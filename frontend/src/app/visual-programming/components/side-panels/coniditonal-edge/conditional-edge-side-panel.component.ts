@@ -27,7 +27,7 @@ import { EdgeNodeModel } from '../../../core/models/node.model';
 import { ToolLibrariesComponent } from '../../../../user-settings-page/tools/custom-tool-editor/tool-libraries/tool-libraries.component';
 import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { FlowService } from '../../../services/flow.service';
-import { uniqueNodeNameValidator } from '../unique-node-name-validator/unique-node-name.validator';
+import { NodeNameValidatorService } from '../../../services/node-name-validator.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { InputMapComponent } from '../../../components/input-map/input-map.component';
@@ -86,10 +86,15 @@ export class ConditionalEdgeSidePanelComponent implements OnInit, OnDestroy {
   constructor(
     private readonly fb: FormBuilder,
     private readonly flowService: FlowService,
+    private readonly nodeNameValidatorService: NodeNameValidatorService,
     private readonly dialog: Dialog,
     private readonly sidePanelService: SidePanelService
   ) {
-    this.conditionalEdgeForm = this.initializeForm();
+    this.conditionalEdgeForm = this.fb.group({
+      node_name: ['', [Validators.required]],
+      input_map: this.fb.array([]),
+      output_variable_path: [''],
+    });
   }
 
   @HostListener('document:keydown.escape')
@@ -98,6 +103,7 @@ export class ConditionalEdgeSidePanelComponent implements OnInit, OnDestroy {
   }
 
   public ngOnInit(): void {
+    this.initializeFormWithValidators();
     this.initializeFormValues();
     this.setupFormChangeTracking();
   }
@@ -150,12 +156,18 @@ export class ConditionalEdgeSidePanelComponent implements OnInit, OnDestroy {
     }
   }
 
-  private initializeForm(): FormGroup {
-    return this.fb.group({
-      node_name: ['', [Validators.required]],
-      input_map: this.fb.array([]),
-      output_variable_path: [''],
-    });
+  private initializeFormWithValidators(): void {
+    // Update the node_name field with the unique validator
+    const nodeNameControl = this.conditionalEdgeForm.get('node_name');
+    if (nodeNameControl) {
+      nodeNameControl.setValidators([
+        Validators.required,
+        this.nodeNameValidatorService.createUniqueNodeNameValidator(
+          this.node?.id
+        ),
+      ]);
+      nodeNameControl.updateValueAndValidity();
+    }
   }
 
   private initializeFormValues(): void {

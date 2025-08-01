@@ -21,10 +21,7 @@ export class AnswerToLLMService {
 
   constructor(private http: HttpClient, private configService: ConfigService) {}
 
-  // Dynamically retrieve the API URL from ConfigService
   private get apiUrl(): string {
-    // If you want 'answer-to-llm/' appended here, do it like this:
-    // return this.configService.apiUrl + 'answer-to-llm/';
     return this.configService.apiUrl;
   }
 

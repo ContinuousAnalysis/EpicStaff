@@ -20,6 +20,10 @@ import { LoadingSpinnerComponent } from '../../../../../../shared/components/loa
 import { FlowSessionsListComponent } from '../../../../components/flow-sessions-dialog/flow-sessions-list.component';
 import { FlowsApiService } from '../../../../services/flows-api.service';
 import { ConfirmationDialogComponent } from '../../../../../../shared/components/cofirm-dialog/confirmation-dialog.component';
+import {
+  ConfirmationDialogService,
+  ConfirmationResult,
+} from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
 import { FlowRenameDialogComponent } from '../../../../components/flow-rename-dialog/flow-rename-dialog.component';
 import { RunGraphService } from '../../../../../../services/run-graph-session.service';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
@@ -44,6 +48,9 @@ export class MyFlowsComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly dialog = inject(Dialog);
   private readonly toastService = inject(ToastService);
+  private readonly confirmationDialogService = inject(
+    ConfirmationDialogService
+  );
 
   public readonly error = signal<string | null>(null);
   public readonly filteredFlows = this.flowsService.filteredFlows;
@@ -98,31 +105,25 @@ export class MyFlowsComponent implements OnInit {
   }
 
   private confirmAndDeleteFlow(flow: GraphDto): void {
-    const dialogRef = this.dialog.open<'confirm' | 'cancel' | 'close'>(
-      ConfirmationDialogComponent,
-      {
-        data: {
-          title: 'Delete Flow',
-          message: `Are you sure you want to delete the flow "${flow.name}"? This action cannot be undone.`,
-          confirmText: 'Delete',
-          cancelText: 'Cancel',
-          type: 'danger',
-        },
-      }
-    );
-
-    dialogRef.closed.subscribe((result) => {
-      if (result === 'confirm') {
-        this.flowsService.deleteFlow(flow.id).subscribe({
-          next: () => {
-            console.log(`Flow ${flow.id} - ${flow.name} deleted successfully.`);
-          },
-          error: (err) => {
-            console.error(`Error deleting flow ${flow.id} - ${flow.name}`, err);
-          },
-        });
-      }
-    });
+    this.confirmationDialogService
+      .confirmDeleteWithTruncation(flow.name, 50)
+      .subscribe((result: ConfirmationResult) => {
+        if (result === true) {
+          this.flowsService.deleteFlow(flow.id).subscribe({
+            next: () => {
+              console.log(
+                `Flow ${flow.id} - ${flow.name} deleted successfully.`
+              );
+            },
+            error: (err) => {
+              console.error(
+                `Error deleting flow ${flow.id} - ${flow.name}`,
+                err
+              );
+            },
+          });
+        }
+      });
   }
 
   private openRenameDialog(flow: GraphDto): void {

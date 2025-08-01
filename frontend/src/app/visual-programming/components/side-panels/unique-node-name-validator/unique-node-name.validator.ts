@@ -1,5 +1,10 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { NodeNameValidatorService } from '../../../services/node-name-validator.service';
 
+/**
+ * @deprecated Use NodeNameValidatorService.createUniqueNodeNameValidator() instead
+ * This function is kept for backward compatibility
+ */
 export function uniqueNodeNameValidator(
   getExistingNames: () => string[],
   getCurrentName?: () => string | undefined
@@ -25,4 +30,15 @@ export function uniqueNodeNameValidator(
     }
     return null;
   };
+}
+
+/**
+ * Creates a validator that uses the NodeNameValidatorService
+ * This is the recommended approach for new implementations
+ */
+export function createNodeNameValidator(
+  validatorService: NodeNameValidatorService,
+  excludeNodeId?: string
+): ValidatorFn {
+  return validatorService.createUniqueNodeNameValidator(excludeNodeId);
 }

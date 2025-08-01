@@ -20,7 +20,7 @@ import { PythonNodeModel } from '../../../core/models/node.model';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { uniqueNodeNameValidator } from '../unique-node-name-validator/unique-node-name.validator';
+import { NodeNameValidatorService } from '../../../services/node-name-validator.service';
 import { FlowService } from '../../../services/flow.service';
 import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { ToolLibrariesComponent } from '../../../../user-settings-page/tools/custom-tool-editor/tool-libraries/tool-libraries.component';
@@ -69,13 +69,20 @@ export class PythonSidePanelComponent implements OnInit, OnDestroy {
   constructor(
     private readonly fb: FormBuilder,
     private readonly flowService: FlowService,
+    private readonly nodeNameValidatorService: NodeNameValidatorService,
     private readonly dialog: Dialog,
     private readonly sidePanelService: SidePanelService
   ) {
-    this.pythonForm = this.initializeForm();
+    this.pythonForm = this.fb.group({
+      name: ['', Validators.required],
+      node_name: ['', [Validators.required]],
+      input_map: this.fb.array([]),
+      output_variable_path: [''],
+    });
   }
 
   public ngOnInit(): void {
+    this.initializeFormWithValidators();
     this.initializeNodeData();
     this.setupFormChangeTracking();
   }
@@ -129,13 +136,18 @@ export class PythonSidePanelComponent implements OnInit, OnDestroy {
     this.nodeExpanded.emit(this.isExpanded());
   }
 
-  private initializeForm(): FormGroup {
-    return this.fb.group({
-      name: ['', Validators.required],
-      node_name: ['', [Validators.required]],
-      input_map: this.fb.array([]),
-      output_variable_path: [''],
-    });
+  private initializeFormWithValidators(): void {
+    // Update the node_name field with the unique validator
+    const nodeNameControl = this.pythonForm.get('node_name');
+    if (nodeNameControl) {
+      nodeNameControl.setValidators([
+        Validators.required,
+        this.nodeNameValidatorService.createUniqueNodeNameValidator(
+          this.node?.id
+        ),
+      ]);
+      nodeNameControl.updateValueAndValidity();
+    }
   }
 
   private initializeNodeData(): void {

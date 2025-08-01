@@ -5,7 +5,7 @@ import { NodeModel } from '../core/models/node.model';
 import { ConnectionModel } from '../core/models/connection.model';
 import { GroupNodeModel } from '../core/models/group.model';
 
-import { v4 as uuidv4 } from 'uuid'; // Install via: npm install uuid
+import { v4 as uuidv4 } from 'uuid';
 import { FSelectionChangeEvent } from '@foblex/flow';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
 import {
@@ -14,7 +14,10 @@ import {
   generatePortsForNode,
 } from '../core/helpers/helpers';
 import { NodeType } from '../core/enums/node-type';
-import { generateNodeDisplayName } from '../core/helpers/generate-node-display-name.util';
+import {
+  generateNodeDisplayName,
+  generateMultipleNodeDisplayNames,
+} from '../core/helpers/generate-node-display-name.util';
 
 interface ClipboardData {
   nodes: NodeModel[];
@@ -186,21 +189,25 @@ export class ClipboardService {
       };
     });
 
+    // Generate display names for all nodes at once to ensure unique counts
+    const currentNodes = this.flowService.getFlowState().nodes;
+    const nodesToCreate = clipboardNodes.map((oldNode) => ({
+      type: oldNode.type,
+      data: oldNode.data,
+    }));
+    const displayNames = generateMultipleNodeDisplayNames(
+      nodesToCreate,
+      currentNodes
+    );
+
     // Create new nodes
-    const newNodes: NodeModel[] = clipboardNodes.map((oldNode) => {
+    const newNodes: NodeModel[] = clipboardNodes.map((oldNode, index) => {
       const newNodeId = uuidv4();
       oldToNewIdMap.set(oldNode.id, newNodeId);
 
       const newPorts: ViewPort[] = generatePortsForNode(
         newNodeId,
         oldNode.type
-      );
-
-      const currentNodes = this.flowService.getFlowState().nodes;
-      const newNodeName = generateNodeDisplayName(
-        oldNode.type,
-        oldNode.data,
-        currentNodes
       );
 
       return {
@@ -214,7 +221,7 @@ export class ClipboardService {
         // Update parentId if it exists and is in our selection
         parentId:
           (oldNode.parentId && oldToNewIdMap.get(oldNode.parentId)) || null,
-        node_name: newNodeName,
+        node_name: displayNames[index],
       };
     });
 

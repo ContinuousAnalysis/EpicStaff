@@ -46,7 +46,6 @@ export class ProjectCardComponent implements OnInit, OnChanges {
   );
   private readonly cdr = inject(ChangeDetectorRef);
 
-  // Convert input to signal for reactivity
   private readonly projectSignal = signal<GetProjectRequest | null>(null);
 
   public isMenuOpen = false;
@@ -60,18 +59,18 @@ export class ProjectCardComponent implements OnInit, OnChanges {
 
   public getIconContainerStyle() {
     return {
-      'background-color': '#333333', // Fixed dark-grey shade for background
+      'background-color': '#333333',
     };
   }
 
   public getIconStyle() {
     return {
-      color: 'var(--accent-color)', // Use accent color from variables.scss
+      color: 'var(--accent-color)',
     };
   }
 
   public getProjectIconPath(): string {
-    return 'ui/project'; // Always use ui/project icon
+    return 'ui/project';
   }
 
   public readonly projectTags = computed(() => {
@@ -99,15 +98,13 @@ export class ProjectCardComponent implements OnInit, OnChanges {
   });
 
   constructor() {
-    // Ensure tags are loaded
     this.projectTagsStorageService.ensureLoaded().subscribe();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Update the signal when the project input changes
     if (changes['project'] && this.project) {
       this.projectSignal.set(this.project);
-      // Trigger change detection to ensure UI updates
+
       this.cdr.markForCheck();
     }
   }

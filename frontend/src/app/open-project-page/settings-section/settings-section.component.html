@@ -40,6 +40,39 @@
         </div>
       </div>
 
+      <!-- Cache Setting -->
+      <div class="setting-item">
+        <div class="setting-label">
+          <div class="setting-title">
+            Cache
+            <app-help-tooltip
+              text="When enabled, responses from language models will be cached to improve performance and reduce API costs for repeated queries."
+            ></app-help-tooltip>
+          </div>
+          <div class="setting-description">
+            Enable response caching for better performance
+          </div>
+        </div>
+        <div class="setting-value">
+          <div class="toggle-wrapper">
+            <div
+              class="toggle-option"
+              [class.active]="settings().cache"
+              (click)="!settings().cache && toggleSetting('cache')"
+            >
+              Enabled
+            </div>
+            <div
+              class="toggle-option"
+              [class.active]="!settings().cache"
+              (click)="settings().cache && toggleSetting('cache')"
+            >
+              Disabled
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Process Type Setting -->
       <div class="setting-item">
         <div class="setting-label">
@@ -72,39 +105,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Cache Setting -->
-      <!-- <div class="setting-item">
-        <div class="setting-label">
-          <div class="setting-title">
-            Cache
-            <app-help-tooltip
-              text="When enabled, responses from language models will be cached to improve performance and reduce API costs for repeated queries."
-            ></app-help-tooltip>
-          </div>
-          <div class="setting-description">
-            Enable response caching for better performance
-          </div>
-        </div>
-        <div class="setting-value">
-          <div class="toggle-wrapper">
-            <div
-              class="toggle-option"
-              [class.active]="settings().cache"
-              (click)="!settings().cache && toggleSetting('cache')"
-            >
-              Enabled
-            </div>
-            <div
-              class="toggle-option"
-              [class.active]="!settings().cache"
-              (click)="settings().cache && toggleSetting('cache')"
-            >
-              Disabled
-            </div>
-          </div>
-        </div>
-      </div> -->
 
       <!-- Full Output Setting -->
       <!-- <div class="setting-item">

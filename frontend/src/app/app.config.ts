@@ -13,7 +13,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { MarkdownModule } from 'ngx-markdown';
 import { ConfigService } from './services/config/config.service';
 
-// A factory function for APP_INITIALIZER
 export function initializeApp(configService: ConfigService) {
   return () => configService.loadConfig();
 }

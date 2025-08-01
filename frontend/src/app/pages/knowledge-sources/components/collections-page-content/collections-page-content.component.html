@@ -1,13 +1,10 @@
 <div class="files-area">
   <ng-container *ngIf="selectedCollection; else noCollection">
-    <!-- Collection header as a separate component -->
     <app-collection-header
       (uploadFiles)="onUploadFiles()"
     ></app-collection-header>
 
-    <!-- Display files list if we have files, otherwise show empty state -->
     <ng-container *ngIf="hasFiles; else noFiles">
-      <!-- Files list if filtered results exist -->
       <ng-container *ngIf="filteredSources.length > 0; else noSearchResults">
         <div class="files-list">
           <app-file-item
@@ -17,7 +14,6 @@
         </div>
       </ng-container>
 
-      <!-- No search results template -->
       <ng-template #noSearchResults>
         <div class="zero-files">
           <div class="file-icon">

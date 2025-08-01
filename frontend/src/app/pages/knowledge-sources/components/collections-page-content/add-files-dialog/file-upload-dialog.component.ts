@@ -40,11 +40,9 @@ export class FileUploadDialogComponent implements OnInit {
   filesForm: FormGroup;
   hasInvalidFiles = false;
 
-  // Maximum values for chunk size and overlap
   maxChunkSize = 8000;
   maxOverlapSize = 1000;
 
-  // Chunk strategies
   chunkStrategies: { label: string; value: ChunkStrategy }[] = [
     { label: 'Token', value: 'token' },
     { label: 'Character', value: 'character' },
@@ -65,9 +63,7 @@ export class FileUploadDialogComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    // Initialize any necessary data
-  }
+  ngOnInit(): void {}
 
   get fileSettingsFormArray() {
     return this.filesForm.get('fileSettings') as FormArray;
@@ -83,29 +79,22 @@ export class FileUploadDialogComponent implements OnInit {
       this.fileSettingsFormArray.length > 0 &&
       !this.hasInvalidFiles
     ) {
-      // Get files with settings from the file uploader component
       const filesWithSettings = this.fileUploader.getFiles();
       console.log('Files to upload with settings:', filesWithSettings);
 
-      // Prepare data for API submission
       const formData = new FormData();
 
-      // Append collection ID
       formData.append('collection_id', this.data.collectionId.toString());
 
-      // Append files and their corresponding settings with indexed names
       filesWithSettings.forEach((fileWithSettings, index) => {
-        // Use 1-based indexing as mentioned in your existing code
         const fileIndex = index + 1;
 
-        // Append file with index
         formData.append(
           `files[${fileIndex}]`,
           fileWithSettings.file,
           fileWithSettings.file.name
         );
 
-        // Append settings with matching indices
         formData.append(
           `chunk_strategies[${fileIndex}]`,
           fileWithSettings.chunkStrategy
@@ -120,15 +109,12 @@ export class FileUploadDialogComponent implements OnInit {
         );
       });
 
-      // Always append additional_params as an empty object
       formData.append('additional_params', '{}');
 
-      // Debug log
       const debug: { [key: string]: any } = {};
       formData.forEach((val, key) => (debug[key] = val));
       console.log('FormData to be sent:', debug);
 
-      // Send the request inside the component
       this._GetSourceCollectionRequestsService
         .uploadFiles(this.data.collectionId, formData)
         .subscribe({
@@ -142,7 +128,6 @@ export class FileUploadDialogComponent implements OnInit {
               5000,
               'bottom-right'
             );
-            // Close dialog and return the successful response
             this.dialogRef.close(response);
           },
           error: (error) => {

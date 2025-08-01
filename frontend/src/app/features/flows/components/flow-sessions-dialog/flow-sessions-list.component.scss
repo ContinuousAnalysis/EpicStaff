@@ -60,21 +60,3 @@
     }
   }
 }
-
-.close-dialog-btn {
-  background: transparent;
-  border: none;
-  padding: 4px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.18s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.close-dialog-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
-}
-.close-dialog-btn:hover .icon-tabler-x {
-  stroke: var(--accent-color);
-}

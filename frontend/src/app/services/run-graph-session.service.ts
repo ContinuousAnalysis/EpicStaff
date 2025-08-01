@@ -8,7 +8,6 @@ import { ConfigService } from './config/config.service';
 
 interface RunGraphResponse {
   session_id: number;
-  // Add any other fields that the API returns
 }
 
 @Injectable({

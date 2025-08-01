@@ -249,20 +249,16 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
   }
 
   public onReassignConnection(event: FReassignConnectionEvent): void {
-    // Save the state for undo before making any changes
     this.undoRedoService.stateChanged();
-    console.log('reassign conncetion', event);
 
     // Step 1: find the old connection from the connections list
     const oldConnection: ConnectionModel | undefined = this.flowService
       .connections()
       .find((conn) => conn.id === event.fConnectionId);
-
     if (!oldConnection) {
       console.warn('Old connection not found:', event.fConnectionId);
       return;
     }
-
     // Step 2: Construct the new connection from the new input port (if available)
     if (!event.newFInputId) {
       console.warn(
@@ -271,18 +267,14 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
       return;
     }
     const newTargetNodeId: string = event.newFInputId.split('_')[0];
-
-    // Lookup source and target nodes from flow state
     const nodes = this.flowService.nodes();
     const sourceNode = nodes.find(
       (node) => node.id === oldConnection.sourceNodeId
     );
     const targetNode = nodes.find((node) => node.id === newTargetNodeId);
 
-    // Derive colors from source and target node types
     const startColor = sourceNode ? NODE_COLORS[sourceNode.type] : '#ddd';
     const endColor = targetNode ? NODE_COLORS[targetNode.type] : '#ddd';
-
     const newConnection: ConnectionModel = {
       id: `${event.fOutputId}+${event.newFInputId}`,
       category: 'default',
@@ -292,10 +284,9 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
       targetPortId: event.newFInputId as CustomPortId,
       startColor,
       endColor,
-      behavior: 'floating', // Assuming 'floating' is the default type
-      type: 'segment', // Assuming 'straight' is the default type
+      behavior: 'fixed',
+      type: 'segment',
     };
-
     // Step 3: Validate the new connection
     if (
       !isConnectionValid(newConnection.sourcePortId, newConnection.targetPortId)
@@ -306,12 +297,10 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
       );
       return;
     }
-
     // Step 4: Remove the old connection and add the new one
     this.flowService.removeConnection(event.fConnectionId);
     this.flowService.addConnection(newConnection);
     console.log(this.flowService.getFlowState());
-    console.log('Reassigned connection successfully added:', newConnection);
   }
 
   public onConnectionAdded(event: FCreateConnectionEvent): void {

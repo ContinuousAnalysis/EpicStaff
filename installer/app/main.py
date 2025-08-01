@@ -7,6 +7,8 @@ import time
 
 # Import your app start function here
 from .flask import start_flask_app
+
+
 class TextRedirector(io.TextIOBase):
     def __init__(self, text_widget, tag="stdout"):
         super().__init__()

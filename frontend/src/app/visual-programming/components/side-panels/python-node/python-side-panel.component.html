@@ -69,7 +69,10 @@
               <span class="required">
                 @if (pythonForm.get('node_name')?.errors?.['required'] &&
                 pythonForm.get('node_name')?.touched) { Node name is required }
-                *</span
+                @if (pythonForm.get('node_name')?.errors?.['uniqueNodeName'] &&
+                pythonForm.get('node_name')?.touched) {
+                {{ pythonForm.get('node_name')?.errors?.['uniqueNodeName']?.message }}
+                } *</span
               >
             </label>
             <app-help-tooltip
@@ -181,6 +184,9 @@
                 <span class="required">
                   @if (pythonForm.get('node_name')?.errors?.['required'] &&
                   pythonForm.get('node_name')?.touched) { Node name is required
+                  } @if (pythonForm.get('node_name')?.errors?.['uniqueNodeName']
+                  && pythonForm.get('node_name')?.touched) {
+                  {{ pythonForm.get('node_name')?.errors?.['uniqueNodeName']?.message }}
                   } *</span
                 >
               </label>

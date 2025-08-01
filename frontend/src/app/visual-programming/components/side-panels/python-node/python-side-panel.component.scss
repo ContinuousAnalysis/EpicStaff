@@ -122,6 +122,11 @@
         .required {
           color: #ff4444;
           margin-left: 4px;
+
+          // Special styling for uniqueNodeName errors
+          &:has([data-error="uniqueNodeName"]) {
+            font-weight: 500;
+          }
         }
 
         .ti-plus {

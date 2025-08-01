@@ -20,7 +20,7 @@
   </div>
 
   <div class="dialog-content">
-    <form [formGroup]="filesForm">
+    <form [formGroup]="filesForm" (ngSubmit)="$event.preventDefault()">
       <!-- Using the reusable file upload container component -->
       <app-file-upload-container
         [fileSettingsFormArray]="fileSettingsFormArray"

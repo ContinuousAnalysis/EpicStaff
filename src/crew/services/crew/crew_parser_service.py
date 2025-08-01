@@ -96,10 +96,10 @@ class CrewParserService(metaclass=SingletonMeta):
         output_model = None
         if task_data.output_model is not None:
             output_model = generate_model_from_schema(task_data.output_model)
+            output_model.model_rebuild()
         tools = [
             tool_map[unique_name] for unique_name in task_data.tool_unique_name_list
         ]
-        output_model.model_rebuild()
         return Task(
             name=task_data.name,
             description=task_data.instructions,

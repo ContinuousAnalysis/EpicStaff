@@ -23,6 +23,8 @@ import { Dialog } from '@angular/cdk/dialog';
 import { ProjectTagsDialogComponent } from '../../../../components/project-tags-dialog/project-tags-dialog.component';
 import { ProjectTagsApiService } from '../../../../services/project-tags-api.service';
 import { CreateProjectComponent } from '../../../../components/create-project-form-dialog/create-project.component';
+import { ConfirmationDialogComponent } from '../../../../../../shared/components/cofirm-dialog/confirmation-dialog.component';
+import { ConfirmationDialogService } from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
 
 @Component({
   selector: 'app-my-projects',
@@ -108,6 +110,9 @@ export class MyProjectsComponent implements OnInit {
   );
   private readonly dialog = inject(Dialog);
   private readonly projectTagsApiService = inject(ProjectTagsApiService);
+  private readonly confirmationDialogService = inject(
+    ConfirmationDialogService
+  );
 
   public readonly error = signal<string | null>(null);
   public readonly filteredProjects =
@@ -173,13 +178,31 @@ export class MyProjectsComponent implements OnInit {
         this.openTagsDialog(project);
         break;
       case 'delete':
-        console.log('Deleting project:', project.id);
-        this.projectsStorageService.deleteProject(project.id).subscribe({
-          next: () => console.log(`Project ${project.id} deleted`),
-          error: (err) => console.error('Error deleting project', err),
-        });
+        this.confirmAndDeleteProject(project);
         break;
     }
+  }
+
+  private confirmAndDeleteProject(project: GetProjectRequest): void {
+    this.confirmationDialogService
+      .confirmDeleteWithTruncation(project.name, 50)
+      .subscribe((result) => {
+        if (result === true) {
+          this.projectsStorageService.deleteProject(project.id).subscribe({
+            next: () => {
+              console.log(
+                `Project ${project.id} - ${project.name} deleted successfully.`
+              );
+            },
+            error: (err) => {
+              console.error(
+                `Error deleting project ${project.id} - ${project.name}`,
+                err
+              );
+            },
+          });
+        }
+      });
   }
 
   private openTagsDialog(project: GetProjectRequest): void {

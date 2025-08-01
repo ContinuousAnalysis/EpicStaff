@@ -25,6 +25,6 @@ export class AppIconComponent {
   @Input() size: string = '2rem';
 
   get iconPath(): string {
-    return this.icon ? `/assets/icons/${this.icon}.svg` : '';
+    return this.icon ? `assets/icons/${this.icon}.svg` : '';
   }
 }

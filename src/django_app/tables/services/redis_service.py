@@ -3,6 +3,8 @@ import os
 import json
 import redis
 import redis.asyncio as async_redis
+from redis.backoff import ExponentialBackoff
+from redis.retry import Retry
 from threading import Lock
 
 from tables.request_models import RealtimeAgentChatData, SessionData
@@ -19,19 +21,23 @@ class RedisService(metaclass=SingletonMeta):
         self._async_redis_client = None
         self._redis_host = os.getenv("REDIS_HOST", "localhost")
         self._redis_port = int(os.getenv("REDIS_PORT", 6379))
+        self._retry = Retry(backoff=ExponentialBackoff(cap=3), retries=10)
 
     def _initialize_redis(self):
         with self._lock:
             if self._redis_client is None:
                 self._redis_client = redis.Redis(
-                    host=self._redis_host, port=self._redis_port
+                    host=self._redis_host, port=self._redis_port, retry=self._retry
                 )
                 self._pubsub = self._redis_client.pubsub()
 
     def _initialize_async(self):
         if self._async_redis_client is None:
             self._async_redis_client = async_redis.Redis(
-                host=self._redis_host, port=self._redis_port, decode_responses=True
+                host=self._redis_host,
+                port=self._redis_port,
+                decode_responses=True,
+                retry=self._retry,
             )
 
     @property
@@ -142,7 +148,9 @@ class RedisService(metaclass=SingletonMeta):
                 raise
 
             # Retry with a new pubsub
-            async for message in self.redis_get_message(channels, reconnections_left - 1):
+            async for message in self.redis_get_message(
+                channels, reconnections_left - 1
+            ):
                 yield message
 
         finally:
@@ -150,4 +158,3 @@ class RedisService(metaclass=SingletonMeta):
             with contextlib.suppress(Exception):
                 await pubsub.unsubscribe(*channels)
                 await pubsub.close()
-

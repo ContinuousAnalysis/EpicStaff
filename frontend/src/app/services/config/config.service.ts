@@ -17,12 +17,11 @@ export class ConfigService {
 
   async loadConfig(): Promise<void> {
     try {
-      // Use the correct path for assets in Angular
       const config = await firstValueFrom(
         this.http.get<AppConfig>('/config.json').pipe(
           catchError((error) => {
             console.warn('Could not load config file:', error);
-            // Fallback to environment values
+
             return of({
               type: 'fallback',
               apiUrl: environment.apiUrl,
@@ -34,10 +33,8 @@ export class ConfigService {
       );
 
       this.config = config;
-      console.log('Configuration loaded:', this.config);
     } catch (error) {
       console.error('Error loading configuration:', error);
-      // Set fallback values if everything fails
       this.config = {
         type: 'fallback',
         apiUrl: environment.apiUrl,

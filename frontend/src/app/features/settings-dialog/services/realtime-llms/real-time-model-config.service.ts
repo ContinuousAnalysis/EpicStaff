@@ -7,7 +7,7 @@ import {
   CreateRealtimeModelConfigRequest,
   RealtimeModelConfig,
   UpdateRealtimeModelConfigRequest,
-} from '../../../../pages/settings-dialog/components/models-page/services/realtime-models-services/real-time-model-config.service';
+} from '../../models/realtime-voice/realtime-llm-config.model';
 
 @Injectable({
   providedIn: 'root',

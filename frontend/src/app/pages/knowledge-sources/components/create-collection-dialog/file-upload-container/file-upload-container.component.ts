@@ -55,7 +55,7 @@ export class FileUploadContainerComponent {
 
   @Output() hasInvalidFilesChange = new EventEmitter<boolean>();
 
-  filesWithSettings: FileWithSettings[] = [];
+  public filesWithSettings: FileWithSettings[] = [];
   isDragging = false;
   hasInvalidFiles = false;
 
@@ -208,7 +208,21 @@ export class FileUploadContainerComponent {
     // Update invalid files status after removal
     this.checkForInvalidFiles();
 
+    // Clear the file input to allow re-uploading the same file
+    this.clearFileInput();
+
     console.log('Remaining Files:', this.filesWithSettings);
+  }
+
+  // Helper method to clear the file input
+  private clearFileInput(): void {
+    // Find all file input elements and clear them
+    const fileInputs = document.querySelectorAll(
+      'input[type="file"]'
+    ) as NodeListOf<HTMLInputElement>;
+    fileInputs.forEach((input) => {
+      input.value = '';
+    });
   }
 
   updateFileSettings(index: number, field: string, value: any): void {

@@ -93,8 +93,9 @@ export class CustomToolsComponent implements OnInit {
     this.confirmationDialogService
       .confirmDelete(tool.name)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((confirmed) => {
-        if (confirmed) {
+      .subscribe((result) => {
+        // Only proceed if result is exactly true (user clicked confirm)
+        if (result === true) {
           this.customToolsStorageService
             .deleteTool(tool.id)
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -113,6 +114,7 @@ export class CustomToolsComponent implements OnInit {
               },
             });
         }
+        // If result is false or 'close', the action is cancelled (do nothing)
       });
   }
 }

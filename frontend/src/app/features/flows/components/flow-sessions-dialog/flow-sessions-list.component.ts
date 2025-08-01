@@ -24,6 +24,7 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
 import { FlowSessionsTableComponent } from './flow-sessions-table.component';
 import { PaginationControlsComponent } from '../../../../shared/components/pagination-controls/pagination-controls.component';
 import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-filter-dropdown.component';
+import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
 
 @Component({
   selector: 'app-flow-sessions-list',
@@ -32,7 +33,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
   standalone: true,
   imports: [
     CommonModule,
-
+    IconButtonComponent,
     FlowSessionsTableComponent,
     PaginationControlsComponent,
     FlowSessionStatusFilterDropdownComponent,

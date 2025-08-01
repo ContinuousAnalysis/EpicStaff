@@ -8,6 +8,8 @@ from redis import Redis
 from loguru import logger
 from typing import Any, List, Union
 from redis.client import PubSub
+from redis.retry import Retry
+from redis.backoff import ExponentialBackoff
 from utils.memory_monitor import MemoryMonitor
 
 from utils.singleton_meta import SingletonMeta
@@ -147,6 +149,7 @@ class RedisService(metaclass=SingletonMeta):
         self.sync_redis_client: Redis | None = None
         self._async_pubsub_groups: dict[str, AsyncPubSubGroup] = {}
         self._sync_pubsub_groups: dict[str, SyncPubSubGroup] = {}
+        self._retry = Retry(backoff=ExponentialBackoff(cap=3), retries=10)
 
     async def _init_async_pubsub_group(self, channel: str):
         self._async_pubsub_groups[channel] = AsyncPubSubGroup(
@@ -163,10 +166,14 @@ class RedisService(metaclass=SingletonMeta):
     async def connect(self):
         try:
             self.aioredis_client = await aioredis.from_url(
-                f"redis://{self.host}:{self.port}", decode_responses=True
+                f"redis://{self.host}:{self.port}",
+                decode_responses=True,
+                retry=self._retry,
             )
             self.sync_redis_client = Redis.from_url(
-                f"redis://{self.host}:{self.port}", decode_responses=True
+                f"redis://{self.host}:{self.port}",
+                decode_responses=True,
+                retry=self._retry,
             )
             await self.aioredis_client.ping()
             self.sync_redis_client.ping()

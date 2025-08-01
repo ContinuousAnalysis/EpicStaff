@@ -1,6 +1,6 @@
 * text=auto eol=lf
 *.sh text eol=lf
-*.py text eol=lf
 
-# Explicitly mark PNGs as binary
+# Explicitly mark as binary
 *.png binary
+*.pdf binary

@@ -124,6 +124,12 @@ class SourceSerializerMixin:
     ):
         additional_params = self._convert_list_str_to_json(raw_additional_params)
         self._validate_jsons(additional_params)
+
+        files_count = len(files)
+        params_count = len(additional_params)
+        if params_count < files_count:
+            additional_params += [{}] * (files_count - params_count)
+
         for (
             uploaded_file,
             chunk_size,

@@ -9,34 +9,24 @@ import textwrap
 import json
 import threading
 
-def init_env_file(savefiles_path):
-    """Initializes the .env file"""
-    env_path = get_env_file_path()
-    env_path.parent.mkdir(parents=True, exist_ok=True)  # Create directories
-    env_path.touch(exist_ok=True)  # Create .env file if it doesn't exist
-
-    with env_path.open("w", encoding="utf-8") as f:
-        f.write(f'CREW_SAVEFILES_PATH="{savefiles_path}"\n')
-
 
 def get_env_file_path():
     """Returns the path to .env whether bundled by PyInstaller or run normally"""
     if hasattr(sys, "_MEIPASS"):
         base_path = Path(sys._MEIPASS)
+        return base_path / "app" / "static" / "run_program" / ".env"
     else:
-        base_path = Path(__file__).parent.parent
-    env_path = base_path / "app" / "static" / "run_program" / ".env"
-
-    return env_path
+        return Path(__file__).parent.parent.parent / "src" / ".env"
 
 
 def get_compose_file_path():
     """Returns the path to docker-compose.yaml whether bundled by PyInstaller or run normally"""
     if hasattr(sys, "_MEIPASS"):
         base_path = Path(sys._MEIPASS)
+        return base_path / "app" / "static" / "run_program" / "docker-compose.yaml"
     else:
-        base_path = Path(__file__).parent.parent
-    return base_path / "app" / "static" / "run_program" / "docker-compose.yaml"
+        base_path = Path(__file__).parent.parent.parent
+        return base_path / "src" / "docker-compose.yaml"
 
 
 def get_config_dir():
@@ -114,7 +104,9 @@ def get_config(key, default=None):
                     f"Getting from registry: {key_path} with key: {key} and value: {value}"
                 )
                 return value
-        except Exception:
+            # TODO: maybe refactor?!?!?!?
+        except Exception as e:
+            print(e)
             return default
     else:
         try:
@@ -129,6 +121,19 @@ def get_config(key, default=None):
             return default
         except Exception:
             return default
+
+
+def init_env():
+    try:
+        crew_savefiles_path = get_config("savefiles_path")
+    except Exception as e:
+        print(e)
+        crew_savefiles_path = None
+
+    if crew_savefiles_path is None:
+        return
+    else:
+        save_savefiles_path(crew_savefiles_path)
 
 
 def save_savefiles_path(savefiles_path: str):
@@ -164,6 +169,7 @@ def save_savefiles_path(savefiles_path: str):
         f.writelines(lines)
 
     # Save to system config
+
     save_config("savefiles_path", savefiles_path)
     return True
 
@@ -223,8 +229,9 @@ def save_image_tag(image_tag: str):
     save_config("image_tag", image_tag)
     return True
 
+
 def save_git_build_repository(git_build_repository: str):
-    
+
     allowed_regex = r"^[a-zA-Z0-9][a-zA-Z0-9_.:\-\/]{1,127}$"
     if not git_build_repository or not re.match(allowed_regex, git_build_repository):
         print(f"Invalid git_build_repository: {git_build_repository}")
@@ -249,6 +256,7 @@ def save_git_build_repository(git_build_repository: str):
     # Save to system config
     save_config("git_build_repository", git_build_repository)
     return True
+
 
 def save_git_build_branch(git_build_branch: str):
     """Save the image tag to the appropriate storage"""
@@ -310,17 +318,20 @@ def get_image_tag():
         return image_tag
     return "latest-main"
 
+
 def get_git_build_branch():
     git_build_branch = get_config("git_build_branch")
     if git_build_branch and git_build_branch.lower() != "none":
         return git_build_branch
     return "main"
 
+
 def get_git_build_repository():
     git_build_repository = get_config("git_build_repository")
     if git_build_repository and git_build_repository.lower() != "none":
         return git_build_repository
     return "https://github.com/EpicStaff/EpicStaff.git"
+
 
 def _tk_dialog() -> str:
     """
@@ -331,7 +342,7 @@ def _tk_dialog() -> str:
     from tkinter import filedialog
 
     root = tk.Tk()
-    root.withdraw()                 # Hide the root window
+    root.withdraw()  # Hide the root window
     root.attributes("-topmost", True)
     path = filedialog.askdirectory()
     root.destroy()
@@ -342,7 +353,7 @@ def select_folder() -> str | None:
     """
     Cross-platform folder picker that can be called **from any thread**.
 
-    • On macOS, Tkinter **must** run in the main thread.  
+    • On macOS, Tkinter **must** run in the main thread.
       If we’re not on the main thread we launch a short-lived helper
       Python process that shows the dialog and prints the result.
 
@@ -388,6 +399,3 @@ def select_folder() -> str | None:
     thread.start()
     thread.join()
     return result["path"]
-
-
-

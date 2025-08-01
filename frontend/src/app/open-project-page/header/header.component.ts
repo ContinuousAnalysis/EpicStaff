@@ -58,12 +58,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to project state changes
     this.projectStateService.project$
       .pipe(takeUntil(this.destroy$))
       .subscribe((project) => {
         this.project = project;
-        // Mark for check since we're using OnPush strategy
+
         this.cdr.markForCheck();
       });
   }
@@ -104,15 +103,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   setProcessType(type: 'sequential' | 'hierarchical'): void {
     if (this.project?.process !== type && this.project?.id) {
-      // Update the project through the service
       this.projectStateService
         .updateProjectField(this.project.id, 'process', type)
         .subscribe({
           next: (updatedProject) => {
-            // This line is technically not needed since the service already updates the subject,
-            // but it makes the code more explicit and self-documenting
             this.project = updatedProject;
-            this.cdr.markForCheck(); // Ensure UI updates in OnPush change detection
+            this.cdr.markForCheck();
             this.toastService.success('Process type updated successfully');
           },
           error: (error) => {
@@ -161,9 +157,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
         confirmText: 'Create Flow',
         type: 'info',
       })
-      .subscribe((confirmed) => {
-        if (confirmed) {
-          const project = this.project; // assumes you have this.project
+      .subscribe((result) => {
+        // Only proceed if result is exactly true (user clicked confirm)
+        if (result === true) {
+          const project = this.project;
           const nodeId = uuidv4();
           const node = {
             id: nodeId,
@@ -196,6 +193,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
               this.router.navigate(['/flows', response.id]);
             });
         }
+        // If result is false or 'close', the action is cancelled (do nothing)
       });
   }
 }

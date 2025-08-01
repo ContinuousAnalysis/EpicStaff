@@ -75,10 +75,8 @@ export class ProjectMenuComponent implements OnDestroy {
   }
 
   private scheduleClose(): void {
-    // Only schedule close if menu is open and mouse is not on button or menu
     if (this.isMenuOpen() && !this.isMouseOnButton() && !this.isMouseOnMenu()) {
       this.closeTimeout = setTimeout(() => {
-        // Double-check conditions before closing
         if (
           this.isMenuOpen() &&
           !this.isMouseOnButton() &&
@@ -86,7 +84,7 @@ export class ProjectMenuComponent implements OnDestroy {
         ) {
           this.close();
         }
-      }, 100); // 100ms delay to allow mouse to travel between button and menu
+      }, 100);
     }
   }
 

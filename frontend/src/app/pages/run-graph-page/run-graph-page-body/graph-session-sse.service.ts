@@ -39,7 +39,22 @@ export class RunSessionSSEService {
   private isManualDisconnect = false;
 
   private get apiUrl(): string {
-    return `${this.configService.apiUrl}run-session/subscribe/${this.currentSessionId}`;
+    const baseUrl = this.configService.apiUrl;
+    console.log('=== URL Construction Debug ===');
+    console.log('1. ConfigService.apiUrl:', baseUrl);
+
+    console.log('4. Current session ID:', this.currentSessionId);
+
+    const url = `${baseUrl}run-session/subscribe/${this.currentSessionId}/`;
+    console.log('5. Final constructed URL:', url);
+
+    console.log(
+      '7. Final URL contains /epicstaff/:',
+      url.includes('/epicstaff/')
+    );
+    console.log('=== End URL Construction Debug ===');
+
+    return url;
   }
 
   public startStream(sessionId: string): void {
@@ -59,7 +74,6 @@ export class RunSessionSSEService {
   public stopStream(): void {
     this.isManualDisconnect = true;
     this.disconnect();
-    // Set to manually_disconnected to distinguish from actual connection loss
     this.connectionStatusSignal.set('manually_disconnected');
   }
 
@@ -70,7 +84,22 @@ export class RunSessionSSEService {
     }
 
     this.connectionStatusSignal.set('connecting');
-    this.eventSource = new EventSource(this.apiUrl);
+
+    const eventSourceUrl = this.apiUrl;
+    console.log('=== EventSource Creation Debug ===');
+    console.log('Creating EventSource with URL:', eventSourceUrl);
+
+    console.log(
+      'URL contains /epicstaff/:',
+      eventSourceUrl.includes('/epicstaff/')
+    );
+    console.log(
+      'URL starts with https://chat.mym.hysdev.com/:',
+      eventSourceUrl.startsWith('https://chat.mym.hysdev.com/')
+    );
+    console.log('=== End EventSource Creation Debug ===');
+
+    this.eventSource = new EventSource(eventSourceUrl);
 
     this.eventSource.onopen = () => {
       console.log('SSE connection established');

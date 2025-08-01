@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { CheckboxComponent } from '../../../../shared/components/form-controls/checkbox/checkbox.component';
 import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.component';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
+import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
 import {
   GraphSession,
   GraphSessionLight,
@@ -24,6 +25,7 @@ import { GraphDto } from '../../models/graph.model';
     CheckboxComponent,
     FlowSessionStatusBadgeComponent,
     LoadingSpinnerComponent,
+    IconButtonComponent,
   ],
   template: `
     <div class="table-header">
@@ -119,28 +121,12 @@ import { GraphDto } from '../../models/graph.model';
               </div>
             </td>
             <td>
-              <button
-                class="icon-btn delete-icon-btn"
-                (click)="deleteSelected.emit([session.id])"
-                title="Delete session"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="icon icon-tabler icon-tabler-x"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke="currentColor"
-                  fill="none"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+              <app-icon-button
+                icon="ui/x"
+                size="1.5rem"
+                ariaLabel="Delete session"
+                (onClick)="deleteSelected.emit([session.id])"
+              ></app-icon-button>
             </td>
           </tr>
           }

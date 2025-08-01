@@ -53,6 +53,11 @@
         color: var(--color-text-primary, #d9d9de);
         cursor: pointer;
         transition: all 0.2s ease;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 500px;
+        min-width: 0;
 
         &:hover {
           color: #ffffff;

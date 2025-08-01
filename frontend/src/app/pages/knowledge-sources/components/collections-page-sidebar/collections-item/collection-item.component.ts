@@ -56,7 +56,6 @@ import { RenameCollectionDialogComponent } from '../rename-collection-dialog/ren
         </button>
 
         <div class="dropdown-menu" [class.show]="isDropdownOpen">
-          <div class="dropdown-item" (click)="onCopyClick($event)">Copy</div>
           <div class="dropdown-item" (click)="onRenameClick($event)">
             Rename
           </div>
@@ -244,11 +243,6 @@ export class CollectionItemComponent implements OnDestroy {
     event.stopPropagation();
     console.log('Delete collection:', this.collection.collection_name);
     this.deleteCollection(this.collection);
-    this.isDropdownOpen = false;
-  }
-  public onCopyClick(event: MouseEvent): void {
-    event.stopPropagation();
-    console.log('Copy collection:', this.collection.collection_name);
     this.isDropdownOpen = false;
   }
 

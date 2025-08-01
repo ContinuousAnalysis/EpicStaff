@@ -24,7 +24,11 @@
             <span class="required">
               @if (conditionalEdgeForm.get('node_name')?.errors?.['required'] &&
               conditionalEdgeForm.get('node_name')?.touched) { Node name is
-              required } *</span
+              required } @if
+              (conditionalEdgeForm.get('node_name')?.errors?.['uniqueNodeName']
+              && conditionalEdgeForm.get('node_name')?.touched) {
+              {{ conditionalEdgeForm.get('node_name')?.errors?.['uniqueNodeName']?.message }}
+              } *</span
             >
           </label>
           <app-help-tooltip

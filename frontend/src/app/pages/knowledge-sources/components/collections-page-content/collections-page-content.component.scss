@@ -1,21 +1,24 @@
 :host {
-  display: block;
-  width: 100%;
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  overflow: hidden; /* Prevent any overflow from the host */
+  width: 100%;
+  flex: 1;
 }
 
 .files-area {
   height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1;
 
   background: none !important;
   border-radius: 0 !important;
 
   .files-list {
     padding: 1rem 3rem;
-    overflow-y: auto; /* Only this element should scroll */
+    overflow-y: auto;
     flex: 1;
   }
 

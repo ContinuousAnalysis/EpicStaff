@@ -44,10 +44,16 @@
   color: var(--color-text-subtle);
   margin: 0;
   line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 
   strong {
     color: var(--color-text);
     font-weight: 600;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
   }
 }
 

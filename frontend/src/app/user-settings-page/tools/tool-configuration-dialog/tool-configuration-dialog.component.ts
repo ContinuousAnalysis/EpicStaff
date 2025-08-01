@@ -210,8 +210,9 @@ export class ToolConfigurationDialogComponent implements OnInit, OnDestroy {
       .confirmDelete(config.name)
       .pipe(takeUntil(this._destroy$))
       .subscribe({
-        next: (confirmed) => {
-          if (confirmed) {
+        next: (result) => {
+          // Only proceed if result is exactly true (user clicked confirm)
+          if (result === true) {
             this.toolConfigService
               .deleteToolConfig(config.id)
               .pipe(takeUntil(this._destroy$))
@@ -249,6 +250,7 @@ export class ToolConfigurationDialogComponent implements OnInit, OnDestroy {
                 },
               });
           }
+          // If result is false or 'close', the action is cancelled (do nothing)
         },
       });
   }

@@ -129,6 +129,11 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
             letter-spacing: -0.02em;
             line-height: 1.2;
             color: var(--white);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 500px;
+            min-width: 0;
           }
         }
 

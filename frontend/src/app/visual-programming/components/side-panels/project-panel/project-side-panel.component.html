@@ -25,8 +25,15 @@
               class="required"
               *ngIf="projectForm.get('node_name')?.errors?.['required'] && projectForm.get('node_name')?.touched"
             >
-              Node name is required *
+              Node name is required
             </span>
+            <span
+              class="required"
+              *ngIf="projectForm.get('node_name')?.errors?.['uniqueNodeName'] && projectForm.get('node_name')?.touched"
+            >
+              {{ projectForm.get('node_name')?.errors?.['uniqueNodeName']?.message }}
+            </span>
+            <span class="required">*</span>
           </label>
           <app-help-tooltip
             position="right"

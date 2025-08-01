@@ -62,7 +62,7 @@ class KnowledgeSearchService(metaclass=SingletonMeta):
                     f"Knowledge searching for collection id: {knowledge_callback_receiver.results['collection_id']} completed in {round((time.monotonic() - start_time), 2)} sec. Sender: {sender}"
                 )
                 self.redis_service.unsubscribe(
-                    channels=knowledge_search_response_channel,
+                    channel=knowledge_search_response_channel,
                     subscriber=subscriber,
                 )
                 return knowledge_callback_receiver.results["results"]

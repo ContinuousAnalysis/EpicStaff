@@ -1,28 +1,12 @@
 <div class="dialog-wrapper">
   <div class="dialog-header">
     <h2>Sessions for {{ flow.name }}</h2>
-    <button
-      class="icon-btn close-dialog-btn"
-      (click)="dialogRef.close()"
-      title="Close dialog"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="icon icon-tabler icon-tabler-x"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        stroke-width="2"
-        stroke="currentColor"
-        fill="none"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-      </svg>
-    </button>
+    <app-icon-button
+      icon="ui/x"
+      size="2rem"
+      ariaLabel="Close dialog"
+      (onClick)="dialogRef.close()"
+    ></app-icon-button>
   </div>
 
   <div class="dialog-content">

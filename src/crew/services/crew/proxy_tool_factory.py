@@ -25,12 +25,10 @@ class ProxyToolFactory:
         self,
         host: str,
         port: int,
-        redis_service: RedisService,
         python_code_executor_service: RunPythonCodeService,
     ):
         self.host = host
         self.port = port
-        self.redis_service = redis_service
         self.python_code_executor_service = python_code_executor_service
         self.loop = asyncio.get_event_loop()
 

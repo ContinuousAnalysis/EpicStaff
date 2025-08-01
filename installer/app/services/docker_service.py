@@ -58,7 +58,9 @@ class State(ABC):
         """Restart a specific container by ID"""
         raise StateException("cannot restart container in current state")
 
-    def update_images(self) -> Generator[str, None, None]:
+    def update_images(
+        self, mode: Literal["pull", "build"]
+    ) -> Generator[str, None, None]:
         """Updates Docker images from the registry"""
         raise StateException("cannot update immages in current state")
 
@@ -146,17 +148,23 @@ class UpdateImagesState(State):
             for process in self.update_process_list:
                 if process and process.poll() is None:
                     process.terminate()
-        
+
         self.update_process_list = []
         self.update_images_started = False
 
     def _clone_git_and_build_images(self) -> Generator[str, None, None]:
         image_build_configs = {
-            "django_app": {"dockerfile": "src/django_app/Dockerfile.dj", "context": "src/django_app"},
+            "django_app": {
+                "dockerfile": "src/django_app/Dockerfile.dj",
+                "context": "src/django_app",
+            },
             "manager": {"dockerfile": "src/manager/Dockerfile.man", "context": "src"},
             "crew": {"dockerfile": "src/crew/Dockerfile.crew", "context": "src"},
             "frontend": {"dockerfile": "frontend/Dockerfile.fe", "context": "frontend"},
-            "sandbox": {"dockerfile": "src/sandbox/Dockerfile.sandbox", "context": "src"},
+            "sandbox": {
+                "dockerfile": "src/sandbox/Dockerfile.sandbox",
+                "context": "src",
+            },
             "knowledge": {
                 "dockerfile": "src/knowledge/Dockerfile.knowledge",
                 "context": "src/knowledge",
@@ -165,7 +173,14 @@ class UpdateImagesState(State):
                 "dockerfile": "src/realtime/Dockerfile.realtime",
                 "context": "src/realtime",
             },
-            "crewdb": {"dockerfile": "src/crewdb/Dockerfile.crewdb", "context": "src/crewdb"},
+            "crewdb": {
+                "dockerfile": "src/crewdb/Dockerfile.crewdb",
+                "context": "src/crewdb",
+            },
+            "redis-monitor": {
+                "dockerfile": "src/redis-monitor/Dockerfile.redis-monitor",
+                "context": "src",
+            },
         }
 
         # Use the branch from the original code
@@ -182,7 +197,9 @@ class UpdateImagesState(State):
             # Git will handle authentication (e.g., via credential manager, SSH agent, or prompts if interactive)
             clone_command = f'git clone -b {branch} {repo_url} "{tmp_repo_path}"'
             yield from self._run_script(clone_command, prefix="git clone")
-            cleanup_git = f'cd "{tmp_repo_path}" && git rm --cached -r . && git reset --hard'
+            cleanup_git = (
+                f'cd "{tmp_repo_path}" && git rm --cached -r . && git reset --hard'
+            )
             yield from self._run_script(cleanup_git, prefix="gitattributes-refresh")
 
             # Basic check to see if cloning was successful
@@ -197,12 +214,8 @@ class UpdateImagesState(State):
             ).splitlines()
             for cid in container_ids:
                 if cid.strip():
-                    yield from self._run_script(
-                        f"docker stop {cid}", prefix="stop"
-                    )
-                    yield from self._run_script(
-                        f"docker rm {cid}", prefix="rm"
-                    )
+                    yield from self._run_script(f"docker stop {cid}", prefix="stop")
+                    yield from self._run_script(f"docker rm {cid}", prefix="rm")
 
             # For capturing outputs from all parallel builds
             output_queue = Queue()
@@ -243,12 +256,14 @@ class UpdateImagesState(State):
             if tmp_repo_path and tmp_repo_path.exists():
                 yield f"[INFO] Cleaning up temporary directory: {tmp_repo_path}\n"
                 try:
+
                     def handle_remove_readonly(func, path, exc_info):
                         if not os.access(path, os.W_OK):
                             os.chmod(path, stat.S_IWRITE)
                             func(path)
                         else:
                             raise
+
                     shutil.rmtree(tmp_repo_path, onexc=handle_remove_readonly)
                 except OSError as e:
                     yield f"[WARNING] Failed to remove temporary directory {tmp_repo_path}: {e}\n"
@@ -268,6 +283,7 @@ class UpdateImagesState(State):
             "knowledge",
             "realtime",
             "crewdb",
+            "redis-monitor",
         ]
 
         registry_dir = get_image_repository()
@@ -323,10 +339,7 @@ class UpdateImagesState(State):
         self.terminate()
         self.docker_service.transition_to(DefaultState())
 
-
-    def _run_script(
-        self, path: str, prefix: str = ""
-    ) -> Generator[str, None, None]:
+    def _run_script(self, path: str, prefix: str = "") -> Generator[str, None, None]:
         """Runs a script and yields its output in real time"""
         try:
 
@@ -369,7 +382,7 @@ class ManageProjectState(State):
             savefiles_path = get_savefiles_path()
 
         # Convert path to forward slashes for Docker
-        target_path = str(Path(savefiles_path).absolute()).replace("\\", "/")
+        target_path = Path(savefiles_path).absolute().as_posix()
 
         # Create savefiles directory
         savefiles_dir = Path(savefiles_path)
@@ -377,8 +390,7 @@ class ManageProjectState(State):
 
         # Always rewrite .env with current path
         env_path = get_env_file_path()
-        with env_path.open("w", encoding="utf-8") as f:
-            f.write(f'CREW_SAVEFILES_PATH="{target_path}"\n')
+
         yield f".env updated at: {env_path} with path: {target_path}\n"
 
         # Create Docker volumes
@@ -388,16 +400,26 @@ class ManageProjectState(State):
 
         # Check container status
         docker_compose_path = get_compose_file_path()
-        running_services = self.docker_service.get_running_services(docker_compose_path)
-        all_services = self.docker_service.get_all_services(docker_compose_path)
+        running_services = self.docker_service.get_running_services(
+            docker_compose_path, env_path
+        )
+        all_services = self.docker_service.get_all_services(
+            docker_compose_path, env_path
+        )
 
+        print(f"{docker_compose_path=}")
+        print(f"{running_services=}")
+        print(f"{all_services=}")
+        print(f"{target_path=}")
+        print(f"{env_path=}")
+        print(f"{savefiles_dir=}")
         if set(running_services) == set(all_services):
             yield "All containers are already running. Nothing to do.\n"
             return
 
         # Run missing/stopped containers
         yield f"Using compose file: {docker_compose_path}\n"
-        yield from self._up_services(docker_compose_path)
+        yield from self._up_services(docker_compose_path, env_file_path=env_path)
 
         self.docker_service.transition_to(DefaultState())
 
@@ -432,10 +454,12 @@ class ManageProjectState(State):
             self.docker_service.transition_to(DefaultState())
             self.up_process = None
 
-    def _up_services(self, compose_file_path: Path) -> Generator[str, None, None]:
+    def _up_services(
+        self, compose_file_path: Path, env_file_path: Path
+    ) -> Generator[str, None, None]:
         """Start services defined in compose file and return SSE-compatible lines."""
         cmd = (
-            f'docker compose -f "{compose_file_path}" '
+            f'docker compose --env-file "{env_file_path}" -f "{compose_file_path}" '
             f'--project-name "epicstaff" up -d'  # keep -d so the call returns quickly
         )
 
@@ -613,11 +637,13 @@ class DockerService:
         project = labels.get("com.docker.compose.project", "").lower()
         return project in self.ALLOWED_PROJECTS
 
-    def _run_compose_command(self, compose_file_path: Path, command: str) -> List[str]:
+    def _run_compose_command(
+        self, compose_file_path: Path, command: str, env_file_path: Path
+    ) -> List[str]:
         """Run a docker compose command and return its output as a list of lines"""
         try:
             result = subprocess.run(
-                f'docker compose -f "{compose_file_path}" {command}',
+                f'docker compose --env-file "{env_file_path}" -f "{compose_file_path}" {command}',
                 shell=True,
                 capture_output=True,
                 text=True,
@@ -628,15 +654,23 @@ class DockerService:
             print(f"Error running docker compose command: {e}")
             return []
 
-    def get_running_services(self, compose_file_path: Path) -> List[str]:
+    def get_running_services(
+        self, compose_file_path: Path, env_file_path: Path
+    ) -> List[str]:
         """Get list of running services from compose file"""
         return self._run_compose_command(
-            compose_file_path, "ps --status=running --services"
+            compose_file_path,
+            "ps --status=running --services",
+            env_file_path=env_file_path,
         )
 
-    def get_all_services(self, compose_file_path: Path) -> List[str]:
+    def get_all_services(
+        self, compose_file_path: Path, env_file_path: Path
+    ) -> List[str]:
         """Get list of all services defined in compose file"""
-        return self._run_compose_command(compose_file_path, "config --services")
+        return self._run_compose_command(
+            compose_file_path, "config --services", env_file_path=env_file_path
+        )
 
     def create_volumes(self, volumes: List[str]) -> List[str]:
         """Create Docker volumes if they don't exist"""
@@ -690,6 +724,7 @@ class DockerService:
 
         print("Docker is running.")
         return True
+
     def _is_docker_running(self):
         startupinfo = None
 

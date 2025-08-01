@@ -7,7 +7,8 @@
 }
 
 .knowledge-body {
-  flex-grow: 1;
+  width: 100%;
+  height: 100%;
   display: flex;
 
   overflow: hidden;
@@ -27,10 +28,4 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-}
-
-// Remove border-radius and background from .files-area if needed
-:host ::ng-deep .files-area {
-  background: none !important;
-  border-radius: 0 !important;
 }

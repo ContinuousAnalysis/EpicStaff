@@ -165,7 +165,6 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
 
   public ngOnChanges(changes: SimpleChanges): void {
     if (changes['sessionId'] && !changes['sessionId'].firstChange) {
-      // Clean up previous subscriptions and state
       this.destroy$.next();
       this.sseService.stopStream();
       this.isLoading = true;
@@ -175,7 +174,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       this.statusWaitForUser = false;
       this.showUserInputWithDelay = false;
       this.cdr.markForCheck();
-      // Load new session data
+
       if (this.sessionId) {
         this.loadData();
       }

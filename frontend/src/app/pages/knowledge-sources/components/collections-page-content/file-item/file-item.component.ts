@@ -272,8 +272,9 @@ export class FileItemComponent implements OnDestroy {
       .confirmDelete(source.file_name)
       .pipe(takeUntil(this._destroy$))
       .subscribe({
-        next: (confirmed) => {
-          if (confirmed) {
+        next: (result) => {
+          // Only proceed if result is exactly true (user clicked confirm)
+          if (result === true) {
             this._sourcesService
               .deleteSource(source.document_id)
               .pipe(takeUntil(this._destroy$))
@@ -288,6 +289,7 @@ export class FileItemComponent implements OnDestroy {
                 },
               });
           }
+          // If result is false or 'close', the action is cancelled (do nothing)
         },
       });
   }

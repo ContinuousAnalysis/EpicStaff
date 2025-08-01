@@ -22,7 +22,7 @@ import { ProjectNodeModel } from '../../../core/models/node.model';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import { takeUntil, distinctUntilChanged, debounceTime } from 'rxjs/operators';
-import { uniqueNodeNameValidator } from '../unique-node-name-validator/unique-node-name.validator';
+import { NodeNameValidatorService } from '../../../services/node-name-validator.service';
 import { FlowService } from '../../../services/flow.service';
 import { NgIf, NgFor, NgClass } from '@angular/common';
 import { InputMapComponent } from '../../../components/input-map/input-map.component';
@@ -71,17 +71,23 @@ export class ProjectSidePanelComponent
   constructor(
     private readonly fb: FormBuilder,
     private readonly flowService: FlowService,
+    private readonly nodeNameValidatorService: NodeNameValidatorService,
     private readonly cdr: ChangeDetectorRef,
     private readonly dialog: Dialog,
     private readonly sidePanelService: SidePanelService
   ) {
-    this.projectForm = this.initializeProjectForm();
+    this.projectForm = this.fb.group({
+      node_name: ['', [Validators.required]],
+      input_map: this.fb.array([]),
+      output_variable_path: [''],
+    });
   }
   public get activeColor(): string {
     return this.node?.color || '#685fff';
   }
 
   public ngOnInit(): void {
+    this.initializeFormWithValidators();
     this.initializeFormValues();
     this.initializeInputMap();
   }
@@ -131,12 +137,18 @@ export class ProjectSidePanelComponent
     }
   }
 
-  private initializeProjectForm(): FormGroup {
-    return this.fb.group({
-      node_name: ['', [Validators.required]],
-      input_map: this.fb.array([]),
-      output_variable_path: [''],
-    });
+  private initializeFormWithValidators(): void {
+    // Update the node_name field with the unique validator
+    const nodeNameControl = this.projectForm.get('node_name');
+    if (nodeNameControl) {
+      nodeNameControl.setValidators([
+        Validators.required,
+        this.nodeNameValidatorService.createUniqueNodeNameValidator(
+          this.node?.id
+        ),
+      ]);
+      nodeNameControl.updateValueAndValidity();
+    }
   }
 
   private initializeFormValues(): void {

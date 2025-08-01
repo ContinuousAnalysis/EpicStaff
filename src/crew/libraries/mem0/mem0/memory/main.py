@@ -10,6 +10,8 @@ from threading import Lock
 
 import pytz
 import redis
+from redis.retry import Retry
+from redis.backoff import ExponentialBackoff
 from pydantic import ValidationError
 
 from mem0.configs.base import MemoryConfig, MemoryItem
@@ -58,6 +60,7 @@ class Memory(MemoryBase):
             self.enable_graph = True
 
         self._redis_client = None
+        self._redis_retry = Retry(backoff=ExponentialBackoff(cap=3), retries=10)
 
         capture_event("mem0.init", self)
 
@@ -76,6 +79,7 @@ class Memory(MemoryBase):
                     port=self.config.redis.port,
                     db=self.config.redis.db,
                     decode_responses=True,
+                    retry=self._redis_retry,
                 )
                 self._redis_channel = self.config.redis.channel
 
@@ -98,7 +102,7 @@ class Memory(MemoryBase):
         filters=None,
         prompt=None,
         search_limit=5,
-        memory_update_callback=None
+        memory_update_callback=None,
     ):
         """
         Create a new memory.
