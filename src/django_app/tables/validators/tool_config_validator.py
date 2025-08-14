@@ -124,7 +124,7 @@ class ToolConfigValidator:
         # TODO: take object creation OUT of the function `validate`
         return ToolConfig(name=name, tool=tool, configuration=configuration)
 
-    def validate_is_completed(self, tool_id: int, configuration: dict) -> bool:
+    def validate_is_completed(self, tool_instance, configuration: dict) -> bool:
         """
         Usage:
             Used in `to_representation` method in `ToolConfigSerializer`.
@@ -134,13 +134,13 @@ class ToolConfigValidator:
             To verify whether all fields in the configuration for each specific TOOL remain valid.
 
         Args:
-            tool_id (int): To get required predifined configuration for this tool.
+            tool_instance (Tool): To get required predifined configuration.
             configuration (dict): tool configuration need to be validate.
 
         Raises:
             This validation function raises nothing, but only return bool value(is_completed) about passing validation.
             Returns `False` if:
-                - `tool_id` is not an integer.
+                - `tool_instance` is not provided.
                 - Any required field is missing from `configuration`.
                 - Validation for any field fails.
 
@@ -150,30 +150,36 @@ class ToolConfigValidator:
         """
         is_completed: bool = True
 
-        if not isinstance(tool_id, int):
+        if not tool_instance:
             return False
 
-        tool_required_fields = ToolConfigField.objects.filter(
-            tool_id=tool_id, required=True
-        )
-
+        if hasattr(tool_instance, 'prefetched_config_fields'):
+            tool_required_fields = [
+                field for field in tool_instance.prefetched_config_fields 
+                if field.required
+            ]
+        else:
+            tool_required_fields = ToolConfigField.objects.filter(
+                tool_id=tool_instance.id, required=True
+            )
+        
         for field in tool_required_fields:
             if field.name not in configuration:
                 return False
-
+            
             value = configuration.get(field.name)
             validation_function = self.VALIDATION_FUNCTIONS.get(field.data_type.lower())
-
+            
             if not validation_function:
                 raise KeyError(
                     f"Validation function for '{field.data_type}' does not exist."
                 )
-
+            
             try:
                 validation_function(field.name, value)
             except ValidationError:
                 return False
-
+        
         return is_completed
 
     def __validate_missing_fields(

@@ -161,7 +161,7 @@ import { ConfirmationDialogService } from '../../../../../shared/components/cofi
 
       .file-details {
         flex: 1;
-        min-width: 0; /* Allow text truncation */
+        min-width: 0;
         margin-right: 32px;
       }
 
@@ -172,6 +172,8 @@ import { ConfirmationDialogService } from '../../../../../shared/components/cofi
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        max-width: 300px;
+        display: block;
       }
 
       .chunk-settings {

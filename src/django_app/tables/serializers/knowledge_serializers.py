@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from tables.models import SourceCollection, DocumentMetadata
 from django.db import transaction
-from django.db.models import Count, Q
 from tables.utils.mixins import SourceSerializerMixin
 
 
@@ -51,9 +50,7 @@ class UploadSourceCollectionSerializer(
         ]
         read_only_fields = ["collection_id", "created_at", "status"]
 
-        extra_kwargs = {
-            "collection_name": {"validators": []},
-        }
+        validators = []
 
     def validate_files(self, value):
         return self.validate_files_list(value)
@@ -132,9 +129,7 @@ class UpdateSourceCollectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = SourceCollection
         fields = ["collection_name"]
-        extra_kwargs = {
-            "collection_name": {"validators": []},
-        }
+        validators = []
 
 
 class DocumentMetadataSerializer(serializers.ModelSerializer):
@@ -178,10 +173,7 @@ class CopySourceCollectionSerializer(
             "document_metadata",
         ]
         read_only_fields = ["collection_id", "created_at", "status"]
-
-        extra_kwargs = {
-            "collection_name": {"validators": []},
-        }
+        validators = []
 
     def create(self, validated_data):
         list_document_metadata = validated_data.pop("document_metadata")
@@ -218,39 +210,21 @@ class CollectionStatusSerializer(serializers.ModelSerializer):
 
     def to_representation(self, obj):
         """Custom representation to control response structure"""
-        document_counts = obj.document_metadata.aggregate(
-            total_documents=Count("document_id"),
-            new_documents=Count(
-                "document_id", filter=Q(status=DocumentMetadata.DocumentStatus.NEW)
-            ),
-            completed_documents=Count(
-                "document_id",
-                filter=Q(status=DocumentMetadata.DocumentStatus.COMPLETED),
-            ),
-            processing_documents=Count(
-                "document_id",
-                filter=Q(status=DocumentMetadata.DocumentStatus.PROCESSING),
-            ),
-            failed_documents=Count(
-                "document_id", filter=Q(status=DocumentMetadata.DocumentStatus.FAILED)
-            ),
-        )
-        documents = obj.document_metadata.values("document_id", "file_name", "status")
         return {
             "collection_id": obj.collection_id,
             "collection_name": obj.collection_name,
             "collection_status": obj.status,
-            "total_documents": document_counts["total_documents"],
-            "new_documents": document_counts["new_documents"],
-            "completed_documents": document_counts["completed_documents"],
-            "processing_documents": document_counts["processing_documents"],
-            "failed_documents": document_counts["failed_documents"],
+            "total_documents": obj.total_documents,
+            "new_documents": obj.new_documents,
+            "completed_documents": obj.completed_documents,
+            "processing_documents": obj.processing_documents,
+            "failed_documents": obj.failed_documents,
             "documents": [
                 {
-                    "document_id": doc["document_id"],
-                    "file_name": doc["file_name"],
-                    "status": doc["status"],
+                    "document_id": doc.document_id,
+                    "file_name": doc.file_name,
+                    "status": doc.status,
                 }
-                for doc in documents
+                for doc in obj.document_metadata.all()
             ],
         }

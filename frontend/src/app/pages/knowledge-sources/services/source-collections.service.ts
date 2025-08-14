@@ -21,7 +21,6 @@ interface ApiGetRequest<T> {
 export class CollectionsService {
   constructor(private http: HttpClient, private configService: ConfigService) {}
 
-  // Dynamically retrieve the API URL from ConfigService
   private get apiUrl(): string {
     return this.configService.apiUrl + 'source-collections/';
   }

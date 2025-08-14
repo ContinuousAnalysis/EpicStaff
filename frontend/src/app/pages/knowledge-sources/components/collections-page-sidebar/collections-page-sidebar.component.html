@@ -44,7 +44,10 @@
     <!-- Collections list -->
     <div class="collections-grid" *ngIf="collections.length > 0">
       <app-collection-item
-        *ngFor="let collection of filteredCollections"
+        *ngFor="
+          let collection of filteredCollections;
+          trackBy: trackByCollectionId
+        "
         [collection]="collection"
         [isActive]="
           collection.collection_id === selectedCollection?.collection_id

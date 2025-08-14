@@ -9,4 +9,5 @@ class Status(Enum):
     NEW = "new"
     PROCESSING = "processing"
     COMPLETED = "completed"
+    WARNING = "warning"
     FAILED = "failed"

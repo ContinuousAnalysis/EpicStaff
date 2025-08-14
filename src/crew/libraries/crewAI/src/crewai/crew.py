@@ -216,6 +216,12 @@ class Crew(BaseModel):
         default=None,
         description="Knowledge collection id for the crew.",
     )
+    search_limit: Optional[int] = Field(
+        default=None, description="search_limit for knowledge"
+    )
+    distance_threshold: Optional[Any] = Field(
+        default=None, description="distance_threshold for knowledge"
+    )
 
     @field_validator("id", mode="before")
     @classmethod

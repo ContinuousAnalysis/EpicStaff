@@ -16,10 +16,11 @@ class SourceCollection(models.Model):
         NEW = "new"
         PROCESSING = "processing"
         COMPLETED = "completed"
+        WARNING = "warning"
         FAILED = "failed"
 
     collection_id = models.AutoField(primary_key=True)
-    collection_name = models.CharField(max_length=255, unique=True, blank=True)
+    collection_name = models.CharField(max_length=255, blank=True)
 
     # TODO: change to OneToMany relation with User model after implementation auth
     user_id = models.CharField(max_length=120, default="dummy_user", blank=True)
@@ -32,6 +33,14 @@ class SourceCollection(models.Model):
     embedder = models.ForeignKey(EmbeddingConfig, on_delete=models.SET_NULL, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user_id", "collection_name"],
+                name="unique_collection_name_per_user",
+            )
+        ]
 
     def __str__(self):
         return self.collection_name
@@ -102,6 +111,7 @@ class DocumentMetadata(models.Model):
         NEW = "new"
         PROCESSING = "processing"
         COMPLETED = "completed"
+        WARNING = "warning"
         FAILED = "failed"
 
     document_id = models.AutoField(primary_key=True)

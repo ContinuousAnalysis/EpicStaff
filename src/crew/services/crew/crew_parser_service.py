@@ -81,6 +81,8 @@ class CrewParserService(metaclass=SingletonMeta):
             "step_callback": step_callback,
             "knowledge_collection_id": agent_data.knowledge_collection_id,
             "search_knowledges": self.knowledge_search_service.search_knowledges,
+            "search_limit": agent_data.search_limit,
+            "distance_threshold": agent_data.distance_threshold,
         }
 
         return Agent(**agent_config)
@@ -133,10 +135,12 @@ class CrewParserService(metaclass=SingletonMeta):
             "memory": crew_data.memory,
             "config": crew_data.config,
             "max_rpm": crew_data.max_rpm,
-            "cache": False, # crew_data.cache, # TODO: remove False after frontend create cache field
+            "cache": False,  # crew_data.cache, # TODO: remove False after frontend create cache field
             "full_output": crew_data.full_output,
             "planning_llm": crew_data.planning,
             "knowledge_collection_id": crew_data.knowledge_collection_id,
+            "search_limit": crew_data.search_limit,
+            "distance_threshold": crew_data.distance_threshold,
         }
 
         if crew_data.memory:

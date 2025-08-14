@@ -1,5 +1,6 @@
 from typing import Any, Literal
 from decimal import Decimal
+from itertools import chain
 
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
@@ -221,6 +222,13 @@ class RealtimeAgentSerializer(serializers.ModelSerializer):
 class AgentReadSerializer(serializers.ModelSerializer):
     tools = serializers.SerializerMethodField()
     realtime_agent = RealtimeAgentSerializer(read_only=True)
+    distance_threshold = serializers.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        max_value=Decimal("1.00"),
+        required=False,
+    )
 
     class Meta:
         model = Agent
@@ -244,6 +252,8 @@ class AgentReadSerializer(serializers.ModelSerializer):
             "fcm_llm_config",
             "knowledge_collection",
             "realtime_agent",
+            "search_limit",
+            "distance_threshold",
         ]
 
     def get_tools(self, agent: Agent) -> list[dict]:
@@ -272,6 +282,14 @@ class AgentWriteSerializer(serializers.ModelSerializer):
     llm_config = serializers.PrimaryKeyRelatedField(
         queryset=LLMConfig.objects.all(), required=False, allow_null=True
     )
+    distance_threshold = serializers.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        max_value=Decimal("1.00"),
+        required=False,
+    )
+    search_limit = serializers.IntegerField(min_value=1, max_value=1000, required=False)
 
     class Meta:
         model = Agent
@@ -294,6 +312,8 @@ class AgentWriteSerializer(serializers.ModelSerializer):
             "llm_config",
             "fcm_llm_config",
             "knowledge_collection",
+            "search_limit",
+            "distance_threshold",
             "realtime_agent",
         ]
 
@@ -323,11 +343,10 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         realtime_agent_data = validated_data.pop("realtime_agent", None)
         agent: Agent = super().create(validated_data)
 
-        
         agent.configured_tools.set(
             ToolConfig.objects.filter(id__in=tools["configured-tool-list"])
         )
-    
+
         agent.python_code_tools.set(
             PythonCodeTool.objects.filter(id__in=tools["python-code-tool-list"])
         )
@@ -346,11 +365,10 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         realtime_agent_data: dict | None = validated_data.pop("realtime_agent", None)
         instance = super().update(instance, validated_data)
 
-        
         instance.configured_tools.set(
             ToolConfig.objects.filter(id__in=tools["configured-tool-list"])
         )
-        
+
         instance.python_code_tools.set(
             PythonCodeTool.objects.filter(id__in=tools["python-code-tool-list"])
         )
@@ -383,7 +401,7 @@ class TaskContextListField(serializers.Field):
         """Convert TaskContext queryset to list of context task IDs"""
         if value is None:
             return []
-        return list(value.values_list("context_id", flat=True))
+        return [tc.context_id for tc in value.all()]
 
     def to_internal_value(self, data):
         """Convert list of integers to validated context task IDs"""
@@ -468,25 +486,17 @@ class TaskContextListField(serializers.Field):
 
 class TaskReadSerializer(serializers.ModelSerializer):
     task_context_list = TaskContextListField(read_only=True)
-    tools = (
-        serializers.SerializerMethodField()
-    )
+    tools = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
         fields = "__all__"
 
     def get_tools(self, task: Task) -> list[dict]:
-
-        tools = []
-        for task_tool in task.task_configured_tool_list.all():
-            serialized = BaseToolSerializer(task_tool.tool).data
-            tools.append(serialized)
-        for task_tool in task.task_python_code_tool_list.all():
-            serialized = BaseToolSerializer(task_tool.tool).data
-            tools.append(serialized)
-
-        return tools
+        all_task_tools = chain(
+            task.task_configured_tool_list.all(), task.task_python_code_tool_list.all()
+        )
+        return [BaseToolSerializer(task_tool.tool).data for task_tool in all_task_tools]
 
 
 class TaskWriteSerializer(serializers.ModelSerializer):
@@ -523,7 +533,7 @@ class TaskWriteSerializer(serializers.ModelSerializer):
         tool_ids = validated_data.pop("tool_ids", None)
 
         task = super().create(validated_data)
-        
+
         if tool_ids is not None:
             self._update_task_tools(task=task, tool_ids=tool_ids)
 
@@ -546,7 +556,7 @@ class TaskWriteSerializer(serializers.ModelSerializer):
         if context_ids is not None:
             self._update_task_contexts(task, context_ids)
 
-        return  task # TODO: responce
+        return task  # TODO: responce
 
     def _update_task_tools(self, task: Task, tool_ids: list[str]):
         TaskPythonCodeTools.objects.filter(task=task).delete()
@@ -559,9 +569,7 @@ class TaskWriteSerializer(serializers.ModelSerializer):
             prefix, id_ = tool_id.split(":")
             if prefix == "python-code-tool":
                 python_code_tool = PythonCodeTool.objects.get(pk=id_)
-                instance = TaskPythonCodeTools(
-                    task=task, tool=python_code_tool
-                )
+                instance = TaskPythonCodeTools(task=task, tool=python_code_tool)
                 instance.full_clean()
                 python_code_tool_list.append(instance)
             if prefix == "configured-tool":
@@ -611,6 +619,14 @@ class CrewSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    distance_threshold = serializers.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        max_value=Decimal("1.00"),
+        required=False,
+    )
+    search_limit = serializers.IntegerField(min_value=1, max_value=1000, required=False)
 
     class Meta:
         model = Crew
@@ -685,11 +701,8 @@ class ToolConfigSerializer(serializers.ModelSerializer):
 
                 configuration[key] = value
 
-        # Creation bool field about passing validation.
-        tool_id = data.get("tool", None)
-
         data["is_completed"] = self.tool_config_validator.validate_is_completed(
-            tool_id, configuration
+            instance.tool, configuration
         )
         return data
 

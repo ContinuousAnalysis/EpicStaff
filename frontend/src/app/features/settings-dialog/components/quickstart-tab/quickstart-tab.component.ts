@@ -38,13 +38,7 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
 @Component({
   selector: 'app-quickstart-tab',
   standalone: true,
-  imports: [
-    NgIf,
-  
-    ReactiveFormsModule,
-    AppIconComponent,
-    ButtonComponent,
-  ],
+  imports: [NgIf, ReactiveFormsModule, AppIconComponent, ButtonComponent],
   template: `
     <div class="quick-start-container">
       <div class="quick-start-header">
@@ -356,10 +350,8 @@ export class QuickstartTabComponent implements AfterViewInit {
   public showApiKey = false;
   public isSaving = false;
 
-  // Set OpenAI as the only provider (id: 1)
   private openAIProviderId = 1;
 
-  // Model names to look for
   private llmModelName = 'gpt-4o-mini';
   private embeddingModelName = 'text-embedding-3-small';
   private realtimeModelName = 'gpt-4o-mini-realtime-preview-2024-12-17';
@@ -384,7 +376,6 @@ export class QuickstartTabComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    // Focus the API key input when component initializes
     setTimeout(() => {
       if (this.apiKeyInput) {
         this.apiKeyInput.nativeElement.focus();
@@ -413,7 +404,6 @@ export class QuickstartTabComponent implements AfterViewInit {
     this.isSaving = true;
     this.cdr.markForCheck();
 
-    // First get all models from all three services
     forkJoin({
       llmModels: this.llmModelsService.getLLMModels(),
       embeddingModels: this.embeddingModelsService.getEmbeddingModels(),
@@ -501,14 +491,12 @@ export class QuickstartTabComponent implements AfterViewInit {
         next: (results) => {
           const models = results.models;
 
-          // Create arrays for configs that need to be created
           const configsToCreate: Array<{
             type: string;
             observable: Observable<any>;
           }> = [];
           const missingModels: string[] = [];
 
-          // Generate unique custom names for each config type
           const getUniqueCustomName = (
             configType: string,
             existingConfigs: any[]
@@ -517,12 +505,10 @@ export class QuickstartTabComponent implements AfterViewInit {
             let customName = baseCustomName;
             let counter = 2;
 
-            // Check if the base name is already used
             let nameExists = existingConfigs.some(
               (config) => config.custom_name === customName
             );
 
-            // If the name exists, increment until we find a unique one
             while (nameExists) {
               customName = `${baseCustomName}${counter}`;
               nameExists = existingConfigs.some(
@@ -534,14 +520,13 @@ export class QuickstartTabComponent implements AfterViewInit {
             return customName;
           };
 
-          // Prepare LLM config - using the found model's ID instead of hardcoded ID
           if (models.llm) {
             const llmCustomName = getUniqueCustomName(
               'LLM',
               results.llmConfigs
             );
             const llmConfig: CreateLLMConfigRequest = {
-              model: models.llm.id, // Use the dynamically found model's ID
+              model: models.llm.id,
               custom_name: llmCustomName,
               api_key: apiKey,
               is_visible: true,
@@ -554,14 +539,13 @@ export class QuickstartTabComponent implements AfterViewInit {
             missingModels.push('LLM');
           }
 
-          // Prepare embedding config
           if (models.embedding) {
             const embeddingCustomName = getUniqueCustomName(
               'Embedding',
               results.embeddingConfigs
             );
             const embeddingConfig: CreateEmbeddingConfigRequest = {
-              model: models.embedding.id, // Use the dynamically found model's ID
+              model: models.embedding.id,
               custom_name: embeddingCustomName,
               api_key: apiKey,
               task_type: 'retrieval_document',
@@ -578,14 +562,13 @@ export class QuickstartTabComponent implements AfterViewInit {
             missingModels.push('Embedding');
           }
 
-          // Prepare realtime config
           if (models.realtime) {
             const realtimeCustomName = getUniqueCustomName(
               'Realtime',
               results.realtimeConfigs
             );
             const realtimeConfig: CreateRealtimeModelConfigRequest = {
-              realtime_model: models.realtime.id, // Use the dynamically found model's ID
+              realtime_model: models.realtime.id,
               api_key: apiKey,
               custom_name: realtimeCustomName,
             };
@@ -598,7 +581,6 @@ export class QuickstartTabComponent implements AfterViewInit {
             missingModels.push('Realtime');
           }
 
-          // Prepare transcription config
           if (models.transcription) {
             const transcriptionCustomName = getUniqueCustomName(
               'Transcription',
@@ -620,7 +602,6 @@ export class QuickstartTabComponent implements AfterViewInit {
             missingModels.push('Transcription');
           }
 
-          // If no configurations can be created
           if (configsToCreate.length === 0) {
             this.isSaving = false;
             this.cdr.markForCheck();
@@ -633,7 +614,6 @@ export class QuickstartTabComponent implements AfterViewInit {
             return;
           }
 
-          // Create all configs with unique names
           forkJoin(configsToCreate.map((item) => item.observable)).subscribe({
             next: (createdResults) => {
               this.isSaving = false;
@@ -654,7 +634,6 @@ export class QuickstartTabComponent implements AfterViewInit {
                 5000,
                 'top-center'
               );
-              this.router.navigate(['/projects']);
 
               this.dialogRef.close('quickstart-complete');
             },

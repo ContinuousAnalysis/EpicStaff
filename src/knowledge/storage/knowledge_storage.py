@@ -43,7 +43,7 @@ class KnowledgeStorage:
             logger.exception("Database error during transaction")
             raise
 
-    def get_documents(self, collection_id):
+    def get_new_documents(self, collection_id):
         self.connect()
         query = """
             SELECT dm.document_id, dm.file_name, dc.content, dm.chunk_strategy, dm.chunk_size, dm.chunk_overlap, dm.additional_params
@@ -58,6 +58,19 @@ class KnowledgeStorage:
         with self.transaction() as cur:
             cur.execute(query, (collection_id, Status.NEW.value))
             return cur.fetchall()
+
+    def get_documents_statuses(self, collection_id):
+        self.connect()
+        query = """
+            SELECT dm.status
+            FROM tables_documentmetadata dm
+            JOIN tables_sourcecollection sc
+            ON dm.source_collection_id = sc.collection_id
+            WHERE sc.collection_id = %s
+        """
+        with self.transaction() as cur:
+            cur.execute(query, (collection_id,))
+            return [row[0] for row in cur.fetchall()]
 
     def save_embedding(self, chunk_text, embedding, document_id, collection_id):
         self.connect()

@@ -74,6 +74,7 @@ class BaseToolData(BaseModel):
     unique_name: str
     data: PythonCodeToolData | ConfiguredToolData
 
+
 class RunToolParamsModel(BaseModel):
     tool_config: ToolConfigData | None = None
     run_args: list[str]
@@ -98,6 +99,8 @@ class AgentData(BaseModel):
     embedder: EmbedderData | None = None
     function_calling_llm: LLMData | None
     knowledge_collection_id: int | None
+    search_limit: int = 3
+    distance_threshold: Decimal = 0.7
 
 
 class RealtimeAgentChatData(BaseModel):
@@ -145,6 +148,8 @@ class CrewData(BaseModel):
     planning_llm: LLMData | None
     tools: List[BaseToolData]
     knowledge_collection_id: int | None
+    search_limit: int = 3
+    distance_threshold: Decimal = 0.7
 
 
 class TaskData(BaseModel):

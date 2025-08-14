@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DialogRef } from '@angular/cdk/dialog';
 import { IconButtonComponent } from '../../shared/components/buttons/icon-button/icon-button.component';
@@ -9,8 +9,16 @@ import { PreferencesTabComponent } from './components/preferences-tab/preference
 import { AppIconComponent } from '../../shared/components/app-icon/app-icon.component';
 import { QuickstartTabComponent } from './components/quickstart-tab/quickstart-tab.component';
 
+export enum TabId {
+  LLM = 'llm',
+  EMBEDDING = 'embedding',
+  VOICE = 'voice',
+  PREFERENCES = 'preferences',
+  QUICKSTART = 'quickstart',
+}
+
 export interface Tab {
-  id: string;
+  id: TabId;
   label: string;
 }
 
@@ -47,7 +55,7 @@ export interface Tab {
             @for (tab of tabs; track tab.id) {
             <button
               class="tab-button"
-              [class.active]="activeTabId === tab.id"
+              [class.active]="activeTabId() === tab.id"
               (click)="selectTab(tab.id)"
             >
               {{ tab.label }}
@@ -57,15 +65,15 @@ export interface Tab {
         </div>
 
         <div class="tab-content">
-          @switch (activeTabId) { @case ('llm') {
+          @switch (activeTabId()) { @case (TabId.LLM) {
           <app-llm-models-tab></app-llm-models-tab>
-          } @case ('embedding') {
+          } @case (TabId.EMBEDDING) {
           <app-embedding-models-tab></app-embedding-models-tab>
-          } @case ('voice') {
+          } @case (TabId.VOICE) {
           <app-voice-models-tab></app-voice-models-tab>
-          } @case ('preferences') {
+          } @case (TabId.PREFERENCES) {
           <app-preferences-tab></app-preferences-tab>
-          } @case ('quickstart') {
+          } @case (TabId.QUICKSTART) {
           <app-quickstart-tab></app-quickstart-tab>
           } }
         </div>
@@ -156,20 +164,24 @@ export interface Tab {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsDialogComponent {
+  public readonly TabId = TabId;
+
   public tabs: Tab[] = [
-    { id: 'llm', label: 'LLM Models' },
-    { id: 'embedding', label: 'Embedding Models' },
-    { id: 'voice', label: 'Voice Models' },
-    // { id: 'preferences', label: 'Preferences' },
-    { id: 'quickstart', label: 'Quickstart' },
+    { id: TabId.LLM, label: 'LLM Models' },
+    { id: TabId.EMBEDDING, label: 'Embedding Models' },
+    { id: TabId.VOICE, label: 'Voice Models' },
+    // { id: TabId.PREFERENCES, label: 'Preferences' },
+    { id: TabId.QUICKSTART, label: 'Quickstart' },
   ];
 
-  public activeTabId: string = 'llm';
+  public activeTabId = signal<TabId>(TabId.LLM);
 
-  public constructor(private readonly dialogRef: DialogRef<void>) {}
+  public constructor(private readonly dialogRef: DialogRef<void>) {
+    this.activeTabId.set(TabId.LLM);
+  }
 
-  public selectTab(tabId: string): void {
-    this.activeTabId = tabId;
+  public selectTab(tabId: TabId): void {
+    this.activeTabId.set(tabId);
   }
 
   public close(): void {

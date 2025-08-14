@@ -59,7 +59,6 @@ import { AppIconComponent } from '../../../../../../../shared/components/app-ico
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 0.5rem;
       }
 
       .plus-icon app-icon {

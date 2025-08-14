@@ -15,10 +15,17 @@ import { NgIf } from '@angular/common';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
+import { ToastService } from '../../../../services/notifications/toast.service';
 
 @Component({
   selector: 'app-code-editor',
-  imports: [FormsModule, NgIf, MonacoEditorModule, AppIconComponent],
+  imports: [
+    FormsModule,
+    NgIf,
+    MonacoEditorModule,
+    AppIconComponent,
+    IconButtonComponent,
+  ],
   templateUrl: './code-editor.component.html',
   styleUrls: ['./code-editor.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,7 +40,6 @@ export class CodeEditorComponent {
 
   private monacoEditor: any;
   public editorLoaded = false;
-  public showMainError = false;
 
   public editorOptions = {
     theme: 'vs-dark',
@@ -49,14 +55,16 @@ export class CodeEditorComponent {
     tabSize: 4,
   };
 
-  constructor(private cdr: ChangeDetectorRef, private zone: NgZone) {}
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private zone: NgZone,
+    private toastService: ToastService
+  ) {}
 
   public onCodeChange(newValue: string): void {
-    const mainRegex = /(^|\n)\s*def\s+main\b/;
-    this.showMainError = !mainRegex.test(newValue);
-    this.errorChange.emit(this.showMainError);
     this.pythonCode = newValue;
     this.pythonCodeChange.emit(newValue);
+    this.errorChange.emit(false); // No longer validate main function
     this.cdr.markForCheck();
   }
 
@@ -64,7 +72,6 @@ export class CodeEditorComponent {
     this.editorLoaded = true;
     this.monacoEditor = editor;
 
-    // Set additional editor options after initialization
     if (this.monacoEditor) {
       this.monacoEditor.updateOptions({
         wordWrapBreakAfterCharacters: ',:',
@@ -76,6 +83,17 @@ export class CodeEditorComponent {
   }
 
   public copyCode(): void {
-    navigator.clipboard.writeText(this.pythonCode).catch(() => {});
+    navigator.clipboard
+      .writeText(this.pythonCode)
+      .then(() => {
+        this.toastService.success(
+          'Code copied to clipboard!',
+          3000,
+          'bottom-right'
+        );
+      })
+      .catch(() => {
+        this.toastService.error('Failed to copy code', 3000, 'top-right');
+      });
   }
 }

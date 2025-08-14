@@ -1,4 +1,3 @@
-import { NgFor } from '@angular/common';
 import {
   Component,
   Input,
@@ -21,7 +20,7 @@ import { GetProjectRequest } from '../../features/projects/models/project.model'
   templateUrl: './details-content.component.html',
   styleUrls: ['./details-content.component.scss'],
   standalone: true,
-  imports: [FormsModule, NgFor],
+  imports: [FormsModule],
 })
 export class DetailsContentComponent implements OnInit, OnChanges {
   @Input() public description!: string;
@@ -46,7 +45,6 @@ export class DetailsContentComponent implements OnInit, OnChanges {
     this.internalDescription = this.description || '';
     this.internalTags = [...this.tags];
 
-    // Subscribe to the subject and update via service after debounce
     this.descriptionSubject
       .pipe(debounceTime(500))
       .subscribe((updatedDescription: string) => {
@@ -55,7 +53,6 @@ export class DetailsContentComponent implements OnInit, OnChanges {
         }
       });
 
-    // Subscribe to tags changes with debounce
     this.tagsSubject
       .pipe(debounceTime(300))
       .subscribe((updatedTags: string[]) => {
@@ -75,17 +72,14 @@ export class DetailsContentComponent implements OnInit, OnChanges {
   public onAddTag(): void {
     let trimmedTag = this.newTag.trim();
 
-    // Remove hashtag if user manually added it
     if (trimmedTag.startsWith('#')) {
       trimmedTag = trimmedTag.substring(1);
     }
 
     if (trimmedTag) {
-      // Format tag to match existing format (e.g., capitalize first letter)
       const formattedTag =
         trimmedTag.charAt(0).toUpperCase() + trimmedTag.slice(1);
 
-      // Check for exact duplicate
       const duplicate = this.internalTags.find(
         (tag) => tag.toLowerCase() === formattedTag.toLowerCase()
       );
@@ -94,7 +88,7 @@ export class DetailsContentComponent implements OnInit, OnChanges {
         this.duplicateTagName = duplicate;
         setTimeout(() => {
           this.duplicateTagName = null;
-        }, 820); // Animation duration + small buffer
+        }, 820);
       } else {
         this.duplicateTagName = null;
         this.internalTags = [...this.internalTags, formattedTag];
@@ -115,7 +109,9 @@ export class DetailsContentComponent implements OnInit, OnChanges {
 
   public onBlurDescription(): void {
     this.isEditingDescription = false;
-    // Emit the value to the subject to trigger debounce
+  }
+
+  public onDescriptionInput(): void {
     this.descriptionSubject.next(this.internalDescription);
   }
 
@@ -125,14 +121,11 @@ export class DetailsContentComponent implements OnInit, OnChanges {
     return Math.min(Math.max(lineCount, 2), 4);
   }
 
-  // Adjust textarea height based on content
   public adjustTextareaHeight(textarea: HTMLTextAreaElement): void {
     textarea.style.height = 'auto';
     const newHeight = Math.min(textarea.scrollHeight, 160); // Max height 160px
-    textarea.style.height = `${newHeight}px`;
   }
 
-  // Private method to update project description via API
   private updateProjectDescription(description: string): void {
     if (!this.projectId) {
       console.error('Project ID is required for updating description');
@@ -146,7 +139,7 @@ export class DetailsContentComponent implements OnInit, OnChanges {
         },
         error: (error: any) => {
           console.error('Error updating description:', error);
-          // Optionally revert to original description on error
+
           this.internalDescription = this.description || '';
         },
       });

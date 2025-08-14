@@ -1,6 +1,5 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MarkdownModule } from 'ngx-markdown';
 import {
   GraphMessage,
   UserMessageData,
@@ -10,11 +9,11 @@ import {
 @Component({
   selector: 'app-user-message',
   standalone: true,
-  imports: [CommonModule, MarkdownModule],
+  imports: [CommonModule],
   template: `
     <div class="user-message-container">
       <div class="message-bubble">
-        <markdown [data]="getMessageText()" class="markdown-content"></markdown>
+        <span class="message-text">{{ getMessageText() }}</span>
       </div>
     </div>
   `,
@@ -36,16 +35,9 @@ import {
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
       }
 
-      .markdown-content {
+      .message-text {
         color: var(--gray-900);
-      }
-
-      .markdown-content ::ng-deep p:first-child {
-        margin-top: 0;
-      }
-
-      .markdown-content ::ng-deep p:last-child {
-        margin-bottom: 0;
+        white-space: pre-wrap;
       }
     `,
   ],
@@ -62,7 +54,7 @@ export class UserMessageComponent {
     }
     return null;
   }
-
+  //workaround
   getMessageText(): string {
     if (this.userMessageData?.text === '</done/>') {
       return 'Done';

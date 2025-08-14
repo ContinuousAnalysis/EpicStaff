@@ -1,5 +1,3 @@
-// src/app/services/projects.service.ts
-
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Observable, of, tap, catchError, map, delay } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';

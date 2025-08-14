@@ -158,9 +158,9 @@ urlpatterns = [
         name="init-realtime",
     ),
     path(
-        "collection_status/<int:collection_id>/",
+        "collection_statuses/",
         CollectionStatusAPIView.as_view(),
-        name="collection_status/",
+        name="collection_statuses/",
     ),
     path("default-config/", DefaultConfigAPIView.as_view(), name="default_config"),
     path(

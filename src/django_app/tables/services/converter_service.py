@@ -138,6 +138,8 @@ class ConverterService(metaclass=SingletonMeta):
                 {tool.unique_name: tool for tool in crew_base_tools}.values()
             ),  # TODO: Unique only
             knowledge_collection_id=knowledge_collection_id,
+            search_limit=crew.search_limit,
+            distance_threshold=crew.distance_threshold,
         )
 
         return crew_data
@@ -196,6 +198,8 @@ class ConverterService(metaclass=SingletonMeta):
             llm=llm,
             function_calling_llm=function_calling_llm,
             knowledge_collection_id=knowledge_collection_id,
+            search_limit=agent.search_limit,
+            distance_threshold=agent.distance_threshold,
         )
 
     def convert_rt_agent_chat_to_pydantic(

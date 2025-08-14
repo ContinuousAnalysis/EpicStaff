@@ -50,6 +50,8 @@ from tables.serializers.model_serializers import (
     ConditionSerializer,
     TaskReadSerializer,
     TaskWriteSerializer,
+    TaskConfiguredTools,
+    TaskPythonCodeTools,
 )
 
 
@@ -58,6 +60,7 @@ from tables.models import (
     Task,
     TemplateAgent,
     ToolConfig,
+    Tool,
     LLMConfig,
     EmbeddingModel,
     LLMModel,
@@ -75,6 +78,8 @@ from tables.models import (
     PythonNode,
     RealtimeModel,
     StartNode,
+    ToolConfigField,
+    TaskContext,
 )
 
 from tables.models import (
@@ -228,7 +233,19 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
 
 
 class AgentViewSet(ModelViewSet):
-    queryset = Agent.objects.all()
+    queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
+        "python_code_tools__python_code",
+        Prefetch(
+            "configured_tools",
+            queryset=ToolConfig.objects.select_related("tool").prefetch_related(
+                Prefetch(
+                    "tool__tool_fields",
+                    queryset=ToolConfigField.objects.all(),
+                    to_attr="prefetched_config_fields",
+                )
+            ),
+        ),
+    )
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         "memory",
@@ -253,25 +270,34 @@ class AgentViewSet(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        write_serializer = self.get_serializer(instance, data=request.data, partial=False)
+        write_serializer = self.get_serializer(
+            instance, data=request.data, partial=False
+        )
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
         # Use AgentReadSerializer for the response
-        read_serializer = AgentReadSerializer(instance, context=self.get_serializer_context())
+        read_serializer = AgentReadSerializer(
+            instance, context=self.get_serializer_context()
+        )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-        write_serializer = self.get_serializer(instance, data=request.data, partial=True)
+        write_serializer = self.get_serializer(
+            instance, data=request.data, partial=True
+        )
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
-        read_serializer = AgentReadSerializer(instance, context=self.get_serializer_context())
+        read_serializer = AgentReadSerializer(
+            instance, context=self.get_serializer_context()
+        )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
+
 class CrewReadWriteViewSet(ModelViewSet):
-    queryset = Crew.objects.all()
+    queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
@@ -289,7 +315,29 @@ class CrewReadWriteViewSet(ModelViewSet):
 
 
 class TaskReadWriteViewSet(ModelViewSet):
-    queryset = Task.objects.all()
+    queryset = Task.objects.prefetch_related(
+        "task_python_code_tool_list",
+        Prefetch(
+            "task_context_list", queryset=TaskContext.objects.select_related("context")
+        ),
+        Prefetch(
+            "task_configured_tool_list",
+            queryset=TaskConfiguredTools.objects.select_related(
+                "tool"
+            ).prefetch_related(
+                Prefetch(
+                    "tool__tool",
+                    queryset=Tool.objects.prefetch_related(
+                        Prefetch(
+                            "tool_fields",
+                            queryset=ToolConfigField.objects.all(),
+                            to_attr="prefetched_config_fields",
+                        )
+                    ),
+                )
+            ),
+        ),
+    )
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         "crew",
@@ -310,7 +358,9 @@ class TaskReadWriteViewSet(ModelViewSet):
         write_serializer.is_valid(raise_exception=True)
         self.perform_create(write_serializer)
 
-        read_serializer = TaskReadSerializer(write_serializer.instance, context=self.get_serializer_context())
+        read_serializer = TaskReadSerializer(
+            write_serializer.instance, context=self.get_serializer_context()
+        )
         return Response(read_serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
@@ -319,21 +369,33 @@ class TaskReadWriteViewSet(ModelViewSet):
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
-        read_serializer = TaskReadSerializer(instance, context=self.get_serializer_context())
+        read_serializer = TaskReadSerializer(
+            instance, context=self.get_serializer_context()
+        )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-        write_serializer = self.get_serializer(instance, data=request.data, partial=True)
+        write_serializer = self.get_serializer(
+            instance, data=request.data, partial=True
+        )
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
-        read_serializer = TaskReadSerializer(instance, context=self.get_serializer_context())
+        read_serializer = TaskReadSerializer(
+            instance, context=self.get_serializer_context()
+        )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
 
 class ToolConfigViewSet(ModelViewSet):
-    queryset = ToolConfig.objects.all()
+    queryset = ToolConfig.objects.select_related("tool").prefetch_related(
+        Prefetch(
+            "tool__tool_fields",
+            queryset=ToolConfigField.objects.all(),
+            to_attr="prefetched_config_fields",
+        )
+    )
     serializer_class = ToolConfigSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["tool", "name"]
@@ -455,7 +517,7 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
 
     http_method_names = ["get", "post", "patch", "delete"]
 
-    queryset = SourceCollection.objects.all()
+    queryset = SourceCollection.objects.prefetch_related("document_metadata")
 
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
@@ -539,18 +601,46 @@ class CopySourceCollectionViewSet(viewsets.ModelViewSet):
 
 
 class DocumentMetadataViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = DocumentMetadata.objects.all()
+    queryset = DocumentMetadata.objects.select_related("source_collection")
     serializer_class = DocumentMetadataSerializer
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        collection: SourceCollection = instance.source_collection
         instance.delete()
+
+        self.update_collection_status(collection)
+
         return Response(
             {
                 "message": f"Source '{instance.file_name}' from colection '{instance.source_collection.collection_name}' deleted successfully"
             },
             status=status.HTTP_200_OK,
         )
+
+    def update_collection_status(self, collection):
+        documents_statuses = set(
+            collection.document_metadata.values_list("status", flat=True)
+        )
+
+        NEW = SourceCollection.SourceCollectionStatus.NEW
+        PROCESSING = SourceCollection.SourceCollectionStatus.PROCESSING
+        WARNING = SourceCollection.SourceCollectionStatus.WARNING
+        FAILED = SourceCollection.SourceCollectionStatus.FAILED
+        COMPLETED = SourceCollection.SourceCollectionStatus.COMPLETED
+
+        current_status = COMPLETED
+        if documents_statuses == {FAILED}:
+            current_status = FAILED
+        elif PROCESSING in documents_statuses:
+            current_status = PROCESSING
+        elif FAILED in documents_statuses or WARNING in documents_statuses:
+            current_status = WARNING
+        elif NEW in documents_statuses or not documents_statuses:
+            current_status = NEW
+
+        collection.status = current_status
+        collection.save()
 
 
 class MemoryFilter(FilterSet):

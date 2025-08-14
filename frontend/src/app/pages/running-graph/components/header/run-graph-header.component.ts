@@ -127,6 +127,12 @@ import { GraphDto } from '../../../../features/flows/models/graph.model';
 
           .flow-name {
             color: var(--white);
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: bottom;
             &:hover {
               text-decoration: underline;
             }

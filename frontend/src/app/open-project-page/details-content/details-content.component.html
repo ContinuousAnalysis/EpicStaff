@@ -8,7 +8,7 @@
       [rows]="getTextareaRows(internalDescription)"
       (focus)="onFocusDescription()"
       (blur)="onBlurDescription()"
-      (input)="adjustTextareaHeight(descriptionTextarea)"
+      (input)="adjustTextareaHeight(descriptionTextarea); onDescriptionInput()"
     ></textarea>
   </div>
 </div>

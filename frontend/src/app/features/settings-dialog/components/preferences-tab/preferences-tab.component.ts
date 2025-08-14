@@ -16,7 +16,6 @@ import { CommonModule } from '@angular/common';
         </div>
       </div>
 
-      <!-- Content goes here -->
       <p>User preferences configuration will go here.</p>
     </div>
   `,

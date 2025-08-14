@@ -81,8 +81,8 @@ class BaseToolData(BaseModel):
 
         try:
             prefix, id = unique_name.split(":")
-            assert prefix != ''
-            assert id != ''
+            assert prefix != ""
+            assert id != ""
         except ValueError as e:
             raise ValueError(
                 "Invalid unique_name. Unique name should be splited by `:`. \nFor example: python-code-tool:1"
@@ -121,6 +121,8 @@ class AgentData(BaseModel):
     embedder: EmbedderData | None = None
     function_calling_llm: LLMData | None
     knowledge_collection_id: int | None
+    search_limit: int | None
+    distance_threshold: float | None
 
 
 class RealtimeAgentData(BaseModel):
@@ -157,6 +159,8 @@ class CrewData(BaseModel):
     planning_llm: LLMData | None
     tools: List[BaseToolData] = []
     knowledge_collection_id: int | None
+    search_limit: int | None
+    distance_threshold: float | None
 
 
 class TaskData(BaseModel):

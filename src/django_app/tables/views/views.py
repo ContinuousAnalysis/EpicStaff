@@ -13,7 +13,7 @@ from utils.logger import logger
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q, Prefetch
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -40,7 +40,7 @@ from tables.services.quickstart_service import QuickstartService
 from django_filters.rest_framework import DjangoFilterBackend
 
 
-from tables.models import Session, SourceCollection
+from tables.models import Session, SourceCollection, DocumentMetadata
 from tables.serializers.model_serializers import (
     SessionSerializer,
     SessionLightSerializer,
@@ -555,7 +555,7 @@ class DefaultEmbeddingConfigAPIView(APIView):
 class ToolListRetrieveUpdateGenericViewSet(
     ListModelMixin, RetrieveModelMixin, UpdateModelMixin, GenericViewSet
 ):
-    queryset = Tool.objects.all()
+    queryset = Tool.objects.prefetch_related("tool_fields")
     serializer_class = ToolSerializer
 
 
@@ -653,10 +653,49 @@ class InitRealtimeAPIView(APIView):
 
 
 class CollectionStatusAPIView(APIView):
-    def get(self, request, collection_id):
+    def get(self, request):
         try:
-            collection = SourceCollection.objects.get(collection_id=collection_id)
-            serializer = CollectionStatusSerializer(collection)
+            collections = (
+                SourceCollection.objects.only(
+                    "collection_id", "collection_name", "status"
+                )
+                .annotate(
+                    total_documents=Count("document_metadata"),
+                    new_documents=Count(
+                        "document_metadata",
+                        filter=Q(
+                            document_metadata__status=DocumentMetadata.DocumentStatus.NEW
+                        ),
+                    ),
+                    completed_documents=Count(
+                        "document_metadata",
+                        filter=Q(
+                            document_metadata__status=DocumentMetadata.DocumentStatus.COMPLETED
+                        ),
+                    ),
+                    processing_documents=Count(
+                        "document_metadata",
+                        filter=Q(
+                            document_metadata__status=DocumentMetadata.DocumentStatus.PROCESSING
+                        ),
+                    ),
+                    failed_documents=Count(
+                        "document_metadata",
+                        filter=Q(
+                            document_metadata__status=DocumentMetadata.DocumentStatus.FAILED
+                        ),
+                    ),
+                )
+                .prefetch_related(
+                    Prefetch(
+                        "document_metadata",
+                        queryset=DocumentMetadata.objects.only(
+                            "document_id", "file_name", "status", "source_collection_id"
+                        ),
+                    )
+                )
+            )
+            serializer = CollectionStatusSerializer(collections, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except SourceCollection.DoesNotExist:
             return Response(

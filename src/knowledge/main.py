@@ -32,15 +32,11 @@ async def indexing(redis_service, executor):
                 data = json.loads(message["data"])
                 collection_id = data["collection_id"]
 
-                logger.info(f"Processing embeddings for collection_id: {collection_id}")
-
                 # Run blocking function in a ProcessPoolExecutor for CPU-bound work
                 loop = asyncio.get_running_loop()
                 await loop.run_in_executor(
                     executor, run_process_collection, collection_id
                 )
-
-                logger.info(f"Embeddings created for collection_id: {collection_id}")
             except Exception as e:
                 logger.error(f"Error processing embedding: {e}")
 

@@ -4,6 +4,7 @@ import {
   ElementRef,
   OnDestroy,
   ChangeDetectionStrategy,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Dialog } from '@angular/cdk/dialog';
@@ -55,7 +56,7 @@ import { RenameCollectionDialogComponent } from '../rename-collection-dialog/ren
           </svg>
         </button>
 
-        <div class="dropdown-menu" [class.show]="isDropdownOpen">
+        <div class="dropdown-menu" [class.show]="isDropdownOpen()">
           <div class="dropdown-item" (click)="onRenameClick($event)">
             Rename
           </div>
@@ -201,13 +202,13 @@ export class CollectionItemComponent implements OnDestroy {
   public CollectionStatus = CollectionStatus;
 
   private _destroy$ = new Subject<void>();
-  isDropdownOpen = false;
+  public isDropdownOpen = signal(false);
 
   constructor(
     private elementRef: ElementRef,
     private _dialog: Dialog,
     private _pageService: KnowledgeSourcesPageService,
-    private _GetSourceCollectionRequestsService: CollectionsService,
+    private _sourceCollectionService: CollectionsService,
     private _embeddingConfigsService: EmbeddingConfigsService,
     private _confirmationDialogService: ConfirmationDialogService
   ) {}
@@ -223,12 +224,12 @@ export class CollectionItemComponent implements OnDestroy {
 
   toggleDropdown(event: MouseEvent): void {
     event.stopPropagation();
-    this.isDropdownOpen = !this.isDropdownOpen;
+    this.isDropdownOpen.set(!this.isDropdownOpen());
   }
 
   onClickOutside(): void {
-    if (this.isDropdownOpen) {
-      this.isDropdownOpen = false;
+    if (this.isDropdownOpen()) {
+      this.isDropdownOpen.set(false);
       console.log('Dropdown closed (outside click)');
     }
   }
@@ -243,7 +244,7 @@ export class CollectionItemComponent implements OnDestroy {
     event.stopPropagation();
     console.log('Delete collection:', this.collection.collection_name);
     this.deleteCollection(this.collection);
-    this.isDropdownOpen = false;
+    this.isDropdownOpen.set(false);
   }
 
   private selectCollection(collection: GetSourceCollectionRequest): void {
@@ -278,7 +279,7 @@ export class CollectionItemComponent implements OnDestroy {
 
     dialogRef.closed.pipe(takeUntil(this._destroy$)).subscribe((newName) => {
       if (newName) {
-        this._GetSourceCollectionRequestsService
+        this._sourceCollectionService
           .patchGetSourceCollectionRequest(collection.collection_id, newName)
           .pipe(takeUntil(this._destroy$))
           .subscribe({
@@ -302,8 +303,9 @@ export class CollectionItemComponent implements OnDestroy {
       .pipe(takeUntil(this._destroy$))
       .subscribe({
         next: (confirmed) => {
+          console.log('Confirmed:', confirmed);
           if (confirmed === true) {
-            this._GetSourceCollectionRequestsService
+            this._sourceCollectionService
               .deleteGetSourceCollectionRequest(collection.collection_id)
               .pipe(takeUntil(this._destroy$))
               .subscribe({

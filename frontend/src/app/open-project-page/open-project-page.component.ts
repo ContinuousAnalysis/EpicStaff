@@ -157,7 +157,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Set active tab
   setActiveTab(tab: TabType): void {
     if (this.activeTab !== tab) {
       this.activeTab = tab;
@@ -173,6 +172,7 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
         component: DetailsContentComponent,
         inputs: {
           description: this.project.description ?? '',
+          projectId: this.project.id,
         },
       },
 
@@ -202,7 +202,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
         inputs: {
           project: this.project,
         },
-        // We'll handle the output binding separately in the template
       },
     ];
   }
@@ -278,12 +277,10 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  // Check if a section is expanded
   isSectionExpanded(sectionId: string): boolean {
     return this.expandedSections.has(sectionId);
   }
 
-  // Toggle section expansion (now allows multiple open sections)
   toggleSection(sectionId: string): void {
     if (this.expandedSections.has(sectionId)) {
       this.expandedSections.delete(sectionId);
@@ -295,14 +292,11 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
   }
 
   onAddAction(event: MouseEvent, sectionId: string) {
-    // Prevent the section from toggling
     event.stopPropagation();
 
-    // Handle add action based on section ID
     if (sectionId === 'agents') {
       console.log('Add agent clicked');
 
-      // Open create agent dialog
       const dialogRef = this.dialog.open<FullAgent>(CreateAgentFormComponent, {
         width: '600px',
         data: {
@@ -311,7 +305,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
         },
       });
 
-      // Handle dialog result
       dialogRef.closed.subscribe((newAgent) => {
         if (newAgent) {
           this.projectStateService.addAgent(newAgent);
@@ -335,13 +328,11 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
       updatedSettings
     ) as (keyof Partial<GetProjectRequest>)[];
 
-    // Log the updated settings object
     console.log('Updated settings received:', updatedSettings);
 
     keys.forEach((key) => {
       const updatedValue = updatedSettings[key];
 
-      // Log each setting change
       console.log(
         `Setting change detected: Key: ${key}, Value: ${updatedValue}`
       );
@@ -353,28 +344,18 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
   }
 
   private updateProjectSetting(key: string, value: any) {
-    // Create patch data with only the changed field
     const patchData = { [key]: value };
 
-    // Log the patch data
     console.log(`Sending patch update for ${key} with new value:`, value);
 
-    // Send PATCH request with only the changed field
     this.projectsService
       .patchUpdateProject(this.project.id, patchData)
       .subscribe({
         next: (updatedProject) => {
-          console.log('🔥 PATCH Response received:', updatedProject);
-          console.log('🔥 Current project before update:', this.project);
-          console.log('🔥 Memory field in response:', updatedProject.memory);
-
-          // Update local component state with the response
           this.project = updatedProject;
 
-          // Update ProjectStateService with the latest project data
           this.projectStateService.setProject(updatedProject);
 
-          // Debug: Check current cache state before update
           const currentCachedProject = this.projectsService
             .projects()
             .find((p) => p.id === updatedProject.id);
@@ -383,10 +364,8 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
             currentCachedProject
           );
 
-          // Explicitly update the ProjectsStorageService cache to ensure consistency
           this.projectsService.updateProjectInCache(updatedProject);
 
-          // Debug: Check cache state after update
           const updatedCachedProject = this.projectsService
             .projects()
             .find((p) => p.id === updatedProject.id);
@@ -399,17 +378,14 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
             updatedCachedProject?.memory
           );
 
-          // Trigger change detection
           this.cdr.markForCheck();
 
           this.toastService.success('Project updated successfully');
           console.log('Project updated successfully:', updatedProject);
         },
         error: (error) => {
-          // Log the error if the update fails
           console.error(`Error updating project field ${key}:`, error);
 
-          // Extract error message for user feedback
           let errorMessage = 'Failed to update project';
           if (error.error && error.error.message) {
             errorMessage = error.error.message;
@@ -425,7 +401,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // Unsubscribe from all subscriptions to prevent memory leaks
     this.projectStateService.setProject(null);
     this.subscription.unsubscribe();
   }

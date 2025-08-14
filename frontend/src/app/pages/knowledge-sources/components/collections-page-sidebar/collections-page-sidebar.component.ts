@@ -62,8 +62,6 @@ export class CollectionsSidebarComponent implements OnDestroy {
     }
 
     return this.collections.filter((collection) => {
-      // Add the property you want to search by
-      // Assuming collections have a name property, update as needed
       return collection.collection_name
         ?.toLowerCase()
         .includes(this.searchQuery.toLowerCase());
@@ -76,5 +74,9 @@ export class CollectionsSidebarComponent implements OnDestroy {
 
   public onCreateCollection(): void {
     this.openCreateCollectionDialog();
+  }
+
+  public trackByCollectionId(index: number, collection: any): number {
+    return collection.collection_id;
   }
 }

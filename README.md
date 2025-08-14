@@ -12,7 +12,7 @@ Create intelligent agents that operate with high performance, retain memory acro
 
 ### Watch EpicStaff in Action!
 
-[![Watch the EpicStaff Demo](docs/Preview.png)](https://youtu.be/fEaBBupvWRE)
+[![Watch the EpicStaff Demo](https://img.youtube.com/vi/fEaBBupvWRE/maxresdefault.jpg)](https://youtu.be/fEaBBupvWRE)
 
 ---
 
@@ -114,4 +114,4 @@ xattr -r -d com.apple.quarantine epicstaff.app
 
 4. **Run the program**
  
-**For more [details](https://github.com/EpicStaff/EpicStaff/blob/main/docs/docs.pdf)**
+**For more [details](docs/docs.pdf)**

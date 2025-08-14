@@ -56,6 +56,21 @@
       line-height: 1;
     }
   }
+
+  .right-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    app-icon-button {
+      color: #e0e0e0;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: #ffffff;
+      }
+    }
+  }
 }
 
 .editor-container {

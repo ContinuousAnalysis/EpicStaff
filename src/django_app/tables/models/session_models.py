@@ -1,5 +1,6 @@
 from django.utils import timezone
 from django.db import models
+from django.core.serializers.json import DjangoJSONEncoder
 
 from tables.models import (
     CrewSessionMessage,
@@ -27,7 +28,7 @@ class Session(models.Model):
     status_data = models.JSONField(default=dict)
     variables = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=timezone.now)
-    graph_schema = models.JSONField(default=dict)
+    graph_schema = models.JSONField(default=dict, encoder=DjangoJSONEncoder)
 
     def save(self, *args, **kwargs):
         now = timezone.now()

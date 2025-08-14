@@ -222,13 +222,12 @@ class Agent(BaseAgent):
             )
         agent_knowledge_snippet = ""
         if self.knowledge_collection_id:
-            # TODO: remove hardcode: search_limit, distance_threshold
             agent_knowledges = self.search_knowledges(
                 sender="ag",
                 knowledge_collection_id=self.knowledge_collection_id,
                 query=task.prompt(),
-                search_limit=3,
-                distance_threshold=0.7,
+                search_limit=self.search_limit,
+                distance_threshold=self.distance_threshold,
             )
             agent_knowledge_snippet = self._extract_knowledges(agent_knowledges)
             task_prompt += (
@@ -239,13 +238,12 @@ class Agent(BaseAgent):
 
         if self.crew:
             if self.crew.knowledge_collection_id:
-                # TODO: remove hardcode: search_limit, distance_threshold
                 crew_knowledges = self.search_knowledges(
                     sender="cr",
                     knowledge_collection_id=self.crew.knowledge_collection_id,
                     query=task.prompt(),
-                    search_limit=3,
-                    distance_threshold=0.7,
+                    search_limit=self.crew.search_limit,
+                    distance_threshold=self.crew.distance_threshold,
                 )
                 crew_knowledge_snippet = self._extract_knowledges(crew_knowledges)
                 if crew_knowledge_snippet:

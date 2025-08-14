@@ -74,7 +74,7 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
 
   form!: FormGroup;
   public pythonCode: string =
-    'def main(arg1: str, arg2: str) -> dict:\n    return {\n        "result": arg1 + arg2,\n    }\n';
+    '# This Python code will be executed by AI agents when they use this custom tool\n# Define your tool logic in the main function - agents will call this function with the specified arguments\n# def main(arg1: str, arg2: str) -> dict:\n#    return {\n#        "result": arg1 + arg2,\n#    }\n';
   public editorHasError = false;
   public selectedVariables: Array<{
     name: string;

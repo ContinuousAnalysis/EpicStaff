@@ -2,6 +2,8 @@ import os
 from loguru import logger
 import cachetools
 
+from psycopg2.errors import ForeignKeyViolation
+
 from storage.knowledge_storage import KnowledgeStorage
 from chunkers.token_chunker import TokenChunker
 from chunkers.markdown_chunker import MarkdownChunker
@@ -80,9 +82,10 @@ class CollectionProcessor:
     def process_collection(self):
 
         self.storage.update_collection_status(Status.PROCESSING, self.collection_id)
+        logger.info(f"Processing embeddings for collection_id: {self.collection_id}")
 
         try:
-            documents = self.storage.get_documents(self.collection_id)
+            documents = self.storage.get_new_documents(self.collection_id)
             for (
                 document_id,
                 file_name,
@@ -93,7 +96,11 @@ class CollectionProcessor:
                 additional_params,
             ) in documents:
                 try:
+                    logger.info(
+                        f"Started processing document {file_name}, ID: {document_id}"
+                    )
                     self.storage.update_document_status(Status.PROCESSING, document_id)
+
                     text = self._get_text_content(binary_content)
                     additional_params.update({"file_name": file_name})
                     chunker = self._get_chunk_strategy(
@@ -101,25 +108,37 @@ class CollectionProcessor:
                     )
 
                     chunks = chunker.chunk(text)
-                    for chunk in chunks:
+                    if not chunks:
+                        logger.warning(
+                            f"Document: {file_name} was not chunked and will not be embedded"
+                        )
+                        self.storage.update_document_status(Status.WARNING, document_id)
+                        continue
 
+                    for chunk in chunks:
                         vector = self.embedder.embed(chunk)
                         self.storage.save_embedding(
                             chunk, vector, document_id, self.collection_id
                         )
-                    self.storage.update_document_status(Status.COMPLETED, document_id)
-                    logger.info(f"Document: {file_name} embedded!")
-
+                except ForeignKeyViolation:
+                    logger.warning(
+                        f"Document: {file_name} was deleted and will not be embedded"
+                    )
                 except Exception as e:
                     self.storage.update_document_status(Status.FAILED, document_id)
                     logger.error(
                         f"Error processing {file_name}, ID: {document_id}. Error: {e}"
                     )
-            self.storage.update_collection_status(Status.COMPLETED, self.collection_id)
+                else:
+                    self.storage.update_document_status(Status.COMPLETED, document_id)
+                    logger.success(f"Document: {file_name} embedded!")
 
         except Exception as e:
             self.storage.update_collection_status(Status.FAILED, self.collection_id)
-            logger.error(f"Error processing collection_id_{self.collection_id}: {e}")
+            logger.error(f"Error processing collection_id {self.collection_id}: {e}")
+        else:
+            self._update_status()
+            logger.info(f"Embedding finished for collection_id: {self.collection_id}")
 
     def _get_text_content(self, binary_content) -> str:
 
@@ -171,3 +190,33 @@ class CollectionProcessor:
                 f"Failed to set custom embedder. Default embedder setted. Error: {e}"
             )
             return self._create_default_embedding_function()
+
+    def _update_status(self):
+        """
+        Update Collection status based on documents statuses
+
+        FALIED: all Failed
+        WARNING: at least 1 Warning or 1 Failed
+        PROCESSING: at least 1 Processing
+        NEW: all documents are New
+        COMPLETED: all documents are Completed
+        """
+        documents_statuses = set(
+            self.storage.get_documents_statuses(self.collection_id)
+        )
+
+        current_status = Status.COMPLETED
+        if documents_statuses == {Status.FAILED.value}:
+            current_status = Status.FAILED
+        elif Status.PROCESSING.value in documents_statuses:
+            current_status = Status.PROCESSING
+        elif (
+            Status.FAILED.value in documents_statuses
+            or Status.WARNING.value in documents_statuses
+        ):
+            current_status = Status.WARNING
+        elif Status.NEW.value in documents_statuses or not documents_statuses:
+            current_status = Status.NEW
+
+        self.storage.update_collection_status(current_status, self.collection_id)
+        logger.info(f"{current_status} was set to collection {self.collection_id}")

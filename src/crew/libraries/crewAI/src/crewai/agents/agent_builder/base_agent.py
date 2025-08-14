@@ -136,6 +136,12 @@ class BaseAgent(ABC, BaseModel):
         default=None,
         description="Knowledge collection id for the agent",
     )
+    search_limit: Optional[int] = Field(
+        default=None, description="search_limit for knowledge"
+    )
+    distance_threshold: Optional[Any] = Field(
+        default=None, description="distance_threshold for knowledge"
+    )
 
     @model_validator(mode="before")
     @classmethod

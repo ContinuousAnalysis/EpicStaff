@@ -6,9 +6,14 @@
       <app-icon icon="ui/python" size="1.2rem" class="python-icon"></app-icon>
       Python3 <span class="entrypoint-main">(entrypoint "main")</span>
     </span>
-    <span class="error-message" *ngIf="showMainError">
-      Missing "def main(...)"
-    </span>
+  </div>
+  <div class="right-section">
+    <app-icon-button
+      icon="ui/copy"
+      size="2rem"
+      ariaLabel="Copy code"
+      (onClick)="copyCode()"
+    ></app-icon-button>
   </div>
 </div>
 
