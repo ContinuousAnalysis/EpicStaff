@@ -1,241 +1,333 @@
 :host {
-  display: block;
+    display: block;
 }
 
 .dialog-container {
-  background-color: #1e1e1e;
-  color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  flex-direction: column;
-  border-radius: 12px;
-  overflow: hidden;
-  width: 100%;
-  min-width: 650px;
-  height: 100%;
-  max-height: 90vh;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-
-  .header {
-    padding: 20px 24px;
-    background-color: rgba(30, 30, 30, 0.6);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: #1e1e1e;
+    color: rgba(255, 255, 255, 0.9);
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    .dialog-title {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 18px;
-      font-weight: 600;
-      margin: 0;
-      padding: 0;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow: hidden;
-      max-width: calc(100% - 30px);
-    }
-
-    .close-button {
-      background: none;
-      border: none;
-      color: rgba(255, 255, 255, 0.6);
-      cursor: pointer;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      margin-left: 10px;
-
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.9);
-      }
-    }
-  }
-
-  .scrollable-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px;
-
-    .form-section {
-      margin-bottom: 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 24px;
-
-      &:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-        padding-bottom: 0;
-      }
-
-      .section-title {
-        font-size: 16px;
-        color: rgba(255, 255, 255, 0.8);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 16px;
-      }
-
-      .section-title app-help-tooltip {
-        display: inline-flex;
-        align-items: center;
-      }
-    }
-  }
-
-  .context-list {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+    flex-direction: column;
+    border-radius: 12px;
     overflow: hidden;
+    width: 100%;
+    min-width: 650px;
+    height: 100%;
+    max-height: 90vh;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 
-    .context-item {
-      display: flex;
-      align-items: center;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.05);
-      }
-
-      &.selected {
-        background-color: rgba(104, 95, 255, 0.1);
-        border-left: 3px solid #685fff;
-      }
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .task-order {
-        min-width: 30px;
-        font-size: 14px;
-        padding: 4px;
-        margin-right: 12px;
-        color: rgba(255, 255, 255, 0.7);
-        text-align: center;
-      }
-
-      .task-name {
-        font-weight: 500;
-        flex-grow: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-right: 10px;
-      }
-
-      .task-meta {
+    .header {
+        padding: 20px 24px;
+        background-color: rgba(30, 30, 30, 0.6);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         display: flex;
         align-items: center;
-        margin-left: auto;
+        justify-content: space-between;
 
-        .task-id {
-          color: rgba(255, 255, 255, 0.5);
-          font-size: 12px;
-          margin-right: 12px;
+        .dialog-title {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+            padding: 0;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            max-width: calc(100% - 30px);
         }
 
-        .checkbox-wrapper {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-
-          .transparent-checkbox {
-            width: 18px;
-            height: 18px;
+        .close-button {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
             cursor: pointer;
-            background-color: transparent;
-            appearance: none;
-            -webkit-appearance: none;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 3px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            margin-left: 10px;
 
-            &:checked {
-              background-color: transparent;
-              border-color: #685fff;
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+                color: rgba(255, 255, 255, 0.9);
             }
-
-            &:focus {
-              outline: none;
-            }
-          }
-
-          .checkmark {
-            position: absolute;
-            right: 6px;
-            top: 2px;
-            width: 5px;
-            height: 10px;
-            border: solid #685fff;
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
-            pointer-events: none;
-          }
         }
-      }
     }
-  }
 
-  .empty-state {
-    padding: 16px;
-    text-align: center;
-    color: rgba(255, 255, 255, 0.5);
-    font-style: italic;
-  }
+    .scrollable-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+
+        .form-section {
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 24px;
+
+            &:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
+                padding-bottom: 0;
+            }
+
+            .section-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 16px;
+                gap: 16px;
+
+                .section-title {
+                    font-size: 16px;
+                    color: rgba(255, 255, 255, 0.8);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin: 0;
+                }
+
+                .section-title app-help-tooltip {
+                    display: inline-flex;
+                    align-items: center;
+                }
+
+                .toggle-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    gap: 6px;
+
+                    .toggle-label {
+                        font-size: 12px;
+                        color: rgba(255, 255, 255, 0.6);
+                        margin: 0;
+                        white-space: nowrap;
+                    }
+                }
+            }
+
+            // Fallback for sections without toggle
+            .section-title {
+                font-size: 16px;
+                color: rgba(255, 255, 255, 0.8);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+
+            .section-title app-help-tooltip {
+                display: inline-flex;
+                align-items: center;
+            }
+        }
+    }
+
+    .context-list {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        overflow: hidden;
+
+        .context-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.05);
+            }
+
+            &.selected {
+                background-color: rgba(104, 95, 255, 0.1);
+                border-left: 3px solid #685fff;
+            }
+
+            &:last-child {
+                border-bottom: none;
+            }
+
+            .task-order {
+                min-width: 30px;
+                font-size: 14px;
+                padding: 4px;
+                margin-right: 12px;
+                color: rgba(255, 255, 255, 0.7);
+                text-align: center;
+            }
+
+            .task-name {
+                font-weight: 500;
+                flex-grow: 1;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin-right: 10px;
+            }
+
+            .task-meta {
+                display: flex;
+                align-items: center;
+                margin-left: auto;
+
+                .task-id {
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 12px;
+                    margin-right: 12px;
+                }
+
+                .checkbox-wrapper {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+
+                    .transparent-checkbox {
+                        width: 18px;
+                        height: 18px;
+                        cursor: pointer;
+                        background-color: transparent;
+                        appearance: none;
+                        -webkit-appearance: none;
+                        border: 1px solid rgba(255, 255, 255, 0.5);
+                        border-radius: 3px;
+
+                        &:checked {
+                            background-color: transparent;
+                            border-color: #685fff;
+                        }
+
+                        &:focus {
+                            outline: none;
+                        }
+                    }
+
+                    .checkmark {
+                        position: absolute;
+                        right: 6px;
+                        top: 2px;
+                        width: 5px;
+                        height: 10px;
+                        border: solid #685fff;
+                        border-width: 0 2px 2px 0;
+                        transform: rotate(45deg);
+                        pointer-events: none;
+                    }
+                }
+            }
+        }
+    }
+
+    .empty-state {
+        padding: 16px;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.5);
+        font-style: italic;
+    }
 }
 
 .actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
-  background-color: rgba(30, 30, 30, 0.6);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    background-color: rgba(30, 30, 30, 0.6);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 
-  button {
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    border: none;
+    button {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        border: none;
 
-    &:first-child {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.9);
+        &:first-child {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
 
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.15);
-      }
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.15);
+            }
+        }
+
+        &:last-child {
+            background-color: #685fff;
+            color: white;
+
+            &:hover {
+                background-color: #7a70ff;
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
     }
-
-    &:last-child {
-      background-color: #685fff;
-      color: white;
-
-      &:hover {
-        background-color: #7a70ff;
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
-  }
 }
 
 .json-group {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+// PrimeNG ToggleSwitch custom styles
+:host ::ng-deep {
+    .custom-toggle {
+        .p-toggleswitch {
+            // Custom sizing for the toggle switch
+            width: 44px;
+            height: 24px;
+
+            // Background for unchecked state
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 12px !important;
+            transition: all 0.2s ease !important;
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.15) !important;
+                border-color: rgba(255, 255, 255, 0.3) !important;
+            }
+
+            // Checked state
+            &.p-toggleswitch-checked {
+                background-color: #685fff !important;
+                border-color: #685fff !important;
+
+                &:hover {
+                    background-color: #7a70ff !important;
+                    border-color: #7a70ff !important;
+                }
+            }
+
+            &:focus-visible {
+                outline: none !important;
+                box-shadow: 0 0 0 2px rgba(104, 95, 255, 0.3) !important;
+            }
+
+            // Customize the slider handle
+            .p-toggleswitch-slider {
+                &:before {
+                    background-color: white !important;
+                    border-radius: 50% !important;
+                    transition: all 0.2s ease !important;
+                    width: 18px !important;
+                    height: 18px !important;
+                    top: 2px !important;
+                    left: 2px !important;
+                }
+            }
+
+            &.p-toggleswitch-checked .p-toggleswitch-slider:before {
+                transform: translateX(20px) !important;
+            }
+        }
+    }
 }

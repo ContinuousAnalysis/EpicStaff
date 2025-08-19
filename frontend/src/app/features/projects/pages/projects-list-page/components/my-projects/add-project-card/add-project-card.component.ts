@@ -1,85 +1,89 @@
 import {
-  Component,
-  ChangeDetectionStrategy,
-  Output,
-  EventEmitter,
+    Component,
+    ChangeDetectionStrategy,
+    Output,
+    EventEmitter,
 } from '@angular/core';
-import { AppIconComponent } from '../../../../../../../shared/components/app-icon/app-icon.component';
+
+import { CardModule } from 'primeng/card';
 
 @Component({
-  selector: 'app-add-project-card',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppIconComponent],
-  template: `
-    <div class="add-project-card" (click)="createClick.emit()">
-      <div class="content">
-        <div class="plus-icon">
-          <app-icon icon="ui/plus" size="2.5rem"></app-icon>
-        </div>
-        <div class="title">Create New Project</div>
-      </div>
-    </div>
-  `,
-  styles: [
-    `
-      .add-project-card {
-        background: transparent;
-        border-radius: 12px;
-        padding: 1.5rem;
-        color: var(--color-text-primary);
-        font-size: 1rem;
-        display: flex;
-        flex-direction: column;
-        height: 168px;
-        transition: all 0.2s ease;
-        position: relative;
-        border: 1px dashed #3a3e48;
-        cursor: pointer;
-      }
-
-      .add-project-card:hover {
-        border-color: var(--accent-color);
-        box-shadow: 0 12px 20px rgba(0, 0, 0, 0.18),
-          0 3px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      .content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        text-align: center;
-      }
-
-      .plus-icon {
-        width: 60px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .plus-icon app-icon {
-        color: var(--accent-color);
-        width: 2.5rem;
-        height: 2.5rem;
-      }
-
-      .title {
-        font-size: 16px;
-        font-weight: 500;
-        color: #8b8e98;
-        transition: color 0.2s ease;
-      }
-
-      .add-project-card:hover .title {
-        color: #ffffff;
-      }
+    selector: 'app-add-project-card',
+    standalone: true,
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CardModule],
+    template: `
+        <p-card (click)="createClick.emit()" class="add-project-card">
+            <div class="content">
+                <div class="plus-icon">
+                    <i class="pi pi-plus"></i>
+                </div>
+                <div class="title">Create New Project</div>
+            </div>
+        </p-card>
     `,
-  ],
+    styles: [
+        `
+            :host ::ng-deep .add-project-card {
+                cursor: pointer;
+                height: 165px;
+
+                .p-card {
+                    height: 100%;
+                    border: 1px dashed rgba(255, 255, 255, 0.2);
+                    background: transparent;
+                    transition: all 0.2s ease;
+                }
+
+                .p-card:hover {
+                    border-color: var(--accent-color);
+                }
+
+                .p-card-body {
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+            }
+
+            .content {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .plus-icon {
+                width: 60px;
+                height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.1);
+
+                i {
+                    font-size: 2rem;
+                    color: var(--accent-color);
+                }
+            }
+
+            .title {
+                font-size: 16px;
+                font-weight: 500;
+                color: var(--color-text-secondary);
+                transition: color 0.2s ease;
+            }
+
+            :host ::ng-deep .add-project-card:hover .title {
+                color: var(--color-text-primary);
+            }
+        `,
+    ],
 })
 export class AddProjectCardComponent {
-  @Output() public createClick = new EventEmitter();
+    @Output() public createClick = new EventEmitter();
 }

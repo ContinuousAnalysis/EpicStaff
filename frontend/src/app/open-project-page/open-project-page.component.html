@@ -31,7 +31,6 @@
   </div> -->
 
   <div class="content-area">
-    <!-- Overview Tab Content -->
     @if(activeTab === 'overview') {
     <div class="section-list">
       @for (section of sections; track section.id) {
@@ -60,7 +59,6 @@
             isSectionExpanded(section.id) ? 'expanded' : 'collapsed'
           "
         >
-          <!-- Special handling for SettingsSectionComponent -->
           @if (section.id === 'settings') {
           <app-settings-section
             [project]="project"
@@ -78,10 +76,7 @@
       </div>
       }
     </div>
-    }
-
-    <!-- Draft Tab Content -->
-    @if(activeTab === 'draft') {
+    } @if(activeTab === 'draft') {
     <div class="draft-content"></div>
     }
   </div>

@@ -150,7 +150,7 @@ export class FlowSessionsTableComponent {
 
   public readonly GraphSessionStatus = GraphSessionStatus;
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private readonly cdr: ChangeDetectorRef) {}
 
   isSelected(id: number) {
     return this.selectedIds().has(id);

@@ -1,253 +1,253 @@
 <div class="editor-wrapper">
-  <f-flow
-    appMouseTracker
-    (mousePosition)="updateMouseTrackerPosition($event)"
-    (contextmenu)="onContextMenu($event)"
-    fDraggable
-    class="visual-programming-flow"
-    appShortcutListener
-    (delete)="onDelete()"
-    (undo)="onUndo()"
-    (redo)="onRedo()"
-    (copy)="onCopy()"
-    (paste)="onPaste()"
-    (save)="onSave()"
-    (fLoaded)="onInitialized()"
-    (fReassignConnection)="onReassignConnection($event)"
-    (fCreateConnection)="onConnectionAdded($event)"
-    (fDropToGroup)="onDropToGroup($event)"
-    (fDragStarted)="onDragStarted($event)"
-    (fDragEnded)="onDragEnded()"
-    (fCreateNode)="onCreateNode($event)"
-  >
-    <f-background>
-      <f-circle-pattern></f-circle-pattern>
-    </f-background>
-    <f-line-alignment></f-line-alignment>
-    <f-canvas fZoom>
-      <f-snap-connection
-        fBehavior="fixed"
-        fType="segment"
-        [fSnapThreshold]="100"
-      >
-        <svg
-          viewBox="0 0 10 10"
-          fMarker
-          [type]="eMarkerType.START"
-          [height]="10"
-          [width]="10"
-          [refX]="5"
-          [refY]="5"
-        >
-          <circle cx="5" cy="5" r="2" stroke="none"></circle>
-        </svg>
-        <svg
-          viewBox="0 0 6 6"
-          fMarker
-          [type]="eMarkerType.END"
-          [height]="6"
-          [width]="6"
-          [refX]="5"
-          [refY]="3"
-        >
-          <path d="M0,0 L6,3 0,6Z" stroke="none"></path>
-        </svg>
-      </f-snap-connection>
-      <f-connection-for-create fBehavior="floating" fType="straight">
-        <svg
-          viewBox="0 0 10 10"
-          fMarker
-          [type]="eMarkerType.START"
-          [height]="10"
-          [width]="10"
-          [refX]="5"
-          [refY]="5"
-        >
-          <circle cx="5" cy="5" r="2" stroke="none"></circle>
-        </svg>
-        <svg
-          viewBox="0 0 6 6"
-          fMarker
-          [type]="eMarkerType.END"
-          [height]="6"
-          [width]="6"
-          [refX]="5"
-          [refY]="3"
-        >
-          <path d="M0,0 L6,3 0,6Z" stroke="none"></path>
-        </svg>
-      </f-connection-for-create>
-      @for (node of flowService.visibleNodes(); track node.id) {
-      <app-flow-base-node
-        [node]="node"
-        [showVariables]="showVariables()"
-        fNode
-        fDragHandle
-        [fNodeId]="node.id"
-        [fNodeSize]="node.size"
-        [fNodeParentId]="node.parentId"
-        [fNodePosition]="node.position"
-        [style.z-index]="node.parentId ? 4 : 2"
-        (fNodePositionChange)="onNodePositionChanged($event, node)"
-        (fNodeSizeChange)="onNodeSizeChanged($event, node)"
-        (editClicked)="onEditNode($event)"
-        (projectExpandToggled)="onProjectExpandToggled($event)"
-      >
-      </app-flow-base-node>
-      } @for (connection of flowService.visibleConnections(); track
-      connection.id) {
-      <f-connection
-        [fBehavior]="connection.behavior || 'fixed'"
-        [fType]="connection.type || 'segment'"
-        [fOffset]="30"
-        [fStartColor]="connection.startColor || '#ddd'"
-        [fEndColor]="connection.endColor || '#ddd'"
-        [fOutputId]="connection.sourcePortId"
-        [fInputId]="connection.targetPortId"
-        [fConnectionId]="connection.id"
-        [class.dashed-connection]="connection.category === 'virtual'"
-      >
-        <svg
-          viewBox="0 0 10 10"
-          fMarker
-          [type]="eMarkerType.START"
-          [height]="10"
-          [width]="10"
-          [refX]="5"
-          [refY]="5"
-        >
-          <circle
-            cx="5"
-            cy="5"
-            r="2"
-            stroke="none"
-            [attr.fill]="connection.startColor || '#ddd'"
-          ></circle>
-        </svg>
-        <svg
-          viewBox="0 0 6 6"
-          fMarker
-          [type]="eMarkerType.END"
-          [height]="6"
-          [width]="6"
-          [refX]="5"
-          [refY]="3"
-        >
-          <path
-            d="M0,0 L6,3 0,6Z"
-            stroke="none"
-            [attr.fill]="connection.endColor || '#ddd'"
-          ></path>
-        </svg>
-        <svg
-          viewBox="0 0 10 10"
-          fMarker
-          [type]="eMarkerType.SELECTED_START"
-          [height]="10"
-          [width]="10"
-          [refX]="5"
-          [refY]="5"
-        >
-          <circle cx="5" cy="5" r="2" stroke="none"></circle>
-        </svg>
-        <svg
-          viewBox="0 0 6 6"
-          fMarker
-          [type]="eMarkerType.SELECTED_END"
-          [height]="6"
-          [width]="6"
-          [refX]="5"
-          [refY]="3"
-        >
-          <path d="M0,0 L6,3 0,6Z" stroke="none"></path>
-        </svg>
-        <div fConnectionCenter class="connection-center">
-          <!-- Plus Icon (No Click Attached or for adding node in connection) -->
-          <!-- <div class="icon-button plus-icon" title="Add node">
+    <f-flow
+        appMouseTracker
+        (mousePosition)="updateMouseTrackerPosition($event)"
+        (contextmenu)="onContextMenu($event)"
+        fDraggable
+        class="visual-programming-flow"
+        appShortcutListener
+        (delete)="onDelete()"
+        (undo)="onUndo()"
+        (redo)="onRedo()"
+        (copy)="onCopy()"
+        (paste)="onPaste()"
+        (save)="onSave()"
+        (fLoaded)="onInitialized()"
+        (fCreateConnection)="onConnectionAdded($event)"
+        (fDropToGroup)="onDropToGroup($event)"
+        (fDragStarted)="onDragStarted($event)"
+        (fDragEnded)="onDragEnded()"
+        (fCreateNode)="onCreateNode($event)"
+    >
+        <f-background>
+            <f-circle-pattern></f-circle-pattern>
+        </f-background>
+        <f-line-alignment></f-line-alignment>
+        <f-canvas fZoom>
+            <f-snap-connection
+                fBehavior="fixed"
+                fType="segment"
+                [fSnapThreshold]="100"
+            >
+                <svg
+                    viewBox="0 0 10 10"
+                    fMarker
+                    [type]="eMarkerType.START"
+                    [height]="10"
+                    [width]="10"
+                    [refX]="5"
+                    [refY]="5"
+                >
+                    <circle cx="5" cy="5" r="2" stroke="none"></circle>
+                </svg>
+                <svg
+                    viewBox="0 0 6 6"
+                    fMarker
+                    [type]="eMarkerType.END"
+                    [height]="6"
+                    [width]="6"
+                    [refX]="5"
+                    [refY]="3"
+                >
+                    <path d="M0,0 L6,3 0,6Z" stroke="none"></path>
+                </svg>
+            </f-snap-connection>
+            <f-connection-for-create fBehavior="floating" fType="straight">
+                <svg
+                    viewBox="0 0 10 10"
+                    fMarker
+                    [type]="eMarkerType.START"
+                    [height]="10"
+                    [width]="10"
+                    [refX]="5"
+                    [refY]="5"
+                >
+                    <circle cx="5" cy="5" r="2" stroke="none"></circle>
+                </svg>
+                <svg
+                    viewBox="0 0 6 6"
+                    fMarker
+                    [type]="eMarkerType.END"
+                    [height]="6"
+                    [width]="6"
+                    [refX]="5"
+                    [refY]="3"
+                >
+                    <path d="M0,0 L6,3 0,6Z" stroke="none"></path>
+                </svg>
+            </f-connection-for-create>
+            @for (node of flowService.visibleNodes(); track node.id) {
+            <app-flow-base-node
+                [node]="node"
+                [showVariables]="showVariables()"
+                fNode
+                fDragHandle
+                [fNodeId]="node.id"
+                [fNodeSize]="node.size"
+                [fNodeParentId]="node.parentId"
+                [fNodePosition]="node.position"
+                [style.z-index]="node.parentId ? 4 : 2"
+                (fNodePositionChange)="onNodePositionChanged($event, node)"
+                (fNodeSizeChange)="onNodeSizeChanged($event, node)"
+                (editClicked)="onEditNode($event)"
+                (projectExpandToggled)="onProjectExpandToggled($event)"
+            >
+            </app-flow-base-node>
+            } @for (connection of flowService.visibleConnections(); track
+            connection.id) {
+            <f-connection
+                [fBehavior]="connection.behavior || 'fixed'"
+                [fType]="connection.type || 'segment'"
+                [fOffset]="30"
+                [fStartColor]="connection.startColor || '#ddd'"
+                [fEndColor]="connection.endColor || '#ddd'"
+                [fOutputId]="connection.sourcePortId"
+                [fInputId]="connection.targetPortId"
+                [fConnectionId]="connection.id"
+                [class.dashed-connection]="connection.category === 'virtual'"
+            >
+                <svg
+                    viewBox="0 0 10 10"
+                    fMarker
+                    [type]="eMarkerType.START"
+                    [height]="10"
+                    [width]="10"
+                    [refX]="5"
+                    [refY]="5"
+                >
+                    <circle
+                        cx="5"
+                        cy="5"
+                        r="2"
+                        stroke="none"
+                        [attr.fill]="connection.startColor || '#ddd'"
+                    ></circle>
+                </svg>
+                <svg
+                    viewBox="0 0 6 6"
+                    fMarker
+                    [type]="eMarkerType.END"
+                    [height]="6"
+                    [width]="6"
+                    [refX]="5"
+                    [refY]="3"
+                >
+                    <path
+                        d="M0,0 L6,3 0,6Z"
+                        stroke="none"
+                        [attr.fill]="connection.endColor || '#ddd'"
+                    ></path>
+                </svg>
+                <svg
+                    viewBox="0 0 10 10"
+                    fMarker
+                    [type]="eMarkerType.SELECTED_START"
+                    [height]="10"
+                    [width]="10"
+                    [refX]="5"
+                    [refY]="5"
+                >
+                    <circle cx="5" cy="5" r="2" stroke="none"></circle>
+                </svg>
+                <svg
+                    viewBox="0 0 6 6"
+                    fMarker
+                    [type]="eMarkerType.SELECTED_END"
+                    [height]="6"
+                    [width]="6"
+                    [refX]="5"
+                    [refY]="3"
+                >
+                    <path d="M0,0 L6,3 0,6Z" stroke="none"></path>
+                </svg>
+                <div fConnectionCenter class="connection-center">
+                    <!-- Plus Icon (No Click Attached or for adding node in connection) -->
+                    <!-- <div class="icon-button plus-icon" title="Add node">
           <i class="ti ti-plus"></i>
         </div> -->
 
-          <!-- Delete Icon (Click to Remove Connection) -->
-          <div
-            class="icon-button delete-icon"
-            title="Delete connection"
-            (click)="onDelete()"
-          >
-            <i class="ti ti-trash"></i>
-          </div>
-        </div>
-      </f-connection>
-      } @for (group of flowService.visibleGroups(); track group.id) {
-      <app-group-node
-        [group]="group"
-        [fGroupId]="group.id"
-        fGroup
-        fNodeInput
-        fNodeOutput
-        [fInputMultiple]="true"
-        [fOutputMultiple]="true"
-        [fInputId]="group.id + '_group-input'"
-        [fOutputId]="group.id + '_group-output'"
-        [fInputDisabled]="true"
-        [fOutputDisabled]="true"
-        [fGroupPosition]="
-          group.collapsed ? group.collapsedPosition : group.position
-        "
-        [fGroupSize]="
-          group.collapsed
-            ? { width: group.size.width * 0.6, height: 60 }
-            : group.size
-        "
-        [fGroupParentId]="group.parentId"
-        (fGroupPositionChange)="onGroupPositionChanged($event, group)"
-        (fGroupSizeChange)="onGroupSizeChanged($event, group)"
-        (rename)="onGroupRename($event)"
-        (ungroup)="onUngroupGroup($event)"
-        (colorChanged)="onGroupColorChange($event)"
-        (toggleCollapsed)="onGroupToggleCollapsed($event)"
-      >
-      </app-group-node>
-      }
-    </f-canvas>
-    <f-selection-area></f-selection-area>
-    <f-minimap [fMinSize]="1000"></f-minimap>
-  </f-flow>
-  <div class="top-left-actions">
-    <app-nodes-search
-      [nodes]="flowService.nodes()"
-      (nodeSelected)="onZoomInNode($event)"
-      (nodeDoubleClicked)="onNodeDoubleClickAndZoom($event)"
-    ></app-nodes-search>
+                    <!-- Delete Icon (Click to Remove Connection) -->
+                    <div
+                        class="icon-button delete-icon"
+                        title="Delete connection"
+                        (click)="onDelete()"
+                    >
+                        <i class="ti ti-trash"></i>
+                    </div>
+                </div>
+            </f-connection>
+            } @for (group of flowService.visibleGroups(); track group.id) {
+            <app-group-node
+                [group]="group"
+                [fGroupId]="group.id"
+                fGroup
+                fNodeInput
+                fNodeOutput
+                [fInputMultiple]="true"
+                [fOutputMultiple]="true"
+                [fInputId]="group.id + '_group-input'"
+                [fOutputId]="group.id + '_group-output'"
+                [fInputDisabled]="true"
+                [fOutputDisabled]="true"
+                [fGroupPosition]="
+                    group.collapsed ? group.collapsedPosition : group.position
+                "
+                [fGroupSize]="
+                    group.collapsed
+                        ? { width: group.size.width * 0.6, height: 60 }
+                        : group.size
+                "
+                [fGroupParentId]="group.parentId"
+                (fGroupPositionChange)="onGroupPositionChanged($event, group)"
+                (fGroupSizeChange)="onGroupSizeChanged($event, group)"
+                (rename)="onGroupRename($event)"
+                (ungroup)="onUngroupGroup($event)"
+                (colorChanged)="onGroupColorChange($event)"
+                (toggleCollapsed)="onGroupToggleCollapsed($event)"
+            >
+            </app-group-node>
+            }
+        </f-canvas>
+        <f-selection-area></f-selection-area>
+        <f-minimap [fMinSize]="1000"></f-minimap>
+    </f-flow>
+    <div class="top-left-actions">
+        <app-nodes-search
+            [nodes]="flowService.nodes()"
+            (nodeSelected)="onZoomInNode($event)"
+            (nodeDoubleClicked)="onNodeDoubleClickAndZoom($event)"
+        ></app-nodes-search>
 
-    <button
-      class="show-inputs-btn"
-      [class.active]="showVariables()"
-      (click)="toggleShowVariables()"
+        <button
+            class="show-inputs-btn"
+            [class.active]="showVariables()"
+            (click)="toggleShowVariables()"
+        >
+            {{ showVariables() ? "Hide Variables" : "Show Variables" }}
+        </button>
+
+        @if (flowService.vscodeNodes().length > 0) {
+        <app-flow-nodes-panel
+            [nodeModels]="flowService.vscodeNodes()"
+        ></app-flow-nodes-panel>
+        }
+    </div>
+    <app-flow-action-panel></app-flow-action-panel>
+    <!-- <app-flow-zoom-controls></app-flow-zoom-controls> -->
+    <app-flow-graph-context-menu
+        *ngIf="showContextMenu()"
+        [position]="contextMenuPostion"
+        [menuContext]="nodesMode"
+        clickOutside
+        (clickOutside)="onCloseContextMenu()"
+        (nodeSelected)="onAddNodeFromContextMenu($event)"
     >
-      {{ showVariables() ? "Hide Variables" : "Show Variables" }}
-    </button>
-
-    @if (flowService.vscodeNodes().length > 0) {
-    <app-flow-nodes-panel
-      [nodeModels]="flowService.vscodeNodes()"
-    ></app-flow-nodes-panel>
+    </app-flow-graph-context-menu>
+    @if (selectedNode) {
+    <app-dynamic-side-panel-host
+        [node]="selectedNode"
+        (closePanel)="onCloseSidePanel()"
+        (nodeUpdated)="onSidePanelSaved($event)"
+    ></app-dynamic-side-panel-host>
     }
-  </div>
-  <app-flow-action-panel></app-flow-action-panel>
-  <!-- <app-flow-zoom-controls></app-flow-zoom-controls> -->
-  <app-flow-graph-context-menu
-    *ngIf="showContextMenu()"
-    [position]="contextMenuPostion"
-    [menuContext]="nodesMode"
-    clickOutside
-    (clickOutside)="onCloseContextMenu()"
-    (nodeSelected)="onAddNodeFromContextMenu($event)"
-  >
-  </app-flow-graph-context-menu>
-  <app-dynamic-side-panel-host
-    *ngIf="selectedNode"
-    [node]="selectedNode"
-    (closePanel)="onCloseSidePanel()"
-    (nodeUpdated)="onSidePanelSaved($event)"
-  ></app-dynamic-side-panel-host>
 </div>

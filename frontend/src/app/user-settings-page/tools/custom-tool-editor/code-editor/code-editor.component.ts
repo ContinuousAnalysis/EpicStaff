@@ -6,7 +6,6 @@ import {
   EventEmitter,
   Input,
   NgZone,
-  OnDestroy,
   Output,
   ViewChild,
 } from '@angular/core';
@@ -56,9 +55,9 @@ export class CodeEditorComponent {
   };
 
   constructor(
-    private cdr: ChangeDetectorRef,
-    private zone: NgZone,
-    private toastService: ToastService
+    private readonly cdr: ChangeDetectorRef,
+    private readonly zone: NgZone,
+    private readonly toastService: ToastService
   ) {}
 
   public onCodeChange(newValue: string): void {

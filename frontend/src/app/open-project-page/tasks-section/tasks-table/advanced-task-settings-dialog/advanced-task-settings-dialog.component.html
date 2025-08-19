@@ -1,42 +1,43 @@
 <div class="dialog-container">
-  <!-- Header Section -->
-  <div class="header">
-    <h2 class="dialog-title">
-      Advanced Settings for {{ taskData.taskName || "New Task" }}
-    </h2>
-    <button class="close-button" (click)="dialogRef.close()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <line
-          x1="18"
-          y1="6"
-          x2="6"
-          y2="18"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-        <line
-          x1="6"
-          y1="6"
-          x2="18"
-          y2="18"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-      </svg>
-    </button>
-  </div>
+    <!-- Header Section -->
+    <div class="header">
+        <h2 class="dialog-title">
+            Advanced Settings for {{ taskData.taskName || "New Task" }}
+        </h2>
+        <button class="close-button" (click)="dialogRef.close()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <line
+                    x1="18"
+                    y1="6"
+                    x2="6"
+                    y2="18"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                />
+                <line
+                    x1="6"
+                    y1="6"
+                    x2="18"
+                    y2="18"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                />
+            </svg>
+        </button>
+    </div>
 
-  <!-- Scrollable Content -->
-  <div class="scrollable-content">
-    <!-- Output Model Section -->
-    <div class="form-section">
-      <h3 class="section-title">
-        Output Model
-        <app-help-tooltip
-          position="right"
-          text="The Output Model defines the structure of data your task will return. Key sections:
+    <!-- Scrollable Content -->
+    <div class="scrollable-content">
+        <!-- Output Model Section -->
+        <div class="form-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    Output Model
+                    <app-help-tooltip
+                        position="right"
+                        text="The Output Model defines the structure of data your task will return. Key sections:
 
 'type': Usually 'object' for output models
 'title': A name for your output model (e.g. 'TaskOutputModel')
@@ -63,63 +64,81 @@ Example:
 }
 
 Note: If properties is empty, the output model will be set to null."
-        ></app-help-tooltip>
-      </h3>
-      <div class="form-group json-group">
-        <app-json-editor
-          [jsonData]="jsonConfig()"
-          (jsonChange)="jsonConfig.set($event)"
-          (validationChange)="onJsonValidChange($event)"
-          [fullHeight]="false"
-          [editorHeight]="400"
-        ></app-json-editor>
-      </div>
-    </div>
-
-    <!-- Context Section -->
-    <div class="form-section">
-      <h3 class="section-title">
-        Task Context
-        <app-help-tooltip
-          position="right"
-          text="Select tasks whose outputs will be available to this task when it runs."
-        ></app-help-tooltip>
-      </h3>
-      <div class="full-width-container">
-        <div class="context-list">
-          <div
-            class="context-item"
-            *ngFor="let task of availableTasks; let i = index"
-            [ngClass]="{ selected: isTaskSelected(task.id) }"
-            (click)="toggleTaskSelection(task.id)"
-          >
-            <span class="task-order">{{ formatOrder(task.order) }}</span>
-            <span class="task-name">{{ task.name }}</span>
-            <div class="task-meta">
-              <span class="task-id">ID: {{ task.id }}</span>
-              <span class="checkbox-wrapper">
-                <input
-                  type="checkbox"
-                  [checked]="isTaskSelected(task.id)"
-                  (click)="$event.stopPropagation()"
-                  (change)="toggleTaskSelection(task.id)"
-                  class="transparent-checkbox"
-                />
-                <span class="checkmark" *ngIf="isTaskSelected(task.id)"></span>
-              </span>
+                    ></app-help-tooltip>
+                </h3>
+                <div class="toggle-container">
+                    <p-toggleswitch
+                        [ngModel]="enableOutputModel()"
+                        (onChange)="onToggleOutputModel()"
+                        styleClass="custom-toggle"
+                    ></p-toggleswitch>
+                </div>
             </div>
-          </div>
-          <div *ngIf="availableTasks.length === 0" class="empty-state">
-            No task contexts available
-          </div>
+            <div class="form-group json-group" *ngIf="enableOutputModel()">
+                <app-json-editor
+                    [jsonData]="jsonConfig()"
+                    (jsonChange)="jsonConfig.set($event)"
+                    (validationChange)="onJsonValidChange($event)"
+                    [fullHeight]="false"
+                    [editorHeight]="400"
+                ></app-json-editor>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Action Buttons -->
-  <div class="actions">
-    <button (click)="dialogRef.close()">Cancel</button>
-    <button (click)="save()" [disabled]="!isJsonValid">Save Changes</button>
-  </div>
+        <!-- Context Section -->
+        <div class="form-section">
+            <h3 class="section-title">
+                Task Context
+                <app-help-tooltip
+                    position="right"
+                    text="Select tasks whose outputs will be available to this task when it runs."
+                ></app-help-tooltip>
+            </h3>
+            <div class="full-width-container">
+                <div class="context-list">
+                    <div
+                        class="context-item"
+                        *ngFor="let task of availableTasks; let i = index"
+                        [ngClass]="{ selected: isTaskSelected(task.id) }"
+                        (click)="toggleTaskSelection(task.id)"
+                    >
+                        <span class="task-order">{{
+                            formatOrder(task.order)
+                        }}</span>
+                        <span class="task-name">{{ task.name }}</span>
+                        <div class="task-meta">
+                            <span class="task-id">ID: {{ task.id }}</span>
+                            <span class="checkbox-wrapper">
+                                <input
+                                    type="checkbox"
+                                    [checked]="isTaskSelected(task.id)"
+                                    (click)="$event.stopPropagation()"
+                                    (change)="toggleTaskSelection(task.id)"
+                                    class="transparent-checkbox"
+                                />
+                                <span
+                                    class="checkmark"
+                                    *ngIf="isTaskSelected(task.id)"
+                                ></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div
+                        *ngIf="availableTasks.length === 0"
+                        class="empty-state"
+                    >
+                        No task contexts available
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+        <button (click)="dialogRef.close()">Cancel</button>
+        <button (click)="save()" [disabled]="!isJsonValid()">
+            Save Changes
+        </button>
+    </div>
 </div>
