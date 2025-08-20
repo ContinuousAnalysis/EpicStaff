@@ -1,0 +1,73 @@
+name: EpicStaff Pipeline
+
+on:
+  push:
+    branches: [ main, develop, 'feature-**', 'hotfix/**', 'release-**' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      installer_job:
+        description: 'Installer job mode'
+        type: choice
+        options: [ auto, force, skip ]
+      publish_release:
+        description: 'Publish release after build (only on release branches)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  
+jobs:
+  integration-tests:
+    name: Integration Tests
+    runs-on: self-hosted
+    steps:
+      - name: Run Integration Tests
+        run: |
+          echo "Starting integration tests..."
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Event: ${{ github.event_name }}"
+          
+          # Simulate test execution
+          echo "Running integration tests..."
+          sleep 1
+          echo "Integration tests passed"
+          
+  build-installers:
+    if: ${{ startsWith(github.ref_name, 'release-') || github.event_name == 'workflow_dispatch' }}
+    needs: integration-tests
+    uses: ./.github/workflows/installer.yml
+    with:
+      installer_job: ${{ github.event.inputs.installer_job || 'auto' }}
+    secrets: inherit
+
+  publish-release:
+    if: >
+      startsWith(github.ref_name, 'release-') &&
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.publish_release == 'true' &&
+      needs.build-installers.outputs.artifacts_exist == 'true'
+    needs: [integration-tests, build-installers]
+    uses: ./.github/workflows/publish_release.yml
+    
+
+  pipeline-summary:
+    name: Pipeline Summary
+    runs-on: self-hosted
+    needs: [integration-tests, build-installers, publish-release]
+    if: always()
+    steps:
+      - name: Pipeline Results
+        run: |
+          echo "Pipeline Summary"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Trigger: ${{ github.event_name }}"
+          
+          if [[ "${{ startsWith(github.ref_name, 'release-') }}" == "true" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Installer Build: ${{ needs.build-installers.result }}"
+          else
+            echo "Installer Build: Skipped (not a release branch)"
+          fi

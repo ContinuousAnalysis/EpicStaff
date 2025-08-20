@@ -1,0 +1,60 @@
+name: Publish Release
+
+on:
+  workflow_call
+
+permissions:
+  contents: write
+  
+jobs:
+  publish-release:
+    runs-on: self-hosted
+    if: startsWith(github.ref_name, 'release-')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+        continue-on-error: true
+
+      - name: Archive installers if available
+        run: |
+          mkdir -p release-archives
+
+          if [ -d "artifacts/macos-installer" ]; then
+            tar -czf release-archives/macos-epicstaff.tar.gz -C artifacts/macos-installer .
+          fi
+
+          if [ -d "artifacts/windows-installer" ]; then
+            zip -r release-archives/windows-epicstaff.zip artifacts/windows-installer/*
+          fi
+
+          if [ -d "artifacts/linux-installer" ]; then
+            tar -czf release-archives/linux-epicstaff.tar.gz -C artifacts/linux-installer .
+          fi
+
+          ls -la release-archives || echo "No archives found"
+
+      - name: Extract tag from branch name
+        id: extract_tag
+        run: |
+            BRANCH_NAME="${GITHUB_REF_NAME}"
+            TAG_NAME="${BRANCH_NAME#release-}"
+            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+            echo "Extracted tag: $TAG_NAME"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+            tag_name: ${{ steps.extract_tag.outputs.tag_name }}
+            name: "Release ${{ steps.extract_tag.outputs.tag_name }}"
+            body: ${{ github.event.inputs.release_notes }}
+            files: release-archives/*
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
