@@ -152,7 +152,7 @@ class KnowledgeStorage:
         embedded_query: List[float],
         collection_id: int,
         limit: int = 3,
-        distance_threshold: float = 0.2,
+        similarity_threshold: float = 0.2,
     ) -> list:
         """
         Search for documents in the knowledge base using vector similarity.
@@ -165,8 +165,7 @@ class KnowledgeStorage:
         ORDER BY similarity DESC
         LIMIT %s
         """
-        # TODO: refactor "distance_threshold" to "similarity_threshold" everywhere
-        similarity_threshold = distance_threshold
+
         logger.info(f"{limit=}, {similarity_threshold=}")
 
         with self.transaction() as cur:

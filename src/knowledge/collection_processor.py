@@ -62,13 +62,13 @@ class CollectionProcessor:
         _embedder_cache[self.collection_id] = embedder
         return embedder
 
-    def search(self, uuid, query, search_limit, distance_threshold):
+    def search(self, uuid, query, search_limit, similarity_threshold):
         embedded_query = self.embedder.embed(query)
         knowledge_snippets = self.storage.search(
             embedded_query=embedded_query,
             collection_id=self.collection_id,
             limit=search_limit,
-            distance_threshold=distance_threshold,
+            similarity_threshold=similarity_threshold,
         )
         if knowledge_snippets:
             if len(knowledge_snippets) > 1:

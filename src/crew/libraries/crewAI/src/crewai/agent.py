@@ -232,7 +232,7 @@ class Agent(BaseAgent):
                 knowledge_collection_id=self.knowledge_collection_id,
                 query=task.description,
                 search_limit=self.search_limit,
-                distance_threshold=self.distance_threshold,
+                similarity_threshold=self.similarity_threshold,
             )
             agent_knowledge_snippet = self._extract_knowledges(agent_knowledges)
             task_prompt += (
@@ -248,7 +248,7 @@ class Agent(BaseAgent):
                     knowledge_collection_id=self.crew.knowledge_collection_id,
                     query=task.description,
                     search_limit=self.crew.search_limit,
-                    distance_threshold=self.crew.distance_threshold,
+                    similarity_threshold=self.crew.similarity_threshold,
                 )
                 crew_knowledge_snippet = self._extract_knowledges(crew_knowledges)
                 if crew_knowledge_snippet:
