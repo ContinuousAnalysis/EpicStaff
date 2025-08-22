@@ -71,7 +71,14 @@ class CollectionProcessor:
             distance_threshold=distance_threshold,
         )
         if knowledge_snippets:
-            logger.info(f"KNOWLEDGES: {knowledge_snippets[0][:150]}...")
+            if len(knowledge_snippets) > 1:
+                logger.info(
+                    f"KNOWLEDGES: {knowledge_snippets[0][:150]}\n.........\n{knowledge_snippets[-1][-150:]}"
+                )
+            else:
+                logger.info(f"KNOWLEDGES: {knowledge_snippets[0][:150]}...")
+        else:
+            logger.warning(f"NO KNOWLEDGE CHUNKS WERE EXTRACTED!")
 
         return {
             "uuid": uuid,
