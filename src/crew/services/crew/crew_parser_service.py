@@ -82,7 +82,7 @@ class CrewParserService(metaclass=SingletonMeta):
             "knowledge_collection_id": agent_data.knowledge_collection_id,
             "search_knowledges": self.knowledge_search_service.search_knowledges,
             "search_limit": agent_data.search_limit,
-            "distance_threshold": agent_data.distance_threshold,
+            "similarity_threshold": agent_data.similarity_threshold,
         }
 
         return Agent(**agent_config)
@@ -140,7 +140,7 @@ class CrewParserService(metaclass=SingletonMeta):
             "planning_llm": crew_data.planning,
             "knowledge_collection_id": crew_data.knowledge_collection_id,
             "search_limit": crew_data.search_limit,
-            "distance_threshold": crew_data.distance_threshold,
+            "similarity_threshold": crew_data.similarity_threshold,
         }
 
         if crew_data.memory:

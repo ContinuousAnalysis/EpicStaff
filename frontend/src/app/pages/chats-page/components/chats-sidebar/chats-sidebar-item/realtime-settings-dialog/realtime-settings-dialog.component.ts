@@ -82,7 +82,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     this.settingsForm = this.fb.group({
       voice: [this.data.agent.realtime_agent.voice, Validators.required],
       threshold: [
-        parseFloat(this.data.agent.realtime_agent.distance_threshold),
+        parseFloat(this.data.agent.realtime_agent.similarity_threshold),
         [Validators.required, Validators.min(0), Validators.max(1)],
       ],
       searchLimit: [
@@ -175,7 +175,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
 
       // Prepare the data for API request
       const realtimeAgentData: RealtimeAgentConfig = {
-        distance_threshold: formValues.threshold.toString(),
+        similarity_threshold: formValues.threshold.toString(),
         search_limit: formValues.searchLimit,
         wake_word: formValues.wakeword,
         stop_prompt: formValues.stopword,

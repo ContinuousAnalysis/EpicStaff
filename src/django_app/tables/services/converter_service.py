@@ -139,7 +139,7 @@ class ConverterService(metaclass=SingletonMeta):
             ),  # TODO: Unique only
             knowledge_collection_id=knowledge_collection_id,
             search_limit=crew.search_limit,
-            distance_threshold=crew.distance_threshold,
+            similarity_threshold=crew.similarity_threshold,
         )
 
         return crew_data
@@ -199,7 +199,7 @@ class ConverterService(metaclass=SingletonMeta):
             function_calling_llm=function_calling_llm,
             knowledge_collection_id=knowledge_collection_id,
             search_limit=agent.search_limit,
-            distance_threshold=agent.distance_threshold,
+            similarity_threshold=agent.similarity_threshold,
         )
 
     def convert_rt_agent_chat_to_pydantic(
@@ -231,7 +231,7 @@ class ConverterService(metaclass=SingletonMeta):
             transcript_api_key=rt_transcription_config.api_key,
             temperature=agent.default_temperature,
             search_limit=rt_agent_chat.search_limit,
-            distance_threshold=rt_agent_chat.distance_threshold,
+            similarity_threshold=rt_agent_chat.similarity_threshold,
             connection_key=rt_agent_chat.connection_key,
             wake_word=rt_agent_chat.wake_word,
             stop_prompt=rt_agent_chat.stop_prompt,

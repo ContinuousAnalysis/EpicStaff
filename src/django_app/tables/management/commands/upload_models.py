@@ -9,10 +9,16 @@ from tables.models import (
     RealtimeTranscriptionModel,
     DefaultRealtimeAgentConfig,
 )
-from tables.models.crew_models import Agent, DefaultAgentConfig, DefaultCrewConfig, DefaultToolConfig
+from tables.models.crew_models import (
+    Agent,
+    DefaultAgentConfig,
+    DefaultCrewConfig,
+    DefaultToolConfig,
+)
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
 from litellm import models_by_provider, provider_list
+
 
 class Command(BaseCommand):
     help = "Upload predefined models to database"
@@ -35,7 +41,7 @@ class Command(BaseCommand):
 
 
 def upload_providers():
-    
+
     current_provider_names = set(models_by_provider.keys())
 
     # Add new providers
@@ -62,9 +68,9 @@ def upload_llm_models():
             )
     LLMModel.objects.filter(predefined=True).exclude(
         llm_provider_id__in=[pid for pid, _ in current_model_tuples],
-        name__in=[name for _, name in current_model_tuples]
+        name__in=[name for _, name in current_model_tuples],
     ).delete()
-        
+
 
 def upload_realtime_agent_models():
 
@@ -993,13 +999,13 @@ def upload_realtime_agents():
     for agent in agent_list:
         RealtimeAgent.objects.get_or_create(
             agent=agent,
-            defaults ={
-                "distance_threshold":0.65,
-                "search_limit":3,
-                "wake_word":None,
-                "stop_prompt":None,
-                "language":None,
-            }
+            defaults={
+                "similarity_threshold": 0.2,
+                "search_limit": 3,
+                "wake_word": None,
+                "stop_prompt": None,
+                "language": None,
+            },
         )
 
     pass

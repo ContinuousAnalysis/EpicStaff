@@ -52,7 +52,7 @@ def sample_chat_data() -> RealtimeAgentChatData:
         transcript_model_name="whisper",
         voice_recognition_prompt="say something",
         knowledge_collection_id=1,
-        distance_threshold=0.4,
+        similarity_threshold=0.2,
         memory=True,
         stop_prompt="stop",
         tools=[],
