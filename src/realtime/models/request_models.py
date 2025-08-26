@@ -102,6 +102,7 @@ class AgentData(BaseModel):
     function_calling_llm: LLMData | None
     knowledge_collection_id: int | None
 
+
 class BaseToolData(BaseModel):
     unique_name: str
     data: PythonCodeToolData | ConfiguredToolData
@@ -114,8 +115,8 @@ class BaseToolData(BaseModel):
 
         try:
             prefix, id = unique_name.split(":")
-            assert prefix != ''
-            assert id != ''
+            assert prefix != ""
+            assert id != ""
         except ValueError as e:
             raise ValueError(
                 "Invalid unique_name. Unique name should be splited by `:`. \nFor example: python-code-tool:1"
@@ -142,7 +143,7 @@ class RealtimeAgentChatData(BaseModel):
     transcript_api_key: str
     temperature: float | None
     search_limit: int = 3
-    distance_threshold: float
+    similarity_threshold: float
     memory: bool
     tools: list[BaseToolData] = []
     connection_key: str
@@ -158,7 +159,7 @@ class KnowledgeSearchMessage(BaseModel):
     uuid: str
     query: str
     search_limit: int | None
-    distance_threshold: float | None
+    similarity_threshold: float | None
 
 
 class CrewData(BaseModel):

@@ -56,7 +56,7 @@ class ToolManagerService(metaclass=SingletonMeta):
         if realtime_agent_chat_data.knowledge_collection_id is not None:
             knowledge_tool_executor = KnowledgeSearchToolExecutor(
                 knowledge_collection_id=realtime_agent_chat_data.knowledge_collection_id,
-                distance_threshold=realtime_agent_chat_data.distance_threshold,
+                similarity_threshold=realtime_agent_chat_data.similarity_threshold,
                 search_limit=realtime_agent_chat_data.search_limit,
                 redis_service=self.redis_service,
                 knowledge_search_get_channel=self.knowledge_search_get_channel,

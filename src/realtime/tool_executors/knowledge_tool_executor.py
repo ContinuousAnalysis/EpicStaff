@@ -18,12 +18,12 @@ class KnowledgeSearchToolExecutor(BaseToolExecutor):
         knowledge_search_get_channel: str,
         knowledge_search_response_channel: str,
         search_limit: int,
-        distance_threshold: float,
+        similarity_threshold: float,
     ):
         super().__init__(tool_name="knowledge_tool")
         self.knowledge_search_get_channel = knowledge_search_get_channel
         self.knowledge_collection_id = knowledge_collection_id
-        self.distance_threshold = distance_threshold
+        self.similarity_threshold = similarity_threshold
         self.search_limit = search_limit
         self.knowledge_search_response_channel = knowledge_search_response_channel
         self.redis_service = redis_service
@@ -43,7 +43,7 @@ class KnowledgeSearchToolExecutor(BaseToolExecutor):
             uuid=execution_uuid,
             query=query,
             search_limit=self.search_limit,
-            distance_threshold=self.distance_threshold,
+            similarity_threshold=self.similarity_threshold,
         )
         await self.redis_service.async_publish(
             channel=self.knowledge_search_get_channel,

@@ -219,8 +219,8 @@ class Crew(BaseModel):
     search_limit: Optional[int] = Field(
         default=None, description="search_limit for knowledge"
     )
-    distance_threshold: Optional[Any] = Field(
-        default=None, description="distance_threshold for knowledge"
+    similarity_threshold: Optional[Any] = Field(
+        default=None, description="similarity_threshold for knowledge"
     )
 
     @field_validator("id", mode="before")

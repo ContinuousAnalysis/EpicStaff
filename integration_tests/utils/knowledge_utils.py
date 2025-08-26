@@ -56,7 +56,7 @@ async def knowledge_search(knowledge_collection_id, query, redis_service) -> lis
             uuid=execution_uuid,
             query=query,
             search_limit=3,
-            distance_threshold=1,
+            similarity_threshold=0.01,
         )
 
         await redis_service.async_publish(
@@ -166,7 +166,9 @@ def check_statuses_for_embedding_creation(collection_id: int, max_timeout: int =
 
     for i in range(max_timeout):
         time.sleep(3)
-        response = requests.get(f"{DJANGO_URL}/collection_status/{collection_id}/", headers={"Host": rhost})
+        response = requests.get(
+            f"{DJANGO_URL}/collection_status/{collection_id}/", headers={"Host": rhost}
+        )
         validate_response(response)
         collection_status_data = response.json()
         logger.info(f"collection_status_data: {collection_status_data}")
@@ -216,7 +218,8 @@ def get_or_create_embedder_config(embedder_model_id: int) -> int:
 
     # Try to find existing config
     embedder_config_response = requests.get(
-        f"{DJANGO_URL}/embedding-configs?custom_name={embedder_config_data['custom_name']}", headers={"Host": rhost}
+        f"{DJANGO_URL}/embedding-configs?custom_name={embedder_config_data['custom_name']}",
+        headers={"Host": rhost},
     )
     validate_response(embedder_config_response)
 
@@ -226,7 +229,9 @@ def get_or_create_embedder_config(embedder_model_id: int) -> int:
 
     # Create new config if not found
     embedder_config_response = requests.post(
-        f"{DJANGO_URL}/embedding-configs/", json=embedder_config_data, headers={"Host": rhost}
+        f"{DJANGO_URL}/embedding-configs/",
+        json=embedder_config_data,
+        headers={"Host": rhost},
     )
     validate_response(embedder_config_response)
     embedder_config = embedder_config_response.json()

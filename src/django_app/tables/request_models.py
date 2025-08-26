@@ -100,7 +100,7 @@ class AgentData(BaseModel):
     function_calling_llm: LLMData | None
     knowledge_collection_id: int | None
     search_limit: int = 3
-    distance_threshold: Decimal = 0.7
+    similarity_threshold: Decimal = 0.2
 
 
 class RealtimeAgentChatData(BaseModel):
@@ -115,7 +115,7 @@ class RealtimeAgentChatData(BaseModel):
     transcript_api_key: str
     temperature: float | None
     search_limit: int = 3
-    distance_threshold: Decimal = 0.65
+    similarity_threshold: Decimal = 0.2
     memory: bool
     tools: list[BaseToolData] = []
     connection_key: str
@@ -149,7 +149,7 @@ class CrewData(BaseModel):
     tools: List[BaseToolData]
     knowledge_collection_id: int | None
     search_limit: int = 3
-    distance_threshold: Decimal = 0.7
+    similarity_threshold: Decimal = 0.2
 
 
 class TaskData(BaseModel):
