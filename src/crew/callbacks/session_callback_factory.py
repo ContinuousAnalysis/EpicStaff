@@ -326,7 +326,7 @@ class CrewCallbackFactory:
                         knowledge_collection_id=agent_knowledge_collection_id,
                         query=str(user_input),
                         search_limit=3,
-                        similarity_threshold=1,
+                        similarity_threshold=0.1,
                     )
                     user_input_with_knowledges += self._extract_knowledges(
                         agent_knowledges
@@ -338,7 +338,7 @@ class CrewCallbackFactory:
                         knowledge_collection_id=crew_knowledge_collection_id,
                         query=str(user_input),
                         search_limit=3,
-                        similarity_threshold=0.7,
+                        similarity_threshold=0.2,
                     )
                     user_input_with_knowledges += self._extract_knowledges(crew_results)
 
