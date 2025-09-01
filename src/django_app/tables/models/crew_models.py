@@ -92,10 +92,10 @@ class Agent(AbstractDefaultFillableModel):
     search_limit = models.PositiveIntegerField(
         default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
     )
-    distance_threshold = models.DecimalField(
+    similarity_threshold = models.DecimalField(
         max_digits=3,
         decimal_places=2,
-        default=0.7,
+        default=0.2,
         blank=True,
         help_text="Float between 0.00 and 1.00 for knowledge",
     )
@@ -196,10 +196,10 @@ class Crew(AbstractDefaultFillableModel):
     search_limit = models.PositiveIntegerField(
         default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
     )
-    distance_threshold = models.DecimalField(
+    similarity_threshold = models.DecimalField(
         max_digits=3,
         decimal_places=2,
-        default=0.7,
+        default=0.2,
         blank=True,
         help_text="Float between 0.00 and 1.00 for knowledge",
     )
@@ -289,9 +289,7 @@ class Tool(models.Model):
 
     def get_tool_config_fields(self) -> dict[str, "ToolConfigField"]:
         if hasattr(self, "prefetched_config_fields"):
-            return {
-                field.name: field for field in self.prefetched_config_fields
-            }
+            return {field.name: field for field in self.prefetched_config_fields}
 
         return {
             field.name: field for field in ToolConfigField.objects.filter(tool=self)

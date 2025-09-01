@@ -18,6 +18,7 @@ class VoiceChoices(models.TextChoices):
     SHIMMER = "shimmer", "Shimmer"
     VERSE = "verse", "Verse"
 
+
 # AbstractDefaultFillableModel
 class RealtimeAgent(AbstractDefaultFillableModel):
     class Meta:
@@ -34,10 +35,10 @@ class RealtimeAgent(AbstractDefaultFillableModel):
         default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
     )
 
-    distance_threshold = models.DecimalField(
+    similarity_threshold = models.DecimalField(
         max_digits=3,
         decimal_places=2,
-        default=0.65,
+        default=0.2,
         blank=True,
         help_text="Float between 0.00 and 1.00 for knowledge",
     )
@@ -92,10 +93,10 @@ class RealtimeAgentChat(models.Model):
         default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
     )
 
-    distance_threshold = models.DecimalField(
+    similarity_threshold = models.DecimalField(
         max_digits=3,
         decimal_places=2,
-        default=0.65,
+        default=0.2,
         blank=True,
         help_text="Float between 0.00 and 1.00 for knowledge",
     )
@@ -143,10 +144,10 @@ class DefaultRealtimeAgentConfig(DefaultBaseModel):
     search_limit = models.PositiveIntegerField(
         default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
     )
-    distance_threshold = models.DecimalField(
+    similarity_threshold = models.DecimalField(
         max_digits=3,
         decimal_places=2,
-        default=0.65,
+        default=0.2,
         blank=True,
         help_text="Float between 0.00 and 1.00 for knowledge",
     )

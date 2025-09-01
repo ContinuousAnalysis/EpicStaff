@@ -152,25 +152,34 @@ class KnowledgeStorage:
         embedded_query: List[float],
         collection_id: int,
         limit: int = 3,
-        distance_threshold: float = 0.6,
+        similarity_threshold: float = 0.2,
     ) -> list:
         """
         Search for documents in the knowledge base using vector similarity.
         """
         self.connect()
         sql_query = """
-        SELECT vector <=> %s::vector AS distance, chunk_text
+        SELECT 1 - (vector <=> %s::vector) AS similarity, chunk_text
         FROM tables_documentembedding
         WHERE collection_id = %s
-        ORDER BY distance
+        ORDER BY similarity DESC
         LIMIT %s
         """
+
+        logger.info(f"{limit=}, {similarity_threshold=}")
 
         with self.transaction() as cur:
             cur.execute(sql_query, (embedded_query, collection_id, limit))
             results = cur.fetchall()
+        final_result = []
+        for i, (similarity, text) in enumerate(results, start=1):
+            if similarity >= similarity_threshold:
+                logger.info(f"Chunk #{i} (similarity: {similarity:.4f}): {text}")
+                logger.info(f"Chunk #{i} (similarity: {similarity:.4f}): APPENDED!")
+                final_result.append(text)
 
-        return [r[1] for r in results if float(r[0]) < distance_threshold]
+        logger.info(f"Returning {len(final_result)} chunks ({similarity_threshold=})")
+        return final_result
 
     def __del__(self):
         self.close()

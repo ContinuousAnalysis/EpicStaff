@@ -49,7 +49,7 @@ class RealtimeService(metaclass=SingletonMeta):
         return RealtimeAgentChat.objects.create(
             rt_agent=rt_agent,
             search_limit=rt_agent.search_limit,
-            distance_threshold=rt_agent.distance_threshold,
+            similarity_threshold=rt_agent.similarity_threshold,
             wake_word=rt_agent.wake_word,
             stop_prompt=rt_agent.stop_prompt,
             language=rt_agent.language,

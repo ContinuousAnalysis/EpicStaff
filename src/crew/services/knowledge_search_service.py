@@ -27,7 +27,7 @@ class KnowledgeSearchService(metaclass=SingletonMeta):
         knowledge_collection_id: int,
         query: str,
         search_limit: int,
-        distance_threshold: float,
+        similarity_threshold: float,
     ) -> list[str]:
         execution_uuid = f"{sender}-{str(uuid4())}"
 
@@ -45,7 +45,7 @@ class KnowledgeSearchService(metaclass=SingletonMeta):
             uuid=execution_uuid,
             query=query,
             search_limit=search_limit,
-            distance_threshold=distance_threshold,
+            similarity_threshold=similarity_threshold,
         )
 
         self.redis_service.publish(
