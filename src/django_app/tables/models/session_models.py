@@ -16,7 +16,7 @@ class Session(models.Model):
         END = "end"
         EXPIRED = "expired"
 
-    graph = models.ForeignKey("Graph", on_delete=models.SET_NULL, null=True)
+    graph = models.ForeignKey("Graph", on_delete=models.CASCADE, null=True)
     status = models.CharField(
         choices=SessionStatus.choices, max_length=255, blank=False, null=False
     )
