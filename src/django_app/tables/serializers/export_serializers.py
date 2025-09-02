@@ -100,7 +100,6 @@ class AgentExportSerializer(serializers.ModelSerializer):
     llm_config = LLMConfigExportSerializer()
     fcm_llm_config = LLMConfigExportSerializer()
     realtime_agent = RealtimeAgentSerializer(read_only=True)
-    distance_threshold = serializers.DecimalField(max_digits=3, decimal_places=2)
 
     class Meta:
         model = Agent
@@ -170,7 +169,7 @@ class CrewExportSerializer(serializers.ModelSerializer):
     tasks = serializers.SerializerMethodField()
     tools = serializers.SerializerMethodField()
 
-    embedding_config = EmbeddingConfigExportSerializer()
+    embedding_config = EmbeddingConfigExportSerializer(required=False, allow_null=True)
 
     memory_llm_config = serializers.SerializerMethodField()
     manager_llm_config = serializers.SerializerMethodField()
