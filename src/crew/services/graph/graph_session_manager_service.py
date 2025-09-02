@@ -8,7 +8,8 @@ from services.run_python_code_service import RunPythonCodeService
 from utils.singleton_meta import SingletonMeta
 from services.crew.crew_parser_service import CrewParserService
 from services.redis_service import AsyncPubsubSubscriber, RedisService
-from models.request_models import GraphSessionMessageData, SessionData
+from models.request_models import SessionData
+from models.graph_models import GraphMessage
 from loguru import logger
 import asyncio
 from pathlib import Path
@@ -21,6 +22,7 @@ import gc
 
 session_data_tasks: dict[int, int] = {}
 import ctypes
+
 
 class GraphSessionManagerService(metaclass=SingletonMeta):
     def __init__(
@@ -58,6 +60,7 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
         self._worker_task: asyncio.Task | None = None
         self._semaphore = asyncio.Semaphore(max_concurrent_sessions)
         self.counter = 0
+
     def start(self):
         self._listener_task = asyncio.create_task(self._listen_to_channels())
         self._worker_task = asyncio.create_task(self._session_worker())
@@ -96,10 +99,21 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
                     assert isinstance(data, dict), "custom chunk must be a dict"
                     data["uuid"] = str(uuid.uuid4())
 
-                    await self.redis_service.apublish("graph:messages", data)
+                    self.redis_service.publish("graph:messages", data)
                 logger.debug(f"Mode: {stream_mode}. Chunk: {chunk}")
 
-            await self.redis_service.aupdate_session_status(
+            await asyncio.sleep(0.1)
+            graph_end_data = GraphMessage(
+                session_id=session_id,
+                name="",
+                execution_order=0,
+                message_data={"message_type": "graph_end"},
+            )
+            graph_end_message_data = asdict(graph_end_data)
+            graph_end_message_data["uuid"] = str(uuid.uuid4())
+
+            self.redis_service.publish("graph:messages", graph_end_message_data)
+            self.redis_service.update_session_status(
                 session_id=session_id, status="end"
             )
 
@@ -133,7 +147,6 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
             logger.exception("Listener task cancelled.")
         finally:
             pass
-
 
     async def _listen_to_channels(self):
         subscriber = AsyncPubsubSubscriber(self._listen_callback)
