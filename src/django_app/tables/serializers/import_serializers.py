@@ -312,8 +312,8 @@ class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
 
 class AgentImportSerializer(serializers.ModelSerializer):
 
-    llm_config = LLMConfigImportSerializer()
-    fcm_llm_config = LLMConfigImportSerializer()
+    llm_config = LLMConfigImportSerializer(required=False, allow_null=True)
+    fcm_llm_config = LLMConfigImportSerializer(required=False, allow_null=True)
     realtime_agent = RealtimeAgentImportSerializer()
     tools = ToolsImportSerializer(required=False)
 
@@ -340,8 +340,8 @@ class AgentImportSerializer(serializers.ModelSerializer):
 
         llm_config = validated_data.pop("llm_config", {})
         fcm_llm_config = validated_data.pop("fcm_llm_config", {})
-        llm_config_id = llm_config.get("id")
-        fcm_config_id = llm_config.get("id")
+        llm_config_id = llm_config.get("id") if llm_config else None
+        fcm_config_id = fcm_llm_config.get("id") if fcm_llm_config else None
 
         if llm_config:
             configs.append(llm_config)
