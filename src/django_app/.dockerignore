@@ -4,3 +4,4 @@ ENV
 */.venv
 */.django_venv
 staticfiles/
+*_stand/

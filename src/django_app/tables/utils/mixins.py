@@ -3,6 +3,8 @@ import os
 import json
 import re
 import time
+from datetime import datetime
+
 from typing import AsyncGenerator, AsyncIterable, Callable, Union
 from abc import ABC, abstractmethod
 
@@ -223,6 +225,15 @@ class SSEMixin(View, ABC):
         """
         pass
 
+    async def sort_by_timestamp(self, messages: list[dict]) -> list[dict]:
+        """
+        Sort a list of messages by their 'timestamp' field in ascending order.
+        """
+        return sorted(
+            messages,
+            key=lambda m: datetime.fromisoformat(m["timestamp"].replace("Z", "+00:00")),
+        )
+
     async def _data_generator(
         self,
         callback: Callable[[], AsyncIterable[Union[dict, str, int, float, bool, None]]],
@@ -268,9 +279,8 @@ class SSEMixin(View, ABC):
                     yield f"data: test event #{i + 1}\n\n"
                 raise GeneratorExit()
 
-            while True:
-                async for data in self._data_generator(self.get_live_updates):
-                    yield data
+            async for data in self._data_generator(self.get_live_updates):
+                yield data
 
         except (GeneratorExit, KeyboardInterrupt):
             logger.warning("Sending fatal-error event due to manual stop")
@@ -282,7 +292,6 @@ class SSEMixin(View, ABC):
     async def get(self, request, *args, **kwargs):
         test_mode = bool(request.GET.get("test", ""))
         logger.debug(f"Started SSE {'with' if test_mode else 'without'} test mode")
-
         return StreamingHttpResponse(
             self.event_stream(test_mode=test_mode),
             content_type="text/event-stream",
