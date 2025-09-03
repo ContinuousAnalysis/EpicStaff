@@ -21,6 +21,7 @@ from models.request_models import (
 from settings import PGVECTOR_MEMORY_CONFIG
 import copy
 from services.crew.proxy_tool_factory import ProxyToolFactory
+from loguru import logger
 
 
 class CrewParserService(metaclass=SingletonMeta):
@@ -53,6 +54,12 @@ class CrewParserService(metaclass=SingletonMeta):
 
         llm = None
         if agent_data.llm is not None:
+            try:
+                logger.info(
+                    f"Temperature for agent[{agent_data.id}]: {agent_data.llm.config.temperature}"
+                )
+            except Exception as e:
+                logger.warning(f"Cannot log agent temperature")
             llm = parse_llm(agent_data.llm)
 
         if tool_list is None:

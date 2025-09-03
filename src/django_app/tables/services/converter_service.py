@@ -106,7 +106,8 @@ class ConverterService(metaclass=SingletonMeta):
         assert len(task_data_list) > 0, "No tasks found for crew"
 
         agents_data = [
-            self.convert_agent_to_pydantic(agent) for agent in crew.agents.all()
+            self.convert_agent_to_pydantic(agent, crew_id)
+            for agent in crew.agents.all()
         ]
         crew_agents: Iterable[Agent] = crew.agents.all()
 
@@ -168,8 +169,8 @@ class ConverterService(metaclass=SingletonMeta):
 
         return BaseToolData(unique_name=unique_name, data=data)
 
-    def convert_agent_to_pydantic(self, agent: Agent) -> AgentData:
-        agent = agent.fill_with_defaults()
+    def convert_agent_to_pydantic(self, agent: Agent, crew_id: int) -> AgentData:
+        agent = agent.fill_with_defaults(crew_id=crew_id)
         agent_base_tool_list = self._get_agent_base_tools(
             agent=agent
         )  # TODO: optimize it, duplicated db requests may occur
