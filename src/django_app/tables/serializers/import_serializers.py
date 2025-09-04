@@ -15,6 +15,10 @@ from tables.models import (
     EmbeddingConfig,
     EmbeddingModel,
     Graph,
+    RealtimeConfig,
+    RealtimeModel,
+    RealtimeTranscriptionConfig,
+    RealtimeTranscriptionModel,
 )
 from tables.serializers.model_serializers import (
     CrewNodeSerializer,
@@ -32,28 +36,15 @@ from tables.services.import_services import (
     AgentsImportService,
     CrewsImportService,
     LLMConfigsImportService,
+    RealtimeConfigsImportService,
+    RealtimeTranscriptionConfigsImportService,
+    RealtimeAgentImportService,
 )
 
 
 class FileImportSerializer(serializers.Serializer):
 
     file = serializers.FileField()
-
-
-class RealtimeAgentImportSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = RealtimeAgent
-        exclude = ["agent"]
-
-    def create(self, validated_data):
-        agent = self.context.get("agent")
-        if not agent:
-            raise serializers.ValidationError(
-                "RealtimeAgent cannot be created without agent"
-            )
-
-        return RealtimeAgent.objects.create(agent=agent, **validated_data)
 
 
 class PythonCodeImportSerializer(serializers.ModelSerializer):
@@ -137,7 +128,7 @@ class ToolsImportSerializer(serializers.Serializer):
 
 class BaseConfigImportSerializer(serializers.ModelSerializer):
 
-    model = serializers.CharField(write_only=True)
+    model = serializers.CharField()
 
     class Meta:
         abstract = True
@@ -149,6 +140,50 @@ class BaseConfigImportSerializer(serializers.ModelSerializer):
         }
         validators = []
         llm_model_class = LLMModel
+
+    def create(self, validated_data):
+        model_name = validated_data.pop("model")
+        custom_name = validated_data.pop("custom_name")
+
+        validated_data.pop("id", None)
+
+        llm_model = self.get_llm_model(model_name)
+        if not llm_model:
+            raise serializers.ValidationError(
+                {"model": f"Model '{model_name}' not found"}
+            )
+
+        existing_config = self.get_existing_config(
+            model=model_name,
+            custom_name=custom_name,
+            validated_data=validated_data,
+        )
+
+        if existing_config:
+            return existing_config
+
+        provider = self.get_provider(llm_model)
+        api_key = self.get_api_key(provider.name)
+
+        if not self.Meta.model.objects.filter(custom_name=custom_name).exists():
+            config = self.create_config(
+                custom_name=unique_name,
+                model=llm_model,
+                api_key=api_key,
+                validated_data=validated_data,
+            )
+            return config
+
+        existing_names = self.Meta.model.objects.values_list("custom_name", flat=True)
+        unique_name = generate_new_unique_name(custom_name, existing_names)
+
+        config = self.create_config(
+            custom_name=unique_name,
+            model=llm_model,
+            api_key=api_key,
+            validated_data=validated_data,
+        )
+        return config
 
     def get_api_key(self, provider_name):
         api_key = (
@@ -165,6 +200,24 @@ class BaseConfigImportSerializer(serializers.ModelSerializer):
             .first()
         )
         return llm_model
+
+    def get_provider(self, llm_model):
+        return llm_model.llm_provider
+
+    def create_config(self, custom_name, model, api_key, validated_data):
+        return self.Meta.model.objects.create(
+            custom_name=custom_name,
+            model=model,
+            api_key=api_key,
+            **validated_data,
+        )
+
+    def get_existing_config(self, custom_name, model, validated_data):
+        return self.Meta.model.objects.filter(
+            model__name=model,
+            custom_name=custom_name,
+            **validated_data,
+        ).first()
 
 
 class LLMConfigImportSerializer(BaseConfigImportSerializer):
@@ -207,7 +260,7 @@ class LLMConfigImportSerializer(BaseConfigImportSerializer):
         if existing_config:
             return existing_config
 
-        provider = llm_model.llm_provider
+        provider = self.get_provider(llm_model)
         api_key = self.get_api_key(provider.name)
 
         if not self.Meta.model.objects.filter(custom_name=custom_name).exists():
@@ -244,50 +297,6 @@ class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
         model = EmbeddingConfig
         llm_model_class = EmbeddingModel
 
-    def create(self, validated_data):
-        model_name = validated_data.pop("model")
-        custom_name = validated_data.pop("custom_name")
-
-        validated_data.pop("id", None)
-
-        llm_model = self.get_llm_model(model_name)
-        if not llm_model:
-            raise serializers.ValidationError(
-                {"model": f"Model '{model_name}' not found"}
-            )
-
-        existing_config = self.Meta.model.objects.filter(
-            model__name=model_name,
-            custom_name=custom_name,
-            **validated_data,
-        ).first()
-
-        if existing_config:
-            return existing_config
-
-        provider = llm_model.embedding_provider
-        api_key = self.get_api_key(provider.name)
-
-        if not self.Meta.model.objects.filter(custom_name=custom_name).exists():
-            config = self.Meta.model.objects.create(
-                custom_name=custom_name,
-                model=llm_model,
-                api_key=api_key,
-                **validated_data,
-            )
-            return config
-
-        existing_names = self.Meta.model.objects.values_list("custom_name", flat=True)
-        unique_name = generate_new_unique_name(custom_name, existing_names)
-
-        config = self.Meta.model.objects.create(
-            custom_name=unique_name,
-            model=llm_model,
-            api_key=api_key,
-            **validated_data,
-        )
-        return config
-
     def get_api_key(self, provider_name):
         api_key = (
             self.Meta.model.objects.filter(
@@ -310,11 +319,202 @@ class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
         return llm_model.embedding_provider
 
 
+class RealtimeConfigImportSerializer(BaseConfigImportSerializer):
+
+    class Meta(BaseConfigImportSerializer.Meta):
+        model = RealtimeConfig
+        llm_model_class = RealtimeModel
+        fields = None
+        exclude = ["api_key", "realtime_model"]
+
+    def get_api_key(self, provider_name):
+        api_key = (
+            self.Meta.model.objects.filter(realtime_model__provider__name=provider_name)
+            .values_list("api_key", flat=True)
+            .first()
+        )
+        return api_key
+
+    def get_llm_model(self, model_name):
+        realtime_model = (
+            self.Meta.llm_model_class.objects.filter(name=model_name)
+            .select_related("provider")
+            .first()
+        )
+        return realtime_model
+
+    def get_provider(self, llm_model):
+        return llm_model.provider
+
+    def create_config(self, custom_name, model, api_key, validated_data):
+        return self.Meta.model.objects.create(
+            custom_name=custom_name,
+            realtime_model=model,
+            api_key=api_key,
+            **validated_data,
+        )
+
+    def get_existing_config(self, custom_name, model, validated_data):
+        return self.Meta.model.objects.filter(
+            realtime_model__name=model,
+            custom_name=custom_name,
+            **validated_data,
+        ).first()
+
+
+class RealtimeTranscriptionConfigImportSerializer(BaseConfigImportSerializer):
+
+    class Meta(BaseConfigImportSerializer.Meta):
+        model = RealtimeTranscriptionConfig
+        llm_model_class = RealtimeTranscriptionModel
+        fields = None
+        exclude = ["api_key", "realtime_transcription_model"]
+
+    def get_api_key(self, provider_name):
+        api_key = (
+            self.Meta.model.objects.filter(
+                realtime_transcription_model__provider__name=provider_name
+            )
+            .values_list("api_key", flat=True)
+            .first()
+        )
+        return api_key
+
+    def get_llm_model(self, model_name):
+        realtime_model = (
+            self.Meta.llm_model_class.objects.filter(name=model_name)
+            .select_related("provider")
+            .first()
+        )
+        return realtime_model
+
+    def get_provider(self, llm_model):
+        return llm_model.provider
+
+    def create_config(self, custom_name, model, api_key, validated_data):
+        return self.Meta.model.objects.create(
+            custom_name=custom_name,
+            realtime_transcription_model=model,
+            api_key=api_key,
+            **validated_data,
+        )
+
+    def get_existing_config(self, custom_name, model, validated_data):
+        return self.Meta.model.objects.filter(
+            realtime_transcription_model__name=model,
+            custom_name=custom_name,
+            **validated_data,
+        ).first()
+
+
+class RealtimeAgentImportSerializer(serializers.ModelSerializer):
+
+    realtime_config = RealtimeConfigImportSerializer(required=False, allow_null=True)
+    realtime_transcription_config = RealtimeTranscriptionConfigImportSerializer(
+        required=False, allow_null=True
+    )
+
+    class Meta:
+        model = RealtimeAgent
+        exclude = ["agent"]
+
+    def create(self, validated_data):
+        agent = self.context.get("agent")
+        if not agent:
+            raise serializers.ValidationError(
+                "RealtimeAgent cannot be created without agent"
+            )
+
+        realtime_config = validated_data.pop("realtime_config", None)
+        transcription_config = validated_data.pop("realtime_transcription_config", None)
+        realtime_config_id = realtime_config.get("id") if realtime_config else None
+        transcription_config_id = (
+            transcription_config.get("id") if transcription_config else None
+        )
+
+        configs_service = None
+        transcription_configs_service = None
+
+        if realtime_config:
+            configs_service = RealtimeConfigsImportService([realtime_config])
+            configs_service.create_configs()
+        if transcription_config:
+            transcription_configs_service = RealtimeTranscriptionConfigsImportService(
+                [transcription_config]
+            )
+            transcription_configs_service.create_configs()
+
+        realtime_agent = RealtimeAgent.objects.create(agent=agent, **validated_data)
+
+        if configs_service:
+            realtime_agent.realtime_config = configs_service.get_config(
+                realtime_config_id
+            )
+        if transcription_configs_service:
+            realtime_agent.realtime_transcription_config = (
+                transcription_configs_service.get_config(transcription_config_id)
+            )
+
+        realtime_agent.save()
+        return realtime_agent
+
+
+class NestedRealtimeAgentImportSerializer(RealtimeAgentImportSerializer):
+
+    id = serializers.IntegerField()
+    realtime_config = serializers.IntegerField(required=False, allow_null=True)
+    realtime_transcription_config = serializers.IntegerField(
+        required=False, allow_null=True
+    )
+
+    class Meta(RealtimeAgentImportSerializer.Meta):
+        extra_kwargs = {
+            "id": {"required": False, "read_only": False, "validators": []},
+        }
+
+
+class RealtimeDataImportSerializer(serializers.Serializer):
+
+    realtime_configs = RealtimeConfigImportSerializer(many=True)
+    realtime_transcription_configs = RealtimeTranscriptionConfigImportSerializer(
+        many=True
+    )
+    realtime_agents = NestedRealtimeAgentImportSerializer(many=True)
+
+    def create(self, validated_data):
+        agents = self.context.get("mapped_agents", {})
+
+        realtime_configs = validated_data.pop("realtime_configs", [])
+        realtime_transcription_configs = validated_data.pop(
+            "realtime_transcription_configs", []
+        )
+        realtime_agents = validated_data.pop("realtime_agents", [])
+
+        realtime_agents_service = RealtimeAgentImportService(realtime_agents)
+        configs_service = None
+        transcription_configs_service = None
+
+        if realtime_configs:
+            configs_service = RealtimeConfigsImportService(realtime_configs)
+            configs_service.create_configs()
+        if realtime_transcription_configs:
+            transcription_configs_service = RealtimeTranscriptionConfigsImportService(
+                realtime_transcription_configs
+            )
+            transcription_configs_service.create_configs()
+
+        realtime_agents_service.create_agents(
+            agents=agents,
+            rt_config_service=configs_service,
+            rt_transcription_config_service=transcription_configs_service,
+        )
+
+
 class AgentImportSerializer(serializers.ModelSerializer):
 
     llm_config = LLMConfigImportSerializer(required=False, allow_null=True)
     fcm_llm_config = LLMConfigImportSerializer(required=False, allow_null=True)
-    realtime_agent = RealtimeAgentImportSerializer()
+    realtime_agent = RealtimeAgentImportSerializer(required=False, allow_null=True)
     tools = ToolsImportSerializer(required=False)
 
     class Meta:
@@ -359,7 +559,7 @@ class AgentImportSerializer(serializers.ModelSerializer):
             agent.fcm_llm_config = config_service.get_config(fcm_config_id)
             agent.save()
 
-        if realtime_agent_data:
+        if realtime_agent_data and not isinstance(realtime_agent_data, int):
             realtime_agent_serializer = RealtimeAgentImportSerializer(
                 data=realtime_agent_data, context={"agent": agent}
             )
@@ -388,6 +588,7 @@ class NestedAgentImportSerializer(AgentImportSerializer):
     tools = serializers.DictField(required=False)
     llm_config = serializers.IntegerField(required=False, allow_null=True)
     fcm_llm_config = serializers.IntegerField(required=False, allow_null=True)
+    realtime_agent = serializers.IntegerField(required=False, allow_null=True)
 
 
 class TaskImportSerializer(serializers.ModelSerializer):
@@ -419,6 +620,7 @@ class CrewImportSerializer(serializers.ModelSerializer):
     manager_llm_config = serializers.IntegerField(required=False, allow_null=True)
     planning_llm_config = serializers.IntegerField(required=False, allow_null=True)
     llm_configs = LLMConfigImportSerializer(many=True, required=False, allow_null=True)
+    realtime_agents = RealtimeDataImportSerializer(required=False, allow_null=True)
 
     class Meta:
         model = Crew
@@ -435,6 +637,7 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
         new_agents = {}
         agents_data = validated_data.pop("agents", [])
+        realtime_agents_data = validated_data.pop("realtime_agents", [])
         tasks_data = validated_data.pop("tasks", [])
         tools_data = validated_data.pop("tools", [])
         embedding_config_data = validated_data.pop("embedding_config", None)
@@ -487,6 +690,12 @@ class CrewImportSerializer(serializers.ModelSerializer):
         if agents:
             crew.agents.set(agents)
 
+        if realtime_agents_data:
+            realtime_agents_serializer = RealtimeDataImportSerializer(
+                context={"mapped_agents": new_agents}
+            )
+            realtime_agents_serializer.create(realtime_agents_data)
+
         for t_data in tasks_data:
             tool_ids_data = t_data.pop("tools", {})
 
@@ -507,6 +716,7 @@ class NestedCrewImportSerializer(CrewImportSerializer):
 
     tools = None
     llm_configs = None
+    realtime_agents = None
     agents = serializers.ListField(child=serializers.IntegerField(), required=False)
 
     class Meta(CrewImportSerializer.Meta):
@@ -655,10 +865,19 @@ class GraphMetadataSerializer(serializers.Serializer):
 
 class GraphImportSerializer(serializers.ModelSerializer):
 
-    crews = NestedCrewImportSerializer(many=True, required=False, allow_null=True)
-    agents = NestedAgentImportSerializer(many=True, required=False, allow_null=True)
-    tools = ToolsImportSerializer(required=False)
-    llm_configs = LLMConfigImportSerializer(many=True, required=False, allow_null=True)
+    crews = NestedCrewImportSerializer(
+        many=True, required=False, allow_null=False, default=dict
+    )
+    agents = NestedAgentImportSerializer(
+        many=True, required=False, allow_null=False, default=dict
+    )
+    tools = ToolsImportSerializer(required=False, allow_null=False, default=dict)
+    llm_configs = LLMConfigImportSerializer(
+        many=True, required=False, allow_null=False, default=dict
+    )
+    realtime_agents = RealtimeDataImportSerializer(
+        required=False, allow_null=False, default=dict
+    )
 
     crew_node_list = CrewNodeImportSerializer(many=True)
     python_node_list = PythonNodeImportSerializer(many=True)
@@ -679,6 +898,7 @@ class GraphImportSerializer(serializers.ModelSerializer):
         agents_data = validated_data.pop("agents", [])
         tools_data = validated_data.pop("tools", [])
         llm_configs_data = validated_data.pop("llm_configs", [])
+        realtime_agents_data = validated_data.pop("realtime_agents", {})
 
         crew_node_list_data = validated_data.pop("crew_node_list", [])
         python_node_list_data = validated_data.pop("python_node_list", [])
@@ -719,6 +939,12 @@ class GraphImportSerializer(serializers.ModelSerializer):
         if agents_data:
             agents_service = AgentsImportService(agents_data)
             agents_service.create_agents(tools_service, llm_configs_service)
+
+        if realtime_agents_data:
+            realtime_agents_serializer = RealtimeDataImportSerializer(
+                context={"mapped_agents": agents_service.mapped_agents}
+            )
+            realtime_agents_serializer.create(realtime_agents_data)
 
         if crews_data:
             crews_service = CrewsImportService(crews_data)

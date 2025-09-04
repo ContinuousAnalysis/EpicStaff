@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Prefetch
 
 from tables.models import (
     Agent,
@@ -9,9 +10,11 @@ from tables.models import (
     Crew,
     Task,
     EmbeddingConfig,
+    RealtimeAgent,
+    RealtimeConfig,
+    RealtimeTranscriptionConfig,
 )
 from tables.serializers.model_serializers import (
-    RealtimeAgentSerializer,
     GraphSerializer,
     CrewNodeSerializer,
     PythonNodeSerializer,
@@ -70,28 +73,86 @@ class GeneralToolExportSerializer(serializers.Serializer):
         return tool
 
 
-class EmbeddingConfigExportSerializer(serializers.ModelSerializer):
+class BaseConfigExportSerializer(serializers.ModelSerializer):
 
     model = serializers.SerializerMethodField()
 
     class Meta:
+        abstract = True
+        model = None
+        exclude = ["api_key"]
+
+    def get_model(self, config_instance):
+        return config_instance.model.name
+
+
+class EmbeddingConfigExportSerializer(BaseConfigExportSerializer):
+
+    class Meta(BaseConfigExportSerializer.Meta):
         model = EmbeddingConfig
-        exclude = ["api_key"]
+
+
+class LLMConfigExportSerializer(BaseConfigExportSerializer):
+
+    class Meta(BaseConfigExportSerializer.Meta):
+        model = LLMConfig
+
+
+class RealtimeConfigExportSerializer(BaseConfigExportSerializer):
+
+    class Meta(BaseConfigExportSerializer.Meta):
+        model = RealtimeConfig
+        exclude = ["api_key", "realtime_model"]
 
     def get_model(self, config_instance):
-        return config_instance.model.name
+        return config_instance.realtime_model.name
 
 
-class LLMConfigExportSerializer(serializers.ModelSerializer):
+class RealtimeTranscriptionConfigExportSerializer(BaseConfigExportSerializer):
 
-    model = serializers.SerializerMethodField()
+    class Meta(BaseConfigExportSerializer.Meta):
+        model = RealtimeTranscriptionConfig
+        exclude = ["api_key", "realtime_transcription_model"]
+
+    def get_model(self, config_instance):
+        return config_instance.realtime_transcription_model.name
+
+
+class RealtimeAgentExportSerializer(serializers.ModelSerializer):
+
+    realtime_config = RealtimeConfigExportSerializer()
+    realtime_transcription_config = RealtimeTranscriptionConfigExportSerializer()
 
     class Meta:
-        model = LLMConfig
-        exclude = ["api_key"]
+        model = RealtimeAgent
+        exclude = ["agent"]
 
-    def get_model(self, config_instance):
-        return config_instance.model.name
+
+class NestedRealtimeAgentExportSerializer(RealtimeAgentExportSerializer):
+
+    realtime_config = serializers.SerializerMethodField()
+    realtime_transcription_config = serializers.SerializerMethodField()
+    id = serializers.SerializerMethodField()
+
+    def get_realtime_config(self, realtime_agent: RealtimeAgent):
+        if realtime_agent.realtime_config:
+            return realtime_agent.realtime_config.id
+
+    def get_realtime_transcription_config(self, realtime_agent: RealtimeAgent):
+        if realtime_agent.realtime_transcription_config:
+            return realtime_agent.realtime_transcription_config.id
+
+    def get_id(self, realtime_agent: RealtimeAgent):
+        return realtime_agent.pk
+
+
+class RealtimeDataExportSerializer(serializers.Serializer):
+
+    realtime_configs = RealtimeConfigExportSerializer(many=True)
+    realtime_transcription_configs = RealtimeTranscriptionConfigExportSerializer(
+        many=True
+    )
+    realtime_agents = NestedRealtimeAgentExportSerializer(many=True)
 
 
 class AgentExportSerializer(serializers.ModelSerializer):
@@ -99,7 +160,7 @@ class AgentExportSerializer(serializers.ModelSerializer):
     tools = serializers.SerializerMethodField()
     llm_config = LLMConfigExportSerializer()
     fcm_llm_config = LLMConfigExportSerializer()
-    realtime_agent = RealtimeAgentSerializer(read_only=True)
+    realtime_agent = RealtimeAgentExportSerializer()
 
     class Meta:
         model = Agent
@@ -124,6 +185,7 @@ class NestedAgentExportSerializer(AgentExportSerializer):
 
     llm_config = serializers.SerializerMethodField()
     fcm_llm_config = serializers.SerializerMethodField()
+    realtime_agent = serializers.SerializerMethodField()
 
     def get_tools(self, agent):
         return {
@@ -142,6 +204,10 @@ class NestedAgentExportSerializer(AgentExportSerializer):
     def get_fcm_llm_config(self, agent: Agent):
         if agent.fcm_llm_config:
             return agent.fcm_llm_config.id
+
+    def get_realtime_agent(self, agent: Agent):
+        if agent.realtime_agent:
+            return agent.realtime_agent.pk
 
 
 class TaskExportSerializer(serializers.ModelSerializer):
@@ -168,6 +234,7 @@ class CrewExportSerializer(serializers.ModelSerializer):
     agents = serializers.SerializerMethodField()
     tasks = serializers.SerializerMethodField()
     tools = serializers.SerializerMethodField()
+    realtime_agents = serializers.SerializerMethodField()
 
     embedding_config = EmbeddingConfigExportSerializer(required=False, allow_null=True)
 
@@ -224,7 +291,6 @@ class CrewExportSerializer(serializers.ModelSerializer):
             return crew.planning_llm_config.id
 
     def get_llm_configs(self, crew: Crew):
-
         config_ids = (
             crew.agents.exclude(llm_config__isnull=True, fcm_llm_config__isnull=True)
             .values_list("llm_config", "fcm_llm_config")
@@ -250,11 +316,50 @@ class CrewExportSerializer(serializers.ModelSerializer):
         serializer = LLMConfigExportSerializer(instance=llm_configs, many=True)
         return serializer.data
 
+    def get_realtime_agents(self, crew: Crew):
+        agent_ids = crew.agents.values_list("id", flat=True)
+
+        realtime_agents = (
+            RealtimeAgent.objects.filter(agent_id__in=agent_ids)
+            .select_related("agent")
+            .prefetch_related(
+                Prefetch(
+                    "realtime_config",
+                    queryset=RealtimeConfig.objects.select_related("realtime_model"),
+                ),
+                Prefetch(
+                    "realtime_transcription_config",
+                    queryset=RealtimeTranscriptionConfig.objects.select_related(
+                        "realtime_transcription_model"
+                    ),
+                ),
+            )
+            .distinct()
+        )
+
+        unique_configs = set()
+        unique_transcription_configs = set()
+
+        for rt_agent in realtime_agents:
+            if rt_agent.realtime_config:
+                unique_configs.add(rt_agent.realtime_config)
+            if rt_agent.realtime_transcription_config:
+                unique_transcription_configs.add(rt_agent.realtime_transcription_config)
+
+        data = {
+            "realtime_agents": realtime_agents,
+            "realtime_configs": list(unique_configs),
+            "realtime_transcription_configs": list(unique_transcription_configs),
+        }
+        serializer = RealtimeDataExportSerializer(data)
+        return serializer.data
+
 
 class NestedCrewExportSerializer(CrewExportSerializer):
 
     tools = None
     llm_configs = None
+    realtime_agents = None
 
     class Meta(CrewExportSerializer.Meta):
         exclude = ["tags", "knowledge_collection"]
@@ -292,6 +397,7 @@ class GraphExportSerializer(GraphSerializer):
     agents = serializers.SerializerMethodField()
     tools = serializers.SerializerMethodField()
     llm_configs = serializers.SerializerMethodField()
+    realtime_agents = serializers.SerializerMethodField()
 
     class Meta(GraphSerializer.Meta):
         fields = "__all__"
@@ -365,4 +471,46 @@ class GraphExportSerializer(GraphSerializer):
 
         llm_configs = LLMConfig.objects.filter(id__in=unique_ids)
         serializer = LLMConfigExportSerializer(instance=llm_configs, many=True)
+        return serializer.data
+
+    def get_realtime_agents(self, graph: Crew):
+        agent_ids = (
+            Agent.objects.filter(crew__crewnode__graph=graph)
+            .distinct()
+            .values_list("id", flat=True)
+        )
+
+        realtime_agents = (
+            RealtimeAgent.objects.filter(agent_id__in=agent_ids)
+            .select_related("agent")
+            .prefetch_related(
+                Prefetch(
+                    "realtime_config",
+                    queryset=RealtimeConfig.objects.select_related("realtime_model"),
+                ),
+                Prefetch(
+                    "realtime_transcription_config",
+                    queryset=RealtimeTranscriptionConfig.objects.select_related(
+                        "realtime_transcription_model"
+                    ),
+                ),
+            )
+            .distinct()
+        )
+
+        unique_configs = set()
+        unique_transcription_configs = set()
+
+        for rt_agent in realtime_agents:
+            if rt_agent.realtime_config:
+                unique_configs.add(rt_agent.realtime_config)
+            if rt_agent.realtime_transcription_config:
+                unique_transcription_configs.add(rt_agent.realtime_transcription_config)
+
+        data = {
+            "realtime_agents": realtime_agents,
+            "realtime_configs": list(unique_configs),
+            "realtime_transcription_configs": list(unique_transcription_configs),
+        }
+        serializer = RealtimeDataExportSerializer(data)
         return serializer.data

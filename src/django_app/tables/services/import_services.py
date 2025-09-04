@@ -110,6 +110,63 @@ class LLMConfigsImportService(BaseConfigsImportService):
         self.serializer_class = LLMConfigImportSerializer
 
 
+class RealtimeConfigsImportService(BaseConfigsImportService):
+
+    def __init__(self, configs):
+        from tables.serializers.import_serializers import RealtimeConfigImportSerializer
+
+        super().__init__(configs)
+        self.serializer_class = RealtimeConfigImportSerializer
+
+
+class RealtimeTranscriptionConfigsImportService(BaseConfigsImportService):
+
+    def __init__(self, configs):
+        from tables.serializers.import_serializers import (
+            RealtimeTranscriptionConfigImportSerializer,
+        )
+
+        super().__init__(configs)
+        self.serializer_class = RealtimeTranscriptionConfigImportSerializer
+
+
+class RealtimeAgentImportService:
+
+    def __init__(self, realtime_agents):
+        from tables.serializers.import_serializers import RealtimeAgentImportSerializer
+
+        self.serializer_class = RealtimeAgentImportSerializer
+        self.realtime_agents = realtime_agents
+
+    def create_agents(
+        self, agents, rt_config_service=None, rt_transcription_config_service=None
+    ):
+        for agent_data in self.realtime_agents:
+            current_id = agent_data.pop("id")
+            rt_config_id = agent_data.pop("realtime_config", None)
+            rt_transcription_config_id = agent_data.pop(
+                "realtime_transcription_config", None
+            )
+
+            agent = agents.get(current_id)
+            serializer = self.serializer_class(
+                data=agent_data, context={"agent": agent}
+            )
+            serializer.is_valid(raise_exception=True)
+            rt_agent = serializer.save()
+
+            if rt_config_service and rt_config_id:
+                rt_agent.realtime_config = rt_config_service.get_config(rt_config_id)
+            if rt_transcription_config_service and rt_transcription_config_id:
+                rt_agent.realtime_transcription_config = (
+                    rt_transcription_config_service.get_config(
+                        rt_transcription_config_id
+                    )
+                )
+
+            rt_agent.save()
+
+
 class AgentsImportService:
 
     def __init__(self, agents):
