@@ -41,6 +41,7 @@ from tables.validators.tool_config_validator import (
     validate_tool_configs,
 )
 from tables.validators.crew_memory_validator import CrewMemoryValidator
+from tables.validators.task_validator import TaskValidator
 
 tool_config_serializer = ToolConfigSerializer(
     ToolConfigValidator(validate_missing_reqired_fields=True, validate_null_fields=True)
@@ -52,6 +53,7 @@ class ConverterService(metaclass=SingletonMeta):
 
     def __init__(self):
         self.memory_validator = CrewMemoryValidator()
+        self.task_validator = TaskValidator()
 
     def convert_crew_to_pydantic(self, crew_id: int) -> CrewData:
         crew = Crew.objects.get(pk=crew_id).fill_with_defaults()
@@ -72,10 +74,11 @@ class ConverterService(metaclass=SingletonMeta):
             embedder = self.convert_embedding_config_to_pydantic(embedding_config)
             memory_llm = self.convert_llm_config_to_pydantic(memory_llm_config)
         task_list = Task.objects.filter(crew_id=crew_id)
-
+        self.task_validator.validate_assigned_agents(task_list)
         task_data_list: list[TaskData] = []
 
         crew_base_tools: list[BaseToolData] = []
+
         for task in task_list:
 
             base_tools = self._get_task_base_tools(task=task)
