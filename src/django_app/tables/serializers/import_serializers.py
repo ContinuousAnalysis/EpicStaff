@@ -593,7 +593,7 @@ class NestedAgentImportSerializer(AgentImportSerializer):
 
 class TaskImportSerializer(serializers.ModelSerializer):
 
-    agent = serializers.IntegerField()
+    agent = serializers.IntegerField(required=False, allow_null=True)
     tools = serializers.DictField(required=False)
 
     class Meta:
