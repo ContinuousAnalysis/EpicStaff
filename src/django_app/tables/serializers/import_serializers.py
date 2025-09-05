@@ -839,9 +839,9 @@ class MetdataNodeSerializer(serializers.Serializer):
         if type_ == "python":
             node_name = validated_data.pop("node_name")
             node_name = mapped_node_names.get(node_name)
-            return {"node_name": node_name, **validated_data}
+            return {"node_name": node_name, "data": data, **validated_data}
 
-        return validated_data
+        return {"data": data, **validated_data}
 
 
 class GraphMetadataSerializer(serializers.Serializer):
@@ -982,13 +982,11 @@ class GraphImportSerializer(serializers.ModelSerializer):
 
         for node_data in python_node_list_data:
             previous_name = node_data.pop("node_name")
-            mapped_node_names[previous_name] = create_node_name(
-                original_name=previous_name, new_name=crew.name
+            mapped_node_names[previous_name] = previous_name
+
+            serializer = PythonNodeImportSerializer(
+                data=node_data, context={"graph": graph}
             )
-
-            data = {"node_name": mapped_node_names[previous_name], **node_data}
-
-            serializer = PythonNodeImportSerializer(data=data, context={"graph": graph})
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
