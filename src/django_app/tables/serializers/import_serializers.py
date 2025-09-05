@@ -19,9 +19,9 @@ from tables.models import (
     RealtimeModel,
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
+    CrewNode,
 )
 from tables.serializers.model_serializers import (
-    CrewNodeSerializer,
     PythonNodeSerializer,
     EdgeSerializer,
     ConditionalEdgeSerializer,
@@ -168,7 +168,7 @@ class BaseConfigImportSerializer(serializers.ModelSerializer):
 
         if not self.Meta.model.objects.filter(custom_name=custom_name).exists():
             config = self.create_config(
-                custom_name=unique_name,
+                custom_name=custom_name,
                 model=llm_model,
                 api_key=api_key,
                 validated_data=validated_data,
@@ -736,14 +736,13 @@ class NestedCrewImportSerializer(CrewImportSerializer):
         }
 
 
-class CrewNodeImportSerializer(CrewNodeSerializer):
+class CrewNodeImportSerializer(serializers.ModelSerializer):
 
-    crew = None
     crew_id = serializers.IntegerField()
 
-    class Meta(CrewNodeSerializer.Meta):
-        fields = None
-        exclude = ["graph"]
+    class Meta:
+        model = CrewNode
+        exclude = ["graph", "crew"]
 
     def create(self, validated_data):
         data = {"graph": self.context.get("graph"), **validated_data}
@@ -824,7 +823,7 @@ class MetdataNodeSerializer(serializers.Serializer):
         mapped_node_names = self.context.get("mapped_node_names")
 
         type_ = validated_data.get("type")
-        data = validated_data.get("data")
+        data = validated_data.pop("data", {})
 
         if type_ == "project":
             crew_id = data.get("id")
