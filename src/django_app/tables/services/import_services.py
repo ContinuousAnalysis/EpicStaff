@@ -294,19 +294,20 @@ class CrewsImportService:
                 agents_service.assign_agents_to_crew(agents_ids, crew)
 
             if tools_service:
+                task_service = TasksImportService()
+
                 for t_data in tasks_data:
                     tool_ids_data = t_data.pop("tools", {})
+                    context_ids = t_data.pop("context_tasks", [])
 
-                    task_serializer = self.task_serializer(
-                        data=t_data, context={"crew": crew}
-                    )
-                    task_serializer.is_valid(raise_exception=True)
-                    task = task_serializer.save()
+                    task = task_service.create_task(t_data, crew)
+                    task_service.add_task_context(task, context_ids)
 
                     agent_id = t_data.get("agent")
 
                     tools_service.assign_tools_to_task(task, tool_ids_data)
-                    agents_service.assign_agent_to_task(task, agent_id)
+                    if agents_service:
+                        agents_service.assign_agent_to_task(task, agent_id)
 
             if llm_configs_service:
                 crew.memory_llm_config = llm_configs_service.get_config(
