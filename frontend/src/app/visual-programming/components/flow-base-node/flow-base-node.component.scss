@@ -277,10 +277,11 @@
 }
 
 :host(.type-edge) {
-  // Make the node container fit the SVG
   display: flex;
   align-items: center;
   justify-content: center;
+
+  --edge-node-border-color: var(--color-divider-subtle);
 
   .port-position-left {
     left: 8px !important;
@@ -300,6 +301,10 @@
   padding: 0;
   width: auto;
   height: auto;
+
+  &.f-selected {
+    --edge-node-border-color: var(--vp-selected-node-border-color);
+  }
 }
 
 :host(.type-note) {

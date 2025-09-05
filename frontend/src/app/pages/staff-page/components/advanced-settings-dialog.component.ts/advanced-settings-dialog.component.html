@@ -7,12 +7,7 @@
         Advanced Settings for {{ agentData.agentRole }}
       </h2>
     </div>
-    <app-icon-button
-      icon="ui/x"
-      ariaLabel="Close dialog"
-      size="2rem"
-      (onClick)="dialogRef.close()"
-    >
+    <app-icon-button icon="ui/x" ariaLabel="Close dialog" size="2rem" (onClick)="dialogRef.close()">
     </app-icon-button>
   </div>
 
@@ -23,37 +18,24 @@
       <div class="form-group">
         <div class="label-row">
           <label class="field-label">Agent Creativity Level</label>
-          <app-help-tooltip
-            [text]="
+          <app-help-tooltip [text]="
               'Adjust how creative the agent should be. Higher values lead to more varied responses, while lower values keep responses more predictable.'
-            "
-          ></app-help-tooltip>
+            "></app-help-tooltip>
         </div>
-        <app-form-slider
-          [value]="temperatureValue"
-          [min]="0"
-          [max]="100"
-          label=""
-          (valueChange)="onSliderInput($event)"
-        ></app-form-slider>
+        <app-form-slider [value]="temperatureValue" [min]="0" [max]="100" label=""
+          (valueChange)="onSliderInput($event)"></app-form-slider>
       </div>
 
       <div class="form-group">
         <div class="label-row">
           <label class="field-label">Function Calling LLM</label>
-          <app-help-tooltip
-            [text]="
+          <app-help-tooltip [text]="
               'Select a language model specifically for function calling. This can be different from the main agent LLM.'
-            "
-          ></app-help-tooltip>
+            "></app-help-tooltip>
         </div>
         <!-- Replace with new LLM selector component -->
-        <app-llm-model-selector
-          [llmConfigs]="combinedLLMs"
-          [(ngModel)]="selectedLlmId"
-          (modelSelected)="onLlmChange($event)"
-          placeholder="Select function LLM"
-        ></app-llm-model-selector>
+        <app-llm-model-selector [llmConfigs]="combinedLLMs" [(ngModel)]="selectedLlmId"
+          (modelSelected)="onLlmChange($event)" placeholder="Select function LLM"></app-llm-model-selector>
       </div>
     </div>
 
@@ -64,19 +46,14 @@
       <div class="form-group">
         <div class="label-row">
           <label class="field-label">Select Knowledge Source</label>
-          <app-help-tooltip
-            [text]="
+          <app-help-tooltip [text]="
               'Choose a knowledge source to provide additional context and information for this agent.'
-            "
-          ></app-help-tooltip>
+            "></app-help-tooltip>
         </div>
         <!-- Knowledge source selector component -->
-        <app-knowledge-selector
-          [collections]="allKnowledgeSources"
-          [selectedCollectionId]="agentData.knowledge_collection || null"
-          [loading]="isLoadingKnowledgeSources"
-          (collectionChange)="onKnowledgeSourceChange($event)"
-        ></app-knowledge-selector>
+        <app-knowledge-selector [collections]="allKnowledgeSources"
+          [selectedCollectionId]="agentData.knowledge_collection || null" [loading]="isLoadingKnowledgeSources"
+          (collectionChange)="onKnowledgeSourceChange($event)"></app-knowledge-selector>
       </div>
     </div>
 
@@ -87,77 +64,44 @@
       <div class="form-group">
         <div class="label-row">
           <label for="max-iter" class="field-label">Maximum Iterations</label>
-          <app-help-tooltip
-            [text]="
+          <app-help-tooltip [text]="
               'The maximum number of iterations the agent will perform before stopping.'
-            "
-          ></app-help-tooltip>
+            "></app-help-tooltip>
         </div>
-        <input
-          id="max-iter"
-          [(ngModel)]="agentData.max_iter"
-          type="number"
-          min="1"
-          placeholder="Enter maximum iterations"
-        />
+        <input id="max-iter" [(ngModel)]="agentData.max_iter" type="number" min="1"
+          placeholder="Enter maximum iterations" />
       </div>
 
       <div class="form-group">
         <div class="label-row">
-          <label for="max-rpm" class="field-label"
-            >Maximum Requests Per Minute</label
-          >
-          <app-help-tooltip
-            [text]="
+          <label for="max-rpm" class="field-label">Maximum Requests Per Minute</label>
+          <app-help-tooltip [text]="
               'Set the maximum number of API requests the agent can make per minute. Higher values allow more throughput but may increase costs.'
-            "
-          ></app-help-tooltip>
+            "></app-help-tooltip>
         </div>
-        <input
-          id="max-rpm"
-          [(ngModel)]="agentData.max_rpm"
-          type="number"
-          min="0"
-          placeholder="Enter maximum RPM"
-        />
+        <input id="max-rpm" [(ngModel)]="agentData.max_rpm" type="number" min="0" placeholder="Enter maximum RPM" />
       </div>
 
       <div class="form-group">
         <div class="label-row">
-          <label for="max-exec-time" class="field-label"
-            >Maximum Execution Time (seconds)</label
-          >
-          <app-help-tooltip
-            [text]="
+          <label for="max-exec-time" class="field-label">Maximum Execution Time (seconds)</label>
+          <app-help-tooltip [text]="
               'The maximum time in seconds the agent will run before timing out.'
-            "
-          ></app-help-tooltip>
+            "></app-help-tooltip>
         </div>
-        <input
-          id="max-exec-time"
-          [(ngModel)]="agentData.max_execution_time"
-          type="number"
-          min="0"
-          placeholder="Enter maximum execution time"
-        />
+        <input id="max-exec-time" [(ngModel)]="agentData.max_execution_time" type="number" min="0"
+          placeholder="Enter maximum execution time" />
       </div>
 
       <div class="form-group">
         <div class="label-row">
           <label for="max-retry" class="field-label">Maximum Retry Limit</label>
-          <app-help-tooltip
-            [text]="
+          <app-help-tooltip [text]="
               'The maximum number of times the agent will retry failed operations.'
-            "
-          ></app-help-tooltip>
+            "></app-help-tooltip>
         </div>
-        <input
-          id="max-retry"
-          [(ngModel)]="agentData.max_retry_limit"
-          type="number"
-          min="0"
-          placeholder="Enter maximum retry limit"
-        />
+        <input id="max-retry" [(ngModel)]="agentData.max_retry_limit" type="number" min="0"
+          placeholder="Enter maximum retry limit" />
       </div>
     </div>
 
@@ -170,31 +114,11 @@
           <div class="label-row toggle-container">
             <div class="toggle-label-wrapper">
               <label class="toggle-label">Enable Response Caching</label>
-              <app-help-tooltip
-                [text]="
+              <app-help-tooltip [text]="
                   'Enable to cache responses for repeated queries, improving performance and reducing costs.'
-                "
-              ></app-help-tooltip>
+                "></app-help-tooltip>
             </div>
-            <app-toggle-switch
-              [(ngModel)]="agentData.cache"
-            ></app-toggle-switch>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <div class="label-row toggle-container">
-            <div class="toggle-label-wrapper">
-              <label class="toggle-label">Allow Code Execution</label>
-              <app-help-tooltip
-                [text]="
-                  'Enable to allow the agent to run code. Use with caution as this gives the agent more capabilities.'
-                "
-              ></app-help-tooltip>
-            </div>
-            <app-toggle-switch
-              [(ngModel)]="agentData.allow_code_execution"
-            ></app-toggle-switch>
+            <app-toggle-switch [(ngModel)]="agentData.cache"></app-toggle-switch>
           </div>
         </div>
 
@@ -202,17 +126,37 @@
           <div class="label-row toggle-container">
             <div class="toggle-label-wrapper">
               <label class="toggle-label">Respect Context Window</label>
-              <app-help-tooltip
-                [text]="
+              <app-help-tooltip [text]="
                   'When enabled, the agent will be aware of context window limitations and adjust accordingly.'
-                "
-              ></app-help-tooltip>
+                "></app-help-tooltip>
             </div>
-            <app-toggle-switch
-              [(ngModel)]="agentData.respect_context_window"
-            ></app-toggle-switch>
+            <app-toggle-switch [(ngModel)]="agentData.respect_context_window"></app-toggle-switch>
           </div>
         </div>
+
+        <!-- Threshold Slider -->
+          <div class="form-group">
+            <div class="label-row">
+              <h3 class="field-label">Threshold</h3>
+              <app-help-tooltip
+                text="Sets the similarity threshold for knowledge retrieval. Lower values return more results but may be less relevant. Higher values are more precise but may miss useful information."></app-help-tooltip>
+            </div>
+            <app-range-slider label="Threshold" [value]="floatedThreshold" [min]="0" [max]="1" [step]="0.01"
+              [decimals]="2" (valueChange)="onThresholdChange($event)">
+            </app-range-slider>
+          </div>
+
+        <!-- Search Limit Slider -->
+          <div class="form-group">
+            <div class="label-row">
+              <h3 class="field-label">Search Limit</h3>
+              <app-help-tooltip
+                text="The maximum number of items to retrieve when searching for relevant information. Higher values provide more context but may slow down responses."></app-help-tooltip>
+            </div>
+            <app-range-slider label="Search Limit" [value]="search_limit" [min]="0" [max]="1000" [step]="1"
+              (valueChange)="onSearchLimitChange($event)"></app-range-slider>
+          </div>
+
       </div>
     </div>
   </div>
@@ -222,4 +166,4 @@
     <button class="btn-cancel" (click)="dialogRef.close()">Cancel</button>
     <button class="btn-save" (click)="save()">Save Changes</button>
   </div>
-</div>
+</div>`

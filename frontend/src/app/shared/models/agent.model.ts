@@ -41,7 +41,7 @@ export interface Agent {
 }
 
 export interface RealtimeAgentConfig {
-  similarity_threshold: string;
+  distance_threshold: string;
   search_limit: number;
   wake_word: string | null;
   stop_prompt: string | null;
@@ -82,6 +82,9 @@ export interface GetAgentRequest {
     unique_name: ToolUniqueName;
     data: GetToolConfigRequest | GetPythonCodeToolRequest;
   }[];
+
+  search_limit: number | null;
+  similarity_threshold: string | null;
 }
 
 // Create Agent Request

@@ -25,6 +25,7 @@ import { LlmModelSelectorComponent } from '../../shared/components/llm-model-sel
 import { EmbeddingModelSelectorComponent } from '../../shared/components/embedding-model-selector/embedding-model-selector.component';
 import { FullLLMConfigService } from '../../features/settings-dialog/services/llms/full-llm-config.service';
 import { FullEmbeddingConfigService } from '../../features/settings-dialog/services/embeddings/full-embedding.service';
+import { RangeSliderComponent } from '../../shared/components/range-slider/range-slider.component';
 
 @Component({
   selector: 'app-settings-section',
@@ -37,6 +38,7 @@ import { FullEmbeddingConfigService } from '../../features/settings-dialog/servi
     HelpTooltipComponent,
     LlmModelSelectorComponent,
     EmbeddingModelSelectorComponent,
+    RangeSliderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -58,11 +60,15 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     cache: boolean;
     full_output: boolean;
     planning: boolean;
+    similarity_threshold: string,
+    search_limit: number,
   }>({
     temperature: 0.7,
     cache: false,
     full_output: false,
     planning: false,
+    similarity_threshold: '0.2',
+    search_limit: 0,
   });
 
   // Other signals for reactive data
@@ -85,7 +91,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     private fullLLMConfigService: FullLLMConfigService,
     private fullEmbeddingConfigService: FullEmbeddingConfigService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   public ngOnInit(): void {
     this.loadConfigurations();
@@ -99,6 +105,10 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         this.initializeHierarchicalSettings();
       }
     }
+  }
+
+  public getParsedThreshold(value: string): number {
+    return parseFloat(value);
   }
 
   private initializeBasicSettings(): void {
@@ -117,8 +127,9 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         cache: this.project.cache ?? false,
         full_output: this.project.full_output ?? false,
         planning: this.project.planning ?? false,
+        similarity_threshold: this.project.similarity_threshold ?? '0.2',
+        search_limit: this.project.search_limit ?? 0,
       });
-
       //   this.cdr.markForCheck();
     }
   }
@@ -288,4 +299,23 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     // Only save changes when slider movement ends
     this.onSettingChange('max_rpm', this.rpmCurrentValue);
   }
+
+  public onThresholdChange(value: number): void {
+    const currentSettings = this.settings();
+    this.settings.set({
+      ...currentSettings,
+      similarity_threshold: value.toString(),
+    });
+    this.onSettingChange('similarity_threshold', value);
+  }
+
+  public onSearchLimitChange(value: number): void {
+    const currentSettings = this.settings();
+    this.settings.set({
+      ...currentSettings,
+      search_limit: value,
+    });
+    this.onSettingChange('search_limit', value);
+  }
+
 }

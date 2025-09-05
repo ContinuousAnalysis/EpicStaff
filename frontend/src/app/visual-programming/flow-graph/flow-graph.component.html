@@ -80,6 +80,7 @@
             <app-flow-base-node
                 [node]="node"
                 [showVariables]="showVariables()"
+                [fMinimapClass]="getMinimapClassForNode(node)"
                 fNode
                 fDragHandle
                 [fNodeId]="node.id"
@@ -89,7 +90,7 @@
                 [style.z-index]="node.parentId ? 4 : 2"
                 (fNodePositionChange)="onNodePositionChanged($event, node)"
                 (fNodeSizeChange)="onNodeSizeChanged($event, node)"
-                (editClicked)="onEditNode($event)"
+                (editClicked)="onOpenNodePanel($event)"
                 (projectExpandToggled)="onProjectExpandToggled($event)"
             >
             </app-flow-base-node>
@@ -234,8 +235,8 @@
     </div>
     <app-flow-action-panel></app-flow-action-panel>
     <!-- <app-flow-zoom-controls></app-flow-zoom-controls> -->
+    @if (showContextMenu()) {
     <app-flow-graph-context-menu
-        *ngIf="showContextMenu()"
         [position]="contextMenuPostion"
         [menuContext]="nodesMode"
         clickOutside
@@ -243,11 +244,10 @@
         (nodeSelected)="onAddNodeFromContextMenu($event)"
     >
     </app-flow-graph-context-menu>
-    @if (selectedNode) {
-    <app-dynamic-side-panel-host
-        [node]="selectedNode"
-        (closePanel)="onCloseSidePanel()"
-        (nodeUpdated)="onSidePanelSaved($event)"
-    ></app-dynamic-side-panel-host>
     }
+    <app-node-panel-shell
+        [node]="selectedNode()"
+        [panelComponent]="panelComponentType()"
+        (save)="onNodePanelSaved($event)"
+    />
 </div>

@@ -64,6 +64,26 @@ $purple-accent: rgba(104, 95, 255, 0.5);
       transition: background 0.2s ease;
       position: relative;
 
+      .form-section-slider{
+        // display: flex;
+        // align-items: center;
+        // gap: 0.5rem;
+        // margin-bottom: 8px;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 8px;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 400;}
+
       &:not(:last-child)::after {
         content: "";
         position: absolute;
@@ -162,7 +182,7 @@ $purple-accent: rgba(104, 95, 255, 0.5);
             width: 100%;
             height: 6px;
             border-radius: 3px;
-            background: linear-gradient(90deg, grey, $purple-accent);
+            background: var(--gray-700);
             outline: none;
             cursor: pointer;
             transition: background 0.2s ease;
@@ -171,18 +191,17 @@ $purple-accent: rgba(104, 95, 255, 0.5);
             &::-webkit-slider-runnable-track {
               height: 6px;
               border-radius: 3px;
-              background: linear-gradient(90deg, grey, $purple-accent);
+              background: var(--gray-700);
             }
 
             /* WebKit thumb */
             &::-webkit-slider-thumb {
               -webkit-appearance: none;
               appearance: none;
-              width: 18px;
-              height: 18px;
+              width: 16px;
+              height: 16px;
               margin-top: -6px; /* center the thumb on the track */
-              background: $text-color;
-              border: 2px solid $accent-color;
+              background: $accent-color;
               border-radius: 50%;
               transition: transform 0.2s ease, box-shadow 0.2s ease;
 
@@ -196,7 +215,7 @@ $purple-accent: rgba(104, 95, 255, 0.5);
             &::-moz-range-track {
               height: 6px;
               border-radius: 3px;
-              background: linear-gradient(90deg, grey, $purple-accent);
+              background: grey;
             }
 
             /* Firefox thumb */

@@ -29,7 +29,7 @@ import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 
 import { themeQuartz } from 'ag-grid-community';
 
-import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
+import { ConnectedPosition, GlobalPositionStrategy, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { DialogModule, Dialog } from '@angular/cdk/dialog';
 import {
@@ -155,7 +155,7 @@ export class TasksTableComponent {
     private tasksService: TasksService,
     private toastService: ToastService,
     private fullTaskService: FullTaskService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.rowData = [
@@ -663,6 +663,10 @@ export class TasksTableComponent {
 
     console.log('Filtered tasks (normal IDs & valid order):', normalTasks);
 
+    const positionStrategy = new GlobalPositionStrategy()
+      .top('45px')
+      .centerHorizontally();
+
     const dialogRef = this.dialog.open(AdvancedTaskSettingsDialogComponent, {
       data: {
         config: taskData.config,
@@ -673,8 +677,9 @@ export class TasksTableComponent {
       },
       width: '100%', // Set minimum width
       maxWidth: '650px', // Allow it to be responsive but not too wide
-      height: '100%', // Set height to 90% of viewport height
+      height: 'fit-content', // Set height to 90% of viewport height
       maxHeight: '90vh', // Ensure maximum height
+      positionStrategy,
     });
 
     dialogRef.closed.subscribe((updatedData: unknown) => {

@@ -279,6 +279,46 @@
             (valueChange)="onMaxRpmSliderInput($event)"
           ></app-form-slider>
         </div>
+
+         <!-- Threshold Slider -->
+        <div class="form-group">
+          <div class="label-row">
+            <label class="toggle-label">
+              Threshold
+            </label>
+            <app-help-tooltip
+              text="Sets the similarity threshold for knowledge retrieval. Lower values return more results but may be less relevant. Higher values are more precise but may miss useful information."></app-help-tooltip>
+          </div>
+          <app-range-slider 
+          label="Threshold" 
+          [value]="projectForm.get('similarity_threshold')?.value" 
+          [min]="0" 
+          [max]="1" 
+          [step]="0.01"
+          [decimals]="2" 
+          (valueChange)="onThresholdChange($event)">
+          </app-range-slider>
+        </div>
+
+         <!-- Search Limit Slider -->
+        <div class="form-group">
+          <div class="label-row">
+            <label class="toggle-label">
+              Search Limit
+            </label>
+            <app-help-tooltip
+              text="The maximum number of items to retrieve when searching for relevant information. Higher values provide more context but may slow down responses."
+            ></app-help-tooltip>
+          </div>
+          <app-range-slider
+            label="Search Limit"
+            [value]="projectForm.get('search_limit')?.value"
+            [min]="0"
+            [max]="1000"
+            [step]="1"
+            (valueChange)="onSearchLimitChange($event)"
+          ></app-range-slider>
+        </div>
       </div>
     </div>
 

@@ -26,6 +26,7 @@ import {
 import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
 import { FormSliderComponent } from '../../../../shared/components/form-controls/slider/form-slider.component';
 import { ToggleSwitchComponent } from '../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
+import { RangeSliderComponent } from '../../../../shared/components/range-slider/range-slider.component';
 
 export interface AdvancedSettingsData {
   fullFcmLlmConfig?: FullLLMConfig;
@@ -34,12 +35,13 @@ export interface AdvancedSettingsData {
   max_rpm: number | null;
   max_execution_time: number | null;
   cache: boolean | null;
-  allow_code_execution: boolean | null;
   max_retry_limit: number | null;
   respect_context_window: boolean | null;
   default_temperature: number | null;
   knowledge_collection?: number | null;
   selected_knowledge_source?: GetSourceCollectionRequest | null; // For display purposes only
+  similarity_threshold: string | null;
+  search_limit: number | null;
 }
 
 @Component({
@@ -53,6 +55,7 @@ export interface AdvancedSettingsData {
     IconButtonComponent,
     ToggleSwitchComponent,
     LlmModelSelectorComponent,
+    RangeSliderComponent,
   ],
   standalone: true,
   templateUrl: './advanced-settings-dialog.component.html',
@@ -74,6 +77,8 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
   public knowledgeSourcesError: string | null = null;
 
   private readonly _destroyed$ = new Subject<void>();
+  public floatedThreshold: any;
+  public search_limit: any;
 
   constructor(
     public dialogRef: DialogRef<AdvancedSettingsData>,
@@ -82,14 +87,18 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
     private llmModelsService: LLM_Models_Service,
     private fullLLMConfigService: FullLLMConfigService,
     private collectionsService: CollectionsService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {
     // Initialize your local data from the injected data
     this.agentData = { ...data };
-    console.log(
-      'Constructor - Initial agentData:',
-      JSON.stringify(this.agentData)
-    );
+
+    if (data.similarity_threshold !== null) {
+      this.floatedThreshold = parseFloat(data.similarity_threshold);
+
+    } else {
+      this.floatedThreshold = 0;
+    }
+    this.search_limit = this.agentData.search_limit !== null ? this.agentData.search_limit : 0;
 
     // Initialize temperature slider value from default_temperature (convert from 0-1 to 0-100)
     this.temperatureValue = Math.round(
@@ -241,6 +250,15 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
       this.agentData.selected_knowledge_source = selectedCollection || null;
     }
     this.cdr.markForCheck();
+  }
+
+  public onThresholdChange(value: number): void {
+    this.agentData.similarity_threshold = JSON.stringify(value);
+  }
+
+  public onSearchLimitChange(value: number): void {
+    this.agentData.search_limit = value ?? null;
+
   }
 
   public get temperaturePercent(): number {

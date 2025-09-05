@@ -18,6 +18,8 @@ export interface GetProjectRequest {
   full_output: boolean;
   default_temperature: number | null;
   planning: boolean;
+  similarity_threshold?: string | null,
+  search_limit?: number | null,
 
   planning_llm_config: number | null;
   manager_llm_config: number | null;
@@ -47,6 +49,8 @@ export interface CreateProjectRequest {
   embedding_config?: number | null;
   memory_llm_config?: number | null;
   metadata?: any | null;
+  similarity_threshold?: string | null,
+  search_limit?: number | null,
 }
 
 // Create Project Request

@@ -10,6 +10,7 @@ import {
     signal,
     ViewChild,
     OnDestroy,
+    Type,
 } from '@angular/core';
 import {
     FCreateNodeEvent,
@@ -83,12 +84,16 @@ import { convertJsonToMap } from '../core/helpers/convert-json-to-map.util';
 import { FlowNodePanelComponent } from '../components/flow-nodes-panel/flow-nodes-panel.component';
 import { NodesSearchComponent } from '../components/nodes-search/nodes-search.component';
 import { generateNodeDisplayName } from '../core/helpers/generate-node-display-name.util';
-import { SidePanelService } from '../services/side-panel.service';
-import { map, takeUntil } from 'rxjs/operators';
 import { Dialog } from '@angular/cdk/dialog';
 import { ProjectDialogComponent } from '../components/project-dialog/project-dialog.component';
 import { NoteNodeComponent } from '../components/nodes-components/note-node/note-node.component';
 import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edit-dialog.component';
+import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util'; // Adjust path
+import { NodePanel } from '../core/models/node-panel.interface';
+import { SIDE_PANEL_MAPPING } from '../core/enums/side-panel-mapping';
+import { PANEL_COMPONENT_MAP } from '../core/enums/node-panel.map';
+import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
+import { ToastService } from '../../services/notifications/toast.service';
 
 @Component({
     selector: 'app-flow-graph',
@@ -105,13 +110,13 @@ import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edi
         ShortcutListenerDirective,
         MouseTrackerDirective,
         FlowGraphContextMenuComponent,
-        NgIf,
         GroupNodeComponent,
         ClickOutsideDirective,
-        DynamicSidePanelHostComponent,
+
         FlowActionPanelComponent,
         FlowNodePanelComponent,
         NodesSearchComponent,
+        NodePanelShellComponent,
     ],
 })
 export class FlowGraphComponent implements OnInit, OnDestroy {
@@ -129,6 +134,8 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     @ViewChild(FZoomDirective, { static: true })
     public fZoomDirective!: FZoomDirective;
 
+    public getMinimapClassForNode = getMinimapClassForNode;
+
     public readonly eMarkerType = EFMarkerType;
     public readonly eResizeHandleType = EFResizeHandleType;
 
@@ -141,11 +148,12 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public isLoaded = signal<boolean>(false);
     public showContextMenu = signal(false);
 
-    public selectedNode: NodeModel | null = null;
+    // node side panel logic
+    public selectedNode = signal<NodeModel | null>(null);
+    public panelComponentType = signal<Type<NodePanel> | null>(null);
+    //end node side panel logic
 
     private readonly destroy$ = new Subject<void>();
-    private selectedNode$!: Observable<NodeModel | null>;
-
     public showVariables = signal<boolean>(false);
 
     public NodeType = NodeType;
@@ -155,25 +163,16 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         private readonly undoRedoService: UndoRedoService,
         private readonly clipboardService: ClipboardService,
         private readonly groupCollapserService: GroupCollapserService,
-        private readonly sidePanelService: SidePanelService,
         private readonly cd: ChangeDetectorRef,
-        private readonly dialog: Dialog
+        private readonly dialog: Dialog,
+        private readonly toastService: ToastService
     ) {}
 
     public ngOnInit(): void {
-        this.selectedNode$ = this.sidePanelService.getState().pipe(
-            map((state) => state.selectedNode),
-            takeUntil(this.destroy$)
-        );
-
         this.initializeFlowStateIfEmpty();
         this.addStartNodeIfNeeded();
         this.generatePortsForNodesIfNeeded();
         this.flowService.setFlow(this.flowState);
-        this.selectedNode$.subscribe((node) => {
-            this.selectedNode = node;
-            this.cd.detectChanges();
-        });
     }
 
     private initializeFlowStateIfEmpty(): void {
@@ -683,20 +682,21 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     // side panel logic
-    public onEditNode(node: NodeModel): void {
-        // Special handling for note nodes
+    public onOpenNodePanel(node: NodeModel): void {
+        if (this.selectedNode()?.id === node.id) {
+            return;
+        }
+      
+
         if (node.type === NodeType.NOTE) {
             const noteNode = node as NoteNodeModel;
 
-            // Open the note edit dialog
             const dialogRef = this.dialog.open(NoteEditDialogComponent, {
                 data: { node: noteNode },
             });
 
-            // Handle dialog close with save
             dialogRef.closed.subscribe((result: any) => {
                 if (result && result.content !== undefined) {
-                    // Update the note content
                     const updatedNode: NoteNodeModel = {
                         ...noteNode,
                         data: {
@@ -705,32 +705,35 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                         },
                     };
 
-                    // Update the node in the flow service
                     this.flowService.updateNode(updatedNode);
 
-                    // Trigger change detection to refresh the view
                     this.cd.detectChanges();
                 }
             });
         } else {
-            // For all other node types, use the existing side panel method
-            this.sidePanelService.trySelectNode(node).then((selected) => {
-                if (!selected) {
-                    console.log('Node selection was cancelled or failed');
-                }
-            });
+            const componentType = PANEL_COMPONENT_MAP[node.type] || null;
+            if (componentType) {
+                this.selectedNode.set(node);
+                this.panelComponentType.set(componentType);
+            } else {
+                console.warn(
+                    `No panel component found for node type: ${node.type}`
+                );
+            }
         }
     }
 
-    public onCloseSidePanel(): void {
-        this.sidePanelService.tryClosePanel();
+    public onNodePanelClose(): void {
+        this.selectedNode.set(null);
+        this.panelComponentType.set(null);
     }
-
-    public onSidePanelSaved(updatedNode: NodeModel): void {
-        console.log('Node updated:', updatedNode);
+    public onNodePanelSaved(updatedNode: NodeModel): void {
+        console.log(
+            'Parent received save event. Calling service with:',
+            updatedNode
+        );
         this.flowService.updateNode(updatedNode);
-        this.sidePanelService.setHasUnsavedChanges(false);
-        this.sidePanelService.tryClosePanel();
+        this.onNodePanelClose();
     }
 
     public onGroupSizeChanged(event: IRect, group: GroupNodeModel): void {
@@ -755,7 +758,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         this.undoRedoService.stateChanged();
         console.log('Node size changed:', event, node);
 
-        // Create an updated node with the new size
         const updatedNode = {
             ...node,
             size: {
@@ -2093,9 +2095,9 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     public ngOnDestroy(): void {
-        this.sidePanelService.tryClosePanel().then(() => {});
-
         this.destroy$.next();
         this.destroy$.complete();
     }
+
+   
 }

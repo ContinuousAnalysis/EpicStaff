@@ -125,7 +125,7 @@ export class AgentsTableComponent {
     private toastService: ToastService,
     private realtimeAgentService: RealtimeAgentService,
     public dialog: Dialog
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadStartTime = Date.now();
@@ -213,9 +213,11 @@ export class AgentsTableComponent {
       tags: [],
       knowledge_collection: null,
       tools: [],
+      search_limit: 3,
+      similarity_threshold: '0.65',
       // Replace realtime_config with realtime_agent object using provided defaults
       realtime_agent: {
-        similarity_threshold: '0.2',
+        distance_threshold: '0.65',
         search_limit: 3,
         wake_word: '',
         stop_prompt: 'stop',
@@ -570,7 +572,7 @@ export class AgentsTableComponent {
         ...(agentData.realtime_agent || {}),
         realtime_config: realtimeConfigId,
         // Include other realtime_agent properties if they exist in agentData
-        similarity_threshold: agentData.realtime_agent?.similarity_threshold,
+        distance_threshold: agentData.realtime_agent?.distance_threshold,
         search_limit: agentData.realtime_agent?.search_limit,
         wake_word: agentData.realtime_agent?.wake_word,
         stop_prompt: agentData.realtime_agent?.stop_prompt,
@@ -799,6 +801,9 @@ export class AgentsTableComponent {
         respect_context_window: agentData.respect_context_window ?? false,
         default_temperature: agentData.default_temperature ?? null,
         knowledge_collection: agentData.knowledge_collection ?? null, // Changed parameter name
+        similarity_threshold: agentData.similarity_threshold ?? null,
+        search_limit: agentData.search_limit ?? null,
+
       },
     });
 
@@ -877,7 +882,7 @@ export class AgentsTableComponent {
     // Create or update the realtime_agent object
     const realtime_agent = {
       ...(updatedAgent.realtime_agent || {
-        similarity_threshold: '0.2',
+        distance_threshold: '0.65',
         search_limit: 3,
         wake_word: '',
         stop_prompt: 'stop',
@@ -1140,7 +1145,7 @@ export class AgentsTableComponent {
     // Create or update the realtime_agent object
     const realtime_agent = {
       ...(newAgentData.realtime_agent || {
-        similarity_threshold: '0.2',
+        distance_threshold: '0.65',
         search_limit: 3,
         wake_word: '',
         stop_prompt: 'stop',
