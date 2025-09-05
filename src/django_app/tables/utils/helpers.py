@@ -49,14 +49,3 @@ def generate_new_unique_name(base_name: str, existing_names: list[str]):
         i += 1
 
     return f"{clean_base} ({i})"
-
-
-def create_node_name(original_name: str, new_name: str):
-    """
-    Replaces the name part of a string like "Some Name (#1)"
-    with `new_name` while keeping the (#number).
-    """
-    match = re.search(r"\(#\d+\)", original_name)
-    if match:
-        return f"{new_name} {match.group(0)}"
-    return new_name

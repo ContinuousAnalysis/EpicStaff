@@ -30,7 +30,7 @@ from tables.serializers.model_serializers import (
     DecisionTableNodeSerializer,
 )
 from tables.serializers.export_serializers import NestedCrewExportSerializer
-from tables.utils.helpers import generate_new_unique_name, create_node_name
+from tables.utils.helpers import generate_new_unique_name
 from tables.services.import_services import (
     ToolsImportService,
     AgentsImportService,
@@ -966,9 +966,7 @@ class GraphImportSerializer(serializers.ModelSerializer):
             crew = crews_service.mapped_crews.get(crew_id)
 
             previous_name = node_data.pop("node_name")
-            mapped_node_names[previous_name] = create_node_name(
-                original_name=previous_name, new_name=crew.name
-            )
+            mapped_node_names[previous_name] = previous_name
 
             data = {
                 "crew_id": crew.id,
