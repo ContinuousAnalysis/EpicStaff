@@ -113,6 +113,7 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
             graph_end_message_data["uuid"] = str(uuid.uuid4())
 
             self.redis_service.publish("graph:messages", graph_end_message_data)
+            await asyncio.sleep(0.05)
             self.redis_service.update_session_status(
                 session_id=session_id, status="end"
             )
