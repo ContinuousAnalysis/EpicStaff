@@ -816,7 +816,7 @@ class MetdataNodeSerializer(serializers.Serializer):
     position = serializers.DictField()
     input_map = serializers.DictField()
     node_name = serializers.CharField()
-    output_variable_path = serializers.DictField(allow_null=True)
+    output_variable_path = serializers.CharField(required=False)
 
     def create(self, validated_data):
         mapped_crews = self.context.get("mapped_crews")
