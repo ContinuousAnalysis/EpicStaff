@@ -981,8 +981,10 @@ class GraphImportSerializer(serializers.ModelSerializer):
             serializer.save()
 
         for node_data in python_node_list_data:
-            previous_name = node_data.get("node_name")
-            mapped_node_names[previous_name] = previous_name
+            previous_name = node_data.pop("node_name")
+            mapped_node_names[previous_name] = create_node_name(
+                original_name=previous_name, new_name=crew.name
+            )
 
             data = {"node_name": mapped_node_names[previous_name], **node_data}
 
