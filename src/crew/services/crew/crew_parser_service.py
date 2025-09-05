@@ -211,7 +211,11 @@ class CrewParserService(metaclass=SingletonMeta):
                 ),
                 wait_for_user_callback=crew_callback_factory.get_wait_for_user_callback(
                     crew_knowledge_collection_id=crew_data.knowledge_collection_id,
+                    crew_similarity_threshold=crew_data.similarity_threshold,
+                    crew_search_limit=crew_data.search_limit,
                     agent_knowledge_collection_id=agent_data.knowledge_collection_id,
+                    agent_similarity_threshold=agent_data.similarity_threshold,
+                    agent_search_limit=agent_data.search_limit,
                 ),
                 inputs=inputs,
                 tool_list=tool_list,
