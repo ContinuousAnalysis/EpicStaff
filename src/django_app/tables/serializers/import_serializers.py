@@ -816,7 +816,7 @@ class MetdataNodeSerializer(serializers.Serializer):
     position = serializers.DictField()
     input_map = serializers.DictField()
     node_name = serializers.CharField()
-    output_variable_path = serializers.CharField(required=False)
+    output_variable_path = serializers.CharField(required=False, allow_null=True)
 
     def create(self, validated_data):
         mapped_crews = self.context.get("mapped_crews")
@@ -949,7 +949,7 @@ class GraphImportSerializer(serializers.ModelSerializer):
             agents_service = AgentsImportService(agents_data)
             agents_service.create_agents(tools_service, llm_configs_service)
 
-        if realtime_agents_data:
+        if realtime_agents_data and agents_data:
             realtime_agents_serializer = RealtimeDataImportSerializer(
                 context={"mapped_agents": agents_service.mapped_agents}
             )
@@ -981,10 +981,8 @@ class GraphImportSerializer(serializers.ModelSerializer):
             serializer.save()
 
         for node_data in python_node_list_data:
-            previous_name = node_data.pop("node_name")
-            mapped_node_names[previous_name] = create_node_name(
-                original_name=previous_name, new_name=crew.name
-            )
+            previous_name = node_data.get("node_name")
+            mapped_node_names[previous_name] = previous_name
 
             data = {"node_name": mapped_node_names[previous_name], **node_data}
 
@@ -1023,13 +1021,11 @@ class GraphImportSerializer(serializers.ModelSerializer):
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
-        metadata_serializer = GraphMetadataSerializer(
-            data=metadata,
-            context={
-                "mapped_crews": crews_service.mapped_crews,
-                "mapped_node_names": mapped_node_names,
-            },
-        )
+        context = {"mapped_node_names": mapped_node_names}
+        if crews_service:
+            context["mapped_crews"] = crews_service.mapped_crews
+
+        metadata_serializer = GraphMetadataSerializer(data=metadata, context=context)
         metadata_serializer.is_valid(raise_exception=True)
         graph.metadata = metadata_serializer.save()
         graph.save()
