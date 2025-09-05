@@ -1,4 +1,4 @@
-from tables.models import TaskPythonCodeTools, TaskConfiguredTools
+from tables.models import TaskPythonCodeTools, TaskConfiguredTools, TaskContext
 
 
 class ToolsImportService:
@@ -226,6 +226,33 @@ class AgentsImportService:
 
         task.agent = agent
         task.save()
+
+
+class TasksImportService:
+
+    def __init__(self):
+        from tables.serializers.import_serializers import TaskImportSerializer
+
+        self.serializer_class = TaskImportSerializer
+        self.mapped_tasks = {}
+
+    def create_task(self, task_data, crew):
+        current_id = task_data.pop("id", None)
+
+        serializer = self.serializer_class(data=task_data, context={"crew": crew})
+        serializer.is_valid(raise_exception=True)
+        task = serializer.save()
+
+        self.mapped_tasks[current_id] = task
+        return task
+
+    def add_task_context(self, task, context_ids):
+        for id_ in context_ids:
+            context = self.mapped_tasks.get(id_)
+            if not context:
+                continue
+
+            TaskContext.objects.create(task=task, context=context)
 
 
 class CrewsImportService:

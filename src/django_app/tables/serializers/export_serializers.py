@@ -213,6 +213,7 @@ class NestedAgentExportSerializer(AgentExportSerializer):
 class TaskExportSerializer(serializers.ModelSerializer):
 
     tools = serializers.SerializerMethodField()
+    context_tasks = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
@@ -227,6 +228,9 @@ class TaskExportSerializer(serializers.ModelSerializer):
                 task.task_configured_tool_list.all().values_list("tool_id", flat=True)
             ),
         }
+
+    def get_context_tasks(self, task: Task):
+        return list(task.task_context_list.values_list("context_id", flat=True))
 
 
 class CrewExportSerializer(serializers.ModelSerializer):

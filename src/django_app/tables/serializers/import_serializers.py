@@ -39,6 +39,7 @@ from tables.services.import_services import (
     RealtimeConfigsImportService,
     RealtimeTranscriptionConfigsImportService,
     RealtimeAgentImportService,
+    TasksImportService,
 )
 
 
@@ -594,15 +595,18 @@ class NestedAgentImportSerializer(AgentImportSerializer):
 class TaskImportSerializer(serializers.ModelSerializer):
 
     agent = serializers.IntegerField(required=False, allow_null=True)
-    tools = serializers.DictField(required=False)
+    tools = serializers.DictField(required=False, allow_null=True)
+    context_tasks = serializers.ListField(
+        child=serializers.IntegerField(), required=False, allow_null=True
+    )
 
     class Meta:
         model = Task
-        exclude = ["id", "crew"]
+        exclude = ["crew"]
+        extra_kwargs = {"id": {"required": False, "read_only": False}}
         validators = []
 
     def create(self, validated_data):
-        validated_data.pop("agent", None)
         crew = self.context.get("crew")
         if not crew:
             raise serializers.ValidationError("Task cannot be created without crew")
@@ -644,6 +648,8 @@ class CrewImportSerializer(serializers.ModelSerializer):
         embedding_config = None
         tools_service = None
 
+        tasks_service = TasksImportService()
+
         if embedding_config_data:
             embedding_config = EmbeddingConfigImportSerializer().create(
                 embedding_config_data
@@ -682,7 +688,8 @@ class CrewImportSerializer(serializers.ModelSerializer):
             agent.fcm_llm_config = llm_configs_service.get_config(fcm_llm_config_id)
             agent.save()
 
-            tools_service.assign_tools_to_agent(agent, tool_ids_data)
+            if tools_service:
+                tools_service.assign_tools_to_agent(agent, tool_ids_data)
 
             new_agents[current_id] = agent
 
@@ -698,16 +705,19 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
         for t_data in tasks_data:
             tool_ids_data = t_data.pop("tools", {})
+            context_ids = t_data.pop("context_tasks", [])
+            agent_id = t_data.pop("agent", None)
 
-            task_serializer = TaskImportSerializer(data=t_data, context={"crew": crew})
-            task_serializer.is_valid(raise_exception=True)
-            task = task_serializer.save()
+            task = tasks_service.create_task(t_data, crew)
 
-            agent = new_agents.get(t_data.get("agent"))
-            task.agent = agent
-            task.save()
+            if agent_id:
+                agent = new_agents.get(agent_id)
+                task.agent = agent
+                task.save()
 
-            tools_service.assign_tools_to_task(task, tool_ids_data)
+            tasks_service.add_task_context(task, context_ids)
+            if tools_service:
+                tools_service.assign_tools_to_task(task, tool_ids_data)
 
         return crew
 
