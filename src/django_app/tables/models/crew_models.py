@@ -118,11 +118,13 @@ class Agent(AbstractDefaultFillableModel):
     def get_default_model(self):
         return DefaultAgentConfig.load()
 
-    def get_crew_temperature(self, crew_id: int) -> float | None:
-        crew_temperature = Crew.objects.get(id=crew_id).default_temperature
-        return crew_temperature
+    def get_crew_temperature(self, crew_id: int | None) -> float | None:
+        if crew_id is not None:
+            crew_temperature = Crew.objects.get(id=crew_id).default_temperature
+            return crew_temperature
+        return None
 
-    def fill_with_defaults(self, crew_id: int):
+    def fill_with_defaults(self, crew_id: int | None):
 
         if self.llm_config is not None:
             if self.default_temperature is not None:

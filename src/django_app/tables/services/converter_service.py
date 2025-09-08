@@ -210,7 +210,7 @@ class ConverterService(metaclass=SingletonMeta):
         self, rt_agent_chat: RealtimeAgentChat
     ) -> RealtimeAgentChatData:
 
-        agent: Agent = rt_agent_chat.rt_agent.agent.fill_with_defaults()
+        agent: Agent = rt_agent_chat.rt_agent.agent.fill_with_defaults(crew_id=None)
 
         rt_config: RealtimeConfig = rt_agent_chat.realtime_config
         rt_transcription_config: RealtimeTranscriptionConfig = (
