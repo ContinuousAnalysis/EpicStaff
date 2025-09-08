@@ -812,11 +812,13 @@ class MetdataNodeSerializer(serializers.Serializer):
     color = serializers.CharField()
     ports = serializers.DictField(allow_null=True)
     category = serializers.CharField()
-    parentId = serializers.CharField(allow_null=True)
+    parentId = serializers.CharField(allow_null=True, allow_blank=True)
     position = serializers.DictField()
     input_map = serializers.DictField()
     node_name = serializers.CharField()
-    output_variable_path = serializers.CharField(required=False, allow_null=True)
+    output_variable_path = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
 
     def create(self, validated_data):
         mapped_crews = self.context.get("mapped_crews")
