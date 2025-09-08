@@ -299,11 +299,10 @@ class CrewsImportService:
                 for t_data in tasks_data:
                     tool_ids_data = t_data.pop("tools", {})
                     context_ids = t_data.pop("context_tasks", [])
+                    agent_id = t_data.pop("agent", None)
 
                     task = task_service.create_task(t_data, crew)
                     task_service.add_task_context(task, context_ids)
-
-                    agent_id = t_data.get("agent")
 
                     tools_service.assign_tools_to_task(task, tool_ids_data)
                     if agents_service:
