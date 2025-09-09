@@ -38,6 +38,8 @@ interface InputMapPair {
                         tooltipText="The unique identifier used to reference this conditional edge. This name must be unique within the flow."
                         formControlName="node_name"
                         placeholder="Enter node name"
+                        [activeColor]="activeColor"
+                        [errorMessage]="getNodeNameErrorMessage()"
                     ></app-custom-input>
 
                     <!-- Input Map Key-Value Pairs -->
@@ -70,6 +72,7 @@ interface InputMapPair {
                         tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
                         formControlName="libraries"
                         placeholder="Enter libraries (e.g., requests, pandas, numpy)"
+                        [activeColor]="activeColor"
                     ></app-custom-input>
                 </form>
             </div>
@@ -147,7 +150,7 @@ export class ConditionalEdgeNodePanelComponent extends BaseSidePanel<EdgeNodeMod
      */
     protected initializeForm(): FormGroup {
         const form = this.fb.group({
-            node_name: [this.node().node_name, Validators.required],
+            node_name: [this.node().node_name, this.createNodeNameValidators()],
             input_map: this.fb.array([]),
             output_variable_path: [this.node().output_variable_path || ''],
             libraries: [
@@ -218,6 +221,14 @@ export class ConditionalEdgeNodePanelComponent extends BaseSidePanel<EdgeNodeMod
                     })
                 );
             });
+        } else {
+            // Always add at least one empty input map pair
+            inputMapArray.push(
+                this.fb.group({
+                    key: [''],
+                    value: [''],
+                })
+            );
         }
     }
 

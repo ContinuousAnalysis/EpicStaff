@@ -59,6 +59,7 @@ export class NodePanelShellComponent {
     public readonly node = input<NodeModel | null>(null);
     public readonly panelComponent = input<Type<NodePanel<any>> | null>(null);
     public readonly save = output<NodeModel>();
+    public readonly close = output<void>();
 
     protected readonly outlet = viewChild(NgComponentOutlet);
     protected readonly componentInputs = computed(() => ({
@@ -82,6 +83,12 @@ export class NodePanelShellComponent {
         if (instance.save && typeof instance.save.emit === 'function') {
             instance.save.subscribe((node: NodeModel) => {
                 this.save.emit(node);
+            });
+        }
+
+        if (instance.close && typeof instance.close.emit === 'function') {
+            instance.close.subscribe(() => {
+                this.close.emit();
             });
         }
     }

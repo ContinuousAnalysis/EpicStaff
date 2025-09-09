@@ -38,6 +38,8 @@ interface InputMapPair {
                         tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
                         formControlName="node_name"
                         placeholder="Enter node name"
+                        [activeColor]="activeColor"
+                        [errorMessage]="getNodeNameErrorMessage()"
                     ></app-custom-input>
 
                     <!-- Input Map Key-Value Pairs -->
@@ -53,6 +55,7 @@ interface InputMapPair {
                         tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
                         formControlName="output_variable_path"
                         placeholder="Enter output variable path (leave empty for null)"
+                        [activeColor]="activeColor"
                     ></app-custom-input>
 
                     <!-- Code Editor Component -->
@@ -70,6 +73,7 @@ interface InputMapPair {
                         tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
                         formControlName="libraries"
                         placeholder="Enter libraries (e.g., requests, pandas, numpy)"
+                        [activeColor]="activeColor"
                     ></app-custom-input>
                 </form>
             </div>
@@ -142,7 +146,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
     protected initializeForm(): FormGroup {
         const form = this.fb.group({
-            node_name: [this.node().node_name, Validators.required],
+            node_name: [this.node().node_name, this.createNodeNameValidators()],
             input_map: this.fb.array([]),
             output_variable_path: [this.node().output_variable_path || ''],
             libraries: [this.node().data.libraries?.join(', ') || ''],
@@ -197,6 +201,14 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
                     })
                 );
             });
+        } else {
+            // Always add at least one empty input map pair
+            inputMapArray.push(
+                this.fb.group({
+                    key: [''],
+                    value: [''],
+                })
+            );
         }
     }
 
