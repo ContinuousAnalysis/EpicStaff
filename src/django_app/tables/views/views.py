@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from collections import defaultdict
 import uuid
+import base64
 
 from tables.models import Tool
 from tables.models import Crew
@@ -59,6 +60,9 @@ from tables.serializers.quickstart_serializers import QuickstartSerializer
 from tables.filters import SessionFilter
 
 from .default_config import *
+
+
+MAX_TOTAL_FILE_SIZE = 15 * 1024 * 1024  # 15MB
 
 redis_service = RedisService()
 # TODO: fix. Do we need init converter_service here? Instance is not used.
@@ -205,12 +209,35 @@ class RunSession(APIView):
     def post(self, request):
         logger.info("Received POST request to start a new session.")
 
-        serializer = RunSessionSerializer(data=request.data)
+        data = request.data.copy()
+
+        total_size = sum(f.size for f in request.FILES.values())
+        if total_size > MAX_TOTAL_FILE_SIZE:
+            return Response(
+                {
+                    "files": [
+                        f"Total files size exceeds 15 MB (got {total_size/1024/1024:.2f} MB)"
+                    ]
+                },
+                status=400,
+            )
+
+        files_dict = {}
+        for key, file in request.FILES.items():
+            file_bytes = file.read()
+            files_dict[key] = base64.b64encode(file_bytes).decode("utf-8")
+
+        data["files"] = files_dict
+
+        serializer = RunSessionSerializer(data=data)
         if not serializer.is_valid():
             logger.warning(f"Invalid data received in request: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         graph_id = serializer.validated_data["graph_id"]
-        variables = serializer.validated_data.get("variables")
+        variables = serializer.validated_data.get("variables", {})
+
+        variables["files"] = files_dict
+
         try:
             # Publish session to: crew, maanger
             session_id = session_manager_service.run_session(
