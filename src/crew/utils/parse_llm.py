@@ -31,7 +31,7 @@ def parse_memory_llm(memory_llm: LLMData):
 
 
 def parse_memory_embedder(memory_embedder):
-    # add dims (can be cause of bugs)
+    # TODO: add dims (can be cause of bugs)
     memory_embedder = memory_embedder.model_dump()
     provider = memory_embedder.get("provider")
     config = memory_embedder.get("config")
