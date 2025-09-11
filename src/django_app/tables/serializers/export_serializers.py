@@ -1,3 +1,4 @@
+from enum import Enum
 from rest_framework import serializers
 from django.db.models import Prefetch
 
@@ -20,6 +21,12 @@ from tables.serializers.model_serializers import (
     PythonNodeSerializer,
     ConditionalEdgeSerializer,
 )
+
+
+class EntityType(str, Enum):
+    AGENT = "Agent"
+    CREW = "Project"
+    GRAPH = "Flow"
 
 
 class PythonCodeExportSerializer(serializers.ModelSerializer):
@@ -161,6 +168,7 @@ class AgentExportSerializer(serializers.ModelSerializer):
     llm_config = LLMConfigExportSerializer()
     fcm_llm_config = LLMConfigExportSerializer()
     realtime_agent = RealtimeAgentExportSerializer()
+    entity_type = serializers.SerializerMethodField()
 
     class Meta:
         model = Agent
@@ -179,6 +187,9 @@ class AgentExportSerializer(serializers.ModelSerializer):
                 instance=agent.configured_tools.all(), many=True
             ).data,
         }
+
+    def get_entity_type(self, *args, **kwargs):
+        return EntityType.AGENT.value
 
 
 class NestedAgentExportSerializer(AgentExportSerializer):
@@ -239,6 +250,7 @@ class CrewExportSerializer(serializers.ModelSerializer):
     tasks = serializers.SerializerMethodField()
     tools = serializers.SerializerMethodField()
     realtime_agents = serializers.SerializerMethodField()
+    entity_type = serializers.SerializerMethodField()
 
     embedding_config = EmbeddingConfigExportSerializer(required=False, allow_null=True)
 
@@ -358,6 +370,9 @@ class CrewExportSerializer(serializers.ModelSerializer):
         serializer = RealtimeDataExportSerializer(data)
         return serializer.data
 
+    def get_entity_type(self, *args, **kwargs):
+        return EntityType.CREW.value
+
 
 class NestedCrewExportSerializer(CrewExportSerializer):
 
@@ -402,6 +417,7 @@ class GraphExportSerializer(GraphSerializer):
     tools = serializers.SerializerMethodField()
     llm_configs = serializers.SerializerMethodField()
     realtime_agents = serializers.SerializerMethodField()
+    entity_type = serializers.SerializerMethodField()
 
     class Meta(GraphSerializer.Meta):
         fields = "__all__"
@@ -518,3 +534,6 @@ class GraphExportSerializer(GraphSerializer):
         }
         serializer = RealtimeDataExportSerializer(data)
         return serializer.data
+
+    def get_entity_type(self, *args, **kwargs):
+        return EntityType.GRAPH.value

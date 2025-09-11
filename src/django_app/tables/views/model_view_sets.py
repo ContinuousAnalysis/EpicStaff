@@ -61,6 +61,7 @@ from tables.serializers.export_serializers import (
     AgentExportSerializer,
     CrewExportSerializer,
     GraphExportSerializer,
+    EntityType,
 )
 from tables.serializers.import_serializers import (
     AgentImportSerializer,
@@ -341,6 +342,15 @@ class AgentViewSet(ModelViewSet):
                 {"message": "Invalid JSON file"}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        entity_type = data.pop("entity_type", None)
+        if entity_type != EntityType.AGENT.value:
+            return Response(
+                {
+                    "message": f"Provided wrong entity. Got: {entity_type}. Expected: {EntityType.AGENT.value}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
@@ -404,6 +414,15 @@ class CrewReadWriteViewSet(ModelViewSet):
         except json.JSONDecodeError:
             return Response(
                 {"message": "Invalid JSON file"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        entity_type = data.pop("entity_type", None)
+        if entity_type != EntityType.CREW.value:
+            return Response(
+                {
+                    "message": f"Provided wrong entity. Got: {entity_type}. Expected: {EntityType.CREW.value}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         serializer = self.get_serializer(data=data)
@@ -597,6 +616,15 @@ class GraphViewSet(viewsets.ModelViewSet):
         except json.JSONDecodeError:
             return Response(
                 {"message": "Invalid JSON file"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        entity_type = data.pop("entity_type", None)
+        if entity_type != EntityType.GRAPH.value:
+            return Response(
+                {
+                    "message": f"Provided wrong entity. Got: {entity_type}. Expected: {EntityType.GRAPH.value}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         serializer = self.get_serializer(data=data)
