@@ -22,6 +22,7 @@ from tables.request_models import (
     GraphSessionMessageData,
     LLMNodeData,
     PythonNodeData,
+    FileExtractorNodeData,
     SessionData,
 )
 
@@ -31,6 +32,7 @@ from tables.models import (
     Edge,
     Graph,
     PythonNode,
+    FileExtractorNode,
 )
 
 
@@ -90,6 +92,7 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         crew_node_list = CrewNode.objects.filter(graph=graph.pk)
         python_node_list = PythonNode.objects.filter(graph=graph.pk)
+        file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
         edge_list = Edge.objects.filter(graph=graph.pk)
         conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
@@ -106,6 +109,16 @@ class SessionManagerService(metaclass=SingletonMeta):
         for item in python_node_list:
             python_node_data_list.append(
                 self.converter_service.convert_python_node_to_pydantic(python_node=item)
+            )
+
+        file_extractor_node_data_list: list[FileExtractorNodeData] = []
+        for item in file_extractor_node_list:
+            file_extractor_node_data_list.append(
+                FileExtractorNodeData(
+                    node_name=item.node_name,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                )
             )
 
         llm_node_data_list: list[LLMNodeData] = []
@@ -147,6 +160,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             name=graph.name,
             crew_node_list=crew_node_data_list,
             python_node_list=python_node_data_list,
+            file_extractor_node_list=file_extractor_node_data_list,
             llm_node_list=llm_node_data_list,
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,

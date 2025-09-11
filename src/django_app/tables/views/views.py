@@ -225,7 +225,11 @@ class RunSession(APIView):
         files_dict = {}
         for key, file in request.FILES.items():
             file_bytes = file.read()
-            files_dict[key] = base64.b64encode(file_bytes).decode("utf-8")
+            files_dict[key] = {
+                "name": file.name,
+                "data": base64.b64encode(file_bytes).decode("utf-8"),
+                "content_type": file.content_type,
+            }
 
         data["files"] = files_dict
 
