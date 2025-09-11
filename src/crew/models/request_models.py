@@ -122,7 +122,7 @@ class AgentData(BaseModel):
     function_calling_llm: LLMData | None
     knowledge_collection_id: int | None
     search_limit: int | None
-    distance_threshold: float | None
+    similarity_threshold: float | None
 
 
 class RealtimeAgentData(BaseModel):
@@ -160,7 +160,7 @@ class CrewData(BaseModel):
     tools: List[BaseToolData] = []
     knowledge_collection_id: int | None
     search_limit: int | None
-    distance_threshold: float | None
+    similarity_threshold: float | None
 
 
 class TaskData(BaseModel):
@@ -293,4 +293,4 @@ class KnowledgeSearchMessage(BaseModel):
     uuid: str
     query: str
     search_limit: int | None
-    distance_threshold: float | None
+    similarity_threshold: float | None

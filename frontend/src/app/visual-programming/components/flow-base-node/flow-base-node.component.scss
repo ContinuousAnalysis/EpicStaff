@@ -1,474 +1,481 @@
 @use "../../styles/flow-node-mixins.scss" as mixins;
 
 :host {
-  position: relative;
-  background-color: red;
-
-  background: var(--color-nodes-background);
-
-  border-radius: 16px;
-
-  .node-name-wrapper {
-    position: absolute;
-    top: -24px;
-    width: 100%;
-    display: flex;
-    pointer-events: none;
-  }
-
-  .node-name-label {
-    background-color: var(--color-nodes-actionbar-bg);
-    color: #ccc;
-    font-size: 12px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    opacity: 0;
-  }
-
-  // Control buttons wrapper - positioned above the node
-  .actions {
-    display: flex;
-    opacity: 0;
-    position: absolute;
-    right: 0;
-    top: -45px;
-    gap: 8px;
-    z-index: 11;
-    padding: 8px;
-    border-radius: 8px;
-    transition: opacity 0.2s ease;
-
-    // Create a larger hit area before the actions
-    &::before {
-      content: "";
-      position: absolute;
-      top: -20px;
-      left: -20px;
-      right: -20px;
-      bottom: -20px;
-      background: transparent;
-      z-index: -1;
-    }
-
-    // Additional transparent zone for smoother transitions
-    &::after {
-      content: "";
-      position: absolute;
-      top: -30px;
-      left: -30px;
-      right: -30px;
-      bottom: 0;
-      background: transparent;
-      z-index: -2;
-    }
-  }
-
-  .action-button {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    background-color: #2a2a2a;
-    transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
-
-    &:active:not(.disabled) {
-      transform: scale(0.85);
-      background-color: #444;
-    }
-
-    &:hover {
-      background-color: #3a3a3a;
-    }
-
-    &.edit-button i {
-      color: #aaa;
-      font-size: 16px;
-
-      &:hover {
-        color: #fff;
-      }
-    }
-
-    &.toggle-button i {
-      color: var(--accent-color, #2196f3);
-      font-size: 16px;
-
-      &.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        pointer-events: none;
-      }
-    }
-
-    &.ungroup-button i {
-      color: var(--accent-color, #2196f3);
-      font-size: 16px;
-    }
-  }
-
-  .interactive-node-body {
-    display: flex;
     position: relative;
-    flex-direction: column;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    background-color: var(--color-nodes-background);
-    border: 2px solid var(--color-divider-subtle);
-    cursor: pointer;
-    padding: 1rem;
-    border-radius: 16px;
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
+    background-color: red;
 
-      .icon-wrapper {
+    background: var(--color-nodes-background);
+
+    border-radius: 16px;
+
+    .node-name-wrapper {
+        position: absolute;
+        top: -24px;
+        width: 100%;
+        display: flex;
+        pointer-events: none;
+    }
+
+    .node-name-label {
+        background-color: var(--color-nodes-actionbar-bg);
+        color: #ccc;
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        opacity: 0;
+    }
+
+    // Control buttons wrapper - positioned above the node
+    .actions {
+        display: flex;
+        opacity: 0;
+        position: absolute;
+        right: 0;
+        top: -45px;
+        gap: 8px;
+        z-index: 11;
+        padding: 8px;
+        border-radius: 8px;
+        transition: opacity 0.2s ease;
+
+        // Create a larger hit area before the actions
+        &::before {
+            content: "";
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: transparent;
+            z-index: -1;
+        }
+
+        // Additional transparent zone for smoother transitions
+        &::after {
+            content: "";
+            position: absolute;
+            top: -30px;
+            left: -30px;
+            right: -30px;
+            bottom: 0;
+            background: transparent;
+            z-index: -2;
+        }
+    }
+
+    .action-button {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer;
+        background-color: #2a2a2a;
+        transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
 
-        i {
-          color: var(--python-node-accent-color);
-          font-size: 25px;
+        &:active:not(.disabled) {
+            transform: scale(0.85);
+            background-color: #444;
         }
-      }
 
-      .title {
-        font-size: 16px;
-        font-weight: 500;
-        letter-spacing: 0.5px;
-        color: inherit;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-    }
+        &:hover {
+            background-color: #3a3a3a;
+        }
 
-    .node-details {
-      margin-top: 1rem;
-    }
-  }
+        &.edit-button i {
+            color: #aaa;
+            font-size: 16px;
 
-  &:hover {
-    .interactive-node-body {
-      border-color: var(--color-divider-regular);
-    }
-    .selected-background {
-      //   background-color: var(--vp-hover-node-background-color);
-      //   display: block;
-    }
+            &:hover {
+                color: #fff;
+            }
+        }
 
-    .node-name-label {
-      opacity: 1;
-    }
+        &.toggle-button i {
+            color: var(--accent-color, #2196f3);
+            font-size: 16px;
 
-    .port-wrapper .port-label {
-      opacity: 1;
-    }
+            &.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+        }
 
-    .actions {
-      opacity: 1;
-    }
-  }
-
-  &.f-selected {
-    .node-name-label {
-      opacity: 1;
-    }
-    .port-wrapper .port-label {
-      opacity: 1;
-    }
-    .selected-background {
-      //   display: block;
+        &.ungroup-button i {
+            color: var(--accent-color, #2196f3);
+            font-size: 16px;
+        }
     }
 
     .interactive-node-body {
-      border-color: var(--vp-selected-node-border-color) !important;
+        display: flex;
+        position: relative;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        background-color: var(--color-nodes-background);
+        border: 2px solid var(--color-divider-subtle);
+        cursor: pointer;
+        padding: 1rem;
+        border-radius: 16px;
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+
+            .icon-wrapper {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                i {
+                    color: var(--python-node-accent-color);
+                    font-size: 25px;
+                }
+            }
+
+            .title {
+                font-size: 16px;
+                font-weight: 500;
+                letter-spacing: 0.5px;
+                color: inherit;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+
+        .node-details {
+            margin-top: 1rem;
+        }
     }
 
-    .actions {
-      opacity: 1;
+    &:hover {
+        .interactive-node-body {
+            border-color: var(--color-divider-regular);
+        }
+        .selected-background {
+            //   background-color: var(--vp-hover-node-background-color);
+            //   display: block;
+        }
+
+        .node-name-label {
+            opacity: 1;
+        }
+
+        .port-wrapper .port-label {
+            opacity: 1;
+        }
+
+        .actions {
+            opacity: 1;
+        }
     }
-  }
 
-  // Port styles
-  .port-wrapper {
-    @include mixins.port-wrapper-default;
+    &.f-selected {
+        .node-name-label {
+            opacity: 1;
+        }
+        .port-wrapper .port-label {
+            opacity: 1;
+        }
+        .selected-background {
+            //   display: block;
+        }
 
-    .port-circle {
-      @include mixins.port-circle-default;
+        .interactive-node-body {
+            border-color: var(--vp-selected-node-border-color) !important;
+        }
+
+        .actions {
+            opacity: 1;
+        }
     }
-  }
 
-  // Port position mixins
-  .port-position-left {
-    @include mixins.port-position-left-default;
-  }
+    // Port styles
+    .port-wrapper {
+        @include mixins.port-wrapper-default;
 
-  .port-position-right {
-    @include mixins.port-position-right-default;
-  }
+        .port-circle {
+            @include mixins.port-circle-default;
+        }
+    }
 
-  .port-position-top {
-    @include mixins.port-position-top-default;
-  }
+    // Port position mixins
+    .port-position-left {
+        @include mixins.port-position-left-default;
+    }
 
-  .port-position-bottom {
-    @include mixins.port-position-bottom-default;
-  }
+    .port-position-right {
+        @include mixins.port-position-right-default;
+    }
+
+    .port-position-top {
+        @include mixins.port-position-top-default;
+    }
+
+    .port-position-bottom {
+        @include mixins.port-position-bottom-default;
+    }
 }
 
 // Specific host node types
 :host(.type-agent) {
-  .port-position-top {
-    @include mixins.agent-port-top-indexes;
-  }
+    .port-position-top {
+        @include mixins.agent-port-top-indexes;
+    }
 
-  .port-position-bottom {
-    @include mixins.agent-port-bottom-indexes;
-  }
+    .port-position-bottom {
+        @include mixins.agent-port-bottom-indexes;
+    }
 }
 
 :host(.type-task) {
-  .port-position-top {
-    @include mixins.task-port-top-indexes;
-  }
+    .port-position-top {
+        @include mixins.task-port-top-indexes;
+    }
 
-  .port-position-right {
-    @include mixins.task-port-right-indexes;
-  }
+    .port-position-right {
+        @include mixins.task-port-right-indexes;
+    }
 
-  .port-position-bottom {
-    @include mixins.task-port-bottom-indexes;
-  }
+    .port-position-bottom {
+        @include mixins.task-port-bottom-indexes;
+    }
 
-  .port-position-left {
-    @include mixins.task-port-left-indexes;
-  }
+    .port-position-left {
+        @include mixins.task-port-left-indexes;
+    }
 }
 
 :host(.type-start) {
-  width: 122px;
+    width: 122px;
 }
 
 :host(.type-project) {
-  .port-position-top {
-    @include mixins.project-port-top-indexes;
-  }
+    .port-position-top {
+        @include mixins.project-port-top-indexes;
+    }
 }
 
 :host(.type-python) {
-  .port-position-top {
-    @include mixins.python-port-top-indexes;
-  }
+    .port-position-top {
+        @include mixins.python-port-top-indexes;
+    }
 }
 
 :host(.type-table) {
-  .port-position-left {
-    @include mixins.table-port-left-indexes;
-  }
+    .port-position-left {
+        @include mixins.table-port-left-indexes;
+    }
 }
 
 :host(.type-edge) {
-  // Make the node container fit the SVG
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-  .port-position-left {
-    left: 8px !important;
-    top: 50%;
-    transform: translateY(-50%);
-  }
+    --edge-node-border-color: var(--color-divider-subtle);
 
-  .port-position-right {
-    right: 8px !important;
-    top: 50%;
-    transform: translateY(-50%);
-  }
+    .port-position-left {
+        left: 8px !important;
+        top: 50%;
+        transform: translateY(-50%);
+    }
 
-  background-color: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  width: auto;
-  height: auto;
+    .port-position-right {
+        right: 8px !important;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    width: auto;
+    height: auto;
+
+    &.f-selected {
+        --edge-node-border-color: var(--vp-selected-node-border-color);
+    }
 }
 
 :host(.type-note) {
-  // Make the node container fit the note component
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    // Make the node container fit the note component
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-  background-color: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 0;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
 
-  // Fill the entire node container with the component
-  app-note-node {
-    width: 100%;
-    height: 100%;
-  }
-
-  // Make sure edit button is visible on hover
-  &:hover {
-    .actions {
-      opacity: 1;
+    // Fill the entire node container with the component
+    app-note-node {
+        width: 100%;
+        height: 100%;
+        min-height: 100px;
+        min-width: 100px;
     }
-  }
 
-  // Keep edit button visible when selected
-  &.f-selected {
-    .actions {
-      opacity: 1;
+    // Make sure edit button is visible on hover
+    &:hover {
+        .actions {
+            opacity: 1;
+        }
     }
-  }
+
+    // Keep edit button visible when selected
+    &.f-selected {
+        .actions {
+            opacity: 1;
+        }
+    }
 }
 
 .inputs-overlay {
-  position: absolute;
-  left: -18rem;
-  bottom: calc(100% + 8px);
-  min-width: 120px;
-  background: rgba(30, 30, 30, 0.92);
-  color: var(--color-text-primary);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  padding: 8px 12px;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  border: 1.5px solid var(--color-divider-subtle, #333);
-  max-height: 220px;
-  overflow: auto;
-
-  width: 18rem;
-
-  .input-item {
+    position: absolute;
+    left: -18rem;
+    bottom: calc(100% + 8px);
+    min-width: 120px;
+    background: rgba(30, 30, 30, 0.92);
+    color: var(--color-text-primary);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    padding: 8px 12px;
+    z-index: 30;
     display: flex;
-    gap: 0.5em;
+    flex-direction: column;
+    gap: 4px;
+
+    border: 1.5px solid var(--color-divider-subtle, #333);
+    max-height: 220px;
+    overflow: auto;
+
+    width: 18rem;
+
+    .input-item {
+        display: flex;
+        gap: 0.5em;
+        align-items: center;
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .input-key {
+        font-weight: 600;
+        color: var(--color-text-primary);
+        max-width: 5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+    }
+    .input-value {
+        color: var(--color-text-secondary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+    }
+}
+
+.output-overlay {
+    width: 12rem;
+    position: absolute;
+    right: -12rem;
+    bottom: calc(100% + 8px);
+    min-width: 100px;
+    background: rgba(30, 30, 30, 0.92);
+    color: var(--color-text-primary);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    padding: 8px 12px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    pointer-events: none;
+    border: 1.5px solid var(--color-divider-subtle, #333);
+    max-height: 220px;
+    overflow-y: auto;
+
+    .output-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+    }
+}
+
+.inputs-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: transparent;
+    margin-bottom: 0;
+
+    td {
+        border: 1px solid var(--color-divider-subtle, #333);
+        padding: 2px 4px;
+        background: rgba(255, 255, 255, 0.01);
+        font-size: 12px;
+        vertical-align: middle;
+
+        &:nth-child(2) {
+            max-width: 8rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+    tr:not(:last-child) td {
+        border-bottom: 1px solid var(--color-divider-subtle, #333);
+    }
+}
+
+.inputs-list {
+    width: 100%;
+    font-size: 12px;
+}
+
+.input-item {
+    display: flex;
     align-items: center;
-    font-size: 13px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .input-key {
+    padding: 2px 0;
+}
+
+.input-key {
     font-weight: 600;
     color: var(--color-text-primary);
     max-width: 5rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    display: inline-block;
-  }
-  .input-value {
+    padding: 2px 4px;
+}
+
+.equals-sign {
+    color: #fff;
+    margin: 0 2px;
+}
+
+.input-value {
     color: var(--color-text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    display: inline-block;
-  }
-}
-
-.output-overlay {
-  width: 12rem;
-  position: absolute;
-  right: -12rem;
-  bottom: calc(100% + 8px);
-  min-width: 100px;
-  background: rgba(30, 30, 30, 0.92);
-  color: var(--color-text-primary);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  padding: 8px 12px;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  pointer-events: none;
-  border: 1.5px solid var(--color-divider-subtle, #333);
-  max-height: 220px;
-  overflow-y: auto;
-
-  .output-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: inline-block;
-  }
-}
-
-.inputs-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: transparent;
-  margin-bottom: 0;
-
-  td {
-    border: 1px solid var(--color-divider-subtle, #333);
     padding: 2px 4px;
-    background: rgba(255, 255, 255, 0.01);
-    font-size: 12px;
-    vertical-align: middle;
-
-    &:nth-child(2) {
-      max-width: 8rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-  tr:not(:last-child) td {
-    border-bottom: 1px solid var(--color-divider-subtle, #333);
-  }
-}
-
-.inputs-list {
-  width: 100%;
-  font-size: 12px;
-}
-
-.input-item {
-  display: flex;
-  align-items: center;
-  padding: 2px 0;
-}
-
-.input-key {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  max-width: 5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 2px 4px;
-}
-
-.equals-sign {
-  color: #fff;
-  margin: 0 2px;
-}
-
-.input-value {
-  color: var(--color-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 2px 4px;
-  flex: 1;
+    flex: 1;
 }

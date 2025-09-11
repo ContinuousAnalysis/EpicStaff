@@ -20,7 +20,6 @@ import { AddProjectCardComponent } from './add-project-card/add-project-card.com
 import { LoadingSpinnerComponent } from '../../../../../../shared/components/loading-spinner/loading-spinner.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Dialog } from '@angular/cdk/dialog';
-import { ProjectTagsDialogComponent } from '../../../../components/project-tags-dialog/project-tags-dialog.component';
 import { ProjectTagsApiService } from '../../../../services/project-tags-api.service';
 import { CreateProjectComponent } from '../../../../components/create-project-form-dialog/create-project.component';
 import { ConfirmationDialogComponent } from '../../../../../../shared/components/cofirm-dialog/confirmation-dialog.component';
@@ -155,8 +154,9 @@ export class MyProjectsComponent implements OnInit {
         const dialogRef = this.dialog.open<GetProjectRequest | undefined>(
             CreateProjectComponent,
             {
-                width: '590px',
-                hasBackdrop: true,
+                maxWidth: '95vw',
+                maxHeight: '90vh',
+                autoFocus: true,
             }
         );
         dialogRef.closed.subscribe((result: GetProjectRequest | undefined) => {
@@ -182,9 +182,9 @@ export class MyProjectsComponent implements OnInit {
             case 'edit':
                 this.router.navigate(['/projects', project.id, 'edit']);
                 break;
-            case 'manage-tags':
-                this.openTagsDialog(project);
-                break;
+            // case 'manage-tags':
+            //     this.openTagsDialog(project);
+            //     break;
             case 'delete':
                 this.confirmAndDeleteProject(project);
                 break;
@@ -215,22 +215,22 @@ export class MyProjectsComponent implements OnInit {
             });
     }
 
-    private openTagsDialog(project: GetProjectRequest): void {
-        const dialogRef = this.dialog.open<GetProjectRequest>(
-            ProjectTagsDialogComponent,
-            {
-                data: { project },
-                panelClass: 'tags-dialog-panel',
-            }
-        );
+    // private openTagsDialog(project: GetProjectRequest): void {
+    //     const dialogRef = this.dialog.open<GetProjectRequest>(
+    //         ProjectTagsDialogComponent,
+    //         {
+    //             data: { project },
+    //             panelClass: 'tags-dialog-panel',
+    //         }
+    //     );
 
-        dialogRef.closed.subscribe((updatedProject) => {
-            if (updatedProject) {
-                // Update the project in storage with new tags using the proper update method
-                this.updateProjectInStorage(updatedProject);
-            }
-        });
-    }
+    //     dialogRef.closed.subscribe((updatedProject) => {
+    //         if (updatedProject) {
+    //             // Update the project in storage with new tags using the proper update method
+    //             this.updateProjectInStorage(updatedProject);
+    //         }
+    //     });
+    // }
 
     private updateProjectInStorage(updatedProject: GetProjectRequest): void {
         // Use the proper method to update project in cache

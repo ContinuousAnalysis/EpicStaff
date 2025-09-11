@@ -32,12 +32,11 @@
     <div class="scrollable-content">
         <!-- Output Model Section -->
         <div class="form-section">
-            <div class="section-header">
-                <h3 class="section-title">
-                    Output Model
-                    <app-help-tooltip
-                        position="right"
-                        text="The Output Model defines the structure of data your task will return. Key sections:
+            <h3 class="section-title">
+                Output Model
+                <app-help-tooltip
+                    position="right"
+                    text="The Output Model defines the structure of data your task will return. Key sections:
 
 'type': Usually 'object' for output models
 'title': A name for your output model (e.g. 'TaskOutputModel')
@@ -64,17 +63,29 @@ Example:
 }
 
 Note: If properties is empty, the output model will be set to null."
-                    ></app-help-tooltip>
-                </h3>
-                <div class="toggle-container">
-                    <p-toggleswitch
-                        [ngModel]="enableOutputModel()"
-                        (onChange)="onToggleOutputModel()"
-                        styleClass="custom-toggle"
-                    ></p-toggleswitch>
+                ></app-help-tooltip>
+            </h3>
+
+            <!-- Toggle to enable/disable output model -->
+            <div class="form-group toggle-group">
+                <div class="toggle-setting">
+                    <div class="setting-label">
+                        Enable Output Model
+                        <app-help-tooltip
+                            position="right"
+                            text="Toggle this to enable or disable the output model. When disabled, the output model will be set to null."
+                        ></app-help-tooltip>
+                    </div>
+                    <mat-slide-toggle
+                        [ngModel]="useOutputModel()"
+                        (ngModelChange)="useOutputModel.set($event)"
+                    >
+                    </mat-slide-toggle>
                 </div>
             </div>
-            <div class="form-group json-group" *ngIf="enableOutputModel()">
+
+            <!-- JSON Editor - only show when toggle is enabled -->
+            <div class="form-group json-group" *ngIf="useOutputModel()">
                 <app-json-editor
                     [jsonData]="jsonConfig()"
                     (jsonChange)="jsonConfig.set($event)"
@@ -137,7 +148,10 @@ Note: If properties is empty, the output model will be set to null."
     <!-- Action Buttons -->
     <div class="actions">
         <button (click)="dialogRef.close()">Cancel</button>
-        <button (click)="save()" [disabled]="!isJsonValid()">
+        <button
+            (click)="save()"
+            [disabled]="useOutputModel() && !isJsonValid()"
+        >
             Save Changes
         </button>
     </div>

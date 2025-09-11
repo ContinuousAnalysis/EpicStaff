@@ -92,10 +92,10 @@ class Agent(AbstractDefaultFillableModel):
     search_limit = models.PositiveIntegerField(
         default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
     )
-    distance_threshold = models.DecimalField(
+    similarity_threshold = models.DecimalField(
         max_digits=3,
         decimal_places=2,
-        default=0.7,
+        default=0.2,
         blank=True,
         help_text="Float between 0.00 and 1.00 for knowledge",
     )
@@ -118,14 +118,24 @@ class Agent(AbstractDefaultFillableModel):
     def get_default_model(self):
         return DefaultAgentConfig.load()
 
-    def fill_with_defaults(self):
-        super().fill_with_defaults()
-        self.default_temperature = self.get_default_temperature()
+    def get_crew_temperature(self, crew_id: int | None) -> float | None:
+        if crew_id is not None:
+            crew_temperature = Crew.objects.get(id=crew_id).default_temperature
+            return crew_temperature
+        return None
+
+    def fill_with_defaults(self, crew_id: int | None):
 
         if self.llm_config is not None:
-
-            if self.llm_config.temperature is None:
+            if self.default_temperature is not None:
                 self.llm_config.temperature = self.default_temperature
+            else:
+                crew_temperature = self.get_crew_temperature(crew_id=crew_id)
+                if crew_temperature is not None:
+                    self.llm_config.temperature = crew_temperature
+                # else uses llm temperature
+
+        super().fill_with_defaults()
 
         if self.fcm_llm_config is not None:
             if self.fcm_llm_config.temperature is None:
@@ -196,10 +206,10 @@ class Crew(AbstractDefaultFillableModel):
     search_limit = models.PositiveIntegerField(
         default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
     )
-    distance_threshold = models.DecimalField(
+    similarity_threshold = models.DecimalField(
         max_digits=3,
         decimal_places=2,
-        default=0.7,
+        default=0.2,
         blank=True,
         help_text="Float between 0.00 and 1.00 for knowledge",
     )
@@ -226,11 +236,7 @@ class Crew(AbstractDefaultFillableModel):
         agent_list: list[Agent] = []
         for agent in self.agents.all():
             agent: Agent
-            # set agent default temperature or crew default temperature
-            if agent.default_temperature is None:
-                agent.default_temperature = self.get_default_temperature()
 
-            agent.fill_with_defaults()
             agent_list.append(agent)
         return agent_list
 
@@ -289,9 +295,7 @@ class Tool(models.Model):
 
     def get_tool_config_fields(self) -> dict[str, "ToolConfigField"]:
         if hasattr(self, "prefetched_config_fields"):
-            return {
-                field.name: field for field in self.prefetched_config_fields
-            }
+            return {field.name: field for field in self.prefetched_config_fields}
 
         return {
             field.name: field for field in ToolConfigField.objects.filter(tool=self)

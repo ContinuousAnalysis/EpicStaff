@@ -1,0 +1,45 @@
+<div class="dialog-container" [ngClass]="data.type || 'warning'">
+    <div class="dialog-header">
+        <div class="dialog-title-row">
+            <span class="dialog-icon">
+                <i class="ti ti-alert-circle"></i>
+            </span>
+            <h2 class="dialog-title">{{ data.title }}</h2>
+        </div>
+        <app-icon-button
+            icon="ui/x"
+            size="2rem"
+            ariaLabel="Close"
+            (click)="onClose()"
+            class="close-button"
+        ></app-icon-button>
+    </div>
+    <p class="dialog-message" [innerHTML]="data.message"></p>
+
+    <div class="dialog-actions">
+        <button type="button" class="button cancel-button" (click)="onCancel()">
+            {{ data.cancelText || "Cancel" }}
+        </button>
+        <div class="right-buttons">
+            <button
+                type="button"
+                class="button dont-save-button"
+                (click)="onDontSave()"
+            >
+                {{ data.dontSaveText || "Don't Save" }}
+            </button>
+            <button
+                type="button"
+                class="button save-button"
+                [ngClass]="data.type || 'warning'"
+                (click)="onSave()"
+                [disabled]="isSaving"
+            >
+                <span *ngIf="!isSaving">{{ data.saveText || "Save" }}</span>
+                <span *ngIf="isSaving" class="loading-content">
+                    <i class="ti ti-loader-2 ti-spin"></i>
+                </span>
+            </button>
+        </div>
+    </div>
+</div>

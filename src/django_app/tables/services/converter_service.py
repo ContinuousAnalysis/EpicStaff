@@ -41,6 +41,7 @@ from tables.validators.tool_config_validator import (
     validate_tool_configs,
 )
 from tables.validators.crew_memory_validator import CrewMemoryValidator
+from tables.validators.task_validator import TaskValidator
 
 tool_config_serializer = ToolConfigSerializer(
     ToolConfigValidator(validate_missing_reqired_fields=True, validate_null_fields=True)
@@ -52,6 +53,7 @@ class ConverterService(metaclass=SingletonMeta):
 
     def __init__(self):
         self.memory_validator = CrewMemoryValidator()
+        self.task_validator = TaskValidator()
 
     def convert_crew_to_pydantic(self, crew_id: int) -> CrewData:
         crew = Crew.objects.get(pk=crew_id).fill_with_defaults()
@@ -72,10 +74,11 @@ class ConverterService(metaclass=SingletonMeta):
             embedder = self.convert_embedding_config_to_pydantic(embedding_config)
             memory_llm = self.convert_llm_config_to_pydantic(memory_llm_config)
         task_list = Task.objects.filter(crew_id=crew_id)
-
+        self.task_validator.validate_assigned_agents(task_list)
         task_data_list: list[TaskData] = []
 
         crew_base_tools: list[BaseToolData] = []
+
         for task in task_list:
 
             base_tools = self._get_task_base_tools(task=task)
@@ -106,7 +109,8 @@ class ConverterService(metaclass=SingletonMeta):
         assert len(task_data_list) > 0, "No tasks found for crew"
 
         agents_data = [
-            self.convert_agent_to_pydantic(agent) for agent in crew.agents.all()
+            self.convert_agent_to_pydantic(agent, crew_id)
+            for agent in crew.agents.all()
         ]
         crew_agents: Iterable[Agent] = crew.agents.all()
 
@@ -139,7 +143,7 @@ class ConverterService(metaclass=SingletonMeta):
             ),  # TODO: Unique only
             knowledge_collection_id=knowledge_collection_id,
             search_limit=crew.search_limit,
-            distance_threshold=crew.distance_threshold,
+            similarity_threshold=crew.similarity_threshold,
         )
 
         return crew_data
@@ -168,8 +172,8 @@ class ConverterService(metaclass=SingletonMeta):
 
         return BaseToolData(unique_name=unique_name, data=data)
 
-    def convert_agent_to_pydantic(self, agent: Agent) -> AgentData:
-        agent = agent.fill_with_defaults()
+    def convert_agent_to_pydantic(self, agent: Agent, crew_id: int) -> AgentData:
+        agent = agent.fill_with_defaults(crew_id=crew_id)
         agent_base_tool_list = self._get_agent_base_tools(
             agent=agent
         )  # TODO: optimize it, duplicated db requests may occur
@@ -199,14 +203,14 @@ class ConverterService(metaclass=SingletonMeta):
             function_calling_llm=function_calling_llm,
             knowledge_collection_id=knowledge_collection_id,
             search_limit=agent.search_limit,
-            distance_threshold=agent.distance_threshold,
+            similarity_threshold=agent.similarity_threshold,
         )
 
     def convert_rt_agent_chat_to_pydantic(
         self, rt_agent_chat: RealtimeAgentChat
     ) -> RealtimeAgentChatData:
 
-        agent: Agent = rt_agent_chat.rt_agent.agent.fill_with_defaults()
+        agent: Agent = rt_agent_chat.rt_agent.agent.fill_with_defaults(crew_id=None)
 
         rt_config: RealtimeConfig = rt_agent_chat.realtime_config
         rt_transcription_config: RealtimeTranscriptionConfig = (
@@ -231,7 +235,7 @@ class ConverterService(metaclass=SingletonMeta):
             transcript_api_key=rt_transcription_config.api_key,
             temperature=agent.default_temperature,
             search_limit=rt_agent_chat.search_limit,
-            distance_threshold=rt_agent_chat.distance_threshold,
+            similarity_threshold=rt_agent_chat.similarity_threshold,
             connection_key=rt_agent_chat.connection_key,
             wake_word=rt_agent_chat.wake_word,
             stop_prompt=rt_agent_chat.stop_prompt,

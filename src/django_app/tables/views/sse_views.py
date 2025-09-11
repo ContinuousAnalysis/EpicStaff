@@ -110,10 +110,12 @@ class RunSessionSSEView(SSEMixin):
             from_redis.append(item)
             redis_uuids.add(item.get("uuid"))
 
+        from_redis = await self.sort_by_timestamp(from_redis)
         # 2. Lazy DB queryset excluding records already found in Redis.
         from_db = (
             GraphSessionMessage.objects.filter(session_id=session_id)
             .exclude(uuid__in=redis_uuids)
+            .order_by("id")
             .values()
         )
 
@@ -138,6 +140,7 @@ class RunSessionSSEView(SSEMixin):
         yield {
             "event": "status",
             "data": {
+                "session_id": data["session_id"],
                 "status": data["status"],
                 "status_data": data.get("status_data", {}),
             },
@@ -177,6 +180,7 @@ class RunSessionSSEView(SSEMixin):
             yield {
                 "event": "status",
                 "data": {
+                    "session_id": session["id"],
                     "status": session["status"],
                     "status_data": session.get("status_data", {}),
                 },
@@ -205,7 +209,7 @@ class RunSessionSSEView(SSEMixin):
         ):
             if not message:
                 # No message, sleep a bit and loop
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
                 continue
 
             if message.get("type") != "message":

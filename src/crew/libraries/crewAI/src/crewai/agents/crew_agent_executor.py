@@ -32,7 +32,8 @@ class ToolResult:
     result_as_answer: bool
 
 
-KNOWLEDGE_KEYWORD = "\nUse this information for answer:"
+KNOWLEDGE_KEYWORD = "\n\nRELEVANT KNOWLEDGES:\n"
+END_OF_KNOWLEDGE_KEYWORD = "\n\nEND OF RELEVANT KNOWLEDGES.\n"
 
 
 class CrewAgentExecutor(CrewAgentExecutorMixin):
