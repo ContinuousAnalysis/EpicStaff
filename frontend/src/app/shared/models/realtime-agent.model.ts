@@ -1,6 +1,6 @@
 export interface RealtimeAgent {
   agent: number;
-  distance_threshold: string;
+  similarity_threshold: string;
   search_limit: number;
   wake_word: string | null;
   stop_prompt: string | null;
@@ -12,7 +12,7 @@ export interface RealtimeAgent {
 
 export interface UpdateRealtimeAgentRequest {
   agent: number;
-  distance_threshold?: string;
+  similarity_threshold?: string;
   search_limit?: number;
   wake_word?: string;
   stop_prompt?: string;
@@ -22,7 +22,7 @@ export interface UpdateRealtimeAgentRequest {
 }
 export interface CreateRealtimeAgentRequest {
   agent: number;
-  distance_threshold?: string;
+  similarity_threshold?: string;
   search_limit?: number;
   wake_word?: string;
   stop_prompt?: string;

@@ -23,7 +23,7 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
     template: `
         <div class="input-map-container" formArrayName="input_map">
             <div class="input-map-header">
-                <label>Input Map</label>
+                <label>Input List</label>
                 <app-help-tooltip
                     position="right"
                     text="Maps function arguments to domain variables using key-value pairs. For example, 'project_id' = 'current_project' maps the function parameter 'project_id' to the flow variable 'current_project'."
@@ -36,8 +36,8 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
                         <div class="input-wrapper">
                             <input
                                 type="text"
-                                formControlName="value"
-                                placeholder="Domain Variable Name"
+                                formControlName="key"
+                                placeholder="Function Argument Name"
                                 [style.--active-color]="activeColor"
                                 autocomplete="off"
                             />
@@ -46,8 +46,8 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
                         <div class="input-wrapper">
                             <input
                                 type="text"
-                                formControlName="key"
-                                placeholder="Function Argument Name"
+                                formControlName="value"
+                                placeholder="Domain Variable Name"
                                 [style.--active-color]="activeColor"
                                 autocomplete="off"
                             />

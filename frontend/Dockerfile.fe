@@ -3,7 +3,7 @@ FROM node:20.17.0 AS build-stage
 WORKDIR /home/user/root/app
 
 COPY package*.json ./
-RUN npm ci 
+RUN npm install 
 
 COPY . .
 

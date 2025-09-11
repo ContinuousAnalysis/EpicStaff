@@ -6,15 +6,34 @@ import { RouterOutlet } from '@angular/router';
     selector: 'app-main-layout',
     standalone: true,
     imports: [LeftSidebarComponent, RouterOutlet],
+    styles: [
+        `
+            :host {
+                display: flex;
+                height: 100%;
+                width: 100%;
+            }
+
+            .sidebar-wrapper {
+                width: 3.7rem;
+                flex-shrink: 0;
+            }
+
+            /* The main-content area flexes to fill all remaining horizontal space. */
+            .main-content {
+                flex: 1;
+
+                overflow-y: auto;
+            }
+        `,
+    ],
     template: `
-        <div
-            class="app-layout"
-            style="display: flex; height: 100%; width: 100%;"
-        >
+        <div class="sidebar-wrapper">
             <app-left-sidebar></app-left-sidebar>
-            <div class="main-content" style="flex: 1; margin-left: 3.7rem;">
-                <router-outlet></router-outlet>
-            </div>
+        </div>
+
+        <div class="main-content">
+            <router-outlet></router-outlet>
         </div>
     `,
 })

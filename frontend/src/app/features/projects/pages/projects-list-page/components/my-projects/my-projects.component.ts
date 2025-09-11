@@ -154,8 +154,9 @@ export class MyProjectsComponent implements OnInit {
         const dialogRef = this.dialog.open<GetProjectRequest | undefined>(
             CreateProjectComponent,
             {
-                width: '590px',
-                hasBackdrop: true,
+                maxWidth: '95vw',
+                maxHeight: '90vh',
+                autoFocus: true,
             }
         );
         dialogRef.closed.subscribe((result: GetProjectRequest | undefined) => {
