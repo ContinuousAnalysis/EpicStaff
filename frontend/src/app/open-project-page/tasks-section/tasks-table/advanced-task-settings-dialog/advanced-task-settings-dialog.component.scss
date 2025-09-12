@@ -234,6 +234,51 @@
     }
 }
 
+.toggle-group {
+    margin-bottom: 16px;
+
+    .toggle-setting {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background-color: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+
+        .setting-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        mat-slide-toggle {
+            ::ng-deep {
+                .mdc-switch__track {
+                    background-color: rgba(255, 255, 255, 0.2);
+                }
+
+                .mdc-switch__handle-track {
+                    background-color: rgba(255, 255, 255, 0.3);
+                }
+
+                &.mdc-switch--checked {
+                    .mdc-switch__track {
+                        background-color: #685fff;
+                    }
+
+                    .mdc-switch__handle-track {
+                        background-color: #685fff;
+                    }
+                }
+            }
+        }
+    }
+}
+
 .json-group {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;

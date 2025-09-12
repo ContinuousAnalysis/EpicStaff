@@ -12,6 +12,7 @@ import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { provideHttpClient } from '@angular/common/http';
 import { MarkdownModule } from 'ngx-markdown';
 import { ConfigService } from './services/config/config.service';
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 
 export function initializeApp(configService: ConfigService) {
     return () => configService.loadConfig();
@@ -34,6 +35,12 @@ export const appConfig: ApplicationConfig = {
             useFactory: initializeApp,
             deps: [ConfigService],
             multi: true,
+        },
+        {
+            provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
+            useValue: {
+                appearance: 'outline',
+            },
         },
     ],
 };

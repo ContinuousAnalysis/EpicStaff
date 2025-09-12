@@ -44,10 +44,8 @@ export class ProjectsListPageComponent implements OnDestroy {
         { label: 'Templates', link: 'templates' },
     ];
 
-    // Search term for ngModel binding
     public searchTerm: string = '';
 
-    // For debounce
     private searchTerms = new Subject<string>();
     private subscription: Subscription;
 
@@ -56,7 +54,6 @@ export class ProjectsListPageComponent implements OnDestroy {
         private dialog: Dialog,
         private projectsService: ProjectsStorageService
     ) {
-        // Setup search with debounce
         this.subscription = this.searchTerms
             .pipe(debounceTime(300), distinctUntilChanged())
             .subscribe((term) => {
@@ -111,7 +108,9 @@ export class ProjectsListPageComponent implements OnDestroy {
         const dialogRef = this.dialog.open<GetProjectRequest | undefined>(
             CreateProjectComponent,
             {
-                width: '590px',
+                maxWidth: '95vw',
+                maxHeight: '90vh',
+                autoFocus: true,
             }
         );
         dialogRef.closed.subscribe((result: GetProjectRequest | undefined) => {

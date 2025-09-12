@@ -22,66 +22,69 @@ import { ToolsListPageComponent } from './features/tools/pages/tools-list-page/t
 import { FlowsListPageComponent } from './features/flows/pages/flows-list-page/flows-list-page.component';
 
 export const routes: Routes = [
-  {
-    path: '',
-    component: MainLayoutComponent,
-    children: [
-      {
+    {
         path: '',
-        redirectTo: 'projects',
-        pathMatch: 'full',
-      },
-      {
-        path: 'projects',
-        component: ProjectsListPageComponent,
+        component: MainLayoutComponent,
         children: [
-          { path: '', redirectTo: 'my', pathMatch: 'full' },
-          { path: 'my', component: MyProjectsComponent },
-          { path: 'templates', component: ProjectTemplatesComponent },
-        ],
-      },
-      { path: 'projects/:projectId', component: OpenProjectPageComponent },
-      {
-        path: 'staff',
-        component: StaffPageComponent,
-      },
-      {
-        path: 'tools',
-        component: ToolsListPageComponent,
-        children: [
-          { path: '', redirectTo: 'built-in', pathMatch: 'full' },
-          { path: 'built-in', component: BuiltInToolsComponent },
-          { path: 'custom', component: CustomToolsComponent },
-        ],
-      },
-      {
-        path: 'flows',
-        component: FlowsListPageComponent,
-        children: [
-          { path: '', redirectTo: 'my', pathMatch: 'full' },
-          { path: 'my', component: MyFlowsComponent },
-          { path: 'templates', component: FlowTemplatesComponent },
-        ],
-      },
-      {
-        path: 'flows/:id',
-        component: FlowVisualProgrammingComponent,
-        canDeactivate: [UnsavedChangesGuard],
-      },
-      {
-        path: 'graph/:graphId/session/:sessionId',
-        component: RunningGraphComponent,
-      },
-      {
-        path: 'knowledge-sources',
-        component: KnowledgeSourcesComponent,
-      },
-      {
-        path: 'chats',
-        component: ChatsPageComponent,
-      },
+            {
+                path: '',
+                redirectTo: 'projects',
+                pathMatch: 'full',
+            },
+            {
+                path: 'projects',
+                component: ProjectsListPageComponent,
+                children: [
+                    { path: '', redirectTo: 'my', pathMatch: 'full' },
+                    { path: 'my', component: MyProjectsComponent },
+                    { path: 'templates', component: ProjectTemplatesComponent },
+                ],
+            },
+            {
+                path: 'projects/:projectId',
+                component: OpenProjectPageComponent,
+            },
+            {
+                path: 'staff',
+                component: StaffPageComponent,
+            },
+            {
+                path: 'tools',
+                component: ToolsListPageComponent,
+                children: [
+                    { path: '', redirectTo: 'built-in', pathMatch: 'full' },
+                    { path: 'built-in', component: BuiltInToolsComponent },
+                    { path: 'custom', component: CustomToolsComponent },
+                ],
+            },
+            {
+                path: 'flows',
+                component: FlowsListPageComponent,
+                children: [
+                    { path: '', redirectTo: 'my', pathMatch: 'full' },
+                    { path: 'my', component: MyFlowsComponent },
+                    { path: 'templates', component: FlowTemplatesComponent },
+                ],
+            },
+            {
+                path: 'flows/:id',
+                component: FlowVisualProgrammingComponent,
+                canDeactivate: [UnsavedChangesGuard],
+            },
+            {
+                path: 'graph/:graphId/session/:sessionId',
+                component: RunningGraphComponent,
+            },
+            {
+                path: 'knowledge-sources',
+                component: KnowledgeSourcesComponent,
+            },
+            {
+                path: 'chats',
+                component: ChatsPageComponent,
+            },
 
-      { path: '**', redirectTo: '' },
-    ],
-  },
+            { path: '**', redirectTo: '' },
+        ],
+    },
 ];
