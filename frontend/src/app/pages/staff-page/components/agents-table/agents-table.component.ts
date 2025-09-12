@@ -219,7 +219,7 @@ export class AgentsTableComponent {
             similarity_threshold: '0.65',
             // Replace realtime_config with realtime_agent object using provided defaults
             realtime_agent: {
-                distance_threshold: '0.65',
+                similarity_threshold: '0.65',
                 search_limit: 3,
                 wake_word: '',
                 stop_prompt: 'stop',
@@ -583,8 +583,8 @@ export class AgentsTableComponent {
                 ...(agentData.realtime_agent || {}),
                 realtime_config: realtimeConfigId,
                 // Include other realtime_agent properties if they exist in agentData
-                distance_threshold:
-                    agentData.realtime_agent?.distance_threshold,
+                similarity_threshold:
+                    agentData.realtime_agent?.similarity_threshold,
                 search_limit: agentData.realtime_agent?.search_limit,
                 wake_word: agentData.realtime_agent?.wake_word,
                 stop_prompt: agentData.realtime_agent?.stop_prompt,
@@ -915,7 +915,7 @@ export class AgentsTableComponent {
         // Create or update the realtime_agent object
         const realtime_agent = {
             ...(updatedAgent.realtime_agent || {
-                distance_threshold: '0.65',
+                similarity_threshold: '0.65',
                 search_limit: 3,
                 wake_word: '',
                 stop_prompt: 'stop',
@@ -1195,7 +1195,7 @@ export class AgentsTableComponent {
         // Create or update the realtime_agent object
         const realtime_agent = {
             ...(newAgentData.realtime_agent || {
-                distance_threshold: '0.65',
+                similarity_threshold: '0.65',
                 search_limit: 3,
                 wake_word: '',
                 stop_prompt: 'stop',
