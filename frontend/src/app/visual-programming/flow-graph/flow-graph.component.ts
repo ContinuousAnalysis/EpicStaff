@@ -207,7 +207,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                 id: newStartNodeId,
                 category: 'web',
                 type: NodeType.START,
-                node_name: 'Start',
+                node_name: '__start__',
                 data: {
                     initialState: {},
                 },
@@ -581,7 +581,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public onCreateNode(event: FCreateNodeEvent) {
         if (event.data && typeof event.data === 'object') {
             const nodeData = event.data as NodeModel;
-
             // Create a copy of the node with updated position and category
             const updatedNode: NodeModel = {
                 ...nodeData,
