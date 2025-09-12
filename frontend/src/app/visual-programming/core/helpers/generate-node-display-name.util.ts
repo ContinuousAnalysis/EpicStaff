@@ -15,14 +15,106 @@ export function generateNodeDisplayName(
 ): string {
     if (type === NodeType.PROJECT) {
         const projectName = data?.name || 'My Project';
-        const count =
-            currentNodes.filter((n) => n.type === NodeType.PROJECT).length + 1;
+        const count = getNextAvailableNumber(currentNodes, type, projectName);
         return `${projectName} (#${count})`;
     } else {
         const prefix = NODE_TYPE_PREFIXES[type] || 'Node';
-        const count = currentNodes.filter((n) => n.type === type).length + 1;
+        const count = getNextAvailableNumber(currentNodes, type, prefix);
         return `${prefix} (#${count})`;
     }
+}
+
+/**
+ * Find the next available number for a node type, accounting for gaps in numbering.
+ * @param currentNodes All current nodes in the flow
+ * @param type NodeType to find number for
+ * @param namePrefix The prefix to match against (e.g., "Agent-Node" or "My Project")
+ * @returns Next available number
+ */
+function getNextAvailableNumber(
+    currentNodes: NodeModel[],
+    type: NodeType,
+    namePrefix: string
+): number {
+    // Get all existing node names of this type
+    const existingNames = currentNodes
+        .filter((n) => n.type === type)
+        .map((n) => n.node_name);
+
+    // Extract numbers from existing names that match our prefix pattern
+    const usedNumbers = new Set<number>();
+
+    existingNames.forEach((name) => {
+        // Match pattern like "Agent-Node (#1)" or "My Project (#2)"
+        const match = name.match(
+            new RegExp(
+                `^${namePrefix.replace(
+                    /[.*+?^${}()|[\]\\]/g,
+                    '\\$&'
+                )} \\(#(\\d+)\\)$`
+            )
+        );
+        if (match) {
+            const number = parseInt(match[1], 10);
+            usedNumbers.add(number);
+        }
+    });
+
+    // Find the first available number starting from 1
+    let nextNumber = 1;
+    while (usedNumbers.has(nextNumber)) {
+        nextNumber++;
+    }
+
+    return nextNumber;
+}
+
+/**
+ * Find the next available number for a node type in a batch operation.
+ * @param currentNodes All current nodes in the flow
+ * @param type NodeType to find number for
+ * @param namePrefix The prefix to match against (e.g., "Agent-Node" or "My Project")
+ * @param allExistingNames Set of all existing names (including ones created in current batch)
+ * @returns Next available number
+ */
+function getNextAvailableNumberForBatch(
+    currentNodes: NodeModel[],
+    type: NodeType,
+    namePrefix: string,
+    allExistingNames: Set<string>
+): number {
+    // Get all existing node names of this type from current nodes
+    const existingNames = currentNodes
+        .filter((n) => n.type === type)
+        .map((n) => n.node_name);
+
+    // Extract numbers from existing names that match our prefix pattern
+    const usedNumbers = new Set<number>();
+
+    // Check both current nodes and names generated in this batch
+    [...existingNames, ...Array.from(allExistingNames)].forEach((name) => {
+        // Match pattern like "Agent-Node (#1)" or "My Project (#2)"
+        const match = name.match(
+            new RegExp(
+                `^${namePrefix.replace(
+                    /[.*+?^${}()|[\]\\]/g,
+                    '\\$&'
+                )} \\(#(\\d+)\\)$`
+            )
+        );
+        if (match) {
+            const number = parseInt(match[1], 10);
+            usedNumbers.add(number);
+        }
+    });
+
+    // Find the first available number starting from 1
+    let nextNumber = 1;
+    while (usedNumbers.has(nextNumber)) {
+        nextNumber++;
+    }
+
+    return nextNumber;
 }
 
 /**
@@ -70,60 +162,37 @@ export function generateMultipleNodeDisplayNames(
         const type = node.type;
         const data = node.data;
 
-        // Get current count for this type (existing + already created in this batch)
-        const existingCount = existingCounts.get(type) || 0;
-        const tempCount = tempCounts.get(type) || 0;
-        let currentCount = existingCount + tempCount + 1;
+        // Get the name prefix for this node type
+        const namePrefix =
+            type === NodeType.PROJECT
+                ? data?.name || 'My Project'
+                : NODE_TYPE_PREFIXES[type] || 'Node';
 
-        console.log(
-            `Node ${index} (${type}): existingCount=${existingCount}, tempCount=${tempCount}, initialCount=${currentCount}`
+        // Get all existing node names of this type (including ones created in this batch)
+        const allExistingNames = new Set([
+            ...existingNames,
+            ...Array.from(generatedNames),
+        ]);
+
+        // Find the next available number for this specific prefix
+        const nextNumber = getNextAvailableNumberForBatch(
+            currentNodes,
+            type,
+            namePrefix,
+            allExistingNames
         );
 
-        // Generate name and ensure it's unique
+        // Generate the display name
         let displayName: string;
-        let attempts = 0;
-        const maxAttempts = 1000; // Increased to handle more complex scenarios
-
-        do {
-            if (type === NodeType.PROJECT) {
-                const projectName = data?.name || 'My Project';
-                displayName = `${projectName} (#${currentCount})`;
-            } else {
-                const prefix = NODE_TYPE_PREFIXES[type] || 'Node';
-                displayName = `${prefix} (#${currentCount})`;
-            }
-
-            // Check if this name already exists or was generated in this batch
-            if (
-                !existingNames.has(displayName) &&
-                !generatedNames.has(displayName)
-            ) {
-                break; // Name is unique
-            }
-
-            currentCount++;
-            attempts++;
-            console.log(
-                `Name "${displayName}" already exists, trying count ${currentCount}`
-            );
-        } while (attempts < maxAttempts);
-
-        if (attempts >= maxAttempts) {
-            console.error(
-                `Could not generate unique name for node ${index} after ${maxAttempts} attempts`
-            );
-            // More robust fallback name with timestamp and random component
-            const timestamp = Date.now();
-            const randomSuffix = Math.random().toString(36).substring(2, 8);
-            displayName = `${type}_${timestamp}_${randomSuffix}`;
+        if (type === NodeType.PROJECT) {
+            displayName = `${namePrefix} (#${nextNumber})`;
+        } else {
+            displayName = `${namePrefix} (#${nextNumber})`;
         }
 
         // Add to generated names set
         generatedNames.add(displayName);
         displayNames[index] = displayName;
-
-        // Update temp count for next iteration
-        tempCounts.set(type, tempCount + 1);
 
         console.log(`Generated name for node ${index}: "${displayName}"`);
     });
