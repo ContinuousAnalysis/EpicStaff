@@ -53,6 +53,7 @@
         [isSelfConnectable]="false"
         [fInputConnectableSide]="port.position"
         [fOutputConnectableSide]="port.position"
+        [fCanBeConnectedInputs]="portConnections()[port.id]"
         [ngStyle]="{
             'border-color':
                 port.port_type === 'output' ? port.color : 'hsl(0, 0%, 15%)',
