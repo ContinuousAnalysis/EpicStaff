@@ -43,6 +43,7 @@ import { RenameCollectionDialogComponent } from '../rename-collection-dialog/ren
           collection.status === CollectionStatus.COMPLETED
         "
         [class.status-failed]="collection.status === CollectionStatus.FAILED"
+        [class.status-warning]="collection.status === CollectionStatus.WARNING"
       ></div>
 
       <div class="collection-name">{{ collection.collection_name }}</div>
@@ -124,6 +125,10 @@ import { RenameCollectionDialogComponent } from '../rename-collection-dialog/ren
 
           &.status-failed {
             background-color: #ef4444;
+          }
+
+          &.status-warning {
+            background-color: #ffc918ff;
           }
         }
 

@@ -12,8 +12,7 @@ import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { provideHttpClient } from '@angular/common/http';
 import { MarkdownModule } from 'ngx-markdown';
 import { ConfigService } from './services/config/config.service';
-import { providePrimeNG } from 'primeng/config';
-import Aura from '@primeng/themes/aura';
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 
 export function initializeApp(configService: ConfigService) {
     return () => configService.loadConfig();
@@ -30,19 +29,18 @@ export const appConfig: ApplicationConfig = {
             MarkdownModule.forRoot({}),
             MonacoEditorModule.forRoot()
         ),
-        providePrimeNG({
-            theme: {
-                preset: Aura,
-                options: {
-                    darkModeSelector: '.my-app-dark',
-                },
-            },
-        }),
+
         {
             provide: APP_INITIALIZER,
             useFactory: initializeApp,
             deps: [ConfigService],
             multi: true,
+        },
+        {
+            provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
+            useValue: {
+                appearance: 'outline',
+            },
         },
     ],
 };

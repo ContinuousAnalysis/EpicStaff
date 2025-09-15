@@ -1,0 +1,197 @@
+.dialog-container {
+    background: var(--color-modals-background);
+    border-radius: 8px;
+    padding: 24px;
+    min-width: 320px;
+    max-width: 400px;
+    color: var(--color-text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.close-button {
+    margin-top: -8px;
+    margin-right: -8px;
+}
+
+.dialog-title {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin: 0;
+    color: var(--color-text-primary);
+}
+
+.dialog-message {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+
+    strong {
+        color: var(--color-text-primary);
+        font-weight: 600;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+    }
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.dialog-actions .right-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.button {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    min-width: 80px;
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    &.cancel-button {
+        background: transparent;
+        color: var(--color-text-secondary);
+
+        &:hover:not(:disabled) {
+            background: var(--color-secondary-btn-background-hover);
+        }
+    }
+
+    &.dont-save-button {
+        background: transparent;
+        color: var(--color-text-secondary);
+        border: 1px solid var(--color-divider-regular);
+
+        &:hover:not(:disabled) {
+            background: var(--color-secondary-btn-background-hover);
+        }
+    }
+
+    &.save-button {
+        background: var(--accent-color);
+        color: white;
+
+        &:hover:not(:disabled) {
+            background: var(--accent-color-hover);
+        }
+
+        &:active:not(:disabled) {
+            background: var(--accent-color-active);
+        }
+
+        &.danger {
+            background: #f44336;
+            &:hover:not(:disabled) {
+                background: #d32f2f;
+            }
+        }
+
+        &.warning {
+            background: var(--accent-color);
+            &:hover:not(:disabled) {
+                background: var(--accent-color-hover);
+            }
+            &:active:not(:disabled) {
+                background: var(--accent-color-active);
+            }
+        }
+    }
+}
+
+.loading-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+        font-size: 1rem;
+    }
+}
+
+/* Small animation for dialog opening */
+:host {
+    animation: dialog-fade-in 0.2s ease-out;
+}
+
+@keyframes dialog-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dialog-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.dialog-icon {
+    display: flex;
+    align-items: center;
+    font-size: 2.2rem;
+    color: var(--accent-color);
+}
+
+.dialog-container.danger .dialog-icon {
+    color: #f44336;
+}
+.dialog-container.warning .dialog-icon {
+    color: var(--accent-color);
+}
+.dialog-container.info .dialog-icon {
+    color: var(--accent-color);
+}
+
+.button.save-button.info {
+    background: var(--accent-color);
+    color: white;
+}
+.button.save-button.info:hover:not(:disabled) {
+    background: var(--accent-color-hover);
+}
+.button.save-button.danger {
+    background: #f44336;
+    color: white;
+}
+.button.save-button.danger:hover:not(:disabled) {
+    background: #d32f2f;
+}
+.button.save-button.warning {
+    background: var(--accent-color);
+    color: white;
+}
+.button.save-button.warning:hover:not(:disabled) {
+    background: var(--accent-color-hover);
+}

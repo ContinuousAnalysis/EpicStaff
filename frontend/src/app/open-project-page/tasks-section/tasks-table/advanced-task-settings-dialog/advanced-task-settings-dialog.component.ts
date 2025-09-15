@@ -9,16 +9,16 @@ import {
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { NgIf, NgFor, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
 
 export interface AdvancedTaskSettingsData {
     config: any | null;
     output_model: any | null;
     task_context_list: number[];
     taskName: string;
-    availableTasks?: any[];
+    availableTasks?: any[]; // Added availableTasks property
 }
 
 @Component({
@@ -29,9 +29,9 @@ export interface AdvancedTaskSettingsData {
         NgFor,
         NgClass,
         FormsModule,
+        MatSlideToggleModule,
         JsonEditorComponent,
         HelpTooltipComponent,
-        ToggleSwitchModule,
     ],
     templateUrl: './advanced-task-settings-dialog.component.html',
     styleUrls: ['./advanced-task-settings-dialog.component.scss'],
@@ -42,8 +42,8 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
     public jsonConfig = signal<string>('{}');
     public isJsonValid = signal<boolean>(true);
     public selectedTaskIds = signal<number[]>([]);
-    public enableOutputModel = signal<boolean>(false);
     public readonly availableTasks: any[];
+    public useOutputModel = signal<boolean>(false);
 
     constructor(
         public dialogRef: DialogRef<AdvancedTaskSettingsData>,
@@ -77,18 +77,16 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
             : [];
 
         this.selectedTaskIds.set(initialSelectedIds);
+
+        // Initialize useOutputModel based on whether output_model exists
+        this.useOutputModel.set(
+            this.taskData.output_model !== null &&
+                this.taskData.output_model !== undefined
+        );
     }
 
     public ngOnInit(): void {
-        // Set the toggle state based on whether there's an existing output model
-        const hasOutputModel =
-            this.taskData.output_model &&
-            this.taskData.output_model.properties &&
-            Object.keys(this.taskData.output_model.properties).length > 0;
-
-        this.enableOutputModel.set(hasOutputModel);
-
-        if (this.taskData.output_model && hasOutputModel) {
+        if (this.taskData.output_model) {
             try {
                 // Show the complete output model, including type and title
                 const outputModel = this.taskData.output_model;
@@ -114,14 +112,6 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
 
     public onJsonValidChange(isValid: boolean): void {
         this.isJsonValid.set(isValid);
-    }
-
-    public onToggleOutputModel(): void {
-        const currentState = this.enableOutputModel();
-        this.enableOutputModel.set(!currentState);
-
-        // If toggling off, we don't need to do anything special to the JSON editor
-        // The save method will handle setting output_model to null
     }
 
     public toggleTaskSelection(taskId: number): void {
@@ -174,15 +164,18 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
     }
 
     public save(): void {
-        if (!this.isJsonValid()) {
-            return; // Don't save if JSON is invalid
+        // If output model is enabled, validate JSON first
+        if (this.useOutputModel() && !this.isJsonValid()) {
+            return; // Don't save if JSON is invalid when output model is enabled
         }
 
         try {
-            // Process the output model only if toggle is enabled
-            const outputModel = this.enableOutputModel()
-                ? this.tryProcessOutputModel(this.jsonConfig())
-                : null;
+            let outputModel = null;
+
+            // Only process output model if toggle is on
+            if (this.useOutputModel()) {
+                outputModel = this.tryProcessOutputModel(this.jsonConfig());
+            }
 
             // Update task data with selected task IDs
             const result = {

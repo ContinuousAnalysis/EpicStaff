@@ -1,0 +1,118 @@
+.node-panel {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    width: 440px;
+    background-color: var(--color-nodes-sidepanel-bg);
+    border-radius: 12px;
+    border: 1px solid var(--color-divider-subtle);
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+    overflow: hidden;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-divider-subtle);
+
+    .icon-and-title {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+
+        i {
+            font-size: 1.5rem;
+            margin-right: 1.5rem;
+        }
+
+        .title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        .close-action {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .esc-label {
+                font-size: 0.75rem;
+                color: #666;
+                font-weight: 500;
+                padding: 0.15rem 0.3rem;
+                border: 1px solid #444;
+                border-radius: 4px;
+                background: #2a2a2a;
+            }
+
+            .close-btn {
+                background: none;
+                border: none;
+                color: #ccc;
+                cursor: pointer;
+                padding: 0.25rem;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                &:hover {
+                    color: #fff;
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+
+                i {
+                    font-size: 1.25rem;
+                }
+            }
+        }
+    }
+}
+
+main {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Shake Animation */
+@keyframes shake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-2px);
+    }
+    75% {
+        transform: translateX(2px);
+    }
+}
+
+.shake {
+    animation: shake 0.3s ease-in-out;
+}
+
+/* Enhanced shake for better visibility */
+.shake-strong {
+    animation: shake 0.4s ease-in-out;
+}
+
+/* Shake with color change to draw attention */
+.shake-attention {
+    animation: shake 0.3s ease-in-out;
+}

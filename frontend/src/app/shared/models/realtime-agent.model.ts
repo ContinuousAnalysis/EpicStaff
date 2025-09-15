@@ -22,7 +22,7 @@ export interface UpdateRealtimeAgentRequest {
 }
 export interface CreateRealtimeAgentRequest {
   agent: number;
-  distance_threshold?: string;
+  similarity_threshold?: string;
   search_limit?: number;
   wake_word?: string;
   stop_prompt?: string;

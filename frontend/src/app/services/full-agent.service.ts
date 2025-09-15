@@ -547,7 +547,7 @@ export class FullAgentService {
                 pythonToolIds.push(tool.data.id);
               }
             });
-          }
+          }   
 
           // Tool configs based on parsed IDs
           const fullConfiguredTools = toolConfigs.filter((tool) =>

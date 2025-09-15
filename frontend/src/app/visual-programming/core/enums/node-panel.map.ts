@@ -1,0 +1,14 @@
+import { Type } from '@angular/core';
+import { NodePanel } from '../models/node-panel.interface';
+import { ProjectNodePanelComponent } from '../../components/node-panels/project-node-panel/project-node-panel.component';
+import { PythonNodePanelComponent } from '../../components/node-panels/python-node-panel/python-node-panel.component';
+import { ConditionalEdgeNodePanelComponent } from '../../components/node-panels/conditional-edge-node-panel/conditional-edge-node-panel.component';
+import { StartNodePanelComponent } from '../../components/node-panels/start-node-panel/start-node-panel.component';
+
+export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
+    python: PythonNodePanelComponent,
+    project: ProjectNodePanelComponent,
+    edge: ConditionalEdgeNodePanelComponent,
+    start: StartNodePanelComponent,
+    // text: TextNodePanelComponent
+};

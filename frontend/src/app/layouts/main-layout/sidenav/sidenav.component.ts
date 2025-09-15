@@ -1,16 +1,18 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ICONS } from '../../../shared/constants/icons.constants';
+import { TooltipComponent } from './tooltip/tooltip.component';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { SettingsDialogService } from '../../../features/settings-dialog/settings-dialog.service';
-import { ThemeService } from '../../../services/theme/theme.service';
-import { ButtonModule } from 'primeng/button';
-import { TooltipModule } from 'primeng/tooltip';
+import { OverlayModule } from '@angular/cdk/overlay';
+import { PortalModule } from '@angular/cdk/portal';
 
 interface NavItem {
     id: string;
     routeLink?: string;
-    icon: string;
+    svgIcon: SafeHtml;
     label: string;
+    showTooltip: boolean;
     action?: () => void;
     customClass?: string;
 }
@@ -18,7 +20,13 @@ interface NavItem {
 @Component({
     selector: 'app-left-sidebar',
     standalone: true,
-    imports: [ButtonModule, TooltipModule, RouterModule],
+    imports: [
+        TooltipComponent,
+        RouterLinkActive,
+        RouterLink,
+        OverlayModule,
+        PortalModule,
+    ],
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,61 +36,60 @@ export class LeftSidebarComponent {
     public bottomNavItems: NavItem[];
 
     constructor(
-        private settingsDialogService: SettingsDialogService,
-        private router: Router,
-        public themeService: ThemeService
+        private sanitizer: DomSanitizer,
+        private settingsDialogService: SettingsDialogService
     ) {
         this.topNavItems = [
             {
                 id: 'projects',
                 routeLink: 'projects',
-                icon: ICONS.projects,
+                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.projects),
                 label: 'Projects',
+                showTooltip: false,
             },
             {
                 id: 'staff',
                 routeLink: 'staff',
-                icon: ICONS.staff,
+                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.staff),
                 label: 'Staff',
+                showTooltip: false,
             },
             {
                 id: 'tools',
                 routeLink: 'tools',
-                icon: ICONS.tools,
+                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.tools),
                 label: 'Tools',
+                showTooltip: false,
             },
             {
                 id: 'flows',
                 routeLink: 'flows',
-                icon: ICONS.flows,
+                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.flows),
                 label: 'Flows',
+                showTooltip: false,
             },
             {
                 id: 'knowledge-sources',
                 routeLink: 'knowledge-sources',
-                icon: ICONS.sources,
+                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.sources),
                 label: 'Knowledge Sources',
+                showTooltip: false,
             },
             {
                 id: 'chats',
                 routeLink: 'chats',
-                icon: ICONS.chats,
+                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.chats),
                 label: 'Chats',
+                showTooltip: false,
             },
         ];
 
         this.bottomNavItems = [
             {
-                id: 'theme-toggle',
-                icon: ICONS.darkMode,
-                label: 'Toggle Theme',
-                action: () => this.toggleTheme(),
-                customClass: 'theme-toggle-tooltip',
-            },
-            {
                 id: 'settings',
-                icon: ICONS.settings,
+                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.settings),
                 label: 'Settings',
+                showTooltip: false,
                 action: () => this.onSettingsClick(),
                 customClass: 'settings-tooltip',
             },
@@ -93,28 +100,10 @@ export class LeftSidebarComponent {
         this.settingsDialogService.openSettingsDialog();
     }
 
-    public toggleTheme(): void {
-        this.themeService.toggleTheme();
-    }
-
-    public getThemeIcon(): string {
-        return this.themeService.getCurrentTheme()
-            ? ICONS.lightMode
-            : ICONS.darkMode;
-    }
-
-    public handleItemClick(item: NavItem, event: Event): void {
+    public handleItemClick(item: NavItem, event: MouseEvent): void {
         if (item.action) {
             event.preventDefault();
             item.action();
         }
-    }
-
-    public navigateToHome(): void {
-        this.router.navigate(['/projects']);
-    }
-
-    public isActiveRoute(route: string): boolean {
-        return this.router.url.includes(route);
     }
 }
