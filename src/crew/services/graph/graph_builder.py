@@ -223,6 +223,16 @@ class SessionGraphBuilder:
             )
             self.add_node(python_node)
 
+        for file_extractor_node_data in schema.file_extractor_node_list:
+            file_extractor_node = FileContentExtractorNode(
+                session_id=self.session_id,
+                node_name=file_extractor_node_data.node_name,
+                python_code_executor_service=self.python_code_executor_service,
+                input_map=file_extractor_node_data.input_map,
+                output_variable_path=file_extractor_node_data.output_variable_path,
+            )
+            self.add_node(file_extractor_node)
+
         for llm_node_data in schema.llm_node_list:
             llm_node = LLMNode(
                 session_id=self.session_id,

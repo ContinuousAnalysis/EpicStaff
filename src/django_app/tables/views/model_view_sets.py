@@ -78,6 +78,7 @@ from tables.models import (
     PythonCodeResult,
     PythonCodeTool,
     PythonNode,
+    FileExtractorNode,
     RealtimeModel,
     StartNode,
     ToolConfigField,
@@ -105,6 +106,7 @@ from tables.serializers.model_serializers import (
     PythonCodeSerializer,
     PythonCodeToolSerializer,
     PythonNodeSerializer,
+    FileExtractorNodeSerializer,
     TaskSessionMessageSerializer,
     TemplateAgentSerializer,
     LLMConfigSerializer,
@@ -444,6 +446,9 @@ class GraphViewSet(viewsets.ModelViewSet):
                     "python_node_list",
                     queryset=PythonNode.objects.select_related("python_code"),
                 ),
+                Prefetch(
+                    "file_extractor_node_list", queryset=FileExtractorNode.objects.all()
+                ),
                 Prefetch("edge_list", queryset=Edge.objects.all()),
                 Prefetch(
                     "conditional_edge_list",
@@ -480,6 +485,11 @@ class CrewNodeViewSet(viewsets.ModelViewSet):
 class PythonNodeViewSet(viewsets.ModelViewSet):
     queryset = PythonNode.objects.all()
     serializer_class = PythonNodeSerializer
+
+
+class FileExtractorNodeViewSet(viewsets.ModelViewSet):
+    queryset = FileExtractorNode.objects.all()
+    serializer_class = FileExtractorNodeSerializer
 
 
 class LLMNodeViewSet(viewsets.ModelViewSet):

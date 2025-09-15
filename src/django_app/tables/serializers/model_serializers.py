@@ -25,6 +25,7 @@ from tables.models import (
     Graph,
     GraphSessionMessage,
     PythonNode,
+    FileExtractorNode,
 )
 from rest_framework import serializers
 from tables.exceptions import ToolConfigSerializerError
@@ -830,6 +831,12 @@ class PythonNodeSerializer(serializers.ModelSerializer):
         return self.update(instance, validated_data)
 
 
+class FileExtractorNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FileExtractorNode
+        fields = "__all__"
+
+
 class LLMNodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LLMNode
@@ -1048,6 +1055,7 @@ class GraphSerializer(serializers.ModelSerializer):
     # Reverse relationships
     crew_node_list = CrewNodeSerializer(many=True, read_only=True)
     python_node_list = PythonNodeSerializer(many=True, read_only=True)
+    file_extractor_node_list = FileExtractorNodeSerializer(many=True, read_only=True)
     edge_list = EdgeSerializer(many=True, read_only=True)
     conditional_edge_list = ConditionalEdgeSerializer(many=True, read_only=True)
     llm_node_list = LLMNodeSerializer(many=True, read_only=True)
@@ -1064,6 +1072,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "description",
             "crew_node_list",
             "python_node_list",
+            "file_extractor_node_list",
             "edge_list",
             "conditional_edge_list",
             "llm_node_list",
