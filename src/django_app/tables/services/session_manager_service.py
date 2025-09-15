@@ -102,7 +102,10 @@ class SessionManagerService(metaclass=SingletonMeta):
         try:
             end_node = EndNode.objects.get(graph=graph.pk)
         except EndNode.DoesNotExist:
-            raise EndNodeValidationError(f"end_node is missing for flow id={graph.pk}")
+            end_node = None
+            # TODO: revert back validation
+            logger.warning(f"end_node is missing for flow id={graph.pk}")
+            # raise EndNodeValidationError(f"end_node is missing for flow id={graph.pk}")
 
         for item in crew_node_list:
 
@@ -159,10 +162,14 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
             decision_table_node_data_list.append(decision_table_node_data)
+        # TODO: remove validation
+        if end_node is not None:
+            end_node_data = self.converter_service.convert_end_node_to_pydantic(
+                end_node=end_node
+            )
+        else:
+            end_node_data = None
 
-        end_node_data = self.converter_service.convert_end_node_to_pydantic(
-            end_node=end_node
-        )
         entry_point = start_edge.end_key
         graph_data = GraphData(
             name=graph.name,

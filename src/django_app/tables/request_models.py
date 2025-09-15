@@ -278,7 +278,7 @@ class GraphData(BaseModel):
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
     entry_point: str
-    end_node: EndNodeData
+    end_node: EndNodeData | None
 
 
 class GraphSessionMessageData(BaseModel):
