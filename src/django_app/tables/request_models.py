@@ -252,6 +252,10 @@ class DecisionTableNodeData(BaseModel):
     next_error_node: str | None = None
 
 
+class EndNodeData(BaseModel):
+    output_map: dict[str, Any]
+
+
 class EdgeData(BaseModel):
     start_key: str
     end_key: str
@@ -274,6 +278,7 @@ class GraphData(BaseModel):
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
     entry_point: str
+    end_node: EndNodeData
 
 
 class GraphSessionMessageData(BaseModel):

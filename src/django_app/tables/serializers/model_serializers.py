@@ -40,6 +40,7 @@ from tables.models.graph_models import (
     Condition,
     ConditionGroup,
     DecisionTableNode,
+    EndNode,
     LLMNode,
     StartNode,
 )
@@ -897,6 +898,18 @@ class StartNodeSerializer(serializers.ModelSerializer):
         return "__start__"
 
 
+class EndNodeSerializer(serializers.ModelSerializer):
+    node_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = EndNode
+        fields = ["id", "graph", "output_map", "node_name"]
+        read_only_fields = ["node_name"]
+
+    def get_node_name(self, obj):
+        return "__end_node__"
+
+
 class SessionSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -1048,6 +1061,7 @@ class GraphSerializer(serializers.ModelSerializer):
     llm_node_list = LLMNodeSerializer(many=True, read_only=True)
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
+    end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
 
     class Meta:
         model = Graph
@@ -1064,6 +1078,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "llm_node_list",
             "decision_table_node_list",
             "start_node_list",
+            "end_node_list",
             "time_to_live",
             "persistent_variables",
         ]

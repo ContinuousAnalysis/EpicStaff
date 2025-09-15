@@ -96,6 +96,19 @@ class LLMNode(BaseNode):
         ]
 
 
+class EndNode(models.Model):
+    # TODO: can be OneToOne field
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="end_node"
+    )
+    output_map = models.JSONField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["graph"], name="unique_graph_end_node")
+        ]
+
+
 class Edge(models.Model):
 
     graph = models.ForeignKey(

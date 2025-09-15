@@ -28,11 +28,12 @@ from tables.models.graph_models import (
     ConditionalEdge,
     CrewNode,
     DecisionTableNode,
+    EndNode,
     Graph,
     PythonNode,
 )
 from tables.request_models import *
-from tables.request_models import CrewData
+from tables.request_models import CrewData, EndNodeData
 from utils.singleton_meta import SingletonMeta
 
 from tables.serializers.model_serializers import ToolConfigSerializer
@@ -429,3 +430,6 @@ class ConverterService(metaclass=SingletonMeta):
             input_map=crew_node.input_map,
             output_variable_path=crew_node.output_variable_path,
         )
+
+    def convert_end_node_to_pydantic(self, end_node: EndNode):
+        return EndNodeData(output_map=end_node.output_map)

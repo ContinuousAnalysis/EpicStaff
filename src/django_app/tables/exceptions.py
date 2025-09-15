@@ -40,3 +40,8 @@ class CrewMemoryValidationError(CustomAPIExeption):
 class TaskValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = "ValidationError occured in TaskValidator -> ConverterService during validate crews' tasks"
+
+
+class EndNodeValidationError(CustomAPIExeption):
+    status_code = 400
+    default_detail = "ValidationError occured in session_manager_service"

@@ -1,5 +1,5 @@
 import json
-from tables.exceptions import GraphEntryPointException
+from tables.exceptions import EndNodeValidationError, GraphEntryPointException
 from tables.models.graph_models import (
     ConditionalEdge,
     DecisionTableNode,
@@ -32,6 +32,7 @@ from tables.models import (
     Edge,
     Graph,
     PythonNode,
+    EndNode,
     FileExtractorNode,
 )
 
@@ -98,6 +99,10 @@ class SessionManagerService(metaclass=SingletonMeta):
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         crew_node_data_list: list[CrewNodeData] = []
+        try:
+            end_node = EndNode.objects.get(graph=graph.pk)
+        except EndNode.DoesNotExist:
+            raise EndNodeValidationError(f"end_node is missing for flow id={graph.pk}")
 
         for item in crew_node_list:
 
@@ -155,6 +160,9 @@ class SessionManagerService(metaclass=SingletonMeta):
             )
             decision_table_node_data_list.append(decision_table_node_data)
 
+        end_node_data = self.converter_service.convert_end_node_to_pydantic(
+            end_node=end_node
+        )
         entry_point = start_edge.end_key
         graph_data = GraphData(
             name=graph.name,
@@ -166,6 +174,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             conditional_edge_list=conditional_edge_data_list,
             decision_table_node_list=decision_table_node_data_list,
             entry_point=entry_point,
+            end_node=end_node_data,
         )
         session_data = SessionData(
             id=session.pk, graph=graph_data, initial_state=session.variables
