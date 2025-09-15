@@ -107,7 +107,10 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
                 session_id=session_id,
                 name="",
                 execution_order=0,
-                message_data={"message_type": "graph_end"},
+                message_data={
+                    "message_type": "graph_end",
+                    "end_node_result": session_graph_builder.end_node_result,
+                },
             )
             graph_end_message_data = asdict(graph_end_data)
             graph_end_message_data["uuid"] = str(uuid.uuid4())

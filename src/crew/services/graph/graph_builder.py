@@ -9,6 +9,7 @@ from loguru import logger
 from callbacks.session_callback_factory import CrewCallbackFactory
 from services.graph.subgraphs.decision_table_node import DecisionTableNodeSubgraph
 from services.graph.nodes.llm_node import LLMNode
+from services.graph.nodes.end_node import EndNode
 from models.state import *
 from services.graph.nodes import *
 
@@ -26,7 +27,10 @@ from langgraph.types import StreamWriter
 from utils import map_variables_to_input
 
 from utils.psutil_wrapper import psutil_wrapper
+
+
 class ReturnCodeError(Exception): ...
+
 
 class SessionGraphBuilder:
     def __init__(
@@ -57,6 +61,7 @@ class SessionGraphBuilder:
         self.knowledge_search_service = knowledge_search_service
 
         self._graph_builder = StateGraph(State)
+        self._end_node_result: dict | None = None
 
     def add_conditional_edges(
         self,
@@ -111,7 +116,8 @@ class SessionGraphBuilder:
             return result
 
         self._graph_builder.add_conditional_edges(
-            source=from_node, path=inner_decision_function,
+            source=from_node,
+            path=inner_decision_function,
         )
 
     def add_edge(self, start_key: str, end_key: str):
@@ -155,6 +161,18 @@ class SessionGraphBuilder:
         self._graph_builder.add_conditional_edges(
             decision_table_node_data.node_name, condition
         )
+
+    @property
+    def end_node_result(self):
+        """Getter for end_node_result"""
+        return self._end_node_result
+
+    @end_node_result.setter
+    def end_node_result(self, value):
+        """Setter for end_node_result, enforces dict type"""
+        if not isinstance(value, dict):
+            raise TypeError("end_node_result must be a dict")
+        self._end_node_result = value
 
     def compile(self) -> CompiledStateGraph:
         # checkpointer = MemorySaver()
@@ -230,5 +248,12 @@ class SessionGraphBuilder:
             self.add_decision_table_node(
                 decision_table_node_data=decision_table_node_data
             )
+        # name always __end_node__
+        end_node = EndNode(
+            session_graph_builder_instance=self,
+            session_id=self.session_id,
+            output_map=schema.end_node.output_map,
+        )
+        self.add_node(end_node)
 
         return self.compile()
