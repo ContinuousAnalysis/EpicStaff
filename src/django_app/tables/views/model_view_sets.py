@@ -21,6 +21,7 @@ from tables.models.graph_models import (
     Condition,
     ConditionGroup,
     DecisionTableNode,
+    EndNode,
     LLMNode,
 )
 from tables.models.realtime_models import (
@@ -39,6 +40,7 @@ from tables.serializers.model_serializers import (
     CrewTagSerializer,
     AgentTagSerializer,
     DecisionTableNodeSerializer,
+    EndNodeSerializer,
     GraphLightSerializer,
     GraphTagSerializer,
     RealtimeConfigSerializer,
@@ -454,6 +456,7 @@ class GraphViewSet(viewsets.ModelViewSet):
                 Prefetch(
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
+                Prefetch("end_node", queryset=EndNode.objects.all()),
             )
             .all()
         )
@@ -768,6 +771,11 @@ class RealtimeAgentChatViewSet(ReadOnlyModelViewSet):
 class StartNodeModelViewSet(viewsets.ModelViewSet):
     queryset = StartNode.objects.all()
     serializer_class = StartNodeSerializer
+
+
+class EndNodeModelViewSet(viewsets.ModelViewSet):
+    queryset = EndNode.objects.all()
+    serializer_class = EndNodeSerializer
 
 
 class ConditionGroupModelViewSet(viewsets.ModelViewSet):
