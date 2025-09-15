@@ -3,6 +3,7 @@ from models.request_models import PythonCodeData
 
 
 class FileContentExtractorNode(PythonNode):
+    TYPE = "FILE_EXTRACTOR"
 
     def __init__(
         self,
