@@ -93,17 +93,10 @@ export class FlowBaseNodeComponent {
         }
 
         const fullMap = this.flowService.portConnectionsMap();
-
-        const result = this.node.ports.reduce((acc, port) => {
-            const connections = fullMap[port.id] || [];
-            acc[port.id] = connections;
-
+        return this.node.ports.reduce((acc, port) => {
+            acc[port.id] = fullMap[port.id] || [];
             return acc;
         }, {} as Record<string, CustomPortId[]>);
-
-        console.log('Final port connections result:', result);
-
-        return result;
     });
 
     constructor(
