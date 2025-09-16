@@ -77,7 +77,7 @@ xattr -r -d com.apple.quarantine epicstaff.app
 ### MacOS Launch Instructions (Manual)
 
 ### 1. Clone the Project
-`git clone https://github.com/EpicStaff/EpicStaff.git`
+`git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git`
 ### 2. Change .env file
 - Navigate to **src/.env**
 - Find line `CREW_SAVEFILES_PATH=/c/savefiles`
