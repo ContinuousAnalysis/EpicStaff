@@ -297,7 +297,7 @@ export class GraphUpdateService {
             );
             if (!sourceNode || !targetNode) return EMPTY;
             const payload: CreateEdgeRequest = {
-              start_key: sourceNode.node_name,
+              start_key: "__start__",
               end_key: targetNode.node_name,
               graph: graph.id,
             };

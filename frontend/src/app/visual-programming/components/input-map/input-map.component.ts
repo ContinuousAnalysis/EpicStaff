@@ -40,6 +40,7 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
                                 placeholder="Function Argument Name"
                                 [style.--active-color]="activeColor"
                                 autocomplete="off"
+                                (keydown.enter)="onEnterKey($event, i)"
                             />
                         </div>
                         <div class="equals-sign">=</div>
@@ -50,6 +51,7 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
                                 placeholder="Domain Variable Name"
                                 [style.--active-color]="activeColor"
                                 autocomplete="off"
+                                (keydown.enter)="onEnterKey($event, i)"
                             />
                         </div>
                         <i
@@ -239,5 +241,24 @@ export class InputMapComponent implements OnInit {
         if (this.pairs.length === 0) {
             this.addPair();
         }
+    }
+
+    onEnterKey(event: Event, currentIndex: number) {
+        const keyboardEvent = event as KeyboardEvent;
+        keyboardEvent.preventDefault();
+
+        // Add a new pair after the current one
+        this.addPair();
+
+        // Focus on the key input of the newly added pair
+        setTimeout(() => {
+            const newIndex = currentIndex + 1;
+            const newPairElement = document.querySelector(
+                `[formGroupName="${newIndex}"] input[formControlName="key"]`
+            ) as HTMLInputElement;
+            if (newPairElement) {
+                newPairElement.focus();
+            }
+        }, 0);
     }
 }
