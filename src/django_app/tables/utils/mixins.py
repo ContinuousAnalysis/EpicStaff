@@ -3,6 +3,8 @@ import os
 import json
 import re
 import time
+from datetime import datetime
+
 from typing import AsyncGenerator, AsyncIterable, Callable, Union
 from abc import ABC, abstractmethod
 
@@ -16,8 +18,22 @@ from django.views import View
 from tables.models import DocumentMetadata, DocumentContent
 from .file_text_extractor import extract_text_from_file
 
+from tables.services.redis_service import RedisService
+from functools import partial
+
 ALLOWED_FILE_TYPES = {choice[0] for choice in DocumentMetadata.DocumentFileType.choices}
 MAX_FILE_SIZE = 12 * 1024 * 1024  # 12MB
+
+
+redis_service = RedisService()
+
+session_status_channel_name = os.environ.get(
+    "SESSION_STATUS_CHANNEL", "sessions:session_status"
+)
+graph_messages_channel_name = os.environ.get(
+    "GRAPH_MESSAGE_UPDATE_CHANNEL", "graph:message:update"
+)
+memory_updates_channel_name = os.environ.get("MEMORY_UPDATE_CHANNEL", "memory:update")
 
 
 class SourceSerializerMixin:
@@ -214,7 +230,7 @@ class SSEMixin(View, ABC):
         pass
 
     @abstractmethod
-    async def get_live_updates(self):
+    async def get_live_updates(self, pubsub):
         """
         Overwrite this function with generator yielding updates in while True loop
         Each item should be either:
@@ -222,6 +238,15 @@ class SSEMixin(View, ABC):
             - or any JSON-serializable primitive (str, int, etc)
         """
         pass
+
+    async def sort_by_timestamp(self, messages: list[dict]) -> list[dict]:
+        """
+        Sort a list of messages by their 'timestamp' field in ascending order.
+        """
+        return sorted(
+            messages,
+            key=lambda m: datetime.fromisoformat(m["timestamp"].replace("Z", "+00:00")),
+        )
 
     async def _data_generator(
         self,
@@ -241,6 +266,7 @@ class SSEMixin(View, ABC):
         """
 
         async for item in callback():
+            logger.debug(f"_data_generator item: {item}")
             if isinstance(item, dict):
                 if "event" in item:
                     yield f"event: {item['event']}\n"
@@ -260,6 +286,14 @@ class SSEMixin(View, ABC):
     async def event_stream(self, test_mode=False):
         self.last_ping = time.time()
         try:
+            channels = [
+                session_status_channel_name,
+                graph_messages_channel_name,
+                memory_updates_channel_name,
+            ]
+            pubsub = redis_service.async_redis_client.pubsub()
+            await pubsub.subscribe(*channels)
+
             async for data in self._data_generator(self.get_initial_data):
                 yield data
 
@@ -267,10 +301,11 @@ class SSEMixin(View, ABC):
                 for i in range(3):
                     yield f"data: test event #{i + 1}\n\n"
                 raise GeneratorExit()
-
-            while True:
-                async for data in self._data_generator(self.get_live_updates):
-                    yield data
+            async for data in self._data_generator(
+                partial(self.get_live_updates, pubsub)
+            ):
+                logger.debug(f"event_stream data: {data}")
+                yield data
 
         except (GeneratorExit, KeyboardInterrupt):
             logger.warning("Sending fatal-error event due to manual stop")
@@ -282,7 +317,6 @@ class SSEMixin(View, ABC):
     async def get(self, request, *args, **kwargs):
         test_mode = bool(request.GET.get("test", ""))
         logger.debug(f"Started SSE {'with' if test_mode else 'without'} test mode")
-
         return StreamingHttpResponse(
             self.event_stream(test_mode=test_mode),
             content_type="text/event-stream",

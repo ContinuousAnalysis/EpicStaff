@@ -110,10 +110,12 @@ class RunSessionSSEView(SSEMixin):
             from_redis.append(item)
             redis_uuids.add(item.get("uuid"))
 
+        from_redis = await self.sort_by_timestamp(from_redis)
         # 2. Lazy DB queryset excluding records already found in Redis.
         from_db = (
             GraphSessionMessage.objects.filter(session_id=session_id)
             .exclude(uuid__in=redis_uuids)
+            .order_by("id")
             .values()
         )
 
@@ -130,7 +132,7 @@ class RunSessionSSEView(SSEMixin):
         redis_data = await redis_service.async_redis_client.get(redis_key)
 
         if redis_data:
-            self.__log(event="messages", state="update", data=data["uuid"])
+            logger.debug(f"_handle_graph_session_messages: {redis_data}")
             yield {"event": "messages", "data": json.loads(redis_data)}
 
     async def _handle_session_statuses(self, data):
@@ -138,6 +140,7 @@ class RunSessionSSEView(SSEMixin):
         yield {
             "event": "status",
             "data": {
+                "session_id": data["session_id"],
                 "status": data["status"],
                 "status_data": data.get("status_data", {}),
             },
@@ -177,6 +180,7 @@ class RunSessionSSEView(SSEMixin):
             yield {
                 "event": "status",
                 "data": {
+                    "session_id": session["id"],
                     "status": session["status"],
                     "status_data": session.get("status_data", {}),
                 },
@@ -193,19 +197,19 @@ class RunSessionSSEView(SSEMixin):
                 "data": memo,
             }
 
-    async def get_live_updates(self):
+    async def get_live_updates(self, pubsub):
         session_id = self.kwargs["session_id"]
-
         async for message in redis_service.redis_get_message(
             channels=[
                 self.graph_messages_channel_name,
                 self.session_status_channel_name,
                 self.memory_updates_channel_name,
-            ]
+            ],
+            pubsub=pubsub,
         ):
             if not message:
                 # No message, sleep a bit and loop
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
                 continue
 
             if message.get("type") != "message":
@@ -218,6 +222,7 @@ class RunSessionSSEView(SSEMixin):
 
                 if message.get("channel") in self.handlers:
                     async for i in self.handlers[message.get("channel")](data):
+                        logger.debug(f"get_live_updates data: {i}")
                         yield i
 
             except Exception as e:

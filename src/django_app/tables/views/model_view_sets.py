@@ -21,6 +21,7 @@ from tables.models.graph_models import (
     Condition,
     ConditionGroup,
     DecisionTableNode,
+    EndNode,
     LLMNode,
 )
 from tables.models.realtime_models import (
@@ -39,6 +40,7 @@ from tables.serializers.model_serializers import (
     CrewTagSerializer,
     AgentTagSerializer,
     DecisionTableNodeSerializer,
+    EndNodeSerializer,
     GraphLightSerializer,
     GraphTagSerializer,
     RealtimeConfigSerializer,
@@ -76,6 +78,7 @@ from tables.models import (
     PythonCodeResult,
     PythonCodeTool,
     PythonNode,
+    FileExtractorNode,
     RealtimeModel,
     StartNode,
     ToolConfigField,
@@ -103,6 +106,7 @@ from tables.serializers.model_serializers import (
     PythonCodeSerializer,
     PythonCodeToolSerializer,
     PythonNodeSerializer,
+    FileExtractorNodeSerializer,
     TaskSessionMessageSerializer,
     TemplateAgentSerializer,
     LLMConfigSerializer,
@@ -442,6 +446,9 @@ class GraphViewSet(viewsets.ModelViewSet):
                     "python_node_list",
                     queryset=PythonNode.objects.select_related("python_code"),
                 ),
+                Prefetch(
+                    "file_extractor_node_list", queryset=FileExtractorNode.objects.all()
+                ),
                 Prefetch("edge_list", queryset=Edge.objects.all()),
                 Prefetch(
                     "conditional_edge_list",
@@ -454,6 +461,7 @@ class GraphViewSet(viewsets.ModelViewSet):
                 Prefetch(
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
+                Prefetch("end_node", queryset=EndNode.objects.all()),
             )
             .all()
         )
@@ -477,6 +485,11 @@ class CrewNodeViewSet(viewsets.ModelViewSet):
 class PythonNodeViewSet(viewsets.ModelViewSet):
     queryset = PythonNode.objects.all()
     serializer_class = PythonNodeSerializer
+
+
+class FileExtractorNodeViewSet(viewsets.ModelViewSet):
+    queryset = FileExtractorNode.objects.all()
+    serializer_class = FileExtractorNodeSerializer
 
 
 class LLMNodeViewSet(viewsets.ModelViewSet):
@@ -768,6 +781,11 @@ class RealtimeAgentChatViewSet(ReadOnlyModelViewSet):
 class StartNodeModelViewSet(viewsets.ModelViewSet):
     queryset = StartNode.objects.all()
     serializer_class = StartNodeSerializer
+
+
+class EndNodeModelViewSet(viewsets.ModelViewSet):
+    queryset = EndNode.objects.all()
+    serializer_class = EndNodeSerializer
 
 
 class ConditionGroupModelViewSet(viewsets.ModelViewSet):

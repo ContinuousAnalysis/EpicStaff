@@ -1,5 +1,5 @@
 import json
-from tables.exceptions import GraphEntryPointException
+from tables.exceptions import EndNodeValidationError, GraphEntryPointException
 from tables.models.graph_models import (
     ConditionalEdge,
     DecisionTableNode,
@@ -22,6 +22,7 @@ from tables.request_models import (
     GraphSessionMessageData,
     LLMNodeData,
     PythonNodeData,
+    FileExtractorNodeData,
     SessionData,
 )
 
@@ -31,6 +32,8 @@ from tables.models import (
     Edge,
     Graph,
     PythonNode,
+    EndNode,
+    FileExtractorNode,
 )
 
 
@@ -90,11 +93,19 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         crew_node_list = CrewNode.objects.filter(graph=graph.pk)
         python_node_list = PythonNode.objects.filter(graph=graph.pk)
+        file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
         edge_list = Edge.objects.filter(graph=graph.pk)
         conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         crew_node_data_list: list[CrewNodeData] = []
+        try:
+            end_node = EndNode.objects.get(graph=graph.pk)
+        except EndNode.DoesNotExist:
+            end_node = None
+            # TODO: revert back validation
+            logger.warning(f"end_node is missing for flow id={graph.pk}")
+            # raise EndNodeValidationError(f"end_node is missing for flow id={graph.pk}")
 
         for item in crew_node_list:
 
@@ -106,6 +117,16 @@ class SessionManagerService(metaclass=SingletonMeta):
         for item in python_node_list:
             python_node_data_list.append(
                 self.converter_service.convert_python_node_to_pydantic(python_node=item)
+            )
+
+        file_extractor_node_data_list: list[FileExtractorNodeData] = []
+        for item in file_extractor_node_list:
+            file_extractor_node_data_list.append(
+                FileExtractorNodeData(
+                    node_name=item.node_name,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                )
             )
 
         llm_node_data_list: list[LLMNodeData] = []
@@ -141,17 +162,26 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
             decision_table_node_data_list.append(decision_table_node_data)
+        # TODO: remove validation
+        if end_node is not None:
+            end_node_data = self.converter_service.convert_end_node_to_pydantic(
+                end_node=end_node
+            )
+        else:
+            end_node_data = None
 
         entry_point = start_edge.end_key
         graph_data = GraphData(
             name=graph.name,
             crew_node_list=crew_node_data_list,
             python_node_list=python_node_data_list,
+            file_extractor_node_list=file_extractor_node_data_list,
             llm_node_list=llm_node_data_list,
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,
             decision_table_node_list=decision_table_node_data_list,
             entry_point=entry_point,
+            end_node=end_node_data,
         )
         session_data = SessionData(
             id=session.pk, graph=graph_data, initial_state=session.variables
