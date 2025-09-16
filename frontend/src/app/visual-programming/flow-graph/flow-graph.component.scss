@@ -3,9 +3,18 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 ::ng-deep app-flow-graph {
+    .f-line-alignment {
+        .f-line {
+            background-color: var(--vp-line-alignment-color);
+        }
+    }
     .f-line-alignment {
         .f-line {
             background-color: var(--vp-line-alignment-color);
@@ -23,143 +32,294 @@
         .f-connection-drag-handle {
             fill: transparent;
         }
-
-        .f-connection-selection {
-            fill: none;
-            stroke: #1d1d1d;
-            stroke-width: 5;
-            cursor: pointer;
-        }
-
-        .f-connection-path {
-            fill: none;
-            stroke-width: 2;
-        }
-
-        &.f-selected {
-            .f-connection-path {
-                stroke: var(--db-primary-1);
-            }
-
-            .f-marker {
-                path,
-                circle {
-                    fill: var(--db-primary-1);
-                }
-            }
-            .connection-center {
-                display: flex;
+        .f-background {
+            circle {
+                fill: var(--vp-line-alignment-color);
             }
         }
-
-        &:hover {
-            .f-connection-selection {
-                stroke: var(--db-primary-1);
-                opacity: 0.1;
-            }
-        }
-
-        &.f-snap-connection {
-            .f-connection-path {
-                stroke: var(--db-snap-connection);
-                stroke-width: 2px;
-                stroke-dasharray: 6 3;
-                animation: dashOffset 0.5s linear infinite;
-            }
-
-            .f-marker {
-                path,
-                circle {
-                    fill: var(--db-snap-connection);
-                }
+        .f-connection {
+            z-index: 2;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+            .f-connection-drag-handle {
+                fill: transparent;
             }
 
             .f-connection-selection {
-                fill: transparent !important;
-                stroke: transparent !important;
-            }
-        }
-
-        &.f-connection-for-create {
-            .f-connection-path {
-                stroke: var(--db-primary-1);
-                stroke-width: 2px;
-            }
-            .f-marker {
-                path,
-                circle {
-                    fill: var(--db-primary-1);
-                }
-            }
-            .f-connection-selection {
-                fill: transparent !important;
-                stroke: transparent !important;
-            }
-        }
-
-        &.dashed-connection {
-            .f-connection-path {
-                stroke-dasharray: 4 2;
-            }
-        }
-
-        .connection-center {
-            display: none;
-            position: absolute;
-            gap: 0.75rem;
-            transform: translate(-50%, -50%);
-
-            .icon-button {
-                width: 24px;
-                height: 24px;
-                border-radius: 4px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                fill: none;
+                stroke: #1d1d1d;
+                stroke-width: 5;
                 cursor: pointer;
-                background-color: #2a2a2a;
-                border: 1px solid #444;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-                transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+            }
+            .f-connection-selection {
+                fill: none;
+                stroke: #1d1d1d;
+                stroke-width: 5;
+                cursor: pointer;
+            }
 
-                &:hover {
-                    background-color: #3a3a3a;
+            .f-connection-path {
+                fill: none;
+                stroke-width: 2;
+            }
+            .f-connection-path {
+                fill: none;
+                stroke-width: 2;
+            }
+
+            &.f-selected {
+                .f-connection-path {
+                    stroke: var(--db-primary-1);
                 }
-
-                &:active {
-                    transform: scale(0.85);
-                    background-color: #444;
-                }
-
-                i {
-                    font-size: 14px;
-                }
-
-                &.plus-icon {
-                    i {
-                        color: var(--accent-color, #2196f3);
-                    }
-                }
-
-                &.delete-icon {
-                    i {
-                        color: #aaa;
-                        transition: color 0.2s ease;
+                &.f-selected {
+                    .f-connection-path {
+                        stroke: var(--db-primary-1);
                     }
 
-                    &:hover {
-                        background-color: rgba(255, 82, 82, 0.1);
+                    .f-marker {
+                        path,
+                        circle {
+                            fill: var(--db-primary-1);
+                        }
+                    }
+                    .connection-center {
+                        display: flex;
+                    }
+                }
+                .f-marker {
+                    path,
+                    circle {
+                        fill: var(--db-primary-1);
+                    }
+                }
+                .connection-center {
+                    display: flex;
+                }
+            }
 
-                        i {
-                            color: #ff5252;
+            &:hover {
+                .f-connection-selection {
+                    stroke: var(--db-primary-1);
+                    opacity: 0.1;
+                }
+            }
+            &:hover {
+                .f-connection-selection {
+                    stroke: var(--db-primary-1);
+                    opacity: 0.1;
+                }
+            }
+
+            &.f-snap-connection {
+                .f-connection-path {
+                    stroke: var(--db-snap-connection);
+                    stroke-width: 2px;
+                    stroke-dasharray: 6 3;
+                    animation: dashOffset 0.5s linear infinite;
+                }
+                &.f-snap-connection {
+                    .f-connection-path {
+                        stroke: var(--db-snap-connection);
+                        stroke-width: 2px;
+                        stroke-dasharray: 6 3;
+                        animation: dashOffset 0.5s linear infinite;
+                    }
+
+                    .f-marker {
+                        path,
+                        circle {
+                            fill: var(--db-snap-connection);
+                        }
+                    }
+                    .f-marker {
+                        path,
+                        circle {
+                            fill: var(--db-snap-connection);
                         }
                     }
 
-                    &:active {
-                        background-color: rgba(255, 82, 82, 0.2);
+                    .f-connection-selection {
+                        fill: transparent !important;
+                        stroke: transparent !important;
                     }
                 }
+                .f-connection-selection {
+                    fill: transparent !important;
+                    stroke: transparent !important;
+                }
+            }
 
+            &.f-connection-for-create {
+                .f-connection-path {
+                    stroke: var(--db-primary-1);
+                    stroke-width: 2px;
+                }
+                .f-marker {
+                    path,
+                    circle {
+                        fill: var(--db-primary-1);
+                    }
+                }
+                .f-connection-selection {
+                    fill: transparent !important;
+                    stroke: transparent !important;
+                }
+            }
+            &.f-connection-for-create {
+                .f-connection-path {
+                    stroke: var(--db-primary-1);
+                    stroke-width: 2px;
+                }
+                .f-marker {
+                    path,
+                    circle {
+                        fill: var(--db-primary-1);
+                    }
+                }
+                .f-connection-selection {
+                    fill: transparent !important;
+                    stroke: transparent !important;
+                }
+            }
+
+            &.dashed-connection {
+                .f-connection-path {
+                    stroke-dasharray: 4 2;
+                }
+            }
+            &.dashed-connection {
+                .f-connection-path {
+                    stroke-dasharray: 4 2;
+                }
+            }
+
+            .connection-center {
+                display: none;
+                position: absolute;
+                gap: 0.75rem;
+                transform: translate(-50%, -50%);
+                .connection-center {
+                    display: none;
+                    position: absolute;
+                    gap: 0.75rem;
+                    transform: translate(-50%, -50%);
+
+                    .icon-button {
+                        width: 24px;
+                        height: 24px;
+                        border-radius: 4px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        background-color: #2a2a2a;
+                        border: 1px solid #444;
+                        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                        transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+                        .icon-button {
+                            width: 24px;
+                            height: 24px;
+                            border-radius: 4px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            cursor: pointer;
+                            background-color: #2a2a2a;
+                            border: 1px solid #444;
+                            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                            transition: all 0.15s
+                                cubic-bezier(0.25, 0.8, 0.25, 1);
+
+                            &:hover {
+                                background-color: #3a3a3a;
+                            }
+                            &:hover {
+                                background-color: #3a3a3a;
+                            }
+
+                            &:active {
+                                transform: scale(0.85);
+                                background-color: #444;
+                            }
+                            &:active {
+                                transform: scale(0.85);
+                                background-color: #444;
+                            }
+
+                            i {
+                                font-size: 14px;
+                            }
+                            i {
+                                font-size: 14px;
+                            }
+
+                            &.plus-icon {
+                                i {
+                                    color: var(--accent-color, #2196f3);
+                                }
+                            }
+                            &.plus-icon {
+                                i {
+                                    color: var(--accent-color, #2196f3);
+                                }
+                            }
+
+                            &.delete-icon {
+                                i {
+                                    color: #aaa;
+                                    transition: color 0.2s ease;
+                                }
+                                &.delete-icon {
+                                    i {
+                                        color: #aaa;
+                                        transition: color 0.2s ease;
+                                    }
+
+                                    &:hover {
+                                        background-color: rgba(
+                                            255,
+                                            82,
+                                            82,
+                                            0.1
+                                        );
+                                        &:hover {
+                                            background-color: rgba(
+                                                255,
+                                                82,
+                                                82,
+                                                0.1
+                                            );
+
+                                            i {
+                                                color: #ff5252;
+                                            }
+                                        }
+                                        i {
+                                            color: #ff5252;
+                                        }
+                                    }
+
+                                    &:active {
+                                        background-color: rgba(
+                                            255,
+                                            82,
+                                            82,
+                                            0.2
+                                        );
+                                    }
+                                }
+                                &:active {
+                                    background-color: rgba(255, 82, 82, 0.2);
+                                }
+                            }
+
+                            &.disabled {
+                                opacity: 0.5;
+                                cursor: not-allowed;
+                                pointer-events: none;
+                            }
+                        }
+                    }
+                }
                 &.disabled {
                     opacity: 0.5;
                     cursor: not-allowed;
@@ -172,6 +332,9 @@
     .f-selection-area {
         background-color: var(--vp-selection-area-color);
     }
+    .f-selection-area {
+        background-color: var(--vp-selection-area-color);
+    }
 
     .f-minimap {
         background-color: var(--vp-minimap-color);
@@ -179,73 +342,153 @@
         right: 16px;
         width: 180px;
         height: 180px;
+        .f-minimap {
+            background-color: var(--vp-minimap-color);
+            bottom: 16px;
+            right: 16px;
+            width: 180px;
+            height: 180px;
 
-        .f-minimap-node {
-            fill: var(--vp-minimap-node-color);
+            .f-minimap-node {
+                fill: var(--vp-minimap-node-color);
+                .f-minimap-node {
+                    fill: var(--vp-minimap-node-color);
 
-            &.f-selected {
-                fill: var(--vp-minimap-selected-node-color);
+                    &.f-selected {
+                        fill: var(--vp-minimap-selected-node-color);
+                    }
+                }
+                &.f-selected {
+                    fill: var(--vp-minimap-selected-node-color);
+                }
+            }
+
+            .f-minimap-view {
+                fill: var(--vp-minimap-view-color);
+            }
+            .f-minimap-view {
+                fill: var(--vp-minimap-view-color);
+            }
+
+            .f-minimap-node {
+                &.Agent-Node:not(.f-selected) {
+                    fill: #8e5cd9;
+                }
+                &.Task-Node:not(.f-selected) {
+                    fill: #30a46c;
+                }
+                &.Tool-Node:not(.f-selected) {
+                    fill: #9f6a00;
+                }
+                &.LLM-Node:not(.f-selected) {
+                    fill: #e0575b;
+                }
+                &.Project-Node:not(.f-selected) {
+                    fill: #5672cd;
+                }
+                &.Python-Node:not(.f-selected) {
+                    fill: #ffcf3f;
+                }
+                &.Edge-Node:not(.f-selected) {
+                    fill: #8e5cd9;
+                }
+                &.Start-Node:not(.f-selected) {
+                    fill: #d3d3d3;
+                }
+                &.Group:not(.f-selected) {
+                    fill: #d3d3d3;
+                }
+                &.Decision-Table:not(.f-selected) {
+                    fill: #00aaff;
+                }
+                &.Note:not(.f-selected) {
+                    fill: #ffffd1;
+                }
             }
         }
-
-        .f-minimap-view {
-            fill: var(--vp-minimap-view-color);
+        .f-connections-dragging {
+            .f-component.f-node-input.f-node-output.port-circle.f-node-input-can-be-connected-to
+                ~ .port-label {
+                display: block;
+            }
+            .f-minimap-node {
+                &.Agent-Node:not(.f-selected) {
+                    fill: #8e5cd9;
+                }
+                &.Task-Node:not(.f-selected) {
+                    fill: #30a46c;
+                }
+                &.Tool-Node:not(.f-selected) {
+                    fill: #9f6a00;
+                }
+                &.LLM-Node:not(.f-selected) {
+                    fill: #e0575b;
+                }
+                &.Project-Node:not(.f-selected) {
+                    fill: #5672cd;
+                }
+                &.Python-Node:not(.f-selected) {
+                    fill: #ffcf3f;
+                }
+                &.Edge-Node:not(.f-selected) {
+                    fill: #8e5cd9;
+                }
+                &.Start-Node:not(.f-selected) {
+                    fill: #d3d3d3;
+                }
+                &.Group:not(.f-selected) {
+                    fill: #d3d3d3;
+                }
+                &.Decision-Table:not(.f-selected) {
+                    fill: #00aaff;
+                }
+                &.Note:not(.f-selected) {
+                    fill: #ffffd1;
+                }
+            }
         }
+        .f-connections-dragging {
+            .f-component.f-node-input.f-node-output.port-circle.f-connector-connectable
+                ~ .port-label {
+                display: block;
+            }
 
-        .f-minimap-node {
-            &.Agent-Node:not(.f-selected) {
-                fill: #8e5cd9;
-            }
-            &.Task-Node:not(.f-selected) {
-                fill: #30a46c;
-            }
-            &.Tool-Node:not(.f-selected) {
-                fill: #9f6a00;
-            }
-            &.LLM-Node:not(.f-selected) {
-                fill: #e0575b;
-            }
-            &.Project-Node:not(.f-selected) {
-                fill: #5672cd;
-            }
-            &.Python-Node:not(.f-selected) {
-                fill: #ffcf3f;
-            }
-            &.Edge-Node:not(.f-selected) {
-                fill: #8e5cd9;
-            }
-            &.Start-Node:not(.f-selected) {
-                fill: #d3d3d3;
-            }
-            &.Group:not(.f-selected) {
-                fill: #d3d3d3;
-            }
-            &.Decision-Table:not(.f-selected) {
-                fill: #00aaff;
-            }
-            &.Note:not(.f-selected) {
-                fill: #ffffd1;
-            }
-        }
-    }
-    .f-connections-dragging {
-        .f-component.f-node-input.f-node-output.port-circle.f-node-input-can-be-connected-to
-            ~ .port-label {
-            display: block;
-        }
+            .f-component.f-node-input.f-node-output.port-circle.f-node-input-can-be-connected-to {
+                transform: translate(-50%, -50%) scale(1.3);
+                transition: transform 0.25s ease-in-out;
+                position: relative;
+                .f-component.f-node-input.f-node-output.port-circle.f-connector-connectable {
+                    transform: translate(-50%, -50%) scale(1.3);
+                    transition: transform 0.25s ease-in-out;
+                    position: relative;
 
-        .f-component.f-node-input.f-node-output.port-circle.f-node-input-can-be-connected-to {
-            transform: translate(-50%, -50%) scale(1.3);
-            transition: transform 0.25s ease-in-out;
-            position: relative;
-
+                    &::before {
+                        content: "";
+                        position: absolute;
+                        top: -3px;
+                        left: -3px;
+                        right: -2px;
+                        bottom: -2px;
+                        border: 1.5px dashed #b4b4b4;
+                        border-radius: 50%;
+                        pointer-events: none;
+                        animation: rotateBorder 3s linear infinite;
+                    }
+                }
+            }
+            .connection-center {
+                display: none;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+            }
             &::before {
                 content: "";
                 position: absolute;
-                top: -3px;
-                left: -3px;
-                right: -2px;
-                bottom: -2px;
+                top: -5px;
+                left: -5px;
+                right: -5px;
+                bottom: -5px;
                 border: 1.5px dashed #b4b4b4;
                 border-radius: 50%;
                 pointer-events: none;
@@ -271,12 +514,53 @@
     align-items: flex-start;
     gap: 1rem;
     max-height: calc(100vh - 2rem);
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 10;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+    max-height: calc(100vh - 2rem);
 }
 
 .top-left-actions > * {
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 3rem);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 3rem);
+}
+
+.domain-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 400;
+    border-radius: 4px;
+    border: 1.5px solid var(--color-divider-subtle, #444);
+    background: var(--color-surface-card, #232323);
+    color: var(--color-text-primary, #fff);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border 0.15s;
+    outline: none;
+    height: auto;
+    margin-bottom: 1rem;
+
+    &:hover,
+    &:focus {
+        background: #222222;
+        color: #fff;
+    }
+
+    i {
+        font-size: 16px;
+    }
 }
 @keyframes rotateBorder {
     0% {
@@ -285,8 +569,20 @@
     100% {
         transform: rotate(360deg);
     }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 @keyframes dashOffset {
+    0% {
+        stroke-dashoffset: 20;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
     0% {
         stroke-dashoffset: 20;
     }
@@ -314,13 +610,38 @@
 
         margin-left: 0;
     }
+    padding: 0.5rem 1.25rem;
+    font-size: 0.95rem;
+    border-radius: 4px;
+    border: 1.5px solid var(--color-divider-subtle, #444);
+    background: var(--color-surface-card, #232323);
+    color: var(--color-text-primary, #fff);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border 0.15s;
+    outline: none;
+    height: auto;
+
+    &.standalone {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+
+        margin-left: 0;
+    }
 }
 .show-inputs-btn:hover,
 .show-inputs-btn:focus {
     background: #222222;
     color: #fff;
+    background: #222222;
+    color: #fff;
 }
 .show-inputs-btn.active {
+    background: #222222;
+    border-color: #888;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 0 0 2px #222 inset;
     background: #222222;
     border-color: #888;
     color: #fff;

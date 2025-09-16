@@ -71,6 +71,25 @@ Open your terminal navigate to the unzipped directory and run these two commands
 chmod -R epicstaff.app
 xattr -r -d com.apple.quarantine epicstaff.app
 ```
+
+---
+
+### MacOS Launch Instructions (Manual)
+
+### 1. Clone the Project
+`git clone https://github.com/EpicStaff/EpicStaff.git`
+### 2. Change .env file
+- Navigate to **src/.env**
+- Find line `CREW_SAVEFILES_PATH=/c/savefiles`
+- Change it to `CREW_SAVEFILES_PATH=~/savefiles`
+### 3. Make sure you have Docker installed and running
+### 4. Inside `src/` use next commands
+```bash
+docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config
+
+docker-compose up --build
+```
+
 ---
 
 ## One Platform, Two Workflows: Visual and Code
@@ -142,10 +161,6 @@ Here’s a quick look at how EpicStaff compares to other popular tools in the AI
 ---
 
 **Join us on the journey to shape the future of intelligent, collaborative systems!**
-
----
-
-## 🚀 Get Started
 
 ---
 

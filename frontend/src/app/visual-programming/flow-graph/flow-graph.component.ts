@@ -62,7 +62,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { FlowGraphContextMenuComponent } from '../components/flow-graph-context-menu/flow-graph-context-menu.component';
 
 import { ClickOutsideDirective } from '../../shared/directives/click-outside.directive';
-import { DynamicSidePanelHostComponent } from '../components/side-panel-host/dynamic-side-panel.component';
 import { FlowBaseNodeComponent } from '../components/flow-base-node/flow-base-node.component';
 import { NODE_COLORS, NODE_ICONS } from '../core/enums/node-config';
 
@@ -90,10 +89,10 @@ import { NoteNodeComponent } from '../components/nodes-components/note-node/note
 import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edit-dialog.component';
 import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util'; // Adjust path
 import { NodePanel } from '../core/models/node-panel.interface';
-import { SIDE_PANEL_MAPPING } from '../core/enums/side-panel-mapping';
 import { PANEL_COMPONENT_MAP } from '../core/enums/node-panel.map';
 import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
 import { ToastService } from '../../services/notifications/toast.service';
+import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 
 @Component({
     selector: 'app-flow-graph',
@@ -2137,14 +2136,64 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         console.log('Show Variables:', this.showVariables());
     }
 
+    public onDomainClick(): void {
+        const startNodeInitialState = this.flowService.startNodeInitialState();
+
+        const dialogRef = this.dialog.open(DomainDialogComponent, {
+            width: '1000px',
+            height: '800px',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            data: {
+                initialData: startNodeInitialState,
+            },
+        });
+
+        dialogRef.closed.subscribe((result: unknown) => {
+            if (
+                result !== null &&
+                typeof result === 'object' &&
+                result !== undefined
+            ) {
+                this.updateStartNodeInitialState(
+                    result as Record<string, unknown>
+                );
+            }
+        });
+    }
+
+    private updateStartNodeInitialState(
+        newState: Record<string, unknown>
+    ): void {
+        const startNode = this.flowService
+            .nodes()
+            .find((node) => node.type === NodeType.START) as
+            | StartNodeModel
+            | undefined;
+
+        if (startNode) {
+            const updatedStartNode: StartNodeModel = {
+                ...startNode,
+                data: {
+                    ...startNode.data,
+                    initialState: newState,
+                },
+            };
+
+            this.flowService.updateNode(updatedStartNode);
+            this.toastService.success('Domain variables updated successfully');
+        } else {
+            this.toastService.error('Start node not found');
+        }
+    }
+
     public onProjectExpandToggled(project: ProjectNodeModel): void {
         console.log('Project expanded:', project.data.id);
 
         const dialogRef = this.dialog.open(ProjectDialogComponent, {
             width: '90vw',
             height: '90vh',
-            maxWidth: '100vw',
-            maxHeight: '100vh',
+
             data: {
                 projectId: project.data.id,
                 projectName: project.data.name,

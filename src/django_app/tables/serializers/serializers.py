@@ -6,7 +6,10 @@ from tables.models.realtime_models import VoiceChoices
 
 class RunSessionSerializer(serializers.Serializer):
     graph_id = serializers.IntegerField(required=True)
-    variables = serializers.DictField(required=False)
+    variables = serializers.JSONField(required=False)
+    files = serializers.DictField(
+        child=serializers.CharField(), required=False, allow_null=True, default=dict
+    )
 
 
 class GetUpdatesSerializer(serializers.Serializer):
@@ -35,7 +38,10 @@ class BaseToolSerializer(serializers.Serializer):
     data = serializers.DictField(required=True)
 
     def to_representation(self, instance):  # instance is a Tool instance
-        from tables.serializers.model_serializers import PythonCodeToolSerializer, ToolConfigSerializer
+        from tables.serializers.model_serializers import (
+            PythonCodeToolSerializer,
+            ToolConfigSerializer,
+        )
 
         repr = {}
         if isinstance(instance, PythonCodeTool):
@@ -50,5 +56,3 @@ class BaseToolSerializer(serializers.Serializer):
             )
 
         return repr
-    
-    

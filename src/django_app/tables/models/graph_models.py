@@ -67,6 +67,20 @@ class PythonNode(BaseNode):
         ]
 
 
+class FileExtractorNode(BaseNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="file_extractor_node_list"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_file_extractor_node",
+            )
+        ]
+
+
 class LLMNode(BaseNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="llm_node_list"
@@ -79,6 +93,19 @@ class LLMNode(BaseNode):
                 fields=["graph", "node_name"],
                 name="unique_graph_node_name_for_llm_node",
             )
+        ]
+
+
+class EndNode(models.Model):
+    # TODO: can be OneToOne field
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="end_node"
+    )
+    output_map = models.JSONField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["graph"], name="unique_graph_end_node")
         ]
 
 
