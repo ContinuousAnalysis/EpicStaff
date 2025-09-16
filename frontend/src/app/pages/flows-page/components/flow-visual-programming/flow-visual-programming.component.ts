@@ -322,7 +322,7 @@ export class FlowVisualProgrammingComponent
 
         saveFirst$
             .pipe(
-                switchMap(() => this.runGraphService.runGraph(this.graph.id)),
+                switchMap(() => this.runGraphService.runGraph(this.graph.id, this.graph.start_node_list[0].variables)),
                 takeUntil(this.destroy$),
                 finalize(() => {
                     this.isRunning = false;
