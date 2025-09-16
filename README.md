@@ -42,7 +42,7 @@ Our core philosophy: **We hide the complexity, not the logic.**
 
 This guide will help you launch EpicStaff using our system installer, which manages the Docker containers for you.
 
-### Windows/Linux/macOS
+### Windows/Linux
 
 ### 1. **Install dependencies**  
    - [Git](https://git-scm.com/downloads)  
@@ -79,15 +79,14 @@ xattr -r -d com.apple.quarantine epicstaff.app
 ### 1. Clone the Project
 `git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git`
 ### 2. Change .env file
-- Navigate to **src/.env**
-- Find line `CREW_SAVEFILES_PATH=/c/savefiles`
-- Change it to `CREW_SAVEFILES_PATH=~/savefiles`
-### 3. Make sure you have Docker installed and running
-### 4. Inside `src/` use next commands
 ```bash
-docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config
-
-docker-compose up --build
+sed -i '' 's|CREW_SAVEFILES_PATH=/c/savefiles|CREW_SAVEFILES_PATH=~/savefiles|' src/.env
+```
+Replace ~/savefiles with your preferred location
+### 3. Make sure you have Docker installed and running
+### 4. Use next command to run the project
+```bash
+cd src && docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config && docker-compose up --build
 ```
 
 ---
