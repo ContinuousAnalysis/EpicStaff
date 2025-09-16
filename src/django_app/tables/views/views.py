@@ -209,8 +209,6 @@ class RunSession(APIView):
     def post(self, request):
         logger.info("Received POST request to start a new session.")
 
-        data = request.data.copy()
-
         total_size = sum(f.size for f in request.FILES.values())
         if total_size > MAX_TOTAL_FILE_SIZE:
             return Response(
@@ -231,16 +229,15 @@ class RunSession(APIView):
                 "content_type": file.content_type,
             }
 
-        data["files"] = files_dict
-
-        serializer = RunSessionSerializer(data=data)
+        serializer = RunSessionSerializer(data=request.data)
         if not serializer.is_valid():
             logger.warning(f"Invalid data received in request: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         graph_id = serializer.validated_data["graph_id"]
         variables = serializer.validated_data.get("variables", {})
 
-        variables["files"] = files_dict
+        if files_dict is not None:
+            variables["files"] = files_dict
 
         try:
             # Publish session to: crew, maanger

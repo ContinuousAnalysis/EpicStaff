@@ -6,7 +6,7 @@ from tables.models.realtime_models import VoiceChoices
 
 class RunSessionSerializer(serializers.Serializer):
     graph_id = serializers.IntegerField(required=True)
-    variables = serializers.DictField(required=False)
+    variables = serializers.JSONField(required=False)
     files = serializers.DictField(
         child=serializers.CharField(), required=False, allow_null=True, default=dict
     )
