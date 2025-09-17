@@ -5,6 +5,7 @@ import {
   Agent,
   CreateAgentRequest,
   GetAgentRequest,
+  PartialUpdateAgentRequest,
   UpdateAgentRequest,
 } from '../shared/models/agent.model';
 import { ApiGetRequest } from '../shared/models/api-request.model';
@@ -51,6 +52,17 @@ export class AgentsService {
     return this.http.post<GetAgentRequest>(this.apiUrl, agent, {
       headers: this.headers,
     });
+  }
+
+  // PATCH update agent
+  partialUpdateAgent(agent: PartialUpdateAgentRequest): Observable<PartialUpdateAgentRequest> {
+    return this.http.patch<PartialUpdateAgentRequest>(
+      `${this.apiUrl}${agent.id}/`,
+      agent,
+      {
+        headers: this.headers,
+      }
+    );
   }
 
   // PUT update agent
