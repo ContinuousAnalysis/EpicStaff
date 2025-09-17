@@ -70,7 +70,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
 
         if variables is not None:
-            pass
+            variables = {**start_node.variables, **variables}
         elif start_node.variables is not None:
             variables = start_node.variables
         else:
