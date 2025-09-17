@@ -59,21 +59,6 @@ Unzip the downloaded file and run the EpicStaff application.
 
 ---
 
-### 🛠️ **Important Step for macOS Users**
-
-Before running the application on macOS for the first time, you need to grant it execution permissions.
-
-**Why is this necessary?**
-macOS has a security feature called Gatekeeper that can block applications downloaded from the internet. The following commands simply tell your system that you trust EpicStaff and allow it to run.
-
-Open your terminal navigate to the unzipped directory and run these two commands:
-```bash
-chmod -R epicstaff.app
-xattr -r -d com.apple.quarantine epicstaff.app
-```
-
----
-
 ### MacOS Launch Instructions (Manual)
 
 ### 1. Clone the Project
