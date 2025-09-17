@@ -214,6 +214,7 @@
         <f-minimap [fMinSize]="1000"></f-minimap>
     </f-flow>
     <div class="top-left-actions">
+        <button class="domain-button" (click)="onDomainClick()">Domain</button>
         <app-nodes-search
             [nodes]="flowService.nodes()"
             (nodeSelected)="onZoomInNode($event)"

@@ -3,10 +3,39 @@
     <div class="node-name-label">
         {{ node.node_name || "Unnamed Node" }}
     </div>
+    <div class="node-name-label">
+        {{ node.node_name || "Unnamed Node" }}
+    </div>
 </div>
 
 <!-- Control buttons positioned above the node -->
 <div class="actions" (mousedown)="$event.stopPropagation()">
+    <!-- Edit Button for Note -->
+    <div
+        *ngIf="node.type === NodeType.NOTE"
+        class="action-button edit-button"
+        title="Edit Note"
+        (click)="onEditClick($event)"
+    >
+        <i class="ti ti-edit"></i>
+    </div>
+    <!-- Ungroup Icon -->
+    <div
+        *ngIf="node.type === NodeType.PROJECT"
+        class="action-button ungroup-button"
+        title="Expand Project"
+        (click)="onExpandProjectClick()"
+    >
+        <i class="ti ti-edit"></i>
+    </div>
+    <div
+        *ngIf="node.parentId"
+        class="action-button ungroup-button"
+        title="Remove from group"
+        (click)="onUngroupClick($event)"
+    >
+        <i class="ti ti-lock-off"></i>
+    </div>
     <!-- Edit Button for Note -->
     <div
         *ngIf="node.type === NodeType.NOTE"
@@ -41,6 +70,9 @@
     class="port-wrapper port-index-{{ $index }} port-position-{{
         port.position
     }}"
+    class="port-wrapper port-index-{{ $index }} port-position-{{
+        port.position
+    }}"
 >
     <div
         class="port-circle"
@@ -53,6 +85,7 @@
         [isSelfConnectable]="false"
         [fInputConnectableSide]="port.position"
         [fOutputConnectableSide]="port.position"
+        [fCanBeConnectedInputs]="portConnections()[port.id]"
         [ngStyle]="{
             'border-color':
                 port.port_type === 'output' ? port.color : 'hsl(0, 0%, 15%)',
@@ -82,7 +115,21 @@
             {{ getNodeTitle() }}
         </div>
     </div>
+    <!-- Header Section -->
+    <div class="header">
+        <div class="icon-wrapper">
+            <i [class]="node.icon" [style.color]="node.color"></i>
+        </div>
+        <div class="title">
+            {{ getNodeTitle() }}
+        </div>
+    </div>
 
+    <agent-node
+        *ngIf="agentNode"
+        [node]="agentNode"
+        [parentExpanded]="isExpanded"
+    ></agent-node>
     <agent-node
         *ngIf="agentNode"
         [node]="agentNode"
@@ -94,9 +141,16 @@
         [node]="taskNode"
         [parentExpanded]="isExpanded"
     ></task-node>
+    <task-node
+        *ngIf="taskNode"
+        [node]="taskNode"
+        [parentExpanded]="isExpanded"
+    ></task-node>
 </div>
 } @else if (edgeNode) {
 <app-conditional-edge-node
+    clickOrDrag
+    (actualClick)="onEditClick()"
     clickOrDrag
     (actualClick)="onEditClick()"
 ></app-conditional-edge-node>
@@ -109,7 +163,31 @@ objectKeys(node.input_map).length > 0) {
 <div
     class="inputs-overlay"
     [ngStyle]="{ '--node-overlay-color': node.color || '#23272e' }"
+    class="inputs-overlay"
+    [ngStyle]="{ '--node-overlay-color': node.color || '#23272e' }"
 >
+    <div
+        style="
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+            color: #aaa;
+        "
+    >
+        Inputs
+    </div>
+    <div class="inputs-list">
+        @for (key of objectKeys(node.input_map); track key) {
+        <div class="input-item">
+            <span class="input-key" [title]="key">{{ key }}</span>
+            <span class="equals-sign">=</span>
+            <span class="input-value" [title]="node.input_map[key]">{{
+                node.input_map[key]
+            }}</span>
+        </div>
+        }
+    </div>
     <div
         style="
             font-size: 11px;
@@ -137,7 +215,21 @@ objectKeys(node.input_map).length > 0) {
 <div
     class="output-overlay"
     [ngStyle]="{ '--node-overlay-color': node.color || '#23272e' }"
+    class="output-overlay"
+    [ngStyle]="{ '--node-overlay-color': node.color || '#23272e' }"
 >
+    <div
+        style="
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+            color: #aaa;
+        "
+    >
+        Output
+    </div>
+    <span class="output-label">{{ node.output_variable_path }}</span>
     <div
         style="
             font-size: 11px;

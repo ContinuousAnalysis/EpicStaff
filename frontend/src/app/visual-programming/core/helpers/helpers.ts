@@ -12,6 +12,8 @@ import { DEFAULT_START_NODE_PORTS } from '../rules/start-ports/start-node-defaul
 
 import { DEFAULT_TABLE_NODE_PORTS } from '../rules/table-ports/table-ports';
 import { DEFAULT_GROUP_NODE_PORTS } from '../rules/group-ports/group-node-default-ports';
+import { DEFAULT_FILE_EXTRACTOR_NODE_PORTS } from '../rules/file-extractor-ports/file-extractor-default-ports';
+import { DEFAULT_END_NODE_PORTS } from '../rules/end-ports/end-ports-default-ports';
 import { NodeModel } from '../models/node.model';
 import { ConditionGroup } from '../models/decision-table.model';
 
@@ -54,6 +56,10 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
             return DEFAULT_GROUP_NODE_PORTS;
         case NodeType.TABLE:
             return DEFAULT_TABLE_NODE_PORTS;
+        case NodeType.FILE_EXTRACTOR:
+            return DEFAULT_FILE_EXTRACTOR_NODE_PORTS;
+        case NodeType.END:
+            return DEFAULT_END_NODE_PORTS;
         default:
             console.warn(`Unsupported node type: ${nodeType}`);
             return [];
