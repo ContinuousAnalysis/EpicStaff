@@ -92,6 +92,20 @@ docker-compose up --build
 
 ---
 
+### Windows Launch Instructions (Manual)
+
+### 1. Clone the Project
+`git clone https://github.com/EpicStaff/EpicStaff.git`
+### 2. Make sure you have Docker installed and running
+### 3. Inside `src/` use next commands
+```bash
+docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config
+
+docker compose up --build
+```
+
+---
+
 ## One Platform, Two Workflows: Visual and Code
 
 We built EpicStaff to serve everyone involved in building AI-powered solutions, from business analysts to senior developers.
