@@ -132,7 +132,7 @@ class RunSessionSSEView(SSEMixin):
         redis_data = await redis_service.async_redis_client.get(redis_key)
 
         if redis_data:
-            self.__log(event="messages", state="update", data=data["uuid"])
+            logger.debug(f"_handle_graph_session_messages: {redis_data}")
             yield {"event": "messages", "data": json.loads(redis_data)}
 
     async def _handle_session_statuses(self, data):
@@ -197,15 +197,15 @@ class RunSessionSSEView(SSEMixin):
                 "data": memo,
             }
 
-    async def get_live_updates(self):
+    async def get_live_updates(self, pubsub):
         session_id = self.kwargs["session_id"]
-
         async for message in redis_service.redis_get_message(
             channels=[
                 self.graph_messages_channel_name,
                 self.session_status_channel_name,
                 self.memory_updates_channel_name,
-            ]
+            ],
+            pubsub=pubsub,
         ):
             if not message:
                 # No message, sleep a bit and loop
@@ -222,6 +222,7 @@ class RunSessionSSEView(SSEMixin):
 
                 if message.get("channel") in self.handlers:
                     async for i in self.handlers[message.get("channel")](data):
+                        logger.debug(f"get_live_updates data: {i}")
                         yield i
 
             except Exception as e:

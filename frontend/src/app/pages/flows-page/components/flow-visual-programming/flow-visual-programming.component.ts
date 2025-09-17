@@ -74,6 +74,7 @@ import { UnsavedChangesDialogService } from '../../../../shared/components/unsav
 
 import { isEqual } from 'lodash';
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
+import { ConfigService } from '../../../../services/config/config.service';
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
@@ -107,7 +108,8 @@ export class FlowVisualProgrammingComponent
         private readonly runGraphService: RunGraphService,
         private readonly startNodeService: StartNodeService,
         private readonly dialog: CdkDialog,
-        private readonly unsavedChangesDialogService: UnsavedChangesDialogService
+        private readonly unsavedChangesDialogService: UnsavedChangesDialogService,
+        private readonly configService: ConfigService
     ) {}
 
     public ngOnInit(): void {
@@ -320,7 +322,7 @@ export class FlowVisualProgrammingComponent
 
         saveFirst$
             .pipe(
-                switchMap(() => this.runGraphService.runGraph(this.graph.id)),
+                switchMap(() => this.runGraphService.runGraph(this.graph.id, this.graph.start_node_list[0].variables)),
                 takeUntil(this.destroy$),
                 finalize(() => {
                     this.isRunning = false;
@@ -354,6 +356,64 @@ export class FlowVisualProgrammingComponent
             data: { flow: this.graph },
             panelClass: 'custom-dialog-panel',
         });
+    }
+
+    public handleGetCurl(): void {
+        const flowId = this.graph?.id;
+        const startNodeInitialState = this.flowService.startNodeInitialState();
+        const apiUrl = this.configService.apiUrl;
+
+        if (flowId && startNodeInitialState) {
+            const curlCommand = this.generateCurlCommand(
+                flowId,
+                startNodeInitialState,
+                apiUrl
+            );
+            this.copyToClipboard(curlCommand);
+            this.toastService.success('CURL command copied to clipboard!');
+        } else {
+            this.toastService.error(
+                'Unable to generate CURL: Missing flow ID or start node data'
+            );
+        }
+    }
+
+    private generateCurlCommand(
+        flowId: number,
+        variables: Record<string, unknown>,
+        apiUrl: string
+    ): string {
+        const variablesJson = JSON.stringify(variables, null, 2);
+        const payload = JSON.stringify(
+            {
+                graph_id: flowId.toString(),
+                variables: variables,
+            },
+            null,
+            2
+        );
+
+        return `curl \\
+  -H "Content-Type: application/json" \\
+  -H "Accept: application/json" \\
+  -X POST \\
+  -d '${payload}' \\
+  ${apiUrl}run-session/`;
+    }
+
+    private async copyToClipboard(text: string): Promise<void> {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (err) {
+            console.error('Failed to copy to clipboard:', err);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
     }
 
     @HostListener('window:beforeunload', ['$event'])

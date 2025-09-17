@@ -223,6 +223,16 @@ class SessionGraphBuilder:
             )
             self.add_node(python_node)
 
+        for file_extractor_node_data in schema.file_extractor_node_list:
+            file_extractor_node = FileContentExtractorNode(
+                session_id=self.session_id,
+                node_name=file_extractor_node_data.node_name,
+                python_code_executor_service=self.python_code_executor_service,
+                input_map=file_extractor_node_data.input_map,
+                output_variable_path=file_extractor_node_data.output_variable_path,
+            )
+            self.add_node(file_extractor_node)
+
         for llm_node_data in schema.llm_node_list:
             llm_node = LLMNode(
                 session_id=self.session_id,
@@ -249,11 +259,13 @@ class SessionGraphBuilder:
                 decision_table_node_data=decision_table_node_data
             )
         # name always __end_node__
-        end_node = EndNode(
-            session_graph_builder_instance=self,
-            session_id=self.session_id,
-            output_map=schema.end_node.output_map,
-        )
-        self.add_node(end_node)
+        # TODO: remove validation here and in request model
+        if schema.end_node is not None:
+            end_node = EndNode(
+                session_graph_builder_instance=self,
+                session_id=self.session_id,
+                output_map=schema.end_node.output_map,
+            )
+            self.add_node(end_node)
 
         return self.compile()

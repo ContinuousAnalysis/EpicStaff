@@ -27,7 +27,7 @@ import { NodeModel } from '../../../core/models/node.model';
                         [class]="node()!.icon"
                         [style.color]="node()!.color || '#685fff'"
                     ></i>
-                    <span class="title">{{ node()!.node_name }}</span>
+                    <span class="title">{{ nodeToDisplay() }}</span>
                 </div>
                 <div class="header-actions">
                     <div class="close-action">
@@ -60,6 +60,11 @@ export class NodePanelShellComponent {
     public readonly panelComponent = input<Type<NodePanel<any>> | null>(null);
     public readonly save = output<NodeModel>();
     public readonly close = output<void>();
+    public readonly nodeToDisplay = computed(() =>
+        this.node()!.node_name === '__start__'
+            ? 'Start'
+            : this.node()?.node_name
+    );
 
     protected readonly outlet = viewChild(NgComponentOutlet);
     protected readonly componentInputs = computed(() => ({

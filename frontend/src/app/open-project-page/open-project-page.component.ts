@@ -337,7 +337,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
             const dialogRef = this.dialog.open<FullAgent>(
                 CreateAgentFormComponent,
                 {
-                    width: '600px',
                     data: {
                         isEditMode: false,
                         projectId: this.project.id,

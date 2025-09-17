@@ -1,9 +1,9 @@
 import { BasePort } from '../../models/port.model';
 
-export const DEFAULT_PYTHON_NODE_PORTS: BasePort[] = [
+export const DEFAULT_FILE_EXTRACTOR_NODE_PORTS: BasePort[] = [
     {
         port_type: 'input',
-        role: 'python-in',
+        role: 'file-extractor-in',
         multiple: true,
         label: 'In',
         allowedConnections: [
@@ -15,12 +15,12 @@ export const DEFAULT_PYTHON_NODE_PORTS: BasePort[] = [
             'llm-out-right',
         ],
         position: 'left',
-        color: '#ffcf3f',
+        color: '#2196F3',
     },
 
     {
         port_type: 'output',
-        role: 'python-out',
+        role: 'file-extractor-out',
         multiple: false,
         label: 'Out',
         allowedConnections: [
@@ -31,6 +31,6 @@ export const DEFAULT_PYTHON_NODE_PORTS: BasePort[] = [
             'llm-out-left',
         ],
         position: 'right',
-        color: '#ffcf3f',
+        color: '#2196F3',
     },
 ];

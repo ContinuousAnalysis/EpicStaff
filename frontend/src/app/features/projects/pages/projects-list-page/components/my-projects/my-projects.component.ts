@@ -100,8 +100,6 @@ import { ConfirmationDialogService } from '../../../../../../shared/components/c
         `,
     ],
     imports: [
-        NgIf,
-        NgFor,
         ProjectCardComponent,
         AddProjectCardComponent,
         LoadingSpinnerComponent,
