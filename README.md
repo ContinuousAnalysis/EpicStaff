@@ -99,7 +99,7 @@ docker-compose up --build
 ### 2. Make sure you have Docker installed and running
 ### 3. Inside `src/` use next commands
 ```bash
-docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config
+docker volume create sandbox_venvs; docker volume create sandbox_executions; docker volume create crew_pgdata; docker volume create crew_config
 
 docker compose up --build
 ```
