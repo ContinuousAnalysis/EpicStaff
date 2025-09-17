@@ -69,12 +69,13 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
 
-        if variables is not None:
-            variables = {**start_node.variables, **variables}
-        elif start_node.variables is not None:
-            variables = start_node.variables
-        else:
+        if variables is None:
             variables = dict()
+
+        if variables and start_node.variables:
+            variables = {**start_node.variables, **variables}
+        elif start_node.variables:
+            variables = start_node.variables
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
         session = Session.objects.create(
