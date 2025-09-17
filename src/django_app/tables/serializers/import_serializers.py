@@ -931,9 +931,7 @@ class GraphImportSerializer(serializers.ModelSerializer):
         previous_name = validated_data.pop("name")
         unique_name = generate_new_unique_name(
             previous_name,
-            Graph.objects.filter(name__startswith=previous_name).values_list(
-                "name", flat=True
-            ),
+            Graph.objects.values_list("name", flat=True),
         )
         graph = Graph.objects.create(name=unique_name, **validated_data)
         # Store previous node names and map those to new node names

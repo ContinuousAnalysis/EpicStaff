@@ -26,6 +26,9 @@ def generate_new_unique_name(base_name: str, existing_names: list[str]):
     """
     Creates new unique name from base_name.
     """
+    if base_name not in existing_names:
+        return base_name
+
     match = re.match(r"^(.+?)\s*\(\d+\)$", base_name.strip())
     if match:
         clean_base = match.group(1)
