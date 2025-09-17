@@ -10,8 +10,10 @@ def generate_file_name(
     If `base_name` cannot be sanitized, function falls back to `default_name`
     """
     safe_name = base_name.lower()
+
     safe_name = re.sub(r'[<>:"/\\|?*]+', "", safe_name)
-    safe_name = safe_name.strip().replace(" ", "_")
+    safe_name = re.sub(r"[^a-z0-9_]", "_", safe_name.lower())
+    safe_name = re.sub(r"_+", "_", safe_name).strip("_")
 
     if not safe_name:
         safe_name = default_name
