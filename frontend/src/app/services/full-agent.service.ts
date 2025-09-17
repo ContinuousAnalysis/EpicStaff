@@ -30,7 +30,7 @@ export interface MergedConfig {
   provider_name?: string;
 }
 
-export interface PartialAgent extends PartialUpdateAgentRequest {
+export interface PartialAgent extends Partial<PartialUpdateAgentRequest> {
   fullLlmConfig?: FullLLMConfig | null;
   fullFcmLlmConfig?: FullLLMConfig | null;
   fullRealtimeConfig?: FullRealtimeConfig | null;

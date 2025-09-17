@@ -26,6 +26,7 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
 import { FullAgent, PartialAgent } from '../../../../../../services/full-agent.service';
 import {
   Agent,
+  PartialUpdateAgentRequest,
   RealtimeAgentConfig,
 } from '../../../../../../shared/models/agent.model';
 import { AgentsService } from '../../../../../../services/staff.service';
@@ -208,7 +209,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
       // Build tool_ids array for settings update
       const settingsToolIds = buildToolIdsArray(configured_tool, python_code_tool);
 
-      const updatedAgent = {
+      const updatedAgent: PartialUpdateAgentRequest = {
         id: this.data.agent.id,
         role: this.data.agent.role,
         goal: this.data.agent.goal,
@@ -221,7 +222,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
 
       // Send PATCH request to update the realtime agent
       this.agentsService
-        .partialUpdateAgent(updatedAgent as any)
+        .partialUpdateAgent(updatedAgent)
         .pipe(
           finalize(() => {
             this.submitting = false;

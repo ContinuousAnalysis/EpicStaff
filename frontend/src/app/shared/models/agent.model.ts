@@ -119,36 +119,7 @@ export interface CreateAgentRequest {
 }
 
 // partialUpdate Agent Request
-export interface PartialUpdateAgentRequest {
-    id?: number;
-    role?: string;
-    goal?: string;
-    backstory?: string;
-
-    configured_tools?: number[];
-    python_code_tools?: number[];
-
-    llm_config?: number | null;
-    fcm_llm_config?: number | null;
-
-    allow_delegation?: boolean;
-    memory?: boolean;
-
-    max_iter?: number;
-    max_rpm?: number | null;
-    max_execution_time?: number | null;
-    cache?: boolean | null;
-    allow_code_execution?: boolean | null;
-    max_retry_limit?: number | null;
-    respect_context_window?: boolean | null;
-    default_temperature?: number | null;
-
-    knowledge_collection?: number | null;
-    search_limit?: number | null;
-    similarity_threshold?: string | null;
-    realtime_agent?: RealtimeAgentConfig;
-    tool_ids?: ToolUniqueName[];
-}
+export interface PartialUpdateAgentRequest extends Partial<UpdateAgentRequest> {}
 
 // Update Agent Request
 export interface UpdateAgentRequest {
