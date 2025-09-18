@@ -192,21 +192,28 @@ export class DomainDialogComponent {
     }
 
     private initializeJsonEditor(): void {
-        if (this.data?.initialData) {
+        const initial = this.data?.initialData as
+            | Record<string, unknown>
+            | undefined;
+        const isEmptyObject =
+            initial && typeof initial === 'object' && !Array.isArray(initial)
+                ? Object.keys(initial).length === 0
+                : true;
+
+        if (initial && !isEmptyObject) {
             try {
+                this.initialStateJson = JSON.stringify(initial, null, 2);
+                this.isJsonValid = true;
+            } catch (e) {
                 this.initialStateJson = JSON.stringify(
-                    this.data.initialData,
+                    { context: null },
                     null,
                     2
                 );
-                this.isJsonValid = true;
-            } catch (e) {
-                console.error('Error parsing initial data JSON:', e);
-                this.initialStateJson = '{}';
                 this.isJsonValid = false;
             }
         } else {
-            this.initialStateJson = '{}';
+            this.initialStateJson = JSON.stringify({ context: null }, null, 2);
             this.isJsonValid = true;
         }
     }
@@ -225,10 +232,18 @@ export class DomainDialogComponent {
         }
 
         try {
-            const parsedData = JSON.parse(this.initialStateJson);
-            this.dialogRef.close(parsedData);
+            let parsedData: unknown = JSON.parse(this.initialStateJson);
+            if (
+                parsedData &&
+                typeof parsedData === 'object' &&
+                !Array.isArray(parsedData) &&
+                Object.keys(parsedData as Record<string, unknown>).length === 0
+            ) {
+                parsedData = { context: null } as Record<string, unknown>;
+            }
+            this.dialogRef.close(parsedData as Record<string, unknown>);
         } catch (e) {
-            console.error('Error parsing JSON before save:', e);
+            this.dialogRef.close({ context: null } as Record<string, unknown>);
         }
     }
 
