@@ -19,6 +19,7 @@ import {
 } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
 import { StartNode } from '../../../pages/flows-page/components/flow-visual-programming/models/start-node.model';
 import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
+import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 
 export interface GraphDto {
     id: number;
@@ -30,6 +31,7 @@ export interface GraphDto {
     conditional_edge_list: ConditionalEdge[];
     llm_node_list: GetLLMNodeRequest[];
     file_extractor_node_list: GetFileExtractorNodeRequest[];
+    end_node_list: EndNode[];
     description: string;
     metadata: FlowModel;
     tags?: [];

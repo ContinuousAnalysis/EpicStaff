@@ -1,15 +1,9 @@
 import { Component } from '@angular/core';
-import {
-    ReactiveFormsModule,
-    FormGroup,
-    Validators,
-    FormArray,
-    FormBuilder,
-} from '@angular/forms';
+import { ReactiveFormsModule, FormGroup, FormBuilder } from '@angular/forms';
 import { EndNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
-import { InputMapComponent } from '../../input-map/input-map.component';
+import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 import { CommonModule } from '@angular/common';
 interface InputMapPair {
     key: string;
@@ -21,7 +15,7 @@ interface InputMapPair {
     imports: [
         ReactiveFormsModule,
         CustomInputComponent,
-        InputMapComponent,
+        JsonEditorComponent,
         CommonModule,
     ],
     template: `
@@ -38,21 +32,19 @@ interface InputMapPair {
                         [errorMessage]="getNodeNameErrorMessage()"
                     ></app-custom-input>
 
-                    <!-- Input Map Key-Value Pairs -->
-                    <div class="input-map">
-                        <app-input-map
-                            [activeColor]="activeColor"
-                        ></app-input-map>
+                    <!-- Output Map Title -->
+                    <div class="output-map-container">
+                        <div class="label-container">
+                            <label>Output Map</label>
+                        </div>
+                        <app-json-editor
+                            class="json-editor"
+                            [jsonData]="outputMapJson"
+                            (jsonChange)="onOutputMapChange($event)"
+                            (validationChange)="onOutputMapValidChange($event)"
+                            [fullHeight]="false"
+                        ></app-json-editor>
                     </div>
-
-                    <!-- Output Variable Path -->
-                    <app-custom-input
-                        label="Output Variable Path"
-                        tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
-                        formControlName="output_variable_path"
-                        placeholder="Enter output variable path (leave empty for null)"
-                        [activeColor]="activeColor"
-                    ></app-custom-input>
                 </form>
             </div>
         </div>
@@ -79,6 +71,31 @@ interface InputMapPair {
             .form-container {
                 @include mixins.form-container;
             }
+
+            .label-container {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .label-container label {
+                display: block;
+                font-size: 14px;
+                color: rgba(255, 255, 255, 0.7);
+                margin: 0;
+            }
+
+            :host ::ng-deep app-json-editor .editor-header {
+                padding-top: 0.25rem;
+                padding-bottom: 0.25rem;
+            }
+
+            .output-map-container {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
         `,
     ],
 })
@@ -91,74 +108,60 @@ export class EndNodePanelComponent extends BaseSidePanel<EndNodeModel> {
         return this.node().color || '#d3d3d3';
     }
 
-    public get inputMapPairs(): FormArray {
-        return this.form.get('input_map') as FormArray;
-    }
+    public outputMapJson: string = '{\n  "context": "variables.context"\n}';
+    public isOutputMapValid: boolean = true;
 
     protected initializeForm(): FormGroup {
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
-            input_map: this.fb.array([]),
-            output_variable_path: [this.node().output_variable_path || ''],
         });
 
-        this.initializeInputMap(form);
+        // Initialize output map JSON from node data or default
+        const existingOutputMap = this.node().data?.output_map;
+        if (
+            existingOutputMap &&
+            typeof existingOutputMap === 'object' &&
+            Object.keys(existingOutputMap).length > 0
+        ) {
+            try {
+                this.outputMapJson = JSON.stringify(existingOutputMap, null, 2);
+            } catch {
+                this.outputMapJson = '{\n  "context": "variables.context"\n}';
+            }
+        } else {
+            this.outputMapJson = '{\n  "context": "variables.context"\n}';
+        }
 
         return form;
     }
 
     protected createUpdatedNode(): EndNodeModel {
-        const validInputPairs = this.getValidInputPairs();
-        const inputMapValue = this.createInputMapFromPairs(validInputPairs);
+        let parsedOutputMap: Record<string, unknown> = {
+            context: 'variables.context',
+        } as Record<string, unknown>;
+        try {
+            const parsed = JSON.parse(this.outputMapJson);
+            if (
+                parsed &&
+                typeof parsed === 'object' &&
+                !Array.isArray(parsed)
+            ) {
+                parsedOutputMap = parsed as Record<string, unknown>;
+            }
+        } catch {}
 
         return {
             ...this.node(),
             node_name: this.form.value.node_name,
-            input_map: inputMapValue,
-            output_variable_path: this.form.value.output_variable_path || null,
+            data: { output_map: parsedOutputMap },
         };
     }
 
-    private initializeInputMap(form: FormGroup): void {
-        const inputMapArray = form.get('input_map') as FormArray;
-
-        if (
-            this.node().input_map &&
-            Object.keys(this.node().input_map).length > 0
-        ) {
-            Object.entries(this.node().input_map).forEach(([key, value]) => {
-                inputMapArray.push(
-                    this.fb.group({
-                        key: [key, Validators.required],
-                        value: [value, Validators.required],
-                    })
-                );
-            });
-        } else {
-            // Always add at least one empty input map pair
-            inputMapArray.push(
-                this.fb.group({
-                    key: [''],
-                    value: [''],
-                })
-            );
-        }
+    public onOutputMapChange(json: string): void {
+        this.outputMapJson = json;
     }
 
-    private getValidInputPairs(): any[] {
-        return this.inputMapPairs.controls.filter((control) => {
-            const value = control.value;
-            return value.key?.trim() !== '' || value.value?.trim() !== '';
-        });
-    }
-
-    private createInputMapFromPairs(pairs: any[]): Record<string, string> {
-        return pairs.reduce((acc: Record<string, string>, curr: any) => {
-            const pair = curr.value as InputMapPair;
-            if (pair.key?.trim()) {
-                acc[pair.key.trim()] = pair.value;
-            }
-            return acc;
-        }, {});
+    public onOutputMapValidChange(isValid: boolean): void {
+        this.isOutputMapValid = isValid;
     }
 }

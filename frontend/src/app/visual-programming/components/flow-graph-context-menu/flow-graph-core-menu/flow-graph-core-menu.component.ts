@@ -8,6 +8,8 @@ import {
 import { NgFor } from '@angular/common';
 import { NodeType } from '../../../core/enums/node-type';
 import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
+import { inject } from '@angular/core';
+import { FlowService } from '../../../services/flow.service';
 
 interface FlowGraphBlock {
     label: string;
@@ -25,6 +27,7 @@ interface FlowGraphBlock {
                 *ngFor="let block of filteredBlocks"
                 (click)="onBlockClicked(block.type)"
                 [style.border-left-color]="block.color"
+                [class.disabled]="isDisabled(block.type)"
             >
                 <i [class]="block.icon" [style.color]="block.color"></i>
                 {{ block.label }}
@@ -72,6 +75,11 @@ interface FlowGraphBlock {
                 opacity: 1;
                 color: inherit; /* Match the block color on hover */
             }
+            li.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,6 +92,8 @@ export class FlowGraphCoreMenuComponent {
         type: NodeType;
         data: any;
     }> = new EventEmitter();
+
+    private flowService = inject(FlowService);
 
     // Use NodeType-based mappings for icon & color
     public blocks: FlowGraphBlock[] = [
@@ -182,5 +192,12 @@ export class FlowGraphCoreMenuComponent {
         }
 
         this.nodeSelected.emit({ type, data });
+    }
+
+    public isDisabled(type: NodeType): boolean {
+        if (type === NodeType.END) {
+            return this.flowService.hasEndNode();
+        }
+        return false;
     }
 }

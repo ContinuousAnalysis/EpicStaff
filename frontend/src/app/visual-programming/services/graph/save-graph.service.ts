@@ -52,6 +52,11 @@ import {
     GraphDto,
     UpdateGraphDtoRequest,
 } from '../../../features/flows/models/graph.model';
+import {
+    EndNode,
+    CreateEndNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
+import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
 
 @Injectable({
     providedIn: 'root',
@@ -65,6 +70,7 @@ export class GraphUpdateService {
         private graphService: FlowsApiService,
         private llmNodeService: LLMNodeService,
         private fileExtractorService: FileExtractorService,
+        private endNodeService: EndNodeService,
         private toastService: ToastService
     ) {}
 
@@ -99,6 +105,7 @@ export class GraphUpdateService {
             fileExtractorNodes: any[];
             conditionalEdges: any[];
             edges: Edge[];
+            endNodes: EndNode[];
         };
     }> {
         //
@@ -254,6 +261,38 @@ export class GraphUpdateService {
             })
         );
 
+        // ---- Handle End Nodes ----
+        let deleteEndNodes$: Observable<any> = of(null);
+        if (graph.end_node_list && graph.end_node_list.length > 0) {
+            const deleteEndReqs = graph.end_node_list.map((endNode: EndNode) =>
+                this.endNodeService
+                    .deleteEndNode(endNode.id)
+                    .pipe(catchError((err) => throwError(err)))
+            );
+            deleteEndNodes$ = forkJoin(deleteEndReqs);
+        }
+
+        const endNodes$ = deleteEndNodes$.pipe(
+            switchMap(() => {
+                const endNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.END
+                );
+
+                const requests = endNodes.map((node) => {
+                    const payload: CreateEndNodeRequest = {
+                        graph: graph.id,
+                        output_map: (node as any).data?.output_map || {
+                            context: 'variables.context',
+                        },
+                    };
+                    return this.endNodeService
+                        .createEndNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
         // ---- Handle Conditional Edges ----
         let deleteConditionalEdges$: Observable<any> = of(null);
         if (
@@ -381,6 +420,7 @@ export class GraphUpdateService {
             fileExtractorNodes: fileExtractorNodes$,
             conditionalEdges: conditionalEdges$,
             edges: createEdges$,
+            endNodes: endNodes$,
         }).pipe(
             switchMap(
                 (results: {
@@ -390,6 +430,7 @@ export class GraphUpdateService {
                     fileExtractorNodes: GetFileExtractorNodeRequest[];
                     conditionalEdges: ConditionalEdge[];
                     edges: Edge[];
+                    endNodes: EndNode[];
                 }) => {
                     const updateGraphRequest: UpdateGraphDtoRequest = {
                         id: graph.id,
@@ -422,6 +463,7 @@ export class GraphUpdateService {
                                         conditionalEdges:
                                             results.conditionalEdges,
                                         edges: results.edges,
+                                        endNodes: results.endNodes,
                                     },
                                 };
                             })
@@ -434,3 +476,5 @@ export class GraphUpdateService {
         );
     }
 }
+
+//trigger

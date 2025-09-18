@@ -42,6 +42,16 @@ export class FlowService {
         return startNode?.data?.initialState || {};
     });
 
+    // Whether there is at least one End node in the flow
+    public readonly hasEndNode = computed(() =>
+        this.nodes().some((node) => node.type === NodeType.END)
+    );
+
+    // Generic helper to check if any node of a type exists
+    public hasNodeType(type: NodeType): boolean {
+        return this.nodes().some((node) => node.type === type);
+    }
+
     public visibleConnections = computed(() => {
         const connections = this.connections();
         const groups = this.groups();
