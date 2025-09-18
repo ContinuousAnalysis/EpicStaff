@@ -54,9 +54,34 @@ class DummyHandler(AbstractHandler):
 
 
 class CreateVenvHandler(AbstractHandler):
+
+    def calculate_hash(self, libraries: List[str]) -> str:
+        """Calculate a hash of the libraries list."""
+        libraries_str = json.dumps(libraries, sort_keys=True)
+        return hashlib.sha256(libraries_str.encode("utf-8")).hexdigest()
+
     async def handle(self, context: Dict[str, Any]) -> Any:
         """Create virtual environment task."""
-        venv_path = context.get("venv_path")
+
+        context["libraries"] = set(context["libraries"])
+        # Install libraries
+        predefined_libraries = {"/home/user/root/app/shared/dotdict"}
+        context["libraries"].update(predefined_libraries)
+
+        context["libraries"] = sorted(context["libraries"])
+        lib_hash = self.calculate_hash(context["libraries"])
+        base_venv_path = context.get("base_venv_path")
+        venv_path: Path = Path(base_venv_path) / Path(lib_hash)
+        python_executable = (
+            venv_path / Path(f"bin/python")
+            if os.name != "nt"
+            else venv_path / Path("Scripts/python")
+        )
+        hash_file = venv_path / "libhash"
+        context["venv_path"] = venv_path
+        context["python_executable"] = python_executable
+        context["hash_file"] = hash_file
+        context["lib_hash"] = lib_hash
 
         if not venv_path.exists():
             logger.info(f"Creating virtual environment at {venv_path}...")
@@ -76,7 +101,7 @@ class CreateVenvHandler(AbstractHandler):
 
 class InstallLibrariesHandler(AbstractHandler):
 
-    def _calculate_hash(self, libraries: List[str]) -> str:
+    def calculate_hash(self, libraries: List[str]) -> str:
         """Calculate a hash of the libraries list."""
         libraries_str = json.dumps(libraries, sort_keys=True)
         return hashlib.sha256(libraries_str.encode("utf-8")).hexdigest()
@@ -97,13 +122,7 @@ class InstallLibrariesHandler(AbstractHandler):
     async def handle(self, context: Dict[str, Any]) -> Any:
         """Install libraries asynchronously."""
         python_executable = context["python_executable"]
-        
-        context["libraries"] = set(context["libraries"])
-        # Install libraries
-        predefined_libraries = {"/home/user/root/app/shared/dotdict"}
-        context["libraries"].update(predefined_libraries)
-
-        lib_hash = self._calculate_hash(list(context["libraries"]))
+        lib_hash = context.get("lib_hash")
         hash_changed = self._hash_changed(
             lib_hash=lib_hash, hash_file=context["hash_file"]
         )
@@ -142,7 +161,6 @@ class InstallLibrariesHandler(AbstractHandler):
 
             stderr = stderr.decode("utf-8", errors="replace")
             stdout = stdout.decode("utf-8", errors="replace")
-
             if returncode != 0:
                 return CodeResultData(
                     execution_id=context["execution_id"],
@@ -334,20 +352,13 @@ class DynamicVenvExecutorChain:
             func_kwargs = dict()
 
         output_path = Path(self.output_path) / execution_id
-        venv_path = Path(self.base_venv_path) / venv_name
         os.makedirs(output_path, exist_ok=True)
         os.makedirs(self.base_venv_path, exist_ok=True)
 
         context = {
-            "venv_path": venv_path,
+            "base_venv_path": self.base_venv_path,
             "libraries": libraries,
-            "python_executable": (
-                venv_path / Path(f"bin/python")
-                if os.name != "nt"
-                else venv_path / Path("Scripts/python")
-            ),
             "temp_code_path": output_path / "code.py",
-            "hash_file": venv_path / "libhash",
             "code": code,
             "result_file_path": output_path / "output.txt",
             "entrypoint": entrypoint,
