@@ -93,9 +93,13 @@ export interface FileExtractorNodeModel extends BaseNodeModel {
     data: unknown;
 }
 
+export interface EndNodeData {
+    output_map: Record<string, unknown>;
+}
+
 export interface EndNodeModel extends BaseNodeModel {
     type: NodeType.END;
-    data: unknown;
+    data: EndNodeData;
 }
 
 export type NodeModel =

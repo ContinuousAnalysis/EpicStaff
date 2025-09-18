@@ -618,6 +618,16 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         this.undoRedoService.stateChanged();
         this.showContextMenu.set(false);
 
+        // Prevent adding a second End node
+        if (event.type === NodeType.END && this.flowService.hasEndNode()) {
+            this.toastService.warning(
+                'Only one End node is allowed',
+                4000,
+                'bottom-right'
+            );
+            return;
+        }
+
         // Generate common values
         const newNodeId = uuidv4();
         const nodeColor = NODE_COLORS[event.type] || '#ddd';
