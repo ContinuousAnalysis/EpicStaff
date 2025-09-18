@@ -6,6 +6,7 @@ import {
     OnDestroy,
     HostListener,
     AfterViewInit,
+    ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
@@ -96,6 +97,9 @@ export class FlowVisualProgrammingComponent
     private readonly destroy$ = new Subject<void>();
     private isNavigatingToRun = false;
 
+    @ViewChild(FlowGraphComponent, { static: false })
+    private flowGraphComponent?: FlowGraphComponent;
+
     constructor(
         private readonly route: ActivatedRoute,
         private readonly router: Router,
@@ -151,6 +155,8 @@ export class FlowVisualProgrammingComponent
         }
 
         this.isSaving = true;
+        // Persist open side panel state into FlowService before reading flow state
+        this.flowGraphComponent?.saveOpenPanelStateSilently();
         const flowState: FlowModel = this.flowService.getFlowState();
         console.log(
             'floew state that i got from service on saveflow',
@@ -322,7 +328,12 @@ export class FlowVisualProgrammingComponent
 
         saveFirst$
             .pipe(
-                switchMap(() => this.runGraphService.runGraph(this.graph.id, this.graph.start_node_list[0].variables)),
+                switchMap(() =>
+                    this.runGraphService.runGraph(
+                        this.graph.id,
+                        this.graph.start_node_list[0].variables
+                    )
+                ),
                 takeUntil(this.destroy$),
                 finalize(() => {
                     this.isRunning = false;
