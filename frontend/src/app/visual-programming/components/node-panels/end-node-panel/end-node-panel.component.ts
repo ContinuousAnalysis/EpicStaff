@@ -1,37 +1,18 @@
 import { Component } from '@angular/core';
-import { ReactiveFormsModule, FormGroup, FormBuilder } from '@angular/forms';
+import { ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { EndNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
-import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 import { CommonModule } from '@angular/common';
-interface InputMapPair {
-    key: string;
-    value: string;
-}
+
 @Component({
     standalone: true,
     selector: 'app-end-node-panel',
-    imports: [
-        ReactiveFormsModule,
-        CustomInputComponent,
-        JsonEditorComponent,
-        CommonModule,
-    ],
+    imports: [ReactiveFormsModule, JsonEditorComponent, CommonModule],
     template: `
         <div class="panel-container">
             <div class="panel-content">
-                <form [formGroup]="form" class="form-container">
-                    <!-- Node Name Field -->
-                    <app-custom-input
-                        label="Node Name"
-                        tooltipText="The unique identifier used to reference this End node. This name must be unique within the flow."
-                        formControlName="node_name"
-                        placeholder="Enter node name"
-                        [activeColor]="activeColor"
-                        [errorMessage]="getNodeNameErrorMessage()"
-                    ></app-custom-input>
-
+                <div class="form-container">
                     <!-- Output Map Title -->
                     <div class="output-map-container">
                         <div class="label-container">
@@ -45,7 +26,7 @@ interface InputMapPair {
                             [fullHeight]="false"
                         ></app-json-editor>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     `,
@@ -112,9 +93,7 @@ export class EndNodePanelComponent extends BaseSidePanel<EndNodeModel> {
     public isOutputMapValid: boolean = true;
 
     protected initializeForm(): FormGroup {
-        const form = this.fb.group({
-            node_name: [this.node().node_name, this.createNodeNameValidators()],
-        });
+        const form = this.fb.group({});
 
         // Initialize output map JSON from node data or default
         const existingOutputMap = this.node().data?.output_map;
@@ -152,7 +131,6 @@ export class EndNodePanelComponent extends BaseSidePanel<EndNodeModel> {
 
         return {
             ...this.node(),
-            node_name: this.form.value.node_name,
             data: { output_map: parsedOutputMap },
         };
     }

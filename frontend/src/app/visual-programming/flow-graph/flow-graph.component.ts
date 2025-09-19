@@ -238,29 +238,8 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         });
     }
 
-    public onSave(): void {
-        // Before saving the graph, if a node panel is open, persist its current state without closing
-        const shellEl = this.nodePanelShell;
-        if (shellEl && typeof shellEl.saveStateSilently === 'function') {
-            const updatedNode = shellEl.saveStateSilently();
-            if (updatedNode) {
-                this.flowService.updateNode(updatedNode);
-            }
-        }
+    public onSave(): void {}
 
-        this.save.emit();
-    }
-
-    // Expose a method for parents (header save) to persist open panel state
-    public saveOpenPanelStateSilently(): void {
-        const shellEl = this.nodePanelShell;
-        if (shellEl && typeof shellEl.saveStateSilently === 'function') {
-            const updatedNode = shellEl.saveStateSilently();
-            if (updatedNode) {
-                this.flowService.updateNode(updatedNode);
-            }
-        }
-    }
     ngDoCheck() {
         console.log('PERFORMANCE!');
     }

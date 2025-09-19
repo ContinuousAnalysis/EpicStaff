@@ -163,7 +163,7 @@ export class MyFlowsComponent implements OnInit {
 
     private openCopyDialog(flow: GraphDto): void {
         const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
-            data: { flowName: `${flow.name} Copy` },
+            data: { flowName: `${flow.name} Copy`, title: 'Copy Flow' },
         });
 
         dialogRef.closed.subscribe((newName) => {
