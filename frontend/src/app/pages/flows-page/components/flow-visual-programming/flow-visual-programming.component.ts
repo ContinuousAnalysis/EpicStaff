@@ -157,8 +157,8 @@ export class FlowVisualProgrammingComponent
         }
 
         this.isSaving = true;
-        // Ask any open panel to persist its state via shell to FlowService
-        this.panelSync.requestPersist();
+        // Persist open side panel state into FlowService before reading flow state
+        this.flowGraphComponent?.saveOpenPanelStateSilently();
         const flowState: FlowModel = this.flowService.getFlowState();
         console.log(
             'floew state that i got from service on saveflow',
