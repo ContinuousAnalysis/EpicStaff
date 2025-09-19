@@ -287,7 +287,7 @@ class Tool(models.Model):
     name = models.TextField()
     name_alias = models.TextField()
     description = models.TextField()
-    enabled = models.BooleanField(default=True)
+    enabled = models.BooleanField(default=False)
     favorite = models.BooleanField(default=False)
 
     def __str__(self):

@@ -29,7 +29,7 @@ class Command(BaseCommand):
         upload_realtime_agent_models()
         upload_realtime_transcription_models()
         upload_embedding_models()
-        upload_tools()
+        # upload_tools()
         upload_default_llm_config()
         upload_default_embedding_config()
         upload_default_realtime_agent_config()
