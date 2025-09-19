@@ -134,7 +134,14 @@ class ToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tool
         fields = ["id", "name", "name_alias", "description", "enabled", "tool_fields"]
-        read_only_fields = ["id", "name", "name_alias", "description", "tool_fields"]
+        read_only_fields = [
+            "id",
+            "name",
+            "name_alias",
+            "description",
+            "enabled",  # TODO: remove to enable bult-in tools
+            "tool_fields",
+        ]
 
 
 class PythonCodeSerializer(serializers.ModelSerializer):
