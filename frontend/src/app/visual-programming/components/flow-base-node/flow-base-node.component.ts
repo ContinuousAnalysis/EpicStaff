@@ -175,6 +175,9 @@ export class FlowBaseNodeComponent {
     public get startNode() {
         return this.node.type === NodeType.START ? (this.node as any) : null;
     }
+    public get endNode() {
+        return this.node.type === NodeType.END ? (this.node as any) : null;
+    }
     public get noteNode() {
         return this.node.type === NodeType.NOTE
             ? (this.node as NoteNodeModel)

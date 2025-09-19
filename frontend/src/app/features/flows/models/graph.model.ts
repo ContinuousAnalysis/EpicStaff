@@ -50,6 +50,14 @@ export interface CreateGraphDtoRequest {
     description?: string;
     metadata?: any;
     tags?: [];
+    start_node_list?: StartNode[];
+    crew_node_list?: CrewNode[];
+    python_node_list?: PythonNode[];
+    edge_list?: Edge[];
+    conditional_edge_list?: ConditionalEdge[];
+    llm_node_list?: GetLLMNodeRequest[];
+    file_extractor_node_list?: GetFileExtractorNodeRequest[];
+    end_node_list?: EndNode[];
 }
 
 export interface UpdateGraphDtoRequest {

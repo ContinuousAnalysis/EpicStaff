@@ -90,9 +90,9 @@ import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edi
 import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util'; // Adjust path
 import { NodePanel } from '../core/models/node-panel.interface';
 import { PANEL_COMPONENT_MAP } from '../core/enums/node-panel.map';
-import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
 import { ToastService } from '../../services/notifications/toast.service';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
+import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
 
 @Component({
     selector: 'app-flow-graph',
@@ -132,6 +132,9 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
 
     @ViewChild(FZoomDirective, { static: true })
     public fZoomDirective!: FZoomDirective;
+
+    @ViewChild('nodePanelShell', { static: false })
+    public nodePanelShell?: NodePanelShellComponent;
 
     public getMinimapClassForNode = getMinimapClassForNode;
 
@@ -236,8 +239,27 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     public onSave(): void {
-        console.log('saving');
+        // Before saving the graph, if a node panel is open, persist its current state without closing
+        const shellEl = this.nodePanelShell;
+        if (shellEl && typeof shellEl.saveStateSilently === 'function') {
+            const updatedNode = shellEl.saveStateSilently();
+            if (updatedNode) {
+                this.flowService.updateNode(updatedNode);
+            }
+        }
+
         this.save.emit();
+    }
+
+    // Expose a method for parents (header save) to persist open panel state
+    public saveOpenPanelStateSilently(): void {
+        const shellEl = this.nodePanelShell;
+        if (shellEl && typeof shellEl.saveStateSilently === 'function') {
+            const updatedNode = shellEl.saveStateSilently();
+            if (updatedNode) {
+                this.flowService.updateNode(updatedNode);
+            }
+        }
     }
     ngDoCheck() {
         console.log('PERFORMANCE!');
@@ -780,7 +802,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             updatedNode
         );
         this.flowService.updateNode(updatedNode);
-        this.onNodePanelClose();
+        // Do not close the panel on save; keep it open as requested
     }
 
     public onGroupSizeChanged(event: IRect, group: GroupNodeModel): void {

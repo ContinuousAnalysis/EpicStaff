@@ -6,6 +6,7 @@ import {
     OnDestroy,
     HostListener,
     AfterViewInit,
+    ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
@@ -75,6 +76,7 @@ import { UnsavedChangesDialogService } from '../../../../shared/components/unsav
 import { isEqual } from 'lodash';
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { ConfigService } from '../../../../services/config/config.service';
+import { PanelSyncService } from '../../../../visual-programming/services/panel-sync.service';
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
@@ -96,6 +98,9 @@ export class FlowVisualProgrammingComponent
     private readonly destroy$ = new Subject<void>();
     private isNavigatingToRun = false;
 
+    @ViewChild(FlowGraphComponent, { static: false })
+    private flowGraphComponent?: FlowGraphComponent;
+
     constructor(
         private readonly route: ActivatedRoute,
         private readonly router: Router,
@@ -109,7 +114,8 @@ export class FlowVisualProgrammingComponent
         private readonly startNodeService: StartNodeService,
         private readonly dialog: CdkDialog,
         private readonly unsavedChangesDialogService: UnsavedChangesDialogService,
-        private readonly configService: ConfigService
+        private readonly configService: ConfigService,
+        private readonly panelSync: PanelSyncService
     ) {}
 
     public ngOnInit(): void {
@@ -151,6 +157,8 @@ export class FlowVisualProgrammingComponent
         }
 
         this.isSaving = true;
+        // Ask any open panel to persist its state via shell to FlowService
+        this.panelSync.requestPersist();
         const flowState: FlowModel = this.flowService.getFlowState();
         console.log(
             'floew state that i got from service on saveflow',
@@ -322,7 +330,12 @@ export class FlowVisualProgrammingComponent
 
         saveFirst$
             .pipe(
-                switchMap(() => this.runGraphService.runGraph(this.graph.id, this.graph.start_node_list[0].variables)),
+                switchMap(() =>
+                    this.runGraphService.runGraph(
+                        this.graph.id,
+                        this.graph.start_node_list[0].variables
+                    )
+                ),
                 takeUntil(this.destroy$),
                 finalize(() => {
                     this.isRunning = false;
