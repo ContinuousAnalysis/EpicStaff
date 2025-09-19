@@ -15,7 +15,7 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
       *ngIf="isOpen"
       (clickOutside)="onClickOutside()"
     >
-      <div class="menu-item" (click)="onEditAgent()">
+      <!-- <div class="menu-item" (click)="onEditAgent()">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"
@@ -32,7 +32,7 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
           <path d="M13.5 6.5l4 4" />
         </svg>
         <span>Edit Agent</span>
-      </div>
+      </div> -->
 
       <div
         *ngIf="state === 'default'"

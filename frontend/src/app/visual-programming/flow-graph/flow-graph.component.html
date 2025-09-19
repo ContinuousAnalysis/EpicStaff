@@ -14,6 +14,7 @@
         (save)="onSave()"
         (fLoaded)="onInitialized()"
         (fCreateConnection)="onConnectionAdded($event)"
+        (fReassignConnection)="onReassignConnection($event)"
         (fDropToGroup)="onDropToGroup($event)"
         (fDragStarted)="onDragStarted($event)"
         (fDragEnded)="onDragEnded()"
@@ -80,6 +81,7 @@
             <app-flow-base-node
                 [node]="node"
                 [showVariables]="showVariables()"
+                [fMinimapClass]="getMinimapClassForNode(node)"
                 fNode
                 fDragHandle
                 [fNodeId]="node.id"
@@ -89,7 +91,7 @@
                 [style.z-index]="node.parentId ? 4 : 2"
                 (fNodePositionChange)="onNodePositionChanged($event, node)"
                 (fNodeSizeChange)="onNodeSizeChanged($event, node)"
-                (editClicked)="onEditNode($event)"
+                (editClicked)="onOpenNodePanel($event)"
                 (projectExpandToggled)="onProjectExpandToggled($event)"
             >
             </app-flow-base-node>
@@ -212,19 +214,12 @@
         <f-minimap [fMinSize]="1000"></f-minimap>
     </f-flow>
     <div class="top-left-actions">
+        <button class="domain-button" (click)="onDomainClick()">Domain</button>
         <app-nodes-search
             [nodes]="flowService.nodes()"
             (nodeSelected)="onZoomInNode($event)"
             (nodeDoubleClicked)="onNodeDoubleClickAndZoom($event)"
         ></app-nodes-search>
-
-        <button
-            class="show-inputs-btn"
-            [class.active]="showVariables()"
-            (click)="toggleShowVariables()"
-        >
-            {{ showVariables() ? "Hide Variables" : "Show Variables" }}
-        </button>
 
         @if (flowService.vscodeNodes().length > 0) {
         <app-flow-nodes-panel
@@ -232,10 +227,18 @@
         ></app-flow-nodes-panel>
         }
     </div>
+
+    <button
+        class="show-inputs-btn standalone"
+        [class.active]="showVariables()"
+        (click)="toggleShowVariables()"
+    >
+        {{ showVariables() ? "Hide Inputs/Output" : "Show Inputs/Output" }}
+    </button>
     <app-flow-action-panel></app-flow-action-panel>
     <!-- <app-flow-zoom-controls></app-flow-zoom-controls> -->
+    @if (showContextMenu()) {
     <app-flow-graph-context-menu
-        *ngIf="showContextMenu()"
         [position]="contextMenuPostion"
         [menuContext]="nodesMode"
         clickOutside
@@ -243,11 +246,11 @@
         (nodeSelected)="onAddNodeFromContextMenu($event)"
     >
     </app-flow-graph-context-menu>
-    @if (selectedNode) {
-    <app-dynamic-side-panel-host
-        [node]="selectedNode"
-        (closePanel)="onCloseSidePanel()"
-        (nodeUpdated)="onSidePanelSaved($event)"
-    ></app-dynamic-side-panel-host>
     }
+    <app-node-panel-shell
+        [node]="selectedNode()"
+        [panelComponent]="panelComponentType()"
+        (save)="onNodePanelSaved($event)"
+        (close)="onNodePanelClose()"
+    />
 </div>

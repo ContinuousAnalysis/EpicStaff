@@ -1,328 +1,182 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
 import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
+    Component,
+    OnInit,
+    ChangeDetectionStrategy,
+    signal,
+} from '@angular/core';
+import {
+    FormBuilder,
+    FormGroup,
+    FormControl,
+    Validators,
+    ReactiveFormsModule,
 } from '@angular/forms';
-import { DialogModule, DialogRef } from '@angular/cdk/dialog';
-import { Subject, takeUntil } from 'rxjs';
-import { ToastService } from '../../../../services/notifications/toast.service';
+import { MATERIAL_FORMS } from '../../../../shared/material-forms';
 
-import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
+import { DialogRef } from '@angular/cdk/dialog';
+import { ErrorStateMatcher } from '@angular/material/core';
+import { CustomErrorStateMatcher } from '../../../../shared/error-state-matcher/custom-error-state-matcher';
 import {
-  FullEmbeddingConfig,
-  FullEmbeddingConfigService,
-} from '../../../settings-dialog/services/embeddings/full-embedding.service';
-import {
-  FullLLMConfig,
-  FullLLMConfigService,
-} from '../../../settings-dialog/services/llms/full-llm-config.service';
-import {
-  GetProjectRequest,
-  CreateProjectRequest,
+    ProjectProcess,
+    CreateProjectRequest,
 } from '../../models/project.model';
 import { ProjectsStorageService } from '../../services/projects-storage.service';
-import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
-import { NgIf, NgStyle } from '@angular/common';
-import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
-import { EmbeddingModelSelectorComponent } from '../../../../shared/components/embedding-model-selector/embedding-model-selector.component';
-import { EmbeddingModelItemComponent } from '../../../../shared/components/embedding-model-selector/embedding-model-item/embedding-model-item.component';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
-import { FormSliderComponent } from '../../../../shared/components/form-controls/slider/form-slider.component';
-import { ToggleSwitchComponent } from '../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
-import { ProcessSelectorComponent } from '../process-selector/process-selector.component';
+
+// Typed interface for the form data - all fields are non-nullable
+interface ProjectFormData {
+    name: string;
+    description: string;
+    process: ProjectProcess;
+    memory: boolean;
+    cache: boolean;
+    max_rpm: number;
+    search_limit: number;
+    similarity_threshold: number;
+}
 
 @Component({
-  selector: 'app-create-project',
-  standalone: true,
-  templateUrl: './create-project.component.html',
-  styleUrls: ['./create-project.component.scss'],
-  imports: [
-    DialogModule,
-
-    HelpTooltipComponent,
-    ReactiveFormsModule,
-    FormSliderComponent,
-    ProcessSelectorComponent,
-
-    ToggleSwitchComponent,
-    LlmModelSelectorComponent,
-    EmbeddingModelSelectorComponent,
-    IconButtonComponent,
-    NgIf,
-
-    AppIconComponent,
-  ],
+    selector: 'app-create-project',
+    standalone: true,
+    templateUrl: './create-project.component.html',
+    styleUrls: ['./create-project.component.scss'],
+    imports: [ReactiveFormsModule, ...MATERIAL_FORMS],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [
+        {
+            provide: ErrorStateMatcher,
+            useClass: CustomErrorStateMatcher,
+        },
+    ],
 })
-export class CreateProjectComponent implements OnInit, OnDestroy {
-  public projectForm: FormGroup;
-  public sliderValue = 0;
-  public maxRpmSliderValue = 15;
-  public activeTab: 'overview' | 'configurations' = 'overview';
+export class CreateProjectComponent implements OnInit {
+    public projectForm!: FormGroup<{
+        name: FormControl<string>;
+        description: FormControl<string>;
+        process: FormControl<ProjectProcess>;
+        memory: FormControl<boolean>;
+        cache: FormControl<boolean>;
+        max_rpm: FormControl<number>;
+        search_limit: FormControl<number>;
+        similarity_threshold: FormControl<number>;
+    }>;
+    public isSubmitting = signal(false);
+    public ProjectProcess = ProjectProcess;
 
-  public llmConfigs: FullLLMConfig[] = [];
-  public embeddingConfigs: FullEmbeddingConfig[] = [];
+    constructor(
+        private fb: FormBuilder,
+        private dialogRef: DialogRef<any>,
+        private projectsStorageService: ProjectsStorageService
+    ) {}
 
-  public selectedIcon: string | null = 'star';
+    ngOnInit(): void {
+        this.initializeForm();
+    }
 
-  public get activeColor(): string {
-    return '#685fff';
-  }
+    private initializeForm(): void {
+        this.projectForm = new FormGroup({
+            name: new FormControl<string>('', Validators.required),
+            description: new FormControl<string>(''),
+            process: new FormControl<ProjectProcess>(
+                ProjectProcess.SEQUENTIAL,
+                Validators.required
+            ),
+            memory: new FormControl<boolean>(false),
+            cache: new FormControl<boolean>(false),
+            max_rpm: new FormControl<number>(15, [
+                Validators.min(1),
+                Validators.max(50),
+            ]),
+            search_limit: new FormControl<number>(10, [
+                Validators.min(1),
+                Validators.max(1000),
+            ]),
+            similarity_threshold: new FormControl<number>(0.7, [
+                Validators.min(0.1),
+                Validators.max(1.0),
+            ]),
+        }) as FormGroup<{
+            name: FormControl<string>;
+            description: FormControl<string>;
+            process: FormControl<ProjectProcess>;
+            memory: FormControl<boolean>;
+            cache: FormControl<boolean>;
+            max_rpm: FormControl<number>;
+            search_limit: FormControl<number>;
+            similarity_threshold: FormControl<number>;
+        }>;
+    }
 
-  private destroy$ = new Subject<void>();
+    get nameField(): FormControl<string> {
+        return this.projectForm.controls.name;
+    }
 
-  public isSubmitting = false;
+    get maxRpmField(): FormControl<number> {
+        return this.projectForm.controls.max_rpm;
+    }
 
-  constructor(
-    private fb: FormBuilder,
-    private dialogRef: DialogRef<GetProjectRequest | undefined>,
-    private fullLlmConfigService: FullLLMConfigService,
-    private fullEmbeddingConfigService: FullEmbeddingConfigService,
-    private projectsService: ProjectsStorageService,
-    private toastService: ToastService
-  ) {
-    this.projectForm = this.fb.group({
-      name: ['', Validators.required],
-      description: [''],
-      process_type: ['sequential'],
-      manager_llm_config: [null],
-      memory_llm_config: [null],
-      embedding_config: [null],
-      planning_llm_config: [null],
-      default_temperature: [0],
-      memory: [false],
-      cache: [true],
-      full_output: [true],
-      planning: [false],
-      project_icon: ['ui/star'],
+    get searchLimitField(): FormControl<number> {
+        return this.projectForm.controls.search_limit;
+    }
 
-      tasks: [[]],
-      agents: [[]],
-      config: [null],
-      max_rpm: [15],
-    });
-  }
+    get thresholdField(): FormControl<number> {
+        return this.projectForm.controls.similarity_threshold;
+    }
 
-  public ngOnInit(): void {
-    // Fetch LLM configs using service
-    this.fullLlmConfigService
-      .getFullLLMConfigs()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (configs) => {
-          this.llmConfigs = configs;
-        },
-        error: (error) => {
-          console.error('Error fetching LLM configs:', error);
-        },
-      });
+    formatRpmLabel(value: number): string {
+        return `${value}`;
+    }
 
-    // Fetch embedding configs using service
-    this.fullEmbeddingConfigService
-      .getFullEmbeddingConfigs()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (configs) => {
-          this.embeddingConfigs = configs;
-        },
-        error: (error) => {
-          console.error('Error fetching embedding configs:', error);
-        },
-      });
+    formatSearchLimitLabel(value: number): string {
+        return `${value}`;
+    }
 
-    // Setup dynamic validation
-    this.setupDynamicValidation();
-  }
+    formatThresholdLabel(value: number): string {
+        return `${value}`;
+    }
 
-  private setupDynamicValidation(): void {
-    // Watch for changes in memory toggle
-    this.projectForm
-      .get('memory')
-      ?.valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe((memoryEnabled: boolean) => {
-        const memoryLlmControl = this.projectForm.get('memory_llm_config');
-        const embeddingControl = this.projectForm.get('embedding_config');
-
-        if (memoryEnabled) {
-          // Add required validators when memory is enabled
-          memoryLlmControl?.setValidators([Validators.required]);
-          embeddingControl?.setValidators([Validators.required]);
-        } else {
-          // Remove validators when memory is disabled
-          memoryLlmControl?.clearValidators();
-          embeddingControl?.clearValidators();
+    onSubmit(): void {
+        if (this.projectForm.invalid || this.isSubmitting()) {
+            return;
         }
 
-        // Update validation status
-        memoryLlmControl?.updateValueAndValidity();
-        embeddingControl?.updateValueAndValidity();
-      });
+        this.isSubmitting.set(true);
 
-    // Watch for changes in process type
-    this.projectForm
-      .get('process_type')
-      ?.valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe((processType: string) => {
-        const managerLlmControl = this.projectForm.get('manager_llm_config');
+        const formData = this.projectForm.value as ProjectFormData;
+        console.log('Form submitted:', formData);
 
-        if (processType === 'hierarchical') {
-          // Add required validator when hierarchical is selected
-          managerLlmControl?.setValidators([Validators.required]);
-        } else {
-          // Remove validator when sequential is selected
-          managerLlmControl?.clearValidators();
-        }
+        const createProjectRequest: CreateProjectRequest = {
+            name: formData.name,
+            description: formData.description || null,
+            process: formData.process,
+            memory: formData.memory,
 
-        // Update validation status
-        managerLlmControl?.updateValueAndValidity();
-      });
+            max_rpm: formData.max_rpm,
+            search_limit: formData.search_limit,
+            similarity_threshold: formData.similarity_threshold.toString(),
+        };
 
-    // Trigger initial validation based on current values
-    const currentMemory = this.projectForm.get('memory')?.value;
-    const currentProcessType = this.projectForm.get('process_type')?.value;
-
-    if (currentMemory) {
-      this.projectForm
-        .get('memory_llm_config')
-        ?.setValidators([Validators.required]);
-      this.projectForm
-        .get('embedding_config')
-        ?.setValidators([Validators.required]);
+        // Call the actual service
+        this.projectsStorageService
+            .createProject(createProjectRequest)
+            .subscribe({
+                next: (newProject) => {
+                    console.log('Project created successfully:', newProject);
+                    this.isSubmitting.set(false);
+                    // Close dialog and return the created project
+                    this.dialogRef.close(newProject);
+                },
+                error: (error) => {
+                    console.error('Error creating project:', error);
+                    this.isSubmitting.set(false);
+                    // TODO: Show error message to user (snackbar, toast, etc.)
+                    // For now, just log the error
+                },
+            });
     }
 
-    if (currentProcessType === 'hierarchical') {
-      this.projectForm
-        .get('manager_llm_config')
-        ?.setValidators([Validators.required]);
+    onCancel(): void {
+        console.log('Form cancelled');
+        // Close dialog without returning data
+        this.dialogRef.close();
     }
-
-    // Update all validations
-    this.projectForm.get('memory_llm_config')?.updateValueAndValidity();
-    this.projectForm.get('embedding_config')?.updateValueAndValidity();
-    this.projectForm.get('manager_llm_config')?.updateValueAndValidity();
-  }
-
-  public ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
-  public switchTab(tab: 'overview' | 'configurations'): void {
-    this.activeTab = tab;
-  }
-
-  public setProcessType(type: 'sequential' | 'hierarchical'): void {
-    this.projectForm.get('process_type')?.setValue(type);
-  }
-
-  public onManagerLLMChange(value: number | null): void {
-    console.log('Selected Manager LLM Config ID:', value);
-    this.projectForm.get('manager_llm_config')?.setValue(value);
-  }
-
-  public onMemoryLLMChange(value: number | null): void {
-    console.log('Selected Memory LLM Config ID:', value);
-    this.projectForm.get('memory_llm_config')?.setValue(value);
-  }
-
-  public onEmbeddingChange(value: number | null): void {
-    console.log('Selected Embedding Config ID:', value);
-    this.projectForm.get('embedding_config')?.setValue(value);
-  }
-
-  public onSliderInput(newValue: number): void {
-    this.sliderValue = newValue;
-    this.projectForm.get('default_temperature')?.setValue(newValue / 100);
-  }
-
-  public onMaxRpmSliderInput(newValue: number): void {
-    this.maxRpmSliderValue = newValue;
-    this.projectForm.get('max_rpm')?.setValue(newValue);
-  }
-
-  // Updated onCancelForm method to just close the dialog
-  public onCancelForm(): void {
-    this.dialogRef.close(undefined);
-  }
-
-  public onSubmitForm(): void {
-    if (this.projectForm.valid) {
-      this.isSubmitting = true;
-      // Convert slider value (0-100) to temperature value (0-1)
-      const temperatureValue = this.sliderValue / 100;
-
-      // Construct the project request
-      const projectRequest: CreateProjectRequest = {
-        // Basic info
-        name: this.projectForm.get('name')?.value,
-        description: this.projectForm.get('description')?.value || null,
-
-        // Process type (must be 'sequential' or 'hierarchical')
-        process: this.projectForm.get('process_type')?.value,
-
-        // Optional config fields
-        memory: this.projectForm.get('memory')?.value,
-        cache: this.projectForm.get('cache')?.value,
-        full_output: this.projectForm.get('full_output')?.value,
-        planning: this.projectForm.get('planning')?.value,
-
-        // Temperature (normalized from slider)
-        default_temperature: temperatureValue,
-
-        // Configuration-related fields
-        manager_llm_config: this.projectForm.get('manager_llm_config')?.value,
-        memory_llm_config: this.projectForm.get('memory_llm_config')?.value,
-        embedding_config: this.projectForm.get('embedding_config')?.value,
-        planning_llm_config: this.projectForm.get('planning_llm_config')?.value,
-
-        // Additional fields
-        tasks: this.projectForm.get('tasks')?.value,
-        agents: this.projectForm.get('agents')?.value,
-        config: this.projectForm.get('config')?.value,
-        max_rpm: this.projectForm.get('max_rpm')?.value,
-
-        // Icon metadata
-        metadata: {
-          icon: this.projectForm.get('project_icon')?.value || 'ui/star',
-        },
-      };
-
-      console.log('Submitting project data:', projectRequest);
-
-      // Send the create project request using ProjectsService
-      this.projectsService.createProject(projectRequest).subscribe({
-        next: (project: GetProjectRequest) => {
-          console.log('Project created successfully:', project);
-          this.isSubmitting = false;
-          this.toastService.success(
-            `Project "${project.name}" created successfully!`
-          );
-
-          this.dialogRef.close(project);
-        },
-        error: (error) => {
-          this.isSubmitting = false;
-
-          console.error('Error creating project:', error);
-
-          this.toastService.error(
-            `Failed to delete project: ${error.message || 'Unknown error'}`
-          );
-        },
-      });
-    } else {
-      // Mark all form controls as touched to show validation errors
-      this.markFormGroupTouched(this.projectForm);
-    }
-  }
-
-  private markFormGroupTouched(formGroup: FormGroup): void {
-    Object.values(formGroup.controls).forEach((control) => {
-      control.markAsTouched();
-      if (control instanceof FormGroup) {
-        this.markFormGroupTouched(control);
-      }
-    });
-  }
 }

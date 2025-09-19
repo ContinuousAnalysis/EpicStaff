@@ -74,7 +74,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     private fb: FormBuilder,
     private toastService: ToastService,
     private dialog: Dialog
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadTranscriptionConfigs();

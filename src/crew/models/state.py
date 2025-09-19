@@ -8,7 +8,7 @@ class ReturnCodeError(Exception): ...
 
 
 class StateHistoryItem(TypedDict):
-    type: Literal["CREW", "PYTHON", "CONDITIONAL_EDGE", "LLM"]
+    type: Literal["CREW", "PYTHON", "FILE_EXTRACTOR", "CONDITIONAL_EDGE", "LLM", "END"]
     name: str
     additional_data: dict
     variables: dict  # for output
@@ -20,4 +20,3 @@ class State(TypedDict):
     state_history: list["StateHistoryItem"] = []
     variables: DotDict
     system_variables: Any
-

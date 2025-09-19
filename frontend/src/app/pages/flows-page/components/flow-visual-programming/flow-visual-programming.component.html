@@ -1,27 +1,29 @@
 @if (isLoaded ) {
 <app-flow-header
-  [graphName]="graph.name"
-  [graphId]="graph.id"
-  [isSaving]="isSaving"
-  [isRunning]="isRunning"
-  (save)="handleSaveFlow(true)"
-  (viewSessions)="handleViewSessions()"
-  (run)="handleRunFlow()"
+    [graphName]="graph.name"
+    [graphId]="graph.id"
+    [isSaving]="isSaving"
+    [isRunning]="isRunning"
+    [hasUnsavedChanges]="hasUnsavedChanges()"
+    (save)="handleSaveFlow(true).subscribe()"
+    (viewSessions)="handleViewSessions()"
+    (run)="handleRunFlow()"
+    (getCurl)="handleGetCurl()"
 ></app-flow-header>
 
 <div class="body">
-  <app-flow-graph
-    [flowState]="graph.metadata"
-    [nodesMode]="'flow-graph'"
-    (save)="handleSaveFlow(true)"
-  ></app-flow-graph>
+    <app-flow-graph
+        [flowState]="graph.metadata"
+        [nodesMode]="'flow-graph'"
+        (save)="handleSaveFlow(true).subscribe()"
+    ></app-flow-graph>
 </div>
 } @else {
 
 <app-spinner
-  [text]="'Loading flow...'"
-  [accentColor]="'#6562f5'"
-  [isOverlay]="false"
+    [text]="'Loading flow...'"
+    [accentColor]="'#6562f5'"
+    [isOverlay]="false"
 ></app-spinner>
 
 }

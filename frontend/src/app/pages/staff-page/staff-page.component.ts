@@ -12,63 +12,66 @@ import { NgIf } from '@angular/common';
 import { GetAgentRequest } from '../../shared/models/agent.model';
 
 @Component({
-  selector: 'app-staff-page',
-  standalone: true,
-  imports: [
-    AgentsTableComponent,
-    ButtonComponent,
-    LoadingSpinnerComponent,
-    NgIf,
-  ],
-  templateUrl: './staff-page.component.html',
-  styleUrls: ['./staff-page.component.scss'],
+    selector: 'app-staff-page',
+    standalone: true,
+    imports: [
+        AgentsTableComponent,
+        ButtonComponent,
+        LoadingSpinnerComponent,
+        NgIf,
+    ],
+    templateUrl: './staff-page.component.html',
+    styleUrls: ['./staff-page.component.scss'],
 })
 export class StaffPageComponent {
-  public newlyCreatedAgent: FullAgent | null = null;
-  public isLoadingAgent = false;
+    public newlyCreatedAgent: FullAgent | null = null;
+    public isLoadingAgent = false;
 
-  constructor(
-    private dialog: Dialog,
-    private fullAgentService: FullAgentService
-  ) {}
+    constructor(
+        private dialog: Dialog,
+        private fullAgentService: FullAgentService
+    ) {}
 
-  openCreateAgentDialog(): void {
-    const dialogRef = this.dialog.open<GetAgentRequest>(
-      CreateAgentFormComponent,
-      {
-        maxWidth: 'none',
-        width: '600px',
-        data: {
-          toolConfigs: [],
-          toolsData: [],
-        },
-      }
-    );
+    openCreateAgentDialog(): void {
+        const dialogRef = this.dialog.open<GetAgentRequest>(
+            CreateAgentFormComponent,
+            {
+                maxWidth: '95vw',
+                maxHeight: '90vh',
+                autoFocus: true,
 
-    dialogRef.closed.subscribe((result: GetAgentRequest | undefined) => {
-      if (result) {
-        // Set loading state while fetching the full agent
-        this.isLoadingAgent = true;
-
-        // Fetch the full agent using the ID from the creation result
-        this.fullAgentService.getFullAgentById(result.id).subscribe({
-          next: (fullAgent) => {
-            if (fullAgent) {
-              this.newlyCreatedAgent = fullAgent;
-            } else {
-              console.error(
-                'Could not find newly created agent with ID:',
-                result.id
-              );
+                data: {
+                    toolConfigs: [],
+                    toolsData: [],
+                },
             }
-            this.isLoadingAgent = false;
-          },
-          error: (error) => {
-            console.error('Error fetching newly created agent:', error);
-            this.isLoadingAgent = false;
-          },
+        );
+
+        dialogRef.closed.subscribe((result: GetAgentRequest | undefined) => {
+            if (result) {
+                this.isLoadingAgent = true;
+
+                this.fullAgentService.getFullAgentById(result.id).subscribe({
+                    next: (fullAgent) => {
+                        if (fullAgent) {
+                            this.newlyCreatedAgent = fullAgent;
+                        } else {
+                            console.error(
+                                'Could not find newly created agent with ID:',
+                                result.id
+                            );
+                        }
+                        this.isLoadingAgent = false;
+                    },
+                    error: (error) => {
+                        console.error(
+                            'Error fetching newly created agent:',
+                            error
+                        );
+                        this.isLoadingAgent = false;
+                    },
+                });
+            }
         });
-      }
-    });
-  }
+    }
 }

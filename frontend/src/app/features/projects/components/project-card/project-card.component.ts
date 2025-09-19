@@ -17,9 +17,7 @@ import { NgClass, NgIf, NgFor, NgStyle } from '@angular/common';
 import { TagComponent } from './tag.component';
 import { ProjectMenuComponent } from './project-menu/project-menu.component';
 import { ProjectTagsStorageService } from '../../services/project-tags-storage.service';
-
-import { CardModule } from 'primeng/card';
-import { ButtonModule } from 'primeng/button';
+import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 
 @Component({
     selector: 'app-project-card',
@@ -30,9 +28,7 @@ import { ButtonModule } from 'primeng/button';
         NgStyle,
         TagComponent,
         ProjectMenuComponent,
-
-        CardModule,
-        ButtonModule,
+        AppIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './project-card.component.html',

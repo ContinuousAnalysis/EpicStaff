@@ -2,7 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 import { FlowModel } from '../core/models/flow.model';
-import { NodeModel } from '../core/models/node.model';
+import { NodeModel, StartNodeModel } from '../core/models/node.model';
 import { ConnectionModel } from '../core/models/connection.model';
 
 import { IPoint, IRect } from '@foblex/2d';
@@ -34,6 +34,23 @@ export class FlowService {
     public readonly noteNodes = computed(() =>
         this.nodes().filter((node) => node.type === NodeType.NOTE)
     );
+
+    public readonly startNodeInitialState = computed(() => {
+        const startNode: StartNodeModel | undefined = this.nodes().find(
+            (node) => node.type === NodeType.START
+        );
+        return startNode?.data?.initialState || {};
+    });
+
+    // Whether there is at least one End node in the flow
+    public readonly hasEndNode = computed(() =>
+        this.nodes().some((node) => node.type === NodeType.END)
+    );
+
+    // Generic helper to check if any node of a type exists
+    public hasNodeType(type: NodeType): boolean {
+        return this.nodes().some((node) => node.type === type);
+    }
 
     public visibleConnections = computed(() => {
         const connections = this.connections();
