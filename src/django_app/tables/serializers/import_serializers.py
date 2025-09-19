@@ -26,6 +26,8 @@ from tables.serializers.model_serializers import (
     EdgeSerializer,
     ConditionalEdgeSerializer,
     StartNodeSerializer,
+    FileExtractorNodeSerializer,
+    EndNodeSerializer,
     LLMNodeSerializer,
     DecisionTableNodeSerializer,
 )
@@ -774,6 +776,34 @@ class StartNodeImportSerializer(StartNodeSerializer):
         return super().create(data)
 
 
+class EndNodeImportSerializer(EndNodeSerializer):
+
+    graph = None
+
+    class Meta(EndNodeSerializer.Meta):
+        fields = None
+        exclude = ["graph"]
+        validators = []
+
+    def create(self, validated_data):
+        data = {"graph": self.context.get("graph"), **validated_data}
+        return super().create(data)
+
+
+class FileExtractorNodeImportSerializer(FileExtractorNodeSerializer):
+
+    graph = None
+
+    class Meta(FileExtractorNodeSerializer.Meta):
+        fields = None
+        exclude = ["graph"]
+        validators = []
+
+    def create(self, validated_data):
+        data = {"graph": self.context.get("graph"), **validated_data}
+        return super().create(data)
+
+
 class EdgeImportSerializer(EdgeSerializer):
 
     graph = None
@@ -805,7 +835,7 @@ class ConditionalEdgeImportSerializer(ConditionalEdgeSerializer):
 class MetdataNodeSerializer(serializers.Serializer):
 
     id = serializers.CharField(required=True)
-    data = serializers.JSONField()
+    data = serializers.JSONField(required=False, allow_null=True)
     icon = serializers.CharField()
     size = serializers.DictField()
     type = serializers.CharField()
@@ -895,6 +925,8 @@ class GraphImportSerializer(serializers.ModelSerializer):
     edge_list = EdgeImportSerializer(many=True)
     conditional_edge_list = ConditionalEdgeImportSerializer(many=True)
     start_node_list = StartNodeImportSerializer(many=True)
+    file_extractor_node_list = FileExtractorNodeImportSerializer(many=True)
+    end_node_list = EndNodeImportSerializer(many=True)
     # llm_node_list = LLMNodeSerializer(many=True)
     # decision_table_node_list = DecisionTableNodeSerializer(many=True)
 
@@ -916,6 +948,10 @@ class GraphImportSerializer(serializers.ModelSerializer):
         edge_list_data = validated_data.pop("edge_list", [])
         conditional_edge_list_data = validated_data.pop("conditional_edge_list", [])
         start_node_list_data = validated_data.pop("start_node_list", [])
+        end_node_list_data = validated_data.pop("end_node_list", [])
+        file_extractor_node_list_data = validated_data.pop(
+            "file_extractor_node_list", []
+        )
         # llm_node_list_data = validated_data.pop("llm_node_list", [])
         # decision_table_node_list_data = validated_data.pop(
         #     "decision_table_node_list", []
@@ -990,6 +1026,20 @@ class GraphImportSerializer(serializers.ModelSerializer):
 
         for node_data in start_node_list_data:
             serializer = StartNodeImportSerializer(
+                data=node_data, context={"graph": graph}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        for node_data in end_node_list_data:
+            serializer = EndNodeImportSerializer(
+                data=node_data, context={"graph": graph}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        for node_data in file_extractor_node_list_data:
+            serializer = FileExtractorNodeImportSerializer(
                 data=node_data, context={"graph": graph}
             )
             serializer.is_valid(raise_exception=True)

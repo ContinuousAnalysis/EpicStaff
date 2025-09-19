@@ -20,6 +20,8 @@ from tables.serializers.model_serializers import (
     CrewNodeSerializer,
     PythonNodeSerializer,
     ConditionalEdgeSerializer,
+    FileExtractorNodeSerializer,
+    EndNodeSerializer,
 )
 
 
@@ -412,6 +414,8 @@ class GraphExportSerializer(GraphSerializer):
     crew_node_list = CrewNodeExportSerializer(many=True)
     python_node_list = PythonNodeExportSerializer(many=True)
     conditional_edge_list = ConditionalEdgeExportSerializer(many=True)
+    file_extractor_node_list = FileExtractorNodeSerializer(many=True)
+    end_node_list = EndNodeSerializer(many=True, source="end_node")
     crews = serializers.SerializerMethodField()
     agents = serializers.SerializerMethodField()
     tools = serializers.SerializerMethodField()
