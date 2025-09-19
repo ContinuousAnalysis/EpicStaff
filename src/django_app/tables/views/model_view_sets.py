@@ -1,8 +1,4 @@
-import json
-
 from django_filters import rest_framework as filters
-from django.http import HttpResponse
-from django.db import IntegrityError
 from tables.models.llm_models import (
     RealtimeConfig,
     RealtimeTranscriptionConfig,
@@ -67,7 +63,6 @@ from tables.serializers.import_serializers import (
     AgentImportSerializer,
     CrewImportSerializer,
     GraphImportSerializer,
-    FileImportSerializer,
 )
 
 
@@ -143,7 +138,7 @@ from tables.serializers.knowledge_serializers import (
     DocumentMetadataSerializer,
 )
 from tables.services.redis_service import RedisService
-from tables.utils.helpers import generate_file_name
+from tables.utils.mixins import ImportExportMixin
 
 
 redis_service = RedisService()
@@ -249,7 +244,7 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     filterset_class = EmbeddingConfigFilter
 
 
-class AgentViewSet(ModelViewSet):
+class AgentViewSet(ModelViewSet, ImportExportMixin):
     queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
         "python_code_tools__python_code",
         Prefetch(
@@ -271,12 +266,16 @@ class AgentViewSet(ModelViewSet):
         "allow_code_execution",
     ]
 
+    entity_type = EntityType.AGENT.value
+    export_prefix = "agent"
+    filename_attr = "role"
+
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
             return AgentReadSerializer
         if self.action == "export":
             return AgentExportSerializer
-        if self.action == "import_agent":
+        if self.action == "import_entity":
             return AgentImportSerializer
         return AgentWriteSerializer
 
@@ -316,57 +315,8 @@ class AgentViewSet(ModelViewSet):
         )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=["get"])
-    def export(self, request, pk: int):
-        serializer = self.get_serializer_class()
-        agent = self.get_object()
-        agent_data = json.dumps(serializer(agent).data, indent=4)
-        filename = generate_file_name(base_name=agent.role, prefix="agent")
 
-        response = HttpResponse(agent_data, content_type="application/json")
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-        return response
-
-    @action(detail=False, methods=["post"], url_path="import")
-    def import_agent(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
-        file_serializer.is_valid(raise_exception=True)
-
-        file = file_serializer.validated_data["file"]
-
-        try:
-            data = json.load(file)
-        except json.JSONDecodeError:
-            return Response(
-                {"message": "Invalid JSON file"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        entity_type = data.pop("entity_type", None)
-        if entity_type != EntityType.AGENT.value:
-            return Response(
-                {
-                    "message": f"Provided wrong entity. Got: {entity_type}. Expected: {EntityType.AGENT.value}"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            with transaction.atomic():
-                serializer.save()
-        except IntegrityError as e:
-            return Response(
-                {"message": f"Database error: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(status=status.HTTP_200_OK)
-
-
-class CrewReadWriteViewSet(ModelViewSet):
+class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin):
     queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
@@ -383,61 +333,16 @@ class CrewReadWriteViewSet(ModelViewSet):
         "planning_llm_config",
     ]
 
+    entity_type = EntityType.CREW.value
+    export_prefix = "crew"
+    filename_attr = "name"
+
     def get_serializer_class(self):
         if self.action == "export":
             return CrewExportSerializer
-        if self.action == "import_crew":
+        if self.action == "import_entity":
             return CrewImportSerializer
         return super().get_serializer_class()
-
-    @action(detail=True, methods=["get"])
-    def export(self, request, pk: int):
-        serializer = self.get_serializer_class()
-        crew = self.get_object()
-        crew_data = json.dumps(serializer(crew).data, indent=4)
-        filename = generate_file_name(base_name=crew.name, prefix="crew")
-
-        response = HttpResponse(crew_data, content_type="application/json")
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-        return response
-
-    @action(detail=False, methods=["post"], url_path="import")
-    def import_crew(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
-        file_serializer.is_valid(raise_exception=True)
-
-        file = file_serializer.validated_data["file"]
-
-        try:
-            data = json.load(file)
-        except json.JSONDecodeError:
-            return Response(
-                {"message": "Invalid JSON file"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        entity_type = data.pop("entity_type", None)
-        if entity_type != EntityType.CREW.value:
-            return Response(
-                {
-                    "message": f"Provided wrong entity. Got: {entity_type}. Expected: {EntityType.CREW.value}"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            with transaction.atomic():
-                serializer.save()
-        except IntegrityError as e:
-            return Response(
-                {"message": f"Database error: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(status=status.HTTP_200_OK)
 
 
 class TaskReadWriteViewSet(ModelViewSet):
@@ -554,8 +459,12 @@ class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["execution_id", "returncode"]
 
 
-class GraphViewSet(viewsets.ModelViewSet):
+class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin):
     serializer_class = GraphSerializer
+
+    entity_type = EntityType.GRAPH.value
+    export_prefix = "graph"
+    filename_attr = "name"
 
     def get_queryset(self):
         return (
@@ -587,59 +496,9 @@ class GraphViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "export":
             return GraphExportSerializer
-        if self.action == "import_graph":
+        if self.action == "import_entity":
             return GraphImportSerializer
         return super().get_serializer_class()
-
-    @action(detail=True, methods=["get"])
-    def export(self, request, pk: int):
-        serializer = self.get_serializer_class()
-        graph = self.get_object()
-        graph_data = serializer(graph).data
-        graph_file = json.dumps(graph_data, indent=4)
-        filename = generate_file_name(base_name=graph.name, prefix="graph")
-
-        response = HttpResponse(graph_file, content_type="application/json")
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-        return response
-
-    @action(detail=False, methods=["post"], url_path="import")
-    def import_graph(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
-        file_serializer.is_valid(raise_exception=True)
-
-        file = file_serializer.validated_data["file"]
-
-        try:
-            data = json.load(file)
-        except json.JSONDecodeError:
-            return Response(
-                {"message": "Invalid JSON file"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        entity_type = data.pop("entity_type", None)
-        if entity_type != EntityType.GRAPH.value:
-            return Response(
-                {
-                    "message": f"Provided wrong entity. Got: {entity_type}. Expected: {EntityType.GRAPH.value}"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            with transaction.atomic():
-                serializer.save()
-        except IntegrityError as e:
-            return Response(
-                {"message": f"Database error: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(status=status.HTTP_200_OK)
 
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
