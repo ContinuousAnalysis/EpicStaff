@@ -802,7 +802,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             updatedNode
         );
         this.flowService.updateNode(updatedNode);
-        this.onNodePanelClose();
+        // Do not close the panel on save; keep it open as requested
     }
 
     public onGroupSizeChanged(event: IRect, group: GroupNodeModel): void {

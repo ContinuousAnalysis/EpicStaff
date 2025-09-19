@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 import { NodePanel } from '../../../core/models/node-panel.interface';
+import { PanelSyncService } from '../../../services/panel-sync.service';
 import { NodeModel } from '../../../core/models/node.model';
 
 @Component({
@@ -74,12 +75,20 @@ export class NodePanelShellComponent {
     protected readonly isShaking = signal(false);
     private panelInstance: any = null;
 
-    constructor() {
+    constructor(private readonly panelSync: PanelSyncService) {
         effect(() => {
             const outletRef = this.outlet();
             if (outletRef?.componentInstance) {
                 this.panelInstance = outletRef.componentInstance;
                 this.setupOutputSubscriptions(outletRef.componentInstance);
+            }
+        });
+
+        // Listen for global persist requests (e.g., header Save)
+        this.panelSync.persist$.subscribe(() => {
+            const updated = this.saveStateSilently();
+            if (updated) {
+                this.save.emit(updated);
             }
         });
     }
@@ -99,12 +108,28 @@ export class NodePanelShellComponent {
     }
 
     protected onCloseClick(): void {
-        if (
-            this.panelInstance &&
-            typeof this.panelInstance.onSave === 'function'
-        ) {
-            this.panelInstance.onSave();
+        const updated = this.saveStateSilently();
+        if (updated) {
+            this.save.emit(updated);
         }
+        this.close.emit();
+    }
+
+    // Allows saving current panel state without closing the panel UI
+    public saveStateSilently(): NodeModel | null {
+        if (!this.panelInstance) return null;
+        const instance: any = this.panelInstance as any;
+        try {
+            if (typeof instance.onSaveSilently === 'function') {
+                const updated = instance.onSaveSilently();
+                return updated as NodeModel;
+            }
+            if (typeof instance.createUpdatedNode === 'function') {
+                const updated = instance.createUpdatedNode();
+                return updated as NodeModel;
+            }
+        } catch {}
+        return null;
     }
 
     // Allows saving current panel state without closing the panel UI
