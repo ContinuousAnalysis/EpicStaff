@@ -6,7 +6,6 @@ import {
     OnDestroy,
     HostListener,
     AfterViewInit,
-    ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
@@ -76,6 +75,7 @@ import { UnsavedChangesDialogService } from '../../../../shared/components/unsav
 import { isEqual } from 'lodash';
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { ConfigService } from '../../../../services/config/config.service';
+
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
@@ -96,9 +96,6 @@ export class FlowVisualProgrammingComponent
     private initialState: FlowModel | undefined;
     private readonly destroy$ = new Subject<void>();
     private isNavigatingToRun = false;
-
-    @ViewChild(FlowGraphComponent, { static: false })
-    private flowGraphComponent?: FlowGraphComponent;
 
     constructor(
         private readonly route: ActivatedRoute,
@@ -155,8 +152,6 @@ export class FlowVisualProgrammingComponent
         }
 
         this.isSaving = true;
-        // Persist open side panel state into FlowService before reading flow state
-        this.flowGraphComponent?.saveOpenPanelStateSilently();
         const flowState: FlowModel = this.flowService.getFlowState();
         console.log(
             'floew state that i got from service on saveflow',
