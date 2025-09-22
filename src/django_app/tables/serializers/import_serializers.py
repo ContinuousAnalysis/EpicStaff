@@ -925,8 +925,10 @@ class GraphImportSerializer(serializers.ModelSerializer):
     edge_list = EdgeImportSerializer(many=True)
     conditional_edge_list = ConditionalEdgeImportSerializer(many=True)
     start_node_list = StartNodeImportSerializer(many=True)
-    file_extractor_node_list = FileExtractorNodeImportSerializer(many=True)
-    end_node_list = EndNodeImportSerializer(many=True)
+    file_extractor_node_list = FileExtractorNodeImportSerializer(
+        many=True, required=False
+    )
+    end_node_list = EndNodeImportSerializer(many=True, required=False)
     # llm_node_list = LLMNodeSerializer(many=True)
     # decision_table_node_list = DecisionTableNodeSerializer(many=True)
 
