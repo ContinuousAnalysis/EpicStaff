@@ -55,6 +55,17 @@ from tables.serializers.model_serializers import (
     TaskConfiguredTools,
     TaskPythonCodeTools,
 )
+from tables.serializers.export_serializers import (
+    AgentExportSerializer,
+    CrewExportSerializer,
+    GraphExportSerializer,
+    EntityType,
+)
+from tables.serializers.import_serializers import (
+    AgentImportSerializer,
+    CrewImportSerializer,
+    GraphImportSerializer,
+)
 
 
 from tables.models import (
@@ -131,6 +142,7 @@ from tables.serializers.knowledge_serializers import (
     DocumentMetadataSerializer,
 )
 from tables.services.redis_service import RedisService
+from tables.utils.mixins import ImportExportMixin
 
 
 redis_service = RedisService()
@@ -236,7 +248,7 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     filterset_class = EmbeddingConfigFilter
 
 
-class AgentViewSet(ModelViewSet):
+class AgentViewSet(ModelViewSet, ImportExportMixin):
     queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
         "python_code_tools__python_code",
         Prefetch(
@@ -258,9 +270,17 @@ class AgentViewSet(ModelViewSet):
         "allow_code_execution",
     ]
 
+    entity_type = EntityType.AGENT.value
+    export_prefix = "agent"
+    filename_attr = "role"
+
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
             return AgentReadSerializer
+        if self.action == "export":
+            return AgentExportSerializer
+        if self.action == "import_entity":
+            return AgentImportSerializer
         return AgentWriteSerializer
 
     def get_queryset(self):
@@ -300,7 +320,7 @@ class AgentViewSet(ModelViewSet):
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
 
-class CrewReadWriteViewSet(ModelViewSet):
+class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin):
     queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
@@ -316,6 +336,17 @@ class CrewReadWriteViewSet(ModelViewSet):
         "planning",
         "planning_llm_config",
     ]
+
+    entity_type = EntityType.CREW.value
+    export_prefix = "crew"
+    filename_attr = "name"
+
+    def get_serializer_class(self):
+        if self.action == "export":
+            return CrewExportSerializer
+        if self.action == "import_entity":
+            return CrewImportSerializer
+        return super().get_serializer_class()
 
 
 class TaskReadWriteViewSet(ModelViewSet):
@@ -432,8 +463,12 @@ class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["execution_id", "returncode"]
 
 
-class GraphViewSet(viewsets.ModelViewSet):
+class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin):
     serializer_class = GraphSerializer
+
+    entity_type = EntityType.GRAPH.value
+    export_prefix = "graph"
+    filename_attr = "name"
 
     def get_queryset(self):
         return (
@@ -465,6 +500,13 @@ class GraphViewSet(viewsets.ModelViewSet):
             )
             .all()
         )
+
+    def get_serializer_class(self):
+        if self.action == "export":
+            return GraphExportSerializer
+        if self.action == "import_entity":
+            return GraphImportSerializer
+        return super().get_serializer_class()
 
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):

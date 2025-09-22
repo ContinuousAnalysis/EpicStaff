@@ -92,7 +92,7 @@ class RealtimeModel(models.Model):
 class RealtimeConfig(models.Model):
     custom_name = models.CharField(max_length=250)
     realtime_model = models.ForeignKey("RealtimeModel", on_delete=models.CASCADE)
-    api_key = models.TextField()
+    api_key = models.TextField(null=True, blank=True)
 
 
 class RealtimeTranscriptionModel(models.Model):
@@ -107,4 +107,4 @@ class RealtimeTranscriptionConfig(models.Model):
     realtime_transcription_model = models.ForeignKey(
         "RealtimeTranscriptionModel", on_delete=models.CASCADE
     )
-    api_key = models.TextField()
+    api_key = models.TextField(null=True, blank=True)
