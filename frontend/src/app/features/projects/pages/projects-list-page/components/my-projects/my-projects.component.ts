@@ -20,6 +20,7 @@ import { AddProjectCardComponent } from './add-project-card/add-project-card.com
 import { LoadingSpinnerComponent } from '../../../../../../shared/components/loading-spinner/loading-spinner.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Dialog } from '@angular/cdk/dialog';
+import { FlowRenameDialogComponent } from '../../../../../flows/components/flow-rename-dialog/flow-rename-dialog.component';
 import { ProjectTagsApiService } from '../../../../services/project-tags-api.service';
 import { CreateProjectComponent } from '../../../../components/create-project-form-dialog/create-project.component';
 import { ConfirmationDialogComponent } from '../../../../../../shared/components/cofirm-dialog/confirmation-dialog.component';
@@ -175,7 +176,7 @@ export class MyProjectsComponent implements OnInit {
                 console.log('Running project:', project.id);
                 break;
             case 'copy':
-                console.log('Copying project:', project.id);
+                this.openCopyDialog(project);
                 break;
             case 'edit':
                 this.router.navigate(['/projects', project.id, 'edit']);
@@ -187,6 +188,22 @@ export class MyProjectsComponent implements OnInit {
                 this.confirmAndDeleteProject(project);
                 break;
         }
+    }
+    private openCopyDialog(project: GetProjectRequest): void {
+        const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
+            data: {
+                flowName: `${project.name} Copy`,
+                title: 'Copy Project',
+            },
+        });
+
+        dialogRef.closed.subscribe((newName) => {
+            if (newName && newName.trim().length > 0) {
+                this.projectsStorageService
+                    .copyProject(project, newName.trim())
+                    .subscribe();
+            }
+        });
     }
 
     private confirmAndDeleteProject(project: GetProjectRequest): void {

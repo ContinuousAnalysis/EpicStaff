@@ -31,8 +31,6 @@ export interface GetProjectRequest {
     metadata?: any | null;
 }
 
-// Create Project Request
-
 export interface CreateProjectRequest {
     name: string;
     description: string | null;
@@ -57,7 +55,6 @@ export interface CreateProjectRequest {
     search_limit?: number | null;
 }
 
-// Create Project Request
 export interface UpdateProjectRequest {
     id: number;
     name: string;
