@@ -26,7 +26,7 @@ import { UniqueNodeNameValidatorService } from '../../services/unique-node-name.
         },
     ],
     host: {
-        '(escape)': 'onSave()',
+        '(escape)': 'onEscape()',
     },
 })
 export abstract class BaseSidePanel<T extends NodeModel>
@@ -59,12 +59,33 @@ export abstract class BaseSidePanel<T extends NodeModel>
 
     public onSave(): void {
         if (this.form.invalid) {
-            // If form is invalid, just close the panel without saving
-            this.close.emit();
             return;
         }
         const updatedNode = this.createUpdatedNode();
         this.save.emit(updatedNode);
+    }
+
+    public onEscape(): void {
+        if (!this.form) {
+            this.close.emit();
+            return;
+        }
+        if (!this.form.invalid) {
+            const updatedNode = this.createUpdatedNode();
+            this.save.emit(updatedNode);
+        }
+        this.close.emit();
+    }
+
+    // Returns the updated node without emitting outputs or closing the panel
+    public onSaveSilently(): T | null {
+        if (!this.form) return null;
+        if (this.form.invalid) return null;
+        try {
+            return this.createUpdatedNode();
+        } catch {
+            return null;
+        }
     }
 
     protected createNodeNameValidators(

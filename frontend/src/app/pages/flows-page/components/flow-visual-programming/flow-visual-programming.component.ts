@@ -75,6 +75,7 @@ import { UnsavedChangesDialogService } from '../../../../shared/components/unsav
 import { isEqual } from 'lodash';
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { ConfigService } from '../../../../services/config/config.service';
+
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
@@ -322,7 +323,12 @@ export class FlowVisualProgrammingComponent
 
         saveFirst$
             .pipe(
-                switchMap(() => this.runGraphService.runGraph(this.graph.id, this.graph.start_node_list[0].variables)),
+                switchMap(() =>
+                    this.runGraphService.runGraph(
+                        this.graph.id,
+                        this.graph.start_node_list[0].variables
+                    )
+                ),
                 takeUntil(this.destroy$),
                 finalize(() => {
                     this.isRunning = false;

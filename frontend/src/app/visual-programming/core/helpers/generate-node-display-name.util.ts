@@ -13,6 +13,9 @@ export function generateNodeDisplayName(
     data: any,
     currentNodes: NodeModel[]
 ): string {
+    if (type === NodeType.END) {
+        return '__end_node__';
+    }
     if (type === NodeType.PROJECT) {
         const projectName = data?.name || 'My Project';
         const count = getNextAvailableNumber(currentNodes, type, projectName);
