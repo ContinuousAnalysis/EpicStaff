@@ -63,7 +63,7 @@ Unzip the downloaded file and run the EpicStaff application.
 
 ### 1. Clone the Project
 ```bash
-git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git`
+git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git
 ```
 ### 2. Set your prefered savefiles location
 ```bash
