@@ -3,12 +3,10 @@ import {
     Type,
     input,
     output,
-    OnDestroy,
     effect,
     signal,
     computed,
     viewChild,
-    inject,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 import { NodePanel } from '../../../core/models/node-panel.interface';
@@ -59,7 +57,6 @@ export class NodePanelShellComponent {
     public readonly node = input<NodeModel | null>(null);
     public readonly panelComponent = input<Type<NodePanel<any>> | null>(null);
     public readonly save = output<NodeModel>();
-    public readonly close = output<void>();
 
     public readonly nodeNameToDisplay = computed(() => {
         const n = this.node();
@@ -93,15 +90,14 @@ export class NodePanelShellComponent {
                 this.save.emit(node);
             });
         }
-
-        if (instance.close && typeof instance.close.emit === 'function') {
-            instance.close.subscribe(() => {
-                this.close.emit();
-            });
-        }
     }
 
     protected onCloseClick(): void {
-        this.close.emit();
+        if (
+            this.panelInstance &&
+            typeof this.panelInstance.onSave === 'function'
+        ) {
+            this.panelInstance.onSave();
+        }
     }
 }

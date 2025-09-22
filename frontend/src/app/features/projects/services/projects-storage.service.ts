@@ -220,19 +220,11 @@ export class ProjectsStorageService {
 
         return this.projectsApiService.patchUpdateProject(id, updateData).pipe(
             tap((updatedProject) => {
-                console.log('💫 TAP operator fired with:', updatedProject);
-                console.log('💫 Memory in TAP:', updatedProject.memory);
-
                 const currentProjects = this.projectsSignal();
                 const index = currentProjects.findIndex((p) => p.id === id);
-                console.log('💫 TAP - Found project at index:', index);
 
                 if (index !== -1) {
                     const oldProject = currentProjects[index];
-                    console.log(
-                        '💫 TAP - Old project memory:',
-                        oldProject.memory
-                    );
 
                     const updatedProjectsList = [...currentProjects];
                     updatedProjectsList[index] = {
@@ -240,24 +232,10 @@ export class ProjectsStorageService {
                         ...updatedProject,
                     } as GetProjectRequest;
 
-                    console.log(
-                        '💫 TAP - New project memory:',
-                        updatedProjectsList[index].memory
-                    );
-
                     this.projectsSignal.set(updatedProjectsList);
 
-                    // Verify TAP update
                     const verifyTapUpdate = this.projectsSignal().find(
                         (p) => p.id === id
-                    );
-                    console.log(
-                        '💫 TAP Verification - project in cache:',
-                        verifyTapUpdate
-                    );
-                    console.log(
-                        '💫 TAP Verification - memory field:',
-                        verifyTapUpdate?.memory
                     );
                 }
             })
@@ -273,6 +251,37 @@ export class ProjectsStorageService {
                 );
                 this.projectsSignal.set(updatedProjects);
             })
+        );
+    }
+
+    copyProject(
+        source: GetProjectRequest,
+        newName: string
+    ): Observable<GetProjectRequest> {
+        const payload: CreateProjectRequest = {
+            name: newName,
+            description: source.description,
+            process: source.process,
+            tasks: source.tasks,
+            agents: source.agents,
+            tags: source.tags,
+            memory: source.memory,
+            config: source.config,
+            max_rpm: source.max_rpm,
+            cache: source.cache ?? null,
+            full_output: source.full_output,
+            default_temperature: source.default_temperature,
+            planning: source.planning,
+            planning_llm_config: source.planning_llm_config,
+            manager_llm_config: source.manager_llm_config,
+            embedding_config: source.embedding_config,
+            memory_llm_config: source.memory_llm_config,
+            metadata: source.metadata ?? null,
+            similarity_threshold: source.similarity_threshold ?? null,
+            search_limit: source.search_limit ?? null,
+        };
+        return this.createProject(payload).pipe(
+            tap((created) => this.addProjectToCache(created))
         );
     }
 
