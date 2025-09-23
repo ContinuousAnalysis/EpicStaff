@@ -19,7 +19,7 @@ services:
       - FASTMCP_HOST=0.0.0.0
       - FASTMCP_PORT=8080
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - START_TOOL=computer
+      - START_TOOL=browser
       - START_URL=about:blank
       - CUA_USE_LOCAL=1        
       - CUA_CONTAINER_NAME=browser_use_with_cua

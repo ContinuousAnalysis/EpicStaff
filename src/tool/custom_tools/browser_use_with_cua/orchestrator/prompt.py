@@ -5,10 +5,10 @@ Login:
 - Password: Epica23!
 
 Navigate to the “Resource management” section.
-In Groups: create a multigroup named “multigroup2”.
-Create a group named “group2”.
+Then click on plus icon near Groups: create a multigroup named “multigroup2”.
+Then use same flow to create a group named “group2”.
 Open “multigroup2” → Subgroups → tick “group2”.
-Summarize steps done (no secrets).
+Summarize steps done.
 
 """
 

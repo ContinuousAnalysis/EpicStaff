@@ -26,7 +26,6 @@ class Hub:
             "step": step,
             "plan": plan_ctx,
             "reset": reset,
-            "allow_escalation": True,
         }
         if model: payload["model"] = model
         if temperature is not None: payload["temperature"] = temperature

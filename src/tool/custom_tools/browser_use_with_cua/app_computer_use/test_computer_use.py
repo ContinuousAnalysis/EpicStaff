@@ -252,7 +252,6 @@ def main(prompt):
     import os
     orchestrator_mode = os.getenv("ORCHESTRATOR_COMPUTER_PROMPT") == "1"
     if orchestrator_mode:
-        # Оркестратор подав повний інструктаж (system+step) — сприймаємо як один крок
         test_description = ""
         steps = [prompt]
     else:

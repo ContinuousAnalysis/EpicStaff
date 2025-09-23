@@ -5,18 +5,14 @@ import uuid
 
 from orchestrator.hub import Hub
 from orchestrator.planner import plan_steps
-from orchestrator.runner import run_steps 
-from orchestrator.prompt import PROMPT
+from orchestrator.core.config import AgentConfig
+
+from orchestrator.supervisor import Supervisor as IfSupervisor
+from orchestrator.crew_supervisor import CrewSupervisor
 
 from dotenv import load_dotenv
 load_dotenv()
 
-os.environ.setdefault("RUNS_DIR", "./runs")
-MCP_URL = os.getenv("MCP_URL", "http://127.0.0.1:8080/mcp")
-MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
-TEMP = float(os.getenv("DEEPSEEK_TEMPERATURE", "0.0"))
-
-SESSION_ID = str(uuid.uuid4())
 
 def to_jsonable(obj):
     if hasattr(obj, "model_dump"):
@@ -27,17 +23,112 @@ def to_jsonable(obj):
         return {k: to_jsonable(v) for k, v in obj.items()}
     return obj
 
-async def amain(full_prompt: str):
-    steps = plan_steps(full_prompt)
-    print(f"[planner] steps: {len(steps)}")
-    hub = Hub(MCP_URL, timeout=600.0, session_id=SESSION_ID)
-    await hub.ainit()
+
+async def amain(full_prompt: str) -> dict:
+    config = AgentConfig.from_env()
+    errors = config.validate()
+    if errors:
+        print("Configuration errors:")
+        for error in errors:
+            print(f"  - {error}")
+        return {"error": "Configuration validation failed", "details": errors}
+
+    print(f"[main] Starting task with config:")
+    print(f"  - Model: {config.deepseek_model}")
+    print(f"  - Start tool: {config.start_tool}")
+    print(f"  - MCP URL: {config.mcp_url}")
+
     try:
-        result = await run_steps(hub, steps, MODEL, TEMP, env="local", user_context=full_prompt)
-        return result
-    finally:
-        await hub.aclose()
+        steps = plan_steps(full_prompt)
+        print(f"[planner] Generated {len(steps)} steps")
+
+        session_id = str(uuid.uuid4())
+        print(f"[main] Session ID: {session_id[:8]}...")
+
+        hub = Hub(config.mcp_url, timeout=config.mcp_timeout, session_id=session_id)
+        await hub.ainit()
+
+        try:
+            supervisor_engine = os.getenv("SUPERVISOR_ENGINE", "if").lower()
+            if supervisor_engine == "crew":
+                supervisor = CrewSupervisor(hub, steps, config, user_context=full_prompt)
+            else:
+                supervisor = IfSupervisor(hub, steps, config, user_context=full_prompt)
+
+            result = await supervisor.run()
+
+            print(f"[main] Execution completed: {result['done']}/{result['total']} steps")
+            return result
+
+        finally:
+            await hub.aclose()
+
+    except Exception as e:
+        print(f"[main] Fatal error: {e}")
+        return {
+            "error": str(e),
+            "total": 0,
+            "done": 0,
+            "results": []
+        }
+
+
+def run_from_env():
+    prompt = os.getenv("AGENT_PROMPT")
+    if not prompt:
+        print("Error: AGENT_PROMPT environment variable is required")
+        return {"error": "No prompt provided"}
+
+    print(f"[main] Task: {prompt[:100]}...")
+    return asyncio.run(amain(prompt))
+
+
+def run_interactive():
+    print("=== Agent Interactive Mode ===")
+    print("Enter your task (or 'quit' to exit):")
+
+    while True:
+        try:
+            prompt = input("\n> ").strip()
+            if prompt.lower() in ('quit', 'exit', 'q'):
+                break
+            if not prompt:
+                continue
+
+            print(f"\n[main] Executing: {prompt}")
+            result = asyncio.run(amain(prompt))
+            print(f"\n[result] {json.dumps(to_jsonable(result), ensure_ascii=False, indent=2)}")
+
+        except KeyboardInterrupt:
+            print("\n[main] Interrupted by user")
+            break
+        except Exception as e:
+            print(f"\n[main] Error: {e}")
+
 
 if __name__ == "__main__":
-    out = asyncio.run(amain(PROMPT))
-    print(json.dumps(to_jsonable(out), ensure_ascii=False, indent=2))
+    mode = os.getenv("RUN_MODE", "auto")
+
+    if mode == "interactive":
+        run_interactive()
+    elif mode == "env":
+        result = run_from_env()
+        print(json.dumps(to_jsonable(result), ensure_ascii=False, indent=2))
+    else:
+        if os.getenv("AGENT_PROMPT"):
+            result = run_from_env()
+            print(json.dumps(to_jsonable(result), ensure_ascii=False, indent=2))
+        else:
+            try:
+                from orchestrator.prompt import PROMPT
+                print("Found orchestrator/prompt.py - executing default prompt")
+                result = asyncio.run(amain(PROMPT))
+                print(json.dumps(to_jsonable(result), ensure_ascii=False, indent=2))
+            except ImportError:
+                print("No AGENT_PROMPT env var and no orchestrator/prompt.py found")
+                print("Starting interactive mode...")
+                run_interactive()
+            except AttributeError:
+                print("orchestrator/prompt.py exists but missing PROMPT variable")
+                print("Starting interactive mode...")
+                run_interactive()

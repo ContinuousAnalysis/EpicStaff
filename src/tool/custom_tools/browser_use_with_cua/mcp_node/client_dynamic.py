@@ -1,15 +1,14 @@
 import os
-from mcp_node.mcptool_node import MCPNodeConfig, MCPService, MCPToolNode
-from mcp_node.prompt import PROMPT
+from mcptool_node import MCPNodeConfig, MCPService, MCPToolNode
+from prompt import PROMPT
 from config import DEEPSEEK_MODEL, DEEPSEEK_TEMPERATURE
 
 MCP_BROWSER_URL = os.getenv("MCP_BROWSER_URL", "http://127.0.0.1:8080/mcp")
-MCP_COMPUTER_URL = os.getenv("MCP_COMPUTER_URL", "http://127.0.0.1:9091/mcp")
+MCP_COMPUTER_URL = os.getenv("MCP_COMPUTER_URL", "http://127.0.0.1:8080/mcp")
 
 cfg = MCPNodeConfig(
     services={
-        "browser-use": MCPService(name="browser-use", url=MCP_BROWSER_URL),
-        "computer-use": MCPService(name="computer-use", url=MCP_COMPUTER_URL),
+        "browser_use_with_cua": MCPService(name="browser_use_with_cua", url=MCP_BROWSER_URL),
     },
     default_service="browser-use",
     allowed_tools={
@@ -29,7 +28,7 @@ result = node.call(
         "model": DEEPSEEK_MODEL,
         "temperature": DEEPSEEK_TEMPERATURE,
     },
-    service="browser-use",
+    service="browser_use_with_cua",
 )
 
 print("Tool result:")

@@ -11,8 +11,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=en_US.UTF-8 \
     MCP_HOST=0.0.0.0 \
     MCP_PORT=8080 \
-    START_TOOL=computer \
-    CUA_USE_LOCAL=1
+    START_TOOL=browser \
+    CUA_USE_LOCAL=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 # ---- System deps ----
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -22,7 +23,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libnss3 libxss1 libasound2 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
     libxcomposite1 libxrandr2 libgbm1 libpango-1.0-0 libpangocairo-1.0-0 \
     xdotool imagemagick \
-    && rm -rf /var/lib/apt/lists/*
+    chromium \
+  && rm -rf /var/lib/apt/lists/*
+
+# ---- Install uv (gives uvx) ----
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+RUN ln -s /root/.local/bin/uvx /usr/local/bin/uvx || true
 
 # ---- Locale ----
 RUN sed -i 's/# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
@@ -38,10 +45,11 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/requirements.txt && \
     pip install --no-cache-dir playwright && \
-    python -m playwright install chromium
+    uvx playwright install chromium --with-deps
 
 # ---- App code ----
 COPY . /app
+RUN chmod +x /app/restart.sh
 RUN chmod +x /app/entrypoint.sh
 
 # ---- Ports ----
