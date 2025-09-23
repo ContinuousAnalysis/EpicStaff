@@ -34,9 +34,18 @@ from tables.models import (
     CrewNode,
     Edge,
     StartNode,
+    PythonCodeTool,
+    PythonCode,
+    RealtimeAgent,
+)
+from tables.serializers.export_serializers import (
+    AgentExportSerializer,
+    CrewExportSerializer,
+    GraphExportSerializer,
 )
 
 from django.utils.crypto import get_random_string
+from tests.helpers import data_to_json_file
 
 
 import fakeredis
@@ -261,7 +270,9 @@ def fake_redis_client() -> Generator[MagicMock, None, None]:
 
 @pytest.fixture
 def mock_redis_service_async():
-    with patch("tables.services.redis_service_async.RedisServiceAsync", autospec=True) as MockService:
+    with patch(
+        "tables.services.redis_service_async.RedisServiceAsync", autospec=True
+    ) as MockService:
         mock = MockService.return_value
         mock.connect = AsyncMock()
         mock.disconnect = AsyncMock()
@@ -444,3 +455,68 @@ def wikipedia_agent_with_configured_realtime(
     )
 
     return wikipedia_agent
+
+
+@pytest.fixture
+def seeded_db(wikipedia_tool):
+    tool1 = ToolConfig.objects.create(name="tool1", tool=wikipedia_tool)
+
+    code = PythonCode.objects.create(code="def main(arg1, arg2): return None")
+    custom_tool = PythonCodeTool.objects.create(
+        name="custom_tool1",
+        description="description",
+        python_code=code,
+        args_schema={"arg1": "a", "arg2": "b"},
+    )
+
+    agent1 = Agent.objects.create(role="agent1", goal="goal1", backstory="backstory")
+    agent2 = Agent.objects.create(role="agent2", goal="goal2", backstory="backstory")
+    agent3 = Agent.objects.create(role="agent3", goal="agent3", backstory="backstory")
+    agent4 = Agent.objects.create(role="agent4", goal="agent4", backstory="backstory")
+
+    agents = [agent1, agent2, agent3, agent4]
+    for agent in agents:
+        RealtimeAgent.objects.create(agent=agent)
+
+    agent1.configured_tools.add(tool1)
+    agent2.python_code_tools.add(custom_tool)
+    agent3.configured_tools.add(tool1)
+    agent3.python_code_tools.add(custom_tool)
+    agent4.python_code_tools.add(custom_tool)
+
+    crew1 = Crew.objects.create(name="crew1")
+    crew1.agents.set((agent1, agent2))
+    crew2 = Crew.objects.create(name="crew2")
+    crew2.agents.set((agent1, agent2, agent3, agent4))
+
+    graph = Graph.objects.create(name="graph1")
+
+    CrewNode.objects.create(crew=crew1, graph=graph, node_name="crew_node1")
+    CrewNode.objects.create(crew=crew2, graph=graph, node_name="crew_node2")
+
+    return {
+        "agents": agents,
+        "crews": [crew1, crew2],
+        "graph": graph,
+    }
+
+
+@pytest.fixture
+def agent_export(seeded_db):
+    agent = seeded_db["agents"][0]
+    data = AgentExportSerializer(agent).data
+    return {"file": data_to_json_file(data=data, filename=agent.role), "agent": agent}
+
+
+@pytest.fixture
+def crew_export(seeded_db):
+    crew = seeded_db["crews"][0]
+    data = CrewExportSerializer(crew).data
+    return {"file": data_to_json_file(data=data, filename=crew.name), "crew": crew}
+
+
+@pytest.fixture
+def graph_export(seeded_db):
+    graph = seeded_db["graph"]
+    data = GraphExportSerializer(graph).data
+    return {"file": data_to_json_file(data=data, filename=graph.name), "graph": graph}
