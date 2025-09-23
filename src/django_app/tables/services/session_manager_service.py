@@ -1,5 +1,9 @@
 import json
-from tables.exceptions import EndNodeValidationError, GraphEntryPointException
+from tables.exceptions import (
+    EndNodeValidationError,
+    GraphEntryPointException,
+    FileExtractorValidationError,
+)
 from tables.models.graph_models import (
     ConditionalEdge,
     DecisionTableNode,
@@ -122,6 +126,11 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         file_extractor_node_data_list: list[FileExtractorNodeData] = []
         for item in file_extractor_node_list:
+            if not item.input_map:
+                raise FileExtractorValidationError(
+                    f"FileExtractor requires arguments. Node wihout arguments: {item.node_name}"
+                )
+
             file_extractor_node_data_list.append(
                 FileExtractorNodeData(
                     node_name=item.node_name,
