@@ -681,7 +681,20 @@ class InitRealtimeAPIView(APIView):
 
 
 class CollectionStatusAPIView(APIView):
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                "collection_id",
+                openapi.IN_QUERY,
+                description="Filter by collection_id",
+                type=openapi.TYPE_STRING,
+                required=False,
+            )
+        ]
+    )
     def get(self, request):
+        collection_id = request.query_params.get("collection_id")
+
         try:
             collections = (
                 SourceCollection.objects.only(
@@ -723,8 +736,18 @@ class CollectionStatusAPIView(APIView):
                     )
                 )
             )
+
+            if collection_id:
+                collections = collections.filter(collection_id=collection_id)
+                if not collections.exists():
+                    return Response(
+                        {"error": f"Collection {collection_id} not found"},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+
             serializer = CollectionStatusSerializer(collections, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
+
         except SourceCollection.DoesNotExist:
             return Response(
                 {"error": "Collection not found"}, status=status.HTTP_404_NOT_FOUND
