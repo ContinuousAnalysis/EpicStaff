@@ -335,6 +335,19 @@ class SSEMixin(View, ABC):
 
 
 class ImportExportMixin:
+    """
+    A mixin that can extend ModelSerializer class with import/export functionality.
+    Creates 2 new action methods: export, import_entity.
+
+    Params:
+        `entity_type`: A string that represents the entity (agent, crew, graph, etc.).
+        `export_prefix`: A string that will be added for export file.
+        `filename_attr`: A string that should be accesible as entity instance attribute.
+            For example:
+
+            If `filename_attr` set to "name", and given `instance` is Agent,
+            we will try to get `agent.name`
+    """
 
     entity_type = None
     export_prefix = None
