@@ -1,9 +1,5 @@
 import json
-from tables.exceptions import (
-    EndNodeValidationError,
-    GraphEntryPointException,
-    FileExtractorValidationError,
-)
+from tables.exceptions import EndNodeValidationError, GraphEntryPointException
 from tables.models.graph_models import (
     ConditionalEdge,
     DecisionTableNode,
@@ -16,6 +12,7 @@ from utils.singleton_meta import SingletonMeta
 from utils.logger import logger
 from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
+from tables.validators.file_extractor_node_validator import FileExtractorNodeValidator
 
 from tables.request_models import (
     ConditionalEdgeData,
@@ -50,6 +47,7 @@ class SessionManagerService(metaclass=SingletonMeta):
     ) -> None:
         self.redis_service = redis_service
         self.converter_service = converter_service
+        self.file_extractor_node_validator = FileExtractorNodeValidator()
 
     def get_session(self, session_id: int) -> Session:
         return Session.objects.get(id=session_id)
@@ -104,6 +102,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         crew_node_data_list: list[CrewNodeData] = []
+
         try:
             end_node = EndNode.objects.get(graph=graph.pk)
         except EndNode.DoesNotExist:
@@ -111,6 +110,11 @@ class SessionManagerService(metaclass=SingletonMeta):
             # TODO: revert back validation
             logger.warning(f"end_node is missing for flow id={graph.pk}")
             # raise EndNodeValidationError(f"end_node is missing for flow id={graph.pk}")
+
+        if file_extractor_node_list:
+            self.file_extractor_node_validator.validate_file_extractor_nodes(
+                file_extractor_node_list
+            )
 
         for item in crew_node_list:
 
@@ -126,11 +130,6 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         file_extractor_node_data_list: list[FileExtractorNodeData] = []
         for item in file_extractor_node_list:
-            if not item.input_map:
-                raise FileExtractorValidationError(
-                    f"FileExtractor requires arguments. Node wihout arguments: {item.node_name}"
-                )
-
             file_extractor_node_data_list.append(
                 FileExtractorNodeData(
                     node_name=item.node_name,
