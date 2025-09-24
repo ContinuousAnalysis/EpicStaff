@@ -65,7 +65,27 @@ Example:
 Note: If properties is empty, the output model will be set to null."
                 ></app-help-tooltip>
             </h3>
-            <div class="form-group json-group">
+
+            <!-- Toggle to enable/disable output model -->
+            <div class="form-group toggle-group">
+                <div class="toggle-setting">
+                    <div class="setting-label">
+                        Enable Output Model
+                        <app-help-tooltip
+                            position="right"
+                            text="Toggle this to enable or disable the output model. When disabled, the output model will be set to null."
+                        ></app-help-tooltip>
+                    </div>
+                    <mat-slide-toggle
+                        [ngModel]="useOutputModel()"
+                        (ngModelChange)="useOutputModel.set($event)"
+                    >
+                    </mat-slide-toggle>
+                </div>
+            </div>
+
+            <!-- JSON Editor - only show when toggle is enabled -->
+            <div class="form-group json-group" *ngIf="useOutputModel()">
                 <app-json-editor
                     [jsonData]="jsonConfig()"
                     (jsonChange)="jsonConfig.set($event)"
@@ -128,6 +148,11 @@ Note: If properties is empty, the output model will be set to null."
     <!-- Action Buttons -->
     <div class="actions">
         <button (click)="dialogRef.close()">Cancel</button>
-        <button (click)="save()" [disabled]="!isJsonValid()">Save Changes</button>
+        <button
+            (click)="save()"
+            [disabled]="useOutputModel() && !isJsonValid()"
+        >
+            Save Changes
+        </button>
     </div>
 </div>

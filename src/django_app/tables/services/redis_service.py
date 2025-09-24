@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import os
 import json
@@ -131,30 +132,29 @@ class RedisService(metaclass=SingletonMeta):
             f"Cached for saving graph message data created by user unput: {uuid} in {session_id=}."
         )
 
-    async def redis_get_message(self, channels: list, reconnections_left=2):
+    async def redis_get_message(self, channels: list, pubsub):
         try:
-            pubsub = self.async_redis_client.pubsub()
-            await pubsub.subscribe(*channels)
-
             async for message in pubsub.listen():
                 if message["type"] == "message":
+                    logger.debug(f"message from redis_get_message {message["data"]}")
                     yield message
+                    await asyncio.sleep(0.01)
 
         except Exception as e:
-            logger.warning(
-                f"Redis PubSub connection error: {e}. Reinitializing pubsub. Tries left #{reconnections_left}"
-            )
-            if reconnections_left <= 0:
-                raise
+            # TODO: fix reconection logic
+            logger.warning(f"Redis PubSub connection error: {e}.")
+            # if reconnections_left <= 0:
+            #     raise
 
-            # Retry with a new pubsub
-            async for message in self.redis_get_message(
-                channels, reconnections_left - 1
-            ):
-                yield message
+            # # Retry with a new pubsub
+            # async for message in self.redis_get_message(
+            #     channels, reconnections_left - 1
+            # ):
+            #     yield message
 
         finally:
             # Cleanly unsubscribe and close pubsub to avoid Redis leaks
             with contextlib.suppress(Exception):
+                # TODO: refactor
                 await pubsub.unsubscribe(*channels)
                 await pubsub.close()

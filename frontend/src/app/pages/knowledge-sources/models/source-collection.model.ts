@@ -12,6 +12,7 @@ export enum CollectionStatus {
   PROCESSING = 'processing',
   COMPLETED = 'completed',
   FAILED = 'failed',
+  WARNING = 'warning',
 }
 export interface GetSourceCollectionRequest {
   collection_id: number;

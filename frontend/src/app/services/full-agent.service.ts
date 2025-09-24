@@ -11,7 +11,7 @@ import { ProjectsStorageService } from '../features/projects/services/projects-s
 import { LLM_Providers_Service } from '../features/settings-dialog/services/LLM_providers.service';
 import { ToolsService } from '../features/tools/services/tools.service';
 
-import { GetAgentRequest } from '../shared/models/agent.model';
+import { GetAgentRequest, PartialUpdateAgentRequest } from '../shared/models/agent.model';
 import { GetToolConfigRequest } from '../features/tools/models/tool_config.model';
 import { GetPythonCodeToolRequest } from '../features/tools/models/python-code-tool.model';
 import { RealtimeModelConfigsService } from '../features/settings-dialog/services/realtime-llms/real-time-model-config.service';
@@ -29,6 +29,23 @@ export interface MergedConfig {
   provider_id?: number;
   provider_name?: string;
 }
+
+export interface PartialAgent extends Partial<PartialUpdateAgentRequest> {
+  fullLlmConfig?: FullLLMConfig | null;
+  fullFcmLlmConfig?: FullLLMConfig | null;
+  fullRealtimeConfig?: FullRealtimeConfig | null;
+  fullConfiguredTools?: GetToolConfigRequest[];
+  fullPythonTools?: GetPythonCodeToolRequest[];
+  mergedTools?: {
+    id: number;
+    configName: string;
+    toolName: string;
+    type: string;
+  }[];
+  mergedConfigs?: MergedConfig[];
+  tags?: string[];
+}
+
 
 export interface FullAgent extends GetAgentRequest {
   fullLlmConfig?: FullLLMConfig | null;
@@ -547,7 +564,7 @@ export class FullAgentService {
                 pythonToolIds.push(tool.data.id);
               }
             });
-          }
+          }   
 
           // Tool configs based on parsed IDs
           const fullConfiguredTools = toolConfigs.filter((tool) =>

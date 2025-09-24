@@ -182,6 +182,7 @@ class SessionData(BaseModel):
     id: int
     graph: "GraphData"
     initial_state: dict[str, Any] = {}
+    output_state: dict[str, Any] = {}
 
 
 class TaskMessageData(BaseModel):
@@ -230,6 +231,12 @@ class PythonNodeData(BaseModel):
     output_variable_path: str | None = None
 
 
+class FileExtractorNodeData(BaseModel):
+    node_name: str
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
 class LLMNodeData(BaseModel):
     node_name: str
     llm_data: LLMData
@@ -257,6 +264,10 @@ class DecisionTableNodeData(BaseModel):
     next_error_node: str | None = None
 
 
+class EndNodeData(BaseModel):
+    output_map: dict[str, Any]
+
+
 class EdgeData(BaseModel):
     start_key: str
     end_key: str
@@ -273,11 +284,13 @@ class GraphData(BaseModel):
     name: str
     crew_node_list: list[CrewNodeData] = []
     python_node_list: list[PythonNodeData] = []
+    file_extractor_node_list: list[FileExtractorNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
     entry_point: str
+    end_node: EndNodeData | None
 
 
 class GraphSessionMessageData(BaseModel):

@@ -151,6 +151,8 @@ class RedisPubSub:
         except Exception as e:
             logger.error(f"Error while listening for Redis messages: {e}")
 
+    # TODO: listen_for_redis_messages_worker and cache_for_redis_messages_worker
+    # can be optimized and combined to one function
     def listen_for_redis_messages_worker(self):
         logger.info(f"Start worker {os.getpid()} listening for Redis messages...")
         self.set_handler(SESSION_STATUS_CHANNEL, self.session_status_handler)

@@ -25,6 +25,7 @@ from tables.models import (
     Graph,
     GraphSessionMessage,
     PythonNode,
+    FileExtractorNode,
 )
 from rest_framework import serializers
 from tables.exceptions import ToolConfigSerializerError
@@ -39,6 +40,7 @@ from tables.models.graph_models import (
     Condition,
     ConditionGroup,
     DecisionTableNode,
+    EndNode,
     LLMNode,
     StartNode,
 )
@@ -132,7 +134,14 @@ class ToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tool
         fields = ["id", "name", "name_alias", "description", "enabled", "tool_fields"]
-        read_only_fields = ["id", "name", "name_alias", "description", "tool_fields"]
+        read_only_fields = [
+            "id",
+            "name",
+            "name_alias",
+            "description",
+            "enabled",  # TODO: remove to enable bult-in tools
+            "tool_fields",
+        ]
 
 
 class PythonCodeSerializer(serializers.ModelSerializer):
@@ -829,6 +838,12 @@ class PythonNodeSerializer(serializers.ModelSerializer):
         return self.update(instance, validated_data)
 
 
+class FileExtractorNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FileExtractorNode
+        fields = "__all__"
+
+
 class LLMNodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LLMNode
@@ -888,6 +903,18 @@ class StartNodeSerializer(serializers.ModelSerializer):
 
     def get_node_name(self, obj):
         return "__start__"
+
+
+class EndNodeSerializer(serializers.ModelSerializer):
+    node_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = EndNode
+        fields = ["id", "graph", "output_map", "node_name"]
+        read_only_fields = ["node_name"]
+
+    def get_node_name(self, obj):
+        return "__end_node__"
 
 
 class SessionSerializer(serializers.ModelSerializer):
@@ -1035,11 +1062,13 @@ class GraphSerializer(serializers.ModelSerializer):
     # Reverse relationships
     crew_node_list = CrewNodeSerializer(many=True, read_only=True)
     python_node_list = PythonNodeSerializer(many=True, read_only=True)
+    file_extractor_node_list = FileExtractorNodeSerializer(many=True, read_only=True)
     edge_list = EdgeSerializer(many=True, read_only=True)
     conditional_edge_list = ConditionalEdgeSerializer(many=True, read_only=True)
     llm_node_list = LLMNodeSerializer(many=True, read_only=True)
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
+    end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
 
     class Meta:
         model = Graph
@@ -1050,11 +1079,13 @@ class GraphSerializer(serializers.ModelSerializer):
             "description",
             "crew_node_list",
             "python_node_list",
+            "file_extractor_node_list",
             "edge_list",
             "conditional_edge_list",
             "llm_node_list",
             "decision_table_node_list",
             "start_node_list",
+            "end_node_list",
             "time_to_live",
             "persistent_variables",
         ]

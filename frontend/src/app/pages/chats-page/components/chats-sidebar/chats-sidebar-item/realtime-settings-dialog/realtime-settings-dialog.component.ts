@@ -23,9 +23,10 @@ import {
   UpdateRealtimeAgentRequest,
 } from '../../../../../../shared/models/realtime-agent.model';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
-import { FullAgent } from '../../../../../../services/full-agent.service';
+import { FullAgent, PartialAgent } from '../../../../../../services/full-agent.service';
 import {
   Agent,
+  PartialUpdateAgentRequest,
   RealtimeAgentConfig,
 } from '../../../../../../shared/models/agent.model';
 import { AgentsService } from '../../../../../../services/staff.service';
@@ -36,6 +37,7 @@ import {
 } from '../../../../../../shared/models/transcription-config.model';
 import { TranscriptionConfigSelectorComponent } from './transcription-model-selector/transcription-config-selector.component';
 import { AddTranscriptionConfigDialogComponent } from './add-transcription-dialog/add-transcription-dialog.component';
+import { buildToolIdsArray } from '../../../../../../shared/utils/tool-ids-builder.util';
 
 @Component({
   selector: 'app-realtime-settings-dialog',
@@ -67,7 +69,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
   voices = AVAILABLE_VOICES;
 
   constructor(
-    private dialogRef: DialogRef<FullAgent>,
+    private dialogRef: DialogRef<PartialAgent>,
     @Inject(DIALOG_DATA) public data: { agent: FullAgent },
     private agentsService: AgentsService,
     private transcriptionConfigsService: TranscriptionConfigsService,
@@ -82,7 +84,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     this.settingsForm = this.fb.group({
       voice: [this.data.agent.realtime_agent.voice, Validators.required],
       threshold: [
-        parseFloat(this.data.agent.realtime_agent.distance_threshold),
+        parseFloat(this.data.agent.realtime_agent.similarity_threshold),
         [Validators.required, Validators.min(0), Validators.max(1)],
       ],
       searchLimit: [
@@ -175,7 +177,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
 
       // Prepare the data for API request
       const realtimeAgentData: RealtimeAgentConfig = {
-        distance_threshold: formValues.threshold.toString(),
+        similarity_threshold: formValues.threshold.toString(),
         search_limit: formValues.searchLimit,
         wake_word: formValues.wakeword,
         stop_prompt: formValues.stopword,
@@ -185,14 +187,42 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         realtime_transcription_config: formValues.realtime_transcription_config,
         realtime_config: this.data.agent.realtime_agent.realtime_config,
       };
-      const updatedAgent = {
-        ...this.data.agent,
-        realtime_agent: realtimeAgentData,
+
+      const getToolIds = (tools: any[]) => {
+        const configured_tool: number[] = [];
+        const python_code_tool: number[] = [];
+
+        tools.forEach(({ data, unique_name }) => {
+          const parts = unique_name.split(":");
+          if (parts[0] === "configured-tool") {
+            configured_tool.push(data.id);
+          } else {
+            python_code_tool.push(data.id);
+          }
+        });
+
+        return { configured_tool, python_code_tool };
       };
 
-      // Send PUT request to update the realtime agent
+      const { configured_tool, python_code_tool } = getToolIds(this.data.agent.tools);
+
+      // Build tool_ids array for settings update
+      const settingsToolIds = buildToolIdsArray(configured_tool, python_code_tool);
+
+      const updatedAgent: PartialUpdateAgentRequest = {
+        id: this.data.agent.id,
+        role: this.data.agent.role,
+        goal: this.data.agent.goal,
+        backstory: this.data.agent.backstory,
+        realtime_agent: realtimeAgentData,
+        configured_tools: configured_tool,
+        python_code_tools: python_code_tool,
+        tool_ids: settingsToolIds,
+      };
+
+      // Send PATCH request to update the realtime agent
       this.agentsService
-        .updateAgent(updatedAgent as any)
+        .partialUpdateAgent(updatedAgent)
         .pipe(
           finalize(() => {
             this.submitting = false;

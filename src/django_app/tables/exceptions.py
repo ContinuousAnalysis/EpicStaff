@@ -35,3 +35,18 @@ class UploadSourceCollectionSerializerValidationError(CustomAPIExeption):
 class CrewMemoryValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = "ValidationError occured in CrewMemoryValidator -> ConverterService during asigning memory_llm or embedder"
+
+
+class TaskValidationError(CustomAPIExeption):
+    status_code = 400
+    default_detail = "ValidationError occured in TaskValidator -> ConverterService during validate crews' tasks"
+
+
+class EndNodeValidationError(CustomAPIExeption):
+    status_code = 400
+    default_detail = "ValidationError occured in session_manager_service"
+
+
+class FileExtractorValidationError(CustomAPIExeption):
+    status_code = 400
+    default_detail = "FileExtractorNode requires input arguments"

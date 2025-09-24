@@ -35,9 +35,14 @@ import { HelpTooltipComponent } from '../help-tooltip/help-tooltip.component';
                 [(ngModel)]="value"
                 (blur)="onTouched()"
                 class="text-input"
+                [class.error]="errorMessage"
                 [disabled]="disabled"
                 [autofocus]="autofocus"
+                [style.--active-color]="activeColor"
             />
+            <div class="error-message" *ngIf="errorMessage">
+                {{ errorMessage }}
+            </div>
         </div>
     `,
     styles: [
@@ -69,8 +74,19 @@ import { HelpTooltipComponent } from '../help-tooltip/help-tooltip.component';
 
                     &:focus {
                         outline: none;
-                        border-color: #685fff;
+                        border-color: var(--active-color, #685fff);
                     }
+
+                    &.error {
+                        border-color: #ef4444;
+                    }
+                }
+
+                .error-message {
+                    color: #ef4444;
+                    font-size: 12px;
+                    margin-top: 4px;
+                    line-height: 1.4;
                 }
             }
         `,
@@ -91,6 +107,8 @@ export class CustomInputComponent implements ControlValueAccessor {
     @Input() name: string = '';
     @Input() autofocus: boolean = false;
     @Input() tooltipText: string = '';
+    @Input() activeColor: string = '#685fff';
+    @Input() errorMessage: string = '';
 
     private _value: string = '';
     private _disabled: boolean = false;

@@ -23,7 +23,7 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
     template: `
         <div class="input-map-container" formArrayName="input_map">
             <div class="input-map-header">
-                <label>Input Map</label>
+                <label>Input List</label>
                 <app-help-tooltip
                     position="right"
                     text="Maps function arguments to domain variables using key-value pairs. For example, 'project_id' = 'current_project' maps the function parameter 'project_id' to the flow variable 'current_project'."
@@ -36,20 +36,22 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
                         <div class="input-wrapper">
                             <input
                                 type="text"
-                                formControlName="value"
-                                placeholder="Domain Variable Name"
+                                formControlName="key"
+                                placeholder="Function Argument Name"
                                 [style.--active-color]="activeColor"
                                 autocomplete="off"
+                                (keydown.enter)="onEnterKey($event, i)"
                             />
                         </div>
                         <div class="equals-sign">=</div>
                         <div class="input-wrapper">
                             <input
                                 type="text"
-                                formControlName="key"
-                                placeholder="Function Argument Name"
+                                formControlName="value"
+                                placeholder="Domain Variable Name"
                                 [style.--active-color]="activeColor"
                                 autocomplete="off"
+                                (keydown.enter)="onEnterKey($event, i)"
                             />
                         </div>
                         <i
@@ -239,5 +241,24 @@ export class InputMapComponent implements OnInit {
         if (this.pairs.length === 0) {
             this.addPair();
         }
+    }
+
+    onEnterKey(event: Event, currentIndex: number) {
+        const keyboardEvent = event as KeyboardEvent;
+        keyboardEvent.preventDefault();
+
+        // Add a new pair after the current one
+        this.addPair();
+
+        // Focus on the key input of the newly added pair
+        setTimeout(() => {
+            const newIndex = currentIndex + 1;
+            const newPairElement = document.querySelector(
+                `[formGroupName="${newIndex}"] input[formControlName="key"]`
+            ) as HTMLInputElement;
+            if (newPairElement) {
+                newPairElement.focus();
+            }
+        }, 0);
     }
 }
