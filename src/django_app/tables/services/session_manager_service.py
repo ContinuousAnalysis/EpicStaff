@@ -1,4 +1,5 @@
 import json
+from tables.validators.end_node_validator import EndNodeValidator
 from tables.exceptions import EndNodeValidationError, GraphEntryPointException
 from tables.models.graph_models import (
     ConditionalEdge,
@@ -46,6 +47,7 @@ class SessionManagerService(metaclass=SingletonMeta):
     ) -> None:
         self.redis_service = redis_service
         self.converter_service = converter_service
+        self.end_node_validator: EndNodeValidator = EndNodeValidator()
 
     def get_session(self, session_id: int) -> Session:
         return Session.objects.get(id=session_id)
@@ -100,13 +102,6 @@ class SessionManagerService(metaclass=SingletonMeta):
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         crew_node_data_list: list[CrewNodeData] = []
-        try:
-            end_node = EndNode.objects.get(graph=graph.pk)
-        except EndNode.DoesNotExist:
-            end_node = None
-            # TODO: revert back validation
-            logger.warning(f"end_node is missing for flow id={graph.pk}")
-            # raise EndNodeValidationError(f"end_node is missing for flow id={graph.pk}")
 
         for item in crew_node_list:
 
@@ -163,6 +158,9 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
             decision_table_node_data_list.append(decision_table_node_data)
+        
+        end_node = self.end_node_validator.validate(graph_id=graph.pk)
+        
         # TODO: remove validation
         if end_node is not None:
             end_node_data = self.converter_service.convert_end_node_to_pydantic(
