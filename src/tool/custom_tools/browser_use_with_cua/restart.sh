@@ -9,6 +9,5 @@ sleep 2
 
 /app/entrypoint.sh "$@" > /dev/null 2>&1 &
 
-# ✅ Виходимо одразу
 echo "Browser-Use restarted in background"
 exit 0
