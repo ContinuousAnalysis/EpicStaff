@@ -118,6 +118,9 @@ export interface CreateAgentRequest {
     tool_ids: ToolUniqueName[];
 }
 
+// partialUpdate Agent Request
+export interface PartialUpdateAgentRequest extends Partial<UpdateAgentRequest> {}
+
 // Update Agent Request
 export interface UpdateAgentRequest {
     id: number;

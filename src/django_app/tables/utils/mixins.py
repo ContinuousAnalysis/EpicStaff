@@ -1,4 +1,3 @@
-import asyncio
 import os
 import json
 import re
@@ -8,14 +7,19 @@ from datetime import datetime
 from typing import AsyncGenerator, AsyncIterable, Callable, Union
 from abc import ABC, abstractmethod
 
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.response import Response
+from rest_framework.decorators import action
 from loguru import logger
 from asgiref.sync import sync_to_async
 from django.http import StreamingHttpResponse, HttpResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.views import View
+from django.db import IntegrityError, transaction
 
 from tables.models import DocumentMetadata, DocumentContent
+from tables.utils.helpers import generate_file_name
+from tables.serializers.import_serializers import FileImportSerializer
 from .file_text_extractor import extract_text_from_file
 
 from tables.services.redis_service import RedisService
@@ -328,3 +332,82 @@ class SSEMixin(View, ABC):
                 "Transfer-Encoding": "chunked",
             },
         )
+
+
+class ImportExportMixin:
+    """
+    A mixin that can extend ModelSerializer class with import/export functionality.
+    Creates 2 new action methods: export, import_entity.
+
+    Params:
+        `entity_type`: A string that represents the entity (agent, crew, graph, etc.).
+        `export_prefix`: A string that will be added for export file.
+        `filename_attr`: A string that should be accesible as entity instance attribute.
+            For example:
+
+            If `filename_attr` set to "name", and given `instance` is Agent,
+            we will try to get `agent.name`
+    """
+
+    entity_type = None
+    export_prefix = None
+    filename_attr = None
+
+    def get_export_filename(self, instance):
+        base_name = getattr(instance, self.filename_attr, "object")
+        return generate_file_name(base_name, prefix=self.export_prefix)
+
+    def get_entity_type(self):
+        if not self.entity_type:
+            raise NotImplementedError("Subclass must define entity_type")
+        return self.entity_type
+
+    @action(detail=True, methods=["get"])
+    def export(self, request, pk: int):
+        instance = self.get_object()
+        serializer_class = self.get_serializer_class()
+        data = serializer_class(instance).data
+        json_data = json.dumps(data, indent=4)
+        filename = self.get_export_filename(instance)
+
+        response = HttpResponse(json_data, content_type="application/json")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    @action(detail=False, methods=["post"], url_path="import")
+    def import_entity(self, request):
+        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer.is_valid(raise_exception=True)
+
+        file = file_serializer.validated_data["file"]
+
+        try:
+            data = json.load(file)
+        except json.JSONDecodeError:
+            return Response(
+                {"message": "Invalid JSON file"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        entity_type = data.pop("entity_type", None)
+        expected_type = self.get_entity_type()
+        if entity_type != expected_type:
+            return Response(
+                {
+                    "message": f"Provided wrong entity. Got: {entity_type}. Expected: {expected_type}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except IntegrityError as e:
+            return Response(
+                {"message": f"Database error: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(status=status.HTTP_200_OK)

@@ -771,17 +771,14 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         }
     }
 
-    public onNodePanelClose(): void {
-        this.selectedNodeId.set(null);
-        this.panelComponentType.set(null);
-    }
     public onNodePanelSaved(updatedNode: NodeModel): void {
         console.log(
             'Parent received save event. Calling service with:',
             updatedNode
         );
         this.flowService.updateNode(updatedNode);
-        // Do not close the panel on save; keep it open as requested
+        this.selectedNodeId.set(null);
+        this.panelComponentType.set(null);
     }
 
     public onGroupSizeChanged(event: IRect, group: GroupNodeModel): void {

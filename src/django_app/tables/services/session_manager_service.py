@@ -13,6 +13,7 @@ from utils.singleton_meta import SingletonMeta
 from utils.logger import logger
 from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
+from tables.validators.file_extractor_node_validator import FileExtractorNodeValidator
 
 from tables.request_models import (
     ConditionalEdgeData,
@@ -47,6 +48,7 @@ class SessionManagerService(metaclass=SingletonMeta):
     ) -> None:
         self.redis_service = redis_service
         self.converter_service = converter_service
+        self.file_extractor_node_validator = FileExtractorNodeValidator()
         self.end_node_validator: EndNodeValidator = EndNodeValidator()
 
     def get_session(self, session_id: int) -> Session:
@@ -102,6 +104,11 @@ class SessionManagerService(metaclass=SingletonMeta):
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         crew_node_data_list: list[CrewNodeData] = []
+
+        if file_extractor_node_list:
+            self.file_extractor_node_validator.validate_file_extractor_nodes(
+                file_extractor_node_list
+            )
 
         for item in crew_node_list:
 
