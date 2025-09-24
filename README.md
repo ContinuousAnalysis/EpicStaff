@@ -63,15 +63,18 @@ Unzip the downloaded file and run the EpicStaff application.
 
 ### 1. Clone the Project
 ```bash
-git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git`
+git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git && cd EpicStaff
 ```
-### 2. Change .env file
+### 2. Set your prefered savefiles location
 ```bash
-sed -i '' 's|CREW_SAVEFILES_PATH=/c/savefiles|CREW_SAVEFILES_PATH=~/savefiles|' src/.env
+savefiles="$HOME/savefiles"
 ```
-Replace `~/savefiles` with your preferred location
-### 3. Make sure you have Docker installed and running
-### 4. Use next command to run the project
+### 3. Update .env accordingly
+```bash
+sed -i '' "s|CREW_SAVEFILES_PATH=/c/savefiles|CREW_SAVEFILES_PATH=$savefiles|" src/.env
+```
+### 4. Run the Project
+Assuming [Docker](https://www.docker.com/products/docker-desktop/) is already installed and running use next command
 ```bash
 cd src && docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config && docker-compose up --build
 ```
