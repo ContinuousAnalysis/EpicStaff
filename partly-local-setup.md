@@ -90,7 +90,7 @@ python -m venv venv
 venv\Scripts\activate
 pip install poetry
 poetry install
-python main.py
+python main.py --debug
 ```
 
 ---
@@ -102,7 +102,7 @@ python -m venv venv
 venv\Scripts\activate
 pip install poetry
 poetry install
-.\entrypoint_debug.ps1
+.\entrypoint_debug.ps1 
 ```
 
 ---
@@ -114,7 +114,7 @@ python -m venv venv
 venv\Scripts\activate
 pip install poetry 
 poetry install --no-root
-python main.py
+python main.py --debug
 ```
 
 ---
@@ -136,7 +136,7 @@ predefined_libraries = {"../../shared/dotdict"}
 
 Run:
 ```powershell
-python main.py
+python main.py --debug
 ```
 
 ---
@@ -148,7 +148,7 @@ python -m venv venv
 venv\Scripts\activate
 pip install poetry
 poetry install
-python run_server.py
+python run_server.py --debug
 ```
 
 ---
@@ -160,5 +160,5 @@ python -m venv venv
 venv\Scripts\activate
 pip install poetry
 poetry install --no-root
-python app.py
+python app.py --debug
 ```
