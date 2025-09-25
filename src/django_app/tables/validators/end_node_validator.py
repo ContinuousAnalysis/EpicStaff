@@ -6,11 +6,8 @@ class EndNodeValidator:
     def validate(self, graph_id: int) -> EndNode | None:
         end_node = self._check_exists(graph_id)
 
-        if end_node is not None: 
+        if end_node is not None:
             self._validate_output_map(end_node, graph_id)
-
-            if not end_node.output_map:
-                end_node = self._set_default_output_map(end_node)
 
         return end_node
 
@@ -35,7 +32,7 @@ class EndNodeValidator:
         for key, value in end_node.output_map.items():
             if not isinstance(value, str):
                 non_string_errors.append(key)
-            elif not value.startswith("variables."):
+            elif not value.startswith("variables"):
                 variables_path_errors.append(key)
 
         error_messages = []
@@ -50,12 +47,12 @@ class EndNodeValidator:
         if variables_path_errors:
             if len(variables_path_errors) == 1:
                 msg = (
-                    f'Value for "{variables_path_errors[0]}" must start with "variables."'
+                    f'Value for "{variables_path_errors[0]}" must start with "variables"'
                 )
             else:
                 msg = (
                     f'Values for "{", ".join(variables_path_errors)}" '
-                    f'must start with "variables."'
+                    f'must start with "variables"'
                 )
             error_messages.append(msg)
 
@@ -63,11 +60,3 @@ class EndNodeValidator:
             raise EndNodeValidationError(
                 f"End node errors graph[{graph_id}]: {'; '.join(error_messages)}"
             )
-        
-
-    def _set_default_output_map(self, end_node: EndNode):
-        end_node.output_map = {"context": "variables"}
-        end_node.save(update_fields=["output_map"])
-        logger.debug('Updated EndNode from "{ }" to {"context": "variables"}')
-        return end_node
-

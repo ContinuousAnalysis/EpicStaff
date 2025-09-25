@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.utils import timezone
+from loguru import logger
 
 
 class Graph(models.Model):
@@ -107,6 +108,18 @@ class EndNode(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["graph"], name="unique_graph_end_node")
         ]
+    
+    def clean(self):
+        super().clean()
+        if not self.output_map:
+            self.output_map = {"context": "variables"}
+            logger.debug('Set default output_map to {"context": "variables"}')
+
+    def save(self, *args, **kwargs):
+        if not self.output_map:
+            self.output_map = {"context": "variables"}
+            logger.debug('Set default output_map to {"context": "variables"}')
+        super().save(*args, **kwargs)
 
 
 class Edge(models.Model):
