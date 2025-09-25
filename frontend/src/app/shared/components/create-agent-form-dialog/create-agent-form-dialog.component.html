@@ -393,7 +393,7 @@
                             </div>
                             <div class="create-agent__setting-value">
                                 {{
-                                    agentForm.get("max_retry_limit")?.value || 3
+                                    agentForm.get("max_retry_limit")?.value ?? 3 
                                 }}
                             </div>
                         </div>
