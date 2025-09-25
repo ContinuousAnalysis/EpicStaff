@@ -254,35 +254,12 @@ export class ProjectsStorageService {
         );
     }
 
-    copyProject(
-        source: GetProjectRequest,
-        newName: string
-    ): Observable<GetProjectRequest> {
-        const payload: CreateProjectRequest = {
-            name: newName,
-            description: source.description,
-            process: source.process,
-            tasks: source.tasks,
-            agents: source.agents,
-            tags: source.tags,
-            memory: source.memory,
-            config: source.config,
-            max_rpm: source.max_rpm,
-            cache: source.cache ?? null,
-            full_output: source.full_output,
-            default_temperature: source.default_temperature,
-            planning: source.planning,
-            planning_llm_config: source.planning_llm_config,
-            manager_llm_config: source.manager_llm_config,
-            embedding_config: source.embedding_config,
-            memory_llm_config: source.memory_llm_config,
-            metadata: source.metadata ?? null,
-            similarity_threshold: source.similarity_threshold ?? null,
-            search_limit: source.search_limit ?? null,
-        };
-        return this.createProject(payload).pipe(
-            tap((created) => this.addProjectToCache(created))
-        );
+    public copyProject(id: number): Observable<GetProjectRequest> {
+        return this.projectsApiService.copyProject(id).pipe(
+            tap((newProject: GetProjectRequest) => {
+                this.addProjectToCache(newProject);
+            })
+        ); 
     }
 
     public addProjectToCache(newProject: GetProjectRequest) {

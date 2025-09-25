@@ -845,7 +845,7 @@ class MetdataNodeSerializer(serializers.Serializer):
     parentId = serializers.CharField(allow_null=True, allow_blank=True)
     position = serializers.DictField()
     input_map = serializers.DictField()
-    node_name = serializers.CharField()
+    node_name = serializers.CharField(allow_null=True)
     output_variable_path = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
