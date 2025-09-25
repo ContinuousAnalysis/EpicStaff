@@ -24,6 +24,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from rest_framework.decorators import api_view, action
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework import generics
 from rest_framework import viewsets, mixins
 from rest_framework.response import Response
@@ -57,7 +58,7 @@ from tables.serializers.serializers import (
 )
 from tables.serializers.knowledge_serializers import CollectionStatusSerializer
 from tables.serializers.quickstart_serializers import QuickstartSerializer
-from tables.filters import SessionFilter
+from tables.filters import CollectionFilter, SessionFilter
 
 from .default_config import *
 
@@ -680,79 +681,52 @@ class InitRealtimeAPIView(APIView):
             )
 
 
-class CollectionStatusAPIView(APIView):
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
-                "collection_id",
-                openapi.IN_QUERY,
-                description="Filter by collection_id",
-                type=openapi.TYPE_STRING,
-                required=False,
-            )
-        ]
-    )
-    def get(self, request):
-        collection_id = request.query_params.get("collection_id")
+class CollectionStatusAPIView(ListAPIView):
+    serializer_class = CollectionStatusSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CollectionFilter
 
-        try:
-            collections = (
-                SourceCollection.objects.only(
-                    "collection_id", "collection_name", "status"
-                )
-                .annotate(
-                    total_documents=Count("document_metadata"),
-                    new_documents=Count(
-                        "document_metadata",
-                        filter=Q(
-                            document_metadata__status=DocumentMetadata.DocumentStatus.NEW
-                        ),
+    def get_queryset(self):
+        return (
+            SourceCollection.objects.only(
+                "collection_id", "collection_name", "status"
+            )
+            .annotate(
+                total_documents=Count("document_metadata"),
+                new_documents=Count(
+                    "document_metadata",
+                    filter=Q(
+                        document_metadata__status=DocumentMetadata.DocumentStatus.NEW
                     ),
-                    completed_documents=Count(
-                        "document_metadata",
-                        filter=Q(
-                            document_metadata__status=DocumentMetadata.DocumentStatus.COMPLETED
-                        ),
+                ),
+                completed_documents=Count(
+                    "document_metadata",
+                    filter=Q(
+                        document_metadata__status=DocumentMetadata.DocumentStatus.COMPLETED
                     ),
-                    processing_documents=Count(
-                        "document_metadata",
-                        filter=Q(
-                            document_metadata__status=DocumentMetadata.DocumentStatus.PROCESSING
-                        ),
+                ),
+                processing_documents=Count(
+                    "document_metadata",
+                    filter=Q(
+                        document_metadata__status=DocumentMetadata.DocumentStatus.PROCESSING
                     ),
-                    failed_documents=Count(
-                        "document_metadata",
-                        filter=Q(
-                            document_metadata__status=DocumentMetadata.DocumentStatus.FAILED
-                        ),
+                ),
+                failed_documents=Count(
+                    "document_metadata",
+                    filter=Q(
+                        document_metadata__status=DocumentMetadata.DocumentStatus.FAILED
+                    ),
+                ),
+            )
+            .prefetch_related(
+                Prefetch(
+                    "document_metadata",
+                    queryset=DocumentMetadata.objects.only(
+                        "document_id", "file_name", "status", "source_collection_id"
                     ),
                 )
-                .prefetch_related(
-                    Prefetch(
-                        "document_metadata",
-                        queryset=DocumentMetadata.objects.only(
-                            "document_id", "file_name", "status", "source_collection_id"
-                        ),
-                    )
-                )
             )
-
-            if collection_id:
-                collections = collections.filter(collection_id=collection_id)
-                if not collections.exists():
-                    return Response(
-                        {"error": f"Collection {collection_id} not found"},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
-
-            serializer = CollectionStatusSerializer(collections, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except SourceCollection.DoesNotExist:
-            return Response(
-                {"error": "Collection not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
+        )
 
 class QuickstartView(APIView):
     """
