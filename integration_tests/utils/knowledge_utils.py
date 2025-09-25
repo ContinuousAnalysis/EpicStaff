@@ -167,10 +167,11 @@ def check_statuses_for_embedding_creation(collection_id: int, max_timeout: int =
     for i in range(max_timeout):
         time.sleep(3)
         response = requests.get(
-            f"{DJANGO_URL}/collection_status/{collection_id}/", headers={"Host": rhost}
+            f"{DJANGO_URL}/collection_statuses/?collection_id={collection_id}", headers={"Host": rhost}
         )
         validate_response(response)
         collection_status_data = response.json()
+        collection_status_data = collection_status_data[0]
         logger.info(f"collection_status_data: {collection_status_data}")
 
         if collection_status_data["collection_status"] == "completed":
