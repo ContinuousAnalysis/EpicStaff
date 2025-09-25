@@ -19,16 +19,9 @@ from embedder.cohere import CohereEmbedder
 from embedder.mistral import MistralEmbedder
 from embedder.together_ai import TogetherAIEmbedder
 
-<<<<<<< HEAD
 import sys
 from dotenv import load_dotenv, find_dotenv
 
-=======
-from dotenv import load_dotenv, find_dotenv
-
-
-
->>>>>>> 7a0aada2ba9974e4dc89eb96d2ba377bc4f92c4b
 if "--debug" in sys.argv:
     load_dotenv(find_dotenv("debug.env"))
 else:
