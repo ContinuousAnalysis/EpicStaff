@@ -67,17 +67,6 @@ After that, you can manually stop any containers you prefer to run locally:
 
 Alternatively, you can stop them directly from Docker Desktop.
 
-
-## 6. Environment Configuration (Global .env)
-In the `/src` directory, locate the single `.env` file.  
-Add the following variables if they are missing, or update them if they already exist:
-```env
-DB_NAME=crew
-DB_HOST_NAME=127.0.0.1
-REDIS_HOST=127.0.0.1
-MANAGER_PORT=8001
-```
-
 # Running Backend Services Locally  
 ⚠️ **Reminder:** Each service must be started in a **new terminal**.
 
