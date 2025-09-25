@@ -69,4 +69,10 @@ export class ProjectsApiService {
       headers: this.httpHeaders, // DELETE requests can also have headers if needed by API
     });
   }
+
+  copyProject(id: number): Observable<GetProjectRequest> {
+    return this.http.post<GetProjectRequest>(`${this.apiUrl}${id}/copy/`, id, {
+      headers: this.httpHeaders,
+    });
+  }
 }

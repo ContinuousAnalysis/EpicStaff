@@ -27,6 +27,7 @@ import {
 import { FlowRenameDialogComponent } from '../../../../components/flow-rename-dialog/flow-rename-dialog.component';
 import { RunGraphService } from '../../../../../../services/run-graph-session.service';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
+import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
 
 @Component({
     selector: 'app-my-flows',
@@ -43,6 +44,7 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
 })
 export class MyFlowsComponent implements OnInit {
     private readonly flowsService = inject(FlowsStorageService);
+    private readonly graphUpdateService = inject(GraphUpdateService);
     private readonly flowsApiService = inject(FlowsApiService);
     private readonly runGraphService = inject(RunGraphService);
     private readonly router = inject(Router);
@@ -160,6 +162,19 @@ export class MyFlowsComponent implements OnInit {
             }
         });
     }
+    private saving(flowState: any, graph: any): void {
+        this.graphUpdateService.saveGraph(flowState, graph).subscribe({
+            next: (result) => {
+                this.toastService.success(
+                    `Flow copied and saved as "${result.graph.name}"`
+                );
+            },
+            error: (err) => {
+                this.toastService.error('Failed to save graph for copied flow');
+                console.error('Save graph error', err);
+            },
+        });
+    }
 
     private openCopyDialog(flow: GraphDto): void {
         const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
@@ -169,10 +184,8 @@ export class MyFlowsComponent implements OnInit {
         dialogRef.closed.subscribe((newName) => {
             if (newName && newName.trim().length > 0) {
                 this.flowsService.copyFlow(flow.id, newName.trim()).subscribe({
-                    next: (createdFlow) => {
-                        this.toastService.success(
-                            `Flow copied as "${createdFlow.name}"`
-                        );
+                    next: (graph) => {
+                        this.saving(graph.metadata, graph);
                     },
                     error: (err) => {
                         this.toastService.error('Failed to copy flow');
