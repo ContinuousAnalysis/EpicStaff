@@ -16,6 +16,10 @@ from tables.models.crew_models import DefaultAgentConfig, DefaultCrewConfig
 from tables.services.config_service import YamlConfigService
 from tables.services.redis_service import RedisService
 from tables.services.session_manager_service import SessionManagerService
+from tables.services.import_services import (
+    RealtimeConfigsImportService,
+    RealtimeTranscriptionConfigsImportService,
+)
 
 from tables.models import (
     LLMConfig,
@@ -520,3 +524,208 @@ def graph_export(seeded_db):
     graph = seeded_db["graph"]
     data = GraphExportSerializer(graph).data
     return {"file": data_to_json_file(data=data, filename=graph.name), "graph": graph}
+
+
+@pytest.fixture
+def python_tool_data():
+    return {
+        "id": 1,
+        "python_code": {
+            "id": 9,
+            "code": "def main(user_id: int): return 'ok'",
+            "entrypoint": "main",
+            "libraries": "requests",
+            "global_kwargs": {"state": {"input": {"user_surname": "TestUser"}}},
+        },
+        "name": "python tool1",
+        "description": "Get user name from id",
+        "args_schema": {
+            "type": "object",
+            "title": "ArgumentsSchema",
+            "properties": {"user_id": {"type": "integer", "description": "id of user"}},
+        },
+    }
+
+
+@pytest.fixture
+def llm_config_data(embedding_model, gpt_4o_llm):
+    return {
+        "id": 386,
+        "model": "gpt-4o",
+        "custom_name": "quickstart",
+        "temperature": 0.7,
+        "top_p": None,
+        "n": None,
+        "stop": None,
+        "max_completion_tokens": None,
+        "max_tokens": None,
+        "presence_penalty": None,
+        "frequency_penalty": None,
+        "logit_bias": None,
+        "response_format": None,
+        "seed": None,
+        "logprobs": None,
+        "top_logprobs": None,
+        "base_url": None,
+        "api_version": None,
+        "timeout": None,
+    }
+
+
+@pytest.fixture
+def realtime_config_data(openai_realtime_model_config):
+    return {
+        "id": 3,
+        "model": "Test Realtime Model",
+        "custom_name": "RealtimeTest",
+    }
+
+
+@pytest.fixture
+def transcription_config_data(realtime_transcription_config):
+    return {
+        "id": 1,
+        "model": "whisper-1",
+        "custom_name": "TranscriptionModel",
+    }
+
+
+@pytest.fixture
+def agent():
+    return Agent.objects.create(role="tester", goal="goal1")
+
+
+@pytest.fixture
+def agents_map(agent):
+    return {123: agent}
+
+
+@pytest.fixture
+def realtime_agent_data():
+    return [
+        {
+            "id": 123,
+            "voice": "alloy",
+            "realtime_config": 3,
+            "realtime_transcription_config": 1,
+        }
+    ]
+
+
+@pytest.fixture
+def rt_config_service(openai_realtime_model_config):
+    data = [
+        {
+            "id": 3,
+            "model": "Test Realtime Model",
+            "custom_name": "RealtimeTest",
+        }
+    ]
+    service = RealtimeConfigsImportService(data)
+    service.create_configs()
+    return service
+
+
+@pytest.fixture
+def rt_transcription_service(realtime_transcription_config):
+    data = [{"id": 1, "model": "whisper-1", "custom_name": "TranscriptionModel"}]
+    service = RealtimeTranscriptionConfigsImportService(data)
+    service.create_configs()
+    return service
+
+
+@pytest.fixture
+def agents_data():
+    return [
+        {
+            "id": 679,
+            "tools": {"python_tools": [], "configured_tools": []},
+            "llm_config": None,
+            "fcm_llm_config": None,
+            "realtime_agent": 679,
+            "entity_type": "Agent",
+            "role": "Test",
+            "goal": "Test",
+            "backstory": "Test",
+            "max_iter": 10,
+            "max_rpm": 10,
+            "max_execution_time": 60,
+            "memory": True,
+            "allow_delegation": True,
+            "cache": True,
+            "allow_code_execution": True,
+            "max_retry_limit": 3,
+            "respect_context_window": True,
+            "default_temperature": 0.0,
+            "search_limit": 3,
+            "similarity_threshold": "0.20",
+            "tags": [],
+        },
+        {
+            "id": 694,
+            "tools": {"python_tools": [1], "configured_tools": []},
+            "llm_config": 386,
+            "fcm_llm_config": 386,
+            "realtime_agent": 694,
+            "entity_type": "Agent",
+            "role": "Death Star operator",
+            "goal": "Perform Death Star attacks on selected planets",
+            "backstory": "Enjoying his work",
+            "max_iter": 20,
+            "max_rpm": 0,
+            "max_execution_time": 0,
+            "memory": True,
+            "allow_delegation": False,
+            "cache": False,
+            "allow_code_execution": False,
+            "max_retry_limit": 0,
+            "respect_context_window": False,
+            "default_temperature": 0.0,
+            "search_limit": 3,
+            "similarity_threshold": "0.20",
+            "tags": [],
+        },
+    ]
+
+
+@pytest.fixture
+def crew_data():
+    return [
+        {
+            "id": 337,
+            "agents": [694],
+            "tasks": [
+                {
+                    "id": 413,
+                    "tools": {"python_tools": [], "configured_tools": []},
+                    "context_tasks": [],
+                    "name": "Rate work done",
+                    "instructions": "Ask user about ...",
+                    "expected_output": "If user satisfied tell ...",
+                    "order": 1,
+                    "human_input": True,
+                    "async_execution": False,
+                    "config": None,
+                    "output_model": None,
+                    "agent": 694,
+                }
+            ],
+            "entity_type": "Project",
+            "memory_llm_config": None,
+            "manager_llm_config": None,
+            "planning_llm_config": None,
+            "metadata": {"icon": "ui/star"},
+            "description": "Rate user experience about work done",
+            "name": "Enjoying work (4)",
+            "process": "sequential",
+            "memory": False,
+            "config": None,
+            "max_rpm": 15,
+            "cache": True,
+            "full_output": True,
+            "planning": False,
+            "default_temperature": 0.0,
+            "search_limit": 3,
+            "similarity_threshold": "0.20",
+        }
+    ]
