@@ -69,7 +69,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         full_output: false,
         planning: false,
         similarity_threshold: '0.2',
-        search_limit: 0,
+        search_limit: 1,
     });
 
     // Other signals for reactive data
@@ -131,7 +131,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
                 planning: this.project.planning ?? false,
                 similarity_threshold:
                     this.project.similarity_threshold ?? '0.2',
-                search_limit: this.project.search_limit ?? 0,
+                search_limit: this.project.search_limit ?? 1,
             });
             //   this.cdr.markForCheck();
         }
