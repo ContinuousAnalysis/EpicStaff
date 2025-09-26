@@ -91,7 +91,7 @@ export class CreateProjectComponent implements OnInit {
                 Validators.max(1000),
             ]),
             similarity_threshold: new FormControl<number>(0.7, [
-                Validators.min(0.1),
+                Validators.min(0.0),
                 Validators.max(1.0),
             ]),
         }) as FormGroup<{
