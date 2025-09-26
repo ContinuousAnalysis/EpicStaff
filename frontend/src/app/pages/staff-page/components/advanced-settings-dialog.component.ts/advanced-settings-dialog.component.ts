@@ -99,7 +99,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         Validators.max(1000),
     ]);
     public similarityThresholdControl = new FormControl(0.7, [
-        Validators.min(0.1),
+        Validators.min(0.0),
         Validators.max(1.0),
     ]);
     public memoryControl = new FormControl(true);

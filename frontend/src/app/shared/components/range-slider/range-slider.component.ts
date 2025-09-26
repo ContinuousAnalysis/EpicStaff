@@ -18,11 +18,18 @@ export class RangeSliderComponent {
   @Input() decimals = 0;
 
   @Output() valueChange = new EventEmitter<number>();
+  @Output() change = new EventEmitter<number>();
 
-  onValueChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.value = parseFloat(input.value);
-    this.valueChange.emit(this.value);
+  private currentValue: number = this.value;
+
+  onSliderMove(value: number) {
+    this.currentValue = value;
+    this.value = value;
+    this.valueChange.emit(value);
+  }
+
+  onSliderEnd() {
+    this.change.emit(this.currentValue);
   }
 
   formatValue(): string {

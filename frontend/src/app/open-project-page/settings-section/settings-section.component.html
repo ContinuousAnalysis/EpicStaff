@@ -198,6 +198,9 @@
                 </div>
                 <div class="setting-value">
                     <div class="slider-container">
+                        <span class="slider-value">
+                            {{ settings().similarity_threshold }}
+                        </span>
                         <app-range-slider
                             label="Threshold"
                             [value]="
@@ -209,9 +212,14 @@
                             [max]="1"
                             [step]="0.01"
                             [decimals]="2"
-                            (valueChange)="onThresholdChange($event)"
+                            (valueChange)="onThresholdSliderMove($event)"
+                            (change)="onThresholdSliderEnd()"
                         >
                         </app-range-slider>
+                        <div class="slider-labels">
+                            <span>0</span>
+                            <span>1</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -228,14 +236,22 @@
                 </div>
                 <div class="setting-value">
                     <div class="slider-container">
+                        <span class="slider-value">
+                            {{ settings().search_limit }}
+                        </span>
+
                         <app-range-slider
                             label="Search Limit"
                             [value]="this.settings().search_limit"
-                            [min]="0"
+                            [min]="1"
                             [max]="1000"
                             [step]="1"
-                            (valueChange)="onSearchLimitChange($event)"
+                            (change)="onSearchLimitSliderEnd($event)"
                         ></app-range-slider>
+                        <div class="slider-labels">
+                            <span>0</span>
+                            <span>1000</span>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -495,13 +495,13 @@
                             <div class="create-agent__setting-value">
                                 {{
                                     agentForm.get("similarity_threshold")
-                                        ?.value || 0.7
+                                        ?.value ?? 0.7
                                 }}
                             </div>
                         </div>
                         <div class="create-agent__slider-container">
                             <mat-slider
-                                min="0.1"
+                                min="0.0"
                                 max="1.0"
                                 step="0.01"
                                 discrete

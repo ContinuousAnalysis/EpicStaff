@@ -69,7 +69,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         full_output: false,
         planning: false,
         similarity_threshold: '0.2',
-        search_limit: 0,
+        search_limit: 1,
     });
 
     // Other signals for reactive data
@@ -92,7 +92,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         private fullLLMConfigService: FullLLMConfigService,
         private fullEmbeddingConfigService: FullEmbeddingConfigService,
         private cdr: ChangeDetectorRef
-    ) {}
+    ) { }
 
     public ngOnInit(): void {
         this.loadConfigurations();
@@ -131,7 +131,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
                 planning: this.project.planning ?? false,
                 similarity_threshold:
                     this.project.similarity_threshold ?? '0.2',
-                search_limit: this.project.search_limit ?? 0,
+                search_limit: this.project.search_limit ?? 1,
             });
             //   this.cdr.markForCheck();
         }
@@ -314,13 +314,43 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         this.onSettingChange('max_rpm', this.rpmCurrentValue);
     }
 
-    public onThresholdChange(value: number): void {
+    // Текущее значение ползунка (аналог rpmCurrentValue)
+    public thresholdCurrentValue: string = this.settings().similarity_threshold;
+    public searchLimitCurrentValue: number = this.settings().search_limit;
+
+    // Вызывается при движении ползунка
+    public onThresholdSliderMove(value: any): void {
+        this.thresholdCurrentValue = value.toString();
         const currentSettings = this.settings();
         this.settings.set({
             ...currentSettings,
             similarity_threshold: value.toString(),
         });
-        this.onSettingChange('similarity_threshold', value);
+    }
+
+    // Вызывается при отпускании ползунка
+    public onThresholdSliderEnd(): void {
+        this.onSettingChange('similarity_threshold', this.thresholdCurrentValue);
+    }
+
+    public onSearchLimitSliderMove(value: any): void {
+        this.searchLimitCurrentValue = value;
+        const currentSettings = this.settings();
+        this.settings.set({
+            ...currentSettings,
+            search_limit: value,
+        });
+    }
+
+    public onSearchLimitSliderEnd(value: number): void {
+        console.log("value", value);
+
+        const currentSettings = this.settings();
+        this.settings.set({
+            ...currentSettings,
+            search_limit: value,
+        });
+        this.onSettingChange('search_limit', value);
     }
 
     public onSearchLimitChange(value: number): void {
