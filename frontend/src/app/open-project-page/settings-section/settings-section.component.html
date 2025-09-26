@@ -40,6 +40,39 @@
                 </div>
             </div>
 
+            <!-- Cache Setting -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <div class="setting-title">
+                        Cache
+                        <app-help-tooltip
+                            text="Enable cache to store and reuse results from previous API calls."
+                        ></app-help-tooltip>
+                    </div>
+                    <div class="setting-description">
+                        Enable or disable cache for this project
+                    </div>
+                </div>
+                <div class="setting-value">
+                    <div class="toggle-wrapper">
+                        <div
+                            class="toggle-option"
+                            [class.active]="cache()"
+                            (click)="!cache() && toggleCache()"
+                        >
+                            Enabled
+                        </div>
+                        <div
+                            class="toggle-option"
+                            [class.active]="!cache()"
+                            (click)="cache() && toggleCache()"
+                        >
+                            Disabled
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Process Type Setting -->
             <div class="setting-item">
                 <div class="setting-label">

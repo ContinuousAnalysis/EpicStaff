@@ -149,7 +149,7 @@ export class CreateProjectComponent implements OnInit {
             description: formData.description || null,
             process: formData.process,
             memory: formData.memory,
-
+            cache: formData.cache,
             max_rpm: formData.max_rpm,
             search_limit: formData.search_limit,
             similarity_threshold: formData.similarity_threshold.toString(),

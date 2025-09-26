@@ -50,6 +50,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
 
     // Project settings as signals
     public memory = signal<boolean>(false);
+    public cache = signal<boolean>(false);
     public max_rpm = signal<number>(15);
     public process = signal<'sequential' | 'hierarchical'>('sequential');
     public manager_llm_config = signal<number | null>(null);
@@ -114,6 +115,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     private initializeBasicSettings(): void {
         if (this.project) {
             this.memory.set(this.project.memory ?? false);
+            this.cache.set(this.project.cache ?? false);
             const rpm = this.project.max_rpm ?? 15;
             this.max_rpm.set(rpm);
             this.rpmCurrentValue = rpm;
@@ -211,6 +213,12 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         const newValue = !this.memory();
         this.memory.set(newValue);
         this.onSettingChange('memory', newValue);
+    }
+
+    public toggleCache(): void {
+        const newValue = !this.cache();
+        this.cache.set(newValue);
+        this.onSettingChange('cache', newValue);
     }
 
     public toggleProcess(): void {
