@@ -147,6 +147,27 @@ export class RealtimeSettingsDialogComponent implements OnInit {
       }
     });
   }
+
+  deleteTranscriptionConfig(configId: number): void {
+    this.settingsForm.patchValue({ realtime_transcription_config: null });
+
+    this.transcriptionConfigsService
+      .deleteTranscriptionConfig(configId)
+      .subscribe({
+        next: () => {
+          this.toastService.success('Transcription config deleted successfully');
+
+          this.transcriptionConfigs = this.transcriptionConfigs.filter(
+            (c) => c.id !== configId
+          );
+        },
+        error: (error) => {
+          console.error('Error deleting transcription config:', error);
+          this.toastService.error('Failed to delete transcription config');
+        },
+      });
+  }
+
   onThresholdChange(value: number): void {
     this.settingsForm.patchValue({ threshold: value });
   }
