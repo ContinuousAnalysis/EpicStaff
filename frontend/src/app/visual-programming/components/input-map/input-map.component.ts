@@ -205,12 +205,9 @@ export class InputMapComponent implements OnInit {
     ) {}
 
     ngOnInit() {
-        // Ensure there's always at least one empty input map initially
         if (this.pairs.length === 0) {
             this.addPair();
 
-            // Mark the initial empty input as pristine and untouched
-            // This prevents it from being considered as a "change" for the unsaved changes guard
             setTimeout(() => {
                 this.pairs.at(0).markAsPristine();
                 this.pairs.at(0).markAsUntouched();
@@ -231,7 +228,7 @@ export class InputMapComponent implements OnInit {
         this.pairs.push(
             this.fb.group({
                 key: [''],
-                value: [''],
+                value: ['variables.'],
             })
         );
     }

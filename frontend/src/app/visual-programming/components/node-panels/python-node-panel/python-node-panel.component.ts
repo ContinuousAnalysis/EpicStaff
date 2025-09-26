@@ -203,11 +203,10 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
                 );
             });
         } else {
-            // Always add at least one empty input map pair
             inputMapArray.push(
                 this.fb.group({
                     key: [''],
-                    value: [''],
+                    value: ['variables.'],
                 })
             );
         }

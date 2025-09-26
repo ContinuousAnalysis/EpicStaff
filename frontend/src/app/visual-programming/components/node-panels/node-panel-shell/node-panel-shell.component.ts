@@ -104,8 +104,8 @@ export class NodePanelShellComponent {
                 console.log('External autosave triggered:', trigger);
                 this.isAutosaving = true;
                 this.performAutosave();
-                // Reset flag after a short delay
                 setTimeout(() => {
+                    this.autosaveService.clearTrigger();
                     this.isAutosaving = false;
                 }, 100);
             }
@@ -114,7 +114,6 @@ export class NodePanelShellComponent {
         effect(() => {
             const node = this.node();
             if (node) {
-                // Check if we're switching to a different node
                 if (
                     this.previousNodeId &&
                     this.previousNodeId !== node.id &&
@@ -122,23 +121,16 @@ export class NodePanelShellComponent {
                     !this.isUpdatingNode &&
                     !this.isAutosaving
                 ) {
-                    // Auto-save the previous node before switching
                     this.isUpdatingNode = true;
                     this.performAutosave();
                 }
 
-                // Use setTimeout to ensure Angular has finished updating the component
                 setTimeout(() => {
                     const outletRef = this.outlet();
                     if (outletRef?.componentInstance) {
                         this.panelInstance = outletRef.componentInstance;
                         this.previousNodeId = node.id;
                         this.isUpdatingNode = false;
-                        console.log(
-                            'Panel instance updated for node:',
-                            node.id,
-                            this.panelInstance
-                        );
                     }
                 }, 0);
             } else {

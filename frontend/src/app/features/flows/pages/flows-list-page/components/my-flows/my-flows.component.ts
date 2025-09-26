@@ -28,6 +28,7 @@ import { FlowRenameDialogComponent } from '../../../../components/flow-rename-di
 import { RunGraphService } from '../../../../../../services/run-graph-session.service';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
+import { ImportExportService } from '../../../../../../core/services/import-export.service';
 
 @Component({
     selector: 'app-my-flows',
@@ -53,6 +54,7 @@ export class MyFlowsComponent implements OnInit {
     private readonly confirmationDialogService = inject(
         ConfirmationDialogService
     );
+    private readonly importExportService = inject(ImportExportService);
 
     public readonly error = signal<string | null>(null);
     public readonly filteredFlows = this.flowsService.filteredFlows;
@@ -105,6 +107,10 @@ export class MyFlowsComponent implements OnInit {
 
             case 'copy':
                 this.openCopyDialog(flow);
+                break;
+
+            case 'export':
+                this.exportFlow(flow);
                 break;
 
             default:
@@ -234,6 +240,27 @@ export class MyFlowsComponent implements OnInit {
                 this.toastService.error(
                     `Error running flow "${flow.name}": ${errorMessage}`
                 );
+            },
+        });
+    }
+
+    private exportFlow(flow: GraphDto): void {
+        this.importExportService.exportFlow(flow.id.toString()).subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${flow.name}_export_${Date.now()}.json`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                this.toastService.success(
+                    `Flow "${flow.name}" exported successfully`
+                );
+            },
+            error: (error) => {
+                console.error('Export failed:', error);
+                this.toastService.error(`Failed to export flow "${flow.name}"`);
             },
         });
     }

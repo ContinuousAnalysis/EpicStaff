@@ -157,9 +157,8 @@ export class FlowVisualProgrammingComponent
 
         this.autosaveService.triggerAutosave('manual-save');
 
-        // Wait for autosave to complete before getting flow state
         return of(null).pipe(
-            switchMap(() => new Promise((resolve) => setTimeout(resolve, 0))),
+            switchMap(() => new Promise((resolve) => setTimeout(resolve, 200))),
             switchMap(() => {
                 const flowState: FlowModel = this.flowService.getFlowState();
                 console.log(

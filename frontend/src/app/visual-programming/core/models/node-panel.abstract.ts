@@ -43,6 +43,7 @@ export abstract class BaseSidePanel<T extends NodeModel> {
     public onEscape(): void {
         this.onSave();
     }
+
     protected createNodeNameValidators(
         additionalValidators: any[] = []
     ): any[] {

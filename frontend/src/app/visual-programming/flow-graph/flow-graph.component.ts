@@ -708,6 +708,18 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             this.onDropToGroup(dropEvent);
         } else {
             // Create and add a regular node
+            let nodeData = event.data;
+
+            // Add default output_map for end nodes
+            if (event.type === NodeType.END) {
+                nodeData = {
+                    ...event.data,
+                    output_map: {
+                        context: 'variables',
+                    },
+                };
+            }
+
             const newNode: NodeModel = {
                 id: newNodeId,
                 category: 'web',
@@ -716,7 +728,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                 parentId: null,
                 type: event.type,
                 node_name: newNodeName,
-                data: event.data,
+                data: nodeData,
                 color: nodeColor,
                 icon: nodeIcon,
                 input_map: {},
@@ -753,6 +765,31 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                     this.flowService.updateNode(updatedNode);
 
                     this.cd.detectChanges();
+                }
+            });
+        } else if (node.type === NodeType.START) {
+            const startNode = node as StartNodeModel;
+            const startNodeInitialState = startNode.data?.initialState || {};
+
+            const dialogRef = this.dialog.open(DomainDialogComponent, {
+                width: '1000px',
+                height: '800px',
+                maxWidth: '90vw',
+                maxHeight: '90vh',
+                data: {
+                    initialData: startNodeInitialState,
+                },
+            });
+
+            dialogRef.closed.subscribe((result: unknown) => {
+                if (
+                    result !== null &&
+                    typeof result === 'object' &&
+                    result !== undefined
+                ) {
+                    this.updateStartNodeInitialState(
+                        result as Record<string, unknown>
+                    );
                 }
             });
         } else {

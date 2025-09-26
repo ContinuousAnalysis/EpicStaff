@@ -92,7 +92,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         private fullLLMConfigService: FullLLMConfigService,
         private fullEmbeddingConfigService: FullEmbeddingConfigService,
         private cdr: ChangeDetectorRef
-    ) { }
+    ) {}
 
     public ngOnInit(): void {
         this.loadConfigurations();
@@ -330,10 +330,13 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
 
     // Вызывается при отпускании ползунка
     public onThresholdSliderEnd(): void {
-        this.onSettingChange('similarity_threshold', this.thresholdCurrentValue);
+        this.onSettingChange(
+            'similarity_threshold',
+            this.thresholdCurrentValue
+        );
     }
 
-    public onSearchLimitSliderMove(value: any): void {
+    public onSearchLimitSliderMove(value: number): void {
         this.searchLimitCurrentValue = value;
         const currentSettings = this.settings();
         this.settings.set({
@@ -342,23 +345,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         });
     }
 
-    public onSearchLimitSliderEnd(value: number): void {
-        console.log("value", value);
-
-        const currentSettings = this.settings();
-        this.settings.set({
-            ...currentSettings,
-            search_limit: value,
-        });
-        this.onSettingChange('search_limit', value);
-    }
-
-    public onSearchLimitChange(value: number): void {
-        const currentSettings = this.settings();
-        this.settings.set({
-            ...currentSettings,
-            search_limit: value,
-        });
-        this.onSettingChange('search_limit', value);
+    public onSearchLimitSliderEnd(): void {
+        this.onSettingChange('search_limit', this.searchLimitCurrentValue);
     }
 }
