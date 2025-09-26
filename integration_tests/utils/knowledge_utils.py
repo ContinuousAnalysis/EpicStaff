@@ -171,7 +171,7 @@ def check_statuses_for_embedding_creation(collection_id: int, max_timeout: int =
         )
         validate_response(response)
         collection_status_data = response.json()
-        collection_status_data = collection_status_data[0]
+        collection_status_data = collection_status_data.get("results")[0]
         logger.info(f"collection_status_data: {collection_status_data}")
 
         if collection_status_data["collection_status"] == "completed":
