@@ -70,9 +70,14 @@
       <!-- No python tools message -->
       <div class="no-tools" *ngIf="!loading && pythonTools.length === 0">
         <p>No custom tools available</p>
-        <button class="create-tool-btn">
-          <span class="plus-icon">+</span> Create Custom Tool
-        </button>
+         <app-button
+          type="primary"
+          class="btn-primary create-btn"
+          [leftIcon]="'ui/plus'"
+          (click)="openCustomToolDialog()"
+        >
+          Create custom tool
+        </app-button>
       </div>
 
       <!-- Using Python Tool Item Component for each tool -->
