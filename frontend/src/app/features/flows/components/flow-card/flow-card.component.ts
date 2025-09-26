@@ -18,7 +18,8 @@ export type FlowAction =
     | 'open'
     | 'rename'
     | 'run'
-    | 'copy';
+    | 'copy'
+    | 'export';
 
 export interface FlowCardAction {
     action: FlowAction;

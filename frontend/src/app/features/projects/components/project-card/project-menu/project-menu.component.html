@@ -16,15 +16,10 @@
         (mouseleave)="onMenuLeave()"
     >
         <!-- <app-project-menu-item
-            icon="ti-copy"
-            label="Copy"
-            (itemClick)="onActionClick($event, 'copy')"
-        ></app-project-menu-item> -->
-        <app-project-menu-item
             icon="ti-tags"
             label="Manage Tags"
             (itemClick)="onActionClick($event, 'manage-tags')"
-        ></app-project-menu-item>
+        ></app-project-menu-item> -->
         <!-- <app-project-menu-item
       icon="ti-download"
       label="Export"
@@ -35,6 +30,12 @@
             label="Delete"
             [isDelete]="true"
             (itemClick)="onActionClick($event, 'delete')"
+        ></app-project-menu-item>
+
+        <app-project-menu-item
+            icon="ti-copy"
+            label="Copy project"
+            (itemClick)="onActionClick($event, 'copy')"
         ></app-project-menu-item>
     </div>
 </div>

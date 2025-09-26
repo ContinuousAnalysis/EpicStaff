@@ -5,6 +5,7 @@ import {
   Agent,
   CreateAgentRequest,
   GetAgentRequest,
+  PartialUpdateAgentRequest,
   UpdateAgentRequest,
 } from '../shared/models/agent.model';
 import { ApiGetRequest } from '../shared/models/api-request.model';
@@ -53,6 +54,17 @@ export class AgentsService {
     });
   }
 
+  // PATCH update agent
+  partialUpdateAgent(agent: PartialUpdateAgentRequest): Observable<PartialUpdateAgentRequest> {
+    return this.http.patch<PartialUpdateAgentRequest>(
+      `${this.apiUrl}${agent.id}/`,
+      agent,
+      {
+        headers: this.headers,
+      }
+    );
+  }
+
   // PUT update agent
   updateAgent(agent: UpdateAgentRequest): Observable<UpdateAgentRequest> {
     return this.http.put<UpdateAgentRequest>(
@@ -69,5 +81,15 @@ export class AgentsService {
     return this.http.delete<void>(`${this.apiUrl}${agentId}/`, {
       headers: this.headers,
     });
+  }
+
+  // COPY agent
+  copyAgent(agent: CreateAgentRequest,agentId: number): Observable<GetAgentRequest> {
+    return this.http.post<GetAgentRequest>(
+      `${this.apiUrl}${agentId}/copy/`,
+      agent,
+      {
+        headers: this.headers,
+      });
   }
 }

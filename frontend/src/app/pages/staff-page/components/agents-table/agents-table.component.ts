@@ -125,7 +125,7 @@ export class AgentsTableComponent {
         private toastService: ToastService,
         private realtimeAgentService: RealtimeAgentService,
         public dialog: Dialog
-    ) {}
+    ) { }
 
     ngOnInit(): void {
         this.loadStartTime = Date.now();
@@ -468,6 +468,19 @@ export class AgentsTableComponent {
 
             editable: false,
         },
+        {
+            headerName: '',
+            field: 'copy',
+            cellRenderer: (params: ICellRendererParams) => {
+                return `<i class="ti ti-copy action-icon"></i>`;
+            },
+            width: 50,
+            minWidth: 50,
+            maxWidth: 50,
+            cellClass: 'action-cell',
+
+            editable: false,
+        },
     ];
 
     public defaultColDef: ColDef = {
@@ -540,75 +553,75 @@ export class AgentsTableComponent {
         }
     }
 
+    // Function to parse the necessary fields (merged tools and config)
+    private parseAgentData = (agentData: any) => {
+        // Extract LLM config ID and realtime config ID from mergedConfigs
+        let llmConfigId = null;
+        let realtimeConfigId = null;
+
+        // Check if mergedConfigs exist and process them
+        if (
+            agentData.mergedConfigs &&
+            Array.isArray(agentData.mergedConfigs)
+        ) {
+            // Find LLM config
+            const llmConfig = agentData.mergedConfigs.find(
+                (config: any) => config.type === 'llm'
+            );
+            if (llmConfig) {
+                llmConfigId = llmConfig.id;
+            }
+
+            // Find realtime config
+            const realtimeConfig = agentData.mergedConfigs.find(
+                (config: any) => config.type === 'realtime'
+            );
+            if (realtimeConfig) {
+                realtimeConfigId = realtimeConfig.id;
+            }
+        } else {
+            // Fallback to direct fields if mergedConfigs isn't available
+            llmConfigId = agentData.fullLlmConfig?.id || null;
+        }
+
+        // Process merged tools
+        const mergedTools = agentData.mergedTools || [];
+
+        // Create or update the realtime_agent object
+        const realtime_agent = {
+            ...(agentData.realtime_agent || {}),
+            realtime_config: realtimeConfigId,
+            // Include other realtime_agent properties if they exist in agentData
+            similarity_threshold:
+                agentData.realtime_agent?.similarity_threshold,
+            search_limit: agentData.realtime_agent?.search_limit,
+            wake_word: agentData.realtime_agent?.wake_word,
+            stop_prompt: agentData.realtime_agent?.stop_prompt,
+            language: agentData.realtime_agent?.language,
+            voice_recognition_prompt:
+                agentData.realtime_agent?.voice_recognition_prompt,
+            voice: agentData.realtime_agent?.voice,
+            realtime_transcription_config:
+                agentData.realtime_agent?.realtime_transcription_config,
+        };
+
+        return {
+            ...agentData,
+            llm_config: llmConfigId,
+            fcm_llm_config: agentData.fcm_llm_config || llmConfigId, // Maintain existing logic
+            realtime_agent: realtime_agent, // Use the properly structured realtime_agent object
+            configured_tools: mergedTools
+                .filter((tool: any) => tool.type === 'tool-config')
+                .map((tool: any) => tool.id),
+            python_code_tools: mergedTools
+                .filter((tool: any) => tool.type === 'python-tool')
+                .map((tool: any) => tool.id),
+        };
+    };
+
     private onCellValueChanged(event: any): void {
         const colId = event.column.getColId();
         const fieldsToValidate = ['role', 'goal', 'backstory']; // List of fields to validate
-
-        // Function to parse the necessary fields (merged tools and config)
-        const parseAgentData = (agentData: any) => {
-            // Extract LLM config ID and realtime config ID from mergedConfigs
-            let llmConfigId = null;
-            let realtimeConfigId = null;
-
-            // Check if mergedConfigs exist and process them
-            if (
-                agentData.mergedConfigs &&
-                Array.isArray(agentData.mergedConfigs)
-            ) {
-                // Find LLM config
-                const llmConfig = agentData.mergedConfigs.find(
-                    (config: any) => config.type === 'llm'
-                );
-                if (llmConfig) {
-                    llmConfigId = llmConfig.id;
-                }
-
-                // Find realtime config
-                const realtimeConfig = agentData.mergedConfigs.find(
-                    (config: any) => config.type === 'realtime'
-                );
-                if (realtimeConfig) {
-                    realtimeConfigId = realtimeConfig.id;
-                }
-            } else {
-                // Fallback to direct fields if mergedConfigs isn't available
-                llmConfigId = agentData.fullLlmConfig?.id || null;
-            }
-
-            // Process merged tools
-            const mergedTools = agentData.mergedTools || [];
-
-            // Create or update the realtime_agent object
-            const realtime_agent = {
-                ...(agentData.realtime_agent || {}),
-                realtime_config: realtimeConfigId,
-                // Include other realtime_agent properties if they exist in agentData
-                similarity_threshold:
-                    agentData.realtime_agent?.similarity_threshold,
-                search_limit: agentData.realtime_agent?.search_limit,
-                wake_word: agentData.realtime_agent?.wake_word,
-                stop_prompt: agentData.realtime_agent?.stop_prompt,
-                language: agentData.realtime_agent?.language,
-                voice_recognition_prompt:
-                    agentData.realtime_agent?.voice_recognition_prompt,
-                voice: agentData.realtime_agent?.voice,
-                realtime_transcription_config:
-                    agentData.realtime_agent?.realtime_transcription_config,
-            };
-
-            return {
-                ...agentData,
-                llm_config: llmConfigId,
-                fcm_llm_config: agentData.fcm_llm_config || llmConfigId, // Maintain existing logic
-                realtime_agent: realtime_agent, // Use the properly structured realtime_agent object
-                configured_tools: mergedTools
-                    .filter((tool: any) => tool.type === 'tool-config')
-                    .map((tool: any) => tool.id),
-                python_code_tools: mergedTools
-                    .filter((tool: any) => tool.type === 'python-tool')
-                    .map((tool: any) => tool.id),
-            };
-        };
 
         // If the row has a temporary ID (starts with 'temp_') or null id, create a new agent after validation
         const isTempRow =
@@ -641,7 +654,7 @@ export class AgentsTableComponent {
             }
 
             // Parse the agent data
-            const parsedData = parseAgentData(event.data);
+            const parsedData = this.parseAgentData(event.data);
             console.log(parsedData);
 
             // Build tool_ids array
@@ -720,7 +733,7 @@ export class AgentsTableComponent {
                     console.error('Error creating agent:', error);
                     this.toastService.error(
                         'Error creating agent: ' +
-                            (error.message || 'Unknown error')
+                        (error.message || 'Unknown error')
                     );
                 },
                 complete: () => {
@@ -758,7 +771,7 @@ export class AgentsTableComponent {
         }
 
         // Parse the agent data
-        const parsedUpdateData = parseAgentData(event.data);
+        const parsedUpdateData = this.parseAgentData(event.data);
         console.log(parsedUpdateData);
 
         // Build tool_ids array for update
@@ -835,6 +848,7 @@ export class AgentsTableComponent {
                 knowledge_collection: agentData.knowledge_collection ?? null, // Changed parameter name
                 similarity_threshold: agentData.similarity_threshold ?? null,
                 search_limit: agentData.search_limit ?? null,
+                memory: agentData.memory ?? true,
             },
         });
 
@@ -927,13 +941,24 @@ export class AgentsTableComponent {
             realtime_config: realtimeConfigId,
         };
 
+        const allToolsPreBuilding = {
+            configured_tools: this.rowData[index].mergedTools
+                .filter((tool: any) => tool.type === 'tool-config')
+                .map((tool: any) => tool.id),
+            python_code_tools: this.rowData[index].mergedTools
+                .filter((tool: any) => tool.type === 'python-tool')
+                .map((tool: any) => tool.id),
+        }
+
         // Build tool_ids array for settings update
-        const settingsConfiguredToolIds = updatedAgent.configured_tools || [];
-        const settingsPythonToolIds = updatedAgent.python_code_tools || [];
+        const settingsConfiguredToolIds = allToolsPreBuilding.configured_tools || [];
+        const settingsPythonToolIds = allToolsPreBuilding.python_code_tools || [];
         const settingsToolIds = buildToolIdsArray(
             settingsConfiguredToolIds,
             settingsPythonToolIds
         );
+
+        const parsedUpdateData = this.parseAgentData(this.rowData[index])
 
         // Prepare the payload for the backend update request
         const updateAgentData: UpdateAgentRequest = {
@@ -943,10 +968,8 @@ export class AgentsTableComponent {
             backstory: updatedAgent.backstory,
             configured_tools: settingsConfiguredToolIds,
             python_code_tools: settingsPythonToolIds,
-            llm_config: updatedAgent.llm_config ?? null,
-            fcm_llm_config: updatedAgent.fullFcmLlmConfig?.id
-                ? updatedAgent.fullFcmLlmConfig?.id
-                : updatedAgent.fcm_llm_config ?? null,
+            llm_config: parsedUpdateData.llm_config ?? null,
+            fcm_llm_config: parsedUpdateData.fcm_llm_config,
             realtime_agent: realtime_agent, // Use the nested structure instead of realtime_config
             allow_delegation: updatedAgent.allow_delegation ?? false,
             memory: updatedAgent.memory ?? false,
@@ -1335,6 +1358,43 @@ export class AgentsTableComponent {
             this.openSettingsDialog(agentData);
         }
         const columnId = event.column.getColId();
+
+        if (event.colDef.field === 'copy') {
+            const agentData = event.data;
+            this.closePopup();
+            this.agentsService.copyAgent(agentData, agentData.id).subscribe({
+                next: (newAgent) => {
+                    // Show a success toast notification to the user
+                    this.toastService.success(`Agent copied successfully`);
+
+                    // Find the index of the original agent row in the rowData array
+                    const rowIndex = this.rowData.findIndex(
+                        (row) => row === event.data
+                    );
+
+                    if (rowIndex !== -1) {
+                        // Create a new object for the copied agent with the new ID from the server
+                        const copiedAgent = {
+                            ...this.rowData[rowIndex],
+                            id: newAgent.id,
+                        };
+
+                        // Insert the copied agent into the rowData array immediately after the original
+                        this.rowData.splice(rowIndex + 1, 0, copiedAgent);
+
+                        // Update the ag-Grid table by adding the new row at the same index
+                        this.gridApi.applyTransaction({
+                            add: [copiedAgent],
+                            addIndex: rowIndex + 1,
+                        });
+                    }
+                },
+                error: (error) => {
+                    // Show an error toast if the copy operation fails
+                    this.toastService.error('Failed to copy agent');
+                },
+            });
+        }
         // Process only specific columns.
         if (
             columnId !== 'mergedConfigs' &&

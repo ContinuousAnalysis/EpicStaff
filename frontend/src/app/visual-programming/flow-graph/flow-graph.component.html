@@ -249,9 +249,8 @@
     }
     <app-node-panel-shell
         [node]="selectedNode()"
-        [panelComponent]="panelComponentType()"
         (save)="onNodePanelSaved($event)"
-        (close)="onNodePanelClose()"
+        (autosave)="onNodePanelAutosaved($event)"
         #nodePanelShell
     />
 </div>

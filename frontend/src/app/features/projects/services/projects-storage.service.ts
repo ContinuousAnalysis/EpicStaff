@@ -254,34 +254,11 @@ export class ProjectsStorageService {
         );
     }
 
-    copyProject(
-        source: GetProjectRequest,
-        newName: string
-    ): Observable<GetProjectRequest> {
-        const payload: CreateProjectRequest = {
-            name: newName,
-            description: source.description,
-            process: source.process,
-            tasks: source.tasks,
-            agents: source.agents,
-            tags: source.tags,
-            memory: source.memory,
-            config: source.config,
-            max_rpm: source.max_rpm,
-            cache: source.cache ?? null,
-            full_output: source.full_output,
-            default_temperature: source.default_temperature,
-            planning: source.planning,
-            planning_llm_config: source.planning_llm_config,
-            manager_llm_config: source.manager_llm_config,
-            embedding_config: source.embedding_config,
-            memory_llm_config: source.memory_llm_config,
-            metadata: source.metadata ?? null,
-            similarity_threshold: source.similarity_threshold ?? null,
-            search_limit: source.search_limit ?? null,
-        };
-        return this.createProject(payload).pipe(
-            tap((created) => this.addProjectToCache(created))
+    public copyProject(id: number): Observable<GetProjectRequest> {
+        return this.projectsApiService.copyProject(id).pipe(
+            tap((newProject: GetProjectRequest) => {
+                this.addProjectToCache(newProject);
+            })
         );
     }
 
@@ -293,50 +270,24 @@ export class ProjectsStorageService {
     }
 
     public updateProjectInCache(updatedProject: GetProjectRequest) {
-        console.log('🚀 updateProjectInCache called with:', updatedProject);
-        console.log('🚀 Memory field in update:', updatedProject.memory);
-
         const currentProjects = this.projectsSignal();
-        console.log('🚀 Current projects in cache:', currentProjects.length);
 
         const index = currentProjects.findIndex(
             (p) => p.id === updatedProject.id
         );
-        console.log('🚀 Found project at index:', index);
 
         if (index !== -1) {
             const oldProject = currentProjects[index];
-            console.log('🚀 Old project memory:', oldProject.memory);
 
             const updatedProjects = [...currentProjects];
             // Create a new object reference to ensure change detection works
             updatedProjects[index] = { ...updatedProject };
-
-            console.log(
-                '🚀 New project memory:',
-                updatedProjects[index].memory
-            );
 
             this.projectsSignal.set(updatedProjects);
 
             // Verify the update
             const verifyUpdate = this.projectsSignal().find(
                 (p) => p.id === updatedProject.id
-            );
-            console.log(
-                '🚀 Verification - project in cache after set:',
-                verifyUpdate
-            );
-            console.log(
-                '🚀 Verification - memory field:',
-                verifyUpdate?.memory
-            );
-
-            console.log(
-                'Updated project in cache:',
-                updatedProject.id,
-                'with memory:',
-                updatedProject.memory
             );
         } else {
             console.log('🚀 Project not found in cache, adding it');

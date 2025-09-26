@@ -9,12 +9,14 @@ import time
 import dotenv
 import docker
 from loguru import logger
+import re
+from sseclient import SSEClient
 
 from utils.variables import DJANGO_URL, rhost
 
 dotenv.load_dotenv()
 
-MAX_SESSION_EXECUTION_TIME_SECONDS = 1200
+MAX_WAIT_SSE_SECONDS = 180
 container_name_list = [
     "manager_container",
     "redis",
@@ -102,47 +104,64 @@ def validate_task_and_session(task_name, task_id, agent_id, session_id):
     ), "Session task name mismatch"
 
 
-def wait_for_results(session_id: int):
+def wait_for_results_sse(session_id: int):
+    check_containers()
+    url = f"{DJANGO_URL}/run-session/subscribe/{session_id}/"
     start_time = time.time()
-    while True:
-        if time.time() - start_time > MAX_SESSION_EXECUTION_TIME_SECONDS:
-            raise TimeoutError()
-        check_containers()
-        status = get_session_status(session_id=session_id)
 
-        if status == "error":
-            logger.error(f"Session status is {status}")
-            for container_name in container_name_list:
-                log_container(container_name)
+    logger.info(f"Subscribing to SSE for session {session_id}...")
 
-            assert False, f"Session status is {status}"
 
-        if status == "end":
+    client = SSEClient(url)
+    end_node_result = None
+
+    for event in client:
+
+        if time.time() - start_time > MAX_WAIT_SSE_SECONDS:
+            raise TimeoutError(f"SSE listening timed out after {MAX_WAIT_SSE_SECONDS}s")
+
+        if event.event != "messages":
+            continue
+
+        data = json.loads(event.data)
+
+        message_data = data.get("message_data", {})
+        if message_data.get("message_type") == "graph_end":
+            end_node_result = message_data.get("end_node_result", {})
+            logger.info(f"Received graph_end message: {end_node_result}")
             break
 
-        time.sleep(2)
-    session_message_list = get_graph_session_messages(session_id=session_id)
-    logger.info(f"Messages: \n{session_message_list}")
-    assert len(session_message_list) != 0
+        logger.debug(f"Received SSE message: {message_data}")
+    
+
+    time.sleep(1)
+    status = get_session_status(session_id=session_id)
+    if status == "error":
+        logger.error(f"Session status is {status}")
+        for container_name in container_name_list:
+            log_container(container_name)
+
+        assert False, f"Session status is {status}"
+
+    if not end_node_result:
+        raise ValueError("Did not receive graph_end message in time.")
+
+    # assertation values from endnode.output_map
+    hash_value = end_node_result.get("hash_value")
+    non_existing_variable = end_node_result.get("non_existing_variable")
+    some_python_node_result = end_node_result.get("some_python_node_result")
+
+    if not isinstance(hash_value, str) or not re.fullmatch(r"[a-fA-F0-9]{64}", hash_value):
+        raise AssertionError(f"hash_value is not a valid SHA256: {hash_value}")
+
+    assert non_existing_variable == "not found", f"Expected 'not found', got {non_existing_variable}"
+
+    if some_python_node_result == "not found":
+        raise AssertionError(f"some_python_node_result should exist, got: {some_python_node_result}")
+
+    return end_node_result
 
 
-def delete_session(session_id: int):
-    get_url = f"{DJANGO_URL}/sessions/{session_id}"
-    delete_url = f"{DJANGO_URL}/sessions/{session_id}/"
-
-    response = requests.get(get_url, headers={"Host": rhost})
-    validate_response(response)
-    assert response.status_code == 200
-    assert response.json()["id"] == session_id
-
-    response = requests.delete(delete_url, headers={"Host": rhost})
-    assert response.status_code == 204
-    assert not response.content
-
-    response = requests.get(get_url, headers={"Host": rhost})
-    assert response.status_code == 404
-
-    logger.info(f"Session {session_id} deleted")
 
 
 def validate_response(response: Response) -> None:
@@ -228,9 +247,10 @@ def create_agent(*args, **kwargs) -> int:
 
 def create_config(llm_id: int) -> int:
     llm_config_data = {
-        "custom_name": "MyLLMConfig",
+        "custom_name": "MyTestLLMConfig",
         "model": llm_id,
         "temperature": 0,
+        "api_key": os.environ.get("OPENAI_KEY"),
     }
 
     llm_config_response = requests.get(
@@ -241,7 +261,13 @@ def create_config(llm_id: int) -> int:
     if llm_config_response.ok:
         results = llm_config_response.json()["results"]
         if len(results) > 0:
-            llm_config = results[0]
+            result_dict = results[0]
+            if result_dict.get("api_key") is not None:
+                llm_config = result_dict
+            elif result_dict.get("custom_name") == llm_config_data.get("custom_name"):
+                from random import randint
+                llm_config_data["custom_name"] = f"MyLLMConfig_{randint(1, 10000)}"
+
 
     if llm_config is None:
         llm_config_response = requests.post(
@@ -252,23 +278,6 @@ def create_config(llm_id: int) -> int:
 
     return llm_config["id"]
 
-
-def set_openai_api_key_to_environment() -> None:
-    OPENAI_API_KEY = os.environ.get("OPENAI_KEY", None)
-
-    if OPENAI_API_KEY is None:
-
-        logger.error("OPENAI_KEY not provided")
-        assert False, "OPENAI_KEY not provided"
-
-    environment_data = {"data": {"OPENAI_API_KEY": OPENAI_API_KEY}}
-
-    response = requests.post(
-        f"{DJANGO_URL}/environment/config/",
-        json=environment_data,
-        headers={"Host": rhost},
-    )
-    validate_response(response)
 
 def get_tool(tool_alias: str) -> int:
     response_tools = requests.get(f"{DJANGO_URL}/tools/", headers={"Host": rhost})
@@ -457,3 +466,18 @@ def create_start_node(graph_id: int, variables: dict | None = None):
     validate_response(response)
     return response.json()["id"]
 
+
+def create_end_node(graph_id: int):
+    output_map = {
+        "hash_value": "variables.hash",
+        "some_python_node_result": "variables.result",
+        "non_existing_variable": "variables.abracadabra"
+                  }
+    end_node_data = {
+       "graph": graph_id,
+       "output_map": output_map
+
+    }
+    response = requests.post(f"{DJANGO_URL}/endnodes/", json=end_node_data, headers={"Host": rhost})
+    validate_response(response)
+    return response.json()["id"]

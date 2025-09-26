@@ -1,8 +1,13 @@
 from math import log
 import uvicorn
-from dotenv import load_dotenv
+import sys
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv(".env")
+if "--debug" in sys.argv:
+    load_dotenv(find_dotenv("debug.env"))
+else:
+    load_dotenv(find_dotenv(".env"))
+
 
 
 def main():
