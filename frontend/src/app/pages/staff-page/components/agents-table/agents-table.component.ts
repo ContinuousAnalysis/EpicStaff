@@ -848,6 +848,7 @@ export class AgentsTableComponent {
                 knowledge_collection: agentData.knowledge_collection ?? null, // Changed parameter name
                 similarity_threshold: agentData.similarity_threshold ?? null,
                 search_limit: agentData.search_limit ?? null,
+                memory: agentData.memory ?? true,
             },
         });
 
