@@ -259,7 +259,7 @@ export class ProjectsStorageService {
             tap((newProject: GetProjectRequest) => {
                 this.addProjectToCache(newProject);
             })
-        ); 
+        );
     }
 
     public addProjectToCache(newProject: GetProjectRequest) {
@@ -270,50 +270,24 @@ export class ProjectsStorageService {
     }
 
     public updateProjectInCache(updatedProject: GetProjectRequest) {
-        console.log('🚀 updateProjectInCache called with:', updatedProject);
-        console.log('🚀 Memory field in update:', updatedProject.memory);
-
         const currentProjects = this.projectsSignal();
-        console.log('🚀 Current projects in cache:', currentProjects.length);
 
         const index = currentProjects.findIndex(
             (p) => p.id === updatedProject.id
         );
-        console.log('🚀 Found project at index:', index);
 
         if (index !== -1) {
             const oldProject = currentProjects[index];
-            console.log('🚀 Old project memory:', oldProject.memory);
 
             const updatedProjects = [...currentProjects];
             // Create a new object reference to ensure change detection works
             updatedProjects[index] = { ...updatedProject };
-
-            console.log(
-                '🚀 New project memory:',
-                updatedProjects[index].memory
-            );
 
             this.projectsSignal.set(updatedProjects);
 
             // Verify the update
             const verifyUpdate = this.projectsSignal().find(
                 (p) => p.id === updatedProject.id
-            );
-            console.log(
-                '🚀 Verification - project in cache after set:',
-                verifyUpdate
-            );
-            console.log(
-                '🚀 Verification - memory field:',
-                verifyUpdate?.memory
-            );
-
-            console.log(
-                'Updated project in cache:',
-                updatedProject.id,
-                'with memory:',
-                updatedProject.memory
             );
         } else {
             console.log('🚀 Project not found in cache, adding it');

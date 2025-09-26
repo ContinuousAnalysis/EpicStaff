@@ -1,4 +1,4 @@
-import { InputSignal, OutputEmitterRef } from '@angular/core';
+import { InputSignal } from '@angular/core';
 import { NodeModel } from './node.model';
 
 /**
@@ -14,8 +14,8 @@ export interface NodePanel<T extends NodeModel = NodeModel> {
     node: InputSignal<T>;
 
     /**
-     * Every panel MUST have a 'save' event output.
-     * This is the modern equivalent of `@Output() save`.
+     * Every panel MUST have an 'onSave' method that returns the updated node.
+     * The panel shell will call this method and handle the save emission.
      */
-    save: OutputEmitterRef<NodeModel>;
+    onSave(): T | null;
 }

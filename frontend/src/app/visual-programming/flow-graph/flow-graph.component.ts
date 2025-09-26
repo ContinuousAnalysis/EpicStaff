@@ -88,8 +88,6 @@ import { ProjectDialogComponent } from '../components/project-dialog/project-dia
 import { NoteNodeComponent } from '../components/nodes-components/note-node/note-node.component';
 import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edit-dialog.component';
 import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util'; // Adjust path
-import { NodePanel } from '../core/models/node-panel.interface';
-import { PANEL_COMPONENT_MAP } from '../core/enums/node-panel.map';
 import { ToastService } from '../../services/notifications/toast.service';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
@@ -159,7 +157,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             this.flowService.nodes().find((node) => node.id === nodeId) || null
         );
     });
-    public panelComponentType = signal<Type<NodePanel> | null>(null);
     //end node side panel logic
 
     private readonly destroy$ = new Subject<void>();
@@ -759,15 +756,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                 }
             });
         } else {
-            const componentType = PANEL_COMPONENT_MAP[node.type] || null;
-            if (componentType) {
-                this.selectedNodeId.set(node.id);
-                this.panelComponentType.set(componentType);
-            } else {
-                console.warn(
-                    `No panel component found for node type: ${node.type}`
-                );
-            }
+            this.selectedNodeId.set(node.id);
         }
     }
 
@@ -778,7 +767,14 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         );
         this.flowService.updateNode(updatedNode);
         this.selectedNodeId.set(null);
-        this.panelComponentType.set(null);
+    }
+
+    public onNodePanelAutosaved(updatedNode: NodeModel): void {
+        console.log(
+            'Parent received autosave event. Calling service with:',
+            updatedNode
+        );
+        this.flowService.updateNode(updatedNode);
     }
 
     public onGroupSizeChanged(event: IRect, group: GroupNodeModel): void {

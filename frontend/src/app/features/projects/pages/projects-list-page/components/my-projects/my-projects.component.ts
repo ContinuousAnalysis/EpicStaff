@@ -176,9 +176,7 @@ export class MyProjectsComponent implements OnInit {
                 console.log('Running project:', project.id);
                 break;
             case 'copy':
-                this.projectsStorageService
-                    .copyProject(project.id)
-                    .subscribe();
+                this.projectsStorageService.copyProject(project.id).subscribe();
                 break;
             case 'edit':
                 this.router.navigate(['/projects', project.id, 'edit']);
@@ -198,7 +196,6 @@ export class MyProjectsComponent implements OnInit {
                 title: 'Copy Project',
             },
         });
-
     }
 
     private confirmAndDeleteProject(project: GetProjectRequest): void {

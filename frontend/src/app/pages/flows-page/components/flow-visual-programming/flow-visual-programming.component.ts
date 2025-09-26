@@ -75,6 +75,7 @@ import { UnsavedChangesDialogService } from '../../../../shared/components/unsav
 import { isEqual } from 'lodash';
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { ConfigService } from '../../../../services/config/config.service';
+import { SidepanelAutosaveService } from '../../../../visual-programming/services/sidepanel-autosave.service';
 
 @Component({
     selector: 'app-flow-visual-programming',
@@ -110,7 +111,8 @@ export class FlowVisualProgrammingComponent
         private readonly startNodeService: StartNodeService,
         private readonly dialog: CdkDialog,
         private readonly unsavedChangesDialogService: UnsavedChangesDialogService,
-        private readonly configService: ConfigService
+        private readonly configService: ConfigService,
+        private readonly autosaveService: SidepanelAutosaveService
     ) {}
 
     public ngOnInit(): void {
@@ -152,25 +154,34 @@ export class FlowVisualProgrammingComponent
         }
 
         this.isSaving = true;
-        const flowState: FlowModel = this.flowService.getFlowState();
-        console.log(
-            'floew state that i got from service on saveflow',
-            flowState
-        );
 
-        const startNodeInFlow = flowState.nodes.find(
-            (node) => node.type === NodeType.START
-        ) as StartNodeModel | undefined;
+        this.autosaveService.triggerAutosave('manual-save');
 
-        if (!startNodeInFlow) {
-            console.log('no start node in flow');
-            return this.saveGraphDirectly(flowState, showNotif);
-        }
-        console.log('save graph with start node');
-        return this.saveGraphWithStartNode(
-            flowState,
-            startNodeInFlow,
-            showNotif
+        // Wait for autosave to complete before getting flow state
+        return of(null).pipe(
+            switchMap(() => new Promise((resolve) => setTimeout(resolve, 0))),
+            switchMap(() => {
+                const flowState: FlowModel = this.flowService.getFlowState();
+                console.log(
+                    'floew state that i got from service on saveflow',
+                    flowState
+                );
+
+                const startNodeInFlow = flowState.nodes.find(
+                    (node) => node.type === NodeType.START
+                ) as StartNodeModel | undefined;
+
+                if (!startNodeInFlow) {
+                    console.log('no start node in flow');
+                    return this.saveGraphDirectly(flowState, showNotif);
+                }
+                console.log('save graph with start node');
+                return this.saveGraphWithStartNode(
+                    flowState,
+                    startNodeInFlow,
+                    showNotif
+                );
+            })
         );
     }
 
@@ -261,52 +272,61 @@ export class FlowVisualProgrammingComponent
     }
 
     private saveGraphForRun(): Observable<any> {
-        const flowState: FlowModel = this.flowService.getFlowState();
+        // Trigger autosave before getting flow state
+        this.autosaveService.triggerAutosave('run-save');
 
-        const startNodeInFlow = flowState.nodes.find(
-            (node) => node.type === NodeType.START
-        ) as StartNodeModel | undefined;
+        // Wait for autosave to complete before getting flow state
+        return of(null).pipe(
+            switchMap(() => new Promise((resolve) => setTimeout(resolve, 200))),
+            switchMap(() => {
+                const flowState: FlowModel = this.flowService.getFlowState();
 
-        if (!startNodeInFlow) {
-            return this.graphUpdateService
-                .saveGraph(flowState, this.graph)
-                .pipe(
+                const startNodeInFlow = flowState.nodes.find(
+                    (node) => node.type === NodeType.START
+                ) as StartNodeModel | undefined;
+
+                if (!startNodeInFlow) {
+                    return this.graphUpdateService
+                        .saveGraph(flowState, this.graph)
+                        .pipe(
+                            tap((result) => {
+                                this.graph = result.graph;
+                                this.initialState = flowState;
+                            })
+                        );
+                }
+
+                const initialStateData = startNodeInFlow.data.initialState;
+
+                return this.startNodeService.getStartNodes().pipe(
+                    switchMap((startNodes) => {
+                        const matchingStartNode = startNodes.find(
+                            (sn) => sn.graph === this.graph.id
+                        );
+
+                        if (matchingStartNode) {
+                            return this.startNodeService.updateStartNode(
+                                matchingStartNode.id,
+                                {
+                                    graph: this.graph.id,
+                                    variables: initialStateData,
+                                }
+                            );
+                        }
+
+                        return this.startNodeService.createStartNode({
+                            graph: this.graph.id,
+                            variables: initialStateData,
+                        });
+                    }),
+                    switchMap(() =>
+                        this.graphUpdateService.saveGraph(flowState, this.graph)
+                    ),
                     tap((result) => {
                         this.graph = result.graph;
                         this.initialState = flowState;
                     })
                 );
-        }
-
-        const initialStateData = startNodeInFlow.data.initialState;
-
-        return this.startNodeService.getStartNodes().pipe(
-            switchMap((startNodes) => {
-                const matchingStartNode = startNodes.find(
-                    (sn) => sn.graph === this.graph.id
-                );
-
-                if (matchingStartNode) {
-                    return this.startNodeService.updateStartNode(
-                        matchingStartNode.id,
-                        {
-                            graph: this.graph.id,
-                            variables: initialStateData,
-                        }
-                    );
-                }
-
-                return this.startNodeService.createStartNode({
-                    graph: this.graph.id,
-                    variables: initialStateData,
-                });
-            }),
-            switchMap(() =>
-                this.graphUpdateService.saveGraph(flowState, this.graph)
-            ),
-            tap((result) => {
-                this.graph = result.graph;
-                this.initialState = flowState;
             })
         );
     }
