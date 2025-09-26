@@ -23,6 +23,7 @@ from tables.serializers.model_serializers import (
     FileExtractorNodeSerializer,
     EndNodeSerializer,
 )
+from tables.serializers.utils.mixins import NestedAgentExportMixin
 
 
 class EntityType(str, Enum):
@@ -194,33 +195,8 @@ class AgentExportSerializer(serializers.ModelSerializer):
         return EntityType.AGENT.value
 
 
-class NestedAgentExportSerializer(AgentExportSerializer):
-
-    llm_config = serializers.SerializerMethodField()
-    fcm_llm_config = serializers.SerializerMethodField()
-    realtime_agent = serializers.SerializerMethodField()
-
-    def get_tools(self, agent):
-        return {
-            "python_tools": list(
-                agent.python_code_tools.all().values_list("id", flat=True)
-            ),
-            "configured_tools": list(
-                agent.configured_tools.all().values_list("id", flat=True)
-            ),
-        }
-
-    def get_llm_config(self, agent: Agent):
-        if agent.llm_config:
-            return agent.llm_config.id
-
-    def get_fcm_llm_config(self, agent: Agent):
-        if agent.fcm_llm_config:
-            return agent.fcm_llm_config.id
-
-    def get_realtime_agent(self, agent: Agent):
-        if agent.realtime_agent:
-            return agent.realtime_agent.pk
+class NestedAgentExportSerializer(NestedAgentExportMixin, AgentExportSerializer):
+    pass
 
 
 class TaskExportSerializer(serializers.ModelSerializer):
@@ -262,6 +238,8 @@ class CrewExportSerializer(serializers.ModelSerializer):
 
     llm_configs = serializers.SerializerMethodField()
 
+    agent_serializer_class = NestedAgentExportSerializer
+
     class Meta:
         model = Crew
         exclude = ["id", "tags", "knowledge_collection"]
@@ -272,7 +250,7 @@ class CrewExportSerializer(serializers.ModelSerializer):
 
     def get_agents(self, crew: Crew):
         agents = crew.get_agents()
-        return NestedAgentExportSerializer(agents, many=True).data
+        return self.agent_serializer_class(agents, many=True).data
 
     def get_tools(self, crew: Crew):
         agent_configured_tools = ToolConfig.objects.filter(agent__crew=crew).distinct()

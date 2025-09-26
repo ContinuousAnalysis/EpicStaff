@@ -43,6 +43,7 @@ from tables.services.import_services import (
     RealtimeAgentImportService,
     TasksImportService,
 )
+from tables.serializers.utils.mixins import NestedAgentImportMixin
 
 
 class FileImportSerializer(serializers.Serializer):
@@ -447,7 +448,9 @@ class RealtimeAgentImportSerializer(serializers.ModelSerializer):
             )
             transcription_configs_service.create_configs()
 
-        realtime_agent = RealtimeAgent.objects.create(agent=agent, **validated_data)
+        realtime_agent, _ = RealtimeAgent.objects.get_or_create(
+            agent=agent, **validated_data
+        )
 
         if configs_service:
             realtime_agent.realtime_config = configs_service.get_config(
@@ -586,12 +589,8 @@ class AgentImportSerializer(serializers.ModelSerializer):
         }
 
 
-class NestedAgentImportSerializer(AgentImportSerializer):
-
-    tools = serializers.DictField(required=False)
-    llm_config = serializers.IntegerField(required=False, allow_null=True)
-    fcm_llm_config = serializers.IntegerField(required=False, allow_null=True)
-    realtime_agent = serializers.IntegerField(required=False, allow_null=True)
+class NestedAgentImportSerializer(NestedAgentImportMixin, AgentImportSerializer):
+    pass
 
 
 class TaskImportSerializer(serializers.ModelSerializer):
@@ -627,6 +626,8 @@ class CrewImportSerializer(serializers.ModelSerializer):
     planning_llm_config = serializers.IntegerField(required=False, allow_null=True)
     llm_configs = LLMConfigImportSerializer(many=True, required=False, allow_null=True)
     realtime_agents = RealtimeDataImportSerializer(required=False, allow_null=True)
+
+    agent_serializer_class = NestedAgentImportSerializer
 
     class Meta:
         model = Crew
@@ -682,7 +683,7 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
             current_id = a_data.pop("id")
 
-            agent_serializer = NestedAgentImportSerializer(data=a_data)
+            agent_serializer = self.agent_serializer_class(data=a_data)
             agent_serializer.is_valid(raise_exception=True)
             agent = agent_serializer.save()
 

@@ -455,7 +455,8 @@ class DeepCopyMixin:
 
         data = serializer_class(instance).data
 
-        deserializer = self.copy_deserializer_class(data=data)
+        deserializer_class = self.get_copy_deserializer_class()
+        deserializer = deserializer_class(data=data)
         deserializer.is_valid(raise_exception=True)
 
         try:
