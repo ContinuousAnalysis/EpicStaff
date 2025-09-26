@@ -31,6 +31,11 @@ import { GetToolConfigRequest } from '../../../../../features/tools/models/tool_
 import { ToastService } from '../../../../../services/notifications/toast.service';
 import { ToolItemComponent } from './tool-item/tool-item.component';
 import { PythonToolItemComponent } from './python-tool-item/python-tool-item.component';
+import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
+import { CustomToolDialogComponent } from '../../../../../user-settings-page/tools/custom-tool-editor/custom-tool-dialog.component';
+import { Dialog } from '@angular/cdk/dialog';
+import { CustomToolsStorageService } from '../../../../../features/tools/services/custom-tools/custom-tools-storage.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-tools-list',
@@ -42,6 +47,8 @@ import { PythonToolItemComponent } from './python-tool-item/python-tool-item.com
     FormsModule,
     ToolItemComponent,
     PythonToolItemComponent,
+
+    ButtonComponent,
   ],
   templateUrl: './tools-popup.component.html',
   styleUrls: ['./tools-popup.component.scss'],
@@ -63,8 +70,7 @@ import { PythonToolItemComponent } from './python-tool-item/python-tool-item.com
   ],
 })
 export class ToolsPopupComponent
-  implements OnInit, OnChanges, OnDestroy, AfterViewInit
-{
+  implements OnInit, OnChanges, OnDestroy, AfterViewInit {
   @ViewChild('searchInput') private searchInput!: ElementRef;
   @Input() public mergedTools: {
     id: number;
@@ -103,8 +109,14 @@ export class ToolsPopupComponent
     private readonly _pythonCodeToolService: PythonCodeToolService,
     private readonly _fullToolConfigService: FullToolConfigService,
     private readonly _cdr: ChangeDetectorRef,
-    private readonly toastService: ToastService
-  ) {}
+    private readonly toastService: ToastService,
+    private readonly cdkDialog: Dialog,
+    private readonly customToolsStorageService: CustomToolsStorageService,
+    private readonly router: Router,
+    private readonly cdr: ChangeDetectorRef,
+
+
+  ) { }
 
   public ngOnInit(): void {
     console.log('ToolsPopupComponent initialized.');
@@ -338,6 +350,19 @@ export class ToolsPopupComponent
       this.selectedToolConfigs.add(config.id);
     }
     this._cdr.markForCheck();
+  }
+
+  public openCustomToolDialog(): void {
+    const dialogRef = this.cdkDialog.open(CustomToolDialogComponent, {
+      data: { pythonTools: this.customToolsStorageService.allTools() }, // Pass cached tools
+    });
+    dialogRef.closed.subscribe((result) => {
+      if (result) {
+        console.log('New tool created:', result);
+        // The tool is automatically added to cache via the storage service
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   // This method is commented out as per the requirement

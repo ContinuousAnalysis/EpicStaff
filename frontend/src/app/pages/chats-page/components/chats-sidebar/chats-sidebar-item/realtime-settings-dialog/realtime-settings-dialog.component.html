@@ -63,6 +63,7 @@
             [loading]="loadingConfigs"
             (configChange)="onTranscriptionConfigChange($event)"
             (createNew)="openCreateTranscriptionConfigDialog()"
+            (deleteConfig)="deleteTranscriptionConfig($event)"
           ></app-transcription-config-selector>
         </div>
 

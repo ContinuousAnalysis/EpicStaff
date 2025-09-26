@@ -91,8 +91,10 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
                 session_id=session_id, status="run"
             )
             async for stream_mode, chunk in graph.astream(
-                state, stream_mode=["values", "custom"]
-            ):
+                input=state,
+                config={"recursion_limit": 1000},
+                stream_mode=["values", "custom"],
+            ):  # TODO: change hardcoded recursion limit
 
                 if stream_mode == "custom":
                     data = asdict(chunk)
