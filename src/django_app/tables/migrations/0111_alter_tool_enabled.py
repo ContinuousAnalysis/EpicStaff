@@ -2,20 +2,6 @@
 
 from django.db import migrations, models
 
-
-def disable_and_remove_tools(apps, schema_editor):
-    Tool = apps.get_model("tables", "Tool")
-    Agent = apps.get_model("tables", "Agent")
-    TaskConfiguredTools = apps.get_model("tables", "TaskConfiguredTools")
-
-    Tool.objects.filter(enabled=True).update(enabled=False)
-
-    for agent in Agent.objects.all():
-        agent.configured_tools.clear()
-
-    TaskConfiguredTools.objects.all().delete()
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -27,8 +13,5 @@ class Migration(migrations.Migration):
             model_name="tool",
             name="enabled",
             field=models.BooleanField(default=False),
-        ),
-        migrations.RunPython(
-            disable_and_remove_tools, reverse_code=migrations.RunPython.noop
-        ),
+        )
     ]
