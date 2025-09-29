@@ -43,7 +43,6 @@ from tables.services.import_services import (
     RealtimeAgentImportService,
     TasksImportService,
 )
-from tables.serializers.utils.mixins import NestedAgentImportMixin
 
 
 class FileImportSerializer(serializers.Serializer):
@@ -589,8 +588,12 @@ class AgentImportSerializer(serializers.ModelSerializer):
         }
 
 
-class NestedAgentImportSerializer(NestedAgentImportMixin, AgentImportSerializer):
-    pass
+class NestedAgentImportSerializer(AgentImportSerializer):
+
+    tools = serializers.DictField(required=False)
+    llm_config = serializers.IntegerField(required=False, allow_null=True)
+    fcm_llm_config = serializers.IntegerField(required=False, allow_null=True)
+    realtime_agent = serializers.IntegerField(required=False, allow_null=True)
 
 
 class TaskImportSerializer(serializers.ModelSerializer):
@@ -935,6 +938,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
 
     metadata = GraphMetadataSerializer()
 
+    agent_serializer_class = NestedAgentImportSerializer
+    crew_serializer_class = NestedCrewImportSerializer
+
     class Meta:
         model = Graph
         exclude = ["id", "tags"]
@@ -985,7 +991,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
             llm_configs_service.create_configs()
 
         if agents_data:
-            agents_service = AgentsImportService(agents_data)
+            agents_service = AgentsImportService(
+                agents_data, self.agent_serializer_class
+            )
             agents_service.create_agents(tools_service, llm_configs_service)
 
         if realtime_agents_data and agents_data:
@@ -995,7 +1003,7 @@ class GraphImportSerializer(serializers.ModelSerializer):
             realtime_agents_serializer.create(realtime_agents_data)
 
         if crews_data:
-            crews_service = CrewsImportService(crews_data)
+            crews_service = CrewsImportService(crews_data, self.crew_serializer_class)
             crews_service.create_crews(
                 agents_service, tools_service, llm_configs_service
             )

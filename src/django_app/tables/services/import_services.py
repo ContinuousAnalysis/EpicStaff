@@ -169,10 +169,8 @@ class RealtimeAgentImportService:
 
 class AgentsImportService:
 
-    def __init__(self, agents):
-        from tables.serializers.import_serializers import NestedAgentImportSerializer
-
-        self.serializer_class = NestedAgentImportSerializer
+    def __init__(self, agents, serializer_class):
+        self.serializer_class = serializer_class
         self.agents = agents
         self.mapped_agents = {}
 
@@ -257,13 +255,10 @@ class TasksImportService:
 
 class CrewsImportService:
 
-    def __init__(self, crews):
-        from tables.serializers.import_serializers import (
-            NestedCrewImportSerializer,
-            TaskImportSerializer,
-        )
+    def __init__(self, crews, serializer_class):
+        from tables.serializers.import_serializers import TaskImportSerializer
 
-        self.crew_serializer = NestedCrewImportSerializer
+        self.crew_serializer = serializer_class
         self.task_serializer = TaskImportSerializer
         self.crews = crews
         self.mapped_crews = {}

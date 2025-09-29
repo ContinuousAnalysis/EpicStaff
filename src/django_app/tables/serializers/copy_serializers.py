@@ -1,20 +1,18 @@
 from rest_framework import serializers
-from tables.models import SourceCollection, Agent
+from tables.models import SourceCollection
 from tables.serializers.export_serializers import (
     AgentExportSerializer,
-    NestedAgentExportSerializer,
     CrewExportSerializer,
     GraphExportSerializer,
 )
 from tables.serializers.import_serializers import (
     AgentImportSerializer,
-    NestedAgentImportSerializer,
     CrewImportSerializer,
     GraphImportSerializer,
 )
 from tables.serializers.utils.mixins import (
     NestedAgentExportMixin,
-    NestedAgentImportMixin,
+    NestedCrewExportMixin,
 )
 
 
@@ -55,13 +53,20 @@ class AgentCopyDeserializer(AgentImportSerializer):
 
 class NestedAgentCopySerializer(NestedAgentExportMixin, AgentCopySerializer):
 
+    llm_config = serializers.SerializerMethodField()
+    fcm_llm_config = serializers.SerializerMethodField()
+    realtime_agent = serializers.SerializerMethodField()
     knowledge_collection = serializers.PrimaryKeyRelatedField(
         queryset=SourceCollection.objects.all(), allow_null=True, required=False
     )
 
 
-class NestedAgentCopyDeserializer(NestedAgentImportMixin, AgentCopyDeserializer):
+class NestedAgentCopyDeserializer(AgentCopyDeserializer):
 
+    tools = serializers.DictField(required=False)
+    llm_config = serializers.IntegerField(required=False, allow_null=True)
+    fcm_llm_config = serializers.IntegerField(required=False, allow_null=True)
+    realtime_agent = serializers.IntegerField(required=False, allow_null=True)
     knowledge_collection = serializers.IntegerField(required=False, allow_null=True)
 
 
@@ -75,6 +80,20 @@ class CrewCopySerializer(CrewExportSerializer):
 
     class Meta(CrewExportSerializer.Meta):
         exclude = ["id", "tags"]
+
+
+class NestedCrewCopySerializer(NestedCrewExportMixin, CrewCopySerializer):
+
+    tools = None
+    llm_configs = None
+    realtime_agents = None
+
+    knowledge_collection = serializers.PrimaryKeyRelatedField(
+        queryset=SourceCollection.objects.all(), allow_null=True, required=False
+    )
+
+    class Meta(CrewCopySerializer.Meta):
+        exclude = ["tags"]
 
 
 class CrewCopyDeserializer(CrewImportSerializer):
@@ -98,9 +117,36 @@ class CrewCopyDeserializer(CrewImportSerializer):
         return crew
 
 
+class NestedCrewCopyDeserializer(CrewCopyDeserializer):
+
+    tools = None
+    llm_configs = None
+    realtime_agents = None
+
+    agents = serializers.ListField(child=serializers.IntegerField(), required=False)
+    knowledge_collection = serializers.IntegerField(required=False, allow_null=True)
+
+    class Meta(CrewCopyDeserializer.Meta):
+        exclude = ["tags"]
+        extra_kwargs = {
+            "id": {"read_only": False, "required": False, "validators": []},
+        }
+
+
 class GraphCopySerializer(GraphExportSerializer):
-    pass
+
+    crew_serializer_class = NestedCrewCopySerializer
+    agent_serializer_class = NestedAgentCopySerializer
 
 
 class GraphCopyDeserializer(GraphImportSerializer):
-    pass
+
+    crews = NestedCrewCopyDeserializer(
+        many=True, required=False, allow_null=False, default=dict
+    )
+    agents = NestedAgentCopyDeserializer(
+        many=True, required=False, allow_null=False, default=dict
+    )
+
+    crew_serializer_class = NestedCrewCopyDeserializer
+    agent_serializer_class = NestedAgentCopyDeserializer

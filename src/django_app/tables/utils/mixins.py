@@ -454,6 +454,7 @@ class DeepCopyMixin:
         serializer_class = self.get_copy_serializer_class()
 
         data = serializer_class(instance).data
+        data = dict(data)
 
         deserializer_class = self.get_copy_deserializer_class()
         deserializer = deserializer_class(data=data)

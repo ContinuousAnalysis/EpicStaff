@@ -23,7 +23,10 @@ from tables.serializers.model_serializers import (
     FileExtractorNodeSerializer,
     EndNodeSerializer,
 )
-from tables.serializers.utils.mixins import NestedAgentExportMixin
+from tables.serializers.utils.mixins import (
+    NestedAgentExportMixin,
+    NestedCrewExportMixin,
+)
 
 
 class EntityType(str, Enum):
@@ -196,7 +199,10 @@ class AgentExportSerializer(serializers.ModelSerializer):
 
 
 class NestedAgentExportSerializer(NestedAgentExportMixin, AgentExportSerializer):
-    pass
+
+    llm_config = serializers.SerializerMethodField()
+    fcm_llm_config = serializers.SerializerMethodField()
+    realtime_agent = serializers.SerializerMethodField()
 
 
 class TaskExportSerializer(serializers.ModelSerializer):
@@ -354,7 +360,7 @@ class CrewExportSerializer(serializers.ModelSerializer):
         return EntityType.CREW.value
 
 
-class NestedCrewExportSerializer(CrewExportSerializer):
+class NestedCrewExportSerializer(NestedCrewExportMixin, CrewExportSerializer):
 
     tools = None
     llm_configs = None
@@ -362,10 +368,6 @@ class NestedCrewExportSerializer(CrewExportSerializer):
 
     class Meta(CrewExportSerializer.Meta):
         exclude = ["tags", "knowledge_collection"]
-
-    def get_agents(self, crew):
-        agents = list(crew.agents.all().values_list("id", flat=True))
-        return agents
 
 
 class CrewNodeExportSerializer(CrewNodeSerializer):
@@ -401,6 +403,9 @@ class GraphExportSerializer(GraphSerializer):
     realtime_agents = serializers.SerializerMethodField()
     entity_type = serializers.SerializerMethodField()
 
+    crew_serializer_class = NestedCrewExportSerializer
+    agent_serializer_class = NestedAgentExportSerializer
+
     class Meta(GraphSerializer.Meta):
         fields = "__all__"
 
@@ -411,12 +416,12 @@ class GraphExportSerializer(GraphSerializer):
             .values_list("crew", flat=True)
         )
         crews = Crew.objects.filter(id__in=unique_crews)
-        serializer = NestedCrewExportSerializer(instance=crews, many=True)
+        serializer = self.crew_serializer_class(instance=crews, many=True)
         return serializer.data
 
     def get_agents(self, graph):
         agents = Agent.objects.filter(crew__crewnode__graph=graph).distinct()
-        serializer = NestedAgentExportSerializer(instance=agents, many=True)
+        serializer = self.agent_serializer_class(instance=agents, many=True)
         return serializer.data
 
     def get_tools(self, graph):

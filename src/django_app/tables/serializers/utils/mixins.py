@@ -1,12 +1,7 @@
-from rest_framework import serializers
 from tables.models import Agent
 
 
 class NestedAgentExportMixin:
-
-    llm_config = serializers.SerializerMethodField()
-    fcm_llm_config = serializers.SerializerMethodField()
-    realtime_agent = serializers.SerializerMethodField()
 
     def get_tools(self, agent):
         return {
@@ -31,9 +26,8 @@ class NestedAgentExportMixin:
             return agent.realtime_agent.pk
 
 
-class NestedAgentImportMixin:
+class NestedCrewExportMixin:
 
-    tools = serializers.DictField(required=False)
-    llm_config = serializers.IntegerField(required=False, allow_null=True)
-    fcm_llm_config = serializers.IntegerField(required=False, allow_null=True)
-    realtime_agent = serializers.IntegerField(required=False, allow_null=True)
+    def get_agents(self, crew):
+        agents = list(crew.agents.all().values_list("id", flat=True))
+        return agents
