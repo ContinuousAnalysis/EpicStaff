@@ -35,7 +35,7 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
       </div> -->
 
       <div
-        *ngIf="state === 'default'"
+        *ngIf="state === 'removing'"
         class="menu-item remove-item"
         (click)="onRemoveAgent()"
       >
@@ -108,7 +108,7 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
 })
 export class AgentMenuComponent {
   @Input() isOpen = false;
-  @Input() state: CardState = 'default';
+  @Input() state: CardState = 'adding';
   @Input() agent!: FullAgent;
 
   @Output() close = new EventEmitter<void>();

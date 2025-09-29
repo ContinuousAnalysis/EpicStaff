@@ -40,7 +40,7 @@
                 >
                 </app-agent-menu>
             </div> -->
-            <ng-container *ngIf="cardState !== 'default'">
+            <ng-container>
                 <div
                     *ngIf="cardState === 'adding'"
                     class="icon-container add-icon-container"
@@ -66,7 +66,7 @@
                 </div>
 
                 <div
-                    *ngIf="cardState === 'removing'"
+                    *ngIf="cardState !== 'adding'"
                     class="icon-container remove-icon-container"
                     title="Remove Agent"
                     (click)="onRemoveAgentClick()"

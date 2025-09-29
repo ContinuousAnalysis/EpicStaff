@@ -12,6 +12,7 @@ export class AgGridContextMenuComponent {
   @Input() visible: boolean = false;
   @Input() left: number = 0;
   @Input() top: number = 0;
+  @Input() parent?: string = "Agent";
 
   @Output() delete = new EventEmitter<void>();
   @Output() copy = new EventEmitter<void>();
