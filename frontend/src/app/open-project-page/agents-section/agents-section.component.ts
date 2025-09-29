@@ -71,7 +71,7 @@ export class AgentsSectionComponent implements OnInit, OnDestroy {
         return this.currentGridSize === 'large';
     }
 
-    public cardState: CardState = 'default';
+    public cardState: CardState = 'removing';
 
     private agentsSubscription!: Subscription;
     public isLoaded: boolean = false;
@@ -105,14 +105,9 @@ export class AgentsSectionComponent implements OnInit, OnDestroy {
 
         this.cdr.markForCheck();
     }
-    public onShowDropdownChange(isDropdownVisible: boolean): void {
-        this.cardState = isDropdownVisible ? 'removing' : 'default';
-        this.cdr.markForCheck();
-    }
 
     public onOutsideClick(): void {
         // Close the dropdown when clicking outside the agents section
-        this.cardState = 'default';
         // Also close the actual dropdown in grid controls
         if (this.gridControls) {
             this.gridControls.onCloseDropdown();
