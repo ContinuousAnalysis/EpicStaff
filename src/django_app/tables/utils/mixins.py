@@ -469,6 +469,13 @@ class DeepCopyMixin:
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        new_name = request.data.get("name")
+        current_name = getattr(new_instance, "name", None)
+
+        if new_name and current_name:
+            new_instance.name = new_name
+            new_instance.save()
+
         response_serializer_class = self.get_copy_serializer_response_class()
         serializer = response_serializer_class(new_instance)
 
