@@ -40,8 +40,16 @@ export abstract class BaseSidePanel<T extends NodeModel> {
         return updatedNode;
     }
 
-    public onEscape(): void {
-        this.onSave();
+
+    // Returns the updated node without emitting outputs or closing the panel
+    public onSaveSilently(): T | null {
+        if (!this.form) return null;
+        if (this.form.invalid) return null;
+        try {
+            return this.createUpdatedNode();
+        } catch {
+            return null;
+        }
     }
 
     protected createNodeNameValidators(
