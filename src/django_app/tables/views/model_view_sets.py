@@ -281,6 +281,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
     entity_type = EntityType.AGENT.value
     export_prefix = "agent"
     filename_attr = "role"
+    serializer_response_class = AgentReadSerializer
 
     copy_serializer_class = AgentCopySerializer
     copy_deserializer_class = AgentCopyDeserializer
@@ -352,6 +353,7 @@ class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
     entity_type = EntityType.CREW.value
     export_prefix = "crew"
     filename_attr = "name"
+    serializer_response_class = CrewSerializer
 
     copy_serializer_class = CrewCopySerializer
     copy_deserializer_class = CrewCopyDeserializer
@@ -487,6 +489,7 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
     entity_type = EntityType.GRAPH.value
     export_prefix = "graph"
     filename_attr = "name"
+    serializer_response_class = GraphSerializer
 
     copy_serializer_class = GraphCopySerializer
     copy_deserializer_class = GraphCopyDeserializer

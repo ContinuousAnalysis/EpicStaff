@@ -92,7 +92,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         private fullLLMConfigService: FullLLMConfigService,
         private fullEmbeddingConfigService: FullEmbeddingConfigService,
         private cdr: ChangeDetectorRef
-    ) {}
+    ) { }
 
     public ngOnInit(): void {
         this.loadConfigurations();

@@ -139,7 +139,6 @@ class ToolSerializer(serializers.ModelSerializer):
             "name",
             "name_alias",
             "description",
-            "enabled",  # TODO: remove to enable bult-in tools
             "tool_fields",
         ]
 
