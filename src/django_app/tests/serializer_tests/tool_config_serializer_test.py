@@ -196,7 +196,7 @@ def test_validate_is_completed_with_valid_empty_configuration(test_tool):
     tool = test_tool
     configuration = {}
     tool_config_validator = ToolConfigValidator()
-    is_completed = tool_config_validator.validate_is_completed(tool.pk, configuration)
+    is_completed = tool_config_validator.validate_is_completed(tool, configuration)
 
     assert is_completed is True
 
@@ -213,7 +213,7 @@ def test_validate_is_completed_with_missing_fields(
         "llm_config": llm_config.pk,  # Missing required fields
     }
     tool_config_validator = ToolConfigValidator()
-    is_completed = tool_config_validator.validate_is_completed(tool.pk, configuration)
+    is_completed = tool_config_validator.validate_is_completed(tool, configuration)
 
     assert is_completed is False
 
@@ -231,6 +231,6 @@ def test_validate_is_completed_with_invalid_field_data(
         "url": 123,  # Should be an string, not a integer
     }
     tool_config_validator = ToolConfigValidator()
-    is_completed = tool_config_validator.validate_is_completed(tool.pk, configuration)
+    is_completed = tool_config_validator.validate_is_completed(tool, configuration)
 
     assert is_completed is False
