@@ -522,16 +522,16 @@ class TaskWriteSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        context_ids = self.initial_data.get("task_context_list", [])
+        context_ids = self.initial_data.get("task_context_list", None)
         task_context_field = self.fields["task_context_list"]
 
-        if context_ids:
+        if context_ids is not None:
             validated = task_context_field.validate_context_tasks(
                 context_ids, task_instance=self.instance, task_data=attrs
             )
             attrs["_validated_context_ids"] = validated
         else:
-            attrs["_validated_context_ids"] = []
+            attrs["_validated_context_ids"] = None
 
         return attrs
 
@@ -543,10 +543,10 @@ class TaskWriteSerializer(serializers.ModelSerializer):
 
         task = super().create(validated_data)
 
-        if tool_ids:
+        if tool_ids is not None:
             self._update_task_tools(task=task, tool_ids=tool_ids)
 
-        if context_ids:
+        if context_ids is not None:
             self._update_task_contexts(task, context_ids)
 
         return task
@@ -559,10 +559,10 @@ class TaskWriteSerializer(serializers.ModelSerializer):
 
         task = super().update(instance, validated_data)
 
-        if tool_ids:
+        if tool_ids is not None:
             self._update_task_tools(task=task, tool_ids=tool_ids)
 
-        if context_ids:
+        if context_ids is not None:
             self._update_task_contexts(task, context_ids)
 
         return task  # TODO: responce
