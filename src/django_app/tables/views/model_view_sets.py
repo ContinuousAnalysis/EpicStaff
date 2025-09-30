@@ -273,6 +273,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin):
     entity_type = EntityType.AGENT.value
     export_prefix = "agent"
     filename_attr = "role"
+    serializer_response_class = AgentReadSerializer
 
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
@@ -340,6 +341,7 @@ class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin):
     entity_type = EntityType.CREW.value
     export_prefix = "crew"
     filename_attr = "name"
+    serializer_response_class = CrewSerializer
 
     def get_serializer_class(self):
         if self.action == "export":
@@ -469,6 +471,7 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin):
     entity_type = EntityType.GRAPH.value
     export_prefix = "graph"
     filename_attr = "name"
+    serializer_response_class = GraphSerializer
 
     def get_queryset(self):
         return (
