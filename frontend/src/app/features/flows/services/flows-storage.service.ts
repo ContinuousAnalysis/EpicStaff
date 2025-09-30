@@ -208,7 +208,8 @@ export class FlowsStorageService {
     public copyFlow(sourceId: number, newName: string): Observable<GraphDto> {
         return this.flowsApiService.getGraphById(sourceId).pipe(
             switchMap((sourceFlow: GraphDto) => {
-                const payload: CreateGraphDtoRequest = {
+                const payload: GraphDto = {
+                    id: sourceFlow.id,
                     name: newName,
                     description: sourceFlow.description,
                     metadata: sourceFlow.metadata,
@@ -223,7 +224,7 @@ export class FlowsStorageService {
                         sourceFlow.file_extractor_node_list,
                     end_node_list: sourceFlow.end_node_list,
                 };
-                return this.createFlow(payload).pipe(
+                return this.flowsApiService.copyGraph(payload).pipe(
                     tap((created) => this.addFlowToCache(created))
                 );
             })

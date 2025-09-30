@@ -47,7 +47,7 @@ class PythonCodeToolExportSerializer(serializers.ModelSerializer):
         exclude = ["favorite"]
 
 
-class ToolConfigExportSerilizer(serializers.ModelSerializer):
+class ToolConfigExportSerializer(serializers.ModelSerializer):
 
     tool = serializers.SerializerMethodField()
 
@@ -66,7 +66,7 @@ class GeneralToolExportSerializer(serializers.Serializer):
     def to_representation(self, instance):
         tool_classes = (
             (PythonCodeTool, PythonCodeToolExportSerializer),
-            (ToolConfig, ToolConfigExportSerilizer),
+            (ToolConfig, ToolConfigExportSerializer),
         )
         tool = {}
 

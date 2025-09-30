@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
     ReactiveFormsModule,
     FormGroup,
@@ -118,33 +118,34 @@ interface InputMapPair {
             }
         `,
     ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
-    public pythonCode: string = '';
-    public initialPythonCode: string = '';
-    public codeEditorHasError: boolean = false;
+    pythonCode: string = '';
+    initialPythonCode: string = '';
+    codeEditorHasError: boolean = false;
 
     constructor() {
         super();
     }
 
-    public get activeColor(): string {
+    get activeColor(): string {
         return this.node().color || '#685fff';
     }
 
-    public get inputMapPairs(): FormArray {
+    get inputMapPairs(): FormArray {
         return this.form.get('input_map') as FormArray;
     }
 
-    public onPythonCodeChange(code: string): void {
+    onPythonCodeChange(code: string): void {
         this.pythonCode = code;
     }
 
-    public onCodeErrorChange(hasError: boolean): void {
+    onCodeErrorChange(hasError: boolean): void {
         this.codeEditorHasError = hasError;
     }
 
-    protected initializeForm(): FormGroup {
+    initializeForm(): FormGroup {
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
             input_map: this.fb.array([]),
@@ -160,7 +161,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
         return form;
     }
 
-    protected createUpdatedNode(): PythonNodeModel {
+    createUpdatedNode(): PythonNodeModel {
         const validInputPairs = this.getValidInputPairs();
         const inputMapValue = this.createInputMapFromPairs(validInputPairs);
 
@@ -202,11 +203,10 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
                 );
             });
         } else {
-            // Always add at least one empty input map pair
             inputMapArray.push(
                 this.fb.group({
                     key: [''],
-                    value: [''],
+                    value: ['variables.'],
                 })
             );
         }

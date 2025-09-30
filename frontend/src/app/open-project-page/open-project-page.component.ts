@@ -370,6 +370,9 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
         if (formValue.memory !== undefined) {
             updateData.memory = formValue.memory;
         }
+        if (formValue.cache !== undefined) {
+            updateData.cache = formValue.cache;
+        }
         if (formValue.process !== undefined) {
             updateData.process = formValue.process;
         }

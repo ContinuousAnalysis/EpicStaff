@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { EndNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
@@ -79,6 +79,7 @@ import { CommonModule } from '@angular/common';
             }
         `,
     ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EndNodePanelComponent extends BaseSidePanel<EndNodeModel> {
     constructor() {
@@ -89,13 +90,12 @@ export class EndNodePanelComponent extends BaseSidePanel<EndNodeModel> {
         return this.node().color || '#d3d3d3';
     }
 
-    public outputMapJson: string = '{\n  "context": "variables.context"\n}';
+    public outputMapJson: string = '{}';
     public isOutputMapValid: boolean = true;
 
     protected initializeForm(): FormGroup {
         const form = this.fb.group({});
 
-        // Initialize output map JSON from node data or default
         const existingOutputMap = this.node().data?.output_map;
         if (
             existingOutputMap &&
@@ -105,19 +105,17 @@ export class EndNodePanelComponent extends BaseSidePanel<EndNodeModel> {
             try {
                 this.outputMapJson = JSON.stringify(existingOutputMap, null, 2);
             } catch {
-                this.outputMapJson = '{\n  "context": "variables.context"\n}';
+                this.outputMapJson = '{}';
             }
         } else {
-            this.outputMapJson = '{\n  "context": "variables.context"\n}';
+            this.outputMapJson = '{}';
         }
 
         return form;
     }
 
     protected createUpdatedNode(): EndNodeModel {
-        let parsedOutputMap: Record<string, unknown> = {
-            context: 'variables.context',
-        } as Record<string, unknown>;
+        let parsedOutputMap: Record<string, unknown> = {};
         try {
             const parsed = JSON.parse(this.outputMapJson);
             if (

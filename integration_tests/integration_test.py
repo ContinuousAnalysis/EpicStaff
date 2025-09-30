@@ -4,17 +4,17 @@ import pytest
 
 from utils.utils import *
 from utils.knowledge_utils import *
+from utils.cleaning_utils import *
 import uuid
 from loguru import logger
 
-from utils.variables import MANAGER_URL
+from utils.variables import MANAGER_URL, TEST_TOOL_NAME
 
 
 def test_create_and_run_session():
 
     # TODO: create a function to ensure container is running
     sleep(1)  # sleep to make sure that predifined models uploaded
-    set_openai_api_key_to_environment()
 
     # Create configurations
     llm_id = get_llm_model()
@@ -73,6 +73,8 @@ def test_create_and_run_session():
 
     create_edge(start_key="option_2", end_key="author_crew_node", graph=graph_id)
     create_edge(start_key="author_crew_node", end_key="wiki_crew_node", graph=graph_id)
+    create_end_node(graph_id=graph_id)
+    create_edge(start_key="wiki_crew_node", end_key="__end_node__", graph=graph_id)
 
     # Run sessions
     session1 = run_session(
@@ -87,9 +89,13 @@ def test_create_and_run_session():
     # )
     # logger.success(f"Session with id {session2} created, yay!")
 
-    wait_for_results(session_id=session1)
+    wait_for_results_sse(session_id=session1)
     # wait_for_results(session_id=session2)
     delete_session(session_id=session1)
+    delete_crews(crew_ids_to_delete=[user_crew_id, author_crew_id, wikipedia_crew_id])
+    delete_graph(graph_id=graph_id)
+    delete_custom_tools()
+
 
 
 @pytest.mark.asyncio
@@ -309,7 +315,7 @@ def main(user_id: int):
     }
 
     tool_data = {
-        "name": "python tool1",
+        "name": TEST_TOOL_NAME,
         "description": "Get user name from id",
         "code": code,
         "entrypoint": "main",

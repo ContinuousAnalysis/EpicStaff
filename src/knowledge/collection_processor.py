@@ -1,4 +1,5 @@
 import os
+import sys
 from loguru import logger
 import cachetools
 
@@ -18,9 +19,14 @@ from embedder.cohere import CohereEmbedder
 from embedder.mistral import MistralEmbedder
 from embedder.together_ai import TogetherAIEmbedder
 
-from dotenv import load_dotenv
+import sys
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()
+if "--debug" in sys.argv:
+    load_dotenv(find_dotenv("debug.env"))
+else:
+    load_dotenv(find_dotenv(".env"))
+
 
 
 def get_required_env_var(key: str) -> str:

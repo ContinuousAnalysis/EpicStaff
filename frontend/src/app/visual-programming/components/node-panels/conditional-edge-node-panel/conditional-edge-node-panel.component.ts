@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
     ReactiveFormsModule,
     FormGroup,
@@ -117,6 +117,7 @@ interface InputMapPair {
             }
         `,
     ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConditionalEdgeNodePanelComponent extends BaseSidePanel<EdgeNodeModel> {
     public pythonCode: string = '';

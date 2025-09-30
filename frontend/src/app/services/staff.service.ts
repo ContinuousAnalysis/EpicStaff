@@ -82,4 +82,14 @@ export class AgentsService {
       headers: this.headers,
     });
   }
+
+  // COPY agent
+  copyAgent(agent: CreateAgentRequest,agentId: number): Observable<GetAgentRequest> {
+    return this.http.post<GetAgentRequest>(
+      `${this.apiUrl}${agentId}/copy/`,
+      agent,
+      {
+        headers: this.headers,
+      });
+  }
 }

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
     ReactiveFormsModule,
     FormGroup,
@@ -88,6 +88,7 @@ import { CommonModule } from '@angular/common';
             }
         `,
     ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StartNodePanelComponent extends BaseSidePanel<StartNodeModel> {
     public initialStateJson: string = '{}';
