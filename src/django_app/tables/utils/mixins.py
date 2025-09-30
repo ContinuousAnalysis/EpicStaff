@@ -425,6 +425,15 @@ class ImportExportMixin:
 
 
 class DeepCopyMixin:
+    """
+    A mixin that can extend ModelSerializer class with deep copy functionality.
+    Creates new action method: `copy`.
+
+    Params:
+        `copy_serializer_class`: A serializer class that used for creating copy of the entity (agent, crew, graph).
+        `copy_deserializer_class`: A serializer class that used for creating entity from copied entity.
+        `copy_serializer_response_class`: A serializer class that used in repose body.
+    """
 
     copy_serializer_class = None
     copy_deserializer_class = None
