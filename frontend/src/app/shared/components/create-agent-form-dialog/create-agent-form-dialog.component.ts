@@ -406,6 +406,16 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         return tooltip;
     }
 
+    // Helper method to format temperature for display
+    getFormattedTemperature(config: FullLLMConfig): string {
+        if (config && typeof config.temperature === 'number') {
+            // Convert 0-1 to 1-100, ensuring it's at least 1 if original is 0
+            const temp = Math.max(1, Math.round(config.temperature * 100));
+            return `${temp}°`;
+        }
+        return 'N/A';
+    }
+
     public onSubmitForm(): void {
         if (this.agentForm.invalid) {
             this.markFormGroupTouched(this.agentForm);

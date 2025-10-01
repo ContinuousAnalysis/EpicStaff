@@ -116,6 +116,9 @@
                                 >
                                     ({{ config.custom_name }})
                                 </span>
+                                <span class="create-agent__llm-temperature">
+                                    {{ getFormattedTemperature(config) }}
+                                </span>
                             </div>
                         </mat-option>
                     </mat-select>
@@ -170,6 +173,9 @@
                                     class="create-agent__llm-custom"
                                 >
                                     ({{ config.custom_name }})
+                                </span>
+                                <span class="create-agent__llm-temperature">
+                                    {{ getFormattedTemperature(config) }}
                                 </span>
                             </div>
                         </mat-option>
