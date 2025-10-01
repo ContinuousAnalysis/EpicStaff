@@ -893,12 +893,8 @@ class Crew(BaseModel):
         return tools
 
     def _get_context(self, task: Task, task_outputs: List[TaskOutput]):
-        context = (
-            aggregate_raw_outputs_from_tasks(task.context)
-            if task.context
-            else aggregate_raw_outputs_from_task_outputs(task_outputs)
-        )
-        return context
+        if task.context:
+            return aggregate_raw_outputs_from_tasks(task.context)
 
     def _process_task_result(self, task: Task, output: TaskOutput) -> None:
         role = task.agent.role if task.agent is not None else "None"
