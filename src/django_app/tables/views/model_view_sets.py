@@ -313,7 +313,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
-        # Use AgentReadSerializer for the response
+        instance.refresh_from_db()
         read_serializer = AgentReadSerializer(
             instance, context=self.get_serializer_context()
         )
@@ -327,6 +327,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
+        instance.refresh_from_db()
         read_serializer = AgentReadSerializer(
             instance, context=self.get_serializer_context()
         )
@@ -436,7 +437,7 @@ class TaskReadWriteViewSet(ModelViewSet):
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
         instance.refresh_from_db()
-        
+
         read_serializer = TaskReadSerializer(
             instance, context=self.get_serializer_context()
         )
