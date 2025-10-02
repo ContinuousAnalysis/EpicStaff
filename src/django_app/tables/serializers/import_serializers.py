@@ -447,7 +447,9 @@ class RealtimeAgentImportSerializer(serializers.ModelSerializer):
             )
             transcription_configs_service.create_configs()
 
-        realtime_agent = RealtimeAgent.objects.create(agent=agent, **validated_data)
+        realtime_agent, _ = RealtimeAgent.objects.get_or_create(
+            agent=agent, **validated_data
+        )
 
         if configs_service:
             realtime_agent.realtime_config = configs_service.get_config(
@@ -628,6 +630,8 @@ class CrewImportSerializer(serializers.ModelSerializer):
     llm_configs = LLMConfigImportSerializer(many=True, required=False, allow_null=True)
     realtime_agents = RealtimeDataImportSerializer(required=False, allow_null=True)
 
+    agent_serializer_class = NestedAgentImportSerializer
+
     class Meta:
         model = Crew
         exclude = ["id", "tags", "knowledge_collection"]
@@ -682,7 +686,7 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
             current_id = a_data.pop("id")
 
-            agent_serializer = NestedAgentImportSerializer(data=a_data)
+            agent_serializer = self.agent_serializer_class(data=a_data)
             agent_serializer.is_valid(raise_exception=True)
             agent = agent_serializer.save()
 
@@ -934,6 +938,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
 
     metadata = GraphMetadataSerializer()
 
+    agent_serializer_class = NestedAgentImportSerializer
+    crew_serializer_class = NestedCrewImportSerializer
+
     class Meta:
         model = Graph
         exclude = ["id", "tags"]
@@ -984,7 +991,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
             llm_configs_service.create_configs()
 
         if agents_data:
-            agents_service = AgentsImportService(agents_data)
+            agents_service = AgentsImportService(
+                agents_data, self.agent_serializer_class
+            )
             agents_service.create_agents(tools_service, llm_configs_service)
 
         if realtime_agents_data and agents_data:
@@ -994,7 +1003,7 @@ class GraphImportSerializer(serializers.ModelSerializer):
             realtime_agents_serializer.create(realtime_agents_data)
 
         if crews_data:
-            crews_service = CrewsImportService(crews_data)
+            crews_service = CrewsImportService(crews_data, self.crew_serializer_class)
             crews_service.create_crews(
                 agents_service, tools_service, llm_configs_service
             )
