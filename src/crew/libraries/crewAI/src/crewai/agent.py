@@ -227,10 +227,11 @@ class Agent(BaseAgent):
         agent_knowledge_snippet = ""
         crew_knowledge_snippet = ""
         if self.knowledge_collection_id:
+            knowledge_query = task.knowledge_query or task.description
             agent_knowledges = self.search_knowledges(
                 sender="ag",
                 knowledge_collection_id=self.knowledge_collection_id,
-                query=task.description,
+                query=knowledge_query,
                 search_limit=self.search_limit,
                 similarity_threshold=self.similarity_threshold,
             )
@@ -243,10 +244,11 @@ class Agent(BaseAgent):
 
         if self.crew:
             if self.crew.knowledge_collection_id:
+                knowledge_query = task.knowledge_query or task.description
                 crew_knowledges = self.search_knowledges(
                     sender="cr",
                     knowledge_collection_id=self.crew.knowledge_collection_id,
-                    query=task.description,
+                    query=knowledge_query,
                     search_limit=self.crew.search_limit,
                     similarity_threshold=self.crew.similarity_threshold,
                 )

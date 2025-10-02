@@ -112,6 +112,7 @@ class CrewParserService(metaclass=SingletonMeta):
         return Task(
             name=task_data.name,
             description=task_data.instructions,
+            knowledge_query=task_data.knowledge_query,
             agent=agent,
             expected_output=task_data.expected_output,
             human_input=task_data.human_input,
