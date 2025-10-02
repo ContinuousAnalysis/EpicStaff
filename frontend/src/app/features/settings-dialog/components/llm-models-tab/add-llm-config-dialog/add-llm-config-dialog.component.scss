@@ -70,6 +70,13 @@
         font-size: 0.75rem;
         color: var(--color-error, #ff4d4f);
     }
+
+    .slider-description {
+        font-size: 0.75rem;
+        color: var(--color-text-tertiary);
+        margin-top: 0.25rem;
+        line-height: 1.4;
+    }
 }
 
 .dialog-actions {
