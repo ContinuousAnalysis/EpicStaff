@@ -1,6 +1,7 @@
 from django.db.models import Q, Value, JSONField
 from rest_framework import serializers
 
+from tables.models.mcp_models import McpTool
 from tables.models import (
     Agent,
     LLMConfig,
@@ -123,10 +124,36 @@ class ToolConfigImportSerilizer(serializers.ModelSerializer):
         return config
 
 
+class McpToolImportSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = McpTool
+        fields = "__all__"
+        extra_kwargs = {
+            "name": {"validators": []},
+            "id": {"required": False, "read_only": False, "validators": []},
+        }
+
+    def create(self, validated_data: dict):
+        validated_data.pop("id", None)
+        full_match = McpTool.objects.filter(**validated_data).first()
+        if full_match is not None:
+            return full_match
+
+        name = validated_data.pop("name")
+        if McpTool.objects.filter(name=name).exists():
+            existing_names = McpTool.objects.values_list("name", flat=True)
+            name = generate_new_unique_name(name, existing_names)
+
+        mcp_tool = McpTool.objects.create(name=name, **validated_data)
+        return mcp_tool
+
+
 class ToolsImportSerializer(serializers.Serializer):
 
     python_tools = PythonCodeToolImportSerializer(many=True)
     configured_tools = ToolConfigImportSerilizer(many=True)
+    mcp_tools = McpToolImportSerializer(many=True)
 
 
 class BaseConfigImportSerializer(serializers.ModelSerializer):
@@ -527,8 +554,6 @@ class AgentImportSerializer(serializers.ModelSerializer):
         exclude = [
             "tags",
             "knowledge_collection",
-            "configured_tools",
-            "python_code_tools",
         ]
         extra_kwargs = {
             "tools": {"validators": []},
@@ -585,6 +610,7 @@ class AgentImportSerializer(serializers.ModelSerializer):
             "configured_tools": [
                 t_data["id"] for t_data in tools_data["configured_tools"]
             ],
+            "mcp_tools": [t_data["id"] for t_data in tools_data["mcp_tools"]],
         }
 
 

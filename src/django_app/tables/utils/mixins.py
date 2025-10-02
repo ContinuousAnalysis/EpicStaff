@@ -24,6 +24,9 @@ from .file_text_extractor import extract_text_from_file
 
 from tables.services.redis_service import RedisService
 from functools import partial
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 ALLOWED_FILE_TYPES = {choice[0] for choice in DocumentMetadata.DocumentFileType.choices}
 MAX_FILE_SIZE = 12 * 1024 * 1024  # 12MB
