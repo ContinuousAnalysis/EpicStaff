@@ -157,6 +157,7 @@ class TaskData(BaseModel):
     name: str
     agent_id: int
     instructions: str
+    knowledge_query: str | None
     expected_output: str
     order: int = 1
     human_input: bool
