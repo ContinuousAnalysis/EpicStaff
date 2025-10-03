@@ -29,6 +29,8 @@ from crewai.utilities.training_handler import CrewTrainingHandler
 
 agentops = None
 
+from loguru import logger
+
 try:
     import agentops  # type: ignore # Name "agentops" is already defined
     from agentops import track_agent  # type: ignore
@@ -228,6 +230,8 @@ class Agent(BaseAgent):
         crew_knowledge_snippet = ""
         if self.knowledge_collection_id:
             knowledge_query = task.knowledge_query or task.description
+            #TODO: move query logging to knowledge container
+            logger.info(f"Agent {self.role}'s knowledge query: {knowledge_query}")
             agent_knowledges = self.search_knowledges(
                 sender="ag",
                 knowledge_collection_id=self.knowledge_collection_id,
@@ -245,6 +249,8 @@ class Agent(BaseAgent):
         if self.crew:
             if self.crew.knowledge_collection_id:
                 knowledge_query = task.knowledge_query or task.description
+                #TODO: move query logging to knowledge container
+                logger.info(f"Crew {self.crew} knowledge query: {knowledge_query}")
                 crew_knowledges = self.search_knowledges(
                     sender="cr",
                     knowledge_collection_id=self.crew.knowledge_collection_id,
