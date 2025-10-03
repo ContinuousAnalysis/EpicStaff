@@ -493,7 +493,10 @@ class Task(BaseModel):
             raise ValueError(f"Error interpolating description: {str(e)}") from e
         
         try:
-            self.knowledge_query = self._original_knowledge_query.format(**inputs)
+            if self._original_knowledge_query is not None:
+                self.knowledge_query = self._original_knowledge_query.format(**inputs)
+            else:
+                self.knowledge_query = None
         except KeyError as e:
             raise ValueError(
                 f"Missing required template variable '{e.args[0]}' in knowledge_query"
