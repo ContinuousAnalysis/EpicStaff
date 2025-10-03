@@ -72,8 +72,7 @@ export class LlmConfigItemComponent {
 
     public getFormattedTemperature(): string {
         if (this.config && typeof this.config.temperature === 'number') {
-            // Convert 0-1 to 1-100, ensuring it's at least 1 if original is 0
-            const temp = Math.max(1, Math.round(this.config.temperature * 100));
+            const temp = Math.round(this.config.temperature * 100);
             return `${temp}°`;
         }
         return 'N/A';
