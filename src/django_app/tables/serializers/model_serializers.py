@@ -619,8 +619,6 @@ class TaskWriteSerializer(serializers.ModelSerializer):
 
         task = super().create(validated_data)
 
-        task.refresh_from_db()
-
         if tool_ids is not None:
             self._update_task_tools(task=task, tool_ids=tool_ids)
 
