@@ -41,7 +41,6 @@ import { ErrorStateMatcher } from '@angular/material/core';
 import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
 import { AppIconComponent } from '../app-icon/app-icon.component';
 
-// Typed interface for the agent form data - all fields are non-nullable
 interface AgentFormData {
     role: string;
     goal: string;
@@ -52,7 +51,7 @@ interface AgentFormData {
     max_rpm: number;
     max_execution_time: number;
     max_retry_limit: number;
-    default_temperature: number | null; // Keep as null for creativity slider removal
+    default_temperature: number | null;
     llm_config: number | null;
     fcm_llm_config: number | null;
     knowledge_collection: number | null;
@@ -144,7 +143,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         private collectionsService: CollectionsService,
         public dialogRef: DialogRef<GetAgentRequest | undefined>
     ) {
-        // Check if we're in edit mode
+        // Check edit mode
         const data = this.dialogRef.config?.data as
             | { agent: GetAgentRequest; isEditMode: boolean }
             | undefined;
@@ -162,7 +161,6 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
     }
 
     private initializeForm(): void {
-        // If in edit mode, use agent data for initial values
         if (this.isEditMode && this.agentToEdit) {
             const agent = this.agentToEdit;
 
@@ -176,7 +174,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 allow_delegation: new FormControl<boolean>(
                     agent.allow_delegation
                 ),
-                memory: new FormControl<boolean>(agent.memory ?? true),
+                memory: new FormControl<boolean>(agent.memory ?? false),
                 max_iter: new FormControl<number>(agent.max_iter, [
                     Validators.min(1),
                     Validators.max(30),
@@ -249,7 +247,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 goal: new FormControl<string>('', Validators.required),
                 backstory: new FormControl<string>('', Validators.required),
                 allow_delegation: new FormControl<boolean>(true),
-                memory: new FormControl<boolean>(true),
+                memory: new FormControl<boolean>(false),
                 max_iter: new FormControl<number>(10, [
                     Validators.min(1),
                     Validators.max(30),
@@ -406,6 +404,16 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         }
 
         return tooltip;
+    }
+
+    // Helper method to format temperature for display
+    getFormattedTemperature(config: FullLLMConfig): string {
+        if (config && typeof config.temperature === 'number') {
+            // Convert 0-1 to 1-100, ensuring it's at least 1 if original is 0
+            const temp = Math.max(1, Math.round(config.temperature * 100));
+            return `${temp}°`;
+        }
+        return 'N/A';
     }
 
     public onSubmitForm(): void {
