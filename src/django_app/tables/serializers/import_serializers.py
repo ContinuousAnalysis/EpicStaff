@@ -681,6 +681,7 @@ class CrewImportSerializer(serializers.ModelSerializer):
         tools_service = None
 
         tasks_service = TasksImportService()
+        tasks = []
 
         if embedding_config_data:
             embedding_config = EmbeddingConfigImportSerializer().create(
@@ -737,7 +738,6 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
         for t_data in tasks_data:
             tool_ids_data = t_data.pop("tools", {})
-            context_ids = t_data.pop("context_tasks", [])
             agent_id = t_data.pop("agent", None)
 
             task = tasks_service.create_task(t_data, crew)
@@ -747,9 +747,14 @@ class CrewImportSerializer(serializers.ModelSerializer):
                 task.agent = agent
                 task.save()
 
-            tasks_service.add_task_context(task, context_ids)
             if tools_service:
                 tools_service.assign_tools_to_task(task, tool_ids_data)
+
+            tasks.append(task)
+
+        for task, t_data in zip(tasks, tasks_data):
+            context_ids = t_data.pop("context_tasks", [])
+            tasks_service.add_task_context(task, context_ids)
 
         return crew
 
