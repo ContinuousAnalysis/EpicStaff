@@ -682,6 +682,7 @@ class TaskWriteSerializer(serializers.ModelSerializer):
         TaskMcpTools.objects.bulk_create(mcp_tool_list)
 
     def _update_task_contexts(self, task, context_ids):
+        task.refresh_from_db(fields=["order"])
         TaskContext.objects.filter(task=task).delete()
         context_objects = []
 
