@@ -1,4 +1,4 @@
-from tables.models import Agent
+from tables.models import Agent, PythonCodeTool, ToolConfig, McpTool
 
 
 class NestedAgentExportMixin:
@@ -22,10 +22,19 @@ class NestedAgentExportMixin:
     def get_tools(self, agent):
         return {
             "python_tools": list(
-                agent.python_code_tools.all().values_list("id", flat=True)
+                PythonCodeTool.objects.filter(
+                    agentpythoncodetools__agent_id=agent.pk
+                ).values_list("id", flat=True)
             ),
             "configured_tools": list(
-                agent.configured_tools.all().values_list("id", flat=True)
+                ToolConfig.objects.filter(
+                    agentconfiguredtools__agent_id=agent.pk
+                ).values_list("id", flat=True)
+            ),
+            "mcp_tools": list(
+                McpTool.objects.filter(agentmcptools__agent_id=agent.pk).values_list(
+                    "id", flat=True
+                )
             ),
         }
 
