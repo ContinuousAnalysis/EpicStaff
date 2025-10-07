@@ -64,10 +64,12 @@ class ToolConfigExportSerializer(serializers.ModelSerializer):
     def get_tool(self, instance):
         return instance.tool.name_alias
 
+
 class McpToolExportSerilizer(serializers.ModelSerializer):
     class Meta:
         model = McpTool
         fields = "__all__"
+
 
 class GeneralToolExportSerializer(serializers.Serializer):
 
@@ -77,7 +79,7 @@ class GeneralToolExportSerializer(serializers.Serializer):
         tool_classes = (
             (PythonCodeTool, PythonCodeToolExportSerializer),
             (ToolConfig, ToolConfigExportSerializer),
-            (McpTool, McpToolExportSerilizer)
+            (McpTool, McpToolExportSerilizer),
         )
         tool = {}
 
@@ -218,37 +220,6 @@ class NestedAgentExportSerializer(NestedAgentExportMixin, AgentExportSerializer)
     llm_config = serializers.SerializerMethodField()
     fcm_llm_config = serializers.SerializerMethodField()
     realtime_agent = serializers.SerializerMethodField()
-
-    def get_tools(self, agent):
-        return {
-            "python_tools": list(
-                PythonCodeTool.objects.filter(
-                    agentpythoncodetools__agent_id=agent.pk
-                ).values_list("id", flat=True)
-            ),
-            "configured_tools": list(
-                ToolConfig.objects.filter(
-                    agentconfiguredtools__agent_id=agent.pk
-                ).values_list("id", flat=True)
-            ),
-            "mcp_tools": list(
-                McpTool.objects.filter(
-                    agentmcptools__agent_id=agent.pk
-                ).values_list("id", flat=True)
-            ),
-        }
-
-    def get_llm_config(self, agent: Agent):
-        if agent.llm_config:
-            return agent.llm_config.id
-
-    def get_fcm_llm_config(self, agent: Agent):
-        if agent.fcm_llm_config:
-            return agent.fcm_llm_config.id
-
-    def get_realtime_agent(self, agent: Agent):
-        if agent.realtime_agent:
-            return agent.realtime_agent.pk
 
 
 class TaskExportSerializer(serializers.ModelSerializer):
@@ -509,7 +480,6 @@ class GraphExportSerializer(GraphSerializer):
             taskmcptools__task__crew__crewnode__graph=graph
         ).distinct()
 
-        
         all_configured_tools = agent_configured_tools.union(task_configured_tools)
         all_python_tools = agent_python_tools.union(task_python_tools)
         all_mcp_tools = agent_mcp_tools.union(task_mcp_tools)
@@ -523,7 +493,7 @@ class GraphExportSerializer(GraphSerializer):
             ),
             "mcp_tools": list(
                 GeneralToolExportSerializer(instance=all_mcp_tools, many=True).data
-            )
+            ),
         }
 
     def get_llm_configs(self, graph):
