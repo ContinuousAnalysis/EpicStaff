@@ -1,3 +1,4 @@
+from copy import deepcopy
 from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
@@ -273,8 +274,10 @@ class TasksImportService:
 
     def create_task(self, task_data, crew):
         current_id = task_data.pop("id", None)
+        data = deepcopy(task_data)
+        data.pop("context_tasks", None)
 
-        serializer = self.serializer_class(data=task_data, context={"crew": crew})
+        serializer = self.serializer_class(data=data, context={"crew": crew})
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
 
