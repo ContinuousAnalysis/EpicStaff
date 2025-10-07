@@ -96,6 +96,9 @@ class CrewParserService(metaclass=SingletonMeta):
             "similarity_threshold": agent_data.similarity_threshold,
         }
 
+        if not tool_list:
+            agent_config["tool_choice"] = "none"
+
         return Agent(**agent_config)
 
     def parse_task(
