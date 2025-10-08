@@ -254,3 +254,10 @@ class GraphFile(models.Model):
                 fields=["graph", "domain_key"], name="unique_file_key_per_graph"
             )
         ]
+
+    def delete(self, *args, **kwargs):
+        # Delete file from uploads/
+        if self.file:
+            self.file.delete(save=False)
+
+        super().delete(*args, **kwargs)

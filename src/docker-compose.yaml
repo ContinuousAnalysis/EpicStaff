@@ -35,7 +35,7 @@ services:
       - GUNICORN_THREADS=${GUNICORN_THREADS}
     volumes:
       - crew_config:/home/user/root/app/env_config
-      - media_data:/home/user/root/app/media
+      - media_data:/app/media
 
     networks:
       - backend-network

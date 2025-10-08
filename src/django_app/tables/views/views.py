@@ -5,6 +5,7 @@ import base64
 
 from tables.models import Tool
 from tables.models import Crew
+from tables.models import GraphFile
 from tables.models.crew_models import DefaultAgentConfig, DefaultCrewConfig
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
@@ -221,21 +222,23 @@ class RunSession(APIView):
                 status=400,
             )
 
-        files_dict = {}
-        for key, file in request.FILES.items():
-            file_bytes = file.read()
-            files_dict[key] = {
-                "name": file.name,
-                "data": base64.b64encode(file_bytes).decode("utf-8"),
-                "content_type": file.content_type,
-            }
-
         serializer = RunSessionSerializer(data=request.data)
         if not serializer.is_valid():
             logger.warning(f"Invalid data received in request: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         graph_id = serializer.validated_data["graph_id"]
         variables = serializer.validated_data.get("variables", {})
+        graph_files = GraphFile.objects.filter(graph__id=graph_id)
+
+        for graph_file in graph_files:
+            files_dict[graph_file.domain_key] = self._get_file_data(
+                graph_file.file, graph_file.content_type
+            )
+
+        files_dict = {}
+        for key, file in request.FILES.items():
+            files_dict[key] = self._get_file_data(file, file.content_type)
 
         if files_dict is not None:
             variables["files"] = files_dict
@@ -255,6 +258,15 @@ class RunSession(APIView):
             return Response(
                 data={"session_id": session_id}, status=status.HTTP_201_CREATED
             )
+
+    def _get_file_data(self, file, content_type):
+        file_bytes = file.read()
+
+        return {
+            "name": file.name,
+            "data": base64.b64encode(file_bytes).decode("utf-8"),
+            "content_type": content_type,
+        }
 
 
 class GetUpdates(APIView):
@@ -688,9 +700,7 @@ class CollectionStatusAPIView(ListAPIView):
 
     def get_queryset(self):
         return (
-            SourceCollection.objects.only(
-                "collection_id", "collection_name", "status"
-            )
+            SourceCollection.objects.only("collection_id", "collection_name", "status")
             .annotate(
                 total_documents=Count("document_metadata"),
                 new_documents=Count(
@@ -727,6 +737,7 @@ class CollectionStatusAPIView(ListAPIView):
                 )
             )
         )
+
 
 class QuickstartView(APIView):
     """
