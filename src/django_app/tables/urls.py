@@ -44,6 +44,7 @@ from tables.views.model_view_sets import (
     RealtimeModelViewSet,
     RealtimeAgentViewSet,
     RealtimeAgentChatViewSet,
+    GraphFileViewSet,
 )
 
 from tables.views.views import (
@@ -98,6 +99,7 @@ router.register(
 router.register(r"sources", DocumentMetadataViewSet)
 # Graphs
 router.register(r"graphs", GraphViewSet, basename="graphs")
+router.register(r"graph-files", GraphFileViewSet)
 router.register(r"crewnodes", CrewNodeViewSet)
 router.register(r"pythonnodes", PythonNodeViewSet)
 router.register(r"file-extractor-nodes", FileExtractorNodeViewSet)

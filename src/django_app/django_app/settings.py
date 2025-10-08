@@ -187,3 +187,6 @@ CACHES = {
         },
     }
 }
+
+MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
+MEDIA_URL = "/media/"

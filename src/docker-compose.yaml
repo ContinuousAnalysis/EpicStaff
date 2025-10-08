@@ -27,13 +27,15 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}      
+      - DB_NAME=${POSTGRES_DB}
+      - DJANGO_MEDIA_ROOT=${MEDIA_ROOT}  
       
 
       - GUNICORN_WORKERS=${GUNICORN_WORKERS}
       - GUNICORN_THREADS=${GUNICORN_THREADS}
     volumes:
       - crew_config:/home/user/root/app/env_config
+      - media_data:/home/user/root/app/media
 
     networks:
       - backend-network
@@ -316,6 +318,8 @@ volumes:
   crew_config:
     external: true
   
+  media_data:
+    external: true
 
 networks:
   backend-network:
@@ -327,3 +331,4 @@ networks:
   mcp-network:
     driver: bridge
     external: true
+  

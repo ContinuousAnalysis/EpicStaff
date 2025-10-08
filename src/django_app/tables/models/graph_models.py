@@ -108,7 +108,7 @@ class EndNode(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["graph"], name="unique_graph_end_node")
         ]
-    
+
     def clean(self):
         super().clean()
         if not self.output_map:
@@ -231,3 +231,26 @@ class Condition(models.Model):
             )
         ]
         ordering = ["order"]
+
+
+class GraphFile(models.Model):
+
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="uploaded_files"
+    )
+    domain_key = models.CharField(
+        max_length=100, help_text="Key to access file from domain"
+    )
+    name = models.CharField(max_length=255, help_text="Original filename")
+    content_type = models.CharField(max_length=100, help_text="MIME type")
+    size = models.PositiveIntegerField(help_text="File size in bytes")
+    file = models.FileField(upload_to="uploads/")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "domain_key"], name="unique_file_key_per_graph"
+            )
+        ]
