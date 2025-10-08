@@ -41,6 +41,7 @@ class TaskValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = "ValidationError occured in TaskValidator -> ConverterService during validate crews' tasks"
 
+
 class TaskSerializerError(CustomAPIExeption):
     status_code = 400
     default_detail = "SerializerError occured during Task serialization"
@@ -59,3 +60,9 @@ class EndNodeValidationError(CustomAPIExeption):
 class FileExtractorValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = "FileExtractorNode requires input arguments"
+
+
+class InvalidTaskOrderError(CustomAPIExeption):
+    status_code = 409
+    default_detail = "A task cannot be placed before its context dependency. Please reorder the tasks or delete context."
+    default_code = "invalid_context_task_order"
