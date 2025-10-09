@@ -23,10 +23,8 @@ class AgentCopySerializer(AgentExportSerializer):
     )
 
     class Meta(AgentExportSerializer.Meta):
-        exclude = [
-            "python_code_tools",
-            "configured_tools",
-        ]
+        exclude = None
+        fields = "__all__"
 
 
 class AgentCopyDeserializer(AgentImportSerializer):
@@ -36,8 +34,6 @@ class AgentCopyDeserializer(AgentImportSerializer):
     class Meta(AgentImportSerializer.Meta):
         exclude = [
             "tags",
-            "configured_tools",
-            "python_code_tools",
         ]
 
     def create(self, validated_data):
