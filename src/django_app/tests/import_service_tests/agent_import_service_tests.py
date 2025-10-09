@@ -1,4 +1,5 @@
 import pytest
+from tables.serializers.import_serializers import NestedAgentImportSerializer
 from tables.models import Crew, Task
 from tables.services.import_services import AgentsImportService
 from tests.fixtures import *
@@ -6,7 +7,7 @@ from tests.fixtures import *
 
 @pytest.mark.django_db
 def test_create_agents_basic(agents_data):
-    service = AgentsImportService(agents_data)
+    service = AgentsImportService(agents_data, NestedAgentImportSerializer)
     service.create_agents(tools_service=None, llm_configs_service=None)
 
     # Both agents should be mapped
@@ -28,7 +29,7 @@ def test_create_agents_basic(agents_data):
 
 @pytest.mark.django_db
 def test_assign_agents_to_crew(agents_data):
-    service = AgentsImportService(agents_data)
+    service = AgentsImportService(agents_data, NestedAgentImportSerializer)
     service.create_agents(tools_service=None, llm_configs_service=None)
 
     crew = Crew.objects.create(name="TestCrew")
@@ -42,7 +43,7 @@ def test_assign_agents_to_crew(agents_data):
 
 @pytest.mark.django_db
 def test_assign_agent_to_task(agents_data):
-    service = AgentsImportService(agents_data)
+    service = AgentsImportService(agents_data, NestedAgentImportSerializer)
     service.create_agents(tools_service=None, llm_configs_service=None)
 
     task = Task.objects.create(name="TestTask")
@@ -53,7 +54,7 @@ def test_assign_agent_to_task(agents_data):
 
 @pytest.mark.django_db
 def test_assign_agents_to_crew_raises_error_for_invalid_id(agents_data):
-    service = AgentsImportService(agents_data)
+    service = AgentsImportService(agents_data, NestedAgentImportSerializer)
     service.create_agents(tools_service=None, llm_configs_service=None)
     crew = Crew.objects.create(name="TestCrew")
 
@@ -63,7 +64,7 @@ def test_assign_agents_to_crew_raises_error_for_invalid_id(agents_data):
 
 @pytest.mark.django_db
 def test_assign_agent_to_task_raises_error_for_invalid_id(agents_data):
-    service = AgentsImportService(agents_data)
+    service = AgentsImportService(agents_data, NestedAgentImportSerializer)
     service.create_agents(tools_service=None, llm_configs_service=None)
     task = Task.objects.create(name="TestTask")
 

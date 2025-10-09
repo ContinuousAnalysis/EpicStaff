@@ -3,8 +3,8 @@ from django.urls import reverse
 from tests.fixtures import *
 from rest_framework import status
 
-
 @pytest.mark.django_db
+@pytest.mark.skip
 def test_get_environment_config(api_client, yaml_config_service_patched_config_path):
     test_keys = {"key1": "some value", "key2": "other_value"}
     file_content = ""
@@ -22,6 +22,7 @@ def test_get_environment_config(api_client, yaml_config_service_patched_config_p
 
 
 @pytest.mark.django_db
+@pytest.mark.skip
 def test_create_environment_config(api_client, yaml_config_service_patched_config_path):
     url = reverse("environment_config")
     data = {

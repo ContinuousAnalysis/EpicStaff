@@ -480,8 +480,15 @@ class DeepCopyMixin:
                 {"message": f"Database error: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        except Exception as e:
+            return Response(
+                {
+                    "message": f"Something went wrong while copying the instance. {str(e)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        new_name = request.data.get("name")
+        new_name = request.data.get("name") if isinstance(request.data, dict) else None
         current_name = getattr(new_instance, "name", None)
 
         if new_name and current_name:
