@@ -41,6 +41,7 @@ class TaskValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = "ValidationError occured in TaskValidator -> ConverterService during validate crews' tasks"
 
+
 class TaskSerializerError(CustomAPIExeption):
     status_code = 400
     default_detail = "SerializerError occured during Task serialization"
@@ -56,6 +57,6 @@ class EndNodeValidationError(CustomAPIExeption):
     default_detail = "ValidationError occured in session_manager_service"
 
 
-class FileExtractorValidationError(CustomAPIExeption):
+class FileNodeValidationError(CustomAPIExeption):
     status_code = 400
-    default_detail = "FileExtractorNode requires input arguments"
+    default_detail = "FileNode requires input arguments"
