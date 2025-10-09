@@ -82,6 +82,20 @@ class FileExtractorNode(BaseNode):
         ]
 
 
+class AudioTranscriptionNode(BaseNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="audio_transcription_node_list"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_audio_transcriotion_node",
+            )
+        ]
+
+
 class LLMNode(BaseNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="llm_node_list"

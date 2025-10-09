@@ -227,6 +227,7 @@ class RunSession(APIView):
             logger.warning(f"Invalid data received in request: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        files_dict = {}
         graph_id = serializer.validated_data["graph_id"]
         variables = serializer.validated_data.get("variables", {})
         graph_files = GraphFile.objects.filter(graph__id=graph_id)
@@ -236,7 +237,6 @@ class RunSession(APIView):
                 graph_file.file, graph_file.content_type
             )
 
-        files_dict = {}
         for key, file in request.FILES.items():
             files_dict[key] = self._get_file_data(file, file.content_type)
 

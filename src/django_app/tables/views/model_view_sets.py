@@ -113,6 +113,7 @@ from tables.models import (
     PythonCodeTool,
     PythonNode,
     FileExtractorNode,
+    AudioTranscriptionNode,
     RealtimeModel,
     StartNode,
     ToolConfigField,
@@ -142,6 +143,7 @@ from tables.serializers.model_serializers import (
     PythonCodeToolSerializer,
     PythonNodeSerializer,
     FileExtractorNodeSerializer,
+    AudioTranscriptionNodeSerializer,
     TaskSessionMessageSerializer,
     TemplateAgentSerializer,
     LLMConfigSerializer,
@@ -558,6 +560,10 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
                 Prefetch(
                     "file_extractor_node_list", queryset=FileExtractorNode.objects.all()
                 ),
+                Prefetch(
+                    "audio_transcription_node_list",
+                    queryset=AudioTranscriptionNode.objects.all(),
+                ),
                 Prefetch("edge_list", queryset=Edge.objects.all()),
                 Prefetch(
                     "conditional_edge_list",
@@ -615,6 +621,11 @@ class PythonNodeViewSet(viewsets.ModelViewSet):
 class FileExtractorNodeViewSet(viewsets.ModelViewSet):
     queryset = FileExtractorNode.objects.all()
     serializer_class = FileExtractorNodeSerializer
+
+
+class AudioTranscriptionNodeViewSet(viewsets.ModelViewSet):
+    queryset = AudioTranscriptionNode.objects.all()
+    serializer_class = AudioTranscriptionNodeSerializer
 
 
 class LLMNodeViewSet(viewsets.ModelViewSet):

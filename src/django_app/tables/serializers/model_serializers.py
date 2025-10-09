@@ -27,6 +27,7 @@ from tables.models import (
     GraphSessionMessage,
     PythonNode,
     FileExtractorNode,
+    AudioTranscriptionNode,
     GraphFile,
 )
 from rest_framework import serializers
@@ -929,6 +930,12 @@ class FileExtractorNodeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class AudioTranscriptionNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AudioTranscriptionNode
+        fields = "__all__"
+
+
 class LLMNodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LLMNode
@@ -1148,6 +1155,9 @@ class GraphSerializer(serializers.ModelSerializer):
     crew_node_list = CrewNodeSerializer(many=True, read_only=True)
     python_node_list = PythonNodeSerializer(many=True, read_only=True)
     file_extractor_node_list = FileExtractorNodeSerializer(many=True, read_only=True)
+    audio_transcription_node_list = AudioTranscriptionNodeSerializer(
+        many=True, read_only=True
+    )
     edge_list = EdgeSerializer(many=True, read_only=True)
     conditional_edge_list = ConditionalEdgeSerializer(many=True, read_only=True)
     llm_node_list = LLMNodeSerializer(many=True, read_only=True)
@@ -1165,6 +1175,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "crew_node_list",
             "python_node_list",
             "file_extractor_node_list",
+            "audio_transcription_node_list",
             "edge_list",
             "conditional_edge_list",
             "llm_node_list",
