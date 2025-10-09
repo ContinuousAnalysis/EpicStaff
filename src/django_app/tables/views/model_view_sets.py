@@ -1009,6 +1009,7 @@ class McpToolViewSet(viewsets.ModelViewSet):
 class GraphFileViewSet(ModelViewSet):
     queryset = GraphFile.objects.all()
     parser_classes = [MultiPartParser, FormParser]
+    http_method_names = ["get", "post", "put", "delete", "head", "options"]
 
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
