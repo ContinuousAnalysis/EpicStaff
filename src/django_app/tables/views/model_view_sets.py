@@ -36,6 +36,7 @@ from tables.models.realtime_models import (
     RealtimeAgent,
     RealtimeAgentChat,
 )
+from tables.filters import ProviderFilter
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
 from tables.models.mcp_models import McpTool
@@ -226,8 +227,8 @@ class ProviderReadWriteViewSet(ModelViewSet):
     queryset = Provider.objects.all()
     serializer_class = ProviderSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["name"]
-
+    filterset_class = ProviderFilter
+ 
 
 class LLMModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
     queryset = LLMModel.objects.all()
