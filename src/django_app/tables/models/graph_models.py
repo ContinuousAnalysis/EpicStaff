@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from loguru import logger
+from tables.models.mixins import HashedFieldMixin
 
 
 class Graph(models.Model):
@@ -108,7 +109,7 @@ class EndNode(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["graph"], name="unique_graph_end_node")
         ]
-    
+
     def clean(self):
         super().clean()
         if not self.output_map:
@@ -231,3 +232,29 @@ class Condition(models.Model):
             )
         ]
         ordering = ["order"]
+
+
+class Organization(HashedFieldMixin, models.Model):
+
+    name = models.CharField(max_length=256, blank=False, required=False, unique=True)
+    identifier = models.CharField(
+        max_length=512,
+        blank=False,
+        unique=True,
+        help_text="A hashed unique identifier for organization",
+    )
+    variables = models.JSONField(
+        default=dict, help_text="Organization global variables"
+    )
+
+
+class OrganizationUser(HashedFieldMixin, models.Model):
+
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    identifier = models.CharField(
+        max_length=512,
+        blank=False,
+        unique=True,
+        help_text="A hashed unique identifier for user inside an organization",
+    )
+    variables = models.JSONField(default=dict, help_text="User scope variables")
