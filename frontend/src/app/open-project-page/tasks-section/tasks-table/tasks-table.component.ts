@@ -702,6 +702,7 @@ export class TasksTableComponent implements OnChanges {
                     output_model: taskData.output_model,
                     task_context_list: taskData.task_context_list,
                     taskName: taskData.name,
+                    taskId: taskData.id,
                     availableTasks: normalTasks, // Pass filtered tasks to dialog
                 },
                 width: '100%', // Set minimum width
