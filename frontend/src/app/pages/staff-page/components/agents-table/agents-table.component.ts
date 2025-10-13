@@ -896,15 +896,11 @@ export class AgentsTableComponent {
             return;
         }
 
-        // Get realtime config ID
+        // Get realtime config ID - check mergedConfigs FIRST as it's the source of truth
         let realtimeConfigId = null;
 
-        // First check if fullRealtimeConfig is directly available
-        if (updatedAgent.fullRealtimeConfig?.id) {
-            realtimeConfigId = updatedAgent.fullRealtimeConfig.id;
-        }
-        // Then check mergedConfigs if available
-        else if (
+        // First check mergedConfigs if available (most up-to-date)
+        if (
             updatedAgent.mergedConfigs &&
             Array.isArray(updatedAgent.mergedConfigs)
         ) {
@@ -914,6 +910,10 @@ export class AgentsTableComponent {
             if (realtimeConfig) {
                 realtimeConfigId = realtimeConfig.id;
             }
+        }
+        // Fallback to fullRealtimeConfig if mergedConfigs doesn't exist
+        else if (updatedAgent.fullRealtimeConfig?.id) {
+            realtimeConfigId = updatedAgent.fullRealtimeConfig.id;
         }
         // Finally check the realtime_agent.realtime_config field directly
         else if (updatedAgent.realtime_agent?.realtime_config) {
@@ -1187,15 +1187,11 @@ export class AgentsTableComponent {
 
         this.cdr.markForCheck();
 
-        // Get realtime config ID
+        // Get realtime config ID - check mergedConfigs FIRST as it's the source of truth
         let realtimeConfigId = null;
 
-        // First check if fullRealtimeConfig is directly available
-        if (newAgentData.fullRealtimeConfig?.id) {
-            realtimeConfigId = newAgentData.fullRealtimeConfig.id;
-        }
-        // Then check mergedConfigs if available
-        else if (
+        // First check mergedConfigs if available (most up-to-date)
+        if (
             newAgentData.mergedConfigs &&
             Array.isArray(newAgentData.mergedConfigs)
         ) {
@@ -1205,6 +1201,10 @@ export class AgentsTableComponent {
             if (realtimeConfig) {
                 realtimeConfigId = realtimeConfig.id;
             }
+        }
+        // Fallback to fullRealtimeConfig if mergedConfigs doesn't exist
+        else if (newAgentData.fullRealtimeConfig?.id) {
+            realtimeConfigId = newAgentData.fullRealtimeConfig.id;
         }
         // Finally check the realtime_agent.realtime_config field directly
         else if (newAgentData.realtime_agent?.realtime_config) {
@@ -1600,11 +1600,57 @@ export class AgentsTableComponent {
                             this.gridApi.getDisplayedRowAtIndex(rowIndex);
 
                         if (rowNode) {
+                            const rowData = rowNode.data;
+
                             // Update the mergedConfigs in the row data
                             rowNode.setDataValue(
                                 'mergedConfigs',
                                 mergedConfigs
                             );
+
+                            // Update related fullLlmConfig and fullRealtimeConfig properties
+                            const llmConfig = mergedConfigs.find(
+                                (config) => config.type === 'llm'
+                            );
+                            const realtimeConfig = mergedConfigs.find(
+                                (config) => config.type === 'realtime'
+                            );
+
+                            if (llmConfig) {
+                                rowNode.setDataValue(
+                                    'llm_config',
+                                    llmConfig.id
+                                );
+                            } else {
+                                rowNode.setDataValue('llm_config', null);
+                                rowNode.setDataValue('fullLlmConfig', null);
+                            }
+
+                            if (realtimeConfig) {
+                                const realtime_agent = {
+                                    ...(rowData.realtime_agent || {}),
+                                    realtime_config: realtimeConfig.id,
+                                };
+                                rowNode.setDataValue(
+                                    'realtime_agent',
+                                    realtime_agent
+                                );
+                            } else {
+                                rowNode.setDataValue(
+                                    'fullRealtimeConfig',
+                                    null
+                                );
+                                if (rowData.realtime_agent) {
+                                    const realtime_agent = {
+                                        ...rowData.realtime_agent,
+                                        realtime_config: null,
+                                    };
+                                    rowNode.setDataValue(
+                                        'realtime_agent',
+                                        realtime_agent
+                                    );
+                                }
+                            }
                         }
                     }
 
