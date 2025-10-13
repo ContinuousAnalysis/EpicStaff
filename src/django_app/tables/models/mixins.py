@@ -9,9 +9,9 @@ class HashedFieldMixin:
     the HASHED_FIELD_NAME class attribute.
     """
 
-    HASHED_FIELD_NAME = "identifier"
+    HASHED_FIELD_NAME = "secret_key"
 
-    def set_identifier(self, raw_value, field_name=None):
+    def set_secret_key(self, raw_value, field_name=None):
         """
         Hash and store a value in the specified field.
 
@@ -22,7 +22,7 @@ class HashedFieldMixin:
         field_name = field_name or self.HASHED_FIELD_NAME
         setattr(self, field_name, make_password(raw_value))
 
-    def check_identifier(self, raw_value, field_name=None):
+    def check_secret_key(self, raw_value, field_name=None):
         """
         Check if the provided value matches the stored hash.
 
@@ -36,26 +36,3 @@ class HashedFieldMixin:
         field_name = field_name or self.HASHED_FIELD_NAME
         hashed_value = getattr(self, field_name)
         return check_password(raw_value, hashed_value)
-
-    @classmethod
-    def get_by_identifier(cls, raw_value, field_name=None, **filters):
-        """
-        Find an object by its raw hashed field value.
-
-        Note: This requires checking all matching objects since we can't
-        query by hash directly.
-
-        Args:
-            raw_value: The plain text value to search for
-            field_name: The field containing the hash (optional)
-            **filters: Additional filters to narrow the search
-
-        Returns:
-            Model instance or None
-        """
-        field_name = field_name or cls.HASHED_FIELD_NAME
-        objects = cls.objects.filter(**filters)
-        for obj in objects:
-            if obj.check_hashed_field(raw_value, field_name):
-                return obj
-        return None

@@ -29,6 +29,12 @@ class Session(models.Model):
     variables = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=timezone.now)
     graph_schema = models.JSONField(default=dict, encoder=DjangoJSONEncoder)
+    organization = models.ForeignKey(
+        "Organization", on_delete=models.SET_NULL, null=True
+    )
+    organization_user = models.ForeignKey(
+        "OrganizationUser", on_delete=models.SET_NULL, null=True
+    )
 
     def save(self, *args, **kwargs):
         now = timezone.now()

@@ -236,12 +236,12 @@ class Condition(models.Model):
 
 class Organization(HashedFieldMixin, models.Model):
 
-    name = models.CharField(max_length=256, blank=False, required=False, unique=True)
-    identifier = models.CharField(
+    name = models.CharField(max_length=256, blank=False, unique=True)
+    secret_key = models.CharField(
         max_length=512,
         blank=False,
         unique=True,
-        help_text="A hashed unique identifier for organization",
+        help_text="A hashed unique key for organization",
     )
     variables = models.JSONField(
         default=dict, help_text="Organization global variables"
@@ -250,11 +250,20 @@ class Organization(HashedFieldMixin, models.Model):
 
 class OrganizationUser(HashedFieldMixin, models.Model):
 
+    username = models.CharField(max_length=256, blank=False, unique=True)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    identifier = models.CharField(
+    secret_key = models.CharField(
         max_length=512,
         blank=False,
         unique=True,
-        help_text="A hashed unique identifier for user inside an organization",
+        help_text="A hashed unique key for user inside an organization",
     )
     variables = models.JSONField(default=dict, help_text="User scope variables")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["username", "organization"],
+                name="unique_flow_user_for_organization",
+            )
+        ]

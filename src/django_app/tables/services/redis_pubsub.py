@@ -67,6 +67,10 @@ class RedisPubSub:
                     session.status = data["status"]
                     session.status_data = data.get("status_data", {})
                     session.save()
+
+                    if session.status == Session.SessionStatus.END:
+                        self._save_organization_variables(session, data)
+
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
 
@@ -78,6 +82,40 @@ class RedisPubSub:
             PythonCodeResult.objects.create(**data)
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
+
+    def _save_organization_variables(self, session: Session, data: dict):
+        """
+        Save organization and organization_user variables to database
+        """
+        try:
+            variables = data["state"]["variables"]
+
+            if session.organization:
+                organization_variables = variables.get("organization")
+                session.organization.variables = (
+                    organization_variables if organization_variables else {}
+                )
+                session.organization.save()
+                logger.info(
+                    f"Saved new organization variables {organization_variables}"
+                )
+
+            if session.organization_user:
+                user_variables = variables.get("user")
+                organization_variables = variables.get("organization")
+
+                session.organization_user.variables = (
+                    user_variables if user_variables else {}
+                )
+                session.organization_user.organization.variables = (
+                    organization_variables if organization_variables else {}
+                )
+                session.organization_user.save()
+                session.organization.save()
+                logger.info(f"Saved new organization user variables {user_variables}")
+
+        except Exception as e:
+            logger.error(f"Error handling organization variables message: {e}")
 
     def _buffer_save(self, buffer: deque[dict], model: Type[models.Model]):
         try:
