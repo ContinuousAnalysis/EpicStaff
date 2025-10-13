@@ -1,0 +1,26 @@
+services:
+  git-agents:
+    build: .
+    container_name: git-agents
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITLAB_TOKEN=${GITLAB_TOKEN}
+      - GITLAB_URL=${GITLAB_URL:-https://gitlab.com}
+      - PROVIDER=${PROVIDER:-github}
+      - REPO_OWNER=${REPO_OWNER}
+      - REPO_NAME=${REPO_NAME}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - DISPLAY=:99
+      - VNC_GEOMETRY=1600x900
+      - VNC_PASS=secret
+      - MCP_HOST=${MCP_HOST:-0.0.0.0}
+      - MCP_PORT=${MCP_PORT:-8080}
+    volumes:
+      - .:/app
+    ports:
+      - "5900:5900"
+      - "8080:8080"
+      - "8000:8000"
+    stdin_open: true
+    tty: true
