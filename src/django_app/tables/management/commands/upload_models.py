@@ -1,6 +1,7 @@
-from django.core.management.base import BaseCommand
-from pathlib import Path
 import os
+from pathlib import Path
+from django.core.management.base import BaseCommand
+
 from tables.models import (
     Tool,
     ToolConfigField,
@@ -19,7 +20,7 @@ from tables.models.crew_models import (
 )
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
-from tables.services.json_service import load_json_from_file
+from .helpers import load_json_from_file
 
 class Command(BaseCommand):
     help = "Upload predefined models to database"
@@ -40,27 +41,39 @@ class Command(BaseCommand):
 
         upload_realtime_agents()
 
+LLM_MODELS_JSON = "llm_models.json"
+EMBEDDING_MODELS_JSON = "embedding_models.json"
+REALTIME_MODELS_JSON = "realtime_models.json"
+TRANSCRIPTION_MODELS_JSON = "transcription_models.json"
+
+MODEL_JSON_FILES = [
+    LLM_MODELS_JSON,
+    EMBEDDING_MODELS_JSON,
+    REALTIME_MODELS_JSON,
+    TRANSCRIPTION_MODELS_JSON,
+]
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 PROVIDER_MODELS_DIR = BASE_DIR / "provider_models"
 
-def get_all_providers_from_files(json_paths):
+def get_all_providers_from_files():
     all_providers = set()
-    for path in json_paths:
+    for path in MODEL_JSON_FILES:
         js_path = PROVIDER_MODELS_DIR / path
         data = load_json_from_file(js_path)
         all_providers.update(data.keys())
     return all_providers
 
-def upload_providers(json_paths=["llm_models.json", "embedding_models.json", "realtime_models.json", "transcription_models.json"]):
-    current_provider_names = get_all_providers_from_files(json_paths)
+def upload_providers():
+    current_provider_names = get_all_providers_from_files()
     for name in current_provider_names:
         Provider.objects.get_or_create(name=name)
 
     Provider.objects.exclude(name__in=current_provider_names).delete()
 
 
-def upload_llm_models(json_path="llm_models.json"):
-    path = PROVIDER_MODELS_DIR / json_path
+def upload_llm_models():
+    path = PROVIDER_MODELS_DIR / LLM_MODELS_JSON
 
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()
@@ -81,8 +94,8 @@ def upload_llm_models(json_path="llm_models.json"):
     ).delete()
 
 
-def upload_realtime_agent_models(json_path="realtime_models.json"):
-    path = PROVIDER_MODELS_DIR / json_path
+def upload_realtime_agent_models():
+    path = PROVIDER_MODELS_DIR / REALTIME_MODELS_JSON
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()    
 
@@ -100,8 +113,8 @@ def upload_realtime_agent_models(json_path="realtime_models.json"):
         name__in=[name for _, name in current_model_tuples],
     ).delete()
 
-def upload_realtime_transcription_models(json_path="transcription_models.json"):
-    path = PROVIDER_MODELS_DIR / json_path
+def upload_realtime_transcription_models():
+    path = PROVIDER_MODELS_DIR / TRANSCRIPTION_MODELS_JSON
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()    
 
@@ -119,8 +132,8 @@ def upload_realtime_transcription_models(json_path="transcription_models.json"):
         name__in=[name for _, name in current_model_tuples],
     ).delete()
 
-def upload_embedding_models(json_path="embedding_models.json"):
-    path = os.path.join(PROVIDER_MODELS_DIR, json_path)
+def upload_embedding_models():
+    path = PROVIDER_MODELS_DIR / EMBEDDING_MODELS_JSON
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()    
     
