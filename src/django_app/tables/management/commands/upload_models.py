@@ -20,7 +20,7 @@ from tables.models.crew_models import (
 )
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
-from .helpers import load_json_from_file
+from tables.management.commands.helpers import load_json_from_file
 
 class Command(BaseCommand):
     help = "Upload predefined models to database"
