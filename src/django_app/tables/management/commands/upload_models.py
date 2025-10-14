@@ -1,4 +1,7 @@
+import os
+from pathlib import Path
 from django.core.management.base import BaseCommand
+
 from tables.models import (
     Tool,
     ToolConfigField,
@@ -17,8 +20,7 @@ from tables.models.crew_models import (
 )
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
-from litellm import models_by_provider, provider_list
-
+from tables.management.commands.helpers import load_json_from_file
 
 class Command(BaseCommand):
     help = "Upload predefined models to database"
@@ -39,33 +41,53 @@ class Command(BaseCommand):
 
         upload_realtime_agents()
 
+LLM_MODELS_JSON = "llm_models.json"
+EMBEDDING_MODELS_JSON = "embedding_models.json"
+REALTIME_MODELS_JSON = "realtime_models.json"
+TRANSCRIPTION_MODELS_JSON = "transcription_models.json"
+
+MODEL_JSON_FILES = [
+    LLM_MODELS_JSON,
+    EMBEDDING_MODELS_JSON,
+    REALTIME_MODELS_JSON,
+    TRANSCRIPTION_MODELS_JSON,
+]
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+PROVIDER_MODELS_DIR = BASE_DIR / "provider_models"
+
+def get_all_providers_from_files():
+    all_providers = set()
+    for path in MODEL_JSON_FILES:
+        js_path = PROVIDER_MODELS_DIR / path
+        data = load_json_from_file(js_path)
+        all_providers.update(data.keys())
+    return all_providers
 
 def upload_providers():
-
-    current_provider_names = set(models_by_provider.keys())
-
-    # Add new providers
+    current_provider_names = get_all_providers_from_files()
     for name in current_provider_names:
         Provider.objects.get_or_create(name=name)
-    # Delete providers not in the current list
+
     Provider.objects.exclude(name__in=current_provider_names).delete()
 
 
 def upload_llm_models():
+    path = PROVIDER_MODELS_DIR / LLM_MODELS_JSON
+
+    models_by_provider = load_json_from_file(path)
     current_model_tuples = set()
 
-    # Add new models and collect all valid model entries
-    for provider_name, llm_model_name_list in models_by_provider.items():
+    for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
-        for llm_model_name in llm_model_name_list:
-            current_model_tuples.add((provider.pk, llm_model_name))
+        for model_name in model_names:
+            current_model_tuples.add((provider.pk, model_name))
             LLMModel.objects.get_or_create(
                 predefined=True,
-                name=llm_model_name,
+                name=model_name,
                 llm_provider=provider,
-                # base_url=model_data.get("base_url"),
-                # deployment=model_data.get("deployment"),
             )
+
     LLMModel.objects.filter(predefined=True).exclude(
         llm_provider_id__in=[pid for pid, _ in current_model_tuples],
         name__in=[name for _, name in current_model_tuples],
@@ -73,76 +95,64 @@ def upload_llm_models():
 
 
 def upload_realtime_agent_models():
+    path = PROVIDER_MODELS_DIR / REALTIME_MODELS_JSON
+    models_by_provider = load_json_from_file(path)
+    current_model_tuples = set()    
 
-    openai_provider = Provider.objects.get(name="openai")
-    rt_models = [
-        {
-            "id": 1,
-            "name": "gpt-4o-mini-realtime-preview-2024-12-17",
-            "provider": openai_provider,
-        },
-        {
-            "id": 2,
-            "name": "gpt-4o-realtime-preview-2024-12-17",
-            "provider": openai_provider,
-        },
-    ]
+    for provider_name, model_names in models_by_provider.items():
+        provider, _ = Provider.objects.get_or_create(name=provider_name)
+        for model_name in model_names:
+            current_model_tuples.add((provider.pk, model_name))
+            RealtimeModel.objects.get_or_create(
+                name=model_name,
+                provider=provider
+            )
 
-    for rt_model in rt_models:
-        RealtimeModel.objects.update_or_create(
-            id=rt_model.get("id"),
-            name=rt_model.get("name"),
-            provider_id=openai_provider.pk,
-        )
-
+    RealtimeModel.objects.exclude(
+        provider_id__in=[pid for pid, _ in current_model_tuples],
+        name__in=[name for _, name in current_model_tuples],
+    ).delete()
 
 def upload_realtime_transcription_models():
+    path = PROVIDER_MODELS_DIR / TRANSCRIPTION_MODELS_JSON
+    models_by_provider = load_json_from_file(path)
+    current_model_tuples = set()    
 
-    openai_provider = Provider.objects.get(name="openai")
-    rt_transcription_models = [
-        {
-            "id": 1,
-            "name": "whisper-1",
-            "provider": openai_provider,
-        },
-        {
-            "id": 2,
-            "name": "gpt-4o-mini-transcribe",
-            "provider": openai_provider,
-        },
-        {
-            "id": 3,
-            "name": "gpt-4o-transcribe",
-            "provider": openai_provider,
-        },
-    ]
-
-    for model in rt_transcription_models:
-        RealtimeTranscriptionModel.objects.update_or_create(
-            id=model.get("id"),
-            name=model.get("name"),
-            provider_id=openai_provider.pk,
-        )
-
+    for provider_name, model_names in models_by_provider.items():
+        provider, _ = Provider.objects.get_or_create(name=provider_name)
+        for model_name in model_names:
+            current_model_tuples.add((provider.pk, model_name))
+            RealtimeTranscriptionModel.objects.get_or_create(
+                name=model_name,
+                provider=provider
+            )
+            
+    RealtimeTranscriptionModel.objects.exclude(
+        provider_id__in=[pid for pid, _ in current_model_tuples],
+        name__in=[name for _, name in current_model_tuples],
+    ).delete()
 
 def upload_embedding_models():
-    openai_provider = Provider.objects.get(name="openai")
+    path = PROVIDER_MODELS_DIR / EMBEDDING_MODELS_JSON
+    models_by_provider = load_json_from_file(path)
+    current_model_tuples = set()    
+    
+    for provider_name, model_names in models_by_provider.items():
+        provider, _ = Provider.objects.get_or_create(name=provider_name)
+        for model_name in model_names:
+            current_model_tuples.add((provider.pk, model_name))
+            EmbeddingModel.objects.get_or_create(
+                predefined=True,
+                name=model_name,
+                embedding_provider=provider,
+                # base_url, deployment 
+            )
 
-    embedding_models = [
-        {
-            "name": "text-embedding-3-small",
-            "embedding_provider": openai_provider,
-        },
-    ]
+    EmbeddingModel.objects.filter(predefined=True).exclude(
+        embedding_provider_id__in=[pid for pid, _ in current_model_tuples],
+        name__in=[name for _, name in current_model_tuples],
+    ).delete()
 
-    for model_data in embedding_models:
-        EmbeddingModel.objects.get_or_create(
-            predefined=True,
-            name=model_data.get("name"),
-            embedding_provider=model_data.get("embedding_provider"),
-            base_url=model_data.get("base_url"),
-            deployment=model_data.get("deployment"),
-        )
 
 
 def upload_tools():
