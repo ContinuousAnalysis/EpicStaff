@@ -65,13 +65,13 @@ def upload_llm_models(json_path="llm_models.json"):
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()
 
-    for provider_name, llm_model_name_list in models_by_provider.items():
+    for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
-        for llm_model_name in llm_model_name_list:
-            current_model_tuples.add((provider.pk, llm_model_name))
+        for model_name in model_names:
+            current_model_tuples.add((provider.pk, model_name))
             LLMModel.objects.get_or_create(
                 predefined=True,
-                name=llm_model_name,
+                name=model_name,
                 llm_provider=provider,
             )
 
@@ -84,44 +84,61 @@ def upload_llm_models(json_path="llm_models.json"):
 def upload_realtime_agent_models(json_path="realtime_models.json"):
     path = PROVIDER_MODELS_DIR / json_path
     models_by_provider = load_json_from_file(path)
+    current_model_tuples = set()    
 
-    for provider_name, model_list in models_by_provider.items():
-        provider = Provider.objects.get(name=provider_name)
-        for idx, name in enumerate(model_list, start=1):
-            RealtimeModel.objects.update_or_create(
-                id=idx,
-                name=name,
-                provider_id=provider.pk,
+    for provider_name, model_names in models_by_provider.items():
+        provider, _ = Provider.objects.get_or_create(name=provider_name)
+        for model_name in model_names:
+            current_model_tuples.add((provider.pk, model_name))
+            RealtimeModel.objects.get_or_create(
+                name=model_name,
+                provider=provider
             )
+
+    RealtimeModel.objects.exclude(
+        provider_id__in=[pid for pid, _ in current_model_tuples],
+        name__in=[name for _, name in current_model_tuples],
+    ).delete()
 
 def upload_realtime_transcription_models(json_path="transcription_models.json"):
     path = PROVIDER_MODELS_DIR / json_path
     models_by_provider = load_json_from_file(path)
+    current_model_tuples = set()    
 
     for provider_name, model_names in models_by_provider.items():
-        provider = Provider.objects.get(name=provider_name)
-
-        for idx, model_name in enumerate(model_names, start=1):
-            RealtimeTranscriptionModel.objects.update_or_create(
-                id=idx,
+        provider, _ = Provider.objects.get_or_create(name=provider_name)
+        for model_name in model_names:
+            current_model_tuples.add((provider.pk, model_name))
+            RealtimeTranscriptionModel.objects.get_or_create(
                 name=model_name,
-                provider_id=provider.pk,
+                provider=provider
             )
+            
+    RealtimeTranscriptionModel.objects.exclude(
+        provider_id__in=[pid for pid, _ in current_model_tuples],
+        name__in=[name for _, name in current_model_tuples],
+    ).delete()
 
 def upload_embedding_models(json_path="embedding_models.json"):
     path = os.path.join(PROVIDER_MODELS_DIR, json_path)
     models_by_provider = load_json_from_file(path)
-
+    current_model_tuples = set()    
+    
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
-
         for model_name in model_names:
+            current_model_tuples.add((provider.pk, model_name))
             EmbeddingModel.objects.get_or_create(
                 predefined=True,
                 name=model_name,
                 embedding_provider=provider,
                 # base_url, deployment 
             )
+
+    EmbeddingModel.objects.filter(predefined=True).exclude(
+        embedding_provider_id__in=[pid for pid, _ in current_model_tuples],
+        name__in=[name for _, name in current_model_tuples],
+    ).delete()
 
 
 
