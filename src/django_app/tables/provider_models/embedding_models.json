@@ -1,4 +1,7 @@
 {
+  "openai": [
+    "text-embedding-3-small"
+  ],
   "azure": [
     "text-embedding-ada-002"
   ],
