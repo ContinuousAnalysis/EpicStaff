@@ -88,34 +88,37 @@ class RedisPubSub:
         Save organization and organization_user variables to database
         """
         try:
-            variables = data["state"]["variables"]
+            variables = data["status_data"]["variables"]
+            organization_variables = variables.get("organization", {})
+            user_variables = variables.get("user", {})
 
-            if session.organization:
-                organization_variables = variables.get("organization")
-                session.organization.variables = (
-                    organization_variables if organization_variables else {}
-                )
+            for item in (organization_variables, user_variables):
+                is_valid, error = self._validate_organization_variables(item)
+                if not is_valid:
+                    raise ValueError(error)
+
+            if session.organization and session.organization.persistent_variables:
+                session.organization.variables = organization_variables
                 session.organization.save()
                 logger.info(
                     f"Saved new organization variables {organization_variables}"
                 )
 
-            if session.organization_user:
-                user_variables = variables.get("user")
-                organization_variables = variables.get("organization")
-
-                session.organization_user.variables = (
-                    user_variables if user_variables else {}
-                )
-                session.organization_user.organization.variables = (
-                    organization_variables if organization_variables else {}
-                )
+            if (
+                session.organization_user
+                and session.organization_user.persistent_variables
+            ):
+                session.organization_user.variables = user_variables
                 session.organization_user.save()
-                session.organization.save()
                 logger.info(f"Saved new organization user variables {user_variables}")
 
         except Exception as e:
             logger.error(f"Error handling organization variables message: {e}")
+
+    def _validate_organization_variables(self, variables: dict):
+        if not isinstance(variables, dict):
+            return False, "Variables should be a dictionary"
+        return True, None
 
     def _buffer_save(self, buffer: deque[dict], model: Type[models.Model]):
         try:

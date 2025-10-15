@@ -256,7 +256,7 @@ class RunSession(APIView):
             logger.info(f"Added {len(files_dict)} files to variables.")
 
         if organization_data:
-            vars_dict, error = self.get_entity_variables(
+            vars_dict, organization, error = self.get_entity_variables(
                 Organization,
                 "name",
                 organization_data,
@@ -273,7 +273,7 @@ class RunSession(APIView):
             logger.info("Organization variables are being used for this flow.")
 
         if organization_user_data:
-            vars_dict, error = self.get_entity_variables(
+            vars_dict, organization_user, error = self.get_entity_variables(
                 OrganizationUser,
                 "username",
                 organization_user_data,
@@ -327,16 +327,22 @@ class RunSession(APIView):
             error_messages: dict with 'not_found' and 'invalid_key' messages
 
         Returns:
-            tuple: (dict of variables, error Response or None)
+            tuple: (dict of variables, entity object, error Response or None)
         """
         entity = entity_class.objects.filter(
             **{lookup_field: data[lookup_field]}
         ).first()
         if not entity:
-            return None, Response({"message": error_messages["not_found"]}, status=404)
+            return (
+                None,
+                None,
+                Response({"message": error_messages["not_found"]}, status=404),
+            )
         if not entity.check_secret_key(data["secret_key"]):
-            return None, Response(
-                {"message": error_messages["invalid_key"]}, status=403
+            return (
+                None,
+                None,
+                Response({"message": error_messages["invalid_key"]}, status=403),
             )
 
         vars_dict = {}
@@ -345,7 +351,7 @@ class RunSession(APIView):
                 vars_dict[key] = value(entity)
             else:
                 vars_dict[key] = getattr(entity, value)
-        return vars_dict, None
+        return vars_dict, entity, None
 
 
 class GetUpdates(APIView):

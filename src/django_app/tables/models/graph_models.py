@@ -246,6 +246,10 @@ class Organization(HashedFieldMixin, models.Model):
     variables = models.JSONField(
         default=dict, help_text="Organization global variables"
     )
+    persistent_variables = models.BooleanField(
+        default=False,
+        help_text="If 'True' -> variables will be updated after each session.",
+    )
 
 
 class OrganizationUser(HashedFieldMixin, models.Model):
@@ -259,6 +263,10 @@ class OrganizationUser(HashedFieldMixin, models.Model):
         help_text="A hashed unique key for user inside an organization",
     )
     variables = models.JSONField(default=dict, help_text="User scope variables")
+    persistent_variables = models.BooleanField(
+        default=False,
+        help_text="If 'True' -> variables will be updated after each session.",
+    )
 
     class Meta:
         constraints = [

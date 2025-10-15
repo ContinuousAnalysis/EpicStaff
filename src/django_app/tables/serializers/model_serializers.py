@@ -1191,7 +1191,7 @@ class OrganizationSerializer(HashedFieldSerializerMixin, serializers.ModelSerial
 
     class Meta:
         model = Organization
-        fields = ["id", "name", "secret_key", "variables"]
+        fields = ["id", "name", "secret_key", "variables", "persistent_variables"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1216,7 +1216,14 @@ class OrganizationUserSerializer(
 
     class Meta:
         model = OrganizationUser
-        fields = ["id", "username", "organization", "secret_key", "variables"]
+        fields = [
+            "id",
+            "username",
+            "organization",
+            "secret_key",
+            "variables",
+            "persistent_variables",
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
