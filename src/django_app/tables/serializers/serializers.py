@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import serializers
 from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
@@ -90,6 +91,8 @@ class UploadGraphFileSerializer(serializers.Serializer):
         return instances
 
     def validate(self, attrs):
+        MAX_TOTAL_SIZE = 150 * 1024 * 1024
+
         graph = attrs.get("graph")
         files = attrs.get("files")
 
@@ -100,6 +103,26 @@ class UploadGraphFileSerializer(serializers.Serializer):
         if GraphFile.objects.filter(graph=graph, domain_key__in=domain_keys).exists():
             raise serializers.ValidationError(
                 {"files": "One or more domain_key(s) already exist for this graph."}
+            )
+
+        current_total = (
+            GraphFile.objects.filter(graph=graph).aggregate(total=models.Sum("size"))[
+                "total"
+            ]
+            or 0
+        )
+
+        new_files_size = sum(file.size for file in files.values())
+        total_size = current_total + new_files_size
+
+        if total_size > MAX_TOTAL_SIZE:
+            raise serializers.ValidationError(
+                {
+                    "files": f"Total file size for this graph would exceed 150MB. "
+                    f"Current: {current_total / (1024 * 1024):.2f}MB, "
+                    f"New files: {new_files_size / (1024 * 1024):.2f}MB, "
+                    f"Total would be: {total_size / (1024 * 1024):.2f}MB"
+                }
             )
 
         return attrs
