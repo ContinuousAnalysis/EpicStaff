@@ -177,6 +177,9 @@ services:
       timeout: 2s
       retries: 5
       start_period: 5s
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
 
   redis-monitor:
     image: redis-monitor
