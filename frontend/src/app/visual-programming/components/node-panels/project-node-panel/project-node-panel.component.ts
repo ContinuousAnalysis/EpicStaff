@@ -153,7 +153,7 @@ export class ProjectNodePanelComponent extends BaseSidePanel<ProjectNodeModel> {
             inputMapArray.push(
                 this.fb.group({
                     key: [''],
-                    value: [''],
+                    value: ['variables.'],
                 })
             );
         }

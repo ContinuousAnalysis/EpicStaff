@@ -144,11 +144,10 @@ export class FileExtractorNodePanelComponent extends BaseSidePanel<FileExtractor
                 );
             });
         } else {
-            // Always add at least one empty input map pair
             inputMapArray.push(
                 this.fb.group({
                     key: [''],
-                    value: [''],
+                    value: ['variables.'],
                 })
             );
         }
