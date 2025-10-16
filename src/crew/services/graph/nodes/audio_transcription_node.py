@@ -60,7 +60,7 @@ def transcribe_audio(base64_audio: str):
     finally:
         os.remove(input_path)
 
-    model = WhisperModel("small", device="cpu", compute_type="int8")
+    model = WhisperModel("medium", device="cpu", compute_type="int8")
 
     segments, info = model.transcribe(
         wav_path,
