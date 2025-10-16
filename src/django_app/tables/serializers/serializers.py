@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from rest_framework import serializers
 from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
@@ -91,8 +92,6 @@ class UploadGraphFileSerializer(serializers.Serializer):
         return instances
 
     def validate(self, attrs):
-        MAX_TOTAL_SIZE = 150 * 1024 * 1024
-
         graph = attrs.get("graph")
         files = attrs.get("files")
 
@@ -114,11 +113,13 @@ class UploadGraphFileSerializer(serializers.Serializer):
 
         new_files_size = sum(file.size for file in files.values())
         total_size = current_total + new_files_size
+        max_mb = round(settings.MAX_TOTAL_FILE_SIZE / 1024 / 1024, 2)
+        total_mb = round(total_size / 1024 / 1024, 2)
 
-        if total_size > MAX_TOTAL_SIZE:
+        if total_mb > max_mb:
             raise serializers.ValidationError(
                 {
-                    "files": f"Total file size for this graph would exceed 150MB. "
+                    "files": f"Total file size for this graph would exceed {max_mb:.2f}MB. "
                     f"Current: {current_total / (1024 * 1024):.2f}MB, "
                     f"New files: {new_files_size / (1024 * 1024):.2f}MB, "
                     f"Total would be: {total_size / (1024 * 1024):.2f}MB"
