@@ -1,0 +1,23 @@
+
+services:
+  open_interpreter:
+    build:
+      context: ./open_interpreter_tool 
+      dockerfile: Dockerfile
+    container_name: mcp_open_interpreter
+    env_file:
+      - ../../.env
+    ports:
+      - "7001:7001"   # HTTP MCP API
+      - "5900:5900"   # VNC
+      - "6080:6080"   # noVNC
+    volumes:
+      - ./open_interpreter_tool/data:/app/data
+    restart: unless-stopped
+    networks:
+      - mcp_network 
+
+networks:
+  mcp_network:
+    external: true 
+    driver: bridge
