@@ -78,6 +78,7 @@ from tables.models import (
 from tables.serializers.utils.mixins import HashedFieldSerializerMixin
 
 from django.core.exceptions import ValidationError
+from tables.exceptions import InvalidTaskOrderError
 
 
 class LLMConfigSerializer(serializers.ModelSerializer):
@@ -600,16 +601,46 @@ class TaskWriteSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        context_ids = self.initial_data.get("task_context_list", None)
-        task_context_field = self.fields["task_context_list"]
 
-        if context_ids is not None:
-            validated = task_context_field.validate_context_tasks(
-                context_ids, task_instance=self.instance, task_data=attrs
+        task_order = attrs.get("order", self.instance.order if self.instance else None)
+
+        if task_order is None:
+            return attrs
+
+        incoming_context_ids = self.initial_data.get("task_context_list", None)
+
+        ids_to_validate = []
+
+        if incoming_context_ids is not None:
+            # Case A: A new context list was explicitly sent in the request.
+            task_context_field = self.fields["task_context_list"]
+            ids_to_validate = task_context_field.validate_context_tasks(
+                incoming_context_ids, task_instance=self.instance, task_data=attrs
             )
-            attrs["_validated_context_ids"] = validated
-        else:
-            attrs["_validated_context_ids"] = None
+        elif "order" in attrs and self.instance:
+            # Case B: The 'order' is being changed, but no context list was sent.
+            ids_to_validate = list(
+                self.instance.task_context_list.values_list("context_id", flat=True)
+            )
+
+        if ids_to_validate:
+            valid_context_count = Task.objects.filter(
+                id__in=ids_to_validate, order__lt=task_order
+            ).count()
+
+            if valid_context_count < len(ids_to_validate):
+                raise InvalidTaskOrderError
+
+        if "order" in attrs and self.instance:
+            dependent_tasks = Task.objects.filter(
+                task_context_list__context=self.instance
+            )
+
+            if dependent_tasks.filter(order__lte=task_order).exists():
+                raise InvalidTaskOrderError
+
+        if incoming_context_ids is not None:
+            attrs["_validated_context_ids"] = ids_to_validate
 
         return attrs
 

@@ -565,6 +565,8 @@ export class TasksTableComponent implements OnChanges {
                 crew: parsedData.crew,
                 agent: parsedData.agent,
                 task_context_list: parsedData.task_context_list ?? [],
+                configured_tools: configuredToolIds,
+                python_code_tools: pythonToolIds,
                 tool_ids: toolIds,
             };
 
@@ -642,9 +644,11 @@ export class TasksTableComponent implements OnChanges {
             parsedUpdateData.id = +parsedUpdateData.id;
         }
 
-        // Create update request with tool_ids
+        // Create update request with all tool arrays
         const updateTaskRequest: UpdateTaskRequest = {
             ...parsedUpdateData,
+            configured_tools: updateConfiguredToolIds,
+            python_code_tools: updatePythonToolIds,
             tool_ids: updateToolIds,
         };
 
@@ -702,6 +706,7 @@ export class TasksTableComponent implements OnChanges {
                     output_model: taskData.output_model,
                     task_context_list: taskData.task_context_list,
                     taskName: taskData.name,
+                    taskId: taskData.id,
                     availableTasks: normalTasks, // Pass filtered tasks to dialog
                 },
                 width: '100%', // Set minimum width
@@ -786,6 +791,8 @@ export class TasksTableComponent implements OnChanges {
             crew: updatedTask.crew,
             agent: updatedTask.agent,
             task_context_list: updatedTask.task_context_list,
+            configured_tools: settingsConfiguredToolIds,
+            python_code_tools: settingsPythonToolIds,
             tool_ids: settingsToolIds,
         };
 
@@ -995,6 +1002,8 @@ export class TasksTableComponent implements OnChanges {
             crew: newTaskData.crew ?? null,
             agent: newTaskData.agent ?? null,
             task_context_list: newTaskData.task_context_list ?? [],
+            configured_tools: pasteConfiguredToolIds,
+            python_code_tools: pastePythonToolIds,
             tool_ids: pasteToolIds,
         };
 
