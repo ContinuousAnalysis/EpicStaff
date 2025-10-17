@@ -48,6 +48,8 @@ from tables.models.graph_models import (
     EndNode,
     LLMNode,
     StartNode,
+    Organization,
+    OrganizationUser,
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -73,7 +75,7 @@ from tables.models import (
 from tables.models import (
     ToolConfig,
 )
-
+from tables.serializers.utils.mixins import HashedFieldSerializerMixin
 
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
@@ -1204,3 +1206,97 @@ class GraphSerializer(serializers.ModelSerializer):
             "time_to_live",
             "persistent_variables",
         ]
+
+
+class OrganizationSerializer(HashedFieldSerializerMixin, serializers.ModelSerializer):
+
+    REQUIRE_IDENTIFIER_FOR_UPDATE = True
+    IDENTIFIER_FIELD = "name"
+
+    secret_key = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_null=False,
+        help_text="Secret key for verification (will be hashed on create)",
+    )
+
+    class Meta:
+        model = Organization
+        fields = ["id", "name", "secret_key", "variables", "persistent_variables"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["secret_key"].required = True
+        if self.instance is not None:
+            self.fields["secret_key"].help_text = "Secret key for verification"
+
+
+class OrganizationUserSerializer(
+    HashedFieldSerializerMixin, serializers.ModelSerializer
+):
+    REQUIRE_IDENTIFIER_FOR_UPDATE = True
+    IDENTIFIER_FIELD = "username"
+
+    secret_key = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_null=False,
+        help_text="Secret key for verification (will be hashed on create)",
+    )
+
+    class Meta:
+        model = OrganizationUser
+        fields = [
+            "id",
+            "username",
+            "organization",
+            "secret_key",
+            "variables",
+            "persistent_variables",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["secret_key"].required = True
+        if self.instance is not None:
+            self.fields["secret_key"].help_text = "Secret key for verification"
+
+
+class OrganizationSecretKeyUpdateSerializer(
+    HashedFieldSerializerMixin, serializers.ModelSerializer
+):
+    REQUIRE_OLD_FOR_CHANGE = True
+    REQUIRE_IDENTIFIER_FOR_UPDATE = False
+
+    name = serializers.CharField(read_only=True)
+    secret_key = serializers.CharField(
+        write_only=True, required=True, help_text="New secret key (will be hashed)"
+    )
+    old_secret_key = serializers.CharField(
+        write_only=True, required=True, help_text="Current secret key for verification"
+    )
+
+    class Meta:
+        model = Organization
+        fields = ["name", "secret_key", "old_secret_key"]
+
+
+class OrganizationUserSecretKeyUpdateSerializer(
+    HashedFieldSerializerMixin, serializers.ModelSerializer
+):
+    REQUIRE_OLD_FOR_CHANGE = True
+    REQUIRE_IDENTIFIER_FOR_UPDATE = False
+
+    username = serializers.CharField(read_only=True)
+    secret_key = serializers.CharField(
+        write_only=True, required=True, help_text="New secret key (will be hashed)"
+    )
+    old_secret_key = serializers.CharField(
+        write_only=True, required=True, help_text="Current secret_key for verification"
+    )
+
+    class Meta:
+        model = OrganizationUser
+        fields = ["username", "secret_key", "old_secret_key"]
