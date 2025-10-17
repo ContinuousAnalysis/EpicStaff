@@ -1,11 +1,10 @@
 import os
-
+import argparse
+import time
 from fastmcp import FastMCP
 import interpreter
-from typing import TypedDict, List, Optional
 from loguru import logger
-import builtins
-import argparse
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--host", type=str, default="0.0.0.0")
@@ -19,6 +18,7 @@ PORT = args.port
 
 API_KEY = os.getenv("API_KEY")
 LLM = os.getenv("LLM_MODEL", "gpt-4o")
+TIMEOUT = int(os.getenv("MCP_OPEN_INTERPRETER_TIMEOUT_SECONDS", 300))
 
 logger.info(f"Using model {LLM}")
 
@@ -66,6 +66,7 @@ mcp = FastMCP("OpenInterpreterTool")
 def open_interpreter(instruction: str):
     try:
         logger.info(f"Received instruction: {instruction}")
+        start_time = time.time()
         output = ""
         errors = []
 
@@ -76,6 +77,12 @@ def open_interpreter(instruction: str):
                     output += chunk.get("content", "")
                 elif chunk.get("type") in ["console", "message"]:
                     output += chunk.get("content", "")
+
+            if time.time() - start_time > TIMEOUT:
+                errors.append(
+                    f"Execution exceeded {TIMEOUT}s and stopped before finishing all commands."
+                )
+                break
 
         return {
             "success": True,
