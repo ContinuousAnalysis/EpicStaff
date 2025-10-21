@@ -42,13 +42,7 @@ from tables.services.quickstart_service import QuickstartService
 from django_filters.rest_framework import DjangoFilterBackend
 
 
-from tables.models import (
-    Session,
-    SourceCollection,
-    DocumentMetadata,
-    Organization,
-    OrganizationUser,
-)
+from tables.models import Session, SourceCollection, DocumentMetadata
 from tables.serializers.model_serializers import (
     SessionSerializer,
     SessionLightSerializer,
@@ -240,65 +234,16 @@ class RunSession(APIView):
         if not serializer.is_valid():
             logger.warning(f"Invalid data received in request: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         graph_id = serializer.validated_data["graph_id"]
-        organization_data = serializer.validated_data.get("organization_data", None)
-        organization_user_data = serializer.validated_data.get(
-            "organization_user_data", None
-        )
-        organization = None
-        organization_user = None
-
         variables = serializer.validated_data.get("variables", {})
 
         if files_dict is not None:
             variables["files"] = files_dict
-            logger.info(f"Added {len(files_dict)} files to variables.")
-
-        if organization_data:
-            vars_dict, organization, error = self.get_entity_variables(
-                Organization,
-                "name",
-                organization_data,
-                variable_keys={"organization": "variables"},
-                error_messages={
-                    "not_found": "Organization not found",
-                    "invalid_key": "Provided secret key is invalid",
-                },
-            )
-            if error:
-                return error
-
-            variables.update(vars_dict)
-            logger.info("Organization variables are being used for this flow.")
-
-        if organization_user_data:
-            vars_dict, organization_user, error = self.get_entity_variables(
-                OrganizationUser,
-                "username",
-                organization_user_data,
-                variable_keys={
-                    "user": "variables",
-                    "organization": lambda user: user.organization.variables,
-                },
-                error_messages={
-                    "not_found": "Organization User not found",
-                    "invalid_key": "Provided secret key is invalid",
-                },
-            )
-            if error:
-                return error
-
-            variables.update(vars_dict)
-            logger.info("Organization and User variables are being used for this flow.")
 
         try:
-            # Publish session to: crew, manager
+            # Publish session to: crew, maanger
             session_id = session_manager_service.run_session(
-                graph_id=graph_id,
-                variables=variables,
-                organization=organization,
-                organization_user=organization_user,
+                graph_id=graph_id, variables=variables
             )
             logger.info(f"Session {session_id} successfully started.")
         except Exception as e:
@@ -310,48 +255,6 @@ class RunSession(APIView):
             return Response(
                 data={"session_id": session_id}, status=status.HTTP_201_CREATED
             )
-
-    def get_entity_variables(
-        self, entity_class, lookup_field, data, variable_keys, error_messages
-    ):
-        """
-        Fetch an entity, validate secret_key, and return its variables.
-
-        Args:
-            entity_class: Model class (Organization or OrganizationUser)
-            lookup_field: Field name to filter by ("name" or "username")
-            data: Dict containing the lookup_field and 'secret_key'
-            variable_keys: Dict mapping keys in variables dict to either:
-                - string attribute of entity that contains the dict (e.g. 'variables')
-                - callable to compute value
-            error_messages: dict with 'not_found' and 'invalid_key' messages
-
-        Returns:
-            tuple: (dict of variables, entity object, error Response or None)
-        """
-        entity = entity_class.objects.filter(
-            **{lookup_field: data[lookup_field]}
-        ).first()
-        if not entity:
-            return (
-                None,
-                None,
-                Response({"message": error_messages["not_found"]}, status=404),
-            )
-        if not entity.check_secret_key(data["secret_key"]):
-            return (
-                None,
-                None,
-                Response({"message": error_messages["invalid_key"]}, status=403),
-            )
-
-        vars_dict = {}
-        for key, value in variable_keys.items():
-            if callable(value):
-                vars_dict[key] = value(entity)
-            else:
-                vars_dict[key] = getattr(entity, value)
-        return vars_dict, entity, None
 
 
 class GetUpdates(APIView):
@@ -785,7 +688,9 @@ class CollectionStatusAPIView(ListAPIView):
 
     def get_queryset(self):
         return (
-            SourceCollection.objects.only("collection_id", "collection_name", "status")
+            SourceCollection.objects.only(
+                "collection_id", "collection_name", "status"
+            )
             .annotate(
                 total_documents=Count("document_metadata"),
                 new_documents=Count(
@@ -822,7 +727,6 @@ class CollectionStatusAPIView(ListAPIView):
                 )
             )
         )
-
 
 class QuickstartView(APIView):
     """

@@ -62,7 +62,7 @@ interface FlowGraphBlock {
                 transition: color 0.2s ease;
             }
             li:hover i {
-                color: inherit; /* Keep the color from [style.color]="block.color" */
+                color: inher;
             }
             .plus-icon {
                 margin-left: auto;
@@ -73,7 +73,7 @@ interface FlowGraphBlock {
             }
             li:hover .plus-icon {
                 opacity: 1;
-                color: inherit; /* Match the block color on hover */
+                color: inherit;
             }
             li.disabled {
                 opacity: 0.5;
@@ -133,12 +133,12 @@ export class FlowGraphCoreMenuComponent {
             icon: NODE_ICONS[NodeType.NOTE],
             color: NODE_COLORS[NodeType.NOTE],
         },
-        // {
-        //   label: 'Decision Table',
-        //   type: NodeType.TABLE,
-        //   icon: NODE_ICONS[NodeType.TABLE],
-        //   color: NODE_COLORS[NodeType.TABLE],
-        // },
+        {
+            label: 'Decision Table',
+            type: NodeType.TABLE,
+            icon: NODE_ICONS[NodeType.TABLE],
+            color: NODE_COLORS[NodeType.TABLE],
+        },
     ];
 
     public get filteredBlocks(): FlowGraphBlock[] {
@@ -170,7 +170,6 @@ export class FlowGraphCoreMenuComponent {
         } else if (type === NodeType.GROUP) {
             data = 'group'; // Assign "group" if NodeType is GROUP
         } else if (type === NodeType.TABLE) {
-            // Provide mock data for a decision table node
             data = {
                 name: 'Decision Table',
                 table: {

@@ -44,8 +44,6 @@ from tables.views.model_view_sets import (
     RealtimeModelViewSet,
     RealtimeAgentViewSet,
     RealtimeAgentChatViewSet,
-    OrganizationViewSet,
-    OrganizationUserViewSet,
 )
 
 from tables.views.views import (
@@ -133,8 +131,6 @@ router.register(r"condition", ConditionModelViewSet)
 
 router.register(r"sessions", SessionViewSet, basename="session")
 router.register(r"mcp-tools", McpToolViewSet)
-router.register(r"organizations", OrganizationViewSet)
-router.register(r"organization-users", OrganizationUserViewSet)
 urlpatterns = [
     path("", include(router.urls)),
     path("run-session/", RunSession.as_view(), name="run-session"),

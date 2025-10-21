@@ -11,21 +11,25 @@ import {
     FormsModule,
     NG_VALUE_ACCESSOR,
 } from '@angular/forms';
-import { HelpTooltipComponent } from '../help-tooltip/help-tooltip.component';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
     selector: 'app-custom-input',
     standalone: true,
-    imports: [CommonModule, FormsModule, HelpTooltipComponent],
+    imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule],
     template: `
         <div class="form-group">
             <div class="label-container" *ngIf="label">
                 <label [for]="id">{{ label }}</label>
-                <app-help-tooltip
+                <mat-icon
                     *ngIf="tooltipText"
-                    position="right"
-                    [text]="tooltipText"
-                ></app-help-tooltip>
+                    matTooltip="{{ tooltipText }}"
+                    matTooltipPosition="right"
+                    matTooltipClass="custom-tooltip"
+                    class="help-icon"
+                    >help</mat-icon
+                >
             </div>
             <input
                 [type]="type"
@@ -62,6 +66,19 @@ import { HelpTooltipComponent } from '../help-tooltip/help-tooltip.component';
                     margin: 0;
                 }
 
+                .help-icon {
+                    font-size: 18px;
+                    width: 18px;
+                    height: 18px;
+                    color: rgba(255, 255, 255, 0.6);
+                    cursor: help;
+                    transition: color 0.2s ease;
+
+                    &:hover {
+                        color: rgba(255, 255, 255, 0.9);
+                    }
+                }
+
                 .text-input {
                     width: 100%;
                     padding: 8px 12px;
@@ -88,6 +105,15 @@ import { HelpTooltipComponent } from '../help-tooltip/help-tooltip.component';
                     margin-top: 4px;
                     line-height: 1.4;
                 }
+            }
+
+            :host ::ng-deep .custom-tooltip {
+                background: #232323 !important;
+                color: #fff !important;
+                font-size: 0.9rem !important;
+                max-width: 300px !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
             }
         `,
     ],

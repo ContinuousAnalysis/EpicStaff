@@ -36,8 +36,6 @@ from tables.models import (
     PythonNode,
     EndNode,
     FileExtractorNode,
-    Organization,
-    OrganizationUser,
 )
 
 
@@ -71,8 +69,6 @@ class SessionManagerService(metaclass=SingletonMeta):
         self,
         graph_id: int,
         variables: dict | None = None,
-        organization: Organization | None = None,
-        organization_user: OrganizationUser | None = None,
     ) -> Session:
 
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
@@ -91,8 +87,6 @@ class SessionManagerService(metaclass=SingletonMeta):
             status=Session.SessionStatus.PENDING,
             variables=variables,
             time_to_live=time_to_live,
-            organization=organization,
-            organization_user=organization_user,
         )
         return session
 
@@ -171,9 +165,9 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
             decision_table_node_data_list.append(decision_table_node_data)
-
+        
         end_node = self.end_node_validator.validate(graph_id=graph.pk)
-
+        
         # TODO: remove validation
         if end_node is not None:
             end_node_data = self.converter_service.convert_end_node_to_pydantic(
@@ -203,24 +197,13 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         return session_data
 
-    def run_session(
-        self,
-        graph_id: int,
-        variables: dict | None = None,
-        organization: Organization | None = None,
-        organization_user: OrganizationUser | None = None,
-    ) -> int:
+    def run_session(self, graph_id: int, variables: dict | None = None) -> int:
         logger.info(f"'run_session' got variables: {variables}")
 
         # Choose to use variables from previous flow or left 'variables' param None
         variables = self.choose_variables(graph_id, variables)
 
-        session: Session = self.create_session(
-            graph_id=graph_id,
-            variables=variables,
-            organization=organization,
-            organization_user=organization_user,
-        )
+        session: Session = self.create_session(graph_id=graph_id, variables=variables)
         session_data: SessionData = self.create_session_data(session=session)
 
         session.graph_schema = session_data.graph.model_dump()
