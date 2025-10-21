@@ -5,16 +5,8 @@ from fastmcp import FastMCP
 import interpreter
 from loguru import logger
 
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--host", type=str, default="0.0.0.0")
-parser.add_argument("--port", type=int, default=int(os.getenv("PORT", 7001)))
-args = parser.parse_args()
-
-logger.info(f"Confirming environment -> DISPLAY is set to: {os.getenv('DISPLAY')}")
-
-HOST = args.host
-PORT = args.port
+HOST = "0.0.0.0"
+PORT = int(os.getenv("PORT", 7002))
 
 API_KEY = os.getenv("API_KEY")
 LLM = os.getenv("LLM_MODEL", "gpt-4o")

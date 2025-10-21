@@ -1,14 +1,33 @@
 
 services:
-  open_interpreter:
+  cli_open_interpreter:
     build:
       context: ./open_interpreter_tool 
-      dockerfile: Dockerfile
-    container_name: mcp_open_interpreter
+      dockerfile: CLI.Dockerfile
+    container_name: cli_open_interpreter
     env_file:
       - .env
+    environment:
+      PORT: ${MCP_CLI_OPEN_INTERPRETER_PORT}
     ports:
-      - "7001:7001"   # HTTP MCP API
+      - "${MCP_CLI_OPEN_INTERPRETER_PORT}:${MCP_CLI_OPEN_INTERPRETER_PORT}"   # HTTP MCP API
+    volumes:
+      - ${CREW_SAVEFILES_PATH}:/app/data
+    restart: unless-stopped
+    networks:
+      - mcp_network 
+  
+  browser_open_interpreter:
+    build:
+      context: ./open_interpreter_tool 
+      dockerfile: browser.Dockerfile
+    container_name: browser_open_interpreter
+    env_file:
+      - .env
+    environment:
+      PORT: ${MCP_BROWSER_OPEN_INTERPRETER_PORT}
+    ports:
+      - "${MCP_BROWSER_OPEN_INTERPRETER_PORT}:${MCP_BROWSER_OPEN_INTERPRETER_PORT}"   # HTTP MCP API
       - "5900:5900"   # VNC
       - "6080:6080"   # noVNC
     volumes:

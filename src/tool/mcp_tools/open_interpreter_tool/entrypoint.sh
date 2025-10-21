@@ -14,4 +14,4 @@ websockify --web /usr/share/novnc 6080 0.0.0.0:5900 &
 sleep 2
 
 echo "Starting MCP server with Open Interpreter..."
-exec poetry run python mcp_server.py
+exec poetry run python browser_mcp.py

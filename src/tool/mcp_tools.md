@@ -1,7 +1,7 @@
 # Open Interpreter Tool
 
 ## Setup
-1. Add the following to `src/tool/mcp_tools/.env`:
+1. Create file `src/tool/mcp_tools/.env`, copy contents of `src/tool/mcp_tools/template.env` to it and add fill this fields:
 
 ~~~text
 API_KEY=<your_api_key>

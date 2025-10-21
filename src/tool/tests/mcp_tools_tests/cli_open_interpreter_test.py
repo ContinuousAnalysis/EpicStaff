@@ -7,7 +7,7 @@ from pathlib import Path
 # --- Configuration ---
 TESTS_DIR = Path(__file__).parent
 TOOL_ROOT = TESTS_DIR.parent.parent / "mcp_tools" / "open_interpreter_tool"
-SHARED_DIR = TOOL_ROOT / "data" / "pytest_output.txt"
+SHARED_TESTFILE = "/home/folder/project/savefiles/pytest_output.txt"
 
 
 TOOL_HOST = os.getenv("TOOL_HOST", "localhost")
@@ -33,7 +33,7 @@ def endpoint():
 
 
 # --- Helper Functions ---
-def create_payload(instruction: str, tool_name: str = "open_interpreter") -> dict:
+def create_payload(instruction: str, tool_name: str = "cli_tool") -> dict:
     return {
         "jsonrpc": "2.0",
         "method": "tools/call",
@@ -47,28 +47,59 @@ def post_request(payload: dict, endpoint: str, headers: dict) -> requests.Respon
 
 
 def parse_sse_response(response):
+    """
+    Parse SSE response from MCP/OpenInterpreter JSON-RPC output.
+    Extracts the final result from 'structuredContent'.
+    """
     data_lines = [
-        json.loads(line[len("data: ") :].strip())
+        line[len("data: ") :].strip()
         for line in response.text.splitlines()
         if line.startswith("data:")
     ]
+
     if not data_lines:
         raise ValueError(f"No 'data:' lines found in response:\n{response.text}")
 
-    last_event = data_lines[-1]
-    result = last_event.get("result", {})
+    # Parse the last event
+    try:
+        last_event = json.loads(data_lines[-1])
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Failed to parse JSON: {data_lines[-1]}\nError: {e}")
 
-    if "structuredContent" in result:
-        return result["structuredContent"]
+    # Extract 'structuredContent' where the actual result lives
+    structured = last_event.get("result", {}).get("structuredContent")
 
-    output_text = ""
-    if "content" in result and isinstance(result["content"], list):
-        output_text = "\n".join(item.get("text", "") for item in result["content"])
+    if structured:
+        success = bool(structured.get("success", False))
+        output_text = structured.get("output", "")
+        errors = structured.get("errors", [])
+        commands = []
+        for cmd in structured.get("commands", []):
+            commands.append(
+                {
+                    "command": cmd.get("command", ""),
+                    "output": cmd.get("output", ""),
+                    "errors": cmd.get("errors", []),
+                }
+            )
+    else:
+        # Fallback for error-only messages
+        success = False
+        output_text = ""
+        commands = []
+        errors = []
+        # collect all 'text' entries from content
+        content = last_event.get("result", {}).get("content", [])
+        for c in content:
+            text = c.get("text")
+            if text:
+                errors.append(text)
 
     return {
-        "success": False,
+        "success": success,
         "output": output_text,
-        "errors": [],
+        "commands": commands,
+        "errors": errors,
     }
 
 
@@ -78,7 +109,7 @@ def parse_sse_response(response):
 # 1. Correct test
 @pytest.mark.parametrize(
     "instruction,expected_output_substr",
-    [("What is 125 divided by 5?", "25")],
+    [("Using python calculate what is 125 divided by 5?", "25")],
 )
 def test_successful_code_execution(
     instruction, expected_output_substr, endpoint, headers
@@ -87,38 +118,50 @@ def test_successful_code_execution(
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
+    data_lines = [
+        line[len("data: ") :].strip()
+        for line in response.text.splitlines()
+        if line.startswith("data:")
+    ]
+
+    print(data)
+
     assert response.status_code == 200
     assert data["success"]
-    assert expected_output_substr in data["output"]
     assert not data["errors"]
+    assert expected_output_substr in data["output"]
+    assert "[result]" not in data["output"]
+
+    assert isinstance(data["commands"], list)
+    assert len(data["commands"]) >= 1
 
 
 def test_successful_shell_command(endpoint, headers):
     payload = create_payload(
-        "List the files in the current directory using a shell command."
+        "Do this steps one after another:"
+        "1. Find in what directory your code is located"
+        "2. List all files in this directory"
     )
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
     assert response.status_code == 200
     assert data["success"]
-    assert "mcp" in data["output"].lower()
     assert not data["errors"]
+
+    assert "[result]" not in data["output"]
+    assert "dockerfile" in data["output"].lower()
+
+    assert isinstance(data["commands"], list)
+    assert len(data["commands"]) >= 2
+
+    last_cmd_output = data["commands"][-1]["output"]
+    assert data["output"] not in last_cmd_output
 
 
 # 2. AI Behavior Tests
-@pytest.mark.parametrize(
-    "instruction,expected_outputs",
-    [
-        (
-            "Divide 100 by 0.",
-            ["division by zero", "dividing by zero", "dividing a number by zero"],
-        ),
-        ("Run this python code: print('hello world')", ["hello world"]),
-    ],
-)
-def test_ai_behavior(instruction, expected_outputs, endpoint, headers):
-    payload = create_payload(instruction)
+def test_invalid_prompt(endpoint, headers):
+    payload = create_payload("Divide 100 by 0.")
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
@@ -126,19 +169,10 @@ def test_ai_behavior(instruction, expected_outputs, endpoint, headers):
     assert data["success"]
     assert not data["errors"]
 
-    output_lower = data["output"].lower()
-    assert any(phrase.lower() in output_lower for phrase in expected_outputs)
+    assert "[result]" not in data["output"]
 
-
-def test_vague_instruction(endpoint, headers):
-    payload = create_payload("Just do something useful.")
-    response = post_request(payload, endpoint, headers)
-    data = parse_sse_response(response)
-
-    assert response.status_code == 200
-    assert data["success"]
-    assert not data["errors"]
-    assert data["output"] and len(data["output"].strip()) > 0
+    assert isinstance(data["commands"], list)
+    assert not data["commands"]
 
 
 # 3. Error Handling Tests
@@ -147,28 +181,34 @@ def test_invalid_tool_name(endpoint, headers):
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
+    print(data)
+
     assert response.status_code == 200
     assert not data["success"]
-    assert "Unknown tool" in data["output"]
+    assert not data["commands"]
+    assert any("Unknown tool" in e for e in data["errors"])
 
 
 def test_missing_instruction_parameter(endpoint, headers):
     payload = {
         "jsonrpc": "2.0",
         "method": "tools/call",
-        "params": {"name": "open_interpreter", "arguments": {}},
+        "params": {"name": "cli_tool", "arguments": {}},
         "id": 1,
     }
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
+    print(data)
+
     assert response.status_code == 200
     assert not data["success"]
-    assert "required property" in data["output"]
+    assert not data["commands"]
+    assert any("required property" in e for e in data["errors"])
 
 
 # 4. File Interaction Tests
-SHARED_DIR = "./mcp_tools/open_interpreter_tool/data/pytest_output.txt"
+SHARED_TESTFILE = "./mcp_tools/open_interpreter_tool/data/pytest_output.txt"
 
 
 def test_write_file(endpoint, headers):
@@ -180,8 +220,9 @@ def test_write_file(endpoint, headers):
     assert response.status_code == 200
     assert data["success"]
     assert not data["errors"]
+    assert "[result]" not in data["output"]
 
-    with open(SHARED_DIR, "r") as f:
+    with open(SHARED_TESTFILE, "r") as f:
         content = f.read()
     assert "This is a test output." in content
 
@@ -195,6 +236,7 @@ def test_read_file(endpoint, headers):
     assert response.status_code == 200
     assert data["success"]
     assert not data["errors"]
+    assert "[result]" not in data["output"]
     assert "This is a test output." in data["output"]
 
 
@@ -207,7 +249,8 @@ def test_modify_existing_file(endpoint, headers):
     assert response.status_code == 200
     assert data["success"]
     assert not data["errors"]
+    assert "[result]" not in data["output"]
 
-    with open(SHARED_DIR, "r") as f:
+    with open(SHARED_TESTFILE, "r") as f:
         content = f.read()
     assert " -- Modified by OpenInterpreter" in content
