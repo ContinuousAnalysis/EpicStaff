@@ -10,6 +10,7 @@ class TablesConfig(AppConfig):
 
     def ready(self):
         import tables.signals.crew_signals
+        import tables.signals.graph_signals
         from tables.services.config_service import YamlConfigService
         from tables.services.converter_service import ConverterService
         from tables.services.redis_service import RedisService

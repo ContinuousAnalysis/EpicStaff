@@ -46,8 +46,8 @@ from tables.models import (
     Session,
     SourceCollection,
     DocumentMetadata,
-    Organization,
-    OrganizationUser,
+    GraphOrganization,
+    GraphOrganizationUser,
 )
 from tables.serializers.model_serializers import (
     SessionSerializer,
@@ -242,63 +242,29 @@ class RunSession(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         graph_id = serializer.validated_data["graph_id"]
-        organization_data = serializer.validated_data.get("organization_data", None)
-        organization_user_data = serializer.validated_data.get(
-            "organization_user_data", None
-        )
-        organization = None
-        organization_user = None
+        graph_organization = GraphOrganization.objects.filter(
+            graph__id=graph_id
+        ).first()
+        graph_organization_user = GraphOrganizationUser.objects.filter(
+            graph__id=graph_id
+        ).first()
 
         variables = serializer.validated_data.get("variables", {})
 
         if files_dict is not None:
             variables["files"] = files_dict
             logger.info(f"Added {len(files_dict)} files to variables.")
-
-        if organization_data:
-            vars_dict, organization, error = self.get_entity_variables(
-                Organization,
-                "name",
-                organization_data,
-                variable_keys={"organization": "variables"},
-                error_messages={
-                    "not_found": "Organization not found",
-                    "invalid_key": "Provided secret key is invalid",
-                },
-            )
-            if error:
-                return error
-
-            variables.update(vars_dict)
-            logger.info("Organization variables are being used for this flow.")
-
-        if organization_user_data:
-            vars_dict, organization_user, error = self.get_entity_variables(
-                OrganizationUser,
-                "username",
-                organization_user_data,
-                variable_keys={
-                    "user": "variables",
-                    "organization": lambda user: user.organization.variables,
-                },
-                error_messages={
-                    "not_found": "Organization User not found",
-                    "invalid_key": "Provided secret key is invalid",
-                },
-            )
-            if error:
-                return error
-
-            variables.update(vars_dict)
-            logger.info("Organization and User variables are being used for this flow.")
+        if graph_organization:
+            variables.update(graph_organization.persistent_variables)
+            logger.info("Organization variables are used for this flow.")
+        if graph_organization_user:
+            variables.update(graph_organization_user.persistent_variables)
+            logger.info("Organization user variables are used for this flow.")
 
         try:
             # Publish session to: crew, manager
             session_id = session_manager_service.run_session(
-                graph_id=graph_id,
-                variables=variables,
-                organization=organization,
-                organization_user=organization_user,
+                graph_id=graph_id, variables=variables
             )
             logger.info(f"Session {session_id} successfully started.")
         except Exception as e:

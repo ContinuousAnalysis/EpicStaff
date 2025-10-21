@@ -7,6 +7,7 @@ from collections import deque
 from django.db import transaction, IntegrityError, models
 from tables.models import GraphSessionMessage
 from tables.models import PythonCodeResult
+from tables.models import GraphOrganization, GraphOrganizationUser
 from tables.request_models import CodeResultData, GraphSessionMessageData
 from tables.services.session_manager_service import SessionManagerService
 from tables.models import Session
@@ -89,36 +90,30 @@ class RedisPubSub:
         """
         try:
             variables = data["status_data"]["variables"]
-            organization_variables = variables.get("organization", {})
-            user_variables = variables.get("user", {})
+            if not variables:
+                return
 
-            for item in (organization_variables, user_variables):
-                is_valid, error = self._validate_organization_variables(item)
-                if not is_valid:
-                    raise ValueError(error)
+            graph_organization = GraphOrganization.objects.filter(
+                graph=session.graph
+            ).first()
+            graph_organization_user = GraphOrganizationUser.objects.filter(
+                graph=session.graph
+            ).first()
 
-            if session.organization and session.organization.persistent_variables:
-                session.organization.variables = organization_variables
-                session.organization.save()
-                logger.info(
-                    f"Saved new organization variables {organization_variables}"
-                )
+            if graph_organization:
+                for key, value in variables.items():
+                    if key in graph_organization.persistent_variables:
+                        graph_organization.persistent_variables[key] = value
+                graph_organization.save(update_fields=["persistent_variables"])
 
-            if (
-                session.organization_user
-                and session.organization_user.persistent_variables
-            ):
-                session.organization_user.variables = user_variables
-                session.organization_user.save()
-                logger.info(f"Saved new organization user variables {user_variables}")
+            if graph_organization_user:
+                for key, value in variables.items():
+                    if key in graph_organization_user.persistent_variables:
+                        graph_organization_user.persistent_variables[key] = value
+                graph_organization_user.save(update_fields=["persistent_variables"])
 
         except Exception as e:
             logger.error(f"Error handling organization variables message: {e}")
-
-    def _validate_organization_variables(self, variables: dict):
-        if not isinstance(variables, dict):
-            return False, "Variables should be a dictionary"
-        return True, None
 
     def _buffer_save(self, buffer: deque[dict], model: Type[models.Model]):
         try:

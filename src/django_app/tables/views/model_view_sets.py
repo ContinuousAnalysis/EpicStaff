@@ -34,6 +34,8 @@ from tables.models.graph_models import (
     LLMNode,
     Organization,
     OrganizationUser,
+    GraphOrganization,
+    GraphOrganizationUser,
 )
 from tables.models.realtime_models import (
     RealtimeSessionItem,
@@ -155,8 +157,8 @@ from tables.serializers.model_serializers import (
     RealtimeTranscriptionModelSerializer,
     OrganizationSerializer,
     OrganizationUserSerializer,
-    OrganizationSecretKeyUpdateSerializer,
-    OrganizationUserSecretKeyUpdateSerializer,
+    GraphOrganizationSerializer,
+    GraphOrganizationUserSerializer,
 )
 
 from tables.serializers.knowledge_serializers import (
@@ -168,7 +170,7 @@ from tables.serializers.knowledge_serializers import (
     DocumentMetadataSerializer,
 )
 from tables.services.redis_service import RedisService
-from tables.utils.mixins import ImportExportMixin, DeepCopyMixin, ChangeSecretKeyMixin
+from tables.utils.mixins import ImportExportMixin, DeepCopyMixin
 
 
 redis_service = RedisService()
@@ -236,7 +238,7 @@ class ProviderReadWriteViewSet(ModelViewSet):
     serializer_class = ProviderSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProviderFilter
- 
+
 
 class LLMModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
     queryset = LLMModel.objects.all()
@@ -988,87 +990,25 @@ class McpToolViewSet(viewsets.ModelViewSet):
     filterset_fields = ["name", "tool_name"]
 
 
-class OrganizationViewSet(ChangeSecretKeyMixin, viewsets.ModelViewSet):
+class OrganizationViewSet(viewsets.ModelViewSet):
 
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
 
-    def get_serializer_class(self):
-        if self.action == "change_secret_key":
-            return OrganizationSecretKeyUpdateSerializer
-        return OrganizationSerializer
 
-    @swagger_auto_schema(
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            required=["secret_key"],
-            properties={
-                "secret_key": openapi.Schema(
-                    type=openapi.TYPE_STRING, description="Organization secret key"
-                ),
-            },
-        ),
-        responses={204: "Organization deleted successfully"},
-    )
-    def destroy(self, request, pk):
-        instance: Organization = self.get_object()
-        secret_key = request.data.get("secret_key")
-
-        if not secret_key:
-            return Response(
-                {
-                    "message": "Organization secret_key is required to delete the organization."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if not instance.check_secret_key(secret_key):
-            return Response(
-                {"message": "secret_key is not valid for this organization."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class OrganizationUserViewSet(ChangeSecretKeyMixin, viewsets.ModelViewSet):
+class OrganizationUserViewSet(viewsets.ModelViewSet):
 
     queryset = OrganizationUser.objects.all()
     serializer_class = OrganizationUserSerializer
 
-    def get_serializer_class(self):
-        if self.action == "change_secret_key":
-            return OrganizationUserSecretKeyUpdateSerializer
-        return OrganizationUserSerializer
 
-    @swagger_auto_schema(
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            required=["secret_key"],
-            properties={
-                "secret_key": openapi.Schema(
-                    type=openapi.TYPE_STRING, description="Organization User secret key"
-                ),
-            },
-        ),
-        responses={204: "Organization User deleted successfully"},
-    )
-    def destroy(self, request, pk):
-        instance: OrganizationUser = self.get_object()
-        secret_key = request.data.get("secret_key")
+class GraphOrganizationViewSet(viewsets.ModelViewSet):
 
-        if not secret_key:
-            return Response(
-                {
-                    "message": "Organization user secret_key is required to delete the organization."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if not instance.check_secret_key(secret_key):
-            return Response(
-                {"message": "secret_key is not valid for this organization user."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    queryset = GraphOrganization.objects.all()
+    serializer_class = GraphOrganizationSerializer
 
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class GraphOrganizationUserViewSet(viewsets.ModelViewSet):
+
+    queryset = GraphOrganizationUser.objects.all()
+    serializer_class = GraphOrganizationUserSerializer

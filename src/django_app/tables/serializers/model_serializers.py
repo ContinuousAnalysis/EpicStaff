@@ -50,6 +50,8 @@ from tables.models.graph_models import (
     StartNode,
     Organization,
     OrganizationUser,
+    GraphOrganization,
+    GraphOrganizationUser,
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -75,7 +77,6 @@ from tables.models import (
 from tables.models import (
     ToolConfig,
 )
-from tables.serializers.utils.mixins import HashedFieldSerializerMixin
 
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
@@ -1208,95 +1209,77 @@ class GraphSerializer(serializers.ModelSerializer):
         ]
 
 
-class OrganizationSerializer(HashedFieldSerializerMixin, serializers.ModelSerializer):
-
-    REQUIRE_IDENTIFIER_FOR_UPDATE = True
-    IDENTIFIER_FIELD = "name"
-
-    secret_key = serializers.CharField(
-        write_only=True,
-        required=False,
-        allow_null=False,
-        help_text="Secret key for verification (will be hashed on create)",
-    )
+class OrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = ["id", "name", "secret_key", "variables", "persistent_variables"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields["secret_key"].required = True
-        if self.instance is not None:
-            self.fields["secret_key"].help_text = "Secret key for verification"
+        fields = ["id", "name"]
 
 
-class OrganizationUserSerializer(
-    HashedFieldSerializerMixin, serializers.ModelSerializer
-):
-    REQUIRE_IDENTIFIER_FOR_UPDATE = True
-    IDENTIFIER_FIELD = "username"
-
-    secret_key = serializers.CharField(
-        write_only=True,
-        required=False,
-        allow_null=False,
-        help_text="Secret key for verification (will be hashed on create)",
-    )
+class OrganizationUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrganizationUser
-        fields = [
-            "id",
-            "username",
-            "organization",
-            "secret_key",
-            "variables",
-            "persistent_variables",
-        ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields["secret_key"].required = True
-        if self.instance is not None:
-            self.fields["secret_key"].help_text = "Secret key for verification"
+        fields = ["id", "organization", "name"]
 
 
-class OrganizationSecretKeyUpdateSerializer(
-    HashedFieldSerializerMixin, serializers.ModelSerializer
-):
-    REQUIRE_OLD_FOR_CHANGE = True
-    REQUIRE_IDENTIFIER_FOR_UPDATE = False
-
-    name = serializers.CharField(read_only=True)
-    secret_key = serializers.CharField(
-        write_only=True, required=True, help_text="New secret key (will be hashed)"
-    )
-    old_secret_key = serializers.CharField(
-        write_only=True, required=True, help_text="Current secret key for verification"
-    )
+class GraphOrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Organization
-        fields = ["name", "secret_key", "old_secret_key"]
+        model = GraphOrganization
+        fields = ["id", "graph", "organization", "persistent_variables"]
+
+    def validate(self, attrs):
+        graph = attrs.get("graph")
+        organization_variables = attrs.get("persistent_variables")
+        graph_user: GraphOrganizationUser = GraphOrganizationUser.objects.filter(
+            graph=graph
+        ).first()
+
+        start_node: StartNode = graph.start_node_list.first()
+        for key in organization_variables:
+            if key not in start_node.variables:
+                raise serializers.ValidationError(
+                    {
+                        "persistent_variables": f"Provided persistent_variables have to be in flow domain. Variable `{key}` is not in domain."
+                    }
+                )
+            if graph_user and key in graph_user.persistent_variables:
+                raise serializers.ValidationError(
+                    {
+                        "persistent_variables": f"Provided variable `{key}` is already persistent for user {graph_user.user.name}."
+                    }
+                )
+
+        return super().validate(attrs)
 
 
-class OrganizationUserSecretKeyUpdateSerializer(
-    HashedFieldSerializerMixin, serializers.ModelSerializer
-):
-    REQUIRE_OLD_FOR_CHANGE = True
-    REQUIRE_IDENTIFIER_FOR_UPDATE = False
-
-    username = serializers.CharField(read_only=True)
-    secret_key = serializers.CharField(
-        write_only=True, required=True, help_text="New secret key (will be hashed)"
-    )
-    old_secret_key = serializers.CharField(
-        write_only=True, required=True, help_text="Current secret_key for verification"
-    )
+class GraphOrganizationUserSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = OrganizationUser
-        fields = ["username", "secret_key", "old_secret_key"]
+        model = GraphOrganizationUser
+        fields = ["id", "graph", "user", "persistent_variables"]
+
+    def validate(self, attrs):
+        graph = attrs.get("graph")
+        organization_user_variables = attrs.get("persistent_variables")
+        graph_organization: GraphOrganization = GraphOrganization.objects.filter(
+            graph=graph
+        ).first()
+
+        start_node: StartNode = graph.start_node_list.first()
+        for key in organization_user_variables:
+            if key not in start_node.variables:
+                raise serializers.ValidationError(
+                    {
+                        "persistent_variables": f"Provided persistent_variables have to be in flow domain. Variable `{key}` is not in domain."
+                    }
+                )
+            if graph_organization and key in graph_organization.persistent_variables:
+                raise serializers.ValidationError(
+                    {
+                        "persistent_variables": f"Provided variable `{key}` is already persistent for organization {graph_organization.organization.name}."
+                    }
+                )
+
+        return super().validate(attrs)
