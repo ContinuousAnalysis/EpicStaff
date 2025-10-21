@@ -2,9 +2,7 @@ from django.utils import timezone
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
 
-from tables.models import (
-    CrewSessionMessage,
-)
+from tables.models import CrewSessionMessage, GraphOrganizationUser
 
 
 class Session(models.Model):
@@ -29,6 +27,9 @@ class Session(models.Model):
     variables = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=timezone.now)
     graph_schema = models.JSONField(default=dict, encoder=DjangoJSONEncoder)
+    graph_user = models.ForeignKey(
+        GraphOrganizationUser, on_delete=models.SET_NULL, default=None, null=True
+    )
 
     def save(self, *args, **kwargs):
         now = timezone.now()

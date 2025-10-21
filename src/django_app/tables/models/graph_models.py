@@ -270,6 +270,10 @@ class GraphOrganization(BasePersistentEntity):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="graph"
     )
+    user_variables = models.JSONField(
+        default=dict,
+        help_text="Variables that persistent for all users for specific flow",
+    )
 
     class Meta:
         constraints = [

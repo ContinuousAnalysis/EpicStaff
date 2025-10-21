@@ -242,11 +242,13 @@ class RunSession(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         graph_id = serializer.validated_data["graph_id"]
+        username = serializer.validated_data.get("username")
+
         graph_organization = GraphOrganization.objects.filter(
             graph__id=graph_id
         ).first()
         graph_organization_user = GraphOrganizationUser.objects.filter(
-            graph__id=graph_id
+            user__name=username, graph=graph_id
         ).first()
 
         variables = serializer.validated_data.get("variables", {})
@@ -264,7 +266,7 @@ class RunSession(APIView):
         try:
             # Publish session to: crew, manager
             session_id = session_manager_service.run_session(
-                graph_id=graph_id, variables=variables
+                graph_id=graph_id, variables=variables, username=username
             )
             logger.info(f"Session {session_id} successfully started.")
         except Exception as e:
@@ -276,48 +278,6 @@ class RunSession(APIView):
             return Response(
                 data={"session_id": session_id}, status=status.HTTP_201_CREATED
             )
-
-    def get_entity_variables(
-        self, entity_class, lookup_field, data, variable_keys, error_messages
-    ):
-        """
-        Fetch an entity, validate secret_key, and return its variables.
-
-        Args:
-            entity_class: Model class (Organization or OrganizationUser)
-            lookup_field: Field name to filter by ("name" or "username")
-            data: Dict containing the lookup_field and 'secret_key'
-            variable_keys: Dict mapping keys in variables dict to either:
-                - string attribute of entity that contains the dict (e.g. 'variables')
-                - callable to compute value
-            error_messages: dict with 'not_found' and 'invalid_key' messages
-
-        Returns:
-            tuple: (dict of variables, entity object, error Response or None)
-        """
-        entity = entity_class.objects.filter(
-            **{lookup_field: data[lookup_field]}
-        ).first()
-        if not entity:
-            return (
-                None,
-                None,
-                Response({"message": error_messages["not_found"]}, status=404),
-            )
-        if not entity.check_secret_key(data["secret_key"]):
-            return (
-                None,
-                None,
-                Response({"message": error_messages["invalid_key"]}, status=403),
-            )
-
-        vars_dict = {}
-        for key, value in variable_keys.items():
-            if callable(value):
-                vars_dict[key] = value(entity)
-            else:
-                vars_dict[key] = getattr(entity, value)
-        return vars_dict, entity, None
 
 
 class GetUpdates(APIView):

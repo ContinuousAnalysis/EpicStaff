@@ -96,21 +96,17 @@ class RedisPubSub:
             graph_organization = GraphOrganization.objects.filter(
                 graph=session.graph
             ).first()
-            graph_organization_user = GraphOrganizationUser.objects.filter(
-                graph=session.graph
-            ).first()
-
             if graph_organization:
                 for key, value in variables.items():
                     if key in graph_organization.persistent_variables:
                         graph_organization.persistent_variables[key] = value
                 graph_organization.save(update_fields=["persistent_variables"])
 
-            if graph_organization_user:
+            if session.graph_user:
                 for key, value in variables.items():
-                    if key in graph_organization_user.persistent_variables:
-                        graph_organization_user.persistent_variables[key] = value
-                graph_organization_user.save(update_fields=["persistent_variables"])
+                    if key in session.graph_user.persistent_variables:
+                        session.graph_user.persistent_variables[key] = value
+                session.graph_user.save(update_fields=["persistent_variables"])
 
         except Exception as e:
             logger.error(f"Error handling organization variables message: {e}")

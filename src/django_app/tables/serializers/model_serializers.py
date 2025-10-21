@@ -1227,16 +1227,27 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GraphOrganization
-        fields = ["id", "graph", "organization", "persistent_variables"]
+        fields = [
+            "id",
+            "graph",
+            "organization",
+            "persistent_variables",
+            "user_variables",
+        ]
 
     def validate(self, attrs):
         graph = attrs.get("graph")
         organization_variables = attrs.get("persistent_variables")
-        graph_user: GraphOrganizationUser = GraphOrganizationUser.objects.filter(
-            graph=graph
-        ).first()
+        user_variables = attrs.get("user_variables")
 
         start_node: StartNode = graph.start_node_list.first()
+        for key in user_variables:
+            if key not in start_node.variables:
+                raise serializers.ValidationError(
+                    {
+                        "user_variables": f"Provided user_variables have to be in flow domain. Variable `{key}` is not in domain."
+                    }
+                )
         for key in organization_variables:
             if key not in start_node.variables:
                 raise serializers.ValidationError(
@@ -1244,10 +1255,10 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
                         "persistent_variables": f"Provided persistent_variables have to be in flow domain. Variable `{key}` is not in domain."
                     }
                 )
-            if graph_user and key in graph_user.persistent_variables:
+            if key in user_variables:
                 raise serializers.ValidationError(
                     {
-                        "persistent_variables": f"Provided variable `{key}` is already persistent for user {graph_user.user.name}."
+                        "user_variables": f"User variables and Organization variables cannot have same values. Issue with key `{key}`"
                     }
                 )
 
@@ -1259,27 +1270,20 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
+        read_only_fields = ["id", "persistent_variables"]
 
-    def validate(self, attrs):
-        graph = attrs.get("graph")
-        organization_user_variables = attrs.get("persistent_variables")
-        graph_organization: GraphOrganization = GraphOrganization.objects.filter(
-            graph=graph
+    def create(self, validated_data):
+        graph = validated_data.get("graph")
+        user: OrganizationUser = validated_data.get("user")
+        graph_organization = GraphOrganization.objects.filter(
+            organization=user.organization
         ).first()
 
-        start_node: StartNode = graph.start_node_list.first()
-        for key in organization_user_variables:
-            if key not in start_node.variables:
-                raise serializers.ValidationError(
-                    {
-                        "persistent_variables": f"Provided persistent_variables have to be in flow domain. Variable `{key}` is not in domain."
-                    }
-                )
-            if graph_organization and key in graph_organization.persistent_variables:
-                raise serializers.ValidationError(
-                    {
-                        "persistent_variables": f"Provided variable `{key}` is already persistent for organization {graph_organization.organization.name}."
-                    }
-                )
+        if not graph_organization.user_variables:
+            return super().create(validated_data)
 
-        return super().validate(attrs)
+        return GraphOrganizationUser.objects.create(
+            graph=graph,
+            user=user,
+            persistent_variables=graph_organization.user_variables,
+        )
