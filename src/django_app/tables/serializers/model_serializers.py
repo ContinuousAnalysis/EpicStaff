@@ -1237,8 +1237,8 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         graph = attrs.get("graph")
-        organization_variables = attrs.get("persistent_variables")
-        user_variables = attrs.get("user_variables")
+        organization_variables = attrs.get("persistent_variables", {})
+        user_variables = attrs.get("user_variables", {})
 
         start_node: StartNode = graph.start_node_list.first()
         for key in user_variables:
@@ -1272,18 +1272,18 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
 
-    def create(self, validated_data):
-        graph = validated_data.get("graph")
-        user: OrganizationUser = validated_data.get("user")
-        graph_organization = GraphOrganization.objects.filter(
-            organization=user.organization
-        ).first()
+    # def create(self, validated_data):
+    #     graph = validated_data.get("graph")
+    #     user: OrganizationUser = validated_data.get("user")
+    #     graph_organization = GraphOrganization.objects.filter(
+    #         organization=user.organization
+    #     ).first()
 
-        if not graph_organization.user_variables:
-            return super().create(validated_data)
+    #     if not graph_organization.user_variables:
+    #         return graph_organization
 
-        return GraphOrganizationUser.objects.create(
-            graph=graph,
-            user=user,
-            persistent_variables=graph_organization.user_variables,
-        )
+    #     return GraphOrganizationUser.objects.create(
+    #         graph=graph,
+    #         user=user,
+    #         persistent_variables=graph_organization.user_variables,
+    #     )

@@ -30,6 +30,40 @@ def prune_variables(
         )
 
 
+def sync_variables(
+    instance,
+    field_name,
+    display_name,
+    object_type="organization",
+    current_variables=None,
+):
+    """
+    Sync a JSON field on an instance with current_variables:
+    - Remove keys that are not present in current_variables
+    - Add key/value from current_variables if missing in the instance
+    - Keep existing values for keys that exist in both
+    """
+    if not current_variables:
+        return
+
+    original_vars = getattr(instance, field_name, {}) or {}
+    updated_vars = {
+        k: original_vars[k] for k in original_vars if k in current_variables
+    }
+
+    for k, v in current_variables.items():
+        if k not in updated_vars:
+            updated_vars[k] = v
+
+    if updated_vars != original_vars:
+        setattr(instance, field_name, updated_vars)
+        instance.save(update_fields=[field_name])
+        logger.info(
+            f"Persistent {object_type} variables for {display_name} were synced "
+            "(removed old keys or added missing ones)."
+        )
+
+
 @receiver(post_save, sender=StartNode)
 def update_organization_objects(sender, instance, created, **kwargs):
     """
@@ -62,6 +96,29 @@ def update_organization_objects(sender, instance, created, **kwargs):
 
     for graph_user in graph_organization_users:
         prune_variables(
+            graph_user,
+            "persistent_variables",
+            graph_user.user.name,
+            "user",
+            current_variables,
+        )
+
+
+@receiver(post_save, sender=GraphOrganization)
+def update_organization_objects(sender, instance, created, **kwargs):
+    """
+    Updates persistent_variables for users after user_variables was changed.
+    """
+    if created:
+        return
+
+    current_variables = instance.user_variables
+    graph_users = GraphOrganizationUser.objects.filter(
+        user__organization=instance.organization
+    )
+
+    for graph_user in graph_users:
+        sync_variables(
             graph_user,
             "persistent_variables",
             graph_user.user.name,

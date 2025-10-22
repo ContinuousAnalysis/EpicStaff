@@ -1008,7 +1008,7 @@ class GraphOrganizationViewSet(viewsets.ModelViewSet):
     serializer_class = GraphOrganizationSerializer
 
 
-class GraphOrganizationUserViewSet(viewsets.ModelViewSet):
+class GraphOrganizationUserViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = GraphOrganizationUser.objects.all()
     serializer_class = GraphOrganizationUserSerializer

@@ -48,6 +48,8 @@ from tables.models import (
     DocumentMetadata,
     GraphOrganization,
     GraphOrganizationUser,
+    OrganizationUser,
+    Graph,
 )
 from tables.serializers.model_serializers import (
     SessionSerializer,
@@ -243,13 +245,40 @@ class RunSession(APIView):
 
         graph_id = serializer.validated_data["graph_id"]
         username = serializer.validated_data.get("username")
+        graph_organization_user = None
+
+        user = OrganizationUser.objects.filter(name=username).first()
+        if not user and username:
+            return Response(
+                {"message": f"Provided user does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        graph = Graph.objects.filter(id=graph_id).first()
+        if not graph:
+            return Response(
+                {"message": f"Provided graph does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         graph_organization = GraphOrganization.objects.filter(
             graph__id=graph_id
         ).first()
-        graph_organization_user = GraphOrganizationUser.objects.filter(
-            user__name=username, graph=graph_id
-        ).first()
+
+        if user and graph_organization.organization != user.organization:
+            return Response(
+                {
+                    "message": f"Provided user does not belong to organization {graph_organization.organization.name}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if user:
+            graph_organization_user, _ = GraphOrganizationUser.objects.get_or_create(
+                user=user,
+                graph=graph,
+                defaults={"persistent_variables": graph_organization.user_variables},
+            )
 
         variables = serializer.validated_data.get("variables", {})
 
@@ -258,10 +287,14 @@ class RunSession(APIView):
             logger.info(f"Added {len(files_dict)} files to variables.")
         if graph_organization:
             variables.update(graph_organization.persistent_variables)
-            logger.info("Organization variables are used for this flow.")
+            logger.info(
+                f"Organization variables are used for this flow. Variables: {graph_organization.persistent_variables}"
+            )
         if graph_organization_user:
             variables.update(graph_organization_user.persistent_variables)
-            logger.info("Organization user variables are used for this flow.")
+            logger.info(
+                f"Organization user variables are used for this flow. Variables: {graph_organization_user.persistent_variables}"
+            )
 
         try:
             # Publish session to: crew, manager
