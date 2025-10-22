@@ -480,8 +480,15 @@ class DeepCopyMixin:
                 {"message": f"Database error: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        except Exception as e:
+            return Response(
+                {
+                    "message": f"Something went wrong while copying the instance. {str(e)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        new_name = request.data.get("name")
+        new_name = request.data.get("name") if isinstance(request.data, dict) else None
         current_name = getattr(new_instance, "name", None)
 
         if new_name and current_name:
@@ -492,3 +499,20 @@ class DeepCopyMixin:
         serializer = response_serializer_class(new_instance)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ChangeSecretKeyMixin:
+    """Mixin to add change_secret_key action to viewsets"""
+
+    @action(detail=True, methods=["patch"])
+    def change_secret_key(self, request, pk):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance=instance, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            {"detail": "Secret key changed successfully."}, status=status.HTTP_200_OK
+        )

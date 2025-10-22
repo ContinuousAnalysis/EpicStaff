@@ -24,18 +24,23 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import transaction
 from django.db.models import Prefetch
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from tables.models.graph_models import (
     Condition,
     ConditionGroup,
     DecisionTableNode,
     EndNode,
     LLMNode,
+    Organization,
+    OrganizationUser,
 )
 from tables.models.realtime_models import (
     RealtimeSessionItem,
     RealtimeAgent,
     RealtimeAgentChat,
 )
+from tables.filters import ProviderFilter
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
 from tables.models.mcp_models import McpTool
@@ -148,6 +153,10 @@ from tables.serializers.model_serializers import (
     RealtimeModelSerializer,
     RealtimeTranscriptionConfigSerializer,
     RealtimeTranscriptionModelSerializer,
+    OrganizationSerializer,
+    OrganizationUserSerializer,
+    OrganizationSecretKeyUpdateSerializer,
+    OrganizationUserSecretKeyUpdateSerializer,
 )
 
 from tables.serializers.knowledge_serializers import (
@@ -159,7 +168,7 @@ from tables.serializers.knowledge_serializers import (
     DocumentMetadataSerializer,
 )
 from tables.services.redis_service import RedisService
-from tables.utils.mixins import ImportExportMixin, DeepCopyMixin
+from tables.utils.mixins import ImportExportMixin, DeepCopyMixin, ChangeSecretKeyMixin
 
 
 redis_service = RedisService()
@@ -226,8 +235,8 @@ class ProviderReadWriteViewSet(ModelViewSet):
     queryset = Provider.objects.all()
     serializer_class = ProviderSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["name"]
-
+    filterset_class = ProviderFilter
+ 
 
 class LLMModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
     queryset = LLMModel.objects.all()
@@ -338,7 +347,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
-        # Use AgentReadSerializer for the response
+        instance.refresh_from_db()
         read_serializer = AgentReadSerializer(
             instance, context=self.get_serializer_context()
         )
@@ -355,6 +364,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
+        instance.refresh_from_db()
         read_serializer = AgentReadSerializer(
             instance, context=self.get_serializer_context()
         )
@@ -477,7 +487,7 @@ class TaskReadWriteViewSet(ModelViewSet):
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
         instance.refresh_from_db()
-        
+
         read_serializer = TaskReadSerializer(
             instance, context=self.get_serializer_context()
         )
@@ -976,3 +986,89 @@ class McpToolViewSet(viewsets.ModelViewSet):
     serializer_class = McpToolSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name", "tool_name"]
+
+
+class OrganizationViewSet(ChangeSecretKeyMixin, viewsets.ModelViewSet):
+
+    queryset = Organization.objects.all()
+    serializer_class = OrganizationSerializer
+
+    def get_serializer_class(self):
+        if self.action == "change_secret_key":
+            return OrganizationSecretKeyUpdateSerializer
+        return OrganizationSerializer
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["secret_key"],
+            properties={
+                "secret_key": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Organization secret key"
+                ),
+            },
+        ),
+        responses={204: "Organization deleted successfully"},
+    )
+    def destroy(self, request, pk):
+        instance: Organization = self.get_object()
+        secret_key = request.data.get("secret_key")
+
+        if not secret_key:
+            return Response(
+                {
+                    "message": "Organization secret_key is required to delete the organization."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not instance.check_secret_key(secret_key):
+            return Response(
+                {"message": "secret_key is not valid for this organization."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class OrganizationUserViewSet(ChangeSecretKeyMixin, viewsets.ModelViewSet):
+
+    queryset = OrganizationUser.objects.all()
+    serializer_class = OrganizationUserSerializer
+
+    def get_serializer_class(self):
+        if self.action == "change_secret_key":
+            return OrganizationUserSecretKeyUpdateSerializer
+        return OrganizationUserSerializer
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["secret_key"],
+            properties={
+                "secret_key": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Organization User secret key"
+                ),
+            },
+        ),
+        responses={204: "Organization User deleted successfully"},
+    )
+    def destroy(self, request, pk):
+        instance: OrganizationUser = self.get_object()
+        secret_key = request.data.get("secret_key")
+
+        if not secret_key:
+            return Response(
+                {
+                    "message": "Organization user secret_key is required to delete the organization."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not instance.check_secret_key(secret_key):
+            return Response(
+                {"message": "secret_key is not valid for this organization user."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)

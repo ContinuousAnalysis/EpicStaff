@@ -1,0 +1,10 @@
+{
+  "openai": [
+    "whisper-1",
+    "gpt-4o-mini-transcribe",
+    "gpt-4o-transcribe"
+  ],
+  "fireworks_ai": [
+    "fireworks_ai/whisper-v3"
+  ]
+}

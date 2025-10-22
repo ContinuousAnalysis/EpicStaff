@@ -98,6 +98,7 @@ services:
       - "8001:8000"
     environment:
       - PULL_TOOL=${PULL_TOOL}
+      - DOCKERHUB_PROFILE_NAME=${DOCKERHUB_PROFILE_NAME}
       - MANAGER_PORT=${MANAGER_PORT}
       
       - REDIS_HOST=${REDIS_HOST}

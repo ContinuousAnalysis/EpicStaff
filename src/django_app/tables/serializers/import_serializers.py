@@ -681,6 +681,7 @@ class CrewImportSerializer(serializers.ModelSerializer):
         tools_service = None
 
         tasks_service = TasksImportService()
+        tasks = []
 
         if embedding_config_data:
             embedding_config = EmbeddingConfigImportSerializer().create(
@@ -737,7 +738,6 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
         for t_data in tasks_data:
             tool_ids_data = t_data.pop("tools", {})
-            context_ids = t_data.pop("context_tasks", [])
             agent_id = t_data.pop("agent", None)
 
             task = tasks_service.create_task(t_data, crew)
@@ -747,9 +747,14 @@ class CrewImportSerializer(serializers.ModelSerializer):
                 task.agent = agent
                 task.save()
 
-            tasks_service.add_task_context(task, context_ids)
             if tools_service:
                 tools_service.assign_tools_to_task(task, tool_ids_data)
+
+            tasks.append(task)
+
+        for task, t_data in zip(tasks, tasks_data):
+            context_ids = t_data.pop("context_tasks", [])
+            tasks_service.add_task_context(task, context_ids)
 
         return crew
 
@@ -1052,32 +1057,31 @@ class GraphImportSerializer(serializers.ModelSerializer):
             serializer.save()
 
         for node_data in python_node_list_data:
-            previous_name = node_data.pop("node_name")
-            mapped_node_names[previous_name] = previous_name
+            data = self._prepare_node_data(node_data, mapped_node_names)
 
-            serializer = PythonNodeImportSerializer(
-                data=node_data, context={"graph": graph}
-            )
+            serializer = PythonNodeImportSerializer(data=data, context={"graph": graph})
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
         for node_data in start_node_list_data:
-            serializer = StartNodeImportSerializer(
-                data=node_data, context={"graph": graph}
-            )
+            data = self._prepare_node_data(node_data, mapped_node_names)
+
+            serializer = StartNodeImportSerializer(data=data, context={"graph": graph})
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
         for node_data in end_node_list_data:
-            serializer = EndNodeImportSerializer(
-                data=node_data, context={"graph": graph}
-            )
+            data = self._prepare_node_data(node_data, mapped_node_names)
+
+            serializer = EndNodeImportSerializer(data=data, context={"graph": graph})
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
         for node_data in file_extractor_node_list_data:
+            data = self._prepare_node_data(node_data, mapped_node_names)
+
             serializer = FileExtractorNodeImportSerializer(
-                data=node_data, context={"graph": graph}
+                data=data, context={"graph": graph}
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -1116,3 +1120,11 @@ class GraphImportSerializer(serializers.ModelSerializer):
         graph.save()
 
         return graph
+
+    def _prepare_node_data(self, node_data, mapped_node_names):
+        """Restore original node_name and register it in mapped_node_names."""
+        previous_name = node_data.pop("node_name", None)
+        if previous_name:
+            mapped_node_names[previous_name] = previous_name
+            return {"node_name": mapped_node_names[previous_name], **node_data}
+        return node_data

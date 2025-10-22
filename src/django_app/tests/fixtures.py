@@ -12,7 +12,7 @@ from tables.models.llm_models import (
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
 )
-from tables.models.crew_models import AgentConfiguredTools, DefaultAgentConfig, DefaultCrewConfig
+from tables.models.crew_models import AgentConfiguredTools, AgentPythonCodeTools, DefaultAgentConfig, DefaultCrewConfig
 from tables.services.config_service import YamlConfigService
 from tables.services.redis_service import RedisService
 from tables.services.session_manager_service import SessionManagerService
@@ -484,12 +484,11 @@ def seeded_db(wikipedia_tool):
     agents = [agent1, agent2, agent3, agent4]
     for agent in agents:
         RealtimeAgent.objects.create(agent=agent)
-
-    agent1.configured_tools.add(tool1)
-    agent2.python_code_tools.add(custom_tool)
-    agent3.configured_tools.add(tool1)
-    agent3.python_code_tools.add(custom_tool)
-    agent4.python_code_tools.add(custom_tool)
+    AgentConfiguredTools.objects.create(agent=agent1, toolconfig=tool1)
+    AgentPythonCodeTools.objects.create(agent=agent2, pythoncodetool=custom_tool)
+    AgentConfiguredTools.objects.create(agent=agent3, toolconfig=tool1)
+    AgentPythonCodeTools.objects.create(agent=agent3, pythoncodetool=custom_tool)
+    AgentPythonCodeTools.objects.create(agent=agent4, pythoncodetool=custom_tool)
 
     crew1 = Crew.objects.create(name="crew1")
     crew1.agents.set((agent1, agent2))

@@ -38,29 +38,10 @@
                     position="right"
                     text="The Output Model defines the structure of data your task will return. Key sections:
 
-'type': Usually 'object' for output models
-'title': A name for your output model (e.g. 'TaskOutputModel')
 'properties': Define each property with:
   - 'type': 'string', 'number', 'array', etc.
   - 'description': Explain what the property contains
 'required': Add property names to this list if they must be included in the result
-
-Example:
-{
-  'type': 'object',
-  'title': 'TaskOutputModel',
-  'properties': {
-    'summary': {
-      'type': 'string',
-      'description': 'Summary of findings'
-    },
-    'confidence': {
-      'type': 'number',
-      'description': 'Confidence score (0-100)'
-    }
-  },
-  'required': ['summary']
-}
 
 Note: If properties is empty, the output model will be set to null."
                 ></app-help-tooltip>
@@ -85,14 +66,19 @@ Note: If properties is empty, the output model will be set to null."
             </div>
 
             <!-- JSON Editor - only show when toggle is enabled -->
-            <div class="form-group json-group" *ngIf="useOutputModel()">
-                <app-json-editor
-                    [jsonData]="jsonConfig()"
-                    (jsonChange)="jsonConfig.set($event)"
-                    (validationChange)="onJsonValidChange($event)"
-                    [fullHeight]="false"
-                    [editorHeight]="400"
-                ></app-json-editor>
+            <div *ngIf="useOutputModel()">
+                <div class="form-group json-group">
+                    <app-json-editor
+                        [jsonData]="jsonConfig()"
+                        (jsonChange)="jsonConfig.set($event)"
+                        (validationChange)="onJsonValidChange($event)"
+                        [fullHeight]="false"
+                        [editorHeight]="400"
+                    ></app-json-editor>
+                </div>
+                <button class="reset-button" (click)="resetToDefault()">
+                    Reset to Default
+                </button>
             </div>
         </div>
 
