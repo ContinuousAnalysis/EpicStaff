@@ -2,8 +2,10 @@
 services:
   cli_open_interpreter:
     build:
-      context: ./open_interpreter_tool 
+      context: ./cli_oi_tool 
       dockerfile: CLI.Dockerfile
+      args:
+        - MCP_CLI_OPEN_INTERPRETER_PORT=${MCP_CLI_OPEN_INTERPRETER_PORT}
     container_name: cli_open_interpreter
     env_file:
       - .env
@@ -19,8 +21,10 @@ services:
   
   browser_open_interpreter:
     build:
-      context: ./open_interpreter_tool 
+      context: ./browser_oi_tool 
       dockerfile: browser.Dockerfile
+      args:
+        - MCP_BROWSER_OPEN_INTERPRETER_PORT=${MCP_BROWSER_OPEN_INTERPRETER_PORT}
     container_name: browser_open_interpreter
     env_file:
       - .env

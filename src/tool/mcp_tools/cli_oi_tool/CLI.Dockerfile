@@ -24,8 +24,11 @@ VOLUME /app/data
 # --- Environment variables ---
 ENV CLI_TOOL_MODE=true
 
+ARG MCP_CLI_OPEN_INTERPRETER_PORT
+ENV MCP_CLI_OPEN_INTERPRETER_PORT=${MCP_CLI_OPEN_INTERPRETER_PORT}
+
 # --- Expose port for MCP API ---
-EXPOSE 7001
+EXPOSE ${MCP_CLI_OPEN_INTERPRETER_PORT}
 
 # --- Entrypoint ---
 COPY entrypoint.sh /app/entrypoint.sh

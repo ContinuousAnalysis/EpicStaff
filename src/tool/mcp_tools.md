@@ -11,7 +11,7 @@ LLM=<your_llm_choice>
 2. Navigate to the `mcp_tools` folder and start the server:
 
 ~~~bash
-docker compose up --build
+docker compose up cli_mcp_tool  --build
 ~~~
 
 ---
@@ -20,16 +20,9 @@ docker compose up --build
 After startup, the server exposes two ports:  
 
 - `7001` – HTTP API for requests to the tool  
-- `6080` – Streaming of container’s GUI to the browser  
-
 ---
 
 ## Access
-
-- **GUI:** Open in browser:  
-~~~text
-http://localhost:6080/vnc.html
-~~~
 
 - **HTTP requests:** You can send requests via:
 
@@ -73,7 +66,7 @@ def serialize_response(resp) -> str:
         return str(resp)
 
 async def call_open_interpreter(instruction: str):
-     url = "http://host.docker.internal:7001/mcp"
+    url = "http://host.docker.internal:7001/mcp"
     async with Client(transport=url, timeout=300, init_timeout=300) as client:
         response = await client.call_tool(
             "open_interpreter",
@@ -93,9 +86,8 @@ def main(instruction: str):
 
 ## Functionality
 The Open Interpreter Tool can:  
-- Execute Python code interactively  
+- Execute Python code/ CLI commands interactively  
 - Return code outputs and errors  
-- Interract with container's GUI
 
 
 ## Tests
@@ -109,8 +101,5 @@ poetry install
 ~~~
 Then, inside venv run
 ~~~bash
-pytest ./tests/mcp_tools_tests/open_interpreter_test.py
+pytest ./tests/mcp_tools_tests/cli_open_interpreter_test.py
 ~~~
-
-### Note
-Test test_ai_behavior[Divide 100 by 0.-expected_outputs0]. Sometimes fails due to how expected text is parsed. If all other tests have passed, this one should also be ok
