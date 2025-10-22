@@ -197,6 +197,10 @@ export class FlowGraphCoreMenuComponent {
         if (type === NodeType.END) {
             return this.flowService.hasEndNode();
         }
+        // Disable Group and Decision Table
+        if (type === NodeType.GROUP || type === NodeType.TABLE) {
+            return true;
+        }
         return false;
     }
 }

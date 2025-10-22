@@ -506,7 +506,7 @@ export class TasksTableComponent implements OnChanges {
         // Process merged tools similar to agents table
         const mergedTools = (taskData as any).mergedTools || [];
 
-        return {
+        const parsed = {
             ...taskData,
             agent: agentId,
             crew: crew,
@@ -516,7 +516,15 @@ export class TasksTableComponent implements OnChanges {
             python_code_tools: mergedTools
                 .filter((tool: any) => tool.type === 'python-tool')
                 .map((tool: any) => tool.id),
+            mcp_tools: mergedTools
+                .filter((tool: any) => tool.type === 'mcp-tool')
+                .map((tool: any) => tool.id),
         };
+
+        // Delete tools field to ensure it's never included in update requests
+        delete (parsed as any).tools;
+
+        return parsed;
     }
 
     private onCellValueChanged(event: CellValueChangedEvent): void {
@@ -550,23 +558,15 @@ export class TasksTableComponent implements OnChanges {
             // Build tool_ids array for task creation
             const configuredToolIds = parsedData.configured_tools || [];
             const pythonToolIds = parsedData.python_code_tools || [];
-            const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds);
+            const mcpToolIds = parsedData.mcp_tools || [];
+            const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds, mcpToolIds);
 
             // Create the new task
             const createTaskData: CreateTaskRequest = {
-                name: parsedData.name,
-                instructions: parsedData.instructions,
-                expected_output: parsedData.expected_output,
-                order: parsedData.order ?? null,
-                human_input: parsedData.human_input ?? false,
-                async_execution: parsedData.async_execution ?? false,
-                config: parsedData.config ?? null,
-                output_model: parsedData.output_model ?? null,
-                crew: parsedData.crew,
-                agent: parsedData.agent,
-                task_context_list: parsedData.task_context_list ?? [],
+                ...parsedData,
                 configured_tools: configuredToolIds,
                 python_code_tools: pythonToolIds,
+                mcp_tools: mcpToolIds,
                 tool_ids: toolIds,
             };
 
@@ -635,20 +635,23 @@ export class TasksTableComponent implements OnChanges {
         // Build tool_ids array for task update
         const updateConfiguredToolIds = parsedUpdateData.configured_tools || [];
         const updatePythonToolIds = parsedUpdateData.python_code_tools || [];
+        const updateMcpToolIds = parsedUpdateData.mcp_tools || [];
         const updateToolIds = buildToolIdsArray(
             updateConfiguredToolIds,
-            updatePythonToolIds
+            updatePythonToolIds,
+            updateMcpToolIds
         );
 
         if (typeof parsedUpdateData.id === 'string') {
             parsedUpdateData.id = +parsedUpdateData.id;
         }
 
-        // Create update request with all tool arrays
+        // Create update request with all tool arrays, explicitly excluding tools field
         const updateTaskRequest: UpdateTaskRequest = {
             ...parsedUpdateData,
             configured_tools: updateConfiguredToolIds,
             python_code_tools: updatePythonToolIds,
+            mcp_tools: updateMcpToolIds,
             tool_ids: updateToolIds,
         };
 
@@ -772,27 +775,20 @@ export class TasksTableComponent implements OnChanges {
         // Build tool_ids array for settings update
         const settingsConfiguredToolIds = parsedTaskData.configured_tools || [];
         const settingsPythonToolIds = parsedTaskData.python_code_tools || [];
+        const settingsMcpToolIds = parsedTaskData.mcp_tools || [];
         const settingsToolIds = buildToolIdsArray(
             settingsConfiguredToolIds,
-            settingsPythonToolIds
+            settingsPythonToolIds,
+            settingsMcpToolIds
         );
 
-        // Prepare the payload for the backend update request
-        const updateTaskData = {
+        // Prepare the payload for the backend update request (excluding tools field)
+        const updateTaskData: UpdateTaskRequest = {
+            ...parsedTaskData,
             id: +updatedTask.id,
-            name: updatedTask.name,
-            instructions: updatedTask.instructions,
-            expected_output: updatedTask.expected_output,
-            order: updatedTask.order,
-            human_input: updatedTask.human_input,
-            async_execution: updatedTask.async_execution,
-            config: updatedTask.config,
-            output_model: updatedTask.output_model,
-            crew: updatedTask.crew,
-            agent: updatedTask.agent,
-            task_context_list: updatedTask.task_context_list,
             configured_tools: settingsConfiguredToolIds,
             python_code_tools: settingsPythonToolIds,
+            mcp_tools: settingsMcpToolIds,
             tool_ids: settingsToolIds,
         };
 
@@ -985,25 +981,18 @@ export class TasksTableComponent implements OnChanges {
         // Build tool_ids array for paste operation
         const pasteConfiguredToolIds = parsedTaskData.configured_tools || [];
         const pastePythonToolIds = parsedTaskData.python_code_tools || [];
+        const pasteMcpToolIds = parsedTaskData.mcp_tools || [];
         const pasteToolIds = buildToolIdsArray(
             pasteConfiguredToolIds,
-            pastePythonToolIds
+            pastePythonToolIds,
+            pasteMcpToolIds
         );
 
         const createTaskData: CreateTaskRequest = {
-            name: newTaskData.name,
-            instructions: newTaskData.instructions,
-            expected_output: newTaskData.expected_output,
-            order: newTaskData.order ?? null,
-            human_input: newTaskData.human_input ?? false,
-            async_execution: newTaskData.async_execution ?? false,
-            config: newTaskData.config ?? null,
-            output_model: newTaskData.output_model ?? null,
-            crew: newTaskData.crew ?? null,
-            agent: newTaskData.agent ?? null,
-            task_context_list: newTaskData.task_context_list ?? [],
+            ...parsedTaskData,
             configured_tools: pasteConfiguredToolIds,
             python_code_tools: pastePythonToolIds,
+            mcp_tools: pasteMcpToolIds,
             tool_ids: pasteToolIds,
         };
 

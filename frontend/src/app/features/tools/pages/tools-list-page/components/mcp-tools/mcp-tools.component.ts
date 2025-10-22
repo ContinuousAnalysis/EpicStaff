@@ -8,35 +8,35 @@ import {
   computed,
   Input,
 } from '@angular/core';
-import { GetPythonCodeToolRequest } from '../../../../models/python-code-tool.model';
+import { GetMcpToolRequest } from '../../../../models/mcp-tool.model';
 import { LoadingSpinnerComponent } from '../../../../../../shared/components/loading-spinner/loading-spinner.component';
-import { CustomToolCardComponent } from './components/custom-tool-card/custom-tool-card.component';
+import { McpToolCardComponent } from './components/mcp-tool-card/mcp-tool-card.component';
 import { HttpErrorResponse } from '@angular/common/http';
-import { CustomToolsService } from '../../../../services/custom-tools/custom-tools.service';
+import { McpToolsService } from '../../../../services/mcp-tools/mcp-tools.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Dialog, DialogModule, DialogRef } from '@angular/cdk/dialog';
+import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { CustomToolDialogComponent } from '../../../../../../user-settings-page/tools/custom-tool-editor/custom-tool-dialog.component';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { ConfirmationDialogService } from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
+import { McpToolDialogComponent } from '../../../../components/mcp-tool-dialog/mcp-tool-dialog.component';
 import { ToolsEventsService } from '../../../../services/tools-events.service';
 import { ToolsSearchService } from '../../../../services/tools-search.service';
 
 @Component({
-  selector: 'app-custom-tools',
+  selector: 'app-mcp-tools',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './custom-tools.component.html',
-  styleUrls: ['./custom-tools.component.scss'],
+  templateUrl: './mcp-tools.component.html',
+  styleUrls: ['./mcp-tools.component.scss'],
   imports: [
     LoadingSpinnerComponent,
-    CustomToolCardComponent,
+    McpToolCardComponent,
     DialogModule,
     CommonModule,
   ],
 })
-export class CustomToolsComponent implements OnInit {
-  private readonly customToolsService = inject(CustomToolsService);
+export class McpToolsComponent implements OnInit {
+  private readonly mcpToolsService = inject(McpToolsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialog = inject(Dialog);
   private readonly toastService = inject(ToastService);
@@ -49,7 +49,7 @@ export class CustomToolsComponent implements OnInit {
   public searchTerm = signal<string>('');
 
   // Local state management
-  private readonly allTools = signal<GetPythonCodeToolRequest[]>([]);
+  private readonly allTools = signal<GetMcpToolRequest[]>([]);
   
   public readonly error = signal<string | null>(null);
   public readonly isLoaded = signal<boolean>(false);
@@ -64,7 +64,8 @@ export class CustomToolsComponent implements OnInit {
     const searchLower = term.toLowerCase();
     return tools.filter(tool => 
       tool.name.toLowerCase().includes(searchLower) ||
-      tool.description.toLowerCase().includes(searchLower)
+      tool.tool_name.toLowerCase().includes(searchLower) ||
+      tool.transport.toLowerCase().includes(searchLower)
     );
   });
 
@@ -72,7 +73,7 @@ export class CustomToolsComponent implements OnInit {
     this.loadTools();
     
     // Listen for new tool creation events
-    this.toolsEventsService.customToolCreated$
+    this.toolsEventsService.mcpToolCreated$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((newTool) => {
         this.addNewTool(newTool);
@@ -87,35 +88,37 @@ export class CustomToolsComponent implements OnInit {
   }
 
   private loadTools(): void {
-    this.customToolsService
-      .getPythonCodeTools()
+    this.mcpToolsService
+      .getMcpTools()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (tools) => {
           this.allTools.set(tools);
           this.isLoaded.set(true);
           console.log(
-            `✅ Custom tools loaded: ${tools.length} tools available`
+            `✅ MCP tools loaded: ${tools.length} tools available`
           );
         },
         error: (err: HttpErrorResponse) => {
           this.error.set(
-            'Failed to load custom tools. Please try again later.'
+            'Failed to load MCP tools. Please try again later.'
           );
           this.isLoaded.set(true);
-          console.error('❌ Error loading custom tools:', err);
+          console.error('❌ Error loading MCP tools:', err);
         },
       });
   }
 
-  public onConfigure(tool: GetPythonCodeToolRequest): void {
-    const dialogRef = this.dialog.open<GetPythonCodeToolRequest>(
-      CustomToolDialogComponent,
+  public onConfigure(tool: GetMcpToolRequest): void {
+    const dialogRef = this.dialog.open<GetMcpToolRequest>(
+      McpToolDialogComponent,
       {
         data: {
-          pythonTools: this.tools(),
           selectedTool: tool,
         },
+        maxWidth: '95vw',
+        maxHeight: '90vh',
+        autoFocus: true,
       }
     );
 
@@ -133,15 +136,15 @@ export class CustomToolsComponent implements OnInit {
     });
   }
 
-  public onDelete(tool: GetPythonCodeToolRequest): void {
+  public onDelete(tool: GetMcpToolRequest): void {
     this.confirmationDialogService
       .confirmDelete(tool.name)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         // Only proceed if result is exactly true (user clicked confirm)
         if (result === true) {
-          this.customToolsService
-            .deletePythonCodeTool(tool.id)
+          this.mcpToolsService
+            .deleteMcpTool(tool.id)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: () => {
@@ -150,15 +153,15 @@ export class CustomToolsComponent implements OnInit {
                 this.allTools.set(currentTools.filter(t => t.id !== tool.id));
                 
                 this.toastService.success(
-                  `Tool "${tool.name}" has been deleted successfully.`
+                  `MCP tool "${tool.name}" has been deleted successfully.`
                 );
-                console.log(`✅ Tool "${tool.name}" deleted successfully`);
+                console.log(`✅ MCP tool "${tool.name}" deleted successfully`);
               },
               error: (err: HttpErrorResponse) => {
                 this.toastService.error(
-                  `Failed to delete tool "${tool.name}". Please try again.`
+                  `Failed to delete MCP tool "${tool.name}". Please try again.`
                 );
-                console.error('❌ Error deleting tool:', err);
+                console.error('❌ Error deleting MCP tool:', err);
               },
             });
         }
@@ -166,9 +169,16 @@ export class CustomToolsComponent implements OnInit {
       });
   }
 
-  public addNewTool(tool: GetPythonCodeToolRequest): void {
+  public refreshTools(): void {
+    this.isLoaded.set(false);
+    this.error.set(null);
+    this.loadTools();
+  }
+
+  public addNewTool(tool: GetMcpToolRequest): void {
     const currentTools = this.allTools();
     this.allTools.set([tool, ...currentTools]);
-    console.log(`✅ New custom tool "${tool.name}" added to list`);
+    console.log(`✅ New MCP tool "${tool.name}" added to list`);
   }
 }
+

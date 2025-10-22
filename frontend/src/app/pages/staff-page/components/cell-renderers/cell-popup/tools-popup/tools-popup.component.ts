@@ -20,7 +20,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
 import { FormsModule } from '@angular/forms';
 
 import { GetPythonCodeToolRequest } from '../../../../../../features/tools/models/python-code-tool.model';
-import { ToolsService } from '../../../../../../features/tools/services/tools.service';
+import { BuiltinToolsService } from '../../../../../../features/tools/services/builtin-tools/builtin-tools.service';
 import { ToolConfigService } from '../../../../../../services/tool_config.service';
 import {
   FullToolConfig,
@@ -90,7 +90,7 @@ export class ToolsPopupComponent
   >();
 
   constructor(
-    private readonly _toolsService: ToolsService,
+    private readonly _toolsService: BuiltinToolsService,
     private readonly _toolConfigService: ToolConfigService,
     private readonly _pythonCodeToolService: PythonCodeToolService,
     private readonly _fullToolConfigService: FullToolConfigService,
