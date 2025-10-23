@@ -1240,6 +1240,9 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
         organization_variables = attrs.get("persistent_variables", {})
         user_variables = attrs.get("user_variables", {})
 
+        if GraphOrganization.objects.filter(graph=graph).exists():
+            raise serializers.ValidationError("This flow already has an organization")
+
         start_node: StartNode = graph.start_node_list.first()
         for key in user_variables:
             if key not in start_node.variables:
@@ -1271,19 +1274,3 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
-
-    # def create(self, validated_data):
-    #     graph = validated_data.get("graph")
-    #     user: OrganizationUser = validated_data.get("user")
-    #     graph_organization = GraphOrganization.objects.filter(
-    #         organization=user.organization
-    #     ).first()
-
-    #     if not graph_organization.user_variables:
-    #         return graph_organization
-
-    #     return GraphOrganizationUser.objects.create(
-    #         graph=graph,
-    #         user=user,
-    #         persistent_variables=graph_organization.user_variables,
-    #     )
