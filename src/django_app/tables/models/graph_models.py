@@ -177,10 +177,11 @@ class StartNode(models.Model):
         ]
 
 
-class DecisionTableNode(BaseNode):
+class DecisionTableNode(models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="decision_table_node_list"
     )
+    node_name = models.CharField(max_length=255, blank=True)
     default_next_node = models.CharField(max_length=255, null=True, default=None)
     next_error_node = models.CharField(max_length=255, null=True, default=None)
 
