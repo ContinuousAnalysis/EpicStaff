@@ -506,7 +506,7 @@ export class TasksTableComponent implements OnChanges {
         // Process merged tools similar to agents table
         const mergedTools = (taskData as any).mergedTools || [];
 
-        return {
+        const parsed = {
             ...taskData,
             agent: agentId,
             crew: crew,
@@ -516,7 +516,15 @@ export class TasksTableComponent implements OnChanges {
             python_code_tools: mergedTools
                 .filter((tool: any) => tool.type === 'python-tool')
                 .map((tool: any) => tool.id),
+            mcp_tools: mergedTools
+                .filter((tool: any) => tool.type === 'mcp-tool')
+                .map((tool: any) => tool.id),
         };
+
+        // Delete tools field to ensure it's never included in update requests
+        delete (parsed as any).tools;
+
+        return parsed;
     }
 
     private onCellValueChanged(event: CellValueChangedEvent): void {
