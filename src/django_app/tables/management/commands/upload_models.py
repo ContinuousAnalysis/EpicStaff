@@ -78,6 +78,8 @@ def upload_llm_models():
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()
 
+    LLMModel.objects.all().delete()
+
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
         for model_name in model_names:
@@ -88,16 +90,12 @@ def upload_llm_models():
                 llm_provider=provider,
             )
 
-    LLMModel.objects.filter(predefined=True).exclude(
-        llm_provider_id__in=[pid for pid, _ in current_model_tuples],
-        name__in=[name for _, name in current_model_tuples],
-    ).delete()
-
-
 def upload_realtime_agent_models():
     path = PROVIDER_MODELS_DIR / REALTIME_MODELS_JSON
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()    
+
+    RealtimeModel.objects.all().delete()
 
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
@@ -108,15 +106,12 @@ def upload_realtime_agent_models():
                 provider=provider
             )
 
-    RealtimeModel.objects.exclude(
-        provider_id__in=[pid for pid, _ in current_model_tuples],
-        name__in=[name for _, name in current_model_tuples],
-    ).delete()
-
 def upload_realtime_transcription_models():
     path = PROVIDER_MODELS_DIR / TRANSCRIPTION_MODELS_JSON
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()    
+
+    RealtimeTranscriptionModel.objects.all().delete()
 
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
@@ -126,17 +121,14 @@ def upload_realtime_transcription_models():
                 name=model_name,
                 provider=provider
             )
-            
-    RealtimeTranscriptionModel.objects.exclude(
-        provider_id__in=[pid for pid, _ in current_model_tuples],
-        name__in=[name for _, name in current_model_tuples],
-    ).delete()
 
 def upload_embedding_models():
     path = PROVIDER_MODELS_DIR / EMBEDDING_MODELS_JSON
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()    
     
+    EmbeddingModel.objects.all().delete()
+
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
         for model_name in model_names:
@@ -147,11 +139,6 @@ def upload_embedding_models():
                 embedding_provider=provider,
                 # base_url, deployment 
             )
-
-    EmbeddingModel.objects.filter(predefined=True).exclude(
-        embedding_provider_id__in=[pid for pid, _ in current_model_tuples],
-        name__in=[name for _, name in current_model_tuples],
-    ).delete()
 
 
 
