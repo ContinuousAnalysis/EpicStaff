@@ -145,6 +145,7 @@ class DocumentMetadataSerializer(serializers.ModelSerializer):
             "chunk_overlap",
             "additional_params",
             "document_content",
+            "status",
         ]
         read_only_fields = ["document_id"]
 

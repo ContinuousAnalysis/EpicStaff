@@ -4,6 +4,7 @@ import time
 from uuid import uuid4
 from loguru import logger
 
+from services.graph.events import StopEvent
 from utils.singleton_meta import SingletonMeta
 from services.redis_service import RedisService, SyncPubsubSubscriber
 from models.request_models import KnowledgeSearchMessage
@@ -28,7 +29,9 @@ class KnowledgeSearchService(metaclass=SingletonMeta):
         query: str,
         search_limit: int,
         similarity_threshold: float,
+        stop_event: StopEvent | None = None,
     ) -> list[str]:
+
         execution_uuid = f"{sender}-{str(uuid4())}"
 
         knowledge_callback_receiver = KnowledgeSearchReceiver(
@@ -66,6 +69,10 @@ class KnowledgeSearchService(metaclass=SingletonMeta):
                     subscriber=subscriber,
                 )
                 return knowledge_callback_receiver.results["results"]
+
+            if stop_event is not None:
+                stop_event.check_stop()
+
             time.sleep(0.1)
 
         logger.error(f"Search failed: No response received within {timeout} seconds")

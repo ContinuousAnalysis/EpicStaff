@@ -34,5 +34,5 @@ class FileLogger:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             text = f"[{timestamp}][{level.upper()}]: {message}"
 
-            with open(self._filepath, "a") as f:
+            with open(self._filepath, "a", encoding="utf-8") as f:
                 f.write(text + "\n")
