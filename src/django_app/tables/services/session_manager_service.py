@@ -7,6 +7,7 @@ from tables.models.graph_models import (
     GraphSessionMessage,
     LLMNode,
     StartNode,
+    SubGraphNode,
 )
 
 from utils.singleton_meta import SingletonMeta
@@ -26,6 +27,7 @@ from tables.request_models import (
     PythonNodeData,
     FileExtractorNodeData,
     SessionData,
+    SubGraphNodeData,
 )
 
 from tables.models import (
@@ -100,108 +102,11 @@ class SessionManagerService(metaclass=SingletonMeta):
         self,
         session: Session,
     ) -> SessionData:
-        graph: Graph = session.graph
+        graph_data = self._build_graph_data(session.graph)
 
-        crew_node_list = CrewNode.objects.filter(graph=graph.pk)
-        python_node_list = PythonNode.objects.filter(graph=graph.pk)
-        file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
-        edge_list = Edge.objects.filter(graph=graph.pk)
-        conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
-        llm_node_list = LLMNode.objects.filter(graph=graph.pk)
-        decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
-        crew_node_data_list: list[CrewNodeData] = []
-
-        if file_extractor_node_list:
-            self.file_extractor_node_validator.validate_file_extractor_nodes(
-                file_extractor_node_list
-            )
-
-        for item in crew_node_list:
-
-            crew_node_data_list.append(
-                self.converter_service.convert_crew_node_to_pydantic(crew_node=item)
-            )
-
-        python_node_data_list: list[PythonNodeData] = []
-        for item in python_node_list:
-            python_node_data_list.append(
-                self.converter_service.convert_python_node_to_pydantic(python_node=item)
-            )
-
-        file_extractor_node_data_list: list[FileExtractorNodeData] = []
-        for item in file_extractor_node_list:
-            file_extractor_node_data_list.append(
-                FileExtractorNodeData(
-                    node_name=item.node_name,
-                    input_map=item.input_map,
-                    output_variable_path=item.output_variable_path,
-                )
-            )
-
-        llm_node_data_list: list[LLMNodeData] = []
-
-        for item in llm_node_list:
-            llm_node_data_list.append(
-                self.converter_service.convert_llm_node_to_pydantic(llm_node=item)
-            )
-
-        edge_data_list: list[EdgeData] = []
-
-        for item in edge_list:
-            edge_data_list.append(
-                EdgeData(start_key=item.start_key, end_key=item.end_key)
-            )
-
-        conditional_edge_data_list: list[ConditionalEdgeData] = []
-        for item in conditional_edge_list:
-            conditional_edge_data_list.append(
-                self.converter_service.convert_conditional_edge_to_pydantic(item)
-            )
-
-        start_edge = Edge.objects.filter(start_key="__start__", graph=graph).first()
-
-        if start_edge is None:
-            raise GraphEntryPointException()
-
-        decision_table_node_data_list: list[DecisionTableNodeData] = []
-        for decision_table_node_list_item in decision_table_node_list:
-            decision_table_node_data = (
-                self.converter_service.convert_decision_table_node_to_pydantic(
-                    decision_table_node=decision_table_node_list_item
-                )
-            )
-            decision_table_node_data_list.append(decision_table_node_data)
-
-        end_node = self.end_node_validator.validate(graph_id=graph.pk)
-
-        # TODO: remove validation
-        if end_node is not None:
-            end_node_data = self.converter_service.convert_end_node_to_pydantic(
-                end_node=end_node
-            )
-        else:
-            end_node_data = None
-
-        entry_point = start_edge.end_key
-        graph_data = GraphData(
-            name=graph.name,
-            crew_node_list=crew_node_data_list,
-            python_node_list=python_node_data_list,
-            file_extractor_node_list=file_extractor_node_data_list,
-            llm_node_list=llm_node_data_list,
-            edge_list=edge_data_list,
-            conditional_edge_list=conditional_edge_data_list,
-            decision_table_node_list=decision_table_node_data_list,
-            entry_point=entry_point,
-            end_node=end_node_data,
-        )
-        session_data = SessionData(
+        return SessionData(
             id=session.pk, graph=graph_data, initial_state=session.variables
         )
-
-        # TODO: rewrite validate_session for graphs
-
-        return session_data
 
     def run_session(
         self,
@@ -312,3 +217,115 @@ class SessionManagerService(metaclass=SingletonMeta):
                 return variables
 
         return variables
+
+    def _build_graph_data(self, graph: Graph) -> GraphData:
+        """Recursively build GraphData for a graph to handle subgraphs"""
+        crew_node_list = CrewNode.objects.filter(graph=graph.pk)
+        python_node_list = PythonNode.objects.filter(graph=graph.pk)
+        file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
+        edge_list = Edge.objects.filter(graph=graph.pk)
+        conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
+        llm_node_list = LLMNode.objects.filter(graph=graph.pk)
+        decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
+        subgraph_node_list = SubGraphNode.objects.filter(graph=graph.pk)
+        crew_node_data_list: list[CrewNodeData] = []
+
+        if file_extractor_node_list:
+            self.file_extractor_node_validator.validate_file_extractor_nodes(
+                file_extractor_node_list
+            )
+
+        for item in crew_node_list:
+
+            crew_node_data_list.append(
+                self.converter_service.convert_crew_node_to_pydantic(crew_node=item)
+            )
+
+        python_node_data_list: list[PythonNodeData] = []
+        for item in python_node_list:
+            python_node_data_list.append(
+                self.converter_service.convert_python_node_to_pydantic(python_node=item)
+            )
+
+        file_extractor_node_data_list: list[FileExtractorNodeData] = []
+        for item in file_extractor_node_list:
+            file_extractor_node_data_list.append(
+                FileExtractorNodeData(
+                    node_name=item.node_name,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                )
+            )
+
+        llm_node_data_list: list[LLMNodeData] = []
+
+        for item in llm_node_list:
+            llm_node_data_list.append(
+                self.converter_service.convert_llm_node_to_pydantic(llm_node=item)
+            )
+
+        edge_data_list: list[EdgeData] = []
+
+        for item in edge_list:
+            edge_data_list.append(
+                EdgeData(start_key=item.start_key, end_key=item.end_key)
+            )
+
+        conditional_edge_data_list: list[ConditionalEdgeData] = []
+        for item in conditional_edge_list:
+            conditional_edge_data_list.append(
+                self.converter_service.convert_conditional_edge_to_pydantic(item)
+            )
+
+        start_edge = Edge.objects.filter(start_key="__start__", graph=graph).first()
+
+        if start_edge is None:
+            raise GraphEntryPointException()
+
+        decision_table_node_data_list: list[DecisionTableNodeData] = []
+        for decision_table_node_list_item in decision_table_node_list:
+            decision_table_node_data = (
+                self.converter_service.convert_decision_table_node_to_pydantic(
+                    decision_table_node=decision_table_node_list_item
+                )
+            )
+            decision_table_node_data_list.append(decision_table_node_data)
+
+        subgraph_node_data_list: list[SubGraphNodeData] = []
+        for item in subgraph_node_list:
+            subgraph = Graph.objects.get(pk=item.subgraph_id)
+            subgraph_data = self._build_graph_data(subgraph)
+
+            subgraph_node_data_list.append(
+                SubGraphNodeData(
+                    node_name=item.node_name,
+                    subgraph_data=subgraph_data,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                )
+            )
+
+        end_node = self.end_node_validator.validate(graph_id=graph.pk)
+
+        # TODO: remove validation
+        if end_node is not None:
+            end_node_data = self.converter_service.convert_end_node_to_pydantic(
+                end_node=end_node
+            )
+        else:
+            end_node_data = None
+
+        entry_point = start_edge.end_key
+        return GraphData(
+            name=graph.name,
+            crew_node_list=crew_node_data_list,
+            python_node_list=python_node_data_list,
+            file_extractor_node_list=file_extractor_node_data_list,
+            llm_node_list=llm_node_data_list,
+            edge_list=edge_data_list,
+            conditional_edge_list=conditional_edge_data_list,
+            decision_table_node_list=decision_table_node_data_list,
+            subgraph_node_list=subgraph_node_data_list,
+            entry_point=entry_point,
+            end_node=end_node_data,
+        )

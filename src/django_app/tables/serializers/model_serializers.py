@@ -27,6 +27,7 @@ from tables.models import (
     GraphSessionMessage,
     PythonNode,
     FileExtractorNode,
+    SubGraphNode,
 )
 from rest_framework import serializers
 from tables.exceptions import ToolConfigSerializerError
@@ -973,6 +974,12 @@ class EdgeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class SubGraphNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubGraphNode
+        fields = "__all__"
+
+
 class ConditionalEdgeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
@@ -1185,6 +1192,7 @@ class GraphSerializer(serializers.ModelSerializer):
     llm_node_list = LLMNodeSerializer(many=True, read_only=True)
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
+    subgraph_node_list = SubGraphNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
 
     class Meta:
@@ -1201,6 +1209,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "conditional_edge_list",
             "llm_node_list",
             "decision_table_node_list",
+            "subgraph_node_list",
             "start_node_list",
             "end_node_list",
             "time_to_live",

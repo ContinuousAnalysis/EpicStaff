@@ -9,6 +9,7 @@ from tables.views.model_view_sets import (
     DecisionTableNodeModelViewSet,
     EdgeViewSet,
     EndNodeModelViewSet,
+    SubGraphNodeModelViewSet,
     GraphLightViewSet,
     GraphViewSet,
     McpToolViewSet,
@@ -106,6 +107,7 @@ router.register(r"file-extractor-nodes", FileExtractorNodeViewSet)
 router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
+router.register(r"subgraph-nodes", SubGraphNodeModelViewSet)
 
 router.register(r"edges", EdgeViewSet)
 router.register(r"conditionaledges", ConditionalEdgeViewSet)
