@@ -8,7 +8,13 @@ from redis.backoff import ExponentialBackoff
 from redis.retry import Retry
 from threading import Lock
 
-from tables.request_models import RealtimeAgentChatData, SessionData
+from django_app.settings import KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL, STOP_SESSION_CHANNEL
+from tables.request_models import (
+    ChunkDocumentMessage,
+    RealtimeAgentChatData,
+    SessionData,
+    StopSessionMessage,
+)
 from utils.singleton_meta import SingletonMeta
 from utils.logger import logger
 
@@ -88,16 +94,7 @@ class RedisService(metaclass=SingletonMeta):
         channel = "knowledge_sources"
         message = {
             "collection_id": collection_id,
-            "event": f"created new collection {collection_id}.",
-        }
-        self.redis_client.publish(channel=channel, message=json.dumps(message))
-        logger.info(f"Sent collection_id: {collection_id} to {channel}.")
-
-    def publish_add_source(self, collection_id) -> None:
-        channel = "knowledge_sources"
-        message = {
-            "collection_id": collection_id,
-            "event": f"add source to collection {collection_id}.",
+            "event": f"embed collection {collection_id}.",
         }
         self.redis_client.publish(channel=channel, message=json.dumps(message))
         logger.info(f"Sent collection_id: {collection_id} to {channel}.")
@@ -158,3 +155,15 @@ class RedisService(metaclass=SingletonMeta):
                 # TODO: refactor
                 await pubsub.unsubscribe(*channels)
                 await pubsub.close()
+
+    def publish_process_document_chunking(self, document_id):
+        message = ChunkDocumentMessage(document_id=document_id)
+        self.redis_client.publish(
+            KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL, json.dumps(message.model_dump())
+        )
+
+    def publish_stop_session(self, session_id):
+        message = StopSessionMessage(session_id=session_id)
+        self.redis_client.publish(
+            STOP_SESSION_CHANNEL, json.dumps(message.model_dump())
+        )

@@ -32,6 +32,7 @@ async def main():
     crewai_output_channel = os.environ.get(
         "CREWAI_OUTPUT_CHANNEL", "sessions:crewai_output"
     )
+    stop_session_channel = os.getenv("STOP_SESSION_CHANNEL", "sessions:stop")
 
     # Initialize services
     redis_service = RedisService(host=redis_host, port=redis_port)
@@ -51,6 +52,7 @@ async def main():
         crew_parser_service=crew_parser_service,
         session_schema_channel=session_schema_channel,
         session_timeout_channel=session_timeout_channel,
+        stop_session_channel=stop_session_channel,
         python_code_executor_service=python_code_executor_service,
         crewai_output_channel=crewai_output_channel,
         knowledge_search_service=knowledge_search_service,

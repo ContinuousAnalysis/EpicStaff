@@ -17,6 +17,7 @@ export enum GraphSessionStatus {
   WAITING_FOR_USER = 'wait_for_user',
   PENDING = 'pending',
   EXPIRED = 'expired',
+  STOP = 'stop',
 }
 
 export interface GraphSession {
@@ -43,6 +44,7 @@ export type SessionStatusesCounts = {
   wait_for_user: number;
   error: number;
   pending: number;
+  stop: number;
 };
 
 export type GraphSessionStatusesCounts = {
@@ -56,6 +58,7 @@ export const defaultSessionStatusesCounts = (): SessionStatusesCounts => ({
   wait_for_user: 0,
   error: 0,
   pending: 0,
+  stop: 0,
 });
 
 @Injectable({
