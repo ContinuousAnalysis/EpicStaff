@@ -11,6 +11,9 @@ import {
   FormGroup,
   FormControl,
   Validators,
+  AsyncValidatorFn,
+  AbstractControl,
+  ValidationErrors,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -24,6 +27,8 @@ import {
   GetMcpToolRequest,
   CreateMcpToolRequest,
 } from '../../models/mcp-tool.model';
+import { Observable, of, timer } from 'rxjs';
+import { map, catchError, switchMap } from 'rxjs/operators';
 
 interface DialogData {
   selectedTool?: GetMcpToolRequest;
@@ -50,6 +55,7 @@ export class McpToolDialogComponent implements OnInit {
   form!: FormGroup;
   public selectedTool?: GetMcpToolRequest;
   public isEditMode: boolean = false;
+  public backendErrorMessage: string | null = null;
 
   constructor(
     private dialogRef: DialogRef<GetMcpToolRequest>,
@@ -68,13 +74,45 @@ export class McpToolDialogComponent implements OnInit {
     this.initializeForm();
   }
 
+  private uniqueNameValidator(): AsyncValidatorFn {
+    return (control: AbstractControl): Observable<ValidationErrors | null> => {
+      if (!control.value) {
+        return of(null);
+      }
+
+      // If in edit mode and name hasn't changed, skip validation
+      if (this.isEditMode && control.value === this.selectedTool?.name) {
+        return of(null);
+      }
+
+      // Debounce for 500ms before making the API call
+      return timer(500).pipe(
+        switchMap(() =>
+          this.mcpToolsService.getMcpTools({ name: control.value }).pipe(
+            map((tools) => {
+              const nameExists = tools.some(
+                (tool) => tool.name === control.value
+              );
+              return nameExists ? { uniqueName: true } : null;
+            }),
+            catchError(() => of(null))
+          )
+        )
+      );
+    };
+  }
+
   private initializeForm(): void {
     this.form = new FormGroup({
-      name: new FormControl(this.selectedTool?.name || '', [
-        Validators.required,
-        Validators.minLength(1),
-        Validators.maxLength(255),
-      ]),
+      name: new FormControl(
+        this.selectedTool?.name || '',
+        [
+          Validators.required,
+          Validators.minLength(1),
+          Validators.maxLength(255),
+        ],
+        [this.uniqueNameValidator()]
+      ),
       transport: new FormControl(this.selectedTool?.transport || '', [
         Validators.required,
         Validators.maxLength(2048),
@@ -101,6 +139,9 @@ export class McpToolDialogComponent implements OnInit {
       return;
     }
 
+    // Clear previous backend error message
+    this.backendErrorMessage = null;
+
     const formValue = this.form.value;
 
     // Clean up empty values
@@ -125,8 +166,9 @@ export class McpToolDialogComponent implements OnInit {
           },
           error: (error) => {
             console.error('Error updating MCP tool:', error);
+            this.backendErrorMessage = this.extractErrorMessage(error);
             this.toastService.error(
-              'Failed to update MCP tool. Please try again.'
+              this.backendErrorMessage || 'Failed to update MCP tool. Please try again.'
             );
             this.cdr.markForCheck();
           },
@@ -141,13 +183,45 @@ export class McpToolDialogComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error creating MCP tool:', error);
+          this.backendErrorMessage = this.extractErrorMessage(error);
           this.toastService.error(
-            'Failed to create MCP tool. Please try again.'
+            this.backendErrorMessage || 'Failed to create MCP tool. Please try again.'
           );
           this.cdr.markForCheck();
         },
       });
     }
+  }
+
+  private extractErrorMessage(error: any): string {
+    // Extract error message from different possible error structures
+    if (error?.error) {
+      // Check for standard error message formats
+      if (typeof error.error === 'string') {
+        return error.error;
+      }
+      if (error.error.message) {
+        return error.error.message;
+      }
+      if (error.error.detail) {
+        return error.error.detail;
+      }
+      // Check for field-specific errors (e.g., {name: ["Tool with this name already exists."]})
+      if (error.error.name && Array.isArray(error.error.name)) {
+        return error.error.name[0];
+      }
+      // Check for non_field_errors
+      if (error.error.non_field_errors && Array.isArray(error.error.non_field_errors)) {
+        return error.error.non_field_errors[0];
+      }
+    }
+    if (error?.message) {
+      return error.message;
+    }
+    if (error?.statusText) {
+      return error.statusText;
+    }
+    return '';
   }
 
   public getFieldError(fieldName: string): string | null {
@@ -161,6 +235,9 @@ export class McpToolDialogComponent implements OnInit {
       }
       if (field.errors?.['maxlength']) {
         return `Maximum length is ${field.errors['maxlength'].requiredLength}`;
+      }
+      if (field.errors?.['uniqueName']) {
+        return 'A tool with this name already exists';
       }
     }
     return null;

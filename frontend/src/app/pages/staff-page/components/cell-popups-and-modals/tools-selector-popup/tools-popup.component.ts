@@ -35,6 +35,7 @@ import { PythonToolItemComponent } from './python-tool-item/python-tool-item.com
 import { McpToolItemComponent } from './mcp-tool-item/mcp-tool-item.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { CustomToolDialogComponent } from '../../../../../user-settings-page/tools/custom-tool-editor/custom-tool-dialog.component';
+import { McpToolDialogComponent } from '../../../../../features/tools/components/mcp-tool-dialog/mcp-tool-dialog.component';
 import { Dialog } from '@angular/cdk/dialog';
 import { CustomToolsService } from '../../../../../features/tools/services/custom-tools/custom-tools.service';
 import { McpToolsService } from '../../../../../features/tools/services/mcp-tools/mcp-tools.service';
@@ -427,6 +428,20 @@ export class ToolsPopupComponent
         }
         this.cdr.markForCheck();
       });
+    });
+  }
+
+  public openMcpToolDialog(): void {
+    const dialogRef = this.cdkDialog.open(McpToolDialogComponent, {
+      data: {},
+    });
+    
+    dialogRef.closed.subscribe((result) => {
+      if (result) {
+        console.log('New MCP tool created:', result);
+        // Reload the MCP tools list to include the newly created tool
+        this.loadToolsData();
+      }
     });
   }
 

@@ -1,7 +1,7 @@
 <div class="mcp-tool-dialog">
   <div class="mcp-tool-dialog__header">
     <h2 class="mcp-tool-dialog__title">
-    asdas  {{ isEditMode ? 'Edit MCP Tool' : 'Add MCP Tool' }}
+      {{ isEditMode ? 'Edit MCP Tool' : 'Add MCP Tool' }}
     </h2>
     <button
       mat-icon-button
@@ -14,6 +14,12 @@
 
   <form [formGroup]="form" class="mcp-tool-dialog__form">
     <div class="mcp-tool-dialog__body">
+      @if (backendErrorMessage) {
+      <div class="mcp-tool-dialog__error-banner">
+        <mat-icon>error</mat-icon>
+        <span>{{ backendErrorMessage }}</span>
+      </div>
+      }
       <mat-form-field
         appearance="outline"
         class="mcp-tool-dialog__field mcp-tool-dialog__field--full-width"
@@ -34,6 +40,9 @@
           placeholder="Enter unique name for MCP configuration"
           required
         />
+        @if (form.get('name')?.pending) {
+        <mat-hint>Checking name availability...</mat-hint>
+        }
         @if (getFieldError('name')) {
         <mat-error>{{ getFieldError('name') }}</mat-error>
         }
@@ -168,7 +177,7 @@
     <button
       mat-flat-button
       class="mcp-tool-dialog__button mcp-tool-dialog__button--submit"
-      [disabled]="form.invalid"
+      [disabled]="form.invalid || form.pending"
       (click)="onSave()"
     >
       {{ isEditMode ? 'Update' : 'Create' }}

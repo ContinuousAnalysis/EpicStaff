@@ -92,6 +92,16 @@
           (toolToggled)="onPythonToolToggle($event)"
         >
         </app-python-tool-item>
+        <div class="add-tool-button-container">
+          <app-button
+            type="primary"
+            class="btn-primary add-tool-btn"
+            [leftIcon]="'ui/plus'"
+            (click)="openCustomToolDialog()"
+          >
+            Create custom tool
+          </app-button>
+        </div>
       </div>
     </div>
 
@@ -109,6 +119,14 @@
       <!-- No MCP tools message -->
       <div class="no-tools" *ngIf="!loading && mcpTools.length === 0">
         <p>No MCP tools available</p>
+        <app-button
+          type="primary"
+          class="btn-primary create-btn"
+          [leftIcon]="'ui/plus'"
+          (click)="openMcpToolDialog()"
+        >
+          Add MCP Tool
+        </app-button>
       </div>
 
       <!-- Using MCP Tool Item Component for each tool -->
@@ -120,6 +138,16 @@
           (toolToggled)="onMcpToolToggle($event)"
         >
         </app-mcp-tool-item>
+        <div class="add-tool-button-container">
+          <app-button
+            type="primary"
+            class="btn-primary add-tool-btn"
+            [leftIcon]="'ui/plus'"
+            (click)="openMcpToolDialog()"
+          >
+            Add MCP Tool
+          </app-button>
+        </div>
       </div>
     </div>
   </div>

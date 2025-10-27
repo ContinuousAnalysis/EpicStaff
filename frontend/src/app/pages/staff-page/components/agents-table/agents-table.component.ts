@@ -425,11 +425,13 @@ export class AgentsTableComponent {
                 }
 
                 const toolsHtml = tools
-                    .map((tool: { configName: any; toolName: any }) => {
+                    .map((tool: { configName: any; toolName: any; type: string }) => {
+                        // For MCP tools, display the configName (mcp.name) instead of toolName (mcp.tool_name)
+                        const displayName = tool.type === 'mcp-tool' ? tool.configName : tool.toolName;
                         return `
               <div class="tool-item">
                 <i class="tool-icon">🔧</i>
-                <span class="tool-name-text" title="${tool.toolName}">${tool.toolName}</span>
+                <span class="tool-name-text" title="${displayName}">${displayName}</span>
               </div>
             `;
                     })
