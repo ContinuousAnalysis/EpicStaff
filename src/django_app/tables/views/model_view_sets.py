@@ -41,7 +41,7 @@ from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
 from tables.models.mcp_models import McpTool
 from utils.logger import logger
-from django.db.models import IntegerField
+from django.db.models import IntegerField, NOT_PROVIDED
 from django.db.models.functions import Cast
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
@@ -1007,3 +1007,15 @@ class McpToolViewSet(viewsets.ModelViewSet):
     serializer_class = McpToolSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name", "tool_name"]
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data = request.data.copy()
+        for field in self.serializer_class.Meta.model._meta.get_fields():
+            if field.concrete and field.name not in data:
+                default = getattr(field, "default", None)
+                data[field.name] = default if default != NOT_PROVIDED else None
+        serializer = self.get_serializer(instance, data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
