@@ -307,6 +307,7 @@ class GraphData(BaseModel):
 class SubGraphNodeData(BaseModel):
     node_name: str
     subgraph_data: GraphData
+    initial_state: dict[str, Any] = {}
     input_map: dict[str, Any]
     output_variable_path: str | None = None
 

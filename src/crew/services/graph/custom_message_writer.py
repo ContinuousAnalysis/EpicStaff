@@ -179,3 +179,57 @@ class CustomSessionMessageWriter:
             message_data=error_message_data,
         )
         writer(graph_message)
+
+    # @classmethod
+    # def add_subraph_start_message(
+    #     cls,
+    #     session_id: int,
+    #     node_name: str,
+    #     writer: StreamWriter,
+    #     input_: Any,
+    #     execution_order: int,
+    #     subgraph_name: str,
+    #     input_map: dict,
+    #     output_variable_path: str,
+    # ):
+    #     start_message_data = SubGraphStartMessageData(
+    #         subgraph_name=subgraph_name,
+    #         input=input_,
+    #         input_map=input_map,
+    #         output_variable_path=output_variable_path,
+    #     )
+    #     graph_message = GraphMessage(
+    #         session_id=session_id,
+    #         name=node_name,
+    #         execution_order=execution_order,
+    #         message_data=start_message_data,
+    #     )
+    #     writer(graph_message)
+
+    # @classmethod
+    # def add_subgraph_finish_message(
+    #     cls,
+    #     session_id: int,
+    #     node_name: str,
+    #     writer: StreamWriter,
+    #     output: Any,
+    #     execution_order: int,
+    #     state: State,
+    #     subgraph_name: str,
+    #     input_map: dict,
+    #     output_variable_path: str,
+    # ):
+    #     finish_message_data = SubGraphFinishMessageData(
+    #         subgraph_name=subgraph_name,
+    #         output=output,
+    #         input_map=input_map,
+    #         output_variable_path=output_variable_path,
+    #         state=cls._convert_state(state=state),
+    #     )
+    #     graph_message = GraphMessage(
+    #         session_id=session_id,
+    #         name=node_name,
+    #         execution_order=execution_order,
+    #         message_data=finish_message_data,
+    #     )
+    #     writer(graph_message)

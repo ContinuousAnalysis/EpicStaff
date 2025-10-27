@@ -1,5 +1,5 @@
-import json
 from tables.validators.end_node_validator import EndNodeValidator
+from tables.validators.subgraph_validator import SubGraphValidator
 from tables.exceptions import EndNodeValidationError, GraphEntryPointException
 from tables.models.graph_models import (
     ConditionalEdge,
@@ -54,6 +54,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         self.converter_service = converter_service
         self.file_extractor_node_validator = FileExtractorNodeValidator()
         self.end_node_validator: EndNodeValidator = EndNodeValidator()
+        self.subgraph_validator = SubGraphValidator()
 
     def get_session(self, session_id: int) -> Session:
         return Session.objects.get(id=session_id)
@@ -102,6 +103,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         self,
         session: Session,
     ) -> SessionData:
+        self.subgraph_validator.validate(session.graph)
         graph_data = self._build_graph_data(session.graph)
 
         return SessionData(
@@ -296,10 +298,15 @@ class SessionManagerService(metaclass=SingletonMeta):
             subgraph = Graph.objects.get(pk=item.subgraph_id)
             subgraph_data = self._build_graph_data(subgraph)
 
+            variables = subgraph.start_node_list.first().variables
+            if not variables:
+                variables = dict()
+
             subgraph_node_data_list.append(
                 SubGraphNodeData(
                     node_name=item.node_name,
                     subgraph_data=subgraph_data,
+                    initial_state=variables,
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
                 )

@@ -8,6 +8,7 @@ from loguru import logger
 
 from callbacks.session_callback_factory import CrewCallbackFactory
 from services.graph.subgraphs.decision_table_node import DecisionTableNodeSubgraph
+from services.graph.subgraphs.subgraph_node import SubGraphNode
 from services.graph.nodes.llm_node import LLMNode
 from services.graph.nodes.end_node import EndNode
 from models.state import *
@@ -162,6 +163,22 @@ class SessionGraphBuilder:
             decision_table_node_data.node_name, condition
         )
 
+    def add_subgraph_node(self, subgraph_node_data: SubGraphNode) -> str:
+        """
+        Adds a subgraph node to the graph builder.
+        """
+        builder = SubGraphNode(
+            session_id=self.session_id,
+            subgraph_node_data=subgraph_node_data,
+            graph_builder=StateGraph(State),
+            session_graph_builder=self,
+        )
+
+        async def inner(state: State, writer: StreamWriter):
+            return await builder.run(state, writer)
+
+        self._graph_builder.add_node(subgraph_node_data.node_name, inner)
+
     @property
     def end_node_result(self):
         """Getter for end_node_result"""
@@ -258,6 +275,10 @@ class SessionGraphBuilder:
             self.add_decision_table_node(
                 decision_table_node_data=decision_table_node_data
             )
+
+        for subgraph_node_data in schema.subgraph_node_list:
+            self.add_subgraph_node(subgraph_node_data=subgraph_node_data)
+
         # name always __end_node__
         # TODO: remove validation here and in request model
         if schema.end_node is not None:

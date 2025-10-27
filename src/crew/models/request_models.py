@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 from typing import Any, List, Literal, Optional, Union
 from pydantic import AnyUrl, BaseModel, HttpUrl, model_validator
@@ -309,12 +310,21 @@ class GraphData(BaseModel):
     crew_node_list: list[CrewNodeData] = []
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
+    subgraph_node_list: list[SubGraphNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
     entry_point: str
     end_node: EndNodeData | None
+
+
+class SubGraphNodeData(BaseModel):
+    node_name: str
+    subgraph_data: GraphData
+    initial_state: dict[str, Any] = {}
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
 
 
 class GraphSessionMessageData(BaseModel):

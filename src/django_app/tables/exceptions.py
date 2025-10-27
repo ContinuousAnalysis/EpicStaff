@@ -66,3 +66,10 @@ class InvalidTaskOrderError(CustomAPIExeption):
     status_code = 409
     default_detail = "A task cannot be placed before its context dependency. Please reorder the tasks or delete context."
     default_code = "invalid_context_task_order"
+
+
+class SubGraphValidationError(CustomAPIExeption):
+    status_code = 400
+    default_detail = (
+        "ValidationError occured in SubGraphValidator during subgraph validation"
+    )

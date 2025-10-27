@@ -979,6 +979,15 @@ class SubGraphNodeSerializer(serializers.ModelSerializer):
         model = SubGraphNode
         fields = "__all__"
 
+    def validate(self, attrs):
+        graph = attrs.get("graph") or getattr(self.instance, "graph", None)
+        subgraph = attrs.get("subgraph") or getattr(self.instance, "subgraph", None)
+
+        if graph and subgraph and graph == subgraph:
+            raise serializers.ValidationError("Graph and subgraph cannot be the same.")
+
+        return attrs
+
 
 class ConditionalEdgeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
