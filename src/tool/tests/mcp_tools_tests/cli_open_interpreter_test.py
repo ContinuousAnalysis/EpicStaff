@@ -33,11 +33,20 @@ def endpoint():
 
 
 # --- Helper Functions ---
-def create_payload(instruction: str, tool_name: str = "cli_tool") -> dict:
+def create_payload(
+    command: str, tool_name: str = "cli_tool", context: str | None = None
+) -> dict:
+    input_data = {"command": command}
+    if context is not None:
+        input_data["context"] = context
+
     return {
         "jsonrpc": "2.0",
         "method": "tools/call",
-        "params": {"name": tool_name, "arguments": {"instruction": instruction}},
+        "params": {
+            "name": tool_name,
+            "arguments": {"input_data": input_data},
+        },
         "id": 1,
     }
 
@@ -222,10 +231,6 @@ def test_write_file(endpoint, headers):
     assert not data["errors"]
     assert "[result]" not in data["output"]
 
-    with open(SHARED_TESTFILE, "r") as f:
-        content = f.read()
-    assert "This is a test output." in content
-
 
 def test_read_file(endpoint, headers):
     instruction = "Read the file at /app/data/pytest_output.txt and output its content."
@@ -251,6 +256,41 @@ def test_modify_existing_file(endpoint, headers):
     assert not data["errors"]
     assert "[result]" not in data["output"]
 
-    with open(SHARED_TESTFILE, "r") as f:
-        content = f.read()
-    assert " -- Modified by OpenInterpreter" in content
+
+def test_read_file_after_append(endpoint, headers):
+    instruction = "Read the file at /app/data/pytest_output.txt and output its content."
+    payload = create_payload(instruction)
+    response = post_request(payload, endpoint, headers)
+    data = parse_sse_response(response)
+
+    assert response.status_code == 200
+    assert data["success"]
+    assert not data["errors"]
+    assert "[result]" not in data["output"]
+    assert "This is a test output." in data["output"]
+    assert "-- Modified by OpenInterpreter" in data["output"]
+
+
+# --- New Context Test ---
+def test_interpreter_context(endpoint, headers):
+    """
+    Provide context to the interpreter (current folder: /app/)
+    and ask it to list files. Check if the output respects context.
+    """
+    context = "We are currently located in the /app/ folder."
+    instruction = "List all files in this folder."
+    payload = create_payload(instruction, context=context)
+    response = post_request(payload, endpoint, headers)
+    data = parse_sse_response(response)
+
+    print(data)  # For debugging
+
+    assert response.status_code == 200
+    assert data["success"]
+    assert not data["errors"]
+    assert isinstance(data["commands"], list)
+    # Check that typical project files are in the output (adjust if needed)
+    assert (
+        "dockerfile" in data["output"].lower()
+        or "pyproject.toml" in data["output"].lower()
+    )

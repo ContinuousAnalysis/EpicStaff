@@ -1,10 +1,12 @@
 import os
-import argparse
+import json
 import time
+from typing import Optional
+
 from fastmcp import FastMCP
 import interpreter
 from loguru import logger
-import json
+from pydantic import BaseModel, Field
 
 HOST = "0.0.0.0"
 PORT = int(os.getenv("PORT", 7001))
@@ -25,8 +27,23 @@ if not API_KEY:
 mcp = FastMCP("OpenInterpreterTool")
 
 
+class CLIToolInput(BaseModel):
+    """
+    Input schema for CLI-style tool that executes a single natural language command.
+    """
+
+    command: str = Field(
+        ...,
+        description="Natural language instruction to be executed by the interpreter.",
+    )
+    context: Optional[str] = Field(
+        None,
+        description="Optional context or background information for the instruction.",
+    )
+
+
 @mcp.tool(name="cli_tool")
-def cli_tool(instruction: str):
+def cli_tool(input_data: CLIToolInput):
     try:
 
         stateless_interpreter = interpreter.OpenInterpreter()
@@ -64,7 +81,14 @@ def cli_tool(instruction: str):
         6. You don't have access to sudo, so don't use it
         """
 
+        if input_data.context:
+            custom_instruction += (
+                f"\n\n### Additional Context:\n{input_data.context.strip()}\n"
+            )
+
         stateless_interpreter.system_message += custom_instruction
+
+        instruction = input_data.command
 
         logger.info("Local Open Interpreter initialized.")
         stateless_interpreter.reset()

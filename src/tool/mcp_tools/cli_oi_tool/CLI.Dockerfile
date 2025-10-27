@@ -30,9 +30,5 @@ ENV MCP_CLI_OPEN_INTERPRETER_PORT=${MCP_CLI_OPEN_INTERPRETER_PORT}
 # --- Expose port for MCP API ---
 EXPOSE ${MCP_CLI_OPEN_INTERPRETER_PORT}
 
-# --- Entrypoint ---
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-
 CMD ["poetry", "run", "python", "cli_mcp.py"]
 
