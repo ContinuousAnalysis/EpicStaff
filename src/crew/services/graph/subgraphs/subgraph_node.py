@@ -159,9 +159,13 @@ class SubGraphNode:
     def _process_subgraph_result(self, state, subgraph_input, result) -> dict:
         """Process subgraph result and update parent state."""
         subgraph_output = result["variables"].model_dump()
-        updated_variables = self._merge_output_to_variables(
-            state["variables"].model_dump(), subgraph_output
-        )
+        updated_variables = state["variables"].model_dump()
+
+        if self.output_variable_path:
+            path = self.output_variable_path
+            if path.startswith("variables."):
+                path = path[len("variables.") :]
+            self._set_nested_value(updated_variables, path, subgraph_output)
 
         state_history_item = self._create_state_history_item(
             subgraph_input, subgraph_output, updated_variables
