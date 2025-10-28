@@ -10,6 +10,7 @@ export interface GetTaskRequest {
     name: string;
     instructions: string;
     expected_output: string;
+    knowledge_query?: string | null;
 
     order: number | null;
     human_input: boolean;
@@ -32,6 +33,7 @@ export interface CreateTaskRequest {
     name: string;
     instructions: string;
     expected_output: string;
+    knowledge_query?: string | null;
 
     order?: number | null;
     human_input?: boolean;
@@ -52,6 +54,7 @@ export interface UpdateTaskRequest {
     name: string;
     instructions: string;
     expected_output: string;
+    knowledge_query?: string | null;
 
     order?: number | null;
     human_input?: boolean;
