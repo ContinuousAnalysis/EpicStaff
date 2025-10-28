@@ -15,6 +15,7 @@ class LLMModel(models.Model):
     base_url = models.URLField(null=True, blank=True)
     deployment = models.TextField(null=True, blank=True)
     is_visible = models.BooleanField(default=True)
+    is_custom = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -87,6 +88,7 @@ class RealtimeModel(models.Model):
     provider = models.ForeignKey(
         "Provider", on_delete=models.CASCADE, null=True, default=None
     )
+    is_custom = models.BooleanField(default=False)
 
 
 class RealtimeConfig(models.Model):
@@ -100,6 +102,7 @@ class RealtimeTranscriptionModel(models.Model):
     provider = models.ForeignKey(
         "Provider", on_delete=models.CASCADE, null=True, default=None
     )
+    is_custom = models.BooleanField(default=False)
 
 
 class RealtimeTranscriptionConfig(models.Model):
