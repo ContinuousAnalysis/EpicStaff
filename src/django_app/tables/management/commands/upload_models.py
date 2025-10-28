@@ -78,7 +78,6 @@ def upload_llm_models():
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()
 
-    LLMModel.objects.all().delete()
 
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
@@ -101,8 +100,6 @@ def upload_realtime_agent_models():
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()    
 
-    RealtimeModel.objects.all().delete()
-
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
         for model_name in model_names:
@@ -122,7 +119,6 @@ def upload_realtime_transcription_models():
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()    
 
-    RealtimeTranscriptionModel.objects.all().delete()
 
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
@@ -143,7 +139,6 @@ def upload_embedding_models():
     models_by_provider = load_json_from_file(path)
     current_model_tuples = set()    
     
-    EmbeddingModel.objects.all().delete()
 
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)

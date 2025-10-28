@@ -23,7 +23,7 @@ class Command(BaseCommand):
                     cursor.execute(f"""
                         SELECT setval(
                             pg_get_serial_sequence('"{meta.db_table}"', 'id'),
-                            (SELECT COALESCE(MAX(id), 1) FROM "{meta.db_table}")
+                            (SELECT COALESCE(MAX(id), 0) FROM "{meta.db_table}")
                         );
                     """)
                     fixed_count += 1
