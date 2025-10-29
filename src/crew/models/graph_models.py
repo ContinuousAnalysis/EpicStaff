@@ -21,16 +21,14 @@ class GraphMessage:
 class SubGraphStartMessageData:
     state: dict
     input: object
-    # message_type: str = "subgraph_start" TODO: return type back
-    message_type: str = "start"
+    message_type: str = "subgraph_start"
 
 
 @dataclass
 class SubGraphFinishMessageData:
     state: dict
     output: object
-    # message_type: str = "subgraph_finish" TODO: return type back
-    message_type: str = "finish"
+    message_type: str = "subgraph_finish"
 
 
 @dataclass
