@@ -6,7 +6,7 @@ import { EmbeddingModelsService } from './embeddings.service';
 import { GetEmbeddingConfigRequest } from '../../models/embeddings/embedding-config.model';
 import { EmbeddingModel } from '../../models/embeddings/embedding.model';
 import { LLM_Providers_Service } from '../LLM_providers.service';
-import { LLM_Provider } from '../../models/LLM_provider.model';
+import { LLM_Provider, ModelTypes } from '../../models/LLM_provider.model';
 
 export interface FullEmbeddingConfig extends GetEmbeddingConfigRequest {
   modelDetails: EmbeddingModel | null;
@@ -27,7 +27,7 @@ export class FullEmbeddingConfigService {
     return forkJoin({
       configs: this.embeddingConfigService.getEmbeddingConfigs(),
       models: this.embeddingModelsService.getEmbeddingModels(),
-      providers: this.providersService.getProviders(),
+      providers: this.providersService.getProvidersByQuery(ModelTypes.EMBEDDING),
     }).pipe(
       map(({ configs, models, providers }) => {
         // Create lookup tables for models and providers
