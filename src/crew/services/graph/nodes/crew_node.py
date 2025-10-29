@@ -16,6 +16,7 @@ class CrewNode(BaseNode):
         self,
         session_id: int,
         node_name: str,
+        stop_event: StopEvent,
         crew_data: CrewData,
         redis_service: RedisService,
         crewai_output_channel: str,
@@ -27,6 +28,7 @@ class CrewNode(BaseNode):
         super().__init__(
             session_id=session_id,
             node_name=node_name,
+            stop_event=stop_event,
             input_map=input_map,
             output_variable_path=output_variable_path,
         )
@@ -65,6 +67,7 @@ class CrewNode(BaseNode):
             crew_callback_factory=crew_callback_factory,
             inputs=input_,
             global_kwargs=gloabl_kwargs,
+            stop_event=self.stop_event,
         )
         crew_output = await crew.kickoff_async(inputs=input_)
 

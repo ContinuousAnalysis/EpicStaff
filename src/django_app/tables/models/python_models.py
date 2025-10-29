@@ -17,6 +17,7 @@ class PythonCodeTool(models.Model):
     args_schema = models.JSONField()
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE, null=False)
     favorite = models.BooleanField(default=False)
+    built_in = models.BooleanField(default=False)
 
 
 class PythonCodeResult(models.Model):

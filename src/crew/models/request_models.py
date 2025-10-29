@@ -192,6 +192,7 @@ class TaskData(BaseModel):
     name: str
     agent_id: int
     instructions: str
+    knowledge_query: str | None
     expected_output: str
     order: int = 1
     human_input: bool
@@ -331,3 +332,6 @@ class KnowledgeSearchMessage(BaseModel):
     query: str
     search_limit: int | None
     similarity_threshold: float | None
+
+class StopSessionMessage(BaseModel):
+    session_id: int

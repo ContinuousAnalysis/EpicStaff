@@ -1,5 +1,7 @@
+from services.graph.events import StopEvent
 from services.graph.nodes.python_node import PythonNode
 from models.request_models import PythonCodeData
+from services.run_python_code_service import RunPythonCodeService
 
 
 class FileContentExtractorNode(PythonNode):
@@ -7,11 +9,12 @@ class FileContentExtractorNode(PythonNode):
 
     def __init__(
         self,
-        session_id,
-        node_name,
-        input_map,
-        output_variable_path,
-        python_code_executor_service,
+        session_id: int,
+        node_name: str,
+        stop_event: StopEvent,
+        input_map: dict,
+        output_variable_path: str,
+        python_code_executor_service: RunPythonCodeService,
     ):
         if not input_map:
             raise ValueError(f"FileContentExtractor input cannot be empty.")
@@ -25,12 +28,13 @@ class FileContentExtractorNode(PythonNode):
         )
 
         super().__init__(
-            session_id,
-            node_name,
-            input_map,
-            output_variable_path,
-            python_code_executor_service,
-            code_data,
+            session_id=session_id,
+            node_name=node_name,
+            stop_event=stop_event,
+            input_map=input_map,
+            output_variable_path=output_variable_path,
+            python_code_executor_service=python_code_executor_service,
+            python_code_data=code_data,
         )
 
     def _get_extractor_code(self, arg_names: list[str]):

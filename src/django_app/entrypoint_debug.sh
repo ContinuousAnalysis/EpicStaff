@@ -4,6 +4,10 @@
 echo "Applying database migrations..."
 python manage.py migrate
 
+# Fix PostgreSQL sequences for all tables
+echo "Fixing PostgreSQL sequences..."
+python manage.py fix_sequences
+
 # Upload models (custom command)
 echo "Uploading models..."
 python manage.py upload_models

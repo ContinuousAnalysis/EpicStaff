@@ -13,7 +13,7 @@ class EmbeddingModel(models.Model):
     deployment = models.TextField(null=True, blank=True)
     base_url = models.URLField(null=True, blank=True, default=None)
     is_visible = models.BooleanField(default=True)
-
+    is_custom = models.BooleanField(default=False)
 
 class EmbeddingConfig(models.Model):
 
