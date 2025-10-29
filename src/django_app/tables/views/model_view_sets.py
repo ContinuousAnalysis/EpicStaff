@@ -171,7 +171,7 @@ from tables.serializers.knowledge_serializers import (
 )
 from tables.services.redis_service import RedisService
 from tables.utils.mixins import ImportExportMixin, DeepCopyMixin, ChangeSecretKeyMixin
-
+from tables.exceptions import BuiltInToolModificationError
 
 redis_service = RedisService()
 
@@ -521,6 +521,7 @@ class PythonCodeViewSet(viewsets.ModelViewSet):
 class PythonCodeToolViewSet(viewsets.ModelViewSet):
     """
     A viewset for viewing and editing PythonCodeTool instances.
+    Prevents modifications or deletions of built-in tools.
     """
 
     queryset = PythonCodeTool.objects.all()
@@ -528,6 +529,13 @@ class PythonCodeToolViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name", "python_code"]
 
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.built_in:
+            raise BuiltInToolModificationError()
+        return super().destroy(request, *args, **kwargs)
+    
 
 class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     queryset = PythonCodeResult.objects.all()
