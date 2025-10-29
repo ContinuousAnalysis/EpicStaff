@@ -263,6 +263,13 @@ class GraphFile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "domain_key"], name="unique_file_key_per_graph"
+            )
+        ]
+
     def delete(self, *args, **kwargs):
         if self.file:
             self.file.delete(save=False)
@@ -286,13 +293,6 @@ class Organization(HashedFieldMixin, models.Model):
         default=False,
         help_text="If 'True' -> variables will be updated after each session.",
     )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "domain_key"], name="unique_file_key_per_graph"
-            )
-        ]
 
 
 class OrganizationUser(HashedFieldMixin, models.Model):
