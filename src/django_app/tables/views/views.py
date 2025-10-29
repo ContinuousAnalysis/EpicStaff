@@ -280,19 +280,19 @@ class RunSession(APIView):
             graph__id=graph_id
         ).first()
 
-        if user and graph_organization.organization != user.organization:
+        if not graph_organization:
             return Response(
-                {
-                    "message": f"Provided user does not belong to organization {graph_organization.organization.name}"
-                },
+                {"message": "No GraphOrganization exists for this flow."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if user:
-            graph_organization_user, _ = GraphOrganizationUser.objects.get_or_create(
-                user=user,
-                graph=graph,
-                defaults={"persistent_variables": graph_organization.user_variables},
+        if user and graph_organization.organization != user.organization:
+            return Response(
+                {
+                    "message": f"Provided user does not belong to organization "
+                    f"{graph_organization.organization.name}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         variables = serializer.validated_data.get("variables", {})
