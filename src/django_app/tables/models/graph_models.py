@@ -2,7 +2,6 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from loguru import logger
-from tables.models.mixins import HashedFieldMixin
 
 
 class Graph(models.Model):
@@ -234,12 +233,12 @@ class Condition(models.Model):
         ordering = ["order"]
 
 
-class Organization(HashedFieldMixin, models.Model):
+class Organization(models.Model):
 
     name = models.CharField(max_length=256, blank=False, unique=True)
 
 
-class OrganizationUser(HashedFieldMixin, models.Model):
+class OrganizationUser(models.Model):
 
     name = models.CharField(max_length=256, blank=False)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
