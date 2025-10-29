@@ -70,7 +70,7 @@ class HTMLChunker(BaseChunker):
         else:
             return []
 
-    def chunk(self, html_text):
+    def chunk(self, html_text: str) -> list[str]:
 
         documents = self.splitter.split_text(html_text)
         chunks = [

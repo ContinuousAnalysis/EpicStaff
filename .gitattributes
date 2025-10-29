@@ -1,7 +1,7 @@
-* text eol=lf
+* text=auto eol=lf
+*.sh text eol=lf
 
 # Explicitly mark PNGs as binary
-*.gif binary
 *.png binary
 *.pdf binary
 *.exe binary

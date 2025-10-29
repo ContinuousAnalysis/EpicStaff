@@ -73,3 +73,12 @@ class SubGraphValidationError(CustomAPIExeption):
     default_detail = (
         "ValidationError occured in SubGraphValidator during subgraph validation"
     )
+
+
+class BuiltInToolModificationError(CustomAPIExeption):
+    """
+    Exception raised when someone tries to modify a built-in PythonCodeTool.
+    """
+
+    def __init__(self, detail="Unable to remove built-in tools", code=None):
+        super().__init__(detail=detail, code=code, status_code=400)

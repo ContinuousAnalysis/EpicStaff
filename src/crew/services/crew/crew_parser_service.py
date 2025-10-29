@@ -1,6 +1,7 @@
 import os
 from textwrap import dedent
 from typing import Any, Type
+from services.graph.events import StopEvent
 from crewai import Agent, Crew, Task, LLM
 from langchain_core.tools import BaseTool
 from utils.parse_llm import parse_llm, parse_memory_llm, parse_memory_embedder
@@ -53,6 +54,7 @@ class CrewParserService(metaclass=SingletonMeta):
         step_callback: Any,
         wait_for_user_callback: Any,
         inputs: dict[str, Any],
+        stop_event: StopEvent,
         tool_list: list[BaseTool] | None = None,
     ) -> Agent:
 
@@ -64,14 +66,16 @@ class CrewParserService(metaclass=SingletonMeta):
                 )
             except Exception as e:
                 logger.warning(f"Cannot log agent temperature")
-            llm = parse_llm(agent_data.llm)
+            llm = parse_llm(agent_data.llm, stop_event=stop_event)
 
         if tool_list is None:
             tool_list = []
 
         function_calling_llm = None
         if agent_data.function_calling_llm is not None:
-            function_calling_llm = parse_llm(agent_data.function_calling_llm)
+            function_calling_llm = parse_llm(
+                agent_data.function_calling_llm, stop_event=stop_event
+            )
 
         agent_config = {
             "role": agent_data.role,
@@ -94,6 +98,7 @@ class CrewParserService(metaclass=SingletonMeta):
             "search_knowledges": self.knowledge_search_service.search_knowledges,
             "search_limit": agent_data.search_limit,
             "similarity_threshold": agent_data.similarity_threshold,
+            "stop_event": stop_event,
         }
 
         if not tool_list:
@@ -118,6 +123,7 @@ class CrewParserService(metaclass=SingletonMeta):
         return Task(
             name=task_data.name,
             description=task_data.instructions,
+            knowledge_query=task_data.knowledge_query,
             agent=agent,
             expected_output=task_data.expected_output,
             human_input=task_data.human_input,
@@ -134,6 +140,7 @@ class CrewParserService(metaclass=SingletonMeta):
         crew_data: CrewData,
         session_id: int,
         crew_callback_factory: CrewCallbackFactory,
+        stop_event: StopEvent,
         inputs: dict[str, Any] | None = None,
         global_kwargs: dict[str, Any] | None = None,
     ) -> Crew:
@@ -154,6 +161,7 @@ class CrewParserService(metaclass=SingletonMeta):
             "knowledge_collection_id": crew_data.knowledge_collection_id,
             "search_limit": crew_data.search_limit,
             "similarity_threshold": crew_data.similarity_threshold,
+            "stop_event": stop_event,
         }
 
         if crew_data.memory:
@@ -189,14 +197,15 @@ class CrewParserService(metaclass=SingletonMeta):
                 tool = self.proxy_tool_factory.create_python_code_proxy_tool(
                     python_code_tool_data=base_tool_data.data,
                     global_kwargs=global_kwargs,
+                    stop_event=stop_event,
                 )
             elif isinstance(base_tool_data.data, ConfiguredToolData):
                 tool = self.proxy_tool_factory.create_proxy_tool(
-                    tool_data=base_tool_data.data,
+                    tool_data=base_tool_data.data, stop_event=stop_event
                 )
             elif isinstance(base_tool_data.data, McpToolData):
                 tool = await self.mcp_tool_factory.create(
-                    tool_data=base_tool_data.data,
+                    tool_data=base_tool_data.data, stop_event=stop_event
                 )
             else:
                 raise TypeError(
@@ -216,6 +225,7 @@ class CrewParserService(metaclass=SingletonMeta):
 
             id_agent_map[agent_data.id] = self.parse_agent(
                 agent_data,
+                stop_event=stop_event,
                 step_callback=crew_callback_factory.get_step_callback(
                     agent_id=agent_data.id,
                 ),
@@ -226,6 +236,7 @@ class CrewParserService(metaclass=SingletonMeta):
                     agent_knowledge_collection_id=agent_data.knowledge_collection_id,
                     agent_similarity_threshold=agent_data.similarity_threshold,
                     agent_search_limit=agent_data.search_limit,
+                    stop_event=stop_event,
                 ),
                 inputs=inputs,
                 tool_list=tool_list,
@@ -238,10 +249,14 @@ class CrewParserService(metaclass=SingletonMeta):
             crew_config["embedder"] = embedder.model_dump(exclude_none=True)
 
         if crew_data.manager_llm:
-            crew_config["manager_llm"] = parse_llm(llm=crew_data.manager_llm)
+            crew_config["manager_llm"] = parse_llm(
+                llm=crew_data.manager_llm, stop_event=stop_event
+            )
 
         if crew_data.planning_llm:
-            crew_config["planning_llm"] = parse_llm(llm=crew_data.planning_llm)
+            crew_config["planning_llm"] = parse_llm(
+                llm=crew_data.planning_llm, stop_event=stop_event
+            )
 
         task_list_data: list[TaskData] = crew_data.tasks
         task_list_data.sort(key=lambda item: int(item.order))
@@ -271,7 +286,7 @@ class CrewParserService(metaclass=SingletonMeta):
         # add context
         # TODO: add knowledge collection here also
         crew_config["manager_ask_human_input_callback"] = (
-            crew_callback_factory.get_wait_for_user_callback()
+            crew_callback_factory.get_wait_for_user_callback(stop_event=stop_event)
         )
 
         return Crew(

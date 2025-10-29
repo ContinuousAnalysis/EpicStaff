@@ -4,6 +4,7 @@ import time
 from typing import Callable, Optional, Union
 from crewai.agents.crew_agent_executor import KNOWLEDGE_KEYWORD
 
+from services.graph.events import StopEvent
 from models.graph_models import (
     GraphMessage,
     AgentMessageData,
@@ -251,6 +252,7 @@ class CrewCallbackFactory:
         agent_similarity_threshold=0.1,
         agent_search_limit=3,
         agent_knowledge_collection_id=None,
+        stop_event: Optional[StopEvent] = None,
     ) -> Callable[[], str]:
         def inner() -> str:
             update_session_status_message_data = UpdateSessionStatusMessageData(
@@ -297,7 +299,9 @@ class CrewCallbackFactory:
                         f"sessions:{self.session_id}:user_input", subscriber
                     )
                     break
-                time.sleep(0.1)
+                if stop_event is not None:
+                    stop_event.check_stop()
+                time.sleep(0.01)
 
             update_session_status_message_data = UpdateSessionStatusMessageData(
                 crew_id=self.crew_id,

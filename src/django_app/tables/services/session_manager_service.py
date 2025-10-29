@@ -61,11 +61,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         return Session.objects.get(id=session_id)
 
     def stop_session(self, session_id: int) -> None:
-        session: Session = self.get_session(session_id=session_id)
-        # TODO: Send notify to redis channel to stop container
-
-        session.status = Session.SessionStatus.END
-        session.save()
+        self.redis_service.publish_stop_session(session_id=session_id)
 
     def get_session_status(self, session_id: int) -> Session.SessionStatus:
         session: Session = self.get_session(session_id=session_id)

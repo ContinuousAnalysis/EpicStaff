@@ -3,6 +3,7 @@ from decimal import Decimal
 from itertools import chain
 
 from tables.models.mcp_models import McpTool
+from tables.models.knowledge_models import Chunk, DocumentMetadata
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
     Agent,
@@ -30,7 +31,7 @@ from tables.models import (
     SubGraphNode,
 )
 from rest_framework import serializers
-from tables.exceptions import ToolConfigSerializerError
+from tables.exceptions import BuiltInToolModificationError, ToolConfigSerializerError
 from tables.models import PythonCode, PythonCodeResult, PythonCodeTool
 from tables.models.crew_models import (
     AgentConfiguredTools,
@@ -182,12 +183,22 @@ class PythonCodeSerializer(serializers.ModelSerializer):
         return internal_value
 
 
+
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
+    built_in = serializers.ReadOnlyField()
 
     class Meta:
         model = PythonCodeTool
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "description",
+            "args_schema",
+            "python_code",
+            "favorite",
+            "built_in",
+        ]
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
@@ -198,27 +209,27 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
         return python_code_tool
 
     def update(self, instance, validated_data):
+        if instance.built_in:
+            raise BuiltInToolModificationError()
+
         python_code_data = validated_data.pop("python_code", None)
 
-        # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
 
-        # Update PythonCodeTool fields
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            if attr != "built_in":
+                setattr(instance, attr, value)
         instance.save()
 
         return instance
 
     def partial_update(self, instance, validated_data):
-        # Delegate to the update method for consistency
         return self.update(instance, validated_data)
-
-
+    
 class McpToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = McpTool
@@ -1318,3 +1329,14 @@ class OrganizationUserSecretKeyUpdateSerializer(
     class Meta:
         model = OrganizationUser
         fields = ["username", "secret_key", "old_secret_key"]
+
+
+class ChunkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chunk
+        fields = "__all__"
+    
+    def validate_document_id(self, value):
+        if not DocumentMetadata.objects.filter(document_id=value).exists():
+            raise serializers.ValidationError("Document with this id does not exist.")
+        return value

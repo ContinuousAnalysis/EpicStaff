@@ -25,9 +25,12 @@ COPY crew/libraries/ ./libraries
 
 ENV PEP517_BUILD_BACKEND=setuptools.build_meta
 
-# Install Python dependencies using Poetry, clearing cache
+RUN poetry install --no-root --without dotdict,crew -v
+RUN poetry install --no-root --only crew -v
+
 COPY ./shared ./../shared
-RUN poetry install --no-root --without dev -vvv
+RUN poetry install --no-root --only dotdict -v
+
 RUN rm -rf /root/.cache
 
 #Copying file to workdir

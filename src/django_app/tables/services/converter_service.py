@@ -101,6 +101,7 @@ class ConverterService(metaclass=SingletonMeta):
                     name=task.name,
                     agent_id=task.agent.pk,
                     instructions=task.instructions,
+                    knowledge_query=task.knowledge_query,
                     expected_output=task.expected_output,
                     order=task.order,
                     human_input=task.human_input,

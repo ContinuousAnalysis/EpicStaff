@@ -1,3 +1,4 @@
+from tables.models.knowledge_models import Chunk
 from django_filters import rest_framework as filters
 from tables.models.crew_models import (
     AgentConfiguredTools,
@@ -50,6 +51,7 @@ from django.db.models.functions import Cast
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentWriteSerializer,
+    ChunkSerializer,
     CrewTagSerializer,
     AgentTagSerializer,
     DecisionTableNodeSerializer,
@@ -171,7 +173,7 @@ from tables.serializers.knowledge_serializers import (
 )
 from tables.services.redis_service import RedisService
 from tables.utils.mixins import ImportExportMixin, DeepCopyMixin, ChangeSecretKeyMixin
-
+from tables.exceptions import BuiltInToolModificationError
 
 redis_service = RedisService()
 
@@ -521,6 +523,7 @@ class PythonCodeViewSet(viewsets.ModelViewSet):
 class PythonCodeToolViewSet(viewsets.ModelViewSet):
     """
     A viewset for viewing and editing PythonCodeTool instances.
+    Prevents modifications or deletions of built-in tools.
     """
 
     queryset = PythonCodeTool.objects.all()
@@ -528,6 +531,13 @@ class PythonCodeToolViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name", "python_code"]
 
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.built_in:
+            raise BuiltInToolModificationError()
+        return super().destroy(request, *args, **kwargs)
+    
 
 class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     queryset = PythonCodeResult.objects.all()
@@ -666,9 +676,6 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             collection = serializer.save()
 
-            redis_service.publish_source_collection(
-                collection_id=collection.collection_id
-            )
         return Response(
             SourceCollectionReadSerializer(collection).data,
             status=status.HTTP_201_CREATED,
@@ -706,8 +713,6 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 serializer.create_documents(collection)
 
-                redis_service.publish_add_source(collection_id=collection.collection_id)
-
             read_serializer = SourceCollectionReadSerializer(collection)
             return Response(read_serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -725,9 +730,6 @@ class CopySourceCollectionViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             collection = serializer.save()
 
-            redis_service.publish_source_collection(
-                collection_id=collection.collection_id
-            )
         return Response(
             SourceCollectionReadSerializer(collection).data,
             status=status.HTTP_201_CREATED,
@@ -743,7 +745,7 @@ class DocumentMetadataViewSet(viewsets.ReadOnlyModelViewSet):
         collection: SourceCollection = instance.source_collection
         instance.delete()
 
-        self.update_collection_status(collection)
+        collection.update_collection_status()
 
         return Response(
             {
@@ -751,30 +753,6 @@ class DocumentMetadataViewSet(viewsets.ReadOnlyModelViewSet):
             },
             status=status.HTTP_200_OK,
         )
-
-    def update_collection_status(self, collection):
-        documents_statuses = set(
-            collection.document_metadata.values_list("status", flat=True)
-        )
-
-        NEW = SourceCollection.SourceCollectionStatus.NEW
-        PROCESSING = SourceCollection.SourceCollectionStatus.PROCESSING
-        WARNING = SourceCollection.SourceCollectionStatus.WARNING
-        FAILED = SourceCollection.SourceCollectionStatus.FAILED
-        COMPLETED = SourceCollection.SourceCollectionStatus.COMPLETED
-
-        current_status = COMPLETED
-        if documents_statuses == {FAILED}:
-            current_status = FAILED
-        elif PROCESSING in documents_statuses:
-            current_status = PROCESSING
-        elif FAILED in documents_statuses or WARNING in documents_statuses:
-            current_status = WARNING
-        elif NEW in documents_statuses or not documents_statuses:
-            current_status = NEW
-
-        collection.status = current_status
-        collection.save()
 
 
 class MemoryFilter(FilterSet):
@@ -994,6 +972,14 @@ class McpToolViewSet(viewsets.ModelViewSet):
     serializer_class = McpToolSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name", "tool_name"]
+
+
+class ChunkViewSet(ReadOnlyModelViewSet):
+    queryset = Chunk.objects.all()
+    serializer_class = ChunkSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["document_id"]
+
 
 
 class OrganizationViewSet(ChangeSecretKeyMixin, viewsets.ModelViewSet):

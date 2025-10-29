@@ -11,13 +11,17 @@ WORKDIR /home/user/root/app
 
 ENV PEP517_BUILD_BACKEND=setuptools.build_meta
 
-COPY pyproject.toml .
-COPY poetry.lock .
+COPY django_app/pyproject.toml .
+COPY django_app/poetry.lock .
 
 # Configure poetry to not create a virtual environment and install dependencies and delete cache
 RUN poetry config virtualenvs.create false && poetry install --no-root && rm -rf /root/.cache
 
 #Coping file to workdir
-COPY . .
+COPY ./django_app ./django_app
+COPY ./shared ./shared
+
+WORKDIR /home/user/root/app/django_app
+
 
 RUN chmod +x ./entrypoint.sh

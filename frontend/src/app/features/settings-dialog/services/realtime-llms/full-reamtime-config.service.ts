@@ -5,7 +5,7 @@ import { map } from 'rxjs/operators';
 import { RealtimeModelsService } from './real-time-models.service';
 import { RealtimeModelConfigsService } from './real-time-model-config.service';
 import { LLM_Providers_Service } from '../LLM_providers.service';
-import { LLM_Provider } from '../../models/LLM_provider.model';
+import { LLM_Provider, ModelTypes } from '../../models/LLM_provider.model';
 import { RealtimeModelConfig } from '../../models/realtime-voice/realtime-llm-config.model';
 import { RealtimeModel } from '../../models/realtime-voice/realtime-model.model';
 
@@ -31,7 +31,7 @@ export class FullRealtimeConfigService {
     return forkJoin({
       configs: this.realtimeModelConfigsService.getAllConfigs(),
       models: this.realtimeModelsService.getAllModels(),
-      providers: this.providersService.getProviders(),
+      providers: this.providersService.getProvidersByQuery(ModelTypes.REALTIME),
     }).pipe(
       map(({ configs, models, providers }) => {
         // Build lookup tables for models and providers
