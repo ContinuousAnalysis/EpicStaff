@@ -1247,11 +1247,18 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        graph = attrs.get("graph")
+        graph = attrs.get("graph") or getattr(self.instance, "graph", None)
+        if not graph:
+            raise serializers.ValidationError("Graph is required to validate variables")
+
         organization_variables = attrs.get("persistent_variables", {})
         user_variables = attrs.get("user_variables", {})
 
-        if GraphOrganization.objects.filter(graph=graph).exists():
+        qs = GraphOrganization.objects.filter(graph=graph)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
             raise serializers.ValidationError("This flow already has an organization")
 
         start_node: StartNode = graph.start_node_list.first()
