@@ -1,3 +1,4 @@
+from tables.models.knowledge_models import Chunk
 from django_filters import rest_framework as filters
 from tables.models.crew_models import (
     AgentConfiguredTools,
@@ -25,18 +26,23 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
 from django.db.models import Prefetch
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from tables.models.graph_models import (
     Condition,
     ConditionGroup,
     DecisionTableNode,
     EndNode,
     LLMNode,
+    Organization,
+    OrganizationUser,
 )
 from tables.models.realtime_models import (
     RealtimeSessionItem,
     RealtimeAgent,
     RealtimeAgentChat,
 )
+from tables.filters import ProviderFilter
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
 from tables.models.mcp_models import McpTool
@@ -46,6 +52,7 @@ from django.db.models.functions import Cast
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentWriteSerializer,
+    ChunkSerializer,
     CrewTagSerializer,
     AgentTagSerializer,
     DecisionTableNodeSerializer,
@@ -157,6 +164,10 @@ from tables.serializers.model_serializers import (
     RealtimeModelSerializer,
     RealtimeTranscriptionConfigSerializer,
     RealtimeTranscriptionModelSerializer,
+    OrganizationSerializer,
+    OrganizationUserSerializer,
+    OrganizationSecretKeyUpdateSerializer,
+    OrganizationUserSecretKeyUpdateSerializer,
 )
 
 from tables.serializers.knowledge_serializers import (
@@ -168,8 +179,8 @@ from tables.serializers.knowledge_serializers import (
     DocumentMetadataSerializer,
 )
 from tables.services.redis_service import RedisService
-from tables.utils.mixins import ImportExportMixin, DeepCopyMixin
-
+from tables.utils.mixins import ImportExportMixin, DeepCopyMixin, ChangeSecretKeyMixin
+from tables.exceptions import BuiltInToolModificationError
 
 redis_service = RedisService()
 
@@ -235,7 +246,7 @@ class ProviderReadWriteViewSet(ModelViewSet):
     queryset = Provider.objects.all()
     serializer_class = ProviderSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["name"]
+    filterset_class = ProviderFilter
 
 
 class LLMModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
@@ -519,12 +530,19 @@ class PythonCodeViewSet(viewsets.ModelViewSet):
 class PythonCodeToolViewSet(viewsets.ModelViewSet):
     """
     A viewset for viewing and editing PythonCodeTool instances.
+    Prevents modifications or deletions of built-in tools.
     """
 
     queryset = PythonCodeTool.objects.all()
     serializer_class = PythonCodeToolSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name", "python_code"]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.built_in:
+            raise BuiltInToolModificationError()
+        return super().destroy(request, *args, **kwargs)
 
 
 class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
@@ -681,9 +699,6 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             collection = serializer.save()
 
-            redis_service.publish_source_collection(
-                collection_id=collection.collection_id
-            )
         return Response(
             SourceCollectionReadSerializer(collection).data,
             status=status.HTTP_201_CREATED,
@@ -721,8 +736,6 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 serializer.create_documents(collection)
 
-                redis_service.publish_add_source(collection_id=collection.collection_id)
-
             read_serializer = SourceCollectionReadSerializer(collection)
             return Response(read_serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -740,9 +753,6 @@ class CopySourceCollectionViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             collection = serializer.save()
 
-            redis_service.publish_source_collection(
-                collection_id=collection.collection_id
-            )
         return Response(
             SourceCollectionReadSerializer(collection).data,
             status=status.HTTP_201_CREATED,
@@ -758,7 +768,7 @@ class DocumentMetadataViewSet(viewsets.ReadOnlyModelViewSet):
         collection: SourceCollection = instance.source_collection
         instance.delete()
 
-        self.update_collection_status(collection)
+        collection.update_collection_status()
 
         return Response(
             {
@@ -766,30 +776,6 @@ class DocumentMetadataViewSet(viewsets.ReadOnlyModelViewSet):
             },
             status=status.HTTP_200_OK,
         )
-
-    def update_collection_status(self, collection):
-        documents_statuses = set(
-            collection.document_metadata.values_list("status", flat=True)
-        )
-
-        NEW = SourceCollection.SourceCollectionStatus.NEW
-        PROCESSING = SourceCollection.SourceCollectionStatus.PROCESSING
-        WARNING = SourceCollection.SourceCollectionStatus.WARNING
-        FAILED = SourceCollection.SourceCollectionStatus.FAILED
-        COMPLETED = SourceCollection.SourceCollectionStatus.COMPLETED
-
-        current_status = COMPLETED
-        if documents_statuses == {FAILED}:
-            current_status = FAILED
-        elif PROCESSING in documents_statuses:
-            current_status = PROCESSING
-        elif FAILED in documents_statuses or WARNING in documents_statuses:
-            current_status = WARNING
-        elif NEW in documents_statuses or not documents_statuses:
-            current_status = NEW
-
-        collection.status = current_status
-        collection.save()
 
 
 class MemoryFilter(FilterSet):
@@ -1066,3 +1052,96 @@ class GraphFileViewSet(ModelViewSet):
         serializer.save()
 
         return Response({"detail": "File updated successfully."})
+
+
+class ChunkViewSet(ReadOnlyModelViewSet):
+    queryset = Chunk.objects.all()
+    serializer_class = ChunkSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["document_id"]
+
+
+class OrganizationViewSet(ChangeSecretKeyMixin, viewsets.ModelViewSet):
+
+    queryset = Organization.objects.all()
+    serializer_class = OrganizationSerializer
+
+    def get_serializer_class(self):
+        if self.action == "change_secret_key":
+            return OrganizationSecretKeyUpdateSerializer
+        return OrganizationSerializer
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["secret_key"],
+            properties={
+                "secret_key": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Organization secret key"
+                ),
+            },
+        ),
+        responses={204: "Organization deleted successfully"},
+    )
+    def destroy(self, request, pk):
+        instance: Organization = self.get_object()
+        secret_key = request.data.get("secret_key")
+
+        if not secret_key:
+            return Response(
+                {
+                    "message": "Organization secret_key is required to delete the organization."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not instance.check_secret_key(secret_key):
+            return Response(
+                {"message": "secret_key is not valid for this organization."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class OrganizationUserViewSet(ChangeSecretKeyMixin, viewsets.ModelViewSet):
+
+    queryset = OrganizationUser.objects.all()
+    serializer_class = OrganizationUserSerializer
+
+    def get_serializer_class(self):
+        if self.action == "change_secret_key":
+            return OrganizationUserSecretKeyUpdateSerializer
+        return OrganizationUserSerializer
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["secret_key"],
+            properties={
+                "secret_key": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Organization User secret key"
+                ),
+            },
+        ),
+        responses={204: "Organization User deleted successfully"},
+    )
+    def destroy(self, request, pk):
+        instance: OrganizationUser = self.get_object()
+        secret_key = request.data.get("secret_key")
+
+        if not secret_key:
+            return Response(
+                {
+                    "message": "Organization user secret_key is required to delete the organization."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not instance.check_secret_key(secret_key):
+            return Response(
+                {"message": "secret_key is not valid for this organization user."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)

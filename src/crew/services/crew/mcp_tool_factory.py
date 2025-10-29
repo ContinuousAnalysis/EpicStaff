@@ -1,3 +1,4 @@
+import asyncio
 import os
 from crewai.tools.base_tool import Tool as CrewaiTool
 
@@ -9,13 +10,20 @@ from mcp.types import Tool as FastMCPTool
 from services.schema_converter.converter import generate_model_from_schema
 
 from functools import partial
+from services.graph.events import StopEvent
 
 
 class McpTool:
 
-    def __init__(self, fast_mcp_client: Client, tool_name: str):
+    def __init__(
+        self,
+        fast_mcp_client: Client,
+        tool_name: str,
+        stop_event: StopEvent | None = None,
+    ):
         self.fast_mcp_client = fast_mcp_client
         self.tool_name = tool_name
+        self.stop_event = stop_event
 
     async def get_tool_data(self) -> FastMCPTool:
         # List all tools from the server
@@ -29,11 +37,19 @@ class McpTool:
 
         return tool
 
-    async def execute(self, **kwargs):
+    async def execute(self, stop_event: StopEvent | None = None, **kwargs):
         async with self.fast_mcp_client:
-            result = await self.fast_mcp_client.call_tool(
-                self.tool_name, arguments=kwargs
+            task = asyncio.create_task(
+                self.fast_mcp_client.call_tool(self.tool_name, arguments=kwargs)
             )
+
+            while not task.done():
+                if stop_event is not None:
+                    stop_event.check_stop()
+                await asyncio.sleep(0.01)
+
+            result = await task
+
             if result.is_error:
                 raise RuntimeError(result.data)
 
@@ -48,7 +64,9 @@ class McpTool:
 
 class CrewaiMcpToolFactory:
 
-    async def create(self, tool_data: McpToolData) -> CrewaiTool:
+    async def create(
+        self, tool_data: McpToolData, stop_event: StopEvent | None = None
+    ) -> CrewaiTool:
 
         mcp_tool = McpTool(
             fast_mcp_client=Client(
@@ -58,6 +76,7 @@ class CrewaiMcpToolFactory:
                 init_timeout=tool_data.init_timeout,
             ),
             tool_name=tool_data.tool_name,
+            stop_event=stop_event,
         )
         tool = await mcp_tool.get_tool_data()
 

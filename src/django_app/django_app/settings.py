@@ -192,3 +192,11 @@ MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
 MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL = os.getenv(
+    "KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL", "knowledge:chunk"
+)
+KNOWLEDGE_DOCUMENT_CHUNK_RESPONSE = os.getenv(
+    "KNOWLEDGE_DOCUMENT_CHUNK_RESPONSE", "knowledge:chunk:response"
+)
+STOP_SESSION_CHANNEL = os.getenv("STOP_SESSION_CHANNEL", "sessions:stop")

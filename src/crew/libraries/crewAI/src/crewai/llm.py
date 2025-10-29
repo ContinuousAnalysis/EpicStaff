@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import threading
+import time
 import warnings
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, TextIO, Union, cast
@@ -253,6 +254,7 @@ class LLM:
         api_version: Optional[str] = None,
         api_key: Optional[str] = None,
         callbacks: List[Any] = [],
+        stop_event: Any = None,
     ):
         self.model = model
         self.timeout = timeout
@@ -274,6 +276,7 @@ class LLM:
         self.api_key = api_key
         self.callbacks = callbacks
         self.context_window_size = 0
+        self.stop_event = stop_event
 
         litellm.drop_params = True
 
@@ -354,7 +357,7 @@ class LLM:
                     "base_url": self.base_url,
                     "api_version": self.api_version,
                     "api_key": self.api_key,
-                    "stream": False,
+                    "stream": True,
                     "tools": tools,
                 }
 
@@ -362,25 +365,40 @@ class LLM:
                 params = {k: v for k, v in params.items() if v is not None}
 
                 # --- 2) Make the completion call
-                response = litellm.completion(**params)
-                response_message = cast(Choices, cast(ModelResponse, response).choices)[
-                    0
-                ].message
-                text_response = response_message.content or ""
-                tool_calls = getattr(response_message, "tool_calls", [])
+                text_response = ""
+                tool_calls = []
+                usage_info = None
+                start_time = time.time()
+                if self.stop_event is not None:
+                    self.stop_event.check_stop()
+
+                for chunk in litellm.completion(**params):
+                    if self.stop_event is not None:
+                        self.stop_event.check_stop()
+
+                    choice = chunk["choices"][0]
+                    delta = choice.get("delta", {})
+                    # accumulate streamed text
+                    if "content" in delta and delta["content"]:
+                        text_piece = delta["content"]
+                        text_response += text_piece
+                    if "tool_calls" in delta and delta["tool_calls"]:
+                        tool_calls.extend(delta["tool_calls"])
+                    # usage sometimes comes as separate event
+                    if "usage" in chunk and chunk["usage"]:
+                        usage_info = chunk["usage"]
+                end_time = time.time()
 
                 # --- 3) Handle callbacks with usage info
-                if callbacks and len(callbacks) > 0:
+                if callbacks and len(callbacks) > 0 and usage_info:
                     for callback in callbacks:
                         if hasattr(callback, "log_success_event"):
-                            usage_info = getattr(response, "usage", None)
-                            if usage_info:
-                                callback.log_success_event(
-                                    kwargs=params,
-                                    response_obj={"usage": usage_info},
-                                    start_time=0,
-                                    end_time=0,
-                                )
+                            callback.log_success_event(
+                                kwargs=params,
+                                response_obj={"usage": usage_info},
+                                start_time=start_time,
+                                end_time=end_time,
+                            )
 
                 # --- 4) If no tool calls, return the text response
                 if not tool_calls or not available_functions:

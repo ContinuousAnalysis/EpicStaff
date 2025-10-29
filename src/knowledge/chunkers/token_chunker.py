@@ -8,5 +8,5 @@ class TokenChunker(BaseChunker):
             chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
 
-    def chunk(self, text):
+    def chunk(self, text: str) -> list[str]:
         return self.text_splitter.split_text(text)

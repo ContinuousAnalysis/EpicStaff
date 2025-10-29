@@ -202,6 +202,7 @@ export class TasksTableComponent implements OnChanges {
             name: '',
             instructions: '',
             expected_output: '',
+            knowledge_query: null,
             order: this.rowData.length,
             human_input: false,
             async_execution: false,
@@ -333,6 +334,26 @@ export class TasksTableComponent implements OnChanges {
             },
             cellClassRules: {
                 'cell-warning': (params) => !!params.data.backstoryWarning,
+            },
+            cellStyle: {
+                'white-space': 'normal',
+                'text-align': 'left',
+                'font-size': '14px',
+            },
+            flex: 1,
+            minWidth: 255,
+            editable: true,
+        },
+        {
+            headerName: 'Knowledge Query',
+            field: 'knowledge_query',
+            cellEditor: 'agLargeTextCellEditor',
+            cellEditorParams: {
+                maxLength: 1000000,
+            },
+            valueSetter: (params) => {
+                params.data.knowledge_query = params.newValue;
+                return true;
             },
             cellStyle: {
                 'white-space': 'normal',
@@ -506,7 +527,7 @@ export class TasksTableComponent implements OnChanges {
         // Process merged tools similar to agents table
         const mergedTools = (taskData as any).mergedTools || [];
 
-        return {
+        const parsed = {
             ...taskData,
             agent: agentId,
             crew: crew,
@@ -516,7 +537,15 @@ export class TasksTableComponent implements OnChanges {
             python_code_tools: mergedTools
                 .filter((tool: any) => tool.type === 'python-tool')
                 .map((tool: any) => tool.id),
+            mcp_tools: mergedTools
+                .filter((tool: any) => tool.type === 'mcp-tool')
+                .map((tool: any) => tool.id),
         };
+
+        // Delete tools field to ensure it's never included in update requests
+        delete (parsed as any).tools;
+
+        return parsed;
     }
 
     private onCellValueChanged(event: CellValueChangedEvent): void {
@@ -557,6 +586,7 @@ export class TasksTableComponent implements OnChanges {
                 name: parsedData.name,
                 instructions: parsedData.instructions,
                 expected_output: parsedData.expected_output,
+                knowledge_query: parsedData.knowledge_query ?? null,
                 order: parsedData.order ?? null,
                 human_input: parsedData.human_input ?? false,
                 async_execution: parsedData.async_execution ?? false,
@@ -565,6 +595,8 @@ export class TasksTableComponent implements OnChanges {
                 crew: parsedData.crew,
                 agent: parsedData.agent,
                 task_context_list: parsedData.task_context_list ?? [],
+                configured_tools: configuredToolIds,
+                python_code_tools: pythonToolIds,
                 tool_ids: toolIds,
             };
 
@@ -642,9 +674,12 @@ export class TasksTableComponent implements OnChanges {
             parsedUpdateData.id = +parsedUpdateData.id;
         }
 
-        // Create update request with tool_ids
+        // Create update request with all tool arrays
         const updateTaskRequest: UpdateTaskRequest = {
             ...parsedUpdateData,
+            knowledge_query: parsedUpdateData.knowledge_query ?? null,
+            configured_tools: updateConfiguredToolIds,
+            python_code_tools: updatePythonToolIds,
             tool_ids: updateToolIds,
         };
 
@@ -702,6 +737,7 @@ export class TasksTableComponent implements OnChanges {
                     output_model: taskData.output_model,
                     task_context_list: taskData.task_context_list,
                     taskName: taskData.name,
+                    taskId: taskData.id,
                     availableTasks: normalTasks, // Pass filtered tasks to dialog
                 },
                 width: '100%', // Set minimum width
@@ -778,6 +814,7 @@ export class TasksTableComponent implements OnChanges {
             name: updatedTask.name,
             instructions: updatedTask.instructions,
             expected_output: updatedTask.expected_output,
+            knowledge_query: updatedTask.knowledge_query ?? null,
             order: updatedTask.order,
             human_input: updatedTask.human_input,
             async_execution: updatedTask.async_execution,
@@ -786,6 +823,8 @@ export class TasksTableComponent implements OnChanges {
             crew: updatedTask.crew,
             agent: updatedTask.agent,
             task_context_list: updatedTask.task_context_list,
+            configured_tools: settingsConfiguredToolIds,
+            python_code_tools: settingsPythonToolIds,
             tool_ids: settingsToolIds,
         };
 
@@ -987,6 +1026,7 @@ export class TasksTableComponent implements OnChanges {
             name: newTaskData.name,
             instructions: newTaskData.instructions,
             expected_output: newTaskData.expected_output,
+            knowledge_query: newTaskData.knowledge_query ?? null,
             order: newTaskData.order ?? null,
             human_input: newTaskData.human_input ?? false,
             async_execution: newTaskData.async_execution ?? false,
@@ -995,6 +1035,8 @@ export class TasksTableComponent implements OnChanges {
             crew: newTaskData.crew ?? null,
             agent: newTaskData.agent ?? null,
             task_context_list: newTaskData.task_context_list ?? [],
+            configured_tools: pasteConfiguredToolIds,
+            python_code_tools: pastePythonToolIds,
             tool_ids: pasteToolIds,
         };
 

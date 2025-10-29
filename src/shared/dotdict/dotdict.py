@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 import ast
-from typing import Any
-
-from collections.abc import Mapping
+from typing import Any, Mapping
 
 
 @dataclass
@@ -14,170 +12,105 @@ class Expression:
         return self.func(*args, **kwargs)
 
 
-class DotDict(Mapping):
-    __slots__ = ("__dict__", "_properties", "_setters")
-    MAX_DEPTH = 50
+class DotDict(dict):
+    def __init__(self, dictionary=None):
+        super().__init__()
+        object.__setattr__(self, "_properties", {})
+        object.__setattr__(self, "_setters", {})
 
-    RESERVED_KEYS = {
-        "__dict__",
-        "__class__",
-        "__module__",
-        "__weakref__",
-        "__properties__",
-    }
-    BUILTIN_METHODS = {"get", "keys", "values", "items", "update", "copy"}
-
-    def __init__(self, dictionary, depth=0):
-
-        self._properties = {}
-        self._setters = {}
-
+        if dictionary is None:
+            dictionary = {}
+        dictionary = dict(dictionary)
+        
         properties = dictionary.pop("__properties__", None)
         setters = dictionary.pop("__setters__", None)
 
-        self.__dict__.update(
-            {
-                self._safe_key(k): self._convert(v, depth + 1)
-                for k, v in dictionary.items()
-            }
-        )
+        for key, value in dictionary.items():
+            self[key] = value
 
-        if properties is not None:
-            if not isinstance(properties, dict):
-                raise TypeError("__properties__ should be dictionary.")
+        if properties:
             for k, v in properties.items():
                 self.add_property(k, v)
-
-        if setters is not None:
-            if not isinstance(setters, dict):
-                raise TypeError("__setters__ should be dictionary.")
+        if setters:
             for k, v in setters.items():
                 self.add_setter(k, v)
 
-    def _convert(self, value, depth):
-        if isinstance(value, dict):
-            return DotDict(value, depth)
-        elif isinstance(value, list):
-            return [self._convert(item, depth) for item in value]
-        return value
-
-    def _safe_key(self, key):
-        if key in self.RESERVED_KEYS or key in self.BUILTIN_METHODS:
-            return f"_{key}"
-        return key
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
-
-    def __iter__(self):
-        return iter(self.__dict__)
-
-    def __len__(self):
-        return len(self.__dict__)
+    def __setitem__(self, key, value):
+        if key in self._setters:
+            value = self._setters[key](value)
+        super().__setitem__(key, DotObject(value))
+        self._update_properties()
 
     def __getattr__(self, key):
         try:
-            return self.__dict__[key]
+            return self[key]
         except KeyError:
-            if key in self._properties:
-                return self._properties[key]()
-
-            # self.__dict__[key] = DotDict(dictionary={})
-            # return self.__dict__[key]
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{key}'"
-            )
+            raise AttributeError(f"'DotDict' object has no attribute '{key}'")
 
     def __setattr__(self, key, value):
-        if key in {"_properties", "_setters"} or key in self.__slots__:
-            super().__setattr__(key, value)
+        if key in {"_properties", "_setters"}:
+            object.__setattr__(self, key, value)
         else:
-            key = self._safe_key(key)
+            self[key] = value
 
-            if key in self._setters:
-                setter_func = self._setters[key]
-                value = setter_func(value)
-
-            self.__dict__[key] = self._convert(value, 0)
-            self._update_properties()
+    def update(self, *args, **kwargs):
+        for key, value in dict(*args, **kwargs).items():
+            self[key] = value
 
     def _update_properties(self):
-        for key, func in self._properties.items():
-            self.__dict__[key] = func()
+        for key, expr_func in self._properties.items():
+            super().__setitem__(key, expr_func())
 
     def add_property(self, name, code: str):
         try:
-            tree = ast.parse(code, mode="eval")
-            compiled_expr = compile(tree, "<string>", "eval")
-
-            func = lambda: eval(compiled_expr, {}, self.__dict__)
-            expr = Expression(code=code, func=func)
-            self._properties[name] = expr
-            self.__dict__[name] = self._properties[name]()
+            compiled_expr = compile(ast.parse(code, mode="eval"), "<string>", "eval")
+            func = lambda: eval(compiled_expr, {}, self)
+            self._properties[name] = Expression(code=code, func=func)
+            self._update_properties()
         except Exception as e:
-            raise ValueError(f"Invalid expression for property '{name}': {e}")
+            raise ValueError(f"Invalid expression for property '{name}': {e}") from e
 
     def add_setter(self, name, code: str):
         try:
-            tree = ast.parse(code, mode="eval")
-            compiled_expr = compile(tree, "<string>", "eval")
-
-            func = lambda value: eval(
-                compiled_expr, {}, {**self.__dict__, "value": value}
-            )
-            expr = Expression(code=code, func=func)
-            self._setters[name] = expr
-
+            compiled_expr = compile(ast.parse(code, mode="eval"), "<string>", "eval")
+            func = lambda value: eval(compiled_expr, {}, {**self, "value": value})
+            self._setters[name] = Expression(code=code, func=func)
         except Exception as e:
-            raise ValueError(f"Invalid expression for setter '{name}': {e}")
+            raise ValueError(f"Invalid expression for setter '{name}': {e}") from e
 
-    def __repr__(self):
-        return f"DotDict({self.__dict__})"
+    def model_dump(self):
+        return dict(self)
 
-    def __copy__(self):
-        return DotDict(self.__dict__.copy())
 
-    def update(self, new_data: dict):
-        """update DotDict overwriting fields with new data"""
-        if not isinstance(new_data, dict):
-            raise TypeError("update method requires a dictionary.")
-        properties = new_data.pop("__properties__", None)
-        setters = new_data.pop("__setters__", None)
-        self.__dict__.update(
-            {self._safe_key(k): self._convert(v, 0) for k, v in new_data.items()}
-        )
+class DotList(list):
+    def __init__(self, iterable=None):
+        super().__init__()
+        if iterable:
+            for item in iterable:
+                super().append(DotObject(item))  # recursive conversion
 
-        if properties is not None:
-            if not isinstance(properties, dict):
-                raise TypeError("__properties__ should be dictionary.")
-            for k, v in properties.items():
-                self.add_property(k, v)
+    def append(self, item):
+        super().append(DotObject(item))
 
-        if setters is not None:
-            if not isinstance(setters, dict):
-                raise TypeError("__setters__ should be dictionary.")
-            for k, v in setters.items():
-                self.add_setter(k, v)
-        return self
+    def extend(self, iterable):
+        for item in iterable:
+            self.append(item)
 
-    def model_dump(self) -> dict:
-        """DotDict to dict"""
-        result = {}
-        for key, value in self.__dict__.items():
-            if isinstance(value, DotDict):
-                result[key] = value.model_dump()
-            elif isinstance(value, list):
-                result[key] = [
-                    v.model_dump() if isinstance(v, DotDict) else v for v in value
-                ]
-            else:
-                result[key] = value
+    def insert(self, index, item):
+        super().insert(index, DotObject(item))
 
-        __properties__ = {k: v.code for k, v in self._properties.items()}
-        if __properties__:
-            result["__properties__"] = __properties__
-        __setters__ = {k: v.code for k, v in self._setters.items()}
-        if __setters__:
-            result["__setters__"] = __setters__
+    def __setitem__(self, key, value):
+        super().__setitem__(key, DotObject(value))
 
-        return result
+    def model_dump(self):
+        return [v.model_dump() if hasattr(v, "model_dump") else v for v in self]
+
+
+def DotObject(data):
+    if isinstance(data, Mapping):
+        return DotDict({k: DotObject(v) for k, v in data.items()})
+    elif isinstance(data, (list, tuple, set)):
+        return DotList(DotObject(v) for v in data)
+    return data
+
+

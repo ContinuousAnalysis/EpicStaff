@@ -3,6 +3,7 @@ from decimal import Decimal
 from itertools import chain
 
 from tables.models.mcp_models import McpTool
+from tables.models.knowledge_models import Chunk, DocumentMetadata
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
     Agent,
@@ -31,7 +32,7 @@ from tables.models import (
     GraphFile,
 )
 from rest_framework import serializers
-from tables.exceptions import ToolConfigSerializerError
+from tables.exceptions import BuiltInToolModificationError, ToolConfigSerializerError
 from tables.models import PythonCode, PythonCodeResult, PythonCodeTool
 from tables.models.crew_models import (
     AgentConfiguredTools,
@@ -50,6 +51,8 @@ from tables.models.graph_models import (
     EndNode,
     LLMNode,
     StartNode,
+    Organization,
+    OrganizationUser,
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -75,9 +78,10 @@ from tables.models import (
 from tables.models import (
     ToolConfig,
 )
-
+from tables.serializers.utils.mixins import HashedFieldSerializerMixin
 
 from django.core.exceptions import ValidationError
+from tables.exceptions import InvalidTaskOrderError
 
 
 class LLMConfigSerializer(serializers.ModelSerializer):
@@ -182,10 +186,19 @@ class PythonCodeSerializer(serializers.ModelSerializer):
 
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
+    built_in = serializers.ReadOnlyField()
 
     class Meta:
         model = PythonCodeTool
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "description",
+            "args_schema",
+            "python_code",
+            "favorite",
+            "built_in",
+        ]
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
@@ -196,24 +209,25 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
         return python_code_tool
 
     def update(self, instance, validated_data):
+        if instance.built_in:
+            raise BuiltInToolModificationError()
+
         python_code_data = validated_data.pop("python_code", None)
 
-        # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
 
-        # Update PythonCodeTool fields
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            if attr != "built_in":
+                setattr(instance, attr, value)
         instance.save()
 
         return instance
 
     def partial_update(self, instance, validated_data):
-        # Delegate to the update method for consistency
         return self.update(instance, validated_data)
 
 
@@ -600,16 +614,46 @@ class TaskWriteSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        context_ids = self.initial_data.get("task_context_list", None)
-        task_context_field = self.fields["task_context_list"]
 
-        if context_ids is not None:
-            validated = task_context_field.validate_context_tasks(
-                context_ids, task_instance=self.instance, task_data=attrs
+        task_order = attrs.get("order", self.instance.order if self.instance else None)
+
+        if task_order is None:
+            return attrs
+
+        incoming_context_ids = self.initial_data.get("task_context_list", None)
+
+        ids_to_validate = []
+
+        if incoming_context_ids is not None:
+            # Case A: A new context list was explicitly sent in the request.
+            task_context_field = self.fields["task_context_list"]
+            ids_to_validate = task_context_field.validate_context_tasks(
+                incoming_context_ids, task_instance=self.instance, task_data=attrs
             )
-            attrs["_validated_context_ids"] = validated
-        else:
-            attrs["_validated_context_ids"] = None
+        elif "order" in attrs and self.instance:
+            # Case B: The 'order' is being changed, but no context list was sent.
+            ids_to_validate = list(
+                self.instance.task_context_list.values_list("context_id", flat=True)
+            )
+
+        if ids_to_validate:
+            valid_context_count = Task.objects.filter(
+                id__in=ids_to_validate, order__lt=task_order
+            ).count()
+
+            if valid_context_count < len(ids_to_validate):
+                raise InvalidTaskOrderError
+
+        if "order" in attrs and self.instance:
+            dependent_tasks = Task.objects.filter(
+                task_context_list__context=self.instance
+            )
+
+            if dependent_tasks.filter(order__lte=task_order).exists():
+                raise InvalidTaskOrderError
+
+        if incoming_context_ids is not None:
+            attrs["_validated_context_ids"] = ids_to_validate
 
         return attrs
 
@@ -1205,3 +1249,108 @@ class GraphFileReadSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
+
+
+class OrganizationSerializer(HashedFieldSerializerMixin, serializers.ModelSerializer):
+
+    REQUIRE_IDENTIFIER_FOR_UPDATE = True
+    IDENTIFIER_FIELD = "name"
+
+    secret_key = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_null=False,
+        help_text="Secret key for verification (will be hashed on create)",
+    )
+
+    class Meta:
+        model = Organization
+        fields = ["id", "name", "secret_key", "variables", "persistent_variables"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["secret_key"].required = True
+        if self.instance is not None:
+            self.fields["secret_key"].help_text = "Secret key for verification"
+
+
+class OrganizationUserSerializer(
+    HashedFieldSerializerMixin, serializers.ModelSerializer
+):
+    REQUIRE_IDENTIFIER_FOR_UPDATE = True
+    IDENTIFIER_FIELD = "username"
+
+    secret_key = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_null=False,
+        help_text="Secret key for verification (will be hashed on create)",
+    )
+
+    class Meta:
+        model = OrganizationUser
+        fields = [
+            "id",
+            "username",
+            "organization",
+            "secret_key",
+            "variables",
+            "persistent_variables",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["secret_key"].required = True
+        if self.instance is not None:
+            self.fields["secret_key"].help_text = "Secret key for verification"
+
+
+class OrganizationSecretKeyUpdateSerializer(
+    HashedFieldSerializerMixin, serializers.ModelSerializer
+):
+    REQUIRE_OLD_FOR_CHANGE = True
+    REQUIRE_IDENTIFIER_FOR_UPDATE = False
+
+    name = serializers.CharField(read_only=True)
+    secret_key = serializers.CharField(
+        write_only=True, required=True, help_text="New secret key (will be hashed)"
+    )
+    old_secret_key = serializers.CharField(
+        write_only=True, required=True, help_text="Current secret key for verification"
+    )
+
+    class Meta:
+        model = Organization
+        fields = ["name", "secret_key", "old_secret_key"]
+
+
+class OrganizationUserSecretKeyUpdateSerializer(
+    HashedFieldSerializerMixin, serializers.ModelSerializer
+):
+    REQUIRE_OLD_FOR_CHANGE = True
+    REQUIRE_IDENTIFIER_FOR_UPDATE = False
+
+    username = serializers.CharField(read_only=True)
+    secret_key = serializers.CharField(
+        write_only=True, required=True, help_text="New secret key (will be hashed)"
+    )
+    old_secret_key = serializers.CharField(
+        write_only=True, required=True, help_text="Current secret_key for verification"
+    )
+
+    class Meta:
+        model = OrganizationUser
+        fields = ["username", "secret_key", "old_secret_key"]
+
+
+class ChunkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chunk
+        fields = "__all__"
+
+    def validate_document_id(self, value):
+        if not DocumentMetadata.objects.filter(document_id=value).exists():
+            raise serializers.ValidationError("Document with this id does not exist.")
+        return value

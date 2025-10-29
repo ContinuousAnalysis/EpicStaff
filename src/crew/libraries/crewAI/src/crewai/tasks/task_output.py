@@ -10,6 +10,7 @@ class TaskOutput(BaseModel):
     """Class that represents the result of a task."""
 
     description: str = Field(description="Description of the task")
+    knowledge_query: Optional[str] = Field(description="Knowledge query of the task.", default=None)
     name: Optional[str] = Field(description="Name of the task", default=None)
     expected_output: Optional[str] = Field(
         description="Expected output of the task", default=None

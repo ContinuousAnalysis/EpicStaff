@@ -406,6 +406,7 @@ class Task(models.Model):
         "Agent", on_delete=models.SET_NULL, null=True, default=None
     )
     instructions = models.TextField()
+    knowledge_query = models.TextField(null=True, blank=True)
     expected_output = models.TextField()
     order = models.IntegerField(null=True, default=None)
     human_input = models.BooleanField(default=False)

@@ -41,14 +41,16 @@ class AppendFileTool(RouteTool):
             file_savepath = self.construct_savepath(frompath=file_path)
             if not AppendFileTool.is_path_has_permission(file_savepath):
                 return "Given filepath doesn't have access to the specified directory."
-            
+
             append_text = kwargs.get("append_text")
             if append_text is None:
-                return "append_text argument is mandatory and it wasn't given to the tool"
-            
-            with open(file_savepath, "a", encoding='utf-8') as file:
+                return (
+                    "append_text argument is mandatory and it wasn't given to the tool"
+                )
+
+            with open(file_savepath, "a", encoding="utf-8") as file:
                 file.write(append_text + "\n")
-                
+
             return f"Text appended successfully to the file {file_path}."
         except Exception as e:
             return f"Didn't manage to append to a file. Unpredicted exception occured, I cannot figure out how to handle this {e}"

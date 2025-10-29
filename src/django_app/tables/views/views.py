@@ -44,7 +44,13 @@ from tables.services.quickstart_service import QuickstartService
 from django_filters.rest_framework import DjangoFilterBackend
 
 
-from tables.models import Session, SourceCollection, DocumentMetadata
+from tables.models import (
+    Session,
+    SourceCollection,
+    DocumentMetadata,
+    Organization,
+    OrganizationUser,
+)
 from tables.serializers.model_serializers import (
     SessionSerializer,
     SessionLightSerializer,
@@ -56,6 +62,8 @@ from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
+    ProcessDocumentChunkingSerializer,
+    ProcessCollectionEmbeddingSerializer,
     RunSessionSerializer,
 )
 from tables.serializers.knowledge_serializers import CollectionStatusSerializer
@@ -189,12 +197,25 @@ class SessionViewSet(
             )
 
         with transaction.atomic():
-            sessions = Session.objects.filter(id__in=ids)
-            deleted_count = sessions.count()
-            sessions.delete()
+            session_list = Session.objects.filter(id__in=ids)
+            deleted_count = session_list.count()
+            for session in session_list:
+                session.delete(
+                    callback=lambda: session_manager_service.stop_session(
+                        session_id=session.pk
+                    )
+                )
+
         return Response(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
+
+    def destroy(self, request, *args, **kwargs):
+        session: Session = self.get_object()
+        session.delete(
+            callback=lambda: session_manager_service.stop_session(session_id=session.pk)
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RunSession(APIView):
@@ -233,6 +254,13 @@ class RunSession(APIView):
 
         files_dict = {}
         graph_id = serializer.validated_data["graph_id"]
+        organization_data = serializer.validated_data.get("organization_data", None)
+        organization_user_data = serializer.validated_data.get(
+            "organization_user_data", None
+        )
+        organization = None
+        organization_user = None
+
         variables = serializer.validated_data.get("variables", {})
         graph_files = GraphFile.objects.filter(graph__id=graph_id)
 
@@ -246,11 +274,52 @@ class RunSession(APIView):
 
         if files_dict is not None:
             variables["files"] = files_dict
+            logger.info(f"Added {len(files_dict)} files to variables.")
+
+        if organization_data:
+            vars_dict, organization, error = self.get_entity_variables(
+                Organization,
+                "name",
+                organization_data,
+                variable_keys={"organization": "variables"},
+                error_messages={
+                    "not_found": "Organization not found",
+                    "invalid_key": "Provided secret key is invalid",
+                },
+            )
+            if error:
+                return error
+
+            variables.update(vars_dict)
+            logger.info("Organization variables are being used for this flow.")
+
+        if organization_user_data:
+            vars_dict, organization_user, error = self.get_entity_variables(
+                OrganizationUser,
+                "username",
+                organization_user_data,
+                variable_keys={
+                    "user": "variables",
+                    "organization": lambda user: user.organization.variables,
+                },
+                error_messages={
+                    "not_found": "Organization User not found",
+                    "invalid_key": "Provided secret key is invalid",
+                },
+            )
+            if error:
+                return error
+
+            variables.update(vars_dict)
+            logger.info("Organization and User variables are being used for this flow.")
 
         try:
-            # Publish session to: crew, maanger
+            # Publish session to: crew, manager
             session_id = session_manager_service.run_session(
-                graph_id=graph_id, variables=variables
+                graph_id=graph_id,
+                variables=variables,
+                organization=organization,
+                organization_user=organization_user,
             )
             logger.info(f"Session {session_id} successfully started.")
         except Exception as e:
@@ -271,6 +340,48 @@ class RunSession(APIView):
             "data": base64.b64encode(file_bytes).decode("utf-8"),
             "content_type": content_type,
         }
+
+    def get_entity_variables(
+        self, entity_class, lookup_field, data, variable_keys, error_messages
+    ):
+        """
+        Fetch an entity, validate secret_key, and return its variables.
+
+        Args:
+            entity_class: Model class (Organization or OrganizationUser)
+            lookup_field: Field name to filter by ("name" or "username")
+            data: Dict containing the lookup_field and 'secret_key'
+            variable_keys: Dict mapping keys in variables dict to either:
+                - string attribute of entity that contains the dict (e.g. 'variables')
+                - callable to compute value
+            error_messages: dict with 'not_found' and 'invalid_key' messages
+
+        Returns:
+            tuple: (dict of variables, entity object, error Response or None)
+        """
+        entity = entity_class.objects.filter(
+            **{lookup_field: data[lookup_field]}
+        ).first()
+        if not entity:
+            return (
+                None,
+                None,
+                Response({"message": error_messages["not_found"]}, status=404),
+            )
+        if not entity.check_secret_key(data["secret_key"]):
+            return (
+                None,
+                None,
+                Response({"message": error_messages["invalid_key"]}, status=403),
+            )
+
+        vars_dict = {}
+        for key, value in variable_keys.items():
+            if callable(value):
+                vars_dict[key] = value(entity)
+            else:
+                vars_dict[key] = getattr(entity, value)
+        return vars_dict, entity, None
 
 
 class GetUpdates(APIView):
@@ -777,7 +888,10 @@ class QuickstartView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @swagger_auto_schema(request_body=QuickstartSerializer)
+    @swagger_auto_schema(
+        request_body=QuickstartSerializer,
+        responses={202: openapi.Response(description="Chunking operation accepted")},
+    )
     def post(self, request):
         serializer = QuickstartSerializer(data=request.data)
         if serializer.is_valid():
@@ -802,3 +916,31 @@ class QuickstartView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProcessDocumentChunkingView(APIView):
+    @swagger_auto_schema(request_body=ProcessDocumentChunkingSerializer)
+    def post(self, request):
+        serializer = ProcessDocumentChunkingSerializer(data=request.data)
+        if serializer.is_valid():
+            document_id = serializer["document_id"].value
+
+            if not DocumentMetadata.objects.filter(document_id=document_id).exists():
+                return Response(status=status.HTTP_404_NOT_FOUND)
+
+            redis_service.publish_process_document_chunking(document_id=document_id)
+            return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class ProcessCollectionEmbeddingView(APIView):
+    @swagger_auto_schema(request_body=ProcessCollectionEmbeddingSerializer)
+    def post(self, request):
+        serializer = ProcessCollectionEmbeddingSerializer(data=request.data)
+        if serializer.is_valid():
+            collection_id = serializer["collection_id"].value
+            if not SourceCollection.objects.filter(
+                collection_id=collection_id
+            ).exists():
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            redis_service.publish_source_collection(collection_id=collection_id)
+            return Response(status=status.HTTP_202_ACCEPTED)

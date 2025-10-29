@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from loguru import logger
+from tables.models.mixins import HashedFieldMixin
 
 
 class Graph(models.Model):
@@ -262,6 +263,30 @@ class GraphFile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def delete(self, *args, **kwargs):
+        if self.file:
+            self.file.delete(save=False)
+
+        super().delete(*args, **kwargs)
+
+
+class Organization(HashedFieldMixin, models.Model):
+
+    name = models.CharField(max_length=256, blank=False, unique=True)
+    secret_key = models.CharField(
+        max_length=512,
+        blank=False,
+        unique=True,
+        help_text="A hashed unique key for organization",
+    )
+    variables = models.JSONField(
+        default=dict, help_text="Organization global variables"
+    )
+    persistent_variables = models.BooleanField(
+        default=False,
+        help_text="If 'True' -> variables will be updated after each session.",
+    )
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -269,9 +294,27 @@ class GraphFile(models.Model):
             )
         ]
 
-    def delete(self, *args, **kwargs):
-        # Delete file from uploads/
-        if self.file:
-            self.file.delete(save=False)
 
-        super().delete(*args, **kwargs)
+class OrganizationUser(HashedFieldMixin, models.Model):
+
+    username = models.CharField(max_length=256, blank=False, unique=True)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    secret_key = models.CharField(
+        max_length=512,
+        blank=False,
+        unique=True,
+        help_text="A hashed unique key for user inside an organization",
+    )
+    variables = models.JSONField(default=dict, help_text="User scope variables")
+    persistent_variables = models.BooleanField(
+        default=False,
+        help_text="If 'True' -> variables will be updated after each session.",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["username", "organization"],
+                name="unique_flow_user_for_organization",
+            )
+        ]

@@ -237,7 +237,7 @@ class ExecuteCodeHandler(AbstractHandler):
         wrapped_code = f"""
 import sys
 import json
-from dotdict import DotDict
+from dotdict import DotDict, DotObject, DotList
 try:
     for k, v in {global_kwargs}.items():
         globals()[k] = v
@@ -248,8 +248,6 @@ try:
     
     sys_result_variable = {entrypoint}(**__sys_dot_kwargs)
     with open(r'{result_file_path.as_posix()}', 'w', encoding='utf-8') as file:
-        if isinstance(sys_result_variable, DotDict):
-            sys_result_variable = sys_result_variable.model_dump()
         file.write(json.dumps(sys_result_variable))
 except Exception as e:
     print(str(e), file=sys.stderr)

@@ -42,6 +42,14 @@ import { NgClass, NgIf } from '@angular/common';
         background-color: rgba(255, 76, 76, 0.15);
         color: #ff7a7a;
       }
+      .status-error {
+        background-color: rgba(16, 2, 2, 0.15);
+        color: #c69999ff;
+      }
+      .status-stop {
+        background-color: rgba(16, 2, 2, 0.15);
+        color: #b7aeaeff;
+      }
       .status-waiting {
         background-color: rgba(255, 170, 0, 0.15);
         color: #ffc14d;
@@ -89,6 +97,8 @@ export class StatusBadgeComponent {
         return 'Pending';
       case GraphSessionStatus.EXPIRED:
         return 'Expired';
+      case GraphSessionStatus.STOP:
+        return 'Stopped';
       default:
         return 'Unknown';
     }
@@ -108,7 +118,9 @@ export class StatusBadgeComponent {
       case GraphSessionStatus.PENDING:
         return 'status-pending';
       case GraphSessionStatus.EXPIRED:
-        return 'status-pending';
+        return 'status-expired';
+      case GraphSessionStatus.STOP:
+        return 'status-stop';
       default:
         return '';
     }
@@ -128,6 +140,8 @@ export class StatusBadgeComponent {
       case GraphSessionStatus.PENDING:
         return 'ti ti-circle-dot';
       case GraphSessionStatus.EXPIRED:
+        return '';
+      case GraphSessionStatus.STOP:
         return '';
       default:
         return '';

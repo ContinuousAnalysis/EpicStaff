@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any
 
+from services.graph.events import StopEvent
 from utils.psutil_wrapper import psutil_wrapper
 from services.graph.custom_message_writer import CustomSessionMessageWriter
 from models.graph_models import *
@@ -19,6 +20,7 @@ class BaseNode(ABC):
         self,
         session_id: int,
         node_name: str,
+        stop_event: StopEvent,
         input_map: dict | None = None,
         output_variable_path: str | None = None,
         custom_session_message_writer: CustomSessionMessageWriter | None = None,
@@ -37,7 +39,7 @@ class BaseNode(ABC):
         self.node_name = node_name
         self.input_map = input_map if input_map is not None else {}
         self.output_variable_path = output_variable_path
-
+        self.stop_event = stop_event
         self.custom_session_message_writer = CustomSessionMessageWriter() or None
 
     def _calc_execution_order(self, state: State, name: str) -> int:

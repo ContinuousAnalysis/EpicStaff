@@ -179,6 +179,7 @@ class TaskData(BaseModel):
     name: str
     agent_id: int
     instructions: str
+    knowledge_query: str | None
     expected_output: str
     order: int = 1
     human_input: bool
@@ -317,3 +318,21 @@ class GraphSessionMessageData(BaseModel):
     timestamp: str
     message_data: dict
     uuid: str
+    
+class KnowledgeSearchMessage(BaseModel):
+    collection_id: int
+    uuid: str
+    query: str
+    search_limit: int | None
+    similarity_threshold: float | None
+
+class ChunkDocumentMessage(BaseModel):
+    document_id: int
+
+class ChunkDocumentMessageResponse(BaseModel):
+    document_id: int
+    success: bool
+    message: str | None
+
+class StopSessionMessage(BaseModel):
+    session_id: int

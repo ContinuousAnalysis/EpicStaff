@@ -5,70 +5,76 @@ import { ToolUniqueName } from './agent.model';
 import { GetToolConfigRequest } from '../../features/tools/models/tool_config.model';
 
 export interface GetTaskRequest {
-  id: number;
+    id: number;
 
-  name: string;
-  instructions: string;
-  expected_output: string;
+    name: string;
+    instructions: string;
+    expected_output: string;
+    knowledge_query?: string | null;
 
-  order: number | null;
-  human_input: boolean;
-  async_execution: boolean;
-  config: any | null;
-  output_model: any | null;
+    order: number | null;
+    human_input: boolean;
+    async_execution: boolean;
+    config: any | null;
+    output_model: any | null;
 
-  crew: number | null;
-  agent: number | null;
+    crew: number | null;
+    agent: number | null;
 
-  task_context_list: number[];
+    task_context_list: number[];
 
-  tools: {
-    unique_name: ToolUniqueName;
-    data: GetToolConfigRequest | GetPythonCodeToolRequest;
-  }[];
+    tools: {
+        unique_name: ToolUniqueName;
+        data: GetToolConfigRequest | GetPythonCodeToolRequest;
+    }[];
 }
 
 export interface CreateTaskRequest {
-  name: string;
-  instructions: string;
-  expected_output: string;
+    name: string;
+    instructions: string;
+    expected_output: string;
+    knowledge_query?: string | null;
 
-  order?: number | null;
-  human_input?: boolean;
-  async_execution?: boolean;
-  config?: any | null;
-  output_model?: any | null;
+    order?: number | null;
+    human_input?: boolean;
+    async_execution?: boolean;
+    config?: any | null;
+    output_model?: any | null;
 
-  crew?: number | null;
-  agent?: number | null;
-  task_context_list?: number[];
-  tool_ids?: ToolUniqueName[];
+    crew?: number | null;
+    agent?: number | null;
+    task_context_list?: number[];
+    configured_tools?: number[];
+    python_code_tools?: number[];
+    tool_ids?: ToolUniqueName[];
 }
 export interface UpdateTaskRequest {
-  id: number;
+    id: number;
 
-  name: string;
-  instructions: string;
-  expected_output: string;
+    name: string;
+    instructions: string;
+    expected_output: string;
+    knowledge_query?: string | null;
 
-  order?: number | null;
-  human_input?: boolean;
-  async_execution?: boolean;
-  config?: any | null;
-  output_model?: any | null;
+    order?: number | null;
+    human_input?: boolean;
+    async_execution?: boolean;
+    config?: any | null;
+    output_model?: any | null;
 
-  crew?: number | null;
-  agent?: number | null;
-  task_context_list?: number[];
-
-  tool_ids?: ToolUniqueName[];
+    crew?: number | null;
+    agent?: number | null;
+    task_context_list?: number[];
+    configured_tools?: number[];
+    python_code_tools?: number[];
+    tool_ids?: ToolUniqueName[];
 }
 export interface TableFullTask extends Omit<FullTask, 'id'> {
-  id: number | string;
+    id: number | string;
 }
 
 //deprecated
 export type TaskTableItem = Omit<GetTaskRequest, 'id'> & {
-  id: number | null;
-  assignedAgentRole: string;
+    id: number | null;
+    assignedAgentRole: string;
 };

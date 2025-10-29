@@ -15,7 +15,7 @@ import {
 } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
-import { LLM_Provider } from '../../../models/LLM_provider.model';
+import { LLM_Provider, ModelTypes } from '../../../models/LLM_provider.model';
 import { LLM_Providers_Service } from '../../../services/LLM_providers.service';
 import { EmbeddingModelsService } from '../../../services/embeddings/embeddings.service';
 import { EmbeddingConfigsService } from '../../../services/embeddings/embedding_configs.service';
@@ -88,7 +88,7 @@ export class AddEmbeddingConfigDialogComponent implements OnInit, OnDestroy {
   private loadProviders(): void {
     this.isLoading.set(true);
     this.providersService
-      .getProviders()
+      .getProvidersByQuery(ModelTypes.EMBEDDING)
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (providers) => {

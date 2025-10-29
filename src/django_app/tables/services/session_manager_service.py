@@ -38,6 +38,8 @@ from tables.models import (
     EndNode,
     FileExtractorNode,
     AudioTranscriptionNode,
+    Organization,
+    OrganizationUser,
 )
 
 
@@ -57,11 +59,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         return Session.objects.get(id=session_id)
 
     def stop_session(self, session_id: int) -> None:
-        session: Session = self.get_session(session_id=session_id)
-        # TODO: Send notify to redis channel to stop container
-
-        session.status = Session.SessionStatus.END
-        session.save()
+        self.redis_service.publish_stop_session(session_id=session_id)
 
     def get_session_status(self, session_id: int) -> Session.SessionStatus:
         session: Session = self.get_session(session_id=session_id)
@@ -71,6 +69,8 @@ class SessionManagerService(metaclass=SingletonMeta):
         self,
         graph_id: int,
         variables: dict | None = None,
+        organization: Organization | None = None,
+        organization_user: OrganizationUser | None = None,
     ) -> Session:
 
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
@@ -89,6 +89,8 @@ class SessionManagerService(metaclass=SingletonMeta):
             status=Session.SessionStatus.PENDING,
             variables=variables,
             time_to_live=time_to_live,
+            organization=organization,
+            organization_user=organization_user,
         )
         return session
 
@@ -213,13 +215,24 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         return session_data
 
-    def run_session(self, graph_id: int, variables: dict | None = None) -> int:
+    def run_session(
+        self,
+        graph_id: int,
+        variables: dict | None = None,
+        organization: Organization | None = None,
+        organization_user: OrganizationUser | None = None,
+    ) -> int:
         logger.info(f"'run_session' got variables: {variables}")
 
         # Choose to use variables from previous flow or left 'variables' param None
         variables = self.choose_variables(graph_id, variables)
 
-        session: Session = self.create_session(graph_id=graph_id, variables=variables)
+        session: Session = self.create_session(
+            graph_id=graph_id,
+            variables=variables,
+            organization=organization,
+            organization_user=organization_user,
+        )
         session_data: SessionData = self.create_session_data(session=session)
 
         session.graph_schema = session_data.graph.model_dump()
