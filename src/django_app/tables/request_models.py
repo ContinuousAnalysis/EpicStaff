@@ -192,6 +192,7 @@ class TaskData(BaseModel):
 class SessionData(BaseModel):
     id: int
     graph: "GraphData"
+    unique_subgraph_list: list["SubGraphData"] = []
     initial_state: dict[str, Any] = {}
 
 
@@ -306,10 +307,15 @@ class GraphData(BaseModel):
 
 class SubGraphNodeData(BaseModel):
     node_name: str
-    subgraph_data: GraphData
-    initial_state: dict[str, Any] = {}
+    subgraph_id: int
     input_map: dict[str, Any]
     output_variable_path: str | None = None
+
+
+class SubGraphData(BaseModel):
+    id: int
+    data: GraphData
+    initial_state: dict[str, Any] = {}
 
 
 class GraphSessionMessageData(BaseModel):

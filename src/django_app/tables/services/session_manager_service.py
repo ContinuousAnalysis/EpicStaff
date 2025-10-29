@@ -28,6 +28,7 @@ from tables.request_models import (
     FileExtractorNodeData,
     SessionData,
     SubGraphNodeData,
+    SubGraphData,
 )
 
 from tables.models import (
@@ -104,10 +105,15 @@ class SessionManagerService(metaclass=SingletonMeta):
         session: Session,
     ) -> SessionData:
         self.subgraph_validator.validate(session.graph)
-        graph_data = self._build_graph_data(session.graph)
+
+        unique_subgraphs: dict[int, SubGraphData] = {}
+        graph_data = self._build_graph_data(session.graph, unique_subgraphs)
 
         return SessionData(
-            id=session.pk, graph=graph_data, initial_state=session.variables
+            id=session.pk,
+            graph=graph_data,
+            unique_subgraph_list=list(unique_subgraphs.values()),
+            initial_state=session.variables,
         )
 
     def run_session(
@@ -220,8 +226,15 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         return variables
 
-    def _build_graph_data(self, graph: Graph) -> GraphData:
-        """Recursively build GraphData for a graph to handle subgraphs"""
+    def _build_graph_data(
+        self, graph: Graph, unique_subgraphs: dict[int, SubGraphData] | None = None
+    ) -> GraphData:
+        """Recursively build GraphData for a graph to handle subgraphs
+
+        Args:
+            graph: The graph to build data for
+            unique_subgraphs: Dictionary to collect unique subgraphs (only used at top level)
+        """
         crew_node_list = CrewNode.objects.filter(graph=graph.pk)
         python_node_list = PythonNode.objects.filter(graph=graph.pk)
         file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
@@ -238,7 +251,6 @@ class SessionManagerService(metaclass=SingletonMeta):
             )
 
         for item in crew_node_list:
-
             crew_node_data_list.append(
                 self.converter_service.convert_crew_node_to_pydantic(crew_node=item)
             )
@@ -260,14 +272,12 @@ class SessionManagerService(metaclass=SingletonMeta):
             )
 
         llm_node_data_list: list[LLMNodeData] = []
-
         for item in llm_node_list:
             llm_node_data_list.append(
                 self.converter_service.convert_llm_node_to_pydantic(llm_node=item)
             )
 
         edge_data_list: list[EdgeData] = []
-
         for item in edge_list:
             edge_data_list.append(
                 EdgeData(start_key=item.start_key, end_key=item.end_key)
@@ -280,7 +290,6 @@ class SessionManagerService(metaclass=SingletonMeta):
             )
 
         start_edge = Edge.objects.filter(start_key="__start__", graph=graph).first()
-
         if start_edge is None:
             raise GraphEntryPointException()
 
@@ -296,17 +305,27 @@ class SessionManagerService(metaclass=SingletonMeta):
         subgraph_node_data_list: list[SubGraphNodeData] = []
         for item in subgraph_node_list:
             subgraph = Graph.objects.get(pk=item.subgraph_id)
-            subgraph_data = self._build_graph_data(subgraph)
 
-            variables = subgraph.start_node_list.first().variables
-            if not variables:
-                variables = dict()
+            if (
+                unique_subgraphs is not None
+                and item.subgraph_id not in unique_subgraphs
+            ):
+                subgraph_data = self._build_graph_data(subgraph, unique_subgraphs)
+
+                variables = subgraph.start_node_list.first().variables
+                if not variables:
+                    variables = dict()
+
+                unique_subgraphs[item.subgraph_id] = SubGraphData(
+                    id=subgraph.id,
+                    data=subgraph_data,
+                    initial_state=variables,
+                )
 
             subgraph_node_data_list.append(
                 SubGraphNodeData(
                     node_name=item.node_name,
-                    subgraph_data=subgraph_data,
-                    initial_state=variables,
+                    subgraph_id=subgraph.id,
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
                 )

@@ -1,7 +1,7 @@
 from utils import map_variables_to_input
 from copy import deepcopy
 from dotdict import DotDict
-from models.request_models import SubGraphNodeData, GraphData
+from models.request_models import SubGraphNodeData, GraphData, SubGraphData
 from models.graph_models import (
     GraphMessage,
     SubGraphFinishMessageData,
@@ -18,15 +18,18 @@ class SubGraphNode:
         self,
         session_id: int,
         subgraph_node_data: SubGraphNodeData,
+        unique_subgraph_list: list[SubGraphData],
         graph_builder: StateGraph,
         custom_session_message_writer: CustomSessionMessageWriter | None = None,
         session_graph_builder=None,
     ):
+        self.unique_subgraph_list = unique_subgraph_list
         self.subgraph_node_data = subgraph_node_data
         self._graph_builder = graph_builder
         self.session_id = session_id
         self.node_name = subgraph_node_data.node_name
         self.input_map = subgraph_node_data.input_map
+        self.subgraph_data = self._get_graph_data(subgraph_node_data.subgraph_id)
         self.output_variable_path = subgraph_node_data.output_variable_path
         self.custom_session_message_writer = (
             custom_session_message_writer or CustomSessionMessageWriter()
@@ -56,7 +59,8 @@ class SubGraphNode:
 
         return SessionData(
             id=self.session_id,
-            graph=self.subgraph_node_data.subgraph_data,
+            graph=self.subgraph_data.data,
+            unique_subgraph_list=self.unique_subgraph_list,
             initial_state=initial_state,
         )
 
@@ -75,8 +79,8 @@ class SubGraphNode:
 
     def _build_simple_graph(self) -> CompiledStateGraph:
         """Build simple graph without SessionGraphBuilder."""
-        subgraph_data = self.subgraph_node_data.subgraph_data
-        self._graph_builder.set_entry_point(subgraph_data.entry_point)
+        subgraph_data = self.subgraph_data.data
+        self._graph_builder.set_entry_point(subgraph_data.data.entry_point)
         return self._graph_builder.compile()
 
     async def run(self, state, writer: StreamWriter):
@@ -121,7 +125,7 @@ class SubGraphNode:
 
     def _create_subgraph_state(self, state, subgraph_input) -> dict:
         """Create initial state for subgraph execution."""
-        variables = self.subgraph_node_data.initial_state | subgraph_input
+        variables = self.subgraph_data.initial_state | subgraph_input
 
         return {
             "variables": DotDict(variables),
@@ -237,3 +241,9 @@ class SubGraphNode:
             message_data=finish_message_data,
         )
         writer(graph_message)
+
+    def _get_graph_data(self, graph_id: int) -> GraphData:
+        subgraph = next(
+            (sg for sg in self.unique_subgraph_list if sg.id == graph_id), None
+        )
+        return subgraph if subgraph else None

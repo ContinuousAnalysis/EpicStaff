@@ -458,13 +458,6 @@ class ConverterService(metaclass=SingletonMeta):
             next_error_node=decision_table_node.next_error_node,
         )
 
-    # def convert_subgraph_node_to_pydantic(self, subgraph_node: SubGraphNode):
-    #     return SubGraphNodeData(
-    #         node_name=subgraph_node.node_name,
-    #         graph_id=subgraph_node.subgraph_id,
-    #         input_map=subgraph_node.input_map,
-    #     )
-
     def convert_crew_node_to_pydantic(self, crew_node: CrewNode):
         crew: Crew = crew_node.crew
         validate_tool_configs(crew)

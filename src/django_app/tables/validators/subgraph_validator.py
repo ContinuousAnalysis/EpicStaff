@@ -14,7 +14,7 @@ class SubGraphValidator:
         """
         if self._has_cycle(graph):
             raise SubGraphValidationError(
-                f"Recursive reference detected in Graph(id={graph.id}, name={graph.name})"
+                f"Recursive reference detected in Flow {graph.name})"
             )
 
     def _has_cycle(self, root_graph):

@@ -13,6 +13,7 @@ from services.graph.nodes.llm_node import LLMNode
 from services.graph.nodes.end_node import EndNode
 from models.state import *
 from services.graph.nodes import *
+from models.request_models import SubGraphData
 
 from services.crew.crew_parser_service import CrewParserService
 from services.redis_service import RedisService
@@ -163,13 +164,16 @@ class SessionGraphBuilder:
             decision_table_node_data.node_name, condition
         )
 
-    def add_subgraph_node(self, subgraph_node_data: SubGraphNode) -> str:
+    def add_subgraph_node(
+        self, subgraph_node_data: SubGraphNode, unique_subgraph_list: list[SubGraphData]
+    ) -> str:
         """
         Adds a subgraph node to the graph builder.
         """
         builder = SubGraphNode(
             session_id=self.session_id,
             subgraph_node_data=subgraph_node_data,
+            unique_subgraph_list=unique_subgraph_list,
             graph_builder=StateGraph(State),
             session_graph_builder=self,
         )
@@ -277,7 +281,10 @@ class SessionGraphBuilder:
             )
 
         for subgraph_node_data in schema.subgraph_node_list:
-            self.add_subgraph_node(subgraph_node_data=subgraph_node_data)
+            self.add_subgraph_node(
+                subgraph_node_data=subgraph_node_data,
+                unique_subgraph_list=session_data.unique_subgraph_list,
+            )
 
         # name always __end_node__
         # TODO: remove validation here and in request model
