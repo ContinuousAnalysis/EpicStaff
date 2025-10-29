@@ -1285,8 +1285,6 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
-        model = Organization
-        fields = ["name", "secret_key", "old_secret_key"]
 
 
 class ChunkSerializer(serializers.ModelSerializer):

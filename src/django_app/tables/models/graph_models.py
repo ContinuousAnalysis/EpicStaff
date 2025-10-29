@@ -241,7 +241,7 @@ class Organization(HashedFieldMixin, models.Model):
 
 class OrganizationUser(HashedFieldMixin, models.Model):
 
-    name = models.CharField(max_length=256, blank=False, unique=True)
+    name = models.CharField(max_length=256, blank=False)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
 
     class Meta:
