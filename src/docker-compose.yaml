@@ -301,7 +301,28 @@ services:
      - frontend-network
     volumes:
      - ../frontend-config/frontend-config.json:/usr/share/nginx/html/config.json:ro
-
+  
+  webhook:
+    container_name: webhook
+    build:
+      context: .
+      dockerfile: ./webhook/Dockerfile
+    ports:
+      - "8009:8000"  # Map host port 8000 to container port 8000
+    environment:
+      - USE_TUNNEL=${USE_TUNNEL}
+      - WEBHOOK_TUNNEL=${WEBHOOK_TUNNEL}
+      - WEBHOOK_AUTH=${WEBHOOK_AUTH}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}  
+    # volumes:
+    #   # Mount local code for hot-reloading during development
+    #   - ./app:/app/app
+    #   - ./run.py:/app/run.py
+    depends_on:
+      - redis  # Wait for the redis service to be healthy
+    networks:
+      - backend-network
 volumes:
   sandbox_venvs:
     external: true
