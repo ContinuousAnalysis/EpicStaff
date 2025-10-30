@@ -3,9 +3,9 @@ from crewai import LLM
 from models.request_models import LLMData
 
 
-def parse_llm(llm: LLMData):
+def parse_llm(llm: LLMData, **kwargs):
     llm_config = {**llm.config.model_dump()}
-
+    llm_config.update(kwargs)
     return LLM(**llm_config)
 
 

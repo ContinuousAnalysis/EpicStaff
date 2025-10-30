@@ -4,9 +4,9 @@ from redis.retry import Retry
 from redis.backoff import ExponentialBackoff
 import json
 from loguru import logger
+from utils.singleton_meta import SingletonMeta
 
-
-class RedisService:
+class RedisService(metaclass=SingletonMeta):
     def __init__(self, host: str, port: int):
         self.host = host
         self.port = port

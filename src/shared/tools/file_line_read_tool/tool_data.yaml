@@ -1,0 +1,7 @@
+tool-data:
+  name: "line-read-file"
+  description: "A tool that can be used to read a file's content starting with the line number given."
+  args-schema: "args_schema.json"
+  code-file: "main.py"
+  entrypoint: "main"
+  requirements: "requirements.txt"

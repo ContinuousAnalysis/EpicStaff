@@ -12,7 +12,7 @@ class CSVChunker(BaseChunker):
         self.headers_level: int = csv_params.get("headers_level", 1)
         self.rows_in_chunk: int = csv_params.get("rows_in_chunk", 150)
 
-    def chunk(self, text: str):
+    def chunk(self, text: str) -> list[str]:
         lines = text.strip().splitlines()
 
         headers = lines[: self.headers_level]
