@@ -300,7 +300,7 @@ class GraphOrganizationUser(BasePersistentEntity):
 
 
 class WebhookTriggerNode(models.Model):
-    node_name = models.CharField(max_length=255, blank=True)
+    node_name = models.CharField(max_length=255, blank=False, unique=True)
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE
     )
