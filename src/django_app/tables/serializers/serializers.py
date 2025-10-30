@@ -7,45 +7,11 @@ from tables.models.realtime_models import VoiceChoices
 
 class RunSessionSerializer(serializers.Serializer):
     graph_id = serializers.IntegerField(required=True)
-    organization_data = serializers.JSONField(required=False)
-    organization_user_data = serializers.JSONField(required=False)
     variables = serializers.JSONField(required=False)
     files = serializers.DictField(
         child=serializers.CharField(), required=False, allow_null=True, default=dict
     )
-
-    def validate(self, attrs):
-        errors = {}
-
-        org_data = attrs.get("organization_data")
-        user_data = attrs.get("organization_user_data")
-
-        if org_data is not None:
-            if not isinstance(org_data, dict):
-                errors["organization_data"] = "Must be a JSON object."
-            else:
-                missing = [key for key in ("name", "secret_key") if key not in org_data]
-                if missing:
-                    errors["organization_data"] = (
-                        f"Missing required fields: {', '.join(missing)}."
-                    )
-
-        if user_data is not None:
-            if not isinstance(user_data, dict):
-                errors["organization_user_data"] = "Must be a JSON object."
-            else:
-                missing = [
-                    key for key in ("username", "secret_key") if key not in user_data
-                ]
-                if missing:
-                    errors["organization_user_data"] = (
-                        f"Missing required fields: {', '.join(missing)}."
-                    )
-
-        if errors:
-            raise serializers.ValidationError(errors)
-
-        return attrs
+    username = serializers.CharField(required=False)
 
 
 class GetUpdatesSerializer(serializers.Serializer):

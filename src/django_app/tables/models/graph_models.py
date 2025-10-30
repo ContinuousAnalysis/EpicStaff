@@ -2,7 +2,6 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from loguru import logger
-from tables.models.mixins import HashedFieldMixin
 
 
 class Graph(models.Model):
@@ -252,44 +251,66 @@ class Condition(models.Model):
         ordering = ["order"]
 
 
-class Organization(HashedFieldMixin, models.Model):
+class Organization(models.Model):
 
     name = models.CharField(max_length=256, blank=False, unique=True)
-    secret_key = models.CharField(
-        max_length=512,
-        blank=False,
-        unique=True,
-        help_text="A hashed unique key for organization",
-    )
-    variables = models.JSONField(
-        default=dict, help_text="Organization global variables"
-    )
-    persistent_variables = models.BooleanField(
-        default=False,
-        help_text="If 'True' -> variables will be updated after each session.",
-    )
 
 
-class OrganizationUser(HashedFieldMixin, models.Model):
+class OrganizationUser(models.Model):
 
-    username = models.CharField(max_length=256, blank=False, unique=True)
+    name = models.CharField(max_length=256, blank=False)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    secret_key = models.CharField(
-        max_length=512,
-        blank=False,
-        unique=True,
-        help_text="A hashed unique key for user inside an organization",
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "organization"],
+                name="unique_flow_user_for_organization",
+            )
+        ]
+
+
+class BasePersistentEntity(models.Model):
+
+    graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
+    persistent_variables = models.JSONField(
+        default=dict,
+        help_text="Variables that persistent for specific entity for specific flow",
     )
-    variables = models.JSONField(default=dict, help_text="User scope variables")
-    persistent_variables = models.BooleanField(
-        default=False,
-        help_text="If 'True' -> variables will be updated after each session.",
+
+    class Meta:
+        abstract = True
+
+
+class GraphOrganization(BasePersistentEntity):
+
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="graph"
+    )
+    user_variables = models.JSONField(
+        default=dict,
+        help_text="Variables that persistent for all users for specific flow",
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["username", "organization"],
-                name="unique_flow_user_for_organization",
+                fields=["graph", "organization"],
+                name="unique_organization_per_flow",
+            )
+        ]
+
+
+class GraphOrganizationUser(BasePersistentEntity):
+
+    user = models.ForeignKey(
+        OrganizationUser, on_delete=models.CASCADE, related_name="graph"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "user"],
+                name="unique_user_per_flow",
             )
         ]

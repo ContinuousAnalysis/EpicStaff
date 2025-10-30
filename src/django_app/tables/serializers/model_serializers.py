@@ -52,6 +52,8 @@ from tables.models.graph_models import (
     StartNode,
     Organization,
     OrganizationUser,
+    GraphOrganization,
+    GraphOrganizationUser,
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -77,7 +79,6 @@ from tables.models import (
 from tables.models import (
     ToolConfig,
 )
-from tables.serializers.utils.mixins import HashedFieldSerializerMixin
 
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
@@ -183,7 +184,6 @@ class PythonCodeSerializer(serializers.ModelSerializer):
         return internal_value
 
 
-
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
     built_in = serializers.ReadOnlyField()
@@ -229,7 +229,8 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
 
     def partial_update(self, instance, validated_data):
         return self.update(instance, validated_data)
-    
+
+
 class McpToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = McpTool
@@ -1237,105 +1238,85 @@ class GraphSerializer(serializers.ModelSerializer):
         ]
 
 
-class OrganizationSerializer(HashedFieldSerializerMixin, serializers.ModelSerializer):
-
-    REQUIRE_IDENTIFIER_FOR_UPDATE = True
-    IDENTIFIER_FIELD = "name"
-
-    secret_key = serializers.CharField(
-        write_only=True,
-        required=False,
-        allow_null=False,
-        help_text="Secret key for verification (will be hashed on create)",
-    )
+class OrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = ["id", "name", "secret_key", "variables", "persistent_variables"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields["secret_key"].required = True
-        if self.instance is not None:
-            self.fields["secret_key"].help_text = "Secret key for verification"
+        fields = ["id", "name"]
 
 
-class OrganizationUserSerializer(
-    HashedFieldSerializerMixin, serializers.ModelSerializer
-):
-    REQUIRE_IDENTIFIER_FOR_UPDATE = True
-    IDENTIFIER_FIELD = "username"
-
-    secret_key = serializers.CharField(
-        write_only=True,
-        required=False,
-        allow_null=False,
-        help_text="Secret key for verification (will be hashed on create)",
-    )
+class OrganizationUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrganizationUser
+        fields = ["id", "organization", "name"]
+
+
+class GraphOrganizationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GraphOrganization
         fields = [
             "id",
-            "username",
+            "graph",
             "organization",
-            "secret_key",
-            "variables",
             "persistent_variables",
+            "user_variables",
         ]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def validate(self, attrs):
+        graph = attrs.get("graph") or getattr(self.instance, "graph", None)
+        if not graph:
+            raise serializers.ValidationError("Graph is required to validate variables")
 
-        self.fields["secret_key"].required = True
-        if self.instance is not None:
-            self.fields["secret_key"].help_text = "Secret key for verification"
+        organization_variables = attrs.get("persistent_variables", {})
+        user_variables = attrs.get("user_variables", {})
+
+        qs = GraphOrganization.objects.filter(graph=graph)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise serializers.ValidationError("This flow already has an organization")
+
+        start_node: StartNode = graph.start_node_list.first()
+        for key in user_variables:
+            if key not in start_node.variables:
+                raise serializers.ValidationError(
+                    {
+                        "user_variables": f"Provided user_variables have to be in flow domain. Variable `{key}` is not in domain."
+                    }
+                )
+        for key in organization_variables:
+            if key not in start_node.variables:
+                raise serializers.ValidationError(
+                    {
+                        "persistent_variables": f"Provided persistent_variables have to be in flow domain. Variable `{key}` is not in domain."
+                    }
+                )
+            if key in user_variables:
+                raise serializers.ValidationError(
+                    {
+                        "user_variables": f"User variables and Organization variables cannot have same values. Issue with key `{key}`"
+                    }
+                )
+
+        return super().validate(attrs)
 
 
-class OrganizationSecretKeyUpdateSerializer(
-    HashedFieldSerializerMixin, serializers.ModelSerializer
-):
-    REQUIRE_OLD_FOR_CHANGE = True
-    REQUIRE_IDENTIFIER_FOR_UPDATE = False
-
-    name = serializers.CharField(read_only=True)
-    secret_key = serializers.CharField(
-        write_only=True, required=True, help_text="New secret key (will be hashed)"
-    )
-    old_secret_key = serializers.CharField(
-        write_only=True, required=True, help_text="Current secret key for verification"
-    )
+class GraphOrganizationUserSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Organization
-        fields = ["name", "secret_key", "old_secret_key"]
-
-
-class OrganizationUserSecretKeyUpdateSerializer(
-    HashedFieldSerializerMixin, serializers.ModelSerializer
-):
-    REQUIRE_OLD_FOR_CHANGE = True
-    REQUIRE_IDENTIFIER_FOR_UPDATE = False
-
-    username = serializers.CharField(read_only=True)
-    secret_key = serializers.CharField(
-        write_only=True, required=True, help_text="New secret key (will be hashed)"
-    )
-    old_secret_key = serializers.CharField(
-        write_only=True, required=True, help_text="Current secret_key for verification"
-    )
-
-    class Meta:
-        model = OrganizationUser
-        fields = ["username", "secret_key", "old_secret_key"]
+        model = GraphOrganizationUser
+        fields = ["id", "graph", "user", "persistent_variables"]
+        read_only_fields = ["id", "persistent_variables"]
 
 
 class ChunkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chunk
         fields = "__all__"
-    
+
     def validate_document_id(self, value):
         if not DocumentMetadata.objects.filter(document_id=value).exists():
             raise serializers.ValidationError("Document with this id does not exist.")

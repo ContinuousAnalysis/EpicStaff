@@ -39,8 +39,7 @@ from tables.models import (
     PythonNode,
     EndNode,
     FileExtractorNode,
-    Organization,
-    OrganizationUser,
+    GraphOrganizationUser,
 )
 
 
@@ -71,8 +70,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         self,
         graph_id: int,
         variables: dict | None = None,
-        organization: Organization | None = None,
-        organization_user: OrganizationUser | None = None,
+        username: str | None = None,
     ) -> Session:
 
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
@@ -86,13 +84,13 @@ class SessionManagerService(metaclass=SingletonMeta):
             variables = start_node.variables
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
+        graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
         session = Session.objects.create(
             graph_id=graph_id,
             status=Session.SessionStatus.PENDING,
             variables=variables,
             time_to_live=time_to_live,
-            organization=organization,
-            organization_user=organization_user,
+            graph_user=graph_user,
         )
         return session
 
@@ -116,8 +114,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         self,
         graph_id: int,
         variables: dict | None = None,
-        organization: Organization | None = None,
-        organization_user: OrganizationUser | None = None,
+        username: str | None = None,
     ) -> int:
         logger.info(f"'run_session' got variables: {variables}")
 
@@ -125,10 +122,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         variables = self.choose_variables(graph_id, variables)
 
         session: Session = self.create_session(
-            graph_id=graph_id,
-            variables=variables,
-            organization=organization,
-            organization_user=organization_user,
+            graph_id=graph_id, variables=variables, username=username
         )
         session_data: SessionData = self.create_session_data(session=session)
 
