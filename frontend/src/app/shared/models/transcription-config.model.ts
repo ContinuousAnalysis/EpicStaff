@@ -17,3 +17,9 @@ export interface EnhancedTranscriptionConfig
   extends GetTranscriptionConfigRequest {
   model_name: string;
 }
+
+export interface GetRealtimeTranscriptionModelRequest {
+  id: number;
+  name: string;
+  provider: number;
+}
