@@ -279,18 +279,18 @@ class RunSession(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user = OrganizationUser.objects.filter(
-            name=username, organization=graph_organization.organization
-        ).first()
-        if not user and username:
-            return Response(
-                {
-                    "message": f"Provided user does not exist or does not belong to organization {graph_organization.organization.name}"
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        if username and graph_organization:
+            user = OrganizationUser.objects.filter(
+                name=username, organization=graph_organization.organization
+            ).first()
+            if not user and username:
+                return Response(
+                    {
+                        "message": f"Provided user does not exist or does not belong to organization {graph_organization.organization.name}"
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
-        if user:
             graph_organization_user, _ = GraphOrganizationUser.objects.get_or_create(
                 user=user,
                 graph=graph,
