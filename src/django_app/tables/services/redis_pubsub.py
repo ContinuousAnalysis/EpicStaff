@@ -5,10 +5,16 @@ from typing import Type
 import redis
 from collections import deque
 from django.db import transaction, IntegrityError, models
+from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.models import GraphSessionMessage
 from tables.models import PythonCodeResult
 from tables.models import GraphOrganization, GraphOrganizationUser
 from tables.request_models import CodeResultData, GraphSessionMessageData
+from tables.request_models import (
+    CodeResultData,
+    GraphSessionMessageData,
+    WebhookEventData,
+)
 from tables.services.session_manager_service import SessionManagerService
 from tables.models import Session
 from loguru import logger
@@ -22,6 +28,7 @@ GRAPH_MESSAGES_CHANNEL = os.environ.get("GRAPH_MESSAGES_CHANNEL", "graph:message
 GRAPH_MESSAGE_UPDATE_CHANNEL = os.environ.get(
     "GRAPH_MESSAGE_UPDATE_CHANNEL", "graph:message:update"
 )
+WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
 
 
 class RedisPubSub:
@@ -77,6 +84,14 @@ class RedisPubSub:
             data = json.loads(message["data"])
             CodeResultData.model_validate(data)
             PythonCodeResult.objects.create(**data)
+        except Exception as e:
+            logger.error(f"Error handling code_results message: {e}")
+
+    def webhook_events_handler(self, message: dict):
+        try:
+            logger.debug(f"Received webhook event: {message}")
+            data = WebhookEventData.model_validate_json(message["data"])
+            WebhookTriggerService().handle_webhook_trigger(id_=data.id, payload=data.payload)
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
 
@@ -185,6 +200,7 @@ class RedisPubSub:
         logger.info(f"Start worker {os.getpid()} listening for Redis messages...")
         self.set_handler(SESSION_STATUS_CHANNEL, self.session_status_handler)
         self.set_handler(CODE_RESULT_CHANNEL, self.code_results_handler)
+        self.set_handler(WEBHOOK_MESSAGE_CHANNEL, self.webhook_events_handler)
         self.subscribe_to_channels()
 
         while True:

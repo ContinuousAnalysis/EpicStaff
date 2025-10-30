@@ -1,3 +1,4 @@
+from tables.serializers.webhook_serializers import WebhookTriggerNodeSerializer
 from tables.models.knowledge_models import Chunk
 from django_filters import rest_framework as filters
 from tables.models.crew_models import (
@@ -35,6 +36,7 @@ from tables.models.graph_models import (
     OrganizationUser,
     GraphOrganization,
     GraphOrganizationUser,
+    WebhookTriggerNode,
 )
 from tables.models.realtime_models import (
     RealtimeSessionItem,
@@ -1034,3 +1036,9 @@ class GraphOrganizationUserViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = GraphOrganizationUser.objects.all()
     serializer_class = GraphOrganizationUserSerializer
+
+class WebhookTriggerNodeViewSet(viewsets.ModelViewSet):
+    queryset = WebhookTriggerNode.objects.all()
+    serializer_class = WebhookTriggerNodeSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["graph", "node_name", "webhook_trigger"]

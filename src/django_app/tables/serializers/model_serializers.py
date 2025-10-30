@@ -36,8 +36,6 @@ from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
     AgentPythonCodeTools,
-    DefaultAgentConfig,
-    DefaultCrewConfig,
     TaskMcpTools,
     TaskPythonCodeTools,
 )
