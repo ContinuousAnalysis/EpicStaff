@@ -262,13 +262,6 @@ class RunSession(APIView):
         username = serializer.validated_data.get("username")
         graph_organization_user = None
 
-        user = OrganizationUser.objects.filter(name=username).first()
-        if not user and username:
-            return Response(
-                {"message": f"Provided user does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
         graph = Graph.objects.filter(id=graph_id).first()
         if not graph:
             return Response(
@@ -280,19 +273,28 @@ class RunSession(APIView):
             graph__id=graph_id
         ).first()
 
-        if not graph_organization:
+        if username and not graph_organization:
             return Response(
                 {"message": "No GraphOrganization exists for this flow."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if user and graph_organization.organization != user.organization:
+        user = OrganizationUser.objects.filter(
+            name=username, organization=graph_organization.organization
+        ).first()
+        if not user and username:
             return Response(
                 {
-                    "message": f"Provided user does not belong to organization "
-                    f"{graph_organization.organization.name}"
+                    "message": f"Provided user does not exist or does not belong to organization {graph_organization.organization.name}"
                 },
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if user:
+            graph_organization_user, _ = GraphOrganizationUser.objects.get_or_create(
+                user=user,
+                graph=graph,
+                defaults={"persistent_variables": graph_organization.user_variables},
             )
 
         variables = serializer.validated_data.get("variables", {})
