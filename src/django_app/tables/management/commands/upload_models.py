@@ -21,7 +21,7 @@ from tables.models.crew_models import (
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
 from tables.management.commands.helpers import load_json_from_file
-
+from tables.management.commands.upload_tools import upload_tools
 class Command(BaseCommand):
     help = "Upload predefined models to database"
 
@@ -38,7 +38,7 @@ class Command(BaseCommand):
         upload_default_agent_config()
         upload_default_crew_config()
         upload_default_tool_config()
-
+        upload_legacy_tools()
         upload_realtime_agents()
 
 LLM_MODELS_JSON = "llm_models.json"
@@ -156,9 +156,56 @@ def upload_embedding_models():
         name__in=[name for _, name in current_model_tuples],
     ).delete()
 
+def upload_realtime_agents():
+    from tables.models.realtime_models import RealtimeAgent
+
+    agent_list = Agent.objects.all()
+    for agent in agent_list:
+        RealtimeAgent.objects.get_or_create(
+            agent=agent,
+            defaults={
+                "similarity_threshold": 0.2,
+                "search_limit": 3,
+                "wake_word": None,
+                "stop_prompt": None,
+                "language": None,
+            },
+        )
+
+    pass
 
 
-def upload_tools():
+def upload_default_llm_config():
+    DefaultLLMConfig.objects.filter().delete()
+    DefaultLLMConfig.objects.create(id=1)
+
+
+def upload_default_embedding_config():
+    DefaultEmbeddingConfig.objects.filter().delete()
+    DefaultEmbeddingConfig.objects.create(id=1)
+
+
+def upload_default_agent_config():
+    DefaultAgentConfig.objects.all().delete()
+    DefaultAgentConfig.objects.create(id=1)
+
+
+def upload_default_realtime_agent_config():
+    DefaultRealtimeAgentConfig.objects.all().delete()
+    DefaultRealtimeAgentConfig.objects.create(id=1)
+
+
+def upload_default_crew_config():
+    DefaultCrewConfig.objects.all().delete()
+    DefaultCrewConfig.objects.create(id=1)
+
+
+def upload_default_tool_config():
+    DefaultToolConfig.objects.all().delete()
+    DefaultToolConfig.objects.create(id=1)
+
+
+def upload_legacy_tools():
     tools = [
         {
             "name": "Wikipedia Tool",
@@ -1004,51 +1051,3 @@ def upload_tools():
                 },
             )
 
-
-def upload_realtime_agents():
-    from tables.models.realtime_models import RealtimeAgent
-
-    agent_list = Agent.objects.all()
-    for agent in agent_list:
-        RealtimeAgent.objects.get_or_create(
-            agent=agent,
-            defaults={
-                "similarity_threshold": 0.2,
-                "search_limit": 3,
-                "wake_word": None,
-                "stop_prompt": None,
-                "language": None,
-            },
-        )
-
-    pass
-
-
-def upload_default_llm_config():
-    DefaultLLMConfig.objects.filter().delete()
-    DefaultLLMConfig.objects.create(id=1)
-
-
-def upload_default_embedding_config():
-    DefaultEmbeddingConfig.objects.filter().delete()
-    DefaultEmbeddingConfig.objects.create(id=1)
-
-
-def upload_default_agent_config():
-    DefaultAgentConfig.objects.all().delete()
-    DefaultAgentConfig.objects.create(id=1)
-
-
-def upload_default_realtime_agent_config():
-    DefaultRealtimeAgentConfig.objects.all().delete()
-    DefaultRealtimeAgentConfig.objects.create(id=1)
-
-
-def upload_default_crew_config():
-    DefaultCrewConfig.objects.all().delete()
-    DefaultCrewConfig.objects.create(id=1)
-
-
-def upload_default_tool_config():
-    DefaultToolConfig.objects.all().delete()
-    DefaultToolConfig.objects.create(id=1)

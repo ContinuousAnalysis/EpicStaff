@@ -24,6 +24,7 @@ export interface GetPythonCodeToolRequest {
   name: string;
   description: string;
   args_schema: ArgsSchema;
+  built_in: boolean;
 }
 export interface CreatePythonCodeToolRequest {
   python_code: CreatePythonCodeRequest;
