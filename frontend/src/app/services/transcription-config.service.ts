@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { map, switchMap, Observable } from 'rxjs';
 
 import { ApiGetRequest } from '../shared/models/api-request.model';
 
@@ -8,12 +8,10 @@ import { ConfigService } from './config/config.service';
 import {
   CreateTranscriptionConfigRequest,
   EnhancedTranscriptionConfig,
+  GetRealtimeTranscriptionModelRequest,
   GetTranscriptionConfigRequest,
 } from '../shared/models/transcription-config.model';
-import {
-  GetRealtimeTranscriptionModelRequest,
-  realTimeTranscriptionModels,
-} from '../shared/constants/transcription-models.constants';
+import { ApiGetResponse, RealtimeTranscriptionModelsService } from './transcription-models.service';
 
 @Injectable({
   providedIn: 'root',
@@ -23,7 +21,10 @@ export class TranscriptionConfigsService {
     'Content-Type': 'application/json',
   });
 
-  constructor(private http: HttpClient, private configService: ConfigService) {}
+  constructor(private http: HttpClient,
+    private configService: ConfigService,
+    private realtimeTranscriptionModelsService: RealtimeTranscriptionModelsService,
+  ) { }
 
   // Dynamically retrieve the API URL from ConfigService
   private get apiUrl(): string {
@@ -68,26 +69,29 @@ export class TranscriptionConfigsService {
     });
   }
 
-  // GET all transcription configs with limit=1000 and enhanced with model_name
   getEnhancedTranscriptionConfigs(): Observable<EnhancedTranscriptionConfig[]> {
     const url = `${this.apiUrl}?limit=1000`;
-    return this.http
-      .get<ApiGetRequest<GetTranscriptionConfigRequest>>(url)
-      .pipe(
-        map((response) => response.results),
-        map((configs) =>
-          configs.map((config) => {
-            const model: GetRealtimeTranscriptionModelRequest | undefined =
-              realTimeTranscriptionModels.find(
-                (m: GetRealtimeTranscriptionModelRequest) =>
-                  m.id === config.realtime_transcription_model
-              );
-            return {
-              ...config,
-              model_name: model ? model.name : 'Unknown model',
-            };
-          })
-        )
-      );
+    // First load the available realtime transcription models, then fetch configs
+    // and enrich each config with model_name by matching ids.
+    return this.realtimeTranscriptionModelsService.getAllModels().pipe(
+      switchMap((modelsRes: ApiGetResponse<GetRealtimeTranscriptionModelRequest>) => {
+        const models = modelsRes && modelsRes.results ? modelsRes.results : [];
+        return this.http
+          .get<ApiGetRequest<GetTranscriptionConfigRequest>>(url)
+          .pipe(
+            map((response) =>
+              response.results.map((config) => {
+                const model = models.find(
+                  (m: GetRealtimeTranscriptionModelRequest) => m.id === config.realtime_transcription_model
+                );
+                return {
+                  ...config,
+                  model_name: model ? model.name : 'Unknown model',
+                } as EnhancedTranscriptionConfig;
+              })
+            )
+          );
+      })
+    );
   }
 }

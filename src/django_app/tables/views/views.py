@@ -48,8 +48,10 @@ from tables.models import (
     Session,
     SourceCollection,
     DocumentMetadata,
-    Organization,
+    GraphOrganization,
+    GraphOrganizationUser,
     OrganizationUser,
+    Graph,
 )
 from tables.serializers.model_serializers import (
     SessionSerializer,
@@ -254,12 +256,43 @@ class RunSession(APIView):
 
         files_dict = {}
         graph_id = serializer.validated_data["graph_id"]
-        organization_data = serializer.validated_data.get("organization_data", None)
-        organization_user_data = serializer.validated_data.get(
-            "organization_user_data", None
-        )
-        organization = None
-        organization_user = None
+        username = serializer.validated_data.get("username")
+        graph_organization_user = None
+
+        graph = Graph.objects.filter(id=graph_id).first()
+        if not graph:
+            return Response(
+                {"message": f"Provided graph does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        graph_organization = GraphOrganization.objects.filter(
+            graph__id=graph_id
+        ).first()
+
+        if username and not graph_organization:
+            return Response(
+                {"message": "No GraphOrganization exists for this flow."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if username and graph_organization:
+            user = OrganizationUser.objects.filter(
+                name=username, organization=graph_organization.organization
+            ).first()
+            if not user and username:
+                return Response(
+                    {
+                        "message": f"Provided user does not exist or does not belong to organization {graph_organization.organization.name}"
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            graph_organization_user, _ = GraphOrganizationUser.objects.get_or_create(
+                user=user,
+                graph=graph,
+                defaults={"persistent_variables": graph_organization.user_variables},
+            )
 
         variables = serializer.validated_data.get("variables", {})
         graph_files = GraphFile.objects.filter(graph__id=graph_id)
@@ -275,51 +308,21 @@ class RunSession(APIView):
         if files_dict is not None:
             variables["files"] = files_dict
             logger.info(f"Added {len(files_dict)} files to variables.")
-
-        if organization_data:
-            vars_dict, organization, error = self.get_entity_variables(
-                Organization,
-                "name",
-                organization_data,
-                variable_keys={"organization": "variables"},
-                error_messages={
-                    "not_found": "Organization not found",
-                    "invalid_key": "Provided secret key is invalid",
-                },
+        if graph_organization:
+            variables.update(graph_organization.persistent_variables)
+            logger.info(
+                f"Organization variables are used for this flow. Variables: {graph_organization.persistent_variables}"
             )
-            if error:
-                return error
-
-            variables.update(vars_dict)
-            logger.info("Organization variables are being used for this flow.")
-
-        if organization_user_data:
-            vars_dict, organization_user, error = self.get_entity_variables(
-                OrganizationUser,
-                "username",
-                organization_user_data,
-                variable_keys={
-                    "user": "variables",
-                    "organization": lambda user: user.organization.variables,
-                },
-                error_messages={
-                    "not_found": "Organization User not found",
-                    "invalid_key": "Provided secret key is invalid",
-                },
+        if graph_organization_user:
+            variables.update(graph_organization_user.persistent_variables)
+            logger.info(
+                f"Organization user variables are used for this flow. Variables: {graph_organization_user.persistent_variables}"
             )
-            if error:
-                return error
-
-            variables.update(vars_dict)
-            logger.info("Organization and User variables are being used for this flow.")
 
         try:
             # Publish session to: crew, manager
             session_id = session_manager_service.run_session(
-                graph_id=graph_id,
-                variables=variables,
-                organization=organization,
-                organization_user=organization_user,
+                graph_id=graph_id, variables=variables, username=username
             )
             logger.info(f"Session {session_id} successfully started.")
         except Exception as e:
@@ -340,48 +343,6 @@ class RunSession(APIView):
             "data": base64.b64encode(file_bytes).decode("utf-8"),
             "content_type": content_type,
         }
-
-    def get_entity_variables(
-        self, entity_class, lookup_field, data, variable_keys, error_messages
-    ):
-        """
-        Fetch an entity, validate secret_key, and return its variables.
-
-        Args:
-            entity_class: Model class (Organization or OrganizationUser)
-            lookup_field: Field name to filter by ("name" or "username")
-            data: Dict containing the lookup_field and 'secret_key'
-            variable_keys: Dict mapping keys in variables dict to either:
-                - string attribute of entity that contains the dict (e.g. 'variables')
-                - callable to compute value
-            error_messages: dict with 'not_found' and 'invalid_key' messages
-
-        Returns:
-            tuple: (dict of variables, entity object, error Response or None)
-        """
-        entity = entity_class.objects.filter(
-            **{lookup_field: data[lookup_field]}
-        ).first()
-        if not entity:
-            return (
-                None,
-                None,
-                Response({"message": error_messages["not_found"]}, status=404),
-            )
-        if not entity.check_secret_key(data["secret_key"]):
-            return (
-                None,
-                None,
-                Response({"message": error_messages["invalid_key"]}, status=403),
-            )
-
-        vars_dict = {}
-        for key, value in variable_keys.items():
-            if callable(value):
-                vars_dict[key] = value(entity)
-            else:
-                vars_dict[key] = getattr(entity, value)
-        return vars_dict, entity, None
 
 
 class GetUpdates(APIView):
