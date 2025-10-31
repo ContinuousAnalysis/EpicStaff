@@ -248,6 +248,7 @@ class SessionGraphBuilder:
                 python_code_executor_service=self.python_code_executor_service,
                 input_map=audio_transcription_node_data.input_map,
                 output_variable_path=audio_transcription_node_data.output_variable_path,
+                stop_event=self.stop_event,
             )
             self.add_node(audio_transcription_node)
 

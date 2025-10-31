@@ -10,6 +10,7 @@ class AudioTranscriptionNode(PythonNode):
         session_id,
         node_name,
         input_map,
+        stop_event,
         output_variable_path,
         python_code_executor_service,
     ):
@@ -25,12 +26,13 @@ class AudioTranscriptionNode(PythonNode):
         )
 
         super().__init__(
-            session_id,
-            node_name,
-            input_map,
-            output_variable_path,
-            python_code_executor_service,
-            code_data,
+            session_id=session_id,
+            node_name=node_name,
+            stop_event=stop_event,
+            input_map=input_map,
+            output_variable_path=output_variable_path,
+            python_code_executor_service=python_code_executor_service,
+            python_code_data=code_data,
         )
 
     def _get_code(self, arg_names: list[str]):
