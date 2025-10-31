@@ -1,40 +1,41 @@
 import { BasePort } from '../../models/port.model';
 
-export const DEFAULT_EDGE_NODE_PORTS: BasePort[] = [
+export const DEFAULT_AUDIO_TO_TEXT_NODE_PORTS: BasePort[] = [
     {
         port_type: 'input',
-        role: 'edge-in',
+        role: 'audio-to-text-in',
         multiple: true,
         label: 'In',
         allowedConnections: [
             'project-out',
-            'edge-out',
             'python-out',
-            'table-out',
+            'edge-out',
             'start-start',
+            'table-out',
             'llm-out-right',
             'file-extractor-out',
             'audio-to-text-out',
         ],
         position: 'left',
-        color: '#8e5cd9',
+        color: '#ff7be9ff',
     },
 
     {
         port_type: 'output',
-        role: 'edge-out',
-        multiple: true,
+        role: 'audio-to-text-out',
+        multiple: false,
         label: 'Out',
         allowedConnections: [
             'project-in',
-            'edge-in',
             'python-in',
+            'edge-in',
+            'table-in',
             'llm-out-left',
             'file-extractor-in',
             'end-in',
             'audio-to-text-in',
         ],
         position: 'right',
-        color: '#8e5cd9',
+        color: '#ff7be9ff',
     },
 ];

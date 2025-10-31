@@ -93,6 +93,11 @@ export interface FileExtractorNodeModel extends BaseNodeModel {
     data: unknown;
 }
 
+export interface AudioToTextNodeModel extends BaseNodeModel {
+    type: NodeType.AUDIO_TO_TEXT;
+    data: unknown;
+}
+
 export interface EndNodeData {
     output_map: Record<string, unknown>;
 }
@@ -115,4 +120,5 @@ export type NodeModel =
     | DecisionTableNodeModel
     | NoteNodeModel
     | FileExtractorNodeModel
+    | AudioToTextNodeModel
     | EndNodeModel;

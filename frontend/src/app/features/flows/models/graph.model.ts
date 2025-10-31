@@ -20,6 +20,7 @@ import {
 import { StartNode } from '../../../pages/flows-page/components/flow-visual-programming/models/start-node.model';
 import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
+import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
 
 export interface GraphDto {
     id: number;
@@ -35,6 +36,7 @@ export interface GraphDto {
     description: string;
     metadata: FlowModel;
     tags?: [];
+    audio_transcription_node_list: GetAudioToTextNodeRequest[];
 }
 
 export interface GetGraphLightRequest {
