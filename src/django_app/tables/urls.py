@@ -50,6 +50,7 @@ from tables.views.model_view_sets import (
     GraphOrganizationViewSet,
     GraphOrganizationUserViewSet,
     WebhookTriggerNodeViewSet,
+    WebhookTriggerViewSet,
 )
 
 from tables.views.views import (
@@ -141,6 +142,9 @@ router.register(r"graph-organizations", GraphOrganizationViewSet)
 router.register(r"graph-organization-users", GraphOrganizationUserViewSet)
 router.register(r"document-chunks", ChunkViewSet)
 router.register(r"webhook-trigger-nodes", WebhookTriggerNodeViewSet)
+router.register(r"webhook-triggers", WebhookTriggerViewSet)
+
+
 urlpatterns = [
     path("", include(router.urls)),
     path("run-session/", RunSession.as_view(), name="run-session"),

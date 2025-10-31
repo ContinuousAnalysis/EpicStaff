@@ -42,3 +42,8 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
     def partial_update(self, instance, validated_data):
         # Delegate to the update method for consistency
         return self.update(instance, validated_data)
+
+class WebhookTriggerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WebhookTrigger
+        fields = "__all__"
