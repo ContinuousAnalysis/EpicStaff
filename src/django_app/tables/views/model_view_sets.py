@@ -1,4 +1,5 @@
-from tables.serializers.webhook_serializers import WebhookTriggerNodeSerializer
+from tables.models.webhook_models import WebhookTrigger
+from tables.serializers.webhook_serializers import WebhookTriggerNodeSerializer, WebhookTriggerSerializer
 from tables.models.knowledge_models import Chunk
 from django_filters import rest_framework as filters
 from tables.models.crew_models import (
@@ -1042,3 +1043,8 @@ class WebhookTriggerNodeViewSet(viewsets.ModelViewSet):
     serializer_class = WebhookTriggerNodeSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["graph", "node_name", "webhook_trigger"]
+
+class WebhookTriggerViewSet(viewsets.ModelViewSet):
+    queryset = WebhookTrigger.objects.all()
+    serializer_class = WebhookTriggerSerializer
+    filter_backends = [DjangoFilterBackend]
