@@ -22,6 +22,7 @@ class SubGraphNode:
         graph_builder: StateGraph,
         custom_session_message_writer: CustomSessionMessageWriter | None = None,
         session_graph_builder=None,
+        stop_event=None,
     ):
         self.unique_subgraph_list = unique_subgraph_list
         self.subgraph_node_data = subgraph_node_data
@@ -35,6 +36,7 @@ class SubGraphNode:
             custom_session_message_writer or CustomSessionMessageWriter()
         )
         self.session_graph_builder = session_graph_builder
+        self.stop_event = stop_event
 
     def build(self, initial_state) -> CompiledStateGraph:
         """
@@ -75,6 +77,7 @@ class SubGraphNode:
             python_code_executor_service=self.session_graph_builder.python_code_executor_service,
             crewai_output_channel=self.session_graph_builder.crewai_output_channel,
             knowledge_search_service=self.session_graph_builder.knowledge_search_service,
+            stop_event=self.stop_event,
         )
 
     def _build_simple_graph(self) -> CompiledStateGraph:

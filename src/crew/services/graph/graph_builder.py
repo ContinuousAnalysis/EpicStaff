@@ -170,7 +170,10 @@ class SessionGraphBuilder:
         )
 
     def add_subgraph_node(
-        self, subgraph_node_data: SubGraphNode, unique_subgraph_list: list[SubGraphData]
+        self,
+        subgraph_node_data: SubGraphNode,
+        unique_subgraph_list: list[SubGraphData],
+        stop_event,
     ) -> str:
         """
         Adds a subgraph node to the graph builder.
@@ -181,6 +184,7 @@ class SessionGraphBuilder:
             unique_subgraph_list=unique_subgraph_list,
             graph_builder=StateGraph(State),
             session_graph_builder=self,
+            stop_event=stop_event,
         )
 
         async def inner(state: State, writer: StreamWriter):
@@ -293,6 +297,7 @@ class SessionGraphBuilder:
             self.add_subgraph_node(
                 subgraph_node_data=subgraph_node_data,
                 unique_subgraph_list=session_data.unique_subgraph_list,
+                stop_event=self.stop_event,
             )
 
         # name always __end_node__
