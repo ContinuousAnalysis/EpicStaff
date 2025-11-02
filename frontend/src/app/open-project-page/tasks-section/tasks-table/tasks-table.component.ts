@@ -162,7 +162,7 @@ export class TasksTableComponent implements OnChanges {
         private tasksService: TasksService,
         private toastService: ToastService,
         private fullTaskService: FullTaskService
-    ) {}
+    ) { }
 
     ngOnInit(): void {
         this.updateRowData();
@@ -492,33 +492,156 @@ export class TasksTableComponent implements OnChanges {
     // Event handler for rowDragEnd
     onRowDragEnd(event: RowDragEndEvent) {
         // Get the moved data
-        const movedData = event.node.data;
-        const index = this.rowData.findIndex((row) => row === movedData);
+        const movedData = event.node.data as TableFullTask;
 
-        if (index !== -1) {
-            // Remove the row from its old position
-            this.rowData.splice(index, 1);
-            // Insert it into the new position
-            this.rowData.splice(event.overIndex, 0, movedData);
+        // Find original index in our rowData
+        const fromIndex = this.rowData.findIndex((row) => row === movedData);
+        const toIndex = event.overIndex;
 
-            // Update order values in all rows
-            this.rowData.forEach((row, i) => {
-                row.order = i;
-            });
-
-            // Refresh all rows to update the order display
-            this.gridApi.refreshCells({
-                force: true,
-                columns: ['index'], // Refresh only the order column
-            });
-
-            // Mark for change detection
-            this.cdr.markForCheck();
-
-            // Update task orders on the backend
-            this.updateTaskOrders();
+        if (fromIndex === -1 || toIndex === null || toIndex === undefined) {
+            return;
         }
+
+        // Calculate where the item will end up after removal (accounts for index shift when removing earlier item)
+        const finalTargetIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+
+        // Check if we can move the dragged task to the final target index
+        const conflictingDeps = (movedData.task_context_list || []).filter(
+            (depId: any) => {
+                const depIndex = this.rowData.findIndex((row) => {
+                    if (row.id === null || row.id === undefined) return false;
+                    // Convert both to numbers where possible
+                    const rowIdNum = typeof row.id === 'string' ? (row.id.startsWith('temp_') ? NaN : +row.id) : row.id;
+                    return +depId === rowIdNum;
+                });
+                // If dependency not found or dependency would end up below target position -> conflict
+                return depIndex === -1 || depIndex >= finalTargetIndex;
+            }
+        );
+
+        if (conflictingDeps.length > 0) {
+            // Build a friendly message listing up to 3 conflicting task names/ids
+            const conflictNames = conflictingDeps.map((depId: any) => {
+                const row = this.rowData.find((r) => {
+                    if (r.id === null || r.id === undefined) return false;
+                    const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                    return +depId === rowIdNum;
+                });
+                return row ? `${row.name || 'Without name'} (id:${row.id})` : `id:${depId}`;
+            });
+
+            const shortList = conflictNames.slice(0, 3).join(', ');
+            const more = conflictNames.length > 3 ? `, …и ещё ${conflictNames.length - 3}` : '';
+
+            this.toastService.error(
+                `Context conflict  ${shortList}${more}. First, arrange/edit the dependencies.`
+            );
+
+            // Revert any visual reorder by re-setting the grid data to our authoritative rowData
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
+
+            return;
+        }
+
+        // Additional check: when moving a task, other tasks between source and target
+        // will shift. If any of those shifted tasks have dependencies that must be
+        // above them, the shift may break their dependencies. We must check those
+        // and block the move if conflicts are found.
+        const shiftedConflicts: string[] = [];
+
+        if (fromIndex < toIndex) {
+            // Moving down: rows in (fromIndex+1 .. toIndex) will shift up by 1
+            for (let i = fromIndex + 1; i <= toIndex; i++) {
+                const row = this.rowData[i];
+                if (!row) continue;
+                const newIndex = i - 1;
+                const deps = row.task_context_list || [];
+                deps.forEach((depId: any) => {
+                    const depIndex = this.rowData.findIndex((r) => {
+                        if (r.id === null || r.id === undefined) return false;
+                        const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                        return +depId === rowIdNum;
+                    });
+                    if (depIndex === -1 || depIndex >= newIndex) {
+                        const depRow = this.rowData.find((r) => {
+                            if (r.id === null || r.id === undefined) return false;
+                            const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                            return +depId === rowIdNum;
+                        });
+                        const depLabel = depRow ? `${depRow.name || 'Without name'} (id:${depRow.id})` : `id:${depId}`;
+                        shiftedConflicts.push(`${row.name || 'Without name'} (id:${row.id}) → dependency ${depLabel}`);
+                    }
+                });
+            }
+        } else if (fromIndex > toIndex) {
+            // Moving up: rows in (toIndex .. fromIndex-1) will shift down by 1
+            for (let i = toIndex; i <= fromIndex - 1; i++) {
+                const row = this.rowData[i];
+                if (!row) continue;
+                const newIndex = i + 1;
+                const deps = row.task_context_list || [];
+                deps.forEach((depId: any) => {
+                    const depIndex = this.rowData.findIndex((r) => {
+                        if (r.id === null || r.id === undefined) return false;
+                        const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                        return +depId === rowIdNum;
+                    });
+                    if (depIndex === -1 || depIndex >= newIndex) {
+                        const depRow = this.rowData.find((r) => {
+                            if (r.id === null || r.id === undefined) return false;
+                            const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                            return +depId === rowIdNum;
+                        });
+                        const depLabel = depRow ? `${depRow.name || 'Without name'} (id:${depRow.id})` : `id:${depId}`;
+                        shiftedConflicts.push(`${row.name || 'Without name'} (id:${row.id}) → dependency ${depLabel}`);
+                    }
+                });
+            }
+        }
+
+        if (shiftedConflicts.length > 0) {
+            const shortList = shiftedConflicts.slice(0, 4).join('; ');
+            const more = shiftedConflicts.length > 4 ? `; …и ещё ${shiftedConflicts.length - 4}` : '';
+            this.toastService.error(`Cannot move the task: shifting it would break the context for: ${shortList}${more}.`);
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
+            return;
+        }
+
+        // Proceed with the reorder. Be careful with insertion index shift when removing earlier item.
+        // Remove the row from its old position
+        this.rowData.splice(fromIndex, 1);
+
+        // Calculate insertion index after removal
+        let insertIndex = toIndex;
+        if (fromIndex < toIndex) {
+            insertIndex = toIndex - 1;
+        }
+
+        // Insert into the new position
+        this.rowData.splice(insertIndex, 0, movedData);
+
+        // Update order values in all rows
+        this.rowData.forEach((row, i) => {
+            row.order = i;
+        });
+
+        // Refresh all rows to update the order display
+        this.gridApi.refreshCells({
+            force: true,
+            columns: ['index'], // Refresh only the order column
+        });
+
+        // Mark for change detection
+        this.cdr.markForCheck();
+
+        // Update task orders on the backend
+        this.updateTaskOrders();
     }
+
     private parseTaskData(taskData: FullTask) {
         const agentData = taskData.agentData || null;
         const agentId = agentData ? agentData.id : null;
@@ -1128,31 +1251,35 @@ export class TasksTableComponent implements OnChanges {
     }
 
     updateTaskOrders(): void {
-        // Filter out rows with null or temporary IDs to get only existing tasks
-        const tasksWithIds = this.rowData.filter((task: TableFullTask) => {
-            // Filter out null IDs
-            if (task.id === null) return false;
+        // Build the ordered list of tasks based on the grid's displayed order so
+        // PATCH requests match what the user sees in the UI.
+        let displayedRows: TableFullTask[] = [];
+        if (this.gridApi) {
+            const count = this.gridApi.getDisplayedRowCount();
+            for (let i = 0; i < count; i++) {
+                const node = this.gridApi.getDisplayedRowAtIndex(i);
+                if (node && node.data) {
+                    displayedRows.push(node.data as TableFullTask);
+                }
+            }
+        } else {
+            // Fallback to local rowData
+            displayedRows = [...this.rowData];
+        }
 
-            // Filter out temporary IDs
-            if (typeof task.id === 'string' && task.id.startsWith('temp_'))
-                return false;
-
-            // Keep only tasks with valid IDs
+        // Filter displayed rows to only real tasks (exclude null and temp IDs)
+        const tasksWithIds = displayedRows.filter((task: TableFullTask) => {
+            if (task.id === null || task.id === undefined) return false;
+            if (typeof task.id === 'string' && task.id.startsWith('temp_')) return false;
             return true;
         });
 
-        // Create an array of update requests with new order values
-        const updateRequests: Observable<GetTaskRequest>[] = tasksWithIds.map(
-            (task, index) => {
-                console.log('updating task order', task);
-
-                // Ensure ID is a number
-                const taskId = typeof task.id === 'string' ? +task.id : task.id;
-
-                // Use PATCH method to update only the order
-                return this.tasksService.patchTaskOrder(taskId, index + 1);
-            }
-        );
+        // Create an array of update requests with new order values (1-based)
+        const updateRequests: Observable<GetTaskRequest>[] = tasksWithIds.map((task, index) => {
+            console.log('updating task order', task);
+            const taskId = typeof task.id === 'string' ? +task.id : task.id;
+            return this.tasksService.patchTaskOrder(taskId, index + 1);
+        });
 
         // Execute all update requests in parallel using forkJoin
         if (updateRequests.length > 0) {
@@ -1560,4 +1687,19 @@ export class TasksTableComponent implements OnChanges {
 
         this.contextMenuVisible.set(true);
     }
+
+    // private canMoveTask(draggedId: number, newOrder: number): boolean {
+    //     const draggedTask = [...this.tasks].find(t => t.id === draggedId);
+    //     if (!draggedTask) return false;
+
+    //     // получаем индекс, куда хотим вставить таск
+    //     const newIndex = [...this.tasks].findIndex(t => t.order === newOrder);
+    //     const newHigherTasks = [...this.tasks].slice(0, newIndex).map(t => t.id);
+
+    //     // все зависимости должны быть выше нового места
+    //     const allDependenciesAbove = draggedTask.task_context_list.every(id => newHigherTasks.includes(id));
+
+    //     return allDependenciesAbove;
+    // }
+
 }
