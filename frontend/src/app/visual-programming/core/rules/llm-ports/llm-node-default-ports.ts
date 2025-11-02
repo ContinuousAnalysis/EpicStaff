@@ -18,9 +18,10 @@ export const DEFAULT_LLM_NODE_PORTS: BasePort[] = [
       'python-out',
       'python-in',
       'table-in',
+      'subgraph-in',
     ],
     position: 'right',
-    color: '#e0575b', // LLM color mapping
+    color: '#e0575b',
   },
 
   {
@@ -38,8 +39,9 @@ export const DEFAULT_LLM_NODE_PORTS: BasePort[] = [
       'project-out',
       'python-out',
       'python-in',
+      'subgraph-out',
     ],
     position: 'left',
-    color: '#e0575b', // LLM color mapping
+    color: '#e0575b',
   },
 ];

@@ -5,6 +5,7 @@ import { PythonNodePanelComponent } from '../../components/node-panels/python-no
 import { ConditionalEdgeNodePanelComponent } from '../../components/node-panels/conditional-edge-node-panel/conditional-edge-node-panel.component';
 import { EndNodePanelComponent } from '../../components/node-panels/end-node-panel/end-node-panel.component';
 import { FileExtractorNodePanelComponent } from '../../components/node-panels/file-extractor-node-panel/file-extractor-node-panel.component';
+import { SubGraphNodePanelComponent } from '../../components/node-panels/subgraph-node-panel/subgraph-node-panel.component';
 
 export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
     python: PythonNodePanelComponent,
@@ -12,5 +13,5 @@ export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
     edge: ConditionalEdgeNodePanelComponent,
     'file-extractor': FileExtractorNodePanelComponent,
     end: EndNodePanelComponent,
-    // start: StartNodePanelComponent,
+    subgraph: SubGraphNodePanelComponent,
 };

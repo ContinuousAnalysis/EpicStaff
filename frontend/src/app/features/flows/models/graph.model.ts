@@ -20,6 +20,7 @@ import {
 import { StartNode } from '../../../pages/flows-page/components/flow-visual-programming/models/start-node.model';
 import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
+import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 
 export interface GraphDto {
     id: number;
@@ -32,6 +33,7 @@ export interface GraphDto {
     llm_node_list: GetLLMNodeRequest[];
     file_extractor_node_list: GetFileExtractorNodeRequest[];
     end_node_list: EndNode[];
+    subgraph_node_list: SubGraphNode[];
     description: string;
     metadata: FlowModel;
     tags?: [];
@@ -58,6 +60,7 @@ export interface CreateGraphDtoRequest {
     llm_node_list?: GetLLMNodeRequest[];
     file_extractor_node_list?: GetFileExtractorNodeRequest[];
     end_node_list?: EndNode[];
+    subgraph_node_list?: SubGraphNode[];
 }
 
 export interface UpdateGraphDtoRequest {

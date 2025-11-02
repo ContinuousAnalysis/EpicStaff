@@ -16,6 +16,7 @@ import { DEFAULT_FILE_EXTRACTOR_NODE_PORTS } from '../rules/file-extractor-ports
 import { DEFAULT_END_NODE_PORTS } from '../rules/end-ports/end-ports-default-ports';
 import { NodeModel } from '../models/node.model';
 import { ConditionGroup } from '../models/decision-table.model';
+import { DEFAULT_SUBGRAPH_NODE_PORTS } from '../rules/subgraph-ports/subgraph-node-default-ports';
 
 export function parsePortId(
     portId: string
@@ -60,6 +61,8 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
             return DEFAULT_FILE_EXTRACTOR_NODE_PORTS;
         case NodeType.END:
             return DEFAULT_END_NODE_PORTS;
+        case NodeType.SUBGRAPH:
+            return DEFAULT_SUBGRAPH_NODE_PORTS;
         default:
             console.warn(`Unsupported node type: ${nodeType}`);
             return [];

@@ -14,6 +14,7 @@ export const NODE_ICONS: Record<NodeType, string> = {
     [NodeType.NOTE]: 'ti ti-note',
     [NodeType.FILE_EXTRACTOR]: 'ti ti-file',
     [NodeType.END]: 'ti ti-square-rounded',
+    [NodeType.SUBGRAPH]: 'ti ti-hierarchy-2',
 };
 
 export const NODE_COLORS: Record<NodeType, string> = {
@@ -30,4 +31,5 @@ export const NODE_COLORS: Record<NodeType, string> = {
     [NodeType.NOTE]: '#ffffd1',
     [NodeType.FILE_EXTRACTOR]: '#2196F3',
     [NodeType.END]: '#d3d3d3',
+    [NodeType.SUBGRAPH]: '#00bfa5',
 };

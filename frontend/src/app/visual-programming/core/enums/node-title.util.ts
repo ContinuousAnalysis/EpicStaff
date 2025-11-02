@@ -33,6 +33,9 @@ export function getNodeTitle(node: NodeModel): string {
             return 'File Extractor';
         case NodeType.END:
             return 'End';
+        case NodeType.SUBGRAPH:
+            return node.data.name 
+            ;
         default:
             return '';
     }

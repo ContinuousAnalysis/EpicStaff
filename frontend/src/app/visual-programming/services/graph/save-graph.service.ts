@@ -14,6 +14,7 @@ import {
     StartNodeModel,
     LLMNodeModel,
     NodeModel,
+    SubGraphNodeModel,
 } from '../../core/models/node.model';
 
 import { ToastService } from '../../../services/notifications/toast.service';
@@ -57,6 +58,11 @@ import {
     CreateEndNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import {
+    SubGraphNode,
+    CreateSubGraphNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
+import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
 
 @Injectable({
     providedIn: 'root',
@@ -71,6 +77,7 @@ export class GraphUpdateService {
         private llmNodeService: LLMNodeService,
         private fileExtractorService: FileExtractorService,
         private endNodeService: EndNodeService,
+        private subGraphNodeService: SubGraphNodeService,
         private toastService: ToastService
     ) {}
 
@@ -106,6 +113,7 @@ export class GraphUpdateService {
             conditionalEdges: any[];
             edges: Edge[];
             endNodes: EndNode[];
+            subGraphNodes: SubGraphNode[];
         };
     }> {
         //
@@ -293,6 +301,40 @@ export class GraphUpdateService {
             })
         );
 
+        // ---- Handle SubGraph Nodes ----
+        let deleteSubGraphNodes$: Observable<any> = of(null);
+        if (graph.subgraph_node_list && graph.subgraph_node_list.length > 0) {
+            const deleteSubGraphReqs = graph.subgraph_node_list.map(
+                (subGraphNode: SubGraphNode) =>
+                    this.subGraphNodeService
+                        .deleteSubGraphNode(subGraphNode.id)
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteSubGraphNodes$ = forkJoin(deleteSubGraphReqs);
+        }
+
+        const subGraphNodes$ = deleteSubGraphNodes$.pipe(
+            switchMap(() => {
+                const subGraphNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.SUBGRAPH
+                ) as SubGraphNodeModel[];
+
+                const requests = subGraphNodes.map((node) => {
+                    const payload: CreateSubGraphNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        subgraph: node.data.id,
+                        input_map: node.input_map || {},
+                        output_variable_path: node.output_variable_path || null,
+                    };
+                    return this.subGraphNodeService
+                        .createSubGraphNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
         // ---- Handle Conditional Edges ----
         let deleteConditionalEdges$: Observable<any> = of(null);
         if (
@@ -421,6 +463,7 @@ export class GraphUpdateService {
             conditionalEdges: conditionalEdges$,
             edges: createEdges$,
             endNodes: endNodes$,
+            subGraphNodes: subGraphNodes$,
         }).pipe(
             switchMap(
                 (results: {
@@ -431,6 +474,7 @@ export class GraphUpdateService {
                     conditionalEdges: ConditionalEdge[];
                     edges: Edge[];
                     endNodes: EndNode[];
+                    subGraphNodes: SubGraphNode[];
                 }) => {
                     const updateGraphRequest: UpdateGraphDtoRequest = {
                         id: graph.id,
@@ -464,6 +508,7 @@ export class GraphUpdateService {
                                             results.conditionalEdges,
                                         edges: results.edges,
                                         endNodes: results.endNodes,
+                                        subGraphNodes: results.subGraphNodes,
                                     },
                                 };
                             })

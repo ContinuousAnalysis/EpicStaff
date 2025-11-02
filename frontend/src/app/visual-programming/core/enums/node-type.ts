@@ -12,4 +12,5 @@ export enum NodeType {
     NOTE = 'note',
     FILE_EXTRACTOR = 'file-extractor',
     END = 'end',
+    SUBGRAPH = 'subgraph',
 }

@@ -119,6 +119,7 @@ import { NodePanelShellComponent } from '../components/node-panels/node-panel-sh
 export class FlowGraphComponent implements OnInit, OnDestroy {
     @Input() flowState!: FlowModel;
     @Input() nodesMode!: 'project-graph' | 'flow-graph';
+    @Input() currentFlowId: number | null = null;
 
     @Output() save = new EventEmitter<void>();
 

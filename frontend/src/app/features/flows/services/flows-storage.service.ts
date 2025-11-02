@@ -116,7 +116,7 @@ export class FlowsStorageService {
             tap((flows) => {
                 this.setFlows(flows);
             }),
-            delay(this.flowsLoaded() ? 0 : 300),
+        
             shareReplay(1),
             catchError(() => {
                 this.flowsLoaded.set(false);
@@ -223,6 +223,7 @@ export class FlowsStorageService {
                     file_extractor_node_list:
                         sourceFlow.file_extractor_node_list,
                     end_node_list: sourceFlow.end_node_list,
+                    subgraph_node_list: sourceFlow.subgraph_node_list,
                 };
                 return this.flowsApiService.copyGraph(payload).pipe(
                     tap((created) => this.addFlowToCache(created))
