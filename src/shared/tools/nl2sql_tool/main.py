@@ -1,6 +1,5 @@
 # NL2SQL Tool
 
-import os
 from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_openai import ChatOpenAI
@@ -9,10 +8,10 @@ class NL2SQLTool:
     def __init__(
         self,
         db_uri: str,
-        openai_api_key: str | None = None
+        openai_api_key: str
     ):
-        self.db_uri = db_uri
-        self.openai_api_key = state["variables"]["OPENAI_API_KEY"] # Waiting for a fix
+        self.db_uri = state["variables"]["DB_URI"] 
+        self.openai_api_key = state["variables"]["OPENAI_API_KEY"] 
 
     def _create_agent(self):
 
@@ -24,8 +23,7 @@ class NL2SQLTool:
         db = SQLDatabase.from_uri(self.db_uri)
         agent_executor = create_sql_agent(
             llm=llm,
-            db=db,
-            verbose=True
+            db=db
         )
         return agent_executor
 
