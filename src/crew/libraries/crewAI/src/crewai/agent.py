@@ -474,9 +474,9 @@ class Agent(BaseAgent):
             )
             previous_context_guidelines = dedent(
                 """
-                - Compare **previous task context** with the current task:
-                    * If it extends, refines, or adds relevant details — integrate those enhancements.
-                    * If it is unrelated or redundant — ignore it completely.
+                - **Previous task context (if provided)** → Use this only as a **secondary enhancer**:  
+                    * Integrate details that logically extend, refine, or clarify the current task.  
+                    * Ignore any unrelated or redundant parts completely.
             """
             )
         else:

@@ -47,6 +47,8 @@ from tables.views.model_view_sets import (
     RealtimeAgentChatViewSet,
     OrganizationViewSet,
     OrganizationUserViewSet,
+    GraphOrganizationViewSet,
+    GraphOrganizationUserViewSet,
 )
 
 from tables.views.views import (
@@ -138,6 +140,8 @@ router.register(r"sessions", SessionViewSet, basename="session")
 router.register(r"mcp-tools", McpToolViewSet)
 router.register(r"organizations", OrganizationViewSet)
 router.register(r"organization-users", OrganizationUserViewSet)
+router.register(r"graph-organizations", GraphOrganizationViewSet)
+router.register(r"graph-organization-users", GraphOrganizationUserViewSet)
 router.register(r"document-chunks", ChunkViewSet)
 
 urlpatterns = [
