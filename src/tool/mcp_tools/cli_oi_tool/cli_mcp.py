@@ -23,7 +23,6 @@ if not API_KEY:
         "The OpenInterpreter tool requires a valid API key to function."
     )
 
-# Initialize MCP server
 mcp = FastMCP("OpenInterpreterTool")
 
 
@@ -74,8 +73,8 @@ def cli_tool(input_data: CLIToolInput):
         3. If request is illogical, and can't be completed, message about this should also start from [result]
         IMPORTANT RULES FOR CLI TOOL:
         1. Your only job is to execute CLI commands inside the container
-        2. If user doesn't specify directory to run commands, use app/
-        3. Never access any system files outside app/ directory, unless user specifically asks
+        2. If user doesn't specify directory to run commands, use /app/
+        3. Never access any system files outside /app/ directory, unless user specifically asks
         4. Never attempt GUI operations
         5. Always handle errors gracefully and return stdout, stderr and exit code.
         6. You don't have access to sudo, so don't use it

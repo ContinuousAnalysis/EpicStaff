@@ -1,4 +1,3 @@
-
 services:
   cli_open_interpreter:
     build:
@@ -12,12 +11,12 @@ services:
     environment:
       PORT: ${MCP_CLI_OPEN_INTERPRETER_PORT}
     ports:
-      - "${MCP_CLI_OPEN_INTERPRETER_PORT}:${MCP_CLI_OPEN_INTERPRETER_PORT}"   # HTTP MCP API
+      - "${MCP_CLI_OPEN_INTERPRETER_PORT}:${MCP_CLI_OPEN_INTERPRETER_PORT}" 
     volumes:
-      - ${CREW_SAVEFILES_PATH}:/app/data
+      - ${MCP_SAVEFILES_PATH}:/app/data
     restart: unless-stopped
     networks:
-      - mcp_network 
+      - mcp-network 
   
   browser_open_interpreter:
     build:
@@ -31,16 +30,18 @@ services:
     environment:
       PORT: ${MCP_BROWSER_OPEN_INTERPRETER_PORT}
     ports:
-      - "${MCP_BROWSER_OPEN_INTERPRETER_PORT}:${MCP_BROWSER_OPEN_INTERPRETER_PORT}"   # HTTP MCP API
-      - "5900:5900"   # VNC
-      - "6080:6080"   # noVNC
+      - "${MCP_BROWSER_OPEN_INTERPRETER_PORT}:${MCP_BROWSER_OPEN_INTERPRETER_PORT}" 
+      - "5900:5900"   
+      - "6080:6080"   
     volumes:
-      - ${CREW_SAVEFILES_PATH}:/app/data
+      - ${MCP_SAVEFILES_PATH}:/app/data
     restart: unless-stopped
     networks:
-      - mcp_network 
+      - mcp-network 
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 networks:
-  mcp_network:
+  mcp-network:
     external: true 
     driver: bridge

@@ -17,6 +17,7 @@ selenium = "^4.17.0"
 playwright = {extras = ["chromium"], version = "^1.41.0"} # prefered
 undetected-chromedriver = "^3.2.1" # with selenium for bot checks
 requests = "^2.32.0"
+beautifulsoup4 = "4.14.2"
 
 # GUI automation
 pyautogui = "^0.9.53"

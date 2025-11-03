@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import subprocess
 
 from typing import Optional, List
 from fastmcp import FastMCP
@@ -60,6 +61,15 @@ def browser_tool(input_data: BrowserToolInput):
         ]
     }
     """
+    forward_ports = [4200, 8000]
+    for port in forward_ports:
+        subprocess.Popen(
+            [
+                "socat",
+                f"TCP-LISTEN:{port},fork",
+                f"TCP:host.docker.internal:{port}",
+            ]
+        )
 
     local_interpreter = interpreter.OpenInterpreter()
 
@@ -77,42 +87,34 @@ def browser_tool(input_data: BrowserToolInput):
     local_interpreter.max_output = 2000
 
     custom_instruction = """
-        You are a **browser automation agent** running inside a secure Linux container
-        with virtual display `:99` and noVNC monitoring.
-        Your mission is to safely execute browser automation tasks using Python.
-        ---
+        You are a browser automation agent running inside a secure Linux container
+        with virtual display `:99` and noVNC monitoring. Your mission is to safely
+        execute browser automation tasks using Python.
 
-        ### Environment
+        Environment:
         - Display: Xvfb (:99)
         - Browser: Chromium + driver
-        - Libraries: Playwright (Chromium), Selenium (undetected-chromedriver), requests, Pillow, OpenCV, pandas, websocket-client
+        - Libraries: Playwright (Chromium), Selenium, requests, Pillow, OpenCV, pandas
         - System tools: scrot, x11vnc, GTK3, libx11, libgl1-mesa-glx, fonts, novnc, websockify
-        - Async runtime: You already run inside an event loop. **Do not** use `asyncio.run()` or `sync_playwright()`.
-        - Image analysis: to "see" any image that you need to analyze, open it via plt.show() any other method won't work.
+        - Async runtime: You are already inside an event loop. Do not use asyncio.run() or sync_playwright().
+        - Image analysis: use only your model's vision capabilities unless explicitly instructed.
 
-        ---
+        Critical Rule:
+        - After finishing a task, always end output with:
+        [SUCCESS] <required output>  or  [FAILURE] <required output>
+        - Include all extracted/read/output information in <required output>.
+        - Do not omit this line. Do not use print() automatically.
 
-        ### Types of Interactions
-        1. Programatic interaction(THIS SHOUD BE DEFAULT MODE)
-            In this mode use playwright to work with browser via direct high-level API calls or DOM interactions.
-            In this mode DO NOT USE methods that simulate mouse or keyboard input
-        2. GUI interaction(USE ONLY WHEN USER ASKS)
-            In this mode use playwright low-level APIs to simulate mouse and keyboard input.
-            You can simulate mouse/keyboard actions via DOM selectors, like page.click('')
-
-        ### Behavior Guidelines
-        1. Only open or close the browser if explicitly instructed.
-        2. Use from browser_manager import start_browser; browser, context, page = await start_browser(); browser = context.browser() to start the browser and get all objects.
-        Use from browser_manager import close_browser; await close_browser() to close the browser.
-        3. DO NOT CLOSE BROWSER IF USER HADN'T ASKED TO DO SO
-        4. For screenshots, **always** use `scrot`.
-        5. Retry each step up to 3 times if it fails. If still failing, stop and record the error.
-        6. Operate strictly inside the container — never access host files or network beyond the browser.
-        
-        CRITICAL RULE:
-        After finishing a step, ALWAYS add a separate line at the very end that starts exactly with:
-        [SUCCESS] <brief summary>  OR  [FAILURE] <brief summary>
-        Do not omit this line. This is required for parsing.
+        Behavior Guidelines:
+        1. Do not close the browser unless instructed.
+        2. Use:
+            from browser_manager import start_browser
+            browser, context, page = await start_browser()
+            to start the browser, and
+            from browser_manager import close_browser
+            await close_browser()
+            to close it.
+        3. Retry each step up to 5 times if it fails; record error if still failing.
     """
     local_interpreter.system_message += custom_instruction
     logger.info("Local Open Interpreter initialized.")
@@ -133,27 +135,31 @@ def browser_tool(input_data: BrowserToolInput):
     local_interpreter.system_message += f"Context of the task:\n{context}"
 
     for instruction in instructions:
+        last_text = []
         step_summary = None
         step_success = False
         try:
             for chunk in local_interpreter.chat(instruction):
+                ctype = chunk.get("type")
                 content = chunk.get("content", "")
+
                 if content:
+                    if ctype in ("code", "console"):
+                        last_text = []
+                    elif ctype == "message":
+                        last_text.append(content)
+
                     if "[SUCCESS]" in content:
-                        step_summary = (
-                            "[SUCCESS] " + content.split("[SUCCESS]", 1)[1].strip()
-                        )
                         step_success = True
-                        break
+
                     elif "[FAILURE]" in content:
-                        step_summary = (
-                            "[FAILURE] " + content.split("[FAILURE]", 1)[1].strip()
-                        )
                         step_success = False
-                        break
+
         except Exception as e:
             step_summary = f"[FAILURE] Exception: {str(e)}"
             step_success = False
+
+        step_summary = "".join(last_text).strip()
 
         steps_output.append(
             {"step": step_counter, "success": step_success, "summary": step_summary}

@@ -48,7 +48,7 @@ After startup, this ports are exposed:
 
 **CLI tool request:**
 ~~~bash
-curl -N -X POST http://localhost:7002/mcp   -H "Content-Type: application/json"   -H "Accept: application/json, text/event-stream"   -d '{
+curl -N -X POST http://localhost:7001/mcp   -H "Content-Type: application/json"   -H "Accept: application/json, text/event-stream"   -d '{
     "jsonrpc": "2.0",
     "method": "tools/call",
     "params": {
@@ -227,6 +227,7 @@ Input Description
 - Automates browser interactions in headful mode
 - Executes a sequence of instructions
 - GUI available at http://127.0.0.1:6080/vnc.html
+- Browser is persistant during single tool call.
 
 # Notes
 
