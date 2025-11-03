@@ -1,11 +1,7 @@
 export interface DecisionTableNode {
-    graph: null;
-    node_name: string | null;
+   
     default_next_node: string | null;
-    condition_groups: ConditionGroup[];
-}
-
-export interface Graph {
+    error_next_node: string | null;
     condition_groups: ConditionGroup[];
 }
 

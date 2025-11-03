@@ -1,23 +1,91 @@
 .decision-table {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    padding: 1rem;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-nodes-background);
+    border: 2px solid var(--color-divider-subtle);
+    border-radius: 16px;
+    cursor: pointer;
+    overflow: hidden;
+
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border-bottom: 1px solid var(--color-divider-subtle);
+
+        .icon-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            i {
+                font-size: 22px;
+            }
+        }
+
+        .title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #ffffff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
 
     &__groups {
         display: flex;
-        flex-direction: row;
-        gap: 1rem;
-        margin-bottom: 1rem;
+        flex-direction: column;
+        gap: 0;
+        flex: 1;
     }
 
     &__group {
-        background: #e3e7f1;
-        color: #2a2a2a;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        font-weight: 500;
-        font-size: 1rem;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid var(--color-divider-subtle);
+        transition: background-color 0.2s ease;
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .group-name {
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .group-port-indicator {
+            position: absolute;
+            right: -10px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            background-color: transparent;
+            pointer-events: none;
+        }
+    }
+
+    &__empty {
+        padding: 1rem;
+        text-align: center;
+        color: #999;
+        font-size: 13px;
     }
 }

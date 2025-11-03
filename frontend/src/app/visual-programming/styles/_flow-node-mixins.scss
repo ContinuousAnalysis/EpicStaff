@@ -183,6 +183,18 @@
 @mixin table-port-left-indexes {
   top: 30px;
 }
+
+@mixin table-port-right-indexes {
+  $header-height: 60px;
+  $row-height: 46px;
+  
+  @for $i from 1 through 100 {
+    &.port-index-#{$i} {
+      top: calc(#{$header-height} + #{$row-height} * #{$i - 0.5}) !important;
+    }
+  }
+}
+
 @mixin project-port-top-indexes {
   &.port-index-0 {
     left: 75% !important;

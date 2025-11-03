@@ -70,7 +70,19 @@
     </div>
     <span class="port-label">{{ port.label }}</span>
 </div>
-} @if (!edgeNode && !noteNode) {
+} @if (node.type === NodeType.TABLE) {
+<app-decision-table-node
+    [node]="tableNode"
+    (actualClick)="onEditClick()"
+></app-decision-table-node>
+} @else if (edgeNode) {
+<app-conditional-edge-node
+    clickOrDrag
+    (actualClick)="onEditClick()"
+></app-conditional-edge-node>
+} @else if (noteNode) {
+<app-note-node [node]="noteNode"></app-note-node>
+} @else if (!edgeNode && !noteNode) {
 
 <div class="interactive-node-body" clickOrDrag (actualClick)="onEditClick()">
     <!-- Header Section -->
@@ -83,15 +95,6 @@
         </div>
     </div>
 </div>
-} @else if (edgeNode) {
-<app-conditional-edge-node
-    clickOrDrag
-    (actualClick)="onEditClick()"
-></app-conditional-edge-node>
-} @else if (noteNode) {
-<app-note-node [node]="noteNode"></app-note-node>
-} @if (node.type === NodeType.TABLE) {
-<app-decision-table-node [node]="tableNode"></app-decision-table-node>
 } @if (showVariables && isBaseNode(node) && node.input_map &&
 objectKeys(node.input_map).length > 0) {
 <div

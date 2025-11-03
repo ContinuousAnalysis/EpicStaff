@@ -1,11 +1,21 @@
-<div class="decision-table">
+<div class="decision-table" clickOrDrag (actualClick)="onEditClick()">
+    <div class="decision-table__header">
+        <div class="icon-wrapper">
+            <i [class]="node.icon" [style.color]="node.color"></i>
+        </div>
+        <div class="title">{{ node.node_name || 'Decision Table' }}</div>
+    </div>
+
     @if (conditionGroups.length > 0) {
     <div class="decision-table__groups">
-        @for (group of conditionGroups; track group.group_name) {
-        <span class="decision-table__group">
-            {{ group.group_name }}
-        </span>
+        @for (group of conditionGroups; track $index) {
+        <div class="decision-table__group">
+            <span class="group-name">{{ group.group_name || 'Group ' + ($index + 1) }}</span>
+            <div class="group-port-indicator"></div>
+        </div>
         }
     </div>
+    } @else {
+    <div class="decision-table__empty">No condition groups</div>
     }
 </div>

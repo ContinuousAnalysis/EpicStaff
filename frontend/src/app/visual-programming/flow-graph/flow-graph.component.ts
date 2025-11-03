@@ -636,12 +636,21 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             )
         );
 
-        // Set different size for note nodes
         let nodeSize: { width: number; height: number };
         if (event.type === NodeType.NOTE) {
             nodeSize = {
                 width: 200,
                 height: 150,
+            };
+        } else if (event.type === NodeType.TABLE) {
+            const conditionGroups = event.data?.table?.condition_groups ?? [];
+            const headerHeight = 60;
+            const rowHeight = 46;
+            const minRows = Math.max(conditionGroups.length, 2);
+            const calculatedHeight = headerHeight + rowHeight * minRows;
+            nodeSize = {
+                width: 330,
+                height: Math.max(calculatedHeight, 152),
             };
         } else {
             nodeSize = {

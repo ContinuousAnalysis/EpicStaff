@@ -274,6 +274,10 @@
     .port-position-left {
         @include mixins.table-port-left-indexes;
     }
+    
+    .port-position-right {
+        @include mixins.table-port-right-indexes;
+    }
 }
 
 :host(.type-edge) {
