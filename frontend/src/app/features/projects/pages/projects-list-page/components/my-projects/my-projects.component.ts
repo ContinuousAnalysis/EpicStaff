@@ -176,7 +176,7 @@ export class MyProjectsComponent implements OnInit {
                 console.log('Running project:', project.id);
                 break;
             case 'copy':
-                this.openCopyDialog(project);
+                this.projectsStorageService.copyProject(project.id).subscribe();
                 break;
             case 'edit':
                 this.router.navigate(['/projects', project.id, 'edit']);
@@ -195,14 +195,6 @@ export class MyProjectsComponent implements OnInit {
                 flowName: `${project.name} Copy`,
                 title: 'Copy Project',
             },
-        });
-
-        dialogRef.closed.subscribe((newName) => {
-            if (newName && newName.trim().length > 0) {
-                this.projectsStorageService
-                    .copyProject(project, newName.trim())
-                    .subscribe();
-            }
         });
     }
 

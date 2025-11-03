@@ -30,6 +30,8 @@ export class FlowSessionStatusBadgeComponent {
         return 'Pending';
       case GraphSessionStatus.EXPIRED:
         return 'Expired';
+      case GraphSessionStatus.STOP:
+        return 'Stopped';
       default:
         return 'Unknown';
     }
@@ -49,6 +51,8 @@ export class FlowSessionStatusBadgeComponent {
         return 'status-pending';
       case GraphSessionStatus.EXPIRED:
         return 'status-expired';
+      case GraphSessionStatus.STOP:
+        return 'status-stop';
       default:
         return 'status-unknown';
     }

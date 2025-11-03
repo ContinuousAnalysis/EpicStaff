@@ -30,7 +30,7 @@ export class ChatsSidebarItemComponent {
         private chatsService: ChatsService,
         private consoleService: ConsoleService,
         private dialog: Dialog
-    ) {}
+    ) { }
 
     public onSelect() {
         this.chatsService.setSelectedAgent(this.agent);
@@ -60,7 +60,7 @@ export class ChatsSidebarItemComponent {
                 console.log('Updated agent received in parent:', updatedAgent);
 
                 // Update the local agent reference with the new data
-                this.agent = updatedAgent;
+                this.agent = { ...updatedAgent, tools: this.agent.tools, python_code_tools: this.agent.python_code_tools, configured_tools: this.agent.configured_tools };
 
                 // If this is the currently selected agent, update it in the service too
                 if (this.isSelected()) {

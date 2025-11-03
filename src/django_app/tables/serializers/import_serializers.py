@@ -1,6 +1,7 @@
 from django.db.models import Q, Value, JSONField
 from rest_framework import serializers
 
+from tables.models.mcp_models import McpTool
 from tables.models import (
     Agent,
     LLMConfig,
@@ -123,10 +124,36 @@ class ToolConfigImportSerilizer(serializers.ModelSerializer):
         return config
 
 
+class McpToolImportSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = McpTool
+        fields = "__all__"
+        extra_kwargs = {
+            "name": {"validators": []},
+            "id": {"required": False, "read_only": False, "validators": []},
+        }
+
+    def create(self, validated_data: dict):
+        validated_data.pop("id", None)
+        full_match = McpTool.objects.filter(**validated_data).first()
+        if full_match is not None:
+            return full_match
+
+        name = validated_data.pop("name")
+        if McpTool.objects.filter(name=name).exists():
+            existing_names = McpTool.objects.values_list("name", flat=True)
+            name = generate_new_unique_name(name, existing_names)
+
+        mcp_tool = McpTool.objects.create(name=name, **validated_data)
+        return mcp_tool
+
+
 class ToolsImportSerializer(serializers.Serializer):
 
     python_tools = PythonCodeToolImportSerializer(many=True)
     configured_tools = ToolConfigImportSerilizer(many=True)
+    mcp_tools = McpToolImportSerializer(many=True)
 
 
 class BaseConfigImportSerializer(serializers.ModelSerializer):
@@ -447,7 +474,9 @@ class RealtimeAgentImportSerializer(serializers.ModelSerializer):
             )
             transcription_configs_service.create_configs()
 
-        realtime_agent = RealtimeAgent.objects.create(agent=agent, **validated_data)
+        realtime_agent, _ = RealtimeAgent.objects.get_or_create(
+            agent=agent, **validated_data
+        )
 
         if configs_service:
             realtime_agent.realtime_config = configs_service.get_config(
@@ -525,8 +554,6 @@ class AgentImportSerializer(serializers.ModelSerializer):
         exclude = [
             "tags",
             "knowledge_collection",
-            "configured_tools",
-            "python_code_tools",
         ]
         extra_kwargs = {
             "tools": {"validators": []},
@@ -583,6 +610,7 @@ class AgentImportSerializer(serializers.ModelSerializer):
             "configured_tools": [
                 t_data["id"] for t_data in tools_data["configured_tools"]
             ],
+            "mcp_tools": [t_data["id"] for t_data in tools_data["mcp_tools"]],
         }
 
 
@@ -628,6 +656,8 @@ class CrewImportSerializer(serializers.ModelSerializer):
     llm_configs = LLMConfigImportSerializer(many=True, required=False, allow_null=True)
     realtime_agents = RealtimeDataImportSerializer(required=False, allow_null=True)
 
+    agent_serializer_class = NestedAgentImportSerializer
+
     class Meta:
         model = Crew
         exclude = ["id", "tags", "knowledge_collection"]
@@ -651,6 +681,7 @@ class CrewImportSerializer(serializers.ModelSerializer):
         tools_service = None
 
         tasks_service = TasksImportService()
+        tasks = []
 
         if embedding_config_data:
             embedding_config = EmbeddingConfigImportSerializer().create(
@@ -682,7 +713,7 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
             current_id = a_data.pop("id")
 
-            agent_serializer = NestedAgentImportSerializer(data=a_data)
+            agent_serializer = self.agent_serializer_class(data=a_data)
             agent_serializer.is_valid(raise_exception=True)
             agent = agent_serializer.save()
 
@@ -707,7 +738,6 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
         for t_data in tasks_data:
             tool_ids_data = t_data.pop("tools", {})
-            context_ids = t_data.pop("context_tasks", [])
             agent_id = t_data.pop("agent", None)
 
             task = tasks_service.create_task(t_data, crew)
@@ -717,9 +747,14 @@ class CrewImportSerializer(serializers.ModelSerializer):
                 task.agent = agent
                 task.save()
 
-            tasks_service.add_task_context(task, context_ids)
             if tools_service:
                 tools_service.assign_tools_to_task(task, tool_ids_data)
+
+            tasks.append(task)
+
+        for task, t_data in zip(tasks, tasks_data):
+            context_ids = t_data.pop("context_tasks", [])
+            tasks_service.add_task_context(task, context_ids)
 
         return crew
 
@@ -845,7 +880,7 @@ class MetdataNodeSerializer(serializers.Serializer):
     parentId = serializers.CharField(allow_null=True, allow_blank=True)
     position = serializers.DictField()
     input_map = serializers.DictField()
-    node_name = serializers.CharField()
+    node_name = serializers.CharField(allow_null=True)
     output_variable_path = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
     )
@@ -878,9 +913,9 @@ class MetdataNodeSerializer(serializers.Serializer):
 
 class GraphMetadataSerializer(serializers.Serializer):
 
-    nodes = MetdataNodeSerializer(many=True)
-    groups = serializers.JSONField()
-    connections = serializers.JSONField()
+    nodes = MetdataNodeSerializer(many=True, required=False)
+    groups = serializers.JSONField(required=False)
+    connections = serializers.JSONField(required=False)
 
     def create(self, validated_data):
         nodes_data = validated_data.pop("nodes", [])
@@ -898,8 +933,8 @@ class GraphMetadataSerializer(serializers.Serializer):
         nodes_serializer.is_valid(raise_exception=True)
         nodes = nodes_serializer.save()
 
-        connections = validated_data.pop("connections")
-        groups = validated_data.pop("groups")
+        connections = validated_data.pop("connections", {})
+        groups = validated_data.pop("groups", {})
 
         return {"nodes": nodes, "groups": groups, "connections": connections}
 
@@ -933,6 +968,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
     # decision_table_node_list = DecisionTableNodeSerializer(many=True)
 
     metadata = GraphMetadataSerializer()
+
+    agent_serializer_class = NestedAgentImportSerializer
+    crew_serializer_class = NestedCrewImportSerializer
 
     class Meta:
         model = Graph
@@ -984,7 +1022,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
             llm_configs_service.create_configs()
 
         if agents_data:
-            agents_service = AgentsImportService(agents_data)
+            agents_service = AgentsImportService(
+                agents_data, self.agent_serializer_class
+            )
             agents_service.create_agents(tools_service, llm_configs_service)
 
         if realtime_agents_data and agents_data:
@@ -994,7 +1034,7 @@ class GraphImportSerializer(serializers.ModelSerializer):
             realtime_agents_serializer.create(realtime_agents_data)
 
         if crews_data:
-            crews_service = CrewsImportService(crews_data)
+            crews_service = CrewsImportService(crews_data, self.crew_serializer_class)
             crews_service.create_crews(
                 agents_service, tools_service, llm_configs_service
             )
@@ -1017,32 +1057,31 @@ class GraphImportSerializer(serializers.ModelSerializer):
             serializer.save()
 
         for node_data in python_node_list_data:
-            previous_name = node_data.pop("node_name")
-            mapped_node_names[previous_name] = previous_name
+            data = self._prepare_node_data(node_data, mapped_node_names)
 
-            serializer = PythonNodeImportSerializer(
-                data=node_data, context={"graph": graph}
-            )
+            serializer = PythonNodeImportSerializer(data=data, context={"graph": graph})
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
         for node_data in start_node_list_data:
-            serializer = StartNodeImportSerializer(
-                data=node_data, context={"graph": graph}
-            )
+            data = self._prepare_node_data(node_data, mapped_node_names)
+
+            serializer = StartNodeImportSerializer(data=data, context={"graph": graph})
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
         for node_data in end_node_list_data:
-            serializer = EndNodeImportSerializer(
-                data=node_data, context={"graph": graph}
-            )
+            data = self._prepare_node_data(node_data, mapped_node_names)
+
+            serializer = EndNodeImportSerializer(data=data, context={"graph": graph})
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
         for node_data in file_extractor_node_list_data:
+            data = self._prepare_node_data(node_data, mapped_node_names)
+
             serializer = FileExtractorNodeImportSerializer(
-                data=node_data, context={"graph": graph}
+                data=data, context={"graph": graph}
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -1081,3 +1120,11 @@ class GraphImportSerializer(serializers.ModelSerializer):
         graph.save()
 
         return graph
+
+    def _prepare_node_data(self, node_data, mapped_node_names):
+        """Restore original node_name and register it in mapped_node_names."""
+        previous_name = node_data.pop("node_name", None)
+        if previous_name:
+            mapped_node_names[previous_name] = previous_name
+            return {"node_name": mapped_node_names[previous_name], **node_data}
+        return node_data

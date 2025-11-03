@@ -1,4 +1,12 @@
+from tables.models.knowledge_models import Chunk
 from django_filters import rest_framework as filters
+from tables.models.crew_models import (
+    AgentConfiguredTools,
+    AgentMcpTools,
+    AgentPythonCodeTools,
+    TaskMcpTools,
+)
+from tables.exceptions import TaskSerializerError, AgentSerializerError
 from tables.models.llm_models import (
     RealtimeConfig,
     RealtimeTranscriptionConfig,
@@ -17,26 +25,35 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import transaction
 from django.db.models import Prefetch
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from tables.models.graph_models import (
     Condition,
     ConditionGroup,
     DecisionTableNode,
     EndNode,
     LLMNode,
+    Organization,
+    OrganizationUser,
+    GraphOrganization,
+    GraphOrganizationUser,
 )
 from tables.models.realtime_models import (
     RealtimeSessionItem,
     RealtimeAgent,
     RealtimeAgentChat,
 )
+from tables.filters import ProviderFilter
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
+from tables.models.mcp_models import McpTool
 from utils.logger import logger
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentWriteSerializer,
+    ChunkSerializer,
     CrewTagSerializer,
     AgentTagSerializer,
     DecisionTableNodeSerializer,
@@ -54,6 +71,7 @@ from tables.serializers.model_serializers import (
     TaskWriteSerializer,
     TaskConfiguredTools,
     TaskPythonCodeTools,
+    McpToolSerializer,
 )
 from tables.serializers.export_serializers import (
     AgentExportSerializer,
@@ -65,6 +83,14 @@ from tables.serializers.import_serializers import (
     AgentImportSerializer,
     CrewImportSerializer,
     GraphImportSerializer,
+)
+from tables.serializers.copy_serializers import (
+    AgentCopySerializer,
+    AgentCopyDeserializer,
+    CrewCopySerializer,
+    CrewCopyDeserializer,
+    GraphCopySerializer,
+    GraphCopyDeserializer,
 )
 
 
@@ -131,6 +157,10 @@ from tables.serializers.model_serializers import (
     RealtimeModelSerializer,
     RealtimeTranscriptionConfigSerializer,
     RealtimeTranscriptionModelSerializer,
+    OrganizationSerializer,
+    OrganizationUserSerializer,
+    GraphOrganizationSerializer,
+    GraphOrganizationUserSerializer,
 )
 
 from tables.serializers.knowledge_serializers import (
@@ -142,8 +172,8 @@ from tables.serializers.knowledge_serializers import (
     DocumentMetadataSerializer,
 )
 from tables.services.redis_service import RedisService
-from tables.utils.mixins import ImportExportMixin
-
+from tables.utils.mixins import ImportExportMixin, DeepCopyMixin
+from tables.exceptions import BuiltInToolModificationError
 
 redis_service = RedisService()
 
@@ -209,7 +239,7 @@ class ProviderReadWriteViewSet(ModelViewSet):
     queryset = Provider.objects.all()
     serializer_class = ProviderSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["name"]
+    filterset_class = ProviderFilter
 
 
 class LLMModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
@@ -248,18 +278,32 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     filterset_class = EmbeddingConfigFilter
 
 
-class AgentViewSet(ModelViewSet, ImportExportMixin):
+class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
     queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
-        "python_code_tools__python_code",
+        Prefetch(
+            "python_code_tools",
+            queryset=AgentPythonCodeTools.objects.select_related(
+                "pythoncodetool__python_code"
+            ),
+            to_attr="prefetched_python_code_tools",
+        ),
         Prefetch(
             "configured_tools",
-            queryset=ToolConfig.objects.select_related("tool").prefetch_related(
+            queryset=AgentConfiguredTools.objects.select_related(
+                "toolconfig__tool"
+            ).prefetch_related(
                 Prefetch(
-                    "tool__tool_fields",
+                    "toolconfig__tool__tool_fields",
                     queryset=ToolConfigField.objects.all(),
                     to_attr="prefetched_config_fields",
                 )
             ),
+            to_attr="prefetched_configured_tools",
+        ),
+        Prefetch(
+            "mcp_tools",
+            queryset=AgentMcpTools.objects.select_related("mcptool"),
+            to_attr="prefetched_mcp_tools",
         ),
     )
     filter_backends = [DjangoFilterBackend]
@@ -273,6 +317,11 @@ class AgentViewSet(ModelViewSet, ImportExportMixin):
     entity_type = EntityType.AGENT.value
     export_prefix = "agent"
     filename_attr = "role"
+    serializer_response_class = AgentReadSerializer
+
+    copy_serializer_class = AgentCopySerializer
+    copy_deserializer_class = AgentCopyDeserializer
+    copy_serializer_response_class = AgentReadSerializer
 
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
@@ -294,13 +343,15 @@ class AgentViewSet(ModelViewSet, ImportExportMixin):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        if "tools" in request.data:
+            raise AgentSerializerError(detail="Use tool_ids instead of tools")
         write_serializer = self.get_serializer(
             instance, data=request.data, partial=False
         )
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
-        # Use AgentReadSerializer for the response
+        instance.refresh_from_db()
         read_serializer = AgentReadSerializer(
             instance, context=self.get_serializer_context()
         )
@@ -308,19 +359,23 @@ class AgentViewSet(ModelViewSet, ImportExportMixin):
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
+        if "tools" in request.data:
+            raise AgentSerializerError(detail="Use tool_ids instead of tools")
+
         write_serializer = self.get_serializer(
             instance, data=request.data, partial=True
         )
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
 
+        instance.refresh_from_db()
         read_serializer = AgentReadSerializer(
             instance, context=self.get_serializer_context()
         )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
 
-class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin):
+class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
     queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
@@ -340,6 +395,11 @@ class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin):
     entity_type = EntityType.CREW.value
     export_prefix = "crew"
     filename_attr = "name"
+    serializer_response_class = CrewSerializer
+
+    copy_serializer_class = CrewCopySerializer
+    copy_deserializer_class = CrewCopyDeserializer
+    copy_serializer_response_class = CrewSerializer
 
     def get_serializer_class(self):
         if self.action == "export":
@@ -351,26 +411,33 @@ class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin):
 
 class TaskReadWriteViewSet(ModelViewSet):
     queryset = Task.objects.prefetch_related(
-        "task_python_code_tool_list",
         Prefetch(
-            "task_context_list", queryset=TaskContext.objects.select_related("context")
+            "task_python_code_tool_list",
+            queryset=TaskPythonCodeTools.objects.select_related("tool__python_code"),
+            to_attr="prefetched_python_code_tools",
+        ),
+        Prefetch(
+            "task_context_list",
+            queryset=TaskContext.objects.select_related("context"),
+            to_attr="prefetched_contexts",
         ),
         Prefetch(
             "task_configured_tool_list",
             queryset=TaskConfiguredTools.objects.select_related(
-                "tool"
+                "tool__tool"
             ).prefetch_related(
                 Prefetch(
-                    "tool__tool",
-                    queryset=Tool.objects.prefetch_related(
-                        Prefetch(
-                            "tool_fields",
-                            queryset=ToolConfigField.objects.all(),
-                            to_attr="prefetched_config_fields",
-                        )
-                    ),
+                    "tool__tool__tool_fields",
+                    queryset=ToolConfigField.objects.all(),
+                    to_attr="prefetched_config_fields",
                 )
             ),
+            to_attr="prefetched_configured_tools",
+        ),
+        Prefetch(
+            "task_mcp_tool_list",
+            queryset=TaskMcpTools.objects.select_related("tool"),
+            to_attr="prefetched_mcp_tools",
         ),
     )
     filter_backends = [DjangoFilterBackend]
@@ -400,9 +467,13 @@ class TaskReadWriteViewSet(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        if "tools" in request.data:
+            raise TaskSerializerError(detail="Use tool_ids instead of tools")
+
         write_serializer = self.get_serializer(instance, data=request.data)
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
+        instance.refresh_from_db()
 
         read_serializer = TaskReadSerializer(
             instance, context=self.get_serializer_context()
@@ -411,11 +482,15 @@ class TaskReadWriteViewSet(ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
+        if "tools" in request.data:
+            raise TaskSerializerError(detail="Use tool_ids instead of tools")
+
         write_serializer = self.get_serializer(
             instance, data=request.data, partial=True
         )
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
+        instance.refresh_from_db()
 
         read_serializer = TaskReadSerializer(
             instance, context=self.get_serializer_context()
@@ -448,12 +523,19 @@ class PythonCodeViewSet(viewsets.ModelViewSet):
 class PythonCodeToolViewSet(viewsets.ModelViewSet):
     """
     A viewset for viewing and editing PythonCodeTool instances.
+    Prevents modifications or deletions of built-in tools.
     """
 
     queryset = PythonCodeTool.objects.all()
     serializer_class = PythonCodeToolSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name", "python_code"]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.built_in:
+            raise BuiltInToolModificationError()
+        return super().destroy(request, *args, **kwargs)
 
 
 class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
@@ -463,12 +545,17 @@ class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["execution_id", "returncode"]
 
 
-class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin):
+class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
     serializer_class = GraphSerializer
 
     entity_type = EntityType.GRAPH.value
     export_prefix = "graph"
     filename_attr = "name"
+    serializer_response_class = GraphSerializer
+
+    copy_serializer_class = GraphCopySerializer
+    copy_deserializer_class = GraphCopyDeserializer
+    copy_serializer_response_class = GraphSerializer
 
     def get_queryset(self):
         return (
@@ -587,9 +674,6 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             collection = serializer.save()
 
-            redis_service.publish_source_collection(
-                collection_id=collection.collection_id
-            )
         return Response(
             SourceCollectionReadSerializer(collection).data,
             status=status.HTTP_201_CREATED,
@@ -627,8 +711,6 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 serializer.create_documents(collection)
 
-                redis_service.publish_add_source(collection_id=collection.collection_id)
-
             read_serializer = SourceCollectionReadSerializer(collection)
             return Response(read_serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -646,9 +728,6 @@ class CopySourceCollectionViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             collection = serializer.save()
 
-            redis_service.publish_source_collection(
-                collection_id=collection.collection_id
-            )
         return Response(
             SourceCollectionReadSerializer(collection).data,
             status=status.HTTP_201_CREATED,
@@ -664,7 +743,7 @@ class DocumentMetadataViewSet(viewsets.ReadOnlyModelViewSet):
         collection: SourceCollection = instance.source_collection
         instance.delete()
 
-        self.update_collection_status(collection)
+        collection.update_collection_status()
 
         return Response(
             {
@@ -672,30 +751,6 @@ class DocumentMetadataViewSet(viewsets.ReadOnlyModelViewSet):
             },
             status=status.HTTP_200_OK,
         )
-
-    def update_collection_status(self, collection):
-        documents_statuses = set(
-            collection.document_metadata.values_list("status", flat=True)
-        )
-
-        NEW = SourceCollection.SourceCollectionStatus.NEW
-        PROCESSING = SourceCollection.SourceCollectionStatus.PROCESSING
-        WARNING = SourceCollection.SourceCollectionStatus.WARNING
-        FAILED = SourceCollection.SourceCollectionStatus.FAILED
-        COMPLETED = SourceCollection.SourceCollectionStatus.COMPLETED
-
-        current_status = COMPLETED
-        if documents_statuses == {FAILED}:
-            current_status = FAILED
-        elif PROCESSING in documents_statuses:
-            current_status = PROCESSING
-        elif FAILED in documents_statuses or WARNING in documents_statuses:
-            current_status = WARNING
-        elif NEW in documents_statuses or not documents_statuses:
-            current_status = NEW
-
-        collection.status = current_status
-        collection.save()
 
 
 class MemoryFilter(FilterSet):
@@ -903,3 +958,41 @@ class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
                 condition_serializer.save()
 
         return Response(self.get_serializer(node).data)
+
+
+class McpToolViewSet(viewsets.ModelViewSet):
+    queryset = McpTool.objects.all()
+    serializer_class = McpToolSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["name", "tool_name"]
+
+
+class ChunkViewSet(ReadOnlyModelViewSet):
+    queryset = Chunk.objects.all()
+    serializer_class = ChunkSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["document_id"]
+
+
+class OrganizationViewSet(viewsets.ModelViewSet):
+
+    queryset = Organization.objects.all()
+    serializer_class = OrganizationSerializer
+
+
+class OrganizationUserViewSet(viewsets.ModelViewSet):
+
+    queryset = OrganizationUser.objects.all()
+    serializer_class = OrganizationUserSerializer
+
+
+class GraphOrganizationViewSet(viewsets.ModelViewSet):
+
+    queryset = GraphOrganization.objects.all()
+    serializer_class = GraphOrganizationSerializer
+
+
+class GraphOrganizationUserViewSet(viewsets.ReadOnlyModelViewSet):
+
+    queryset = GraphOrganizationUser.objects.all()
+    serializer_class = GraphOrganizationUserSerializer

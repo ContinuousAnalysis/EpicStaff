@@ -1,4 +1,9 @@
-import { Component, effect, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    effect,
+    signal,
+} from '@angular/core';
 import {
     ReactiveFormsModule,
     FormGroup,
@@ -91,6 +96,7 @@ interface InputMapPair {
             }
         `,
     ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectNodePanelComponent extends BaseSidePanel<ProjectNodeModel> {
     constructor() {
@@ -144,11 +150,10 @@ export class ProjectNodePanelComponent extends BaseSidePanel<ProjectNodeModel> {
                 );
             });
         } else {
-            // Always add at least one empty input map pair
             inputMapArray.push(
                 this.fb.group({
                     key: [''],
-                    value: [''],
+                    value: ['variables.'],
                 })
             );
         }

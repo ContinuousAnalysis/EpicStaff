@@ -42,6 +42,16 @@ class TaskValidationError(CustomAPIExeption):
     default_detail = "ValidationError occured in TaskValidator -> ConverterService during validate crews' tasks"
 
 
+class TaskSerializerError(CustomAPIExeption):
+    status_code = 400
+    default_detail = "SerializerError occured during Task serialization"
+
+
+class AgentSerializerError(CustomAPIExeption):
+    status_code = 400
+    default_detail = "SerializerError occurred during Agent serialization"
+
+
 class EndNodeValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = "ValidationError occured in session_manager_service"
@@ -50,3 +60,17 @@ class EndNodeValidationError(CustomAPIExeption):
 class FileExtractorValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = "FileExtractorNode requires input arguments"
+
+
+class InvalidTaskOrderError(CustomAPIExeption):
+    status_code = 409
+    default_detail = "A task cannot be placed before its context dependency. Please reorder the tasks or delete context."
+    default_code = "invalid_context_task_order"
+
+
+class BuiltInToolModificationError(CustomAPIExeption):
+    """
+    Exception raised when someone tries to modify a built-in PythonCodeTool.
+    """
+    def __init__(self, detail="Unable to remove built-in tools", code=None):
+        super().__init__(detail=detail, code=code, status_code=400)

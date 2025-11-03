@@ -99,10 +99,10 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         Validators.max(1000),
     ]);
     public similarityThresholdControl = new FormControl(0.7, [
-        Validators.min(0.1),
+        Validators.min(0.0),
         Validators.max(1.0),
     ]);
-    public memoryControl = new FormControl(true);
+    public memoryControl = new FormControl(false);
     public cacheControl = new FormControl(true);
     public respectContextWindowControl = new FormControl(true);
 
@@ -122,7 +122,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         this.maxIterControl.setValue(data.max_iter || 10);
         this.maxRpmControl.setValue(data.max_rpm || 10);
         this.maxExecutionTimeControl.setValue(data.max_execution_time || 60);
-        this.maxRetryLimitControl.setValue(data.max_retry_limit || 3);
+        this.maxRetryLimitControl.setValue(data.max_retry_limit ?? 3);
         this.searchLimitControl.setValue(data.search_limit || 10);
 
         if (data.similarity_threshold !== null) {
@@ -143,7 +143,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         this.agentData.default_temperature = null;
 
         // Initialize boolean controls with data or defaults
-        this.memoryControl.setValue(data.memory ?? true);
+        this.memoryControl.setValue(data.memory ?? false);
         this.cacheControl.setValue(data.cache ?? true);
         this.respectContextWindowControl.setValue(
             data.respect_context_window ?? true
@@ -349,11 +349,11 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         this.agentData.max_rpm = this.maxRpmControl.value || 10;
         this.agentData.max_execution_time =
             this.maxExecutionTimeControl.value || 60;
-        this.agentData.max_retry_limit = this.maxRetryLimitControl.value || 3;
+        this.agentData.max_retry_limit = this.maxRetryLimitControl.value ?? 3;
         this.agentData.search_limit = this.searchLimitControl.value || 10;
         this.agentData.similarity_threshold =
             this.similarityThresholdControl.value?.toString() || '0.7';
-        this.agentData.memory = this.memoryControl.value ?? true;
+        this.agentData.memory = this.memoryControl.value ?? false;
         this.agentData.cache = this.cacheControl.value ?? true;
         this.agentData.respect_context_window =
             this.respectContextWindowControl.value ?? true;

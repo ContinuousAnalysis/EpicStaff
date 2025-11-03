@@ -13,6 +13,7 @@ class LLMNode(BaseNode):
         self,
         session_id: int,
         node_name: str,
+        stop_event: StopEvent,
         llm_data: LLMData,
         input_map: dict,
         output_variable_path: str,
@@ -20,6 +21,7 @@ class LLMNode(BaseNode):
         super().__init__(
             session_id=session_id,
             node_name=node_name,
+            stop_event=stop_event,
             input_map=input_map,
             output_variable_path=output_variable_path,
         )

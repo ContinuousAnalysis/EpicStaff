@@ -2,6 +2,8 @@ from typing import Any, Literal
 from decimal import Decimal
 from itertools import chain
 
+from tables.models.mcp_models import McpTool
+from tables.models.knowledge_models import Chunk, DocumentMetadata
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
     Agent,
@@ -28,11 +30,15 @@ from tables.models import (
     FileExtractorNode,
 )
 from rest_framework import serializers
-from tables.exceptions import ToolConfigSerializerError
+from tables.exceptions import BuiltInToolModificationError, ToolConfigSerializerError
 from tables.models import PythonCode, PythonCodeResult, PythonCodeTool
 from tables.models.crew_models import (
+    AgentConfiguredTools,
+    AgentMcpTools,
+    AgentPythonCodeTools,
     DefaultAgentConfig,
     DefaultCrewConfig,
+    TaskMcpTools,
     TaskPythonCodeTools,
 )
 from tables.models.embedding_models import DefaultEmbeddingConfig
@@ -43,6 +49,10 @@ from tables.models.graph_models import (
     EndNode,
     LLMNode,
     StartNode,
+    Organization,
+    OrganizationUser,
+    GraphOrganization,
+    GraphOrganizationUser,
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -69,8 +79,8 @@ from tables.models import (
     ToolConfig,
 )
 
-
 from django.core.exceptions import ValidationError
+from tables.exceptions import InvalidTaskOrderError
 
 
 class LLMConfigSerializer(serializers.ModelSerializer):
@@ -139,7 +149,6 @@ class ToolSerializer(serializers.ModelSerializer):
             "name",
             "name_alias",
             "description",
-            "enabled",  # TODO: remove to enable bult-in tools
             "tool_fields",
         ]
 
@@ -176,10 +185,19 @@ class PythonCodeSerializer(serializers.ModelSerializer):
 
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
+    built_in = serializers.ReadOnlyField()
 
     class Meta:
         model = PythonCodeTool
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "description",
+            "args_schema",
+            "python_code",
+            "favorite",
+            "built_in",
+        ]
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
@@ -190,25 +208,32 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
         return python_code_tool
 
     def update(self, instance, validated_data):
+        if instance.built_in:
+            raise BuiltInToolModificationError()
+
         python_code_data = validated_data.pop("python_code", None)
 
-        # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
 
-        # Update PythonCodeTool fields
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            if attr != "built_in":
+                setattr(instance, attr, value)
         instance.save()
 
         return instance
 
     def partial_update(self, instance, validated_data):
-        # Delegate to the update method for consistency
         return self.update(instance, validated_data)
+
+
+class McpToolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = McpTool
+        fields = "__all__"
 
 
 class RealtimeAgentSerializer(serializers.ModelSerializer):
@@ -266,17 +291,31 @@ class AgentReadSerializer(serializers.ModelSerializer):
         ]
 
     def get_tools(self, agent: Agent) -> list[dict]:
-
         tools = []
 
-        # TODO: DRY
-        for tool in agent.python_code_tools.all():
-            serialized = BaseToolSerializer(tool).data
-            tools.append(serialized)
+        python_tools = PythonCodeTool.objects.filter(
+            id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id).values_list(
+                "pythoncodetool_id", flat=True
+            )
+        )
+        for tool in python_tools:
+            tools.append(BaseToolSerializer(tool).data)
 
-        for tool in agent.configured_tools.all():
-            serialized = BaseToolSerializer(tool).data
-            tools.append(serialized)
+        configured_tools = ToolConfig.objects.filter(
+            id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id).values_list(
+                "toolconfig_id", flat=True
+            )
+        )
+        for tool in configured_tools:
+            tools.append(BaseToolSerializer(tool).data)
+
+        mcp_tools = McpTool.objects.filter(
+            id__in=AgentMcpTools.objects.filter(agent_id=agent.id).values_list(
+                "mcptool_id", flat=True
+            )
+        )
+        for tool in mcp_tools:
+            tools.append(BaseToolSerializer(tool).data)
 
         return tools
 
@@ -330,6 +369,7 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         tools = {
             "configured-tool-list": [],
             "python-code-tool-list": [],
+            "mcp-tool-list": [],
         }
         for tool_id in tool_ids:
             try:
@@ -338,6 +378,8 @@ class AgentWriteSerializer(serializers.ModelSerializer):
                     tools["configured-tool-list"].append(pk)
                 elif prefix == "python-code-tool":
                     tools["python-code-tool-list"].append(pk)
+                elif prefix == "mcp-tool":
+                    tools["mcp-tool-list"].append(pk)
                 else:
                     raise ValueError(f"Unknown tool prefix: {prefix}")
             except Exception as e:
@@ -352,12 +394,34 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         realtime_agent_data = validated_data.pop("realtime_agent", None)
         agent: Agent = super().create(validated_data)
 
-        agent.configured_tools.set(
-            ToolConfig.objects.filter(id__in=tools["configured-tool-list"])
+        AgentConfiguredTools.objects.filter(agent_id=agent.id).delete()
+        AgentConfiguredTools.objects.bulk_create(
+            [
+                AgentConfiguredTools(agent_id=agent.id, toolconfig_id=tool.id)
+                for tool in ToolConfig.objects.filter(
+                    id__in=tools.get("configured-tool-list", [])
+                )
+            ]
         )
 
-        agent.python_code_tools.set(
-            PythonCodeTool.objects.filter(id__in=tools["python-code-tool-list"])
+        AgentPythonCodeTools.objects.filter(agent_id=agent.id).delete()
+        AgentPythonCodeTools.objects.bulk_create(
+            [
+                AgentPythonCodeTools(agent_id=agent.id, pythoncodetool_id=tool.id)
+                for tool in PythonCodeTool.objects.filter(
+                    id__in=tools.get("python-code-tool-list", [])
+                )
+            ]
+        )
+
+        AgentMcpTools.objects.filter(agent_id=agent.id).delete()
+        AgentMcpTools.objects.bulk_create(
+            [
+                AgentMcpTools(agent_id=agent.id, mcptool_id=tool.id)
+                for tool in McpTool.objects.filter(
+                    id__in=tools.get("mcp-tool-list", [])
+                )
+            ]
         )
 
         if realtime_agent_data:
@@ -374,12 +438,37 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         realtime_agent_data: dict | None = validated_data.pop("realtime_agent", None)
         instance = super().update(instance, validated_data)
 
-        instance.configured_tools.set(
-            ToolConfig.objects.filter(id__in=tools["configured-tool-list"])
+        # configured_tools
+        AgentConfiguredTools.objects.filter(agent_id=instance.id).delete()
+        AgentConfiguredTools.objects.bulk_create(
+            [
+                AgentConfiguredTools(agent_id=instance.id, toolconfig_id=tool.id)
+                for tool in ToolConfig.objects.filter(
+                    id__in=tools.get("configured-tool-list", [])
+                )
+            ]
         )
 
-        instance.python_code_tools.set(
-            PythonCodeTool.objects.filter(id__in=tools["python-code-tool-list"])
+        # python_code_tools
+        AgentPythonCodeTools.objects.filter(agent_id=instance.id).delete()
+        AgentPythonCodeTools.objects.bulk_create(
+            [
+                AgentPythonCodeTools(agent_id=instance.id, pythoncodetool_id=tool.id)
+                for tool in PythonCodeTool.objects.filter(
+                    id__in=tools.get("python-code-tool-list", [])
+                )
+            ]
+        )
+
+        # mcp_tools
+        AgentMcpTools.objects.filter(agent_id=instance.id).delete()
+        AgentMcpTools.objects.bulk_create(
+            [
+                AgentMcpTools(agent_id=instance.id, mcptool_id=tool.id)
+                for tool in McpTool.objects.filter(
+                    id__in=tools.get("mcp-tool-list", [])
+                )
+            ]
         )
 
         if realtime_agent_data:
@@ -503,7 +592,9 @@ class TaskReadSerializer(serializers.ModelSerializer):
 
     def get_tools(self, task: Task) -> list[dict]:
         all_task_tools = chain(
-            task.task_configured_tool_list.all(), task.task_python_code_tool_list.all()
+            task.task_configured_tool_list.all(),
+            task.task_python_code_tool_list.all(),
+            task.task_mcp_tool_list.all(),
         )
         return [BaseToolSerializer(task_tool.tool).data for task_tool in all_task_tools]
 
@@ -522,16 +613,46 @@ class TaskWriteSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        context_ids = self.initial_data.get("task_context_list", [])
-        task_context_field = self.fields["task_context_list"]
 
-        if context_ids:
-            validated = task_context_field.validate_context_tasks(
-                context_ids, task_instance=self.instance, task_data=attrs
+        task_order = attrs.get("order", self.instance.order if self.instance else None)
+
+        if task_order is None:
+            return attrs
+
+        incoming_context_ids = self.initial_data.get("task_context_list", None)
+
+        ids_to_validate = []
+
+        if incoming_context_ids is not None:
+            # Case A: A new context list was explicitly sent in the request.
+            task_context_field = self.fields["task_context_list"]
+            ids_to_validate = task_context_field.validate_context_tasks(
+                incoming_context_ids, task_instance=self.instance, task_data=attrs
             )
-            attrs["_validated_context_ids"] = validated
-        else:
-            attrs["_validated_context_ids"] = []
+        elif "order" in attrs and self.instance:
+            # Case B: The 'order' is being changed, but no context list was sent.
+            ids_to_validate = list(
+                self.instance.task_context_list.values_list("context_id", flat=True)
+            )
+
+        if ids_to_validate:
+            valid_context_count = Task.objects.filter(
+                id__in=ids_to_validate, order__lt=task_order
+            ).count()
+
+            if valid_context_count < len(ids_to_validate):
+                raise InvalidTaskOrderError
+
+        if "order" in attrs and self.instance:
+            dependent_tasks = Task.objects.filter(
+                task_context_list__context=self.instance
+            )
+
+            if dependent_tasks.filter(order__lte=task_order).exists():
+                raise InvalidTaskOrderError
+
+        if incoming_context_ids is not None:
+            attrs["_validated_context_ids"] = ids_to_validate
 
         return attrs
 
@@ -570,9 +691,11 @@ class TaskWriteSerializer(serializers.ModelSerializer):
     def _update_task_tools(self, task: Task, tool_ids: list[str]):
         TaskPythonCodeTools.objects.filter(task=task).delete()
         TaskConfiguredTools.objects.filter(task=task).delete()
+        TaskMcpTools.objects.filter(task=task).delete()
 
         python_code_tool_list = []
         configured_tool_list = []
+        mcp_tool_list = []
         for tool_id in tool_ids:
 
             prefix, id_ = tool_id.split(":")
@@ -581,14 +704,20 @@ class TaskWriteSerializer(serializers.ModelSerializer):
                 instance = TaskPythonCodeTools(task=task, tool=python_code_tool)
                 instance.full_clean()
                 python_code_tool_list.append(instance)
-            if prefix == "configured-tool":
+            elif prefix == "configured-tool":
                 configured_tool = ToolConfig.objects.get(pk=id_)
                 instance = TaskConfiguredTools(task=task, tool=configured_tool)
                 instance.full_clean()
                 configured_tool_list.append(instance)
+            elif prefix == "mcp-tool":
+                mcp_tool = McpTool.objects.get(pk=id_)
+                instance = TaskMcpTools(task=task, tool=mcp_tool)
+                instance.full_clean()
+                mcp_tool_list.append(instance)
 
         TaskPythonCodeTools.objects.bulk_create(python_code_tool_list)
         TaskConfiguredTools.objects.bulk_create(configured_tool_list)
+        TaskMcpTools.objects.bulk_create(mcp_tool_list)
 
     def _update_task_contexts(self, task, context_ids):
         TaskContext.objects.filter(task=task).delete()
@@ -1089,3 +1218,88 @@ class GraphSerializer(serializers.ModelSerializer):
             "time_to_live",
             "persistent_variables",
         ]
+
+
+class OrganizationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Organization
+        fields = ["id", "name"]
+
+
+class OrganizationUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = OrganizationUser
+        fields = ["id", "organization", "name"]
+
+
+class GraphOrganizationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GraphOrganization
+        fields = [
+            "id",
+            "graph",
+            "organization",
+            "persistent_variables",
+            "user_variables",
+        ]
+
+    def validate(self, attrs):
+        graph = attrs.get("graph") or getattr(self.instance, "graph", None)
+        if not graph:
+            raise serializers.ValidationError("Graph is required to validate variables")
+
+        organization_variables = attrs.get("persistent_variables", {})
+        user_variables = attrs.get("user_variables", {})
+
+        qs = GraphOrganization.objects.filter(graph=graph)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise serializers.ValidationError("This flow already has an organization")
+
+        start_node: StartNode = graph.start_node_list.first()
+        for key in user_variables:
+            if key not in start_node.variables:
+                raise serializers.ValidationError(
+                    {
+                        "user_variables": f"Provided user_variables have to be in flow domain. Variable `{key}` is not in domain."
+                    }
+                )
+        for key in organization_variables:
+            if key not in start_node.variables:
+                raise serializers.ValidationError(
+                    {
+                        "persistent_variables": f"Provided persistent_variables have to be in flow domain. Variable `{key}` is not in domain."
+                    }
+                )
+            if key in user_variables:
+                raise serializers.ValidationError(
+                    {
+                        "user_variables": f"User variables and Organization variables cannot have same values. Issue with key `{key}`"
+                    }
+                )
+
+        return super().validate(attrs)
+
+
+class GraphOrganizationUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GraphOrganizationUser
+        fields = ["id", "graph", "user", "persistent_variables"]
+        read_only_fields = ["id", "persistent_variables"]
+
+
+class ChunkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chunk
+        fields = "__all__"
+
+    def validate_document_id(self, value):
+        if not DocumentMetadata.objects.filter(document_id=value).exists():
+            raise serializers.ValidationError("Document with this id does not exist.")
+        return value

@@ -28,6 +28,10 @@
             (itemClick)="onActionClick($event, 'copy')"
         ></app-flow-menu-item>
         <app-flow-menu-item
+            label="Export"
+            (itemClick)="onActionClick($event, 'export')"
+        ></app-flow-menu-item>
+        <app-flow-menu-item
             label="Delete"
             [isDelete]="true"
             (itemClick)="onActionClick($event, 'delete')"

@@ -68,8 +68,9 @@ export class LlmModelsTabComponent implements OnInit {
 
         this.fullLlmConfigService.getFullLLMConfigs().subscribe({
             next: (configs) => {
-                this.llmConfigs.set(configs);
-                console.log('configs', configs);
+                const sortedConfigs = configs.sort((a, b) => b.id - a.id);
+                this.llmConfigs.set(sortedConfigs);
+                console.log('configs', sortedConfigs);
                 this.status.set(LoadingState.LOADED);
             },
             error: (err) => {

@@ -128,6 +128,12 @@ export class FlowSessionStatusFilterDropdownComponent {
       color: '#888888',
       icon: 'ti ti-clock-pause',
     },
+    {
+      value: GraphSessionStatus.STOP,
+      label: 'Stopped',
+      color: '#5a5454ff',
+      icon: 'ti ti-clock-pause',
+    },
   ];
 
   private _cdr: ChangeDetectorRef;

@@ -1,3 +1,10 @@
+from copy import deepcopy
+from tables.models.crew_models import (
+    AgentConfiguredTools,
+    AgentMcpTools,
+    AgentPythonCodeTools,
+    TaskMcpTools,
+)
 from tables.models import TaskPythonCodeTools, TaskConfiguredTools, TaskContext
 
 
@@ -5,16 +12,19 @@ class ToolsImportService:
 
     CONFIGURED_TOOLS_KEY = "configured_tools"
     PYTHON_TOOLS_KEY = "python_tools"
+    MCP_TOOLS_KEY = "mcp_tools"
 
     def __init__(self, tools: dict[str, list]):
         from tables.serializers.import_serializers import (
             ToolConfigImportSerilizer,
             PythonCodeToolImportSerializer,
+            McpToolImportSerializer,
         )
 
         self.TOOL_SERIALIZERS = {
             "configured_tools": ToolConfigImportSerilizer,
             "python_tools": PythonCodeToolImportSerializer,
+            "mcp_tools": McpToolImportSerializer,
         }
 
         self.tools = tools
@@ -47,9 +57,32 @@ class ToolsImportService:
         python_tools = self._get_tools_by_ids(
             self.PYTHON_TOOLS_KEY, tool_ids[self.PYTHON_TOOLS_KEY]
         )
+        mcp_tools = self._get_tools_by_ids(
+            self.MCP_TOOLS_KEY, tool_ids[self.MCP_TOOLS_KEY]
+        )
 
-        agent.configured_tools.set(configured_tools)
-        agent.python_code_tools.set(python_tools)
+        AgentPythonCodeTools.objects.filter(agent=agent).delete()
+
+        AgentPythonCodeTools.objects.bulk_create(
+            [
+                AgentPythonCodeTools(agent=agent, pythoncodetool=tool)
+                for tool in python_tools
+            ]
+        )
+
+        AgentConfiguredTools.objects.filter(agent=agent).delete()
+        AgentConfiguredTools.objects.bulk_create(
+            [
+                AgentConfiguredTools(agent=agent, toolconfig=tool)
+                for tool in configured_tools
+            ]
+        )
+
+        AgentMcpTools.objects.filter(agent=agent).delete()
+
+        AgentMcpTools.objects.bulk_create(
+            [AgentMcpTools(agent=agent, mcptool=tool) for tool in mcp_tools]
+        )
 
     def assign_tools_to_task(self, task, tool_ids: dict[str, list[int]]):
         """
@@ -66,6 +99,11 @@ class ToolsImportService:
         )
         for tool in python_tools:
             TaskPythonCodeTools.objects.create(task=task, tool=tool)
+        mcp_tools = self._get_tools_by_ids(
+            self.MCP_TOOLS_KEY, tool_ids[self.MCP_TOOLS_KEY]
+        )
+        for tool in mcp_tools:
+            TaskMcpTools.objects.create(task=task, tool=tool)
 
     def _get_tools_by_ids(self, tool_type, tool_ids):
         """
@@ -169,10 +207,8 @@ class RealtimeAgentImportService:
 
 class AgentsImportService:
 
-    def __init__(self, agents):
-        from tables.serializers.import_serializers import NestedAgentImportSerializer
-
-        self.serializer_class = NestedAgentImportSerializer
+    def __init__(self, agents, serializer_class):
+        self.serializer_class = serializer_class
         self.agents = agents
         self.mapped_agents = {}
 
@@ -238,8 +274,10 @@ class TasksImportService:
 
     def create_task(self, task_data, crew):
         current_id = task_data.pop("id", None)
+        data = deepcopy(task_data)
+        data.pop("context_tasks", None)
 
-        serializer = self.serializer_class(data=task_data, context={"crew": crew})
+        serializer = self.serializer_class(data=data, context={"crew": crew})
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
 
@@ -257,13 +295,10 @@ class TasksImportService:
 
 class CrewsImportService:
 
-    def __init__(self, crews):
-        from tables.serializers.import_serializers import (
-            NestedCrewImportSerializer,
-            TaskImportSerializer,
-        )
+    def __init__(self, crews, serializer_class):
+        from tables.serializers.import_serializers import TaskImportSerializer
 
-        self.crew_serializer = NestedCrewImportSerializer
+        self.crew_serializer = serializer_class
         self.task_serializer = TaskImportSerializer
         self.crews = crews
         self.mapped_crews = {}

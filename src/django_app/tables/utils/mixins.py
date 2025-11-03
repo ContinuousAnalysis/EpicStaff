@@ -24,6 +24,9 @@ from .file_text_extractor import extract_text_from_file
 
 from tables.services.redis_service import RedisService
 from functools import partial
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 ALLOWED_FILE_TYPES = {choice[0] for choice in DocumentMetadata.DocumentFileType.choices}
 MAX_FILE_SIZE = 12 * 1024 * 1024  # 12MB
@@ -347,11 +350,13 @@ class ImportExportMixin:
 
             If `filename_attr` set to "name", and given `instance` is Agent,
             we will try to get `agent.name`
+        `serializer_response_class`: A serializer class that will be used for response body
     """
 
     entity_type = None
     export_prefix = None
     filename_attr = None
+    serializer_response_class = None
 
     def get_export_filename(self, instance):
         base_name = getattr(instance, self.filename_attr, "object")
@@ -361,6 +366,11 @@ class ImportExportMixin:
         if not self.entity_type:
             raise NotImplementedError("Subclass must define entity_type")
         return self.entity_type
+
+    def get_serializer_response_class(self):
+        if not self.serializer_response_class:
+            raise NotImplementedError("Subclass must define serializer_response_class")
+        return self.serializer_response_class
 
     @action(detail=True, methods=["get"])
     def export(self, request, pk: int):
@@ -376,9 +386,10 @@ class ImportExportMixin:
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
+        serializer_response_class = self.get_serializer_response_class()
+
         file_serializer = FileImportSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
-
         file = file_serializer.validated_data["file"]
 
         try:
@@ -400,14 +411,91 @@ class ImportExportMixin:
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
+        imported_instance = None
 
         try:
             with transaction.atomic():
-                serializer.save()
+                imported_instance = serializer.save()
         except IntegrityError as e:
             return Response(
                 {"message": f"Database error: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(status=status.HTTP_200_OK)
+        serializer = serializer_response_class(instance=imported_instance)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DeepCopyMixin:
+    """
+    A mixin that can extend ModelSerializer class with deep copy functionality.
+    Creates new action method: `copy`.
+
+    Params:
+        `copy_serializer_class`: A serializer class that used for creating copy of the entity (agent, crew, graph).
+        `copy_deserializer_class`: A serializer class that used for creating entity from copied entity.
+        `copy_serializer_response_class`: A serializer class that used in repose body.
+    """
+
+    copy_serializer_class = None
+    copy_deserializer_class = None
+    copy_serializer_response_class = None
+
+    def get_copy_serializer_class(self):
+        if not self.copy_serializer_class:
+            raise NotImplementedError("Subclass must define copy_serializer_class")
+        return self.copy_serializer_class
+
+    def get_copy_deserializer_class(self):
+        if not self.copy_deserializer_class:
+            raise NotImplementedError("Subclass must define copy_deserializer_class")
+        return self.copy_deserializer_class
+
+    def get_copy_serializer_response_class(self):
+        if not self.copy_serializer_response_class:
+            raise NotImplementedError(
+                "Subclass must define copy_serializer_response_class"
+            )
+        return self.copy_serializer_response_class
+
+    @action(detail=True, methods=["post"], url_path="copy")
+    def copy(self, request, pk: int):
+        instance = self.get_object()
+        new_instance = None
+        serializer_class = self.get_copy_serializer_class()
+
+        data = serializer_class(instance).data
+        data = dict(data)
+
+        deserializer_class = self.get_copy_deserializer_class()
+        deserializer = deserializer_class(data=data)
+        deserializer.is_valid(raise_exception=True)
+
+        try:
+            with transaction.atomic():
+                new_instance = deserializer.save()
+        except IntegrityError as e:
+            return Response(
+                {"message": f"Database error: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "message": f"Something went wrong while copying the instance. {str(e)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        new_name = request.data.get("name") if isinstance(request.data, dict) else None
+        current_name = getattr(new_instance, "name", None)
+
+        if new_name and current_name:
+            new_instance.name = new_name
+            new_instance.save()
+
+        response_serializer_class = self.get_copy_serializer_response_class()
+        serializer = response_serializer_class(new_instance)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

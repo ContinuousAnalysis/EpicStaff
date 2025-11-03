@@ -27,6 +27,8 @@ import {
 import { FlowRenameDialogComponent } from '../../../../components/flow-rename-dialog/flow-rename-dialog.component';
 import { RunGraphService } from '../../../../../../services/run-graph-session.service';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
+import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
+import { ImportExportService } from '../../../../../../core/services/import-export.service';
 
 @Component({
     selector: 'app-my-flows',
@@ -43,6 +45,7 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
 })
 export class MyFlowsComponent implements OnInit {
     private readonly flowsService = inject(FlowsStorageService);
+    private readonly graphUpdateService = inject(GraphUpdateService);
     private readonly flowsApiService = inject(FlowsApiService);
     private readonly runGraphService = inject(RunGraphService);
     private readonly router = inject(Router);
@@ -51,6 +54,7 @@ export class MyFlowsComponent implements OnInit {
     private readonly confirmationDialogService = inject(
         ConfirmationDialogService
     );
+    private readonly importExportService = inject(ImportExportService);
 
     public readonly error = signal<string | null>(null);
     public readonly filteredFlows = this.flowsService.filteredFlows;
@@ -103,6 +107,10 @@ export class MyFlowsComponent implements OnInit {
 
             case 'copy':
                 this.openCopyDialog(flow);
+                break;
+
+            case 'export':
+                this.exportFlow(flow);
                 break;
 
             default:
@@ -160,6 +168,19 @@ export class MyFlowsComponent implements OnInit {
             }
         });
     }
+    private saving(flowState: any, graph: any): void {
+        this.graphUpdateService.saveGraph(flowState, graph).subscribe({
+            next: (result) => {
+                this.toastService.success(
+                    `Flow copied and saved as "${result.graph.name}"`
+                );
+            },
+            error: (err) => {
+                this.toastService.error('Failed to save graph for copied flow');
+                console.error('Save graph error', err);
+            },
+        });
+    }
 
     private openCopyDialog(flow: GraphDto): void {
         const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
@@ -169,10 +190,8 @@ export class MyFlowsComponent implements OnInit {
         dialogRef.closed.subscribe((newName) => {
             if (newName && newName.trim().length > 0) {
                 this.flowsService.copyFlow(flow.id, newName.trim()).subscribe({
-                    next: (createdFlow) => {
-                        this.toastService.success(
-                            `Flow copied as "${createdFlow.name}"`
-                        );
+                    next: (graph) => {
+                        this.saving(graph.metadata, graph);
                     },
                     error: (err) => {
                         this.toastService.error('Failed to copy flow');
@@ -221,6 +240,27 @@ export class MyFlowsComponent implements OnInit {
                 this.toastService.error(
                     `Error running flow "${flow.name}": ${errorMessage}`
                 );
+            },
+        });
+    }
+
+    private exportFlow(flow: GraphDto): void {
+        this.importExportService.exportFlow(flow.id.toString()).subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${flow.name}_export_${Date.now()}.json`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                this.toastService.success(
+                    `Flow "${flow.name}" exported successfully`
+                );
+            },
+            error: (error) => {
+                console.error('Export failed:', error);
+                this.toastService.error(`Failed to export flow "${flow.name}"`);
             },
         });
     }

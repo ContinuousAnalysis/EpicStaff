@@ -7,15 +7,28 @@ import {
     signal,
     computed,
     viewChild,
+    ChangeDetectionStrategy,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 import { NodePanel } from '../../../core/models/node-panel.interface';
 import { NodeModel } from '../../../core/models/node.model';
+import { PANEL_COMPONENT_MAP } from '../../../core/enums/node-panel.map';
+import { ShortcutListenerDirective } from '../../../core/directives/shortcut-listener.directive';
+import { SidepanelAutosaveService } from '../../../services/sidepanel-autosave.service';
 
 @Component({
     standalone: true,
     selector: 'app-node-panel-shell',
     imports: [NgComponentOutlet],
+    hostDirectives: [
+        {
+            directive: ShortcutListenerDirective,
+            outputs: ['escape: escape'],
+        },
+    ],
+    host: {
+        '(escape)': 'onEscape()',
+    },
     template: `
         @if (node() && panelComponent()) {
         <aside class="node-panel" [class.shake-attention]="isShaking()">
@@ -52,11 +65,18 @@ import { NodeModel } from '../../../core/models/node.model';
         }
     `,
     styleUrls: ['./node-panel-shell.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NodePanelShellComponent {
     public readonly node = input<NodeModel | null>(null);
-    public readonly panelComponent = input<Type<NodePanel<any>> | null>(null);
     public readonly save = output<NodeModel>();
+    public readonly autosave = output<NodeModel>();
+
+    public readonly panelComponent = computed(() => {
+        const node = this.node();
+        if (!node) return null;
+        return PANEL_COMPONENT_MAP[node.type] || null;
+    });
 
     public readonly nodeNameToDisplay = computed(() => {
         const n = this.node();
@@ -73,31 +93,88 @@ export class NodePanelShellComponent {
 
     protected readonly isShaking = signal(false);
     private panelInstance: any = null;
+    private previousNodeId: string | null = null;
+    private isUpdatingNode = false;
+    private isAutosaving = false;
 
-    constructor() {
+    constructor(private autosaveService: SidepanelAutosaveService) {
         effect(() => {
-            const outletRef = this.outlet();
-            if (outletRef?.componentInstance) {
-                this.panelInstance = outletRef.componentInstance;
-                this.setupOutputSubscriptions(outletRef.componentInstance);
+            const trigger = this.autosaveService.autosaveTrigger();
+            if (trigger && this.panelInstance && !this.isAutosaving) {
+                console.log('External autosave triggered:', trigger);
+                this.isAutosaving = true;
+                this.performAutosave();
+                setTimeout(() => {
+                    this.autosaveService.clearTrigger();
+                    this.isAutosaving = false;
+                }, 100);
+            }
+        });
+
+        effect(() => {
+            const node = this.node();
+            if (node) {
+                if (
+                    this.previousNodeId &&
+                    this.previousNodeId !== node.id &&
+                    this.panelInstance &&
+                    !this.isUpdatingNode &&
+                    !this.isAutosaving
+                ) {
+                    this.isUpdatingNode = true;
+                    this.performAutosave();
+                }
+
+                setTimeout(() => {
+                    const outletRef = this.outlet();
+                    if (outletRef?.componentInstance) {
+                        this.panelInstance = outletRef.componentInstance;
+                        this.previousNodeId = node.id;
+                        this.isUpdatingNode = false;
+                    }
+                }, 0);
+            } else {
+                // Reset when no node is selected
+                this.panelInstance = null;
+                this.previousNodeId = null;
+                this.isUpdatingNode = false;
+                this.isAutosaving = false;
             }
         });
     }
 
-    private setupOutputSubscriptions(instance: any): void {
-        if (instance.save && typeof instance.save.emit === 'function') {
-            instance.save.subscribe((node: NodeModel) => {
-                this.save.emit(node);
-            });
-        }
+    protected onCloseClick(): void {
+        this.saveSidePanel();
     }
 
-    protected onCloseClick(): void {
+    protected onEscape(): void {
+        this.saveSidePanel();
+    }
+
+    private saveSidePanel(): void {
+        console.log('Saving side panel');
         if (
             this.panelInstance &&
             typeof this.panelInstance.onSave === 'function'
         ) {
-            this.panelInstance.onSave();
+            console.log('Panel instance found');
+            const updatedNode = this.panelInstance.onSave();
+            if (updatedNode) {
+                this.save.emit(updatedNode);
+            }
+        }
+    }
+
+    private performAutosave(): void {
+        console.log('Auto-saving previous node');
+        if (
+            this.panelInstance &&
+            typeof this.panelInstance.onSave === 'function'
+        ) {
+            const updatedNode = this.panelInstance.onSave();
+            if (updatedNode) {
+                this.autosave.emit(updatedNode);
+            }
         }
     }
 }

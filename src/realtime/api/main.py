@@ -1,11 +1,12 @@
 from typing import Dict
 import json
 import os
+import sys
 import asyncio
 from loguru import logger
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from models.request_models import RealtimeAgentChatData
 from services.chat_executor import ChatExecutor
 from services.python_code_executor_service import PythonCodeExecutorService
@@ -14,7 +15,11 @@ from services.tool_manager_service import ToolManagerService
 from utils.shorten import shorten_dict
 from utils.instructions_concatenator import generate_instruction
 
-load_dotenv()
+if "--debug" in sys.argv:
+    logger.info("RUNNING IN DEBUG MODE")
+    load_dotenv(find_dotenv("debug.env"))
+else:
+    load_dotenv(find_dotenv(".env"))
 
 from ai.agent.openai_realtime_agent_client import (
     OpenaiRealtimeAgentClient,

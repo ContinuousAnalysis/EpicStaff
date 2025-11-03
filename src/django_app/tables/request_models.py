@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Any, List, Literal, Union
-from pydantic import BaseModel, HttpUrl, model_validator, root_validator
+from typing import Any, List, Literal, Optional, Union
+from pydantic import AnyUrl, BaseModel, HttpUrl, model_validator, root_validator
 from decimal import Decimal
 
 
@@ -53,6 +53,27 @@ class ConfiguredToolData(BaseModel):
     name_alias: str
     tool_config: ToolConfigData
 
+class McpToolData(BaseModel):
+    """
+    Configuration for a FastMCP client connecting to remote MCP tools via SSE.
+    """
+
+    transport: str
+    """URL of the remote MCP server (SSE). Required."""
+    tool_name: str
+
+    timeout: Optional[float] = 30
+    """Request timeout in seconds. Recommended to set."""
+
+    auth: Optional[str] = None
+    """Authorization token or OAuth string, if the server requires it."""
+
+    init_timeout: Optional[float] = 10
+    """Timeout for session initialization. Optional, default is 10 seconds."""
+
+    class Config:
+        extra = "ignore"
+
 
 class PythonCodeData(BaseModel):
     venv_name: str
@@ -72,7 +93,7 @@ class PythonCodeToolData(BaseModel):
 
 class BaseToolData(BaseModel):
     unique_name: str
-    data: PythonCodeToolData | ConfiguredToolData
+    data: PythonCodeToolData | ConfiguredToolData | McpToolData
 
 
 class RunToolParamsModel(BaseModel):
@@ -157,6 +178,7 @@ class TaskData(BaseModel):
     name: str
     agent_id: int
     instructions: str
+    knowledge_query: str | None
     expected_output: str
     order: int = 1
     human_input: bool
@@ -288,3 +310,21 @@ class GraphSessionMessageData(BaseModel):
     timestamp: str
     message_data: dict
     uuid: str
+    
+class KnowledgeSearchMessage(BaseModel):
+    collection_id: int
+    uuid: str
+    query: str
+    search_limit: int | None
+    similarity_threshold: float | None
+
+class ChunkDocumentMessage(BaseModel):
+    document_id: int
+
+class ChunkDocumentMessageResponse(BaseModel):
+    document_id: int
+    success: bool
+    message: str | None
+
+class StopSessionMessage(BaseModel):
+    session_id: int

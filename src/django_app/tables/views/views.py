@@ -24,6 +24,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from rest_framework.decorators import api_view, action
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework import generics
 from rest_framework import viewsets, mixins
 from rest_framework.response import Response
@@ -41,7 +42,15 @@ from tables.services.quickstart_service import QuickstartService
 from django_filters.rest_framework import DjangoFilterBackend
 
 
-from tables.models import Session, SourceCollection, DocumentMetadata
+from tables.models import (
+    Session,
+    SourceCollection,
+    DocumentMetadata,
+    GraphOrganization,
+    GraphOrganizationUser,
+    OrganizationUser,
+    Graph,
+)
 from tables.serializers.model_serializers import (
     SessionSerializer,
     SessionLightSerializer,
@@ -53,11 +62,13 @@ from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
+    ProcessDocumentChunkingSerializer,
+    ProcessCollectionEmbeddingSerializer,
     RunSessionSerializer,
 )
 from tables.serializers.knowledge_serializers import CollectionStatusSerializer
 from tables.serializers.quickstart_serializers import QuickstartSerializer
-from tables.filters import SessionFilter
+from tables.filters import CollectionFilter, SessionFilter
 
 from .default_config import *
 
@@ -186,12 +197,25 @@ class SessionViewSet(
             )
 
         with transaction.atomic():
-            sessions = Session.objects.filter(id__in=ids)
-            deleted_count = sessions.count()
-            sessions.delete()
+            session_list = Session.objects.filter(id__in=ids)
+            deleted_count = session_list.count()
+            for session in session_list:
+                session.delete(
+                    callback=lambda: session_manager_service.stop_session(
+                        session_id=session.pk
+                    )
+                )
+
         return Response(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
+
+    def destroy(self, request, *args, **kwargs):
+        session: Session = self.get_object()
+        session.delete(
+            callback=lambda: session_manager_service.stop_session(session_id=session.pk)
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RunSession(APIView):
@@ -233,16 +257,66 @@ class RunSession(APIView):
         if not serializer.is_valid():
             logger.warning(f"Invalid data received in request: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         graph_id = serializer.validated_data["graph_id"]
+        username = serializer.validated_data.get("username")
+        graph_organization_user = None
+
+        graph = Graph.objects.filter(id=graph_id).first()
+        if not graph:
+            return Response(
+                {"message": f"Provided graph does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        graph_organization = GraphOrganization.objects.filter(
+            graph__id=graph_id
+        ).first()
+
+        if username and not graph_organization:
+            return Response(
+                {"message": "No GraphOrganization exists for this flow."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if username and graph_organization:
+            user = OrganizationUser.objects.filter(
+                name=username, organization=graph_organization.organization
+            ).first()
+            if not user and username:
+                return Response(
+                    {
+                        "message": f"Provided user does not exist or does not belong to organization {graph_organization.organization.name}"
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            graph_organization_user, _ = GraphOrganizationUser.objects.get_or_create(
+                user=user,
+                graph=graph,
+                defaults={"persistent_variables": graph_organization.user_variables},
+            )
+
         variables = serializer.validated_data.get("variables", {})
 
         if files_dict is not None:
             variables["files"] = files_dict
+            logger.info(f"Added {len(files_dict)} files to variables.")
+        if graph_organization:
+            variables.update(graph_organization.persistent_variables)
+            logger.info(
+                f"Organization variables are used for this flow. Variables: {graph_organization.persistent_variables}"
+            )
+        if graph_organization_user:
+            variables.update(graph_organization_user.persistent_variables)
+            logger.info(
+                f"Organization user variables are used for this flow. Variables: {graph_organization_user.persistent_variables}"
+            )
 
         try:
-            # Publish session to: crew, maanger
+            # Publish session to: crew, manager
             session_id = session_manager_service.run_session(
-                graph_id=graph_id, variables=variables
+                graph_id=graph_id, variables=variables, username=username
             )
             logger.info(f"Session {session_id} successfully started.")
         except Exception as e:
@@ -680,55 +754,50 @@ class InitRealtimeAPIView(APIView):
             )
 
 
-class CollectionStatusAPIView(APIView):
-    def get(self, request):
-        try:
-            collections = (
-                SourceCollection.objects.only(
-                    "collection_id", "collection_name", "status"
-                )
-                .annotate(
-                    total_documents=Count("document_metadata"),
-                    new_documents=Count(
-                        "document_metadata",
-                        filter=Q(
-                            document_metadata__status=DocumentMetadata.DocumentStatus.NEW
-                        ),
+class CollectionStatusAPIView(ListAPIView):
+    serializer_class = CollectionStatusSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CollectionFilter
+
+    def get_queryset(self):
+        return (
+            SourceCollection.objects.only("collection_id", "collection_name", "status")
+            .annotate(
+                total_documents=Count("document_metadata"),
+                new_documents=Count(
+                    "document_metadata",
+                    filter=Q(
+                        document_metadata__status=DocumentMetadata.DocumentStatus.NEW
                     ),
-                    completed_documents=Count(
-                        "document_metadata",
-                        filter=Q(
-                            document_metadata__status=DocumentMetadata.DocumentStatus.COMPLETED
-                        ),
+                ),
+                completed_documents=Count(
+                    "document_metadata",
+                    filter=Q(
+                        document_metadata__status=DocumentMetadata.DocumentStatus.COMPLETED
                     ),
-                    processing_documents=Count(
-                        "document_metadata",
-                        filter=Q(
-                            document_metadata__status=DocumentMetadata.DocumentStatus.PROCESSING
-                        ),
+                ),
+                processing_documents=Count(
+                    "document_metadata",
+                    filter=Q(
+                        document_metadata__status=DocumentMetadata.DocumentStatus.PROCESSING
                     ),
-                    failed_documents=Count(
-                        "document_metadata",
-                        filter=Q(
-                            document_metadata__status=DocumentMetadata.DocumentStatus.FAILED
-                        ),
+                ),
+                failed_documents=Count(
+                    "document_metadata",
+                    filter=Q(
+                        document_metadata__status=DocumentMetadata.DocumentStatus.FAILED
                     ),
-                )
-                .prefetch_related(
-                    Prefetch(
-                        "document_metadata",
-                        queryset=DocumentMetadata.objects.only(
-                            "document_id", "file_name", "status", "source_collection_id"
-                        ),
-                    )
+                ),
+            )
+            .prefetch_related(
+                Prefetch(
+                    "document_metadata",
+                    queryset=DocumentMetadata.objects.only(
+                        "document_id", "file_name", "status", "source_collection_id"
+                    ),
                 )
             )
-            serializer = CollectionStatusSerializer(collections, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except SourceCollection.DoesNotExist:
-            return Response(
-                {"error": "Collection not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+        )
 
 
 class QuickstartView(APIView):
@@ -765,7 +834,10 @@ class QuickstartView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @swagger_auto_schema(request_body=QuickstartSerializer)
+    @swagger_auto_schema(
+        request_body=QuickstartSerializer,
+        responses={202: openapi.Response(description="Chunking operation accepted")},
+    )
     def post(self, request):
         serializer = QuickstartSerializer(data=request.data)
         if serializer.is_valid():
@@ -790,3 +862,31 @@ class QuickstartView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProcessDocumentChunkingView(APIView):
+    @swagger_auto_schema(request_body=ProcessDocumentChunkingSerializer)
+    def post(self, request):
+        serializer = ProcessDocumentChunkingSerializer(data=request.data)
+        if serializer.is_valid():
+            document_id = serializer["document_id"].value
+
+            if not DocumentMetadata.objects.filter(document_id=document_id).exists():
+                return Response(status=status.HTTP_404_NOT_FOUND)
+
+            redis_service.publish_process_document_chunking(document_id=document_id)
+            return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class ProcessCollectionEmbeddingView(APIView):
+    @swagger_auto_schema(request_body=ProcessCollectionEmbeddingSerializer)
+    def post(self, request):
+        serializer = ProcessCollectionEmbeddingSerializer(data=request.data)
+        if serializer.is_valid():
+            collection_id = serializer["collection_id"].value
+            if not SourceCollection.objects.filter(
+                collection_id=collection_id
+            ).exists():
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            redis_service.publish_source_collection(collection_id=collection_id)
+            return Response(status=status.HTTP_202_ACCEPTED)

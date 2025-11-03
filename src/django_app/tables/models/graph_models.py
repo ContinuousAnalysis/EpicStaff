@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.utils import timezone
+from loguru import logger
 
 
 class Graph(models.Model):
@@ -107,6 +108,18 @@ class EndNode(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["graph"], name="unique_graph_end_node")
         ]
+
+    def clean(self):
+        super().clean()
+        if not self.output_map:
+            self.output_map = {"context": "variables"}
+            logger.debug('Set default output_map to {"context": "variables"}')
+
+    def save(self, *args, **kwargs):
+        if not self.output_map:
+            self.output_map = {"context": "variables"}
+            logger.debug('Set default output_map to {"context": "variables"}')
+        super().save(*args, **kwargs)
 
 
 class Edge(models.Model):
@@ -218,3 +231,68 @@ class Condition(models.Model):
             )
         ]
         ordering = ["order"]
+
+
+class Organization(models.Model):
+
+    name = models.CharField(max_length=256, blank=False, unique=True)
+
+
+class OrganizationUser(models.Model):
+
+    name = models.CharField(max_length=256, blank=False)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "organization"],
+                name="unique_flow_user_for_organization",
+            )
+        ]
+
+
+class BasePersistentEntity(models.Model):
+
+    graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
+    persistent_variables = models.JSONField(
+        default=dict,
+        help_text="Variables that persistent for specific entity for specific flow",
+    )
+
+    class Meta:
+        abstract = True
+
+
+class GraphOrganization(BasePersistentEntity):
+
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="graph"
+    )
+    user_variables = models.JSONField(
+        default=dict,
+        help_text="Variables that persistent for all users for specific flow",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "organization"],
+                name="unique_organization_per_flow",
+            )
+        ]
+
+
+class GraphOrganizationUser(BasePersistentEntity):
+
+    user = models.ForeignKey(
+        OrganizationUser, on_delete=models.CASCADE, related_name="graph"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "user"],
+                name="unique_user_per_flow",
+            )
+        ]

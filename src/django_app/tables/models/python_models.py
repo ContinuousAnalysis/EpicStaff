@@ -17,6 +17,7 @@ class PythonCodeTool(models.Model):
     args_schema = models.JSONField()
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE, null=False)
     favorite = models.BooleanField(default=False)
+    built_in = models.BooleanField(default=False)
 
 
 class PythonCodeResult(models.Model):
@@ -25,4 +26,3 @@ class PythonCodeResult(models.Model):
     stderr = models.TextField(default="")
     stdout = models.TextField(default="")
     returncode = models.IntegerField(default=0)
-

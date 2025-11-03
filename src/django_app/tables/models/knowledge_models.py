@@ -1,5 +1,7 @@
 from django.db import models
 import uuid
+
+from loguru import logger
 from pgvector.django import VectorField
 
 
@@ -14,6 +16,7 @@ class SourceCollection(models.Model):
         """
 
         NEW = "new"
+        CHUNKED = "chunked"
         PROCESSING = "processing"
         COMPLETED = "completed"
         WARNING = "warning"
@@ -75,6 +78,42 @@ class SourceCollection(models.Model):
 
         super().save(*args, **kwargs)
 
+    def update_collection_status(self: "SourceCollection"):
+        documents_statuses = set(
+            self.document_metadata.values_list("status", flat=True)
+        )
+
+        NEW = SourceCollection.SourceCollectionStatus.NEW
+        PROCESSING = SourceCollection.SourceCollectionStatus.PROCESSING
+        WARNING = SourceCollection.SourceCollectionStatus.WARNING
+        FAILED = SourceCollection.SourceCollectionStatus.FAILED
+        COMPLETED = SourceCollection.SourceCollectionStatus.COMPLETED
+        CHUNKED = SourceCollection.SourceCollectionStatus.CHUNKED
+
+        if not documents_statuses or documents_statuses == {NEW}:
+            current_status = NEW
+        elif documents_statuses == {COMPLETED}:
+            current_status = COMPLETED
+        elif documents_statuses == {FAILED}:
+            current_status = FAILED
+        elif documents_statuses == {CHUNKED}:
+            current_status = CHUNKED
+        elif PROCESSING in documents_statuses:
+            current_status = PROCESSING
+        elif (
+            FAILED in documents_statuses
+            or WARNING in documents_statuses
+            or CHUNKED in documents_statuses
+        ):
+            current_status = WARNING
+        else:
+            # fallback для неизвестных комбинаций
+            current_status = WARNING
+
+        self.status = current_status
+        self.save()
+
+
 
 class DocumentMetadata(models.Model):
     """
@@ -109,12 +148,14 @@ class DocumentMetadata(models.Model):
         """
 
         NEW = "new"
+        CHUNKED = "chunked"
         PROCESSING = "processing"
         COMPLETED = "completed"
         WARNING = "warning"
         FAILED = "failed"
 
     document_id = models.AutoField(primary_key=True)
+    document_hash = models.CharField(max_length=64, null=True, default=None)
     file_name = models.CharField(max_length=255, blank=True)
     file_type = models.CharField(
         max_length=10, choices=DocumentFileType.choices, blank=True
@@ -134,7 +175,10 @@ class DocumentMetadata(models.Model):
         default=DocumentStatus.NEW,
     )
     source_collection = models.ForeignKey(
-        SourceCollection, on_delete=models.CASCADE, related_name="document_metadata"
+        SourceCollection,
+        on_delete=models.CASCADE,
+        related_name="document_metadata",
+        null=True,
     )
 
     document_content = models.ForeignKey(
@@ -144,8 +188,35 @@ class DocumentMetadata(models.Model):
         related_name="document_metadata",
     )
 
+    def save(self, *args, **kwargs):
+        res = super().save(*args, **kwargs)
+        collection = self.source_collection
+        if collection is None:
+            logger.warning(
+                f"Source collection for document {self.file_name} not found!"
+            )
+        else:
+            self.source_collection.update_collection_status()
+        return res
+
+    def delete(self, using=..., keep_parents=...):
+        res = super().delete(using, keep_parents)
+        if self.source_collection is None:
+            logger.warning(
+                f"Source collection for document {self.file_name} not found!"
+            )
+        else:
+            self.source_collection.update_collection_status()
+
+        return res
+
     def __str__(self):
         return f"{self.file_name}"
+
+
+class Chunk(models.Model):
+    document = models.ForeignKey(DocumentMetadata, on_delete=models.CASCADE)
+    text = models.TextField()
 
 
 class DocumentEmbedding(models.Model):
@@ -158,7 +229,13 @@ class DocumentEmbedding(models.Model):
     document = models.ForeignKey(
         DocumentMetadata, on_delete=models.CASCADE, related_name="embeddings_doc"
     )
-    chunk_text = models.TextField()
+    chunk = models.ForeignKey(
+        Chunk,
+        on_delete=models.SET_NULL,
+        related_name="embeddings_chunk",
+        null=True,
+    )
+
     vector = VectorField(
         null=True, blank=True
     )  # embedding vector, with flexible dimensions

@@ -145,6 +145,7 @@ class DocumentMetadataSerializer(serializers.ModelSerializer):
             "chunk_overlap",
             "additional_params",
             "document_content",
+            "status",
         ]
         read_only_fields = ["document_id"]
 
@@ -206,7 +207,7 @@ class CollectionStatusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SourceCollection
-        fields = ["collection_id", "collection_name", "collection_status"]
+        fields = ["collection_id", "collection_name", "status"]
 
     def to_representation(self, obj):
         """Custom representation to control response structure"""

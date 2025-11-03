@@ -1,4 +1,5 @@
 import json
+from tables.validators.end_node_validator import EndNodeValidator
 from tables.exceptions import EndNodeValidationError, GraphEntryPointException
 from tables.models.graph_models import (
     ConditionalEdge,
@@ -35,6 +36,7 @@ from tables.models import (
     PythonNode,
     EndNode,
     FileExtractorNode,
+    GraphOrganizationUser,
 )
 
 
@@ -48,16 +50,13 @@ class SessionManagerService(metaclass=SingletonMeta):
         self.redis_service = redis_service
         self.converter_service = converter_service
         self.file_extractor_node_validator = FileExtractorNodeValidator()
+        self.end_node_validator: EndNodeValidator = EndNodeValidator()
 
     def get_session(self, session_id: int) -> Session:
         return Session.objects.get(id=session_id)
 
     def stop_session(self, session_id: int) -> None:
-        session: Session = self.get_session(session_id=session_id)
-        # TODO: Send notify to redis channel to stop container
-
-        session.status = Session.SessionStatus.END
-        session.save()
+        self.redis_service.publish_stop_session(session_id=session_id)
 
     def get_session_status(self, session_id: int) -> Session.SessionStatus:
         session: Session = self.get_session(session_id=session_id)
@@ -67,6 +66,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         self,
         graph_id: int,
         variables: dict | None = None,
+        username: str | None = None,
     ) -> Session:
 
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
@@ -80,11 +80,13 @@ class SessionManagerService(metaclass=SingletonMeta):
             variables = start_node.variables
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
+        graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
         session = Session.objects.create(
             graph_id=graph_id,
             status=Session.SessionStatus.PENDING,
             variables=variables,
             time_to_live=time_to_live,
+            graph_user=graph_user,
         )
         return session
 
@@ -102,14 +104,6 @@ class SessionManagerService(metaclass=SingletonMeta):
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         crew_node_data_list: list[CrewNodeData] = []
-
-        try:
-            end_node = EndNode.objects.get(graph=graph.pk)
-        except EndNode.DoesNotExist:
-            end_node = None
-            # TODO: revert back validation
-            logger.warning(f"end_node is missing for flow id={graph.pk}")
-            # raise EndNodeValidationError(f"end_node is missing for flow id={graph.pk}")
 
         if file_extractor_node_list:
             self.file_extractor_node_validator.validate_file_extractor_nodes(
@@ -171,6 +165,9 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
             decision_table_node_data_list.append(decision_table_node_data)
+
+        end_node = self.end_node_validator.validate(graph_id=graph.pk)
+
         # TODO: remove validation
         if end_node is not None:
             end_node_data = self.converter_service.convert_end_node_to_pydantic(
@@ -200,13 +197,20 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         return session_data
 
-    def run_session(self, graph_id: int, variables: dict | None = None) -> int:
+    def run_session(
+        self,
+        graph_id: int,
+        variables: dict | None = None,
+        username: str | None = None,
+    ) -> int:
         logger.info(f"'run_session' got variables: {variables}")
 
         # Choose to use variables from previous flow or left 'variables' param None
         variables = self.choose_variables(graph_id, variables)
 
-        session: Session = self.create_session(graph_id=graph_id, variables=variables)
+        session: Session = self.create_session(
+            graph_id=graph_id, variables=variables, username=username
+        )
         session_data: SessionData = self.create_session_data(session=session)
 
         session.graph_schema = session_data.graph.model_dump()

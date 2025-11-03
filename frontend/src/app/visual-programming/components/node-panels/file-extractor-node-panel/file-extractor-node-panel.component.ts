@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
     ReactiveFormsModule,
     FormGroup,
@@ -89,6 +89,7 @@ interface InputMapPair {
             }
         `,
     ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileExtractorNodePanelComponent extends BaseSidePanel<FileExtractorNodeModel> {
     constructor() {
@@ -143,11 +144,10 @@ export class FileExtractorNodePanelComponent extends BaseSidePanel<FileExtractor
                 );
             });
         } else {
-            // Always add at least one empty input map pair
             inputMapArray.push(
                 this.fb.group({
                     key: [''],
-                    value: [''],
+                    value: ['variables.'],
                 })
             );
         }

@@ -1,9 +1,16 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 import os
-from dotenv import load_dotenv
+import sys
+from dotenv import load_dotenv, find_dotenv
+from loguru import logger
 
-load_dotenv()
+if "--debug" in sys.argv:
+    logger.info("RUNNING IN DEBUG MODE")
+    load_dotenv(find_dotenv("debug.env"))
+else:
+    load_dotenv(find_dotenv(".env"))
+
 
 
 def get_required_env_var(key: str) -> str:

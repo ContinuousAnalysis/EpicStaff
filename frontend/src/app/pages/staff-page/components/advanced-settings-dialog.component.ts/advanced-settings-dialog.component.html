@@ -192,7 +192,7 @@
                         </mat-icon>
                     </div>
                     <div class="setting-value">
-                        {{ maxRetryLimitControl.value || 3 }}
+                        {{ maxRetryLimitControl.value ?? 3 }}
                     </div>
                 </div>
                 <div class="slider-container">
@@ -221,7 +221,7 @@
 
             <!-- Boolean Toggle Settings -->
             <div class="toggle-settings">
-                <div class="form-group">
+                <!-- <div class="form-group">
                     <div class="setting-label">
                         Memory
                         <mat-icon
@@ -238,7 +238,7 @@
                         (ngModelChange)="memoryControl.setValue($event)"
                     >
                     </mat-slide-toggle>
-                </div>
+                </div> -->
 
                 <div class="form-group">
                     <div class="setting-label">
@@ -297,12 +297,12 @@
                             </mat-icon>
                         </div>
                         <div class="setting-value">
-                            {{ similarityThresholdControl.value || 0.7 }}
+                            {{ similarityThresholdControl.value ?? 0.7 }}
                         </div>
                     </div>
                     <div class="slider-container">
                         <mat-slider
-                            min="0.1"
+                            min="0.0"
                             max="1.0"
                             step="0.01"
                             discrete

@@ -125,7 +125,7 @@ export class AgentsTableComponent {
         private toastService: ToastService,
         private realtimeAgentService: RealtimeAgentService,
         public dialog: Dialog
-    ) { }
+    ) {}
 
     ngOnInit(): void {
         this.loadStartTime = Date.now();
@@ -211,7 +211,7 @@ export class AgentsTableComponent {
             allow_code_execution: false,
             max_retry_limit: 0,
             respect_context_window: false,
-            default_temperature: 0,
+            default_temperature: null,
             tags: [],
             knowledge_collection: null,
             tools: [],
@@ -468,6 +468,19 @@ export class AgentsTableComponent {
 
             editable: false,
         },
+        {
+            headerName: '',
+            field: 'copy',
+            cellRenderer: (params: ICellRendererParams) => {
+                return `<i class="ti ti-copy action-icon"></i>`;
+            },
+            width: 50,
+            minWidth: 50,
+            maxWidth: 50,
+            cellClass: 'action-cell',
+
+            editable: false,
+        },
     ];
 
     public defaultColDef: ColDef = {
@@ -547,10 +560,7 @@ export class AgentsTableComponent {
         let realtimeConfigId = null;
 
         // Check if mergedConfigs exist and process them
-        if (
-            agentData.mergedConfigs &&
-            Array.isArray(agentData.mergedConfigs)
-        ) {
+        if (agentData.mergedConfigs && Array.isArray(agentData.mergedConfigs)) {
             // Find LLM config
             const llmConfig = agentData.mergedConfigs.find(
                 (config: any) => config.type === 'llm'
@@ -669,7 +679,7 @@ export class AgentsTableComponent {
                 max_retry_limit: parsedData.max_retry_limit ?? null,
                 respect_context_window:
                     parsedData.respect_context_window ?? null,
-                default_temperature: parsedData.default_temperature ?? null,
+                default_temperature: null,
                 knowledge_collection: parsedData.knowledge_collection ?? null,
                 search_limit: parsedData.search_limit ?? null,
                 similarity_threshold: parsedData.similarity_threshold ?? null,
@@ -720,7 +730,7 @@ export class AgentsTableComponent {
                     console.error('Error creating agent:', error);
                     this.toastService.error(
                         'Error creating agent: ' +
-                        (error.message || 'Unknown error')
+                            (error.message || 'Unknown error')
                     );
                 },
                 complete: () => {
@@ -792,8 +802,7 @@ export class AgentsTableComponent {
             max_retry_limit: parsedUpdateData.max_retry_limit ?? undefined,
             respect_context_window:
                 parsedUpdateData.respect_context_window ?? false,
-            default_temperature:
-                parsedUpdateData.default_temperature ?? undefined,
+            default_temperature: null,
             knowledge_collection: parsedUpdateData.knowledge_collection ?? null,
             search_limit: parsedUpdateData.search_limit ?? null,
             similarity_threshold: parsedUpdateData.similarity_threshold ?? null,
@@ -831,10 +840,11 @@ export class AgentsTableComponent {
                 max_retry_limit: agentData.max_retry_limit ?? null,
                 respect_context_window:
                     agentData.respect_context_window ?? false,
-                default_temperature: agentData.default_temperature ?? null,
+                default_temperature: null,
                 knowledge_collection: agentData.knowledge_collection ?? null, // Changed parameter name
                 similarity_threshold: agentData.similarity_threshold ?? null,
                 search_limit: agentData.search_limit ?? null,
+                memory: agentData.memory ?? true,
             },
         });
 
@@ -856,8 +866,6 @@ export class AgentsTableComponent {
             console.error('Agent not found in rowData for update:', agentData);
             return;
         }
-
-        console.log('Temperature:', updatedData.default_temperature);
 
         // Create an updated version of the agent using both existing values and updated fields
         const updatedAgent: TableFullAgent = {
@@ -888,15 +896,11 @@ export class AgentsTableComponent {
             return;
         }
 
-        // Get realtime config ID
+        // Get realtime config ID - check mergedConfigs FIRST as it's the source of truth
         let realtimeConfigId = null;
 
-        // First check if fullRealtimeConfig is directly available
-        if (updatedAgent.fullRealtimeConfig?.id) {
-            realtimeConfigId = updatedAgent.fullRealtimeConfig.id;
-        }
-        // Then check mergedConfigs if available
-        else if (
+        // First check mergedConfigs if available (most up-to-date)
+        if (
             updatedAgent.mergedConfigs &&
             Array.isArray(updatedAgent.mergedConfigs)
         ) {
@@ -906,6 +910,10 @@ export class AgentsTableComponent {
             if (realtimeConfig) {
                 realtimeConfigId = realtimeConfig.id;
             }
+        }
+        // Fallback to fullRealtimeConfig if mergedConfigs doesn't exist
+        else if (updatedAgent.fullRealtimeConfig?.id) {
+            realtimeConfigId = updatedAgent.fullRealtimeConfig.id;
         }
         // Finally check the realtime_agent.realtime_config field directly
         else if (updatedAgent.realtime_agent?.realtime_config) {
@@ -934,17 +942,19 @@ export class AgentsTableComponent {
             python_code_tools: this.rowData[index].mergedTools
                 .filter((tool: any) => tool.type === 'python-tool')
                 .map((tool: any) => tool.id),
-        }
+        };
 
         // Build tool_ids array for settings update
-        const settingsConfiguredToolIds = allToolsPreBuilding.configured_tools || [];
-        const settingsPythonToolIds = allToolsPreBuilding.python_code_tools || [];
+        const settingsConfiguredToolIds =
+            allToolsPreBuilding.configured_tools || [];
+        const settingsPythonToolIds =
+            allToolsPreBuilding.python_code_tools || [];
         const settingsToolIds = buildToolIdsArray(
             settingsConfiguredToolIds,
             settingsPythonToolIds
         );
 
-        const parsedUpdateData = this.parseAgentData(this.rowData[index])
+        const parsedUpdateData = this.parseAgentData(this.rowData[index]);
 
         // Prepare the payload for the backend update request
         const updateAgentData: UpdateAgentRequest = {
@@ -966,7 +976,7 @@ export class AgentsTableComponent {
             allow_code_execution: updatedAgent.allow_code_execution ?? null,
             max_retry_limit: updatedAgent.max_retry_limit ?? null,
             respect_context_window: updatedAgent.respect_context_window ?? null,
-            default_temperature: updatedAgent.default_temperature ?? null,
+            default_temperature: null,
             knowledge_collection: updatedAgent.knowledge_collection ?? null,
             search_limit: updatedAgent.search_limit ?? null,
             similarity_threshold: updatedAgent.similarity_threshold ?? null,
@@ -1177,15 +1187,11 @@ export class AgentsTableComponent {
 
         this.cdr.markForCheck();
 
-        // Get realtime config ID
+        // Get realtime config ID - check mergedConfigs FIRST as it's the source of truth
         let realtimeConfigId = null;
 
-        // First check if fullRealtimeConfig is directly available
-        if (newAgentData.fullRealtimeConfig?.id) {
-            realtimeConfigId = newAgentData.fullRealtimeConfig.id;
-        }
-        // Then check mergedConfigs if available
-        else if (
+        // First check mergedConfigs if available (most up-to-date)
+        if (
             newAgentData.mergedConfigs &&
             Array.isArray(newAgentData.mergedConfigs)
         ) {
@@ -1195,6 +1201,10 @@ export class AgentsTableComponent {
             if (realtimeConfig) {
                 realtimeConfigId = realtimeConfig.id;
             }
+        }
+        // Fallback to fullRealtimeConfig if mergedConfigs doesn't exist
+        else if (newAgentData.fullRealtimeConfig?.id) {
+            realtimeConfigId = newAgentData.fullRealtimeConfig.id;
         }
         // Finally check the realtime_agent.realtime_config field directly
         else if (newAgentData.realtime_agent?.realtime_config) {
@@ -1238,7 +1248,7 @@ export class AgentsTableComponent {
             allow_code_execution: newAgentData.allow_code_execution ?? null,
             max_retry_limit: newAgentData.max_retry_limit ?? null,
             respect_context_window: newAgentData.respect_context_window ?? null,
-            default_temperature: newAgentData.default_temperature ?? null,
+            default_temperature: null,
             knowledge_collection: newAgentData.knowledge_collection ?? null,
             search_limit: newAgentData.search_limit ?? null,
             similarity_threshold: newAgentData.similarity_threshold ?? null,
@@ -1344,6 +1354,43 @@ export class AgentsTableComponent {
             this.openSettingsDialog(agentData);
         }
         const columnId = event.column.getColId();
+
+        if (event.colDef.field === 'copy') {
+            const agentData = event.data;
+            this.closePopup();
+            this.agentsService.copyAgent(agentData, agentData.id).subscribe({
+                next: (newAgent) => {
+                    // Show a success toast notification to the user
+                    this.toastService.success(`Agent copied successfully`);
+
+                    // Find the index of the original agent row in the rowData array
+                    const rowIndex = this.rowData.findIndex(
+                        (row) => row === event.data
+                    );
+
+                    if (rowIndex !== -1) {
+                        // Create a new object for the copied agent with the new ID from the server
+                        const copiedAgent = {
+                            ...this.rowData[rowIndex],
+                            id: newAgent.id,
+                        };
+
+                        // Insert the copied agent into the rowData array immediately after the original
+                        this.rowData.splice(rowIndex + 1, 0, copiedAgent);
+
+                        // Update the ag-Grid table by adding the new row at the same index
+                        this.gridApi.applyTransaction({
+                            add: [copiedAgent],
+                            addIndex: rowIndex + 1,
+                        });
+                    }
+                },
+                error: (error) => {
+                    // Show an error toast if the copy operation fails
+                    this.toastService.error('Failed to copy agent');
+                },
+            });
+        }
         // Process only specific columns.
         if (
             columnId !== 'mergedConfigs' &&
@@ -1553,11 +1600,57 @@ export class AgentsTableComponent {
                             this.gridApi.getDisplayedRowAtIndex(rowIndex);
 
                         if (rowNode) {
+                            const rowData = rowNode.data;
+
                             // Update the mergedConfigs in the row data
                             rowNode.setDataValue(
                                 'mergedConfigs',
                                 mergedConfigs
                             );
+
+                            // Update related fullLlmConfig and fullRealtimeConfig properties
+                            const llmConfig = mergedConfigs.find(
+                                (config) => config.type === 'llm'
+                            );
+                            const realtimeConfig = mergedConfigs.find(
+                                (config) => config.type === 'realtime'
+                            );
+
+                            if (llmConfig) {
+                                rowNode.setDataValue(
+                                    'llm_config',
+                                    llmConfig.id
+                                );
+                            } else {
+                                rowNode.setDataValue('llm_config', null);
+                                rowNode.setDataValue('fullLlmConfig', null);
+                            }
+
+                            if (realtimeConfig) {
+                                const realtime_agent = {
+                                    ...(rowData.realtime_agent || {}),
+                                    realtime_config: realtimeConfig.id,
+                                };
+                                rowNode.setDataValue(
+                                    'realtime_agent',
+                                    realtime_agent
+                                );
+                            } else {
+                                rowNode.setDataValue(
+                                    'fullRealtimeConfig',
+                                    null
+                                );
+                                if (rowData.realtime_agent) {
+                                    const realtime_agent = {
+                                        ...rowData.realtime_agent,
+                                        realtime_config: null,
+                                    };
+                                    rowNode.setDataValue(
+                                        'realtime_agent',
+                                        realtime_agent
+                                    );
+                                }
+                            }
                         }
                     }
 

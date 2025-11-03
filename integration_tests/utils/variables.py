@@ -6,3 +6,4 @@ rhost = '127.0.0.1'
 
 DJANGO_URL = os.environ.get('DJANGO_URL', 'http://127.0.0.1:8000/api')
 MANAGER_URL = os.environ.get('MANAGER_URL', "http://127.0.0.1:8001")
+TEST_TOOL_NAME = "PythonTestTool123"

@@ -8,7 +8,7 @@ class JSONChunker(BaseChunker):
         self.chunk_overlap = chunk_overlap
         self.json_splitter = RecursiveJsonSplitter(max_chunk_size=chunk_size)
 
-    def chunk(self, text):
+    def chunk(self, text: str) -> list[str]:
         json_obj = self._convert_text_to_json(text)
         return self.json_splitter.split_text(json_obj)
 
