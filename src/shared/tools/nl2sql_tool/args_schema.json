@@ -2,14 +2,10 @@
   "title": "NL2SQLArgs",
   "type": "object",
   "properties": {
-    "db_uri": {
-      "type": "string",
-      "description": "Database connection string (e.g. sqlite:///example.db or postgresql+psycopg2://user:pass@host/db)."
-    },
     "query_text": {
       "type": "string",
       "description": "Natural language question or instruction to be converted into an SQL query and executed."
     }
   },
-  "required": ["db_uri", "query_text"]
+  "required": ["query_text"]
 }

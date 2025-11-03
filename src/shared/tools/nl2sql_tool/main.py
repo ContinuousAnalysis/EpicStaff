@@ -5,11 +5,7 @@ from langchain_community.agent_toolkits import create_sql_agent
 from langchain_openai import ChatOpenAI
 
 class NL2SQLTool:
-    def __init__(
-        self,
-        db_uri: str,
-        openai_api_key: str
-    ):
+    def __init__(self):
         self.db_uri = state["variables"]["DB_URI"] 
         self.openai_api_key = state["variables"]["OPENAI_API_KEY"] 
 
@@ -32,8 +28,8 @@ class NL2SQLTool:
         result = agent.invoke({"input": query_text})
         return result["output"]
 
-def main(db_uri, query_text):
-    nl2sql = NL2SQLTool(db_uri)
+def main(query_text):
+    nl2sql = NL2SQLTool()
     result = nl2sql.run_query(query_text)
     return result
 
