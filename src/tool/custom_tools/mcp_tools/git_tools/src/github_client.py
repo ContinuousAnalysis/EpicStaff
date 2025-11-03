@@ -91,14 +91,14 @@ class GitHubClient(BaseClient):
     def _get_latest_release_tag(self) -> str:
         releases = list(self.repo.get_releases())
         if not releases:
-            return "v1.0.0"
+            return "v0.0.0"
         return releases[0].tag_name
     
     def _bump_version(self, tag: str, level: str = "patch") -> str:
         import re
         match = re.match(r"v(\d+)\.(\d+)\.(\d+)", tag)
         if not match:
-            return "v1.0.0"
+            return "v0.0.0"
         
         major, minor, patch = map(int, match.groups())
         

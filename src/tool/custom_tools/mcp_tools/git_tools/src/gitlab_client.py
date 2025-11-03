@@ -97,31 +97,87 @@ class GitLabClient(BaseClient):
     async def create_draft_release(self, notes: str, release_type: str = "patch"):
         latest_tag = self._get_latest_release_tag()
         next_tag = self._bump_version(latest_tag, level=release_type)
+        
+        print(f"Creating draft release: {latest_tag} → {next_tag} ({release_type})")
+        
+        milestone = self.project.milestones.create({
+            'title': f'next_release_draft_{next_tag}',
+            'description': f"""# Release Notes: {next_tag}
 
-        print(f"Creating release: {latest_tag} → {next_tag} ({release_type})")
+        {notes}
 
-        self.project.releases.create(
-            {"tag_name": next_tag, "name": f"Release {next_tag}", "description": notes}
-        )
+        ---
+
+        **Release Type:** {release_type.upper()}  
+        **Previous Version:** {latest_tag}
+
+        ### Publishing Instructions
+
+        1. **Review and edit** release notes above
+        2. **When ready to publish:**
+        - Go to Repository → Tags → New tag
+        - Tag name: `{next_tag}`
+        - Manually copy the release notes from this milestone description
+        - Paste into "Release notes" field
+        - Select this milestone: `next_release_draft_{next_tag}`
+        3. **After publishing:** Close this milestone
+        """,
+                'state': 'active'
+        })
+        
+        return {
+            "platform": "gitlab",
+            "type": "milestone",
+            "next_tag": next_tag,
+            "previous_tag": latest_tag,
+            "release_type": release_type,
+            "milestone_id": milestone.id,
+            "milestone_url": milestone.web_url,
+            "milestone_title": milestone.title,
+            "message": f"Draft release created as milestone: {next_tag}"
+        }
 
     def _get_latest_release_tag(self) -> str:
+        import re
+        
+        def is_valid_version(tag_name: str) -> bool:
+            exclude_patterns = ["draft", "temp", "test"]
+            tag_lower = tag_name.lower()
+            
+            for pattern in exclude_patterns:
+                if pattern in tag_lower:
+                    return False
+            
+            return bool(re.match(r"^v?\d+\.\d+\.\d+$", tag_name))
+        
         try:
             releases = self.project.releases.list(per_page=1)
-            if releases:
+            if releases and is_valid_version(releases[0].tag_name):
                 return releases[0].tag_name
         except Exception as e:
             print(f"Warning: Could not fetch releases: {e}")
-        return "v1.0.0"
+        
+        try:
+            tags = self.project.tags.list(per_page=100, order_by='updated', sort='desc')
+            for tag in tags:
+                if is_valid_version(tag.name):
+                    return tag.name
+        except Exception as e:
+            print(f"Warning: Could not fetch tags: {e}")
+        
+        return "v0.0.0"
 
     def _bump_version(self, tag: str, level: str = "patch") -> str:
         import re
-
-        match = re.match(r"v(\d+)\.(\d+)\.(\d+)", tag)
+        
+        tag_clean = tag.lstrip('v')
+        match = re.match(r"(\d+)\.(\d+)\.(\d+)", tag_clean)
+        
         if not match:
-            return "v1.0.0"
-
+            return "v0.0.0"
+        
         major, minor, patch = map(int, match.groups())
-
+        
         if level == "major":
             major += 1
             minor = 0
@@ -131,7 +187,7 @@ class GitLabClient(BaseClient):
             patch = 0
         else:
             patch += 1
-
+        
         return f"v{major}.{minor}.{patch}"
 
     def _format_mr(self, mr):

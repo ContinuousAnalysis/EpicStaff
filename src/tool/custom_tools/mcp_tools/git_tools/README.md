@@ -16,3 +16,20 @@
 - update_description
 - create_draft_release
 - get_pull_requests
+
+## How to run project in Epicstaff
+
+1. Generate Github/Gitlab tokens
+-Github token scopes: repo, workflow
+-Gitlab token scopes: api, write_repository, read_api
+2. Fill in next info in Domain Variables:
+"platform": "gitlab", # or github
+"pull_number": "", #number of PR/MR you want to work with
+"gitlab_url": "https://gitlab.com",
+"gitlab_owner": "", #name of your gitlab profile
+"gitlab_repo": "", #name of your gitlab repo
+"github_owner": "", #name of your github profile
+"github_repo": "", name of your gitlab repo
+"github_token": "",
+"gitlab_token": ""
+3. Run the agent
