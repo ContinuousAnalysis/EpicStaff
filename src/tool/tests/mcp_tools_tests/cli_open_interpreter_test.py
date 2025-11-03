@@ -217,7 +217,6 @@ def test_missing_instruction_parameter(endpoint, headers):
 
 
 # 4. File Interaction Tests
-SHARED_TESTFILE = "./mcp_tools/open_interpreter_tool/data/pytest_output.txt"
 
 
 def test_write_file(endpoint, headers):
