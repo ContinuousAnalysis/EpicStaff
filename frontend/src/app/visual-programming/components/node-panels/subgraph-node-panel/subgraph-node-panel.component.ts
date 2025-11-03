@@ -1,16 +1,22 @@
 import { ChangeDetectionStrategy, Component, signal, inject, OnInit } from '@angular/core';
-import { ReactiveFormsModule, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormGroup, Validators, FormArray } from '@angular/forms';
 import { SubGraphNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { CommonModule } from '@angular/common';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { GraphDto } from '../../../../features/flows/models/graph.model';
+import { InputMapComponent } from '../../input-map/input-map.component';
+
+interface InputMapPair {
+    key: string;
+    value: string;
+}
 
 @Component({
     standalone: true,
     selector: 'app-subgraph-node-panel',
-    imports: [ReactiveFormsModule, CommonModule, CustomInputComponent],
+    imports: [ReactiveFormsModule, CommonModule, CustomInputComponent, InputMapComponent],
     template: `
         <div class="panel-container">
             <div class="panel-content">
@@ -22,6 +28,20 @@ import { GraphDto } from '../../../../features/flows/models/graph.model';
                         placeholder="Enter node name"
                         [activeColor]="activeColor"
                         [errorMessage]="getNodeNameErrorMessage()"
+                    ></app-custom-input>
+
+                    <div class="input-map">
+                        <app-input-map
+                            [activeColor]="activeColor"
+                        ></app-input-map>
+                    </div>
+
+                    <app-custom-input
+                        label="Output Variable Path"
+                        tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
+                        formControlName="output_variable_path"
+                        placeholder="Enter output variable path (leave empty for null)"
+                        [activeColor]="activeColor"
                     ></app-custom-input>
 
                     <div class="field">
@@ -123,6 +143,10 @@ export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel>
         return this.node().color || '#00bfa5';
     }
 
+    public get inputMapPairs(): FormArray {
+        return this.form.get('input_map') as FormArray;
+    }
+
     ngOnInit(): void {
         this.flowsApiService.getGraphsLight().subscribe({
             next: (flows: any[]) => {
@@ -133,10 +157,15 @@ export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel>
     }
 
     protected initializeForm(): FormGroup {
-        return this.fb.group({
+        const form = this.fb.group({
             node_name: [this.node().node_name || '', this.createNodeNameValidators()],
+            input_map: this.fb.array([]),
+            output_variable_path: [this.node().output_variable_path || ''],
             selectedFlowId: [this.node().data.id, Validators.required],
         });
+
+        this.initializeInputMap(form);
+        return form;
     }
 
     public onFlowChange(): void {
@@ -156,11 +185,58 @@ export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel>
             };
         }
 
+        const validInputPairs = this.getValidInputPairs();
+        const inputMapValue = this.createInputMapFromPairs(validInputPairs);
+
         return {
             ...this.node(),
             node_name: this.form.get('node_name')?.value || this.node().node_name,
+            input_map: inputMapValue,
+            output_variable_path: this.form.value.output_variable_path || null,
             data: updatedData,
         };
+    }
+
+    private initializeInputMap(form: FormGroup): void {
+        const inputMapArray = form.get('input_map') as FormArray;
+
+        if (
+            this.node().input_map &&
+            Object.keys(this.node().input_map).length > 0
+        ) {
+            Object.entries(this.node().input_map).forEach(([key, value]) => {
+                inputMapArray.push(
+                    this.fb.group({
+                        key: [key, Validators.required],
+                        value: [value, Validators.required],
+                    })
+                );
+            });
+        } else {
+            inputMapArray.push(
+                this.fb.group({
+                    key: [''],
+                    value: ['variables.'],
+                })
+            );
+        }
+    }
+
+    private getValidInputPairs(): any[] {
+        return this.inputMapPairs.controls.filter((control) => {
+            const value = control.value;
+            return value.key?.trim() !== '' || value.value?.trim() !== '';
+        });
+    }
+
+    private createInputMapFromPairs(pairs: any[]): Record<string, string> {
+        return pairs.reduce((acc: Record<string, string>, curr: any) => {
+            const pair = curr.value as InputMapPair;
+            if (pair.key?.trim()) {
+                acc[pair.key.trim()] = pair.value;
+            }
+            return acc;
+        }, {});
     }
 }
 
