@@ -228,7 +228,6 @@ services:
       - crew_config:/home/user/root/app/env_config/
     networks:
       - backend-network
-      - mcp-network
     tty: true
     stdin_open: true
     depends_on:
@@ -324,7 +323,3 @@ networks:
 
   frontend-network:
     driver: bridge
-
-  mcp-network:
-    driver: bridge
-    external: true
