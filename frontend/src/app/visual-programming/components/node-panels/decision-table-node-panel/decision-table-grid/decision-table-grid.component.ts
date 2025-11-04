@@ -39,6 +39,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 export class DecisionTableGridComponent implements OnInit {
     public conditionGroups = input.required<ConditionGroup[]>();
     public activeColor = input<string>('#685fff');
+    public currentNodeId = input.required<string>();
 
     public conditionGroupsChange = output<ConditionGroup[]>();
 
@@ -50,8 +51,14 @@ export class DecisionTableGridComponent implements OnInit {
 
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
+        const currentId = this.currentNodeId();
+        
         return nodes
-            .filter((node) => node.type !== NodeType.NOTE)
+            .filter((node) => 
+                node.type !== NodeType.NOTE && 
+                node.type !== NodeType.START &&
+                node.id !== currentId
+            )
             .map((node) => ({
                 value: node.node_name || node.id,
                 label: node.node_name || node.id,
@@ -63,13 +70,26 @@ export class DecisionTableGridComponent implements OnInit {
         if (groups.length === 0) {
             this.rowData.set([this.createEmptyGroup()]);
         } else {
-            this.rowData.set([...groups]);
+            const groupsWithValidFlag = groups.map(group => {
+                this.updateGroupValidFlag(group);
+                return group;
+            });
+            this.rowData.set([...groupsWithValidFlag]);
         }
     }
 
     private createEmptyGroup(): ConditionGroup {
+        const existingNames = this.rowData().map(g => g.group_name);
+        let newName = '';
+        let counter = this.rowData().length + 1;
+        
+        do {
+            newName = `Group ${counter}`;
+            counter++;
+        } while (existingNames.includes(newName));
+        
         return {
-            group_name: '',
+            group_name: newName,
             group_type: 'complex',
             expression: null,
             conditions: [],
@@ -122,6 +142,9 @@ export class DecisionTableGridComponent implements OnInit {
             cellEditorParams: {
                 maxLength: 10000,
             },
+            cellClassRules: {
+                'cell-warning': (params) => !!(params.data as any).group_nameWarning,
+            },
             cellStyle: {
                 fontSize: '14px',
             },
@@ -136,6 +159,9 @@ export class DecisionTableGridComponent implements OnInit {
             cellEditorParams: {
                 maxLength: 10000,
             },
+            cellClassRules: {
+                'cell-warning': (params) => !!(params.data as any).expressionWarning,
+            },
             cellStyle: {
                 fontSize: '14px',
             },
@@ -149,6 +175,9 @@ export class DecisionTableGridComponent implements OnInit {
             cellEditor: 'agLargeTextCellEditor',
             cellEditorParams: {
                 maxLength: 10000,
+            },
+            cellClassRules: {
+                'cell-warning': (params) => !!(params.data as any).manipulationWarning,
             },
             cellStyle: {
                 fontSize: '14px',
@@ -214,9 +243,44 @@ export class DecisionTableGridComponent implements OnInit {
     }
 
     public onCellValueChanged(event: CellValueChangedEvent): void {
+        const colId = event.column.getColId();
+        const rowIndex = event.rowIndex!;
+        
+        if (colId === 'group_name') {
+            const newName = event.newValue?.trim();
+            const isEmpty = !newName;
+            const isDuplicate = !isEmpty && this.rowData().some((row, idx) => 
+                idx !== rowIndex && row.group_name === newName
+            );
+            
+            (event.data as any).group_nameWarning = isEmpty || isDuplicate;
+        } else if (colId === 'expression') {
+            (event.data as any).expressionWarning = !event.newValue?.trim();
+        } else if (colId === 'manipulation') {
+            (event.data as any).manipulationWarning = !event.newValue?.trim();
+        }
+        
+        this.updateGroupValidFlag(event.data);
+        
+        this.gridApi.refreshCells({
+            rowNodes: [event.node],
+            columns: [colId],
+        });
+        
         const updatedData = [...this.rowData()];
         this.rowData.set(updatedData);
         this.emitChanges();
+    }
+
+    private updateGroupValidFlag(group: ConditionGroup): void {
+        const hasValidName = !!(group.group_name?.trim());
+        const hasNoDuplicateName = !this.rowData().some(
+            (g) => g !== group && g.group_name === group.group_name
+        );
+        const hasExpression = !!(group.expression?.trim());
+        const hasManipulation = !!(group.manipulation?.trim());
+        
+        group.valid = hasValidName && hasNoDuplicateName && hasExpression && hasManipulation;
     }
 
     public onCellClicked(event: CellClickedEvent): void {
@@ -230,6 +294,7 @@ export class DecisionTableGridComponent implements OnInit {
 
     public addConditionGroup(): void {
         const newGroup = this.createEmptyGroup();
+        this.updateGroupValidFlag(newGroup);
         const updated = [...this.rowData(), newGroup];
         this.rowData.set(updated);
 
@@ -252,7 +317,12 @@ export class DecisionTableGridComponent implements OnInit {
     }
 
     private emitChanges(): void {
-        this.conditionGroupsChange.emit(this.rowData());
+        const updatedGroups = this.rowData().map(group => {
+            this.updateGroupValidFlag(group);
+            return group;
+        });
+        
+        this.conditionGroupsChange.emit(updatedGroups);
     }
 }
 

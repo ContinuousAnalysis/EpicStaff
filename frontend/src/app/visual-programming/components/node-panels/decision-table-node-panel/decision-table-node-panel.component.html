@@ -37,6 +37,7 @@
                 <app-decision-table-grid
                     [conditionGroups]="conditionGroups()"
                     [activeColor]="activeColor"
+                    [currentNodeId]="node().id"
                     (conditionGroupsChange)="onConditionGroupsChange($event)"
                 />
             </div>

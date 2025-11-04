@@ -174,7 +174,16 @@ export class FlowGraphCoreMenuComponent {
                 name: 'Decision Table',
                 table: {
                     graph: null,
-                    condition_groups: [],
+                    condition_groups: [
+                        {
+                            group_name: 'Group 1',
+                            group_type: 'complex',
+                            expression: null,
+                            conditions: [],
+                            manipulation: null,
+                            next_node: null,
+                        }
+                    ],
                     node_name: '',
                     default_next_node: null,
                 },

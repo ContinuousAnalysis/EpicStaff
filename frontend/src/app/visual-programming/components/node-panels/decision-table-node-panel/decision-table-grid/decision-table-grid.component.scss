@@ -36,6 +36,11 @@
             color: #ff5449 !important;
             transform: scale(1.1);
         }
+
+        .cell-warning {
+            background-color: rgba(255, 59, 48, 0.15) !important;
+            border: 1px solid #ff3b30 !important;
+        }
        
     }
     .ag-layout-auto-height, .ag-layout-print {

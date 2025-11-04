@@ -12,6 +12,7 @@ export interface ConditionGroup {
     conditions: Condition[];
     manipulation: string | null;
     next_node: string | null;
+    valid?: boolean;
 }
 
 export interface Condition {

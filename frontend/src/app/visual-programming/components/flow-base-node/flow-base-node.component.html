@@ -35,12 +35,14 @@
     </div>
 </div>
 
-<!-- Ports -->
+<!-- Ports (skip all ports for table nodes as they render internally) -->
 @for (port of this.node.ports; track port.id) {
+@if (node.type !== NodeType.TABLE) {
 <div
     class="port-wrapper port-index-{{ $index }} port-position-{{
         port.position
     }}"
+    [style.--port-index]="$index"
 >
     <div
         class="port-circle"
@@ -70,6 +72,7 @@
     </div>
     <span class="port-label">{{ port.label }}</span>
 </div>
+}
 } @if (node.type === NodeType.TABLE) {
 <app-decision-table-node
     [node]="tableNode"
