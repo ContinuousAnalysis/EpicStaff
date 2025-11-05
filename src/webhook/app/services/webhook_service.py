@@ -28,7 +28,7 @@ class WebhookService:
             while True:
                 await asyncio.sleep(0.001) 
         except KeyboardInterrupt:
-            logger.info("\nShutting down...")
+            logger.info("Shutting down...")
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
         finally:
