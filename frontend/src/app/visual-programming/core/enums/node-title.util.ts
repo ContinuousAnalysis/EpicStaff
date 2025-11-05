@@ -31,6 +31,8 @@ export function getNodeTitle(node: NodeModel): string {
             return 'Note';
         case NodeType.FILE_EXTRACTOR:
             return 'File Extractor';
+        case NodeType.WEBHOOK_TRIGGER:
+            return (node as any).node_name || '';
         case NodeType.END:
             return 'End';
         default:

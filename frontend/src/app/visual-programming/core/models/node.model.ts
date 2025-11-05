@@ -93,6 +93,14 @@ export interface FileExtractorNodeModel extends BaseNodeModel {
     data: unknown;
 }
 
+export interface WebhookTriggerNodeModel extends BaseNodeModel {
+    type: NodeType.WEBHOOK_TRIGGER;
+    data: {
+        webhook_trigger: number;
+        python_code: CustomPythonCode;
+    }
+}
+
 export interface EndNodeData {
     output_map: Record<string, unknown>;
 }
@@ -115,4 +123,5 @@ export type NodeModel =
     | DecisionTableNodeModel
     | NoteNodeModel
     | FileExtractorNodeModel
+    | WebhookTriggerNodeModel
     | EndNodeModel;
