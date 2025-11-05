@@ -49,13 +49,10 @@ from tables.models.graph_models import (
     EndNode,
     LLMNode,
     StartNode,
-<<<<<<< HEAD
-=======
     Organization,
     OrganizationUser,
     GraphOrganization,
     GraphOrganizationUser,
->>>>>>> main
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -81,10 +78,6 @@ from tables.models import (
 from tables.models import (
     ToolConfig,
 )
-<<<<<<< HEAD
-
-=======
->>>>>>> main
 
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
