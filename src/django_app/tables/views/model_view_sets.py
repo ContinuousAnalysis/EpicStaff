@@ -671,7 +671,7 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             collection = serializer.save()
-
+        redis_service.publish_source_collection(collection_id=collection.pk)
         return Response(
             SourceCollectionReadSerializer(collection).data,
             status=status.HTTP_201_CREATED,
