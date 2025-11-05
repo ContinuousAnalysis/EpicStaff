@@ -13,7 +13,7 @@ class RedisService:
         self.redis_url = f"redis://{host}:{port}"
         self.client = aioredis.from_url(self.redis_url, decode_responses=True)
         self.webhook_channel = webhook_channel
-        print(f"RedisService initialized for {self.redis_url}")
+        logger.info(f"RedisService initialized for {self.redis_url}")
 
     async def publish_webhook(self, custom_id: str, payload: Dict[str, Any]):
         """
@@ -27,8 +27,8 @@ class RedisService:
         
         message_json = json.dumps(message_data)
         
-        print(f"Publishing to Redis channel '{self.webhook_channel}'")
-        await self.client.publish(channel, message_json)
+        logger.debug(f"Publishing to Redis channel '{self.webhook_channel}'")
+        await self.client.publish(self.webhook_channel, message_json)
 
     async def close(self):
         """Closes the Redis connection."""

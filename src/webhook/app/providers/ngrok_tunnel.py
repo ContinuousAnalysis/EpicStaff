@@ -5,7 +5,7 @@ from typing import Optional
 
 class NgrokTunnel(AbstractTunnelProvider):
     """
-    The ngrok-specific implementation of our abstract tunnel.
+    The ngrok-specific implementation of abstract tunnel.
     """
     def __init__(self, port: int, auth_token: Optional[str] = None):
         """
@@ -17,12 +17,10 @@ class NgrokTunnel(AbstractTunnelProvider):
         if not self._auth_token:
             raise ValueError("NgrokTunnel requires an auth_token.")
         
-        # Authenticate with ngrok
         ngrok.set_auth_token(self._auth_token)
 
     async def connect(self):
         print(f"Starting ngrok tunnel for localhost:{self._port}...")
-        # Run the blocking ngrok.connect in a thread
         self._tunnel = await asyncio.to_thread(ngrok.connect, self._port, "http")
         self._public_url = self._tunnel.public_url
 
