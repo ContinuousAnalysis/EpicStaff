@@ -271,9 +271,8 @@
 }
 
 :host(.type-table) {
-    .port-position-left {
-        @include mixins.table-port-left-indexes;
-    }
+    height: auto !important;
+    min-height: fit-content;
 }
 
 :host(.type-edge) {

@@ -28,6 +28,7 @@ export const DEFAULT_TABLE_NODE_PORTS: BasePort[] = [
       'edge-in',
       'table-in',
       'llm-out-left',
+      'end-in',
     ],
     position: 'right',
     color: '#00aaff',
