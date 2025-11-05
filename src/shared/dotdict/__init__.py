@@ -1,1 +1,1 @@
-from dotdict import DotDict
+from .dotdict import DotDict, DotList, DotObject

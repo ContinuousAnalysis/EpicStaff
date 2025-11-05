@@ -9,12 +9,12 @@ import {
 } from '@angular/forms';
 import { ToastService } from '../../../../../../../services/notifications/toast.service';
 import { TranscriptionConfigsService } from '../../../../../../../services/transcription-config.service';
-
-import { realTimeTranscriptionModels } from '../../../../../../../shared/constants/transcription-models.constants';
 import {
   CreateTranscriptionConfigRequest,
+  GetRealtimeTranscriptionModelRequest,
   GetTranscriptionConfigRequest,
 } from '../../../../../../../shared/models/transcription-config.model';
+import { ApiGetResponse, RealtimeTranscriptionModelsService } from '../../../../../../../services/transcription-models.service';
 
 export interface AddTranscriptionConfigDialogData {
   providerId?: number;
@@ -30,7 +30,7 @@ export interface AddTranscriptionConfigDialogData {
 export class AddTranscriptionConfigDialogComponent implements OnInit {
   transcriptionForm!: FormGroup;
   showApiKey = false;
-  models = realTimeTranscriptionModels;
+  models: GetRealtimeTranscriptionModelRequest[] = [];
   submitting = false;
 
   constructor(
@@ -38,10 +38,12 @@ export class AddTranscriptionConfigDialogComponent implements OnInit {
     public dialogRef: DialogRef<GetTranscriptionConfigRequest>,
     private toastService: ToastService,
     private transcriptionConfigsService: TranscriptionConfigsService,
+    private realtimeTranscriptionModelsService: RealtimeTranscriptionModelsService,
     @Inject(DIALOG_DATA) public data: AddTranscriptionConfigDialogData
-  ) {}
+  ) { }
 
   ngOnInit(): void {
+    this.loadModels();
     this.initForm();
   }
 
@@ -62,6 +64,13 @@ export class AddTranscriptionConfigDialogComponent implements OnInit {
 
   toggleApiKeyVisibility(): void {
     this.showApiKey = !this.showApiKey;
+  }
+
+  loadModels(): void {
+    this.realtimeTranscriptionModelsService.getAllModels()
+      .subscribe((res: ApiGetResponse<GetRealtimeTranscriptionModelRequest>) => {
+        this.models = res.results
+      })
   }
 
   onConfirm(): void {

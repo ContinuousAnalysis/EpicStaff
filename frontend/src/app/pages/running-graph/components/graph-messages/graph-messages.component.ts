@@ -314,6 +314,9 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       } else if (sessionStatus === GraphSessionStatus.EXPIRED) {
         this.sseService.stopStream();
       }
+      else if (sessionStatus === GraphSessionStatus.STOP) {
+        this.sseService.stopStream();
+      }
     }
   }
 

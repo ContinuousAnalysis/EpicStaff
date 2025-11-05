@@ -31,4 +31,4 @@ class GoogleGenAIEmbedder(BaseEmbedder):
             model=self.model_name, contents=text
         )
 
-        return response.embeddings[0].values
+        return response.embeddings[0]

@@ -135,7 +135,7 @@ export class FlowSessionsListComponent implements OnInit {
       next: (response) => {
         this.sessions.update((sessions) =>
           sessions.map((s) =>
-            s.id === sessionId ? { ...s, status: GraphSessionStatus.ENDED } : s
+            s.id === sessionId ? { ...s, status: GraphSessionStatus.STOP } : s
           )
         );
       },

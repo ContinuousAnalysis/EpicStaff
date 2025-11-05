@@ -2,8 +2,8 @@ services:
   django_app:
     image: django_app
     build:
-      context: ./django_app
-      dockerfile: Dockerfile.dj
+      context: .
+      dockerfile: ./django_app/Dockerfile.dj
     command: ./entrypoint.sh
     container_name: django_app
     ports:
@@ -227,7 +227,6 @@ services:
       - crew_config:/home/user/root/app/env_config/
     networks:
       - backend-network
-      - mcp-network
     tty: true
     stdin_open: true
     depends_on:
@@ -323,7 +322,3 @@ networks:
 
   frontend-network:
     driver: bridge
-
-  mcp-network:
-    driver: bridge
-    external: true

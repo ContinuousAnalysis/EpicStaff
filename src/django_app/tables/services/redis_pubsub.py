@@ -7,6 +7,7 @@ from collections import deque
 from django.db import transaction, IntegrityError, models
 from tables.models import GraphSessionMessage
 from tables.models import PythonCodeResult
+from tables.models import GraphOrganization, GraphOrganizationUser
 from tables.request_models import CodeResultData, GraphSessionMessageData
 from tables.services.session_manager_service import SessionManagerService
 from tables.models import Session
@@ -78,6 +79,33 @@ class RedisPubSub:
             PythonCodeResult.objects.create(**data)
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
+
+    def _save_organization_variables(self, session: Session, data: dict):
+        """
+        Save organization and organization_user variables to database
+        """
+        try:
+            variables = data["status_data"]["variables"]
+            if not variables:
+                return
+
+            graph_organization = GraphOrganization.objects.filter(
+                graph=session.graph
+            ).first()
+            if graph_organization:
+                for key, value in variables.items():
+                    if key in graph_organization.persistent_variables:
+                        graph_organization.persistent_variables[key] = value
+                graph_organization.save(update_fields=["persistent_variables"])
+
+            if session.graph_user:
+                for key, value in variables.items():
+                    if key in session.graph_user.persistent_variables:
+                        session.graph_user.persistent_variables[key] = value
+                session.graph_user.save(update_fields=["persistent_variables"])
+
+        except Exception as e:
+            logger.error(f"Error handling organization variables message: {e}")
 
     def _buffer_save(self, buffer: deque[dict], model: Type[models.Model]):
         try:

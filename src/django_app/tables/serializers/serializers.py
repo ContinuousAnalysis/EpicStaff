@@ -11,6 +11,7 @@ class RunSessionSerializer(serializers.Serializer):
     files = serializers.DictField(
         child=serializers.CharField(), required=False, allow_null=True, default=dict
     )
+    username = serializers.CharField(required=False)
 
 
 class GetUpdatesSerializer(serializers.Serializer):
@@ -61,3 +62,9 @@ class BaseToolSerializer(serializers.Serializer):
             )
 
         return repr
+    
+class ProcessDocumentChunkingSerializer(serializers.Serializer):
+    document_id = serializers.IntegerField(required=True)
+
+class ProcessCollectionEmbeddingSerializer(serializers.Serializer):
+    collection_id = serializers.IntegerField(required=True)

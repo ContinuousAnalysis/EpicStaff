@@ -3,6 +3,7 @@ from decimal import Decimal
 from itertools import chain
 
 from tables.models.mcp_models import McpTool
+from tables.models.knowledge_models import Chunk, DocumentMetadata
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
     Agent,
@@ -29,7 +30,7 @@ from tables.models import (
     FileExtractorNode,
 )
 from rest_framework import serializers
-from tables.exceptions import ToolConfigSerializerError
+from tables.exceptions import BuiltInToolModificationError, ToolConfigSerializerError
 from tables.models import PythonCode, PythonCodeResult, PythonCodeTool
 from tables.models.crew_models import (
     AgentConfiguredTools,
@@ -48,6 +49,13 @@ from tables.models.graph_models import (
     EndNode,
     LLMNode,
     StartNode,
+<<<<<<< HEAD
+=======
+    Organization,
+    OrganizationUser,
+    GraphOrganization,
+    GraphOrganizationUser,
+>>>>>>> main
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -73,7 +81,10 @@ from tables.models import (
 from tables.models import (
     ToolConfig,
 )
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
@@ -181,10 +192,19 @@ class PythonCodeSerializer(serializers.ModelSerializer):
 
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
+    built_in = serializers.ReadOnlyField()
 
     class Meta:
         model = PythonCodeTool
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "description",
+            "args_schema",
+            "python_code",
+            "favorite",
+            "built_in",
+        ]
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
@@ -195,24 +215,25 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
         return python_code_tool
 
     def update(self, instance, validated_data):
+        if instance.built_in:
+            raise BuiltInToolModificationError()
+
         python_code_data = validated_data.pop("python_code", None)
 
-        # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
 
-        # Update PythonCodeTool fields
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            if attr != "built_in":
+                setattr(instance, attr, value)
         instance.save()
 
         return instance
 
     def partial_update(self, instance, validated_data):
-        # Delegate to the update method for consistency
         return self.update(instance, validated_data)
 
 
@@ -1199,3 +1220,88 @@ class GraphSerializer(serializers.ModelSerializer):
             "time_to_live",
             "persistent_variables",
         ]
+
+
+class OrganizationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Organization
+        fields = ["id", "name"]
+
+
+class OrganizationUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = OrganizationUser
+        fields = ["id", "organization", "name"]
+
+
+class GraphOrganizationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GraphOrganization
+        fields = [
+            "id",
+            "graph",
+            "organization",
+            "persistent_variables",
+            "user_variables",
+        ]
+
+    def validate(self, attrs):
+        graph = attrs.get("graph") or getattr(self.instance, "graph", None)
+        if not graph:
+            raise serializers.ValidationError("Graph is required to validate variables")
+
+        organization_variables = attrs.get("persistent_variables", {})
+        user_variables = attrs.get("user_variables", {})
+
+        qs = GraphOrganization.objects.filter(graph=graph)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise serializers.ValidationError("This flow already has an organization")
+
+        start_node: StartNode = graph.start_node_list.first()
+        for key in user_variables:
+            if key not in start_node.variables:
+                raise serializers.ValidationError(
+                    {
+                        "user_variables": f"Provided user_variables have to be in flow domain. Variable `{key}` is not in domain."
+                    }
+                )
+        for key in organization_variables:
+            if key not in start_node.variables:
+                raise serializers.ValidationError(
+                    {
+                        "persistent_variables": f"Provided persistent_variables have to be in flow domain. Variable `{key}` is not in domain."
+                    }
+                )
+            if key in user_variables:
+                raise serializers.ValidationError(
+                    {
+                        "user_variables": f"User variables and Organization variables cannot have same values. Issue with key `{key}`"
+                    }
+                )
+
+        return super().validate(attrs)
+
+
+class GraphOrganizationUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GraphOrganizationUser
+        fields = ["id", "graph", "user", "persistent_variables"]
+        read_only_fields = ["id", "persistent_variables"]
+
+
+class ChunkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chunk
+        fields = "__all__"
+
+    def validate_document_id(self, value):
+        if not DocumentMetadata.objects.filter(document_id=value).exists():
+            raise serializers.ValidationError("Document with this id does not exist.")
+        return value

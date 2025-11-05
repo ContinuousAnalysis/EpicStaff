@@ -12,7 +12,7 @@ class CharacterChunker(BaseChunker):
         character_params = additional_params.get("character", {})
         self.regex_pattern = character_params.get("regex", None)
 
-    def chunk(self, text):
+    def chunk(self, text: str) -> list[str]:
         text = text.replace("\r", "")
 
         try:

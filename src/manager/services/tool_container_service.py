@@ -33,20 +33,6 @@ class ToolContainerService:
         network_settings = manager_container.attrs["NetworkSettings"]
         self.network_name = list(network_settings["Networks"].keys())[0]
 
-    def fetch_data_with_retry(self, url, retries=10, delay=3):
-        for attempt in range(retries):
-            try:
-                logger.debug(f"Attempt {attempt + 1} to fetch data from URL: {url}")
-                resp = requests.get(url)
-                if resp.status_code == 200:
-                    logger.info(f"Data fetched successfully from URL: {url}")
-                    return resp
-            except requests.exceptions.RequestException as e:
-                logger.warning(f"Request failed on attempt {attempt + 1}: {e}")
-            if attempt < retries - 1:
-                time.sleep(delay)
-        logger.error(f"Failed to fetch data after {retries} attempts for URL: {url}")
-        raise Exception(f"Failed to fetch data after {retries} attempts.")
 
     def post_data_with_retry(self, url, json, retries=30, delay=3):
         if json is None:

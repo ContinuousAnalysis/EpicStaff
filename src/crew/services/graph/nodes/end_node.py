@@ -10,11 +10,13 @@ class EndNode(BaseNode):
         self,
         session_graph_builder_instance,  # SessionGraphBuilder
         session_id: int,
+        stop_event: StopEvent,
         output_map: dict,
     ):
         super().__init__(
             session_id=session_id,
             node_name="__end_node__",
+            stop_event=stop_event,        
         )
         self.output_map = output_map
         self.session_graph_builder_instance = session_graph_builder_instance
