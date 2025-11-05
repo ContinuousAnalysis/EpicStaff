@@ -1,40 +1,41 @@
 import { BasePort } from '../../models/port.model';
 
-export const DEFAULT_EDGE_NODE_PORTS: BasePort[] = [
+export const DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS: BasePort[] = [
     {
         port_type: 'input',
-        role: 'edge-in',
+        role: 'webhook-trigger-in',
         multiple: true,
         label: 'In',
         allowedConnections: [
             'project-out',
-            'edge-out',
             'python-out',
-            'table-out',
+            'edge-out',
             'start-start',
+            'table-out',
             'llm-out-right',
             'file-extractor-out',
-            'webhook-trigger-out',
+            'webhook-trigger-out'
         ],
         position: 'left',
-        color: '#8e5cd9',
+        color: '#21f367ff',
     },
 
     {
         port_type: 'output',
-        role: 'edge-out',
-        multiple: true,
+        role: 'webhook-trigger-out',
+        multiple: false,
         label: 'Out',
         allowedConnections: [
             'project-in',
-            'edge-in',
             'python-in',
+            'edge-in',
+            'table-in',
             'llm-out-left',
             'file-extractor-in',
-            'webhook-trigger-in',
+            'webhook-trigger',
             'end-in',
         ],
         position: 'right',
-        color: '#8e5cd9',
+        color: '#21f367ff',
     },
 ];

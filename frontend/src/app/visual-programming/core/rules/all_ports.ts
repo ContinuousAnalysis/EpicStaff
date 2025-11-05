@@ -10,6 +10,7 @@ import { DEFAULT_START_NODE_PORTS } from './start-ports/start-node-default-ports
 import { DEFAULT_TABLE_NODE_PORTS } from './table-ports/table-ports';
 import { DEFAULT_FILE_EXTRACTOR_NODE_PORTS } from './file-extractor-ports/file-extractor-default-ports';
 import { DEFAULT_END_NODE_PORTS } from './end-ports/end-ports-default-ports';
+import { DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS } from './webhook-trigger-ports/webhook-trigger-default-ports';
 
 export const PORTS_DICTIONARY: { [role: string]: BasePort } =
     Object.fromEntries(
@@ -24,6 +25,7 @@ export const PORTS_DICTIONARY: { [role: string]: BasePort } =
             ...DEFAULT_START_NODE_PORTS,
             ...DEFAULT_TABLE_NODE_PORTS,
             ...DEFAULT_FILE_EXTRACTOR_NODE_PORTS,
+            ...DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS,
             ...DEFAULT_END_NODE_PORTS,
         ].map((port) => [port.role, port])
     );

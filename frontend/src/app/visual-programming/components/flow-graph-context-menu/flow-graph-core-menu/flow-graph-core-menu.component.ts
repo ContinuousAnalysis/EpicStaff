@@ -139,6 +139,18 @@ export class FlowGraphCoreMenuComponent {
             icon: NODE_ICONS[NodeType.TABLE],
             color: NODE_COLORS[NodeType.TABLE],
         },
+        {
+            label: 'Webhook Trigger',
+            type: NodeType.WEBHOOK_TRIGGER,
+            icon: NODE_ICONS[NodeType.WEBHOOK_TRIGGER],
+            color: NODE_COLORS[NodeType.WEBHOOK_TRIGGER],
+        },
+        // {
+        //   label: 'Decision Table',
+        //   type: NodeType.TABLE,
+        //   icon: NODE_ICONS[NodeType.TABLE],
+        //   color: NODE_COLORS[NodeType.TABLE],
+        // },
     ];
 
     public get filteredBlocks(): FlowGraphBlock[] {
@@ -195,6 +207,17 @@ export class FlowGraphCoreMenuComponent {
             };
         } else if (type === NodeType.FILE_EXTRACTOR) {
             data = null; // File extractor data is unknown as specified
+        }
+        else if (type === NodeType.WEBHOOK_TRIGGER) {
+            data = {
+                webhook_trigger: 0,
+                python_code: {
+                    name: 'Webhook trigger Node',
+                    libraries: [],
+                    code: '',
+                    entrypoint: 'main',
+                }
+            };
         } else if (type === NodeType.END) {
             data = null; // End node data is unknown as specified
         }
