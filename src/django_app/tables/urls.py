@@ -130,11 +130,7 @@ router.register(
 router.register(r"realtime-session-items", RealtimeSessionItemViewSet)
 router.register(r"realtime-agents", RealtimeAgentViewSet)
 router.register(r"realtime-agent-chats", RealtimeAgentChatViewSet)
-
-
 router.register(r"decision-table-node", DecisionTableNodeModelViewSet)
-router.register(r"condition-group", ConditionGroupModelViewSet)
-router.register(r"condition", ConditionModelViewSet)
 
 router.register(r"sessions", SessionViewSet, basename="session")
 router.register(r"mcp-tools", McpToolViewSet)

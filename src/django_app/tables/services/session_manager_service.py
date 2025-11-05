@@ -165,9 +165,9 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
             decision_table_node_data_list.append(decision_table_node_data)
-
+        
         end_node = self.end_node_validator.validate(graph_id=graph.pk)
-
+        
         # TODO: remove validation
         if end_node is not None:
             end_node_data = self.converter_service.convert_end_node_to_pydantic(

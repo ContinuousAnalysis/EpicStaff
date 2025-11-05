@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiGetRequest } from '../../../../shared/models/api-request.model';
@@ -9,7 +9,7 @@ import { ConfigService } from '../../../../services/config/config.service';
 @Injectable({
   providedIn: 'root',
 })
-export class BuiltinToolsApiService {
+export class BuiltinToolsService {
   private http = inject(HttpClient);
   private configService = inject(ConfigService);
 
@@ -22,8 +22,10 @@ export class BuiltinToolsApiService {
   }
 
   getTools(): Observable<Tool[]> {
+    const params = new HttpParams().set('limit', '1000');
+    
     return this.http
-      .get<ApiGetRequest<Tool>>(this.apiUrl)
+      .get<ApiGetRequest<Tool>>(this.apiUrl, { params })
       .pipe(map((response) => response.results));
   }
 

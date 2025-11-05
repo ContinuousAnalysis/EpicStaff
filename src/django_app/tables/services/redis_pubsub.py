@@ -68,10 +68,6 @@ class RedisPubSub:
                     session.status = data["status"]
                     session.status_data = data.get("status_data", {})
                     session.save()
-
-                    if session.status == Session.SessionStatus.END:
-                        self._save_organization_variables(session, data)
-
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
 

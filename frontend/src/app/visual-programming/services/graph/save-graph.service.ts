@@ -57,6 +57,12 @@ import {
     CreateEndNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import {
+    GetDecisionTableNodeRequest,
+    CreateDecisionTableNodeRequest,
+    CreateConditionGroupRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
+import { DecisionTableNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/decision-table-node.service';
 
 @Injectable({
     providedIn: 'root',
@@ -71,6 +77,7 @@ export class GraphUpdateService {
         private llmNodeService: LLMNodeService,
         private fileExtractorService: FileExtractorService,
         private endNodeService: EndNodeService,
+        private decisionTableNodeService: DecisionTableNodeService,
         private toastService: ToastService
     ) {}
 
@@ -106,6 +113,7 @@ export class GraphUpdateService {
             conditionalEdges: any[];
             edges: Edge[];
             endNodes: EndNode[];
+            decisionTableNodes: GetDecisionTableNodeRequest[];
         };
     }> {
         //
@@ -293,6 +301,20 @@ export class GraphUpdateService {
             })
         );
 
+        let deleteDecisionTableNodes$: Observable<any> = of(null);
+        if (
+            graph.decision_table_node_list &&
+            graph.decision_table_node_list.length > 0
+        ) {
+            const deleteDecisionTableReqs = graph.decision_table_node_list.map(
+                (dtNode: GetDecisionTableNodeRequest) =>
+                    this.decisionTableNodeService
+                        .deleteDecisionTableNode(dtNode.id.toString())
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteDecisionTableNodes$ = forkJoin(deleteDecisionTableReqs);
+        }
+
         // ---- Handle Conditional Edges ----
         let deleteConditionalEdges$: Observable<any> = of(null);
         if (
@@ -388,6 +410,9 @@ export class GraphUpdateService {
                             return false;
                         if (targetNode && targetNode.type === NodeType.EDGE)
                             return false;
+                        // Skip if source node is of type TABLE
+                        if (sourceNode && sourceNode.type === NodeType.TABLE)
+                            return false;
                         return true;
                     })
                     .map((conn) => {
@@ -419,9 +444,123 @@ export class GraphUpdateService {
             llmNodes: llmNodes$,
             fileExtractorNodes: fileExtractorNodes$,
             conditionalEdges: conditionalEdges$,
-            edges: createEdges$,
             endNodes: endNodes$,
         }).pipe(
+            switchMap((results) => {
+                const nodeNameToIdMap = new Map<string, string>();
+
+                results.crewNodes.forEach((node: CrewNode) => {
+                    const uiNode = flowState.nodes.find(
+                        (n) => n.type === NodeType.PROJECT && n.node_name === node.node_name
+                    );
+                    if (uiNode) {
+                        nodeNameToIdMap.set(node.node_name, node.id.toString());
+                    }
+                });
+
+                results.pythonNodes.forEach((node: PythonNode) => {
+                    const uiNode = flowState.nodes.find(
+                        (n) => n.type === NodeType.PYTHON && n.node_name === node.node_name
+                    );
+                    if (uiNode) {
+                        nodeNameToIdMap.set(node.node_name, node.id.toString());
+                    }
+                });
+
+                results.llmNodes.forEach((node: any) => {
+                    const uiNode = flowState.nodes.find(
+                        (n) => n.type === NodeType.LLM && n.node_name === node.node_name
+                    );
+                    if (uiNode) {
+                        nodeNameToIdMap.set(node.node_name, node.id.toString());
+                    }
+                });
+
+                results.fileExtractorNodes.forEach((node: GetFileExtractorNodeRequest) => {
+                    const uiNode = flowState.nodes.find(
+                        (n) => n.type === NodeType.FILE_EXTRACTOR && n.node_name === node.node_name
+                    );
+                    if (uiNode) {
+                        nodeNameToIdMap.set(node.node_name, node.id.toString());
+                    }
+                });
+
+                results.endNodes.forEach((node: EndNode) => {
+                    const uiNode = flowState.nodes.find(
+                        (n) => n.type === NodeType.END && n.id === (node as any).ui_id
+                    );
+                    if (uiNode) {
+                        nodeNameToIdMap.set(uiNode.node_name || uiNode.id, node.id.toString());
+                    }
+                });
+
+                const decisionTableNodes$ = deleteDecisionTableNodes$.pipe(
+                    switchMap(() => {
+                        const decisionTableNodes = flowState.nodes.filter(
+                            (node) => node.type === NodeType.TABLE
+                        );
+
+                        const requests = decisionTableNodes.map((node) => {
+                            const tableData = (node as any).data?.table;
+                            
+                            const conditionGroups: CreateConditionGroupRequest[] = (
+                                tableData?.condition_groups || []
+                            )
+                                .filter((group: any) => group.valid === true)
+                                .map((group: any) => {
+                                    let nextNodeId: string | null = null;
+                                    if (group.next_node) {
+                                        nextNodeId = nodeNameToIdMap.get(group.next_node) || null;
+                                    }
+
+                                    return {
+                                        group_name: group.group_name,
+                                        group_type: group.group_type || 'complex',
+                                        expression: group.expression,
+                                        conditions: group.conditions || [],
+                                        manipulation: group.manipulation,
+                                        next_node: nextNodeId,
+                                    };
+                                });
+
+                            let defaultNextNodeId: string | null = null;
+                            if (tableData?.default_next_node) {
+                                defaultNextNodeId = nodeNameToIdMap.get(tableData.default_next_node) || null;
+                            }
+
+                            let errorNextNodeId: string | null = null;
+                            if (tableData?.error_next_node) {
+                                errorNextNodeId = nodeNameToIdMap.get(tableData.error_next_node) || null;
+                            }
+
+                            const payload: CreateDecisionTableNodeRequest = {
+                                graph: graph.id,
+                                node_name: node.node_name,
+                                condition_groups: conditionGroups,
+                                default_next_node: defaultNextNodeId,
+                                error_next_node: errorNextNodeId,
+                            };
+
+                            return this.decisionTableNodeService
+                                .createDecisionTableNode(payload)
+                                .pipe(catchError((err) => throwError(err)));
+                        });
+
+                        return requests.length ? forkJoin(requests) : of([]);
+                    })
+                );
+
+                return forkJoin({
+                    crewNodes: of(results.crewNodes),
+                    pythonNodes: of(results.pythonNodes),
+                    llmNodes: of(results.llmNodes),
+                    fileExtractorNodes: of(results.fileExtractorNodes),
+                    conditionalEdges: of(results.conditionalEdges),
+                    endNodes: of(results.endNodes),
+                    edges: createEdges$,
+                    decisionTableNodes: decisionTableNodes$,
+                });
+            }),
             switchMap(
                 (results: {
                     crewNodes: CrewNode[];
@@ -431,6 +570,7 @@ export class GraphUpdateService {
                     conditionalEdges: ConditionalEdge[];
                     edges: Edge[];
                     endNodes: EndNode[];
+                    decisionTableNodes: GetDecisionTableNodeRequest[];
                 }) => {
                     const updateGraphRequest: UpdateGraphDtoRequest = {
                         id: graph.id,
@@ -464,6 +604,8 @@ export class GraphUpdateService {
                                             results.conditionalEdges,
                                         edges: results.edges,
                                         endNodes: results.endNodes,
+                                        decisionTableNodes:
+                                            results.decisionTableNodes,
                                     },
                                 };
                             })

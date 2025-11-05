@@ -226,10 +226,15 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     private generatePortsForNodesIfNeeded(): void {
-        // Check each node and generate ports if they are null
         this.flowState.nodes = this.flowState.nodes.map((node) => {
             if (node.ports === null) {
-                node.ports = generatePortsForNode(node.id, node.type);
+                node.ports = generatePortsForNode(node.id, node.type, node.data);
+            } else if (node.type === NodeType.TABLE) {
+                const conditionGroups = (node.data as any)?.table?.condition_groups ?? [];
+                const expectedPortCount = 1 + conditionGroups.length;
+                if (node.ports.length !== expectedPortCount) {
+                    node.ports = generatePortsForNode(node.id, node.type, node.data);
+                }
             }
             return node;
         });
@@ -298,11 +303,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         const newSourceNodeId = newSourcePortId.split('_')[0];
         const newTargetNodeId = newTargetPortId.split('_')[0];
 
-        // Get nodes for color calculation
-        const nodes = this.flowService.nodes();
-        const sourceNode = nodes.find((node) => node.id === newSourceNodeId);
-        const targetNode = nodes.find((node) => node.id === newTargetNodeId);
-
         // Create the updated connection
         const updatedConnection: ConnectionModel = {
             id: `${newSourcePortId}+${newTargetPortId}`,
@@ -311,8 +311,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             targetNodeId: newTargetNodeId,
             sourcePortId: newSourcePortId as CustomPortId,
             targetPortId: newTargetPortId as CustomPortId,
-            startColor: sourceNode ? NODE_COLORS[sourceNode.type] : '#ddd',
-            endColor: targetNode ? NODE_COLORS[targetNode.type] : '#ddd',
             behavior: 'fixed',
             type: 'segment',
         };
@@ -401,19 +399,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         const sourceNodeId = pair.sourcePortId.split('_')[0];
         const targetNodeId = pair.targetPortId.split('_')[0];
 
-        // Find the corresponding nodes in the flow state
-        const sourceNode = this.flowService
-            .nodes()
-            .find((node) => node.id === sourceNodeId);
-        const targetNode = this.flowService
-            .nodes()
-            .find((node) => node.id === targetNodeId);
-
-        // Get the start and end colors based on node type, using the NODE_COLORS mapping
-        const startColor = sourceNode ? NODE_COLORS[sourceNode.type] : '#ddd';
-        const endColor = targetNode ? NODE_COLORS[targetNode.type] : '#ddd';
-
-        // Create the new connection object based on your models with added color properties
+        // Create the new connection object based on your models
         const newConnection: ConnectionModel = {
             id: newConnectionId,
             category: 'default',
@@ -421,8 +407,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             targetNodeId: targetNodeId,
             sourcePortId: pair.sourcePortId as CustomPortId,
             targetPortId: pair.targetPortId as CustomPortId,
-            startColor,
-            endColor,
             behavior: 'fixed',
             type: 'segment',
         };
@@ -616,7 +600,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         this.undoRedoService.stateChanged();
         this.showContextMenu.set(false);
 
-        // Prevent adding a second End node
         if (event.type === NodeType.END && this.flowService.hasEndNode()) {
             this.toastService.warning(
                 'Only one End node is allowed',
@@ -637,12 +620,25 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             )
         );
 
-        // Set different size for note nodes
         let nodeSize: { width: number; height: number };
         if (event.type === NodeType.NOTE) {
             nodeSize = {
                 width: 200,
                 height: 150,
+            };
+        } else if (event.type === NodeType.TABLE) {
+            const tableData = event.data?.table;
+            const conditionGroups = tableData?.condition_groups ?? [];
+            const headerHeight = 60;
+            const rowHeight = 46;
+            const validGroupsCount = conditionGroups.filter((g: any) => g.valid).length;
+            const hasDefaultRow = tableData?.default_next_node ? 1 : 0;
+            const hasErrorRow = tableData?.error_next_node ? 1 : 0;
+            const totalRows = Math.max(validGroupsCount + hasDefaultRow + hasErrorRow, 2);
+            const calculatedHeight = headerHeight + rowHeight * totalRows;
+            nodeSize = {
+                width: 330,
+                height: Math.max(calculatedHeight, 152),
             };
         } else {
             nodeSize = {

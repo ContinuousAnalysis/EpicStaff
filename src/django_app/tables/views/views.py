@@ -257,7 +257,6 @@ class RunSession(APIView):
         if not serializer.is_valid():
             logger.warning(f"Invalid data received in request: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         graph_id = serializer.validated_data["graph_id"]
         username = serializer.validated_data.get("username")
         graph_organization_user = None
@@ -314,7 +313,7 @@ class RunSession(APIView):
             )
 
         try:
-            # Publish session to: crew, manager
+            # Publish session to: crew, maanger
             session_id = session_manager_service.run_session(
                 graph_id=graph_id, variables=variables, username=username
             )
@@ -761,7 +760,9 @@ class CollectionStatusAPIView(ListAPIView):
 
     def get_queryset(self):
         return (
-            SourceCollection.objects.only("collection_id", "collection_name", "status")
+            SourceCollection.objects.only(
+                "collection_id", "collection_name", "status"
+            )
             .annotate(
                 total_documents=Count("document_metadata"),
                 new_documents=Count(
@@ -798,7 +799,6 @@ class CollectionStatusAPIView(ListAPIView):
                 )
             )
         )
-
 
 class QuickstartView(APIView):
     """
