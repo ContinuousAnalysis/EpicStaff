@@ -1,3 +1,4 @@
 sqlparse
 pymysql
 sqlalchemy
+simplejson
