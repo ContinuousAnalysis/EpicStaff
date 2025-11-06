@@ -7,9 +7,9 @@ class WebhookTriggerService(metaclass=SingletonMeta):
     def __init__(self, session_manager_service: SessionManagerService):
         self.session_manager_service = session_manager_service
 
-    def handle_webhook_trigger(self, id_: int, payload: dict) -> None:
+    def handle_webhook_trigger(self, path: str, payload: dict) -> None:
         webhook_trigger_node_list = WebhookTriggerNode.objects.filter(
-            webhook_trigger__id=id_
+            webhook_trigger__path=path
         )
 
         for webhook_trigger_node in webhook_trigger_node_list:

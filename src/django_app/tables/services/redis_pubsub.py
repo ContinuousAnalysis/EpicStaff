@@ -91,7 +91,7 @@ class RedisPubSub:
         try:
             logger.debug(f"Received webhook event: {message}")
             data = WebhookEventData.model_validate_json(message["data"])
-            WebhookTriggerService().handle_webhook_trigger(id_=data.id, payload=data.payload)
+            WebhookTriggerService().handle_webhook_trigger(path=data.path, payload=data.payload)
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
 

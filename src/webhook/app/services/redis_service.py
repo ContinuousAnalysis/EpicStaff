@@ -5,6 +5,8 @@ import json
 from app.core.config import settings
 from typing import Dict, Any, Optional
 
+from app.request_models import WebhookEventData
+
 class RedisService:
     """
     Handles all communication with the Redis server.
@@ -15,20 +17,14 @@ class RedisService:
         self.webhook_channel = webhook_channel
         logger.info(f"RedisService initialized for {self.redis_url}")
 
-    async def publish_webhook(self, custom_id: str, payload: Dict[str, Any]):
+    async def publish_webhook(self, path: str, payload: Dict[str, Any]):
         """
         Modifies the data and publishes it to a Redis channel.
         """
-        
-        message_data = {
-            "id": custom_id,
-            "payload": payload
-        }
-        
-        message_json = json.dumps(message_data)
-        
+        message_data = WebhookEventData(path=path, payload=payload)
+                
         logger.debug(f"Publishing to Redis channel '{self.webhook_channel}'")
-        await self.client.publish(self.webhook_channel, message_json)
+        await self.client.publish(self.webhook_channel, message_data.model_dump_json())
 
     async def close(self):
         """Closes the Redis connection."""

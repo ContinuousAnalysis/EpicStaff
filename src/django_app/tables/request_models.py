@@ -335,5 +335,5 @@ class StopSessionMessage(BaseModel):
 
 
 class WebhookEventData(BaseModel):
-    id: int
+    path: str
     payload: dict

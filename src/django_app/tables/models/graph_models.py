@@ -301,10 +301,11 @@ class GraphOrganizationUser(BasePersistentEntity):
 
 class WebhookTriggerNode(models.Model):
     node_name = models.CharField(max_length=255, blank=False, unique=True)
-    graph = models.ForeignKey(
-        "Graph", on_delete=models.CASCADE
-    )
+    graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
     webhook_trigger = models.ForeignKey(
-        "WebhookTrigger", on_delete=models.SET_NULL, null=True, related_name="webhook_trigger_nodes"
+        "WebhookTrigger",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="webhook_trigger_nodes",
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
