@@ -1,0 +1,4 @@
+sqlparse
+pymysql
+sqlalchemy
+simplejson

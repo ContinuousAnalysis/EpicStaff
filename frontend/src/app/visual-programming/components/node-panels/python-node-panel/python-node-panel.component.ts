@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import {
     ReactiveFormsModule,
     FormGroup,
@@ -32,49 +32,104 @@ interface InputMapPair {
         <div class="panel-container">
             <div class="panel-content">
                 <form [formGroup]="form" class="form-container">
-                    <!-- Node Name Field -->
-                    <app-custom-input
-                        label="Node Name"
-                        tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
-                        formControlName="node_name"
-                        placeholder="Enter node name"
-                        [activeColor]="activeColor"
-                        [errorMessage]="getNodeNameErrorMessage()"
-                    ></app-custom-input>
+                    @if (isExpanded()) {
+                    <!-- Expanded Mode: Two Column Layout -->
+                    <div class="form-layout expanded">
+                        <!-- Left Column - Form Fields -->
+                        <div class="form-fields">
+                            <!-- Node Name Field -->
+                            <app-custom-input
+                                label="Node Name"
+                                tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
+                                formControlName="node_name"
+                                placeholder="Enter node name"
+                                [activeColor]="activeColor"
+                                [errorMessage]="getNodeNameErrorMessage()"
+                            ></app-custom-input>
 
-                    <!-- Input Map Key-Value Pairs -->
-                    <div class="input-map">
-                        <app-input-map
+                            <!-- Input Map Key-Value Pairs -->
+                            <div class="input-map">
+                                <app-input-map
+                                    [activeColor]="activeColor"
+                                ></app-input-map>
+                            </div>
+
+                            <!-- Output Variable Path -->
+                            <app-custom-input
+                                label="Output Variable Path"
+                                tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
+                                formControlName="output_variable_path"
+                                placeholder="Enter output variable path (leave empty for null)"
+                                [activeColor]="activeColor"
+                            ></app-custom-input>
+
+                            <!-- Libraries Input -->
+                            <app-custom-input
+                                label="Libraries"
+                                tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
+                                formControlName="libraries"
+                                placeholder="Enter libraries (e.g., requests, pandas, numpy)"
+                                [activeColor]="activeColor"
+                            ></app-custom-input>
+                        </div>
+
+                        <!-- Right Column - Code Editor -->
+                        <div class="code-editor-section">
+                            <app-code-editor
+                                [pythonCode]="pythonCode"
+                                (pythonCodeChange)="onPythonCodeChange($event)"
+                                (errorChange)="onCodeErrorChange($event)"
+                            ></app-code-editor>
+                        </div>
+                    </div>
+                    } @else {
+                    <!-- Collapsed Mode: Single Column Layout -->
+                    <div class="form-layout collapsed">
+                        <!-- Node Name Field -->
+                        <app-custom-input
+                            label="Node Name"
+                            tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
+                            formControlName="node_name"
+                            placeholder="Enter node name"
                             [activeColor]="activeColor"
-                        ></app-input-map>
+                            [errorMessage]="getNodeNameErrorMessage()"
+                        ></app-custom-input>
+
+                        <!-- Input Map Key-Value Pairs -->
+                        <div class="input-map">
+                            <app-input-map
+                                [activeColor]="activeColor"
+                            ></app-input-map>
+                        </div>
+
+                        <!-- Output Variable Path -->
+                        <app-custom-input
+                            label="Output Variable Path"
+                            tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
+                            formControlName="output_variable_path"
+                            placeholder="Enter output variable path (leave empty for null)"
+                            [activeColor]="activeColor"
+                        ></app-custom-input>
+
+                        <!-- Libraries Input -->
+                        <app-custom-input
+                            label="Libraries"
+                            tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
+                            formControlName="libraries"
+                            placeholder="Enter libraries (e.g., requests, pandas, numpy)"
+                            [activeColor]="activeColor"
+                        ></app-custom-input>
+
+                        <!-- Code Editor Section -->
+                        <div class="code-editor-section">
+                            <app-code-editor
+                                [pythonCode]="pythonCode"
+                                (pythonCodeChange)="onPythonCodeChange($event)"
+                                (errorChange)="onCodeErrorChange($event)"
+                            ></app-code-editor>
+                        </div>
                     </div>
-
-                    <!-- Output Variable Path -->
-                    <app-custom-input
-                        label="Output Variable Path"
-                        tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
-                        formControlName="output_variable_path"
-                        placeholder="Enter output variable path (leave empty for null)"
-                        [activeColor]="activeColor"
-                    ></app-custom-input>
-
-                    <!-- Code Editor Component -->
-                    <div class="code-editor-section">
-                        <app-code-editor
-                            [pythonCode]="pythonCode"
-                            (pythonCodeChange)="onPythonCodeChange($event)"
-                            (errorChange)="onCodeErrorChange($event)"
-                        ></app-code-editor>
-                    </div>
-
-                    <!-- Libraries Input -->
-                    <app-custom-input
-                        label="Libraries"
-                        tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
-                        formControlName="libraries"
-                        placeholder="Enter libraries (e.g., requests, pandas, numpy)"
-                        [activeColor]="activeColor"
-                    ></app-custom-input>
+                    }
                 </form>
             </div>
         </div>
@@ -92,6 +147,10 @@ interface InputMapPair {
 
             .panel-content {
                 @include mixins.panel-content;
+                height: 100%;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
             }
 
             .section-header {
@@ -100,6 +159,58 @@ interface InputMapPair {
 
             .form-container {
                 @include mixins.form-container;
+                height: 100%;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .form-layout {
+                height: 100%;
+                min-height: 0;
+
+                &.expanded {
+                    display: flex;
+                    gap: 1rem;
+                    height: 100%;
+                }
+
+                &.collapsed {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+            }
+
+            .form-fields {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+
+                .expanded & {
+                    flex: 0 0 400px;
+                    max-width: 400px;
+                    height: 100%;
+                    overflow-y: auto;
+                }
+            }
+
+            .code-editor-section {
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+
+                .expanded & {
+                    flex: 1;
+                    height: 100%;
+                    min-height: 0;
+                }
+
+                .collapsed & {
+                    height: 300px;
+                }
             }
 
             .btn-primary {
@@ -109,18 +220,13 @@ interface InputMapPair {
             .btn-secondary {
                 @include mixins.secondary-button;
             }
-
-            .code-editor-section {
-                height: 300px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 8px;
-                overflow: hidden;
-            }
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
+    public readonly isExpanded = input<boolean>(false);
+
     pythonCode: string = '';
     initialPythonCode: string = '';
     codeEditorHasError: boolean = false;

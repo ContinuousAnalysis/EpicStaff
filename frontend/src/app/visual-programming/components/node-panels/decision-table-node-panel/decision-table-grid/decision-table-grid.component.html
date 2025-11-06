@@ -1,0 +1,25 @@
+<div class="decision-table-grid-container">
+    <div class="grid-header">
+        <h3>Condition Groups</h3>
+        <app-button
+            type="primary"
+            [leftIcon]="'ui/plus'"
+            (click)="addConditionGroup()"
+        >
+            Add Group
+        </app-button>
+    </div>
+
+    <ag-grid-angular
+        class="decision-grid ag-theme-quartz-dark"
+        style="width: 100%"
+        [rowData]="rowData()"
+        [columnDefs]="columnDefs"
+        [defaultColDef]="defaultColDef"
+        [gridOptions]="gridOptions"
+        [domLayout]="'autoHeight'"
+        (gridReady)="onGridReady($event)"
+    >
+    </ag-grid-angular>
+</div>
+

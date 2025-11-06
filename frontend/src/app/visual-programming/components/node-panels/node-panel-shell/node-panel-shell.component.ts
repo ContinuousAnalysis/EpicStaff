@@ -31,7 +31,11 @@ import { SidepanelAutosaveService } from '../../../services/sidepanel-autosave.s
     },
     template: `
         @if (node() && panelComponent()) {
-        <aside class="node-panel" [class.shake-attention]="isShaking()">
+        <aside
+            class="node-panel"
+            [class.shake-attention]="isShaking()"
+            [class.expanded]="isExpanded()"
+        >
             <header class="dialog-header">
                 <div class="icon-and-title">
                     <i
@@ -41,6 +45,21 @@ import { SidepanelAutosaveService } from '../../../services/sidepanel-autosave.s
                     <span class="title">{{ nodeNameToDisplay() }}</span>
                 </div>
                 <div class="header-actions">
+                    @if (shouldShowExpandButton()) {
+                    <button
+                        class="expand-btn"
+                        aria-label="Toggle panel size"
+                        (click)="toggleExpanded()"
+                    >
+                        <i
+                            [class]="
+                                isExpanded()
+                                    ? 'ti ti-arrows-minimize'
+                                    : 'ti ti-arrows-maximize'
+                            "
+                        ></i>
+                    </button>
+                    }
                     <div class="close-action">
                         <span class="esc-label">ESC</span>
                         <button
@@ -86,12 +105,19 @@ export class NodePanelShellComponent {
         return n.node_name;
     });
 
+    public readonly shouldShowExpandButton = computed(() => {
+        const node = this.node();
+        return node && node.type !== 'table';
+    });
+
     protected readonly outlet = viewChild(NgComponentOutlet);
     protected readonly componentInputs = computed(() => ({
         node: this.node(),
+        isExpanded: this.isExpanded(),
     }));
 
     protected readonly isShaking = signal(false);
+    protected readonly isExpanded = signal(false);
     private panelInstance: any = null;
     private previousNodeId: string | null = null;
     private isUpdatingNode = false;
@@ -114,6 +140,11 @@ export class NodePanelShellComponent {
         effect(() => {
             const node = this.node();
             if (node) {
+                // Auto-expand for decision table nodes
+                if (node.type === 'table') {
+                    this.isExpanded.set(true);
+                }
+
                 if (
                     this.previousNodeId &&
                     this.previousNodeId !== node.id &&
@@ -149,6 +180,10 @@ export class NodePanelShellComponent {
 
     protected onEscape(): void {
         this.saveSidePanel();
+    }
+
+    protected toggleExpanded(): void {
+        this.isExpanded.update((expanded) => !expanded);
     }
 
     private saveSidePanel(): void {
