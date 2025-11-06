@@ -400,6 +400,13 @@ class TemplateAgent(models.Model):
 
 
 class Task(models.Model):
+    class SearchMethod(models.TextChoices):
+        NAIVE_VECTOR = "naive_vector_search", "Naive Vector Search"
+        GR_BASIC = "gr_basic_search", "GraphRAG Basic Search"
+        GR_LOCAL = "gr_local_search", "GraphRAG Local Search"
+        GR_GLOBAL = "gr_global_search", "GraphRAG Global Search"
+        GR_DRIFT = "gr_drift_search", "GraphRAG DRIFT Search"
+
     crew = models.ForeignKey("Crew", on_delete=models.SET_NULL, null=True, default=None)
     name = models.TextField()
     agent = models.ForeignKey(
@@ -413,6 +420,12 @@ class Task(models.Model):
     async_execution = models.BooleanField(default=False)
     config = models.JSONField(null=True, blank=True)
     output_model = models.JSONField(null=True, default=None)
+    search_method = models.CharField(
+        max_length=50,
+        choices=SearchMethod.choices,
+        default=SearchMethod.NAIVE_VECTOR,
+        help_text="Defines which search method and configuration applies.",
+    )
 
     def __str__(self):
         return self.name

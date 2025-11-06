@@ -6,6 +6,8 @@ from pgvector.django import VectorField
 
 
 from .embedding_models import EmbeddingConfig
+from .llm_models import LLMConfig
+from .graphrag_models import GraphRagIndexConfig
 
 
 # Knowledge Sources and Embeddings
@@ -22,6 +24,14 @@ class SourceCollection(models.Model):
         WARNING = "warning"
         FAILED = "failed"
 
+    class SourceCollectionRagType(models.TextChoices):
+        """
+        RAG type of SourceCollection
+        """
+
+        NAIVE = "naive"
+        GRAPH_RAG = "graph_rag"
+
     collection_id = models.AutoField(primary_key=True)
     collection_name = models.CharField(max_length=255, blank=True)
 
@@ -32,8 +42,34 @@ class SourceCollection(models.Model):
         choices=SourceCollectionStatus.choices,
         default=SourceCollectionStatus.NEW,
     )
-
     embedder = models.ForeignKey(EmbeddingConfig, on_delete=models.SET_NULL, null=True)
+    llm_model = models.ForeignKey(
+        LLMConfig, on_delete=models.SET_NULL, null=True, default=None
+    )
+
+    rag_type = models.CharField(
+        max_length=20,
+        choices=SourceCollectionRagType.choices,
+        default=SourceCollectionRagType.NAIVE,
+    )
+    root_path = models.TextField(blank=True, null=True, default=None)
+
+    graphrag_index_config = models.OneToOneField(
+        GraphRagIndexConfig,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="collection",
+        help_text="Index-time GraphRAG configuration, unique per collection.",
+    )
+    graphrag_index_config_snapshot = models.JSONField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Serialized JSON snapshot of the full GraphRagConfig Pydantic object. "
+            "Used for quick restoration without reconstructing all nested models."
+        ),
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -112,7 +148,6 @@ class SourceCollection(models.Model):
 
         self.status = current_status
         self.save()
-
 
 
 class DocumentMetadata(models.Model):
