@@ -6,11 +6,11 @@ from loguru import logger
 router = APIRouter()
 
 @router.post(
-    "/webhooks/{custom_id}/",
+    "/webhooks/{custom_path}/",
     summary="Receives a generic webhook"
 )
 async def handle_webhook(
-    custom_id: str,
+    custom_path: str,
     payload: Dict[str, Any],
     redis: RedisService = Depends(get_redis_service)
 ):
@@ -18,14 +18,14 @@ async def handle_webhook(
     Takes the request, calls the Redis service (Model),
     and returns a response (View).
     """
-    logger.info(f"Webhook Received for ID: {custom_id} ---")
+    logger.info(f"Webhook Received for PATH: {custom_path} ---")
     
-    await redis.publish_webhook(custom_id, payload)
+    await redis.publish_webhook(custom_path, payload)
     
     return {
         "status": "success",
         "message": "Webhook received and queued for processing",
-        "custom_id": custom_id
+        "custom_path": custom_path
     }
 
 @router.get("/")
