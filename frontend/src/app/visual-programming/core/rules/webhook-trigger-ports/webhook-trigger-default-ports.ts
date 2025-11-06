@@ -10,7 +10,6 @@ export const DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS: BasePort[] = [
             'project-out',
             'python-out',
             'edge-out',
-            'start-start',
             'table-out',
             'llm-out-right',
             'file-extractor-out',

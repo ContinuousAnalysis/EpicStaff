@@ -96,7 +96,7 @@ export interface FileExtractorNodeModel extends BaseNodeModel {
 export interface WebhookTriggerNodeModel extends BaseNodeModel {
     type: NodeType.WEBHOOK_TRIGGER;
     data: {
-        webhook_trigger: number;
+        webhook_trigger: string;
         python_code: CustomPythonCode;
     }
 }
