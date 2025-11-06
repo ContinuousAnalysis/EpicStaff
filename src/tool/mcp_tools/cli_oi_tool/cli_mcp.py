@@ -8,6 +8,10 @@ import interpreter
 from loguru import logger
 from pydantic import BaseModel, Field
 
+# ===================================================================
+# CONFIG
+# ===================================================================
+
 HOST = "0.0.0.0"
 PORT = int(os.getenv("PORT", 7001))
 
@@ -23,46 +27,17 @@ if not API_KEY:
         "The OpenInterpreter tool requires a valid API key to function."
     )
 
+# ===================================================================
+# MCP SERVER STARTUP
+# ===================================================================
+
 mcp = FastMCP("OpenInterpreterTool")
 
+# ===================================================================
+# SYSTEM PROMPT
+# ===================================================================
 
-class CLIToolInput(BaseModel):
-    """
-    Input schema for CLI-style tool that executes a single natural language command.
-    """
-
-    command: str = Field(
-        ...,
-        description="Natural language instruction to be executed by the interpreter.",
-    )
-    context: Optional[str] = Field(
-        None,
-        description="Optional context or background information for the instruction.",
-    )
-
-
-@mcp.tool(name="cli_tool")
-def cli_tool(input_data: CLIToolInput):
-    try:
-
-        stateless_interpreter = interpreter.OpenInterpreter()
-
-        stateless_interpreter.llm.api_key = API_KEY
-        stateless_interpreter.llm.model = LLM
-        stateless_interpreter.llm_supports_vision = False
-
-        stateless_interpreter.display = False
-        stateless_interpreter.stream = True
-
-        stateless_interpreter.computer.import_computer_api = False
-
-        stateless_interpreter.auto_run = True
-        stateless_interpreter.safe_mode = False
-        stateless_interpreter.offline = False
-        stateless_interpreter.verbose = False
-        stateless_interpreter.max_output = 2000
-
-        custom_instruction = """
+AGENT_SYSTEM_PROMPT = """
         CRITICAL RULE:
         1. After all commands are executed, provide a final summary of the prompt in the following format:
 
@@ -80,27 +55,80 @@ def cli_tool(input_data: CLIToolInput):
         6. You don't have access to sudo, so don't use it
         """
 
-        if input_data.context:
-            custom_instruction += (
-                f"\n\n### Additional Context:\n{input_data.context.strip()}\n"
-            )
+# ===================================================================
+# INPUT_SCHEMA
+# ===================================================================
 
-        stateless_interpreter.system_message += custom_instruction
+
+class CLIToolInput(BaseModel):
+    """
+    Input schema for CLI-style tool that executes a single natural language command.
+    """
+
+    command: str = Field(
+        ...,
+        description="Natural language instruction to be executed by the interpreter.",
+    )
+    context: Optional[str] = Field(
+        None,
+        description="Optional context or background information for the instruction.",
+    )
+
+
+# ===================================================================
+# TOOL
+# ===================================================================
+
+
+@mcp.tool(name="cli_tool")
+def cli_tool(input_data: CLIToolInput):
+    try:
+
+        try:
+            stateless_interpreter = interpreter.OpenInterpreter()
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenInterpreter: {e}")
+            return {"error": f"Interpreter init failed: {str(e)}"}
+
+        stateless_interpreter.llm.api_key = API_KEY
+        stateless_interpreter.llm.model = LLM
+        stateless_interpreter.llm_supports_vision = False
+
+        stateless_interpreter.display = False
+        stateless_interpreter.stream = True
+
+        stateless_interpreter.computer.import_computer_api = False
+
+        stateless_interpreter.auto_run = True
+        stateless_interpreter.safe_mode = False
+        stateless_interpreter.offline = False
+        stateless_interpreter.verbose = False
+        stateless_interpreter.max_output = 2000
+
+        custom_instruction = AGENT_SYSTEM_PROMPT
+
+        logger.info("Local Open Interpreter initialized.")
 
         instruction = input_data.command
 
-        logger.info("Local Open Interpreter initialized.")
-        stateless_interpreter.reset()
-        logger.info(f"Received instruction: {instruction}")
+        if input_data.context:
+            context = input_data.context
+            custom_instruction += f"\n\n Task Context:\n{context}"
+        else:
+            context = None
+
+        stateless_interpreter.system_message = custom_instruction
+
+        logger.info(
+            f"Received task: context: {context if context else "None"}; instruction: {instruction}"
+        )
         start_time = time.time()
 
-        overall_output = ""
         commands = []
         errors = []
         exit_code = 0
         current_code_block = None
         current_output = []
-        start_time = time.time()
         result_section = ""
         result_mode = False
 
@@ -117,7 +145,8 @@ def cli_tool(input_data: CLIToolInput):
             if not content:
                 continue
 
-            elif "[result]" in content:
+            # -------------- result mode start --------------
+            if "[result]" in content and ctype == "message":
                 before, after = content.split("[result]", 1)
 
                 if current_code_block:
@@ -137,10 +166,12 @@ def cli_tool(input_data: CLIToolInput):
                 result_mode = True
                 continue
 
+            # -------------- collect result secion --------------
             elif result_mode:
                 result_section += content + "\n"
                 continue
 
+            # -------------- code block start --------------
             elif ctype == "code":
                 if current_code_block:
                     output_text = "\n".join(current_output).strip()
@@ -154,6 +185,7 @@ def cli_tool(input_data: CLIToolInput):
                     current_output = []
                 current_code_block = content
 
+            # -------------- console/message output --------------
             elif ctype in ["console", "message"]:
                 current_output.append(content)
 
@@ -178,7 +210,7 @@ def cli_tool(input_data: CLIToolInput):
         logger.error(f"Execution failed: {e}")
         final_result = {
             "success": False,
-            "output": overall_output.strip(),
+            "output": result_section.strip(),
             "commands": commands,
             "errors": [str(e)],
             "exit_code": 1,
@@ -191,6 +223,11 @@ def cli_tool(input_data: CLIToolInput):
     logger.info(f"CLI Tool final output:\n{json.dumps(final_result, indent=2)}")
 
     return final_result
+
+
+# ===================================================================
+# SERVER ENTRYPOINT
+# ===================================================================
 
 
 if __name__ == "__main__":
