@@ -6,24 +6,30 @@ import sqlparse
 
 class MySQLSearchTool:
     def __init__(self):
-        self.db_uri = state["variables"]["DB_URI"] 
+        self.db_uri = state["variables"]["DB_URI"]
+        self.read_only = state["variables"]["READ_ONLY"]
         self.engine = create_engine(self.db_uri)
 
     def _is_safe_query(self, query):
-        statements = sqlparse.split(query)
+        query = query.strip()
+        if not query:
+            return False, "Empty SQL query."
+
+        statements = [s.strip() for s in sqlparse.split(query) if s.strip()]
         if len(statements) != 1:
             return False, "Multiple statements are not allowed."
-        
+
         parsed = sqlparse.parse(statements[0])
         if not parsed:
-            return False, "Empty or invalid SQL query."
-        
-        command = parsed[0].get_type().upper()
-        if command != "SELECT":
-            return False, f"Only SELECT queries are allowed, not {command}."
-        
-        return True, ""
+            return False, "Invalid SQL syntax."
 
+        command = parsed[0].get_type().upper()
+
+        if self.read_only and command != "SELECT":
+            return False, f"Only SELECT queries are allowed in read-only mode, not {command}."
+
+        return True, ""
+    
     def run_query(self, sql_query: str):
         is_safe, error_msg = self._is_safe_query(sql_query)
         if not is_safe:
