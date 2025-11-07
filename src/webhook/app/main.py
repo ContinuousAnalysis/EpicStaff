@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from app.controllers import webhook_routes
 from app.services.redis_service import close_redis_connection
 from app.services.webhook_service import WebhookService
+from fastapi.middleware.cors import CORSMiddleware
 
 
 def create_app(webhook_service: Optional[WebhookService] = None) -> FastAPI:
@@ -11,6 +12,13 @@ def create_app(webhook_service: Optional[WebhookService] = None) -> FastAPI:
     Factory function to create and configure the FastAPI app.
     """
     app = FastAPI(title="WebhookService")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # It's a webhook service so I don't care
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     app.include_router(webhook_routes.router)
 
