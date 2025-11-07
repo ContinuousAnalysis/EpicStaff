@@ -251,11 +251,15 @@ class RunSessionSSEView(SSEMixin):
         trimmed_data = copy.deepcopy(message_data)
 
         def trim_data_fields(obj):
-            """Recursively traverse and trim 'data' fields."""
+            """Recursively traverse and trim 'base64_data' fields."""
             if isinstance(obj, dict):
                 for key, value in obj.items():
-                    if key == "data" and isinstance(value, str) and len(value) > 100:
-                        obj[key] = value[:100]
+                    if (
+                        key == "base64_data"
+                        and isinstance(value, str)
+                        and len(value) > 50
+                    ):
+                        obj[key] = value[:50]
                     else:
                         trim_data_fields(value)
             elif isinstance(obj, list):

@@ -123,7 +123,7 @@ def transcribe_audio(base64_audio: str):
 def get_transcription(**files):
     content = dict()
     for key, file_ in files.items():
-        content[key] = transcribe_audio(file_.data)
+        content[key] = transcribe_audio(file_.base64_data)
     return content
 
 

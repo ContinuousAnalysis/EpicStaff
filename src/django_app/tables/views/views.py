@@ -340,7 +340,7 @@ class RunSession(APIView):
 
         return {
             "name": file.name,
-            "data": base64.b64encode(file_bytes).decode("utf-8"),
+            "base64_data": base64.b64encode(file_bytes).decode("utf-8"),
             "content_type": content_type,
         }
 
