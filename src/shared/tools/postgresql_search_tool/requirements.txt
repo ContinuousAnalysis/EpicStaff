@@ -1,0 +1,4 @@
+sqlparse
+psycopg2-binary
+sqlalchemy
+simplejson
