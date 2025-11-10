@@ -8,8 +8,14 @@ from rest_framework import serializers
 class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
     webhook_trigger_path = serializers.CharField(
-        write_only=True, required=False, allow_blank=True
+        required=False, allow_blank=True
     )
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["webhook_trigger_path"] = (
+            instance.webhook_trigger.path if instance.webhook_trigger else None
+        )
+        return data
 
     class Meta:
         model = WebhookTriggerNode
@@ -32,7 +38,6 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
             webhook_trigger=webhook_trigger,
             **validated_data,
         )
-
         return webhook_trigger_node
 
     def update(self, instance, validated_data):
@@ -54,7 +59,6 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-
         return instance
 
     def partial_update(self, instance, validated_data):

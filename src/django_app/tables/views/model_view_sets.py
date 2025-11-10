@@ -1042,7 +1042,7 @@ class WebhookTriggerNodeViewSet(viewsets.ModelViewSet):
     queryset = WebhookTriggerNode.objects.all()
     serializer_class = WebhookTriggerNodeSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["graph", "node_name", "webhook_trigger"]
+    filterset_fields = ["graph", "node_name", "webhook_trigger__path"]
 
 class WebhookTriggerViewSet(viewsets.ModelViewSet):
     queryset = WebhookTrigger.objects.all()
