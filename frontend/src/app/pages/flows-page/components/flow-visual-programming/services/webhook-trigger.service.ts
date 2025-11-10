@@ -4,9 +4,12 @@ import { Observable } from 'rxjs';
 import { CreatePythonNodeRequest } from '../models/python-node.model';
 import { ConfigService } from '../../../../../services/config/config.service';
 import { ApiGetRequest } from '../../../../../shared/models/api-request.model';
-import { WebhookTrigger, WebhookTriggersArray } from '../../../../../visual-programming/components/node-panels/webhook-trigger-node-panel/models/webhook-triggers.models';
 import { CreateWebhookTriggerNodeRequest, GetWebhookTriggerNodeRequest } from '../models/webhook-trigger';
+export interface WebhookTrigger {
+  id: number;
+}
 
+export type WebhookTriggersArray = WebhookTrigger[];
 @Injectable({
   providedIn: 'root',
 })
@@ -17,13 +20,12 @@ export class WebhookTriggerNodeService {
 
   constructor(private http: HttpClient, private configService: ConfigService) { }
 
-  // Dynamically retrieve the API URL from ConfigService
   private get apiUrlTriggers(): string {
     return this.configService.apiUrl + 'webhook-triggers/';
   }
 
   private get apiUrlNode(): string {
-    return this.configService.apiUrl + 'webhook-triggers/';
+    return this.configService.apiUrl + 'webhook-trigger-nodes/';
   }
 
   getWebhookTriggersRequest(): Observable<ApiGetRequest<WebhookTrigger>> {
@@ -44,5 +46,9 @@ export class WebhookTriggerNodeService {
     return this.http.delete(`${this.apiUrlNode}${id}/`, {
       headers: this.headers,
     });
+  }
+
+  getTunnelUrl(): Observable<{ status: string; tunnel_url?: string | null }> {
+    return this.http.get<{ status: string; tunnel_url?: string | null }>('http://localhost:8009/api/tunnel-url');
   }
 }

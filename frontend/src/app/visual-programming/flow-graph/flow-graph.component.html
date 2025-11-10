@@ -248,7 +248,7 @@
     </app-flow-graph-context-menu>
     }
     <app-node-panel-shell
-        [node]="selectedNode()"
+        [node]="sidePanelService.selectedNode()"
         (save)="onNodePanelSaved($event)"
         (autosave)="onNodePanelAutosaved($event)"
         #nodePanelShell

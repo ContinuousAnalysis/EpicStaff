@@ -1,25 +1,13 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import {
-    ReactiveFormsModule,
-    FormGroup,
-    Validators,
-    FormArray,
-    FormBuilder,
-} from '@angular/forms';
-import { PythonNodeModel, WebhookTriggerNodeModel } from '../../../core/models/node.model';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject } from '@angular/core';
+import { ReactiveFormsModule, FormGroup } from '@angular/forms';
+import { WebhookTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
-import { InputMapComponent } from '../../input-map/input-map.component';
 import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { CommonModule } from '@angular/common';
 import { WebhookTriggerNodeService } from '../../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
-import { WebhookTriggersArray } from './models/webhook-triggers.models';
-import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
-
-interface InputMapPair {
-    key: string;
-    value: string;
-}
+import { Clipboard, ClipboardModule } from '@angular/cdk/clipboard';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
     standalone: true,
@@ -27,16 +15,14 @@ interface InputMapPair {
     imports: [
         ReactiveFormsModule,
         CustomInputComponent,
-        InputMapComponent,
         CodeEditorComponent,
         CommonModule,
-        HelpTooltipComponent,
+        ClipboardModule,
     ],
     template: `
         <div class="panel-container">
             <div class="panel-content">
                 <form [formGroup]="form" class="form-container">
-                    <!-- Node Name Field -->
                     <app-custom-input
                         label="Node Name"
                         tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
@@ -46,44 +32,38 @@ interface InputMapPair {
                         [errorMessage]="getNodeNameErrorMessage()"
                     ></app-custom-input>
 
-                    <!-- Input Map Key-Value Pairs -->
-                    <div class="input-map">
-                        <app-input-map
-                            [activeColor]="activeColor"
-                        ></app-input-map>
-                    </div>
-
-                    <!-- Output Variable Path -->
                     <app-custom-input
-                        label="Output Variable Path"
-                        tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
-                        formControlName="output_variable_path"
-                        placeholder="Enter output variable path (leave empty for null)"
+                        label="Webhook Name"
+                        tooltipText="Only enter the webhook name. The base URL is shown below."
+                        formControlName="webhookName"
+                        placeholder="Enter webhook name"
                         [activeColor]="activeColor"
                     ></app-custom-input>
-
-                    <!-- Webhook Trigger Selector -->
-                    <!-- <div class="form-group">
-                        <div class="label-container">
-                            <label>Webhook Trigger</label>
-                            <app-help-tooltip
-                                text="Select the webhook trigger to associate with this node."
-                                position="right"
-                            ></app-help-tooltip>
-                        </div>
-                        <select
-                            formControlName="webhookTriggerId"
-                            class="text-input"
-                            [style.--active-color]="activeColor"
-                        >
-                            <option [ngValue]="null">Select webhook trigger (id)</option>
-                            <option *ngFor="let trigger of webhookTriggers" [ngValue]="trigger.id">
-                                {{ trigger.id }}
-                            </option>
-                        </select>
-                    </div> -->
-
-                    <!-- Code Editor Component -->
+                    <div class="webhook-url-display">
+                        @if (webhookUrlDisplay; as url) {
+                            <span class="webhook-url-text" [style.color]="activeColor">
+                                {{ url }}
+                            </span>
+                            <button
+                                type="button"
+                                class="copy-button"
+                                (click)="copyWebhookUrl()"
+                                [disabled]="!url"
+                                aria-label="Copy webhook URL"
+                            >
+                                <span class="copy-icon" aria-hidden="true"></span>
+                                <span>Copy</span>
+                            </button>
+                        } @else {
+                            @if (tunnelErrorMessage) {
+                                <div class="webhook-url-error">
+                                    {{ tunnelErrorMessage }}
+                                </div>
+                            } @else {
+                                <div class="webhook-url-placeholder">Fetching tunnel URL...</div>
+                            }
+                        }
+                    </div>
                     <div class="code-editor-section">
                         <app-code-editor
                             [pythonCode]="pythonCode"
@@ -91,8 +71,6 @@ interface InputMapPair {
                             (errorChange)="onCodeErrorChange($event)"
                         ></app-code-editor>
                     </div>
-
-                    <!-- Libraries Input -->
                     <app-custom-input
                         label="Libraries"
                         tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
@@ -141,6 +119,82 @@ interface InputMapPair {
                 border-radius: 8px;
                 overflow: hidden;
             }
+
+            .webhook-url-display {
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.65);
+                word-break: break-all;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-top: 6px;
+                margin-bottom: 16px;
+            }
+
+            .webhook-url-text {
+                flex: 1;
+            }
+
+            .webhook-url-placeholder {
+                color: rgba(255, 255, 255, 0.5);
+            }
+
+            .webhook-url-error {
+                color: #ef4444;
+            }
+
+            .copy-button {
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                background: transparent;
+                color: rgba(255, 255, 255, 0.8);
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                cursor: pointer;
+                transition: border-color 0.2s ease, color 0.2s ease;
+                display: flex;
+                align-items: center;
+            }
+
+            .copy-button:hover:not(:disabled) {
+                border-color: var(--active-color, #685fff);
+                color: white;
+            }
+
+            .copy-button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .copy-icon {
+                position: relative;
+                width: 14px;
+                height: 10px;
+                display: inline-block;
+                margin-right: 6px;
+            }
+
+            .copy-icon::before,
+            .copy-icon::after {
+                content: '';
+                position: absolute;
+                width: 12px;
+                height: 12px;
+                border: 1px solid currentColor;
+                border-radius: 2px;
+                background: transparent;
+            }
+
+            .copy-icon::before {
+                top: 0;
+                left: 0;
+            }
+
+            .copy-icon::after {
+                top: -3px;
+                left: 3px;
+                opacity: 0.7;
+            }
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -149,21 +203,44 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
     pythonCode: string = '';
     initialPythonCode: string = '';
     codeEditorHasError: boolean = false;
-    webhookTriggers: WebhookTriggersArray = [];
-    
-    constructor(private webhookTriggerNodeService: WebhookTriggerNodeService) {
+    tunnelUrl: string = '';
+    tunnelErrorMessage: string = '';
+    webhookUrlBase: string = '';
+    webhookUrlDisplay: string = '';
+
+    private readonly destroyRef = inject(DestroyRef);
+
+    constructor(
+        private webhookTriggerNodeService: WebhookTriggerNodeService,
+        private cdr: ChangeDetectorRef,
+        private clipboard: Clipboard
+    ) {
         super();
-        // Load webhook triggers on component init
-        this.webhookTriggerNodeService.getWebhookTriggersRequest()
-            .subscribe(res => this.webhookTriggers = res.results);
+        this.webhookTriggerNodeService.getTunnelUrl().subscribe({
+            next: (response) => {
+                if (response?.status === 'success' && response.tunnel_url) {
+                    this.tunnelUrl = response.tunnel_url;
+                    this.webhookUrlBase = this.normalizeWebhookBase(response.tunnel_url);
+                    this.tunnelErrorMessage = '';
+                    this.updateWebhookUrlDisplay();
+                } else {
+                    this.tunnelErrorMessage = 'set your tunnel in .env configurations';
+                    this.webhookUrlBase = '';
+                    this.updateWebhookUrlDisplay();
+                }
+                this.cdr.markForCheck();
+            },
+            error: () => {
+                this.tunnelErrorMessage = 'set your tunnel in .env configurations';
+                this.webhookUrlBase = '';
+                this.updateWebhookUrlDisplay();
+                this.cdr.markForCheck();
+            },
+        });
     }
 
     get activeColor(): string {
         return this.node().color || '#685fff';
-    }
-
-    get inputMapPairs(): FormArray {
-        return this.form.get('input_map') as FormArray;
     }
 
     onPythonCodeChange(code: string): void {
@@ -177,23 +254,23 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
     initializeForm(): FormGroup {
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
-            input_map: this.fb.array([]),
-            output_variable_path: [this.node().output_variable_path || ''],
             libraries: [this.node().data.python_code.libraries?.join(', ') || ''],
-            webhookTriggerId: [this.node().data.webhook_trigger || null],
+            webhookName: [this.extractWebhookName(this.node().data.webhook_trigger_path || '')],
         });
-
-        this.initializeInputMap(form);
-        // options are loaded by the CustomSelectComponent via optionsRequest
+        form
+            .get('webhookName')
+            ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => {
+                this.updateWebhookUrlDisplay();
+                this.cdr.markForCheck();
+            });
         this.pythonCode = this.node().data.python_code.code || '';
         this.initialPythonCode = this.pythonCode;
+        this.updateWebhookUrlDisplay();
         return form;
     }
 
     createUpdatedNode(): WebhookTriggerNodeModel {
-        const validInputPairs = this.getValidInputPairs();
-        const inputMapValue = this.createInputMapFromPairs(validInputPairs);
-
         const librariesArray = this.form.value.libraries
             ? this.form.value.libraries
                 .split(',')
@@ -204,11 +281,11 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
         return {
             ...this.node(),
             node_name: this.form.value.node_name,
-            input_map: inputMapValue,
-            output_variable_path: this.form.value.output_variable_path || null,
+            input_map: {},
+            output_variable_path: null,
             data: {
                 ...this.node().data,
-                webhook_trigger: this.form.value.webhookTriggerId,
+                webhook_trigger_path: (this.form.value.webhookName || '').trim(),
                 python_code: {
                     name: this.node().data.python_code.name || 'Python Code',
                     code: this.pythonCode,
@@ -219,45 +296,43 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
         };
     }
 
-    private initializeInputMap(form: FormGroup): void {
-        const inputMapArray = form.get('input_map') as FormArray;
-
-        if (
-            this.node().input_map &&
-            Object.keys(this.node().input_map).length > 0
-        ) {
-            Object.entries(this.node().input_map).forEach(([key, value]) => {
-                inputMapArray.push(
-                    this.fb.group({
-                        key: [key, Validators.required],
-                        value: [value, Validators.required],
-                    })
-                );
-            });
-        } else {
-            inputMapArray.push(
-                this.fb.group({
-                    key: [''],
-                    value: ['variables.'],
-                })
-            );
+    private normalizeWebhookBase(tunnelUrl: string): string {
+        if (!tunnelUrl) {
+            return '';
         }
+        const sanitized = tunnelUrl.endsWith('/') ? tunnelUrl.slice(0, -1) : tunnelUrl;
+        return `${sanitized}/webhooks/`;
     }
 
-    private getValidInputPairs(): any[] {
-        return this.inputMapPairs.controls.filter((control) => {
-            const value = control.value;
-            return value.key?.trim() !== '' || value.value?.trim() !== '';
-        });
+    private extractWebhookName(path: string): string {
+        if (!path) {
+            return '';
+        }
+        const webhooksDelimiter = '/webhooks/';
+        if (path.includes(webhooksDelimiter)) {
+            const [, name] = path.split(webhooksDelimiter);
+            return name || '';
+        }
+        const lastSlashIndex = path.lastIndexOf('/');
+        if (lastSlashIndex === -1) {
+            return path;
+        }
+        return path.substring(lastSlashIndex + 1);
     }
 
-    private createInputMapFromPairs(pairs: any[]): Record<string, string> {
-        return pairs.reduce((acc: Record<string, string>, curr: any) => {
-            const pair = curr.value as InputMapPair;
-            if (pair.key?.trim()) {
-                acc[pair.key.trim()] = pair.value;
-            }
-            return acc;
-        }, {});
+    private updateWebhookUrlDisplay(): void {
+        const webhookName = (this.form?.value.webhookName || '').trim();
+        if (!this.webhookUrlBase) {
+            this.webhookUrlDisplay = '';
+            return;
+        }
+        this.webhookUrlDisplay = `${this.webhookUrlBase}${webhookName}`;
+    }
+
+    copyWebhookUrl(): void {
+        if (!this.webhookUrlDisplay) {
+            return;
+        }
+        this.clipboard.copy(this.webhookUrlDisplay);
     }
 }

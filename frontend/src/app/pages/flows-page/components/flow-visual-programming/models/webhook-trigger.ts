@@ -7,7 +7,7 @@ export interface GetWebhookTriggerNodeRequest {
     python_code: GetPythonCodeRequest;
     input_map: Record<string, any>;
     output_variable_path: string | null;
-    webhook_trigger: number;
+    webhook_trigger_path: string;
 }
 
 export interface CreateWebhookTriggerNodeRequest {
@@ -16,5 +16,5 @@ export interface CreateWebhookTriggerNodeRequest {
     python_code: CreatePythonCodeRequest;
     input_map: Record<string, any>;
     output_variable_path: string | null;
-    webhook_trigger: number;
+    webhook_trigger_path: string;
 }

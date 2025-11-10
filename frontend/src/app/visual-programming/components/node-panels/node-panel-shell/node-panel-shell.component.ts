@@ -14,7 +14,7 @@ import { NodePanel } from '../../../core/models/node-panel.interface';
 import { NodeModel } from '../../../core/models/node.model';
 import { PANEL_COMPONENT_MAP } from '../../../core/enums/node-panel.map';
 import { ShortcutListenerDirective } from '../../../core/directives/shortcut-listener.directive';
-import { SidepanelAutosaveService } from '../../../services/sidepanel-autosave.service';
+import { SidePanelService } from '../../../services/side-panel.service';
 
 @Component({
     standalone: true,
@@ -123,15 +123,15 @@ export class NodePanelShellComponent {
     private isUpdatingNode = false;
     private isAutosaving = false;
 
-    constructor(private autosaveService: SidepanelAutosaveService) {
+    constructor(private sidePanelService: SidePanelService) {
         effect(() => {
-            const trigger = this.autosaveService.autosaveTrigger();
+            const trigger = this.sidePanelService.autosaveTrigger();
             if (trigger && this.panelInstance && !this.isAutosaving) {
                 console.log('External autosave triggered:', trigger);
                 this.isAutosaving = true;
                 this.performAutosave();
                 setTimeout(() => {
-                    this.autosaveService.clearTrigger();
+                    this.sidePanelService.clearAutosaveTrigger();
                     this.isAutosaving = false;
                 }, 100);
             }

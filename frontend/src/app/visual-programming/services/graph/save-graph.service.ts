@@ -330,7 +330,7 @@ export class GraphUpdateService {
                         python_code: node.data.python_code,
                         input_map: node.input_map || {},
                         output_variable_path: node.output_variable_path,
-                        webhook_trigger: node.data.webhook_trigger
+                        webhook_trigger_path: node.data.webhook_trigger_path
                     };
                     return this.webhookTriggerService.createWebhookTriggerNode(request);
                 });
