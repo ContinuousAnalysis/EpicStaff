@@ -127,12 +127,6 @@ def test_successful_code_execution(
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
-    data_lines = [
-        line[len("data: ") :].strip()
-        for line in response.text.splitlines()
-        if line.startswith("data:")
-    ]
-
     print(data)
 
     assert response.status_code == 200
@@ -154,6 +148,8 @@ def test_successful_shell_command(endpoint, headers):
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
+    print(data)
+
     assert response.status_code == 200
     assert data["success"]
     assert not data["errors"]
@@ -173,6 +169,8 @@ def test_invalid_prompt(endpoint, headers):
     payload = create_payload("Divide 100 by 0.")
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
+
+    print(data)
 
     assert response.status_code == 200
     assert data["success"]
@@ -225,6 +223,8 @@ def test_write_file(endpoint, headers):
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
+    print(data)
+
     assert response.status_code == 200
     assert data["success"]
     assert not data["errors"]
@@ -236,6 +236,8 @@ def test_read_file(endpoint, headers):
     payload = create_payload(instruction)
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
+
+    print(data)
 
     assert response.status_code == 200
     assert data["success"]
@@ -250,6 +252,8 @@ def test_modify_existing_file(endpoint, headers):
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
+    print(data)
+
     assert response.status_code == 200
     assert data["success"]
     assert not data["errors"]
@@ -262,6 +266,8 @@ def test_read_file_after_append(endpoint, headers):
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
+    print(data)
+
     assert response.status_code == 200
     assert data["success"]
     assert not data["errors"]
@@ -270,7 +276,7 @@ def test_read_file_after_append(endpoint, headers):
     assert "-- Modified by OpenInterpreter" in data["output"]
 
 
-# --- New Context Test ---
+# Context Test
 def test_interpreter_context(endpoint, headers):
     """
     Provide context to the interpreter (current folder: /app/)
@@ -282,13 +288,13 @@ def test_interpreter_context(endpoint, headers):
     response = post_request(payload, endpoint, headers)
     data = parse_sse_response(response)
 
-    print(data)  # For debugging
+    print(data)
 
     assert response.status_code == 200
     assert data["success"]
     assert not data["errors"]
     assert isinstance(data["commands"], list)
-    # Check that typical project files are in the output (adjust if needed)
+
     assert (
         "dockerfile" in data["output"].lower()
         or "pyproject.toml" in data["output"].lower()

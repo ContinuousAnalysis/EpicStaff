@@ -83,6 +83,11 @@ curl -N -X POST http://localhost:7002/mcp   -H "Content-Type: application/json" 
 
 **Python example (as custom tool in UI):**
 
+If working on Linux you'll need to additionally add this lines to sandbox in src/docker-compose.yaml:
+~~~bash
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+~~~
 **CLI tool:**
 Python code for tool
 ~~~python
@@ -91,18 +96,18 @@ import json
 from fastmcp import Client
 
 def serialize_response(resp) -> str:
-    """Safely serialize MCP response to a readable string."""
+    """
+    Extract only the structured_content from a FastMCP tool response
+    and serialize it as JSON.
+    """
     try:
-        return json.dumps(resp.model_dump(), ensure_ascii=False, indent=2)
-    except AttributeError:
-        pass
-    try:
-        return json.dumps(resp.dict(), ensure_ascii=False, indent=2)
-    except AttributeError:
-        pass
-    try:
-        return json.dumps(resp, ensure_ascii=False, indent=2)
-    except TypeError:
+        if hasattr(resp, "structured_content") and resp.structured_content is not None:
+            return json.dumps(resp.structured_content, ensure_ascii=False, indent=2)
+        elif isinstance(resp, dict):
+            return json.dumps(resp, ensure_ascii=False, indent=2)
+        else:
+            return str(resp)
+    except Exception:
         return str(resp)
 
 async def call_cli_tool(command: str, context: str = None):
@@ -133,13 +138,13 @@ Input Description
 ~~~json
 {
   "properties": {
-    "context": {
-      "type": "string",
-      "description": "High-level context or goal"
-    },
     "command": {
       "type": "string",
       "description": "Action that needs to be performed"
+    },
+    "context": {
+      "type": "string",
+      "description": "High-level context or goal"
     }
   },
   "required": [
@@ -156,18 +161,18 @@ import json
 from fastmcp import Client
 
 def serialize_response(resp) -> str:
-    """Safely serialize MCP response to a readable string."""
+    """
+    Extract only the structured_content from a FastMCP tool response
+    and serialize it as JSON.
+    """
     try:
-        return json.dumps(resp.model_dump(), ensure_ascii=False, indent=2)
-    except AttributeError:
-        pass
-    try:
-        return json.dumps(resp.dict(), ensure_ascii=False, indent=2)
-    except AttributeError:
-        pass
-    try:
-        return json.dumps(resp, ensure_ascii=False, indent=2)
-    except TypeError:
+        if hasattr(resp, "structured_content") and resp.structured_content is not None:
+            return json.dumps(resp.structured_content, ensure_ascii=False, indent=2)
+        elif isinstance(resp, dict):
+            return json.dumps(resp, ensure_ascii=False, indent=2)
+        else:
+            return str(resp)
+    except Exception:
         return str(resp)
 
 async def call_browser_tool(context: str, instructions: list):
@@ -227,7 +232,7 @@ Input Description
 - Automates browser interactions in headful mode
 - Executes a sequence of instructions
 - GUI available at http://127.0.0.1:6080/vnc.html
-- Browser is persistant during single tool call.
+- Browser is persistant within single tool call. New call - fresh browser
 
 # Notes
 
