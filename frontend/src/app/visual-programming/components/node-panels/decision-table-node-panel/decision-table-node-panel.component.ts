@@ -21,8 +21,6 @@ import { DecisionTableGridComponent } from './decision-table-grid/decision-table
 import { FlowService } from '../../../services/flow.service';
 import { NodeType } from '../../../core/enums/node-type';
 import { generatePortsForDecisionTableNode } from '../../../core/helpers/helpers';
-import { ConnectionModel } from '../../../core/models/connection.model';
-import { CustomPortId } from '../../../core/models/port.model';
 
 @Component({
     standalone: true,
@@ -72,7 +70,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
         const form = this.fb.group({
             node_name: [node.node_name, this.createNodeNameValidators()],
             default_next_node: [decisionTableData.default_next_node || ''],
-            error_next_node: [decisionTableData.error_next_node || ''],
+            next_error_node: [decisionTableData.next_error_node || ''],
         });
 
         this.conditionGroups.set(decisionTableData.condition_groups || []);
@@ -86,7 +84,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
 
         const decisionTableData: DecisionTableNode = {
             default_next_node: this.form.value.default_next_node || null,
-            error_next_node: this.form.value.error_next_node || null,
+            next_error_node: this.form.value.next_error_node || null,
             condition_groups: conditionGroups,
         };
 
@@ -94,7 +92,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
         const rowHeight = 46;
         const validGroupsCount = conditionGroups.filter(g => g.valid).length;
         const hasDefaultRow = decisionTableData.default_next_node ? 1 : 0;
-        const hasErrorRow = decisionTableData.error_next_node ? 1 : 0;
+        const hasErrorRow = decisionTableData.next_error_node ? 1 : 0;
         const totalRows = Math.max(validGroupsCount + hasDefaultRow + hasErrorRow, 2);
         const calculatedHeight = headerHeight + rowHeight * totalRows;
 
@@ -107,14 +105,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
             currentNode.id,
             conditionGroups,
             !!decisionTableData.default_next_node,
-            !!decisionTableData.error_next_node
-        );
-
-        this.createConnectionsForGroups(
-            currentNode.id, 
-            conditionGroups, 
-            decisionTableData.default_next_node,
-            decisionTableData.error_next_node
+            !!decisionTableData.next_error_node
         );
 
         return {
@@ -127,104 +118,6 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
                 table: decisionTableData,
             },
         };
-    }
-
-    private createConnectionsForGroups(
-        tableNodeId: string,
-        groups: ConditionGroup[],
-        defaultNextNode: string | null,
-        errorNextNode: string | null
-    ): void {
-        const allNodes = this.flowService.nodes();
-        const existingConnections = this.flowService.connections();
-
-        const validGroupsWithNextNode = groups.filter(
-            (g) => g.valid && g.next_node
-        );
-
-        validGroupsWithNextNode.forEach((group) => {
-            this.createConnectionForNode(
-                tableNodeId,
-                group.next_node!,
-                `decision-out-${group.group_name}`,
-                allNodes,
-                existingConnections
-            );
-        });
-
-        if (defaultNextNode) {
-            this.createConnectionForNode(
-                tableNodeId,
-                defaultNextNode,
-                'decision-default',
-                allNodes,
-                existingConnections
-            );
-        }
-
-        if (errorNextNode) {
-            this.createConnectionForNode(
-                tableNodeId,
-                errorNextNode,
-                'decision-error',
-                allNodes,
-                existingConnections
-            );
-        }
-    }
-
-    private createConnectionForNode(
-        tableNodeId: string,
-        targetNodeName: string,
-        sourcePortRole: string,
-        allNodes: any[],
-        existingConnections: ConnectionModel[]
-    ): void {
-        const targetNode = allNodes.find(
-            (n) => n.node_name === targetNodeName || n.id === targetNodeName
-        );
-
-        if (!targetNode) {
-            console.warn(`Target node not found: ${targetNodeName}`);
-            return;
-        }
-
-        const targetInputPort = targetNode.ports?.find(
-            (p: any) => p.port_type === 'input'
-        );
-
-        if (!targetInputPort) {
-            console.warn(`No input port found on target node: ${targetNode.node_name}`);
-            return;
-        }
-
-        const normalizedRole = sourcePortRole.includes('decision-out-')
-            ? sourcePortRole.replace('decision-out-', 'decision-out-').toLowerCase().replace(/\s+/g, '-')
-            : sourcePortRole;
-        
-        const sourcePortId = `${tableNodeId}_${normalizedRole}` as CustomPortId;
-        const targetPortId = targetInputPort.id;
-
-        const connectionId = `${sourcePortId}+${targetPortId}`;
-        const connectionExists = existingConnections.some(
-            (c) => c.id === connectionId
-        );
-
-        if (!connectionExists) {
-            const newConnection: ConnectionModel = {
-                id: connectionId,
-                category: 'default',
-                sourceNodeId: tableNodeId,
-                targetNodeId: targetNode.id,
-                sourcePortId,
-                targetPortId,
-                behavior: 'fixed',
-                type: 'segment',
-            };
-
-            this.flowService.addConnection(newConnection);
-            console.log(`Created connection: ${sourcePortRole} → ${targetNode.node_name}`);
-        }
     }
 
     public onConditionGroupsChange(groups: ConditionGroup[]): void {
