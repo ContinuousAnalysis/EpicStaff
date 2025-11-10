@@ -241,8 +241,16 @@ export function generatePortsForNode(
 ): ViewPort[] {
     if (nodeType === NodeType.TABLE) {
         // Defensive: check for data.table.condition_groups
-        const conditionGroups = data?.table?.condition_groups ?? [];
-        return generatePortsForDecisionTableNode(newNodeId, conditionGroups);
+        const tableData = data?.table ?? {};
+        const conditionGroups = tableData?.condition_groups ?? [];
+        const hasDefault = Boolean(tableData?.default_next_node);
+        const hasError = Boolean(tableData?.next_error_node);
+        return generatePortsForDecisionTableNode(
+            newNodeId,
+            conditionGroups,
+            hasDefault,
+            hasError
+        );
     }
     const portsConfig: BasePort[] = getPortsForType(nodeType);
     return portsConfig.map((config) => ({

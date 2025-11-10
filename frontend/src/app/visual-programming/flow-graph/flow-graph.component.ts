@@ -230,10 +230,23 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             if (node.ports === null) {
                 node.ports = generatePortsForNode(node.id, node.type, node.data);
             } else if (node.type === NodeType.TABLE) {
-                const conditionGroups = (node.data as any)?.table?.condition_groups ?? [];
-                const expectedPortCount = 1 + conditionGroups.length;
+                const tableData = (node as any)?.data?.table ?? {};
+                const conditionGroups = tableData?.condition_groups ?? [];
+                const validGroups = conditionGroups.filter(
+                    (group: any) => group?.valid === true
+                );
+                const hasDefault = Boolean(tableData?.default_next_node);
+                const hasError = Boolean(tableData?.next_error_node);
+                const expectedPortCount =
+                    1 + validGroups.length + (hasDefault ? 1 : 0) + (hasError ? 1 : 0);
+
                 if (node.ports.length !== expectedPortCount) {
-                    node.ports = generatePortsForNode(node.id, node.type, node.data);
+                    node.ports = generatePortsForDecisionTableNode(
+                        node.id,
+                        conditionGroups,
+                        hasDefault,
+                        hasError
+                    );
                 }
             }
             return node;
@@ -633,7 +646,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             const rowHeight = 46;
             const validGroupsCount = conditionGroups.filter((g: any) => g.valid).length;
             const hasDefaultRow = tableData?.default_next_node ? 1 : 0;
-            const hasErrorRow = tableData?.error_next_node ? 1 : 0;
+            const hasErrorRow = tableData?.next_error_node ? 1 : 0;
             const totalRows = Math.max(validGroupsCount + hasDefaultRow + hasErrorRow, 2);
             const calculatedHeight = headerHeight + rowHeight * totalRows;
             nodeSize = {
@@ -799,6 +812,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             updatedNode
         );
         this.flowService.updateNode(updatedNode);
+        this.scheduleFlowRedraw();
         this.selectedNodeId.set(null);
     }
 
@@ -808,6 +822,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             updatedNode
         );
         this.flowService.updateNode(updatedNode);
+        this.scheduleFlowRedraw();
     }
 
     public onGroupSizeChanged(event: IRect, group: GroupNodeModel): void {
@@ -825,6 +840,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
 
         this.flowService.updateGroup(updatedGroup);
     }
+
     public onNodeSizeChanged(
         event: { width: number; height: number },
         node: NodeModel
@@ -2243,5 +2259,13 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
+    }
+
+    private scheduleFlowRedraw(): void {
+        requestAnimationFrame(() => {
+            if (this.fFlowComponent) {
+                this.fFlowComponent.redraw();
+            }
+        });
     }
 }
