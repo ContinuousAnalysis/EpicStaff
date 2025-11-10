@@ -214,7 +214,7 @@ export class FlowGraphCoreMenuComponent {
                 python_code: {
                     name: 'Webhook trigger Node',
                     libraries: [],
-                    code: '',
+                    code: 'def main(arg1: str, arg2: str) -> dict:\n    return {\n        "result": arg1 + arg2,\n    }\n',
                     entrypoint: 'main',
                 }
             };
