@@ -1,4 +1,3 @@
-@echo off
 SETLOCAL
 
 REM Get the target branch name from the first argument
@@ -6,7 +5,6 @@ SET NEW_BRANCH=%1
 
 IF "%NEW_BRANCH%"=="" (
     ECHO ❌ ERROR: No branch name provided.
-    ECHO Usage: make switch b=<branch-name>
     GOTO :EOF
 )
 
@@ -29,7 +27,7 @@ git checkout %NEW_BRANCH%
 
 IF %ERRORLEVEL% NEQ 0 (
     ECHO ❌ ERROR: 'git checkout %NEW_BRANCH%' failed. Aborting.
-    GT_O :EOF
+    GOTO :EOF
 )
 ECHO.
 
