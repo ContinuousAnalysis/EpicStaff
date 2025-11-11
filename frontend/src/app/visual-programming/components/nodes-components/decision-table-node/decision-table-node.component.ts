@@ -32,8 +32,8 @@ export class DecisionTableNodeComponent {
         return this.node.data.table?.default_next_node;
     }
 
-    get errorNextNode() {
-        return this.node.data.table?.error_next_node;
+    get nextErrorNode() {
+        return this.node.data.table?.next_error_node;
     }
 
     get inputPort() {

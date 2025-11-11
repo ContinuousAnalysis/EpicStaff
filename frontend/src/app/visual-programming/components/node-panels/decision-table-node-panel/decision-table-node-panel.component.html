@@ -24,7 +24,7 @@
 
                 <div class="select-wrapper">
                     <label>Error Next Node</label>
-                    <select formControlName="error_next_node" class="node-select">
+                    <select formControlName="next_error_node" class="node-select">
                         <option value="">-- Select Node --</option>
                         @for (node of availableNodes(); track node.value) {
                         <option [value]="node.value">{{ node.label }}</option>

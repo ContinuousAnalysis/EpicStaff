@@ -36,7 +36,7 @@ export interface GetDecisionTableNodeRequest {
     node_name: string;
     condition_groups: ConditionGroupBackend[];
     default_next_node: string | null;
-    error_next_node: string | null;
+    next_error_node: string | null;
 }
 
 export interface CreateDecisionTableNodeRequest {
@@ -44,6 +44,6 @@ export interface CreateDecisionTableNodeRequest {
     node_name: string;
     condition_groups: CreateConditionGroupRequest[];
     default_next_node: string | null;
-    error_next_node: string | null;
+    next_error_node: string | null;
 }
 
