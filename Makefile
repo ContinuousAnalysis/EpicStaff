@@ -14,13 +14,13 @@ SHELL = cmd.exe
 # Usage: make backup
 # Creates a .tar archive of the volume, named after the current branch.
 backup:
-	@echo "--- 📦 Creating Volume Backup ---"
+	@echo "--- Creating Volume Backup ---"
 	@.\\make_scripts\\backup.bat
 
 # Usage: make apply-backup
 # Stops services and restores volume data from the branch's backup file.
 apply-backup:
-	@echo "--- 🚚 Applying Volume Backup ---"
+	@echo "--- Applying Volume Backup ---"
 	@.\\make_scripts\\apply_backup.bat
 
 # --- Docker Image Tagging ---
@@ -28,13 +28,13 @@ apply-backup:
 # Usage: make stash-tags
 # Tags images (e.g., 'crew') with the branch name (e.g., 'crew:my-branch').
 stash-tags:
-	@echo "--- 🏷️ Stashing Image Tags ---"
+	@echo "--- Stashing Image Tags ---"
 	@.\\make_scripts\\stash_tag_images.bat
 
 # Usage: make apply-tags
 # Re-tags images from the branch tag (e.g., 'crew:my-branch') back to the original (e.g., 'crew').
 apply-tags:
-	@echo "--- 🏷️ Applying Stashed Image Tags ---"
+	@echo "--- Applying Stashed Image Tags ---"
 	@.\\make_scripts\\apply_tag_images.bat
 
 # --- Full Environment Switching ---
@@ -42,5 +42,5 @@ apply-tags:
 # Usage: make switch b=<branch-name>
 # Stashes, backs up, checks out, and applies the new branch's state.
 switch:
-	@echo "--- 🔄 Switching Full Branch Environment ---"
+	@echo "--- Switching Full Branch Environment ---"
 	@.\\make_scripts\\switch_branch.bat $(b)
