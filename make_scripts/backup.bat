@@ -1,5 +1,5 @@
 @echo off
-ECHO 📦 Backing up volume data...
+ECHO Backing up volume data...
 SETLOCAL
 
 SET VOLUME_NAME=crew_pdgata
@@ -9,7 +9,7 @@ REM Get the current Git branch name
 FOR /F "tokens=*" %%a IN ('git rev-parse --abbrev-ref HEAD') DO SET BRANCH_NAME=%%a
 
 IF "%BRANCH_NAME%"=="" (
-    ECHO ❌ ERROR: Could not determine Git branch. Make sure you are in a Git repository.
+    ECHO ERROR: Could not determine Git branch. Make sure you are in a Git repository.
     GOTO :EOF
 )
 
