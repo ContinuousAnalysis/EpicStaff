@@ -43,6 +43,4 @@ apply-tags:
 # Stashes, backs up, checks out, and applies the new branch's state.
 switch:
 	@echo "--- 🔄 Switching Full Branch Environment ---"
-	@REM Use PowerShell to check for the 'b' variable, as cmd.exe can't do this.
-	@powershell -Command "if ('$(b)' -eq '') { throw '❌ ERROR: Branch name missing. Use: make switch b=<branch-name>' }"
 	@.\\make_scripts\\switch_branch.bat $(b)
