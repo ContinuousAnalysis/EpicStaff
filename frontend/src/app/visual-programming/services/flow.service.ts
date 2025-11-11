@@ -7,6 +7,11 @@ import { ConnectionModel } from '../core/models/connection.model';
 
 import { IPoint, IRect } from '@foblex/2d';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
+import {
+    DecisionTableNode,
+    ConditionGroup,
+} from '../core/models/decision-table.model';
+import { generatePortsForDecisionTableNode } from '../core/helpers/helpers';
 
 import { NodeType } from '../core/enums/node-type';
 import { FDropToGroupEvent } from '@foblex/flow';
@@ -295,6 +300,64 @@ export class FlowService {
         }));
     }
 
+    public resetDecisionTableConnections(
+        tableNodeId: string,
+        groups: ConditionGroup[],
+        defaultNextNode: string | null,
+        nextErrorNode: string | null
+    ): void {
+        const allNodes = this.nodes();
+        const existingConnections = this.connections();
+
+        const connectionsToRemove = existingConnections
+            .filter(
+                (connection) =>
+                    connection.sourceNodeId === tableNodeId &&
+                    this.isDecisionTableSourcePort(connection.sourcePortId, tableNodeId)
+            )
+            .map((connection) => connection.id);
+
+        if (connectionsToRemove.length) {
+            this.removeConnectionsInBatch(connectionsToRemove);
+        }
+
+        let connectionSnapshot = this.connections();
+
+        const validGroupsWithNextNode = groups.filter(
+            (group) => group.valid && group.next_node
+        );
+
+        validGroupsWithNextNode.forEach((group) => {
+            connectionSnapshot = this.ensureDecisionTableConnection(
+                tableNodeId,
+                group.next_node!,
+                `decision-out-${group.group_name}`,
+                allNodes,
+                connectionSnapshot
+            );
+        });
+
+        if (defaultNextNode) {
+            connectionSnapshot = this.ensureDecisionTableConnection(
+                tableNodeId,
+                defaultNextNode,
+                'decision-default',
+                allNodes,
+                connectionSnapshot
+            );
+        }
+
+        if (nextErrorNode) {
+            connectionSnapshot = this.ensureDecisionTableConnection(
+                tableNodeId,
+                nextErrorNode,
+                'decision-error',
+                allNodes,
+                connectionSnapshot
+            );
+        }
+    }
+
     public updateNodesInBatch(nodes: NodeModel[]): void {
         if (!nodes || nodes.length === 0) {
             return;
@@ -346,6 +409,19 @@ export class FlowService {
                 nodes: updatedNodes,
             };
         });
+
+        if (updatedNode.type === NodeType.TABLE) {
+            const tableData = (updatedNode as any)?.data?.table;
+            if (tableData) {
+                const conditionGroups = tableData.condition_groups || [];
+                this.resetDecisionTableConnections(
+                    updatedNode.id,
+                    conditionGroups,
+                    tableData.default_next_node || null,
+                    tableData.next_error_node || null
+                );
+            }
+        }
     }
     public updateGroupsInBatch(groups: GroupNodeModel[]): void {
         if (!groups || groups.length === 0) {
@@ -407,6 +483,79 @@ export class FlowService {
                 connections: updatedConnections,
             };
         });
+    }
+
+    private ensureDecisionTableConnection(
+        tableNodeId: string,
+        targetNodeName: string,
+        sourcePortRole: string,
+        allNodes: NodeModel[],
+        existingConnections: ConnectionModel[]
+    ): ConnectionModel[] {
+        const targetNode = allNodes.find(
+            (n) => n.node_name === targetNodeName || n.id === targetNodeName
+        );
+
+        if (!targetNode) {
+            console.warn(`Target node not found: ${targetNodeName}`);
+            return existingConnections;
+        }
+
+        const targetInputPort = targetNode.ports?.find(
+            (p: ViewPort) => p.port_type === 'input'
+        );
+
+        if (!targetInputPort) {
+            console.warn(
+                `No input port found on target node: ${targetNode.node_name}`
+            );
+            return existingConnections;
+        }
+
+        const normalizedRole = this.normalizeDecisionPortRole(sourcePortRole);
+        const sourcePortId = `${tableNodeId}_${normalizedRole}` as CustomPortId;
+        const targetPortId = targetInputPort.id;
+
+        const connectionId = `${sourcePortId}+${targetPortId}`;
+        const connectionExists = existingConnections.some(
+            (connection) => connection.id === connectionId
+        );
+
+        if (!connectionExists) {
+            const newConnection: ConnectionModel = {
+                id: connectionId,
+                category: 'default',
+                sourceNodeId: tableNodeId,
+                targetNodeId: targetNode.id,
+                sourcePortId,
+                targetPortId,
+                behavior: 'fixed',
+                type: 'segment',
+            };
+
+            this.addConnection(newConnection);
+
+            return [...existingConnections, newConnection];
+        }
+
+        return existingConnections;
+    }
+
+    private normalizeDecisionPortRole(role: string): string {
+        if (!role.startsWith('decision-out-')) {
+            return role;
+        }
+
+        const suffix = role.substring('decision-out-'.length);
+        return `decision-out-${suffix.toLowerCase().replace(/\s+/g, '-')}`;
+    }
+
+    private isDecisionTableSourcePort(
+        portId: CustomPortId,
+        tableNodeId: string
+    ): boolean {
+        const portIdValue = `${portId}`;
+        return portIdValue.startsWith(`${tableNodeId}_decision-`);
     }
 
     public updateGroup(updatedGroup: GroupNodeModel): void {
@@ -548,6 +697,7 @@ export class FlowService {
 
             // Track removed connection IDs for logging
             const removedConnectionIds: string[] = [];
+            const removedConnections: ConnectionModel[] = [];
 
             const updatedConnections = flow.connections.filter((conn) => {
                 const isSelected = connectionIdsToRemove.has(conn.id);
@@ -561,6 +711,7 @@ export class FlowService {
 
                 if (isSelected || isOrphaned) {
                     removedConnectionIds.push(conn.id);
+                    removedConnections.push(conn);
                     return false; // remove connection
                 }
 
@@ -569,10 +720,97 @@ export class FlowService {
 
             console.log('Connection IDs to remove:', removedConnectionIds);
 
+            const decisionTableUpdates = new Map<
+                string,
+                { table: DecisionTableNode; ports: ViewPort[] }
+            >();
+
+            const normalizeDecisionGroupName = (name: string): string =>
+                (name || '').toLowerCase().replace(/\s+/g, '-');
+
+            removedConnections.forEach((conn) => {
+                const sourceNode = flow.nodes.find(
+                    (node) => node.id === conn.sourceNodeId
+                );
+
+                if (!sourceNode || sourceNode.type !== NodeType.TABLE) {
+                    return;
+                }
+
+                const tableData = (sourceNode as any).data
+                    ?.table as DecisionTableNode | undefined;
+                if (!tableData) {
+                    return;
+                }
+
+                const existingUpdate = decisionTableUpdates.get(sourceNode.id);
+                const updatedTable: DecisionTableNode =
+                    existingUpdate?.table ?? {
+                        ...tableData,
+                        condition_groups: (tableData.condition_groups || []).map(
+                            (group) => ({ ...group })
+                        ),
+                    };
+
+                const portId = String(conn.sourcePortId);
+
+                if (portId === `${sourceNode.id}_decision-default`) {
+                    updatedTable.default_next_node = null;
+                } else if (portId === `${sourceNode.id}_decision-error`) {
+                    updatedTable.next_error_node = null;
+                } else {
+                    const prefix = `${sourceNode.id}_decision-out-`;
+                    if (portId.startsWith(prefix)) {
+                        const normalizedGroupKey = portId.slice(prefix.length);
+                        updatedTable.condition_groups =
+                            updatedTable.condition_groups.map((group) => {
+                                const groupKey = normalizeDecisionGroupName(
+                                    group.group_name
+                                );
+                                if (groupKey === normalizedGroupKey) {
+                                    return {
+                                        ...group,
+                                        next_node: null,
+                                    } as ConditionGroup;
+                                }
+                                return group;
+                            });
+                    }
+                }
+
+                const updatedPorts = generatePortsForDecisionTableNode(
+                    sourceNode.id,
+                    updatedTable.condition_groups,
+                    !!updatedTable.default_next_node,
+                    !!updatedTable.next_error_node
+                );
+
+                decisionTableUpdates.set(sourceNode.id, {
+                    table: updatedTable,
+                    ports: updatedPorts,
+                });
+            });
+
             // Filter out nodes and groups marked for removal
-            const updatedNodes = flow.nodes.filter(
-                (node) => !nodeIdsToRemove.has(node.id)
-            );
+            const updatedNodes = flow.nodes
+                .filter((node) => !nodeIdsToRemove.has(node.id))
+                .map((node) => {
+                     const decisionUpdate = decisionTableUpdates.get(node.id);
+                     if (!decisionUpdate) {
+                         return node;
+                     }
+
+                    const baseNode = node as Record<string, any>;
+
+                    return {
+                        ...baseNode,
+                        data: {
+                            ...(baseNode['data'] || {}),
+                            table: decisionUpdate.table,
+                        },
+                        ports: decisionUpdate.ports,
+                    } as NodeModel;
+                });
 
             const updatedGroups = flow.groups.filter(
                 (group) => !groupIdsToRemove.has(group.id)
