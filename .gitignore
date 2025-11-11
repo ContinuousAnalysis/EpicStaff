@@ -196,6 +196,7 @@ token.json
 
 # Additional tool
 additional_tools/
+make_scripts/backups
 
 # Savefiles
 **/savefiles
