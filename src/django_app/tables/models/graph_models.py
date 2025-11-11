@@ -300,7 +300,7 @@ class GraphOrganizationUser(BasePersistentEntity):
 
 
 class WebhookTriggerNode(models.Model):
-    node_name = models.CharField(max_length=255, blank=False, unique=True)
+    node_name = models.CharField(max_length=255, blank=False)
     graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
     webhook_trigger = models.ForeignKey(
         "WebhookTrigger",
@@ -309,3 +309,10 @@ class WebhookTriggerNode(models.Model):
         related_name="webhook_trigger_nodes",
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_webhook_nodes",
+            )
+        ]
