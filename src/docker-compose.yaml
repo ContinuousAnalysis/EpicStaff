@@ -305,6 +305,7 @@ services:
      - ../frontend-config/frontend-config.json:/usr/share/nginx/html/config.json:ro
   
   webhook:
+    image: webhook
     container_name: webhook
     build:
       context: .
