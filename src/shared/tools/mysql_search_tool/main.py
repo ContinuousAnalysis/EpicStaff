@@ -1,7 +1,6 @@
 # MySQL Search Tool
 
 from sqlalchemy import create_engine, text
-import simplejson as json
 import sqlparse
 
 class MySQLSearchTool:
@@ -10,7 +9,7 @@ class MySQLSearchTool:
         self.read_only = state["variables"]["READ_ONLY"]
         self.engine = create_engine(self.db_uri)
 
-    def _is_safe_query(self, query):
+    def _validate_query(self, query: str):
         query = query.strip()
         if not query:
             return False, "Empty SQL query."
@@ -24,27 +23,34 @@ class MySQLSearchTool:
             return False, "Invalid SQL syntax."
 
         command = parsed[0].get_type().upper()
-
         if self.read_only and command != "SELECT":
-            return False, f"Only SELECT queries are allowed in read-only mode, not {command}."
+            return False, f"Only SELECT queries are allowed in read-only mode (got {command})."
 
         return True, ""
-    
+
+    def _format_result(self, result, sql_query):
+        if result.returns_rows:
+            rows = [dict(r) for r in result.mappings()]
+            if not rows:
+                return f"Query \"{sql_query}\" executed successfully, but returned no rows."
+            return rows
+        else:
+            affected = result.rowcount if result.rowcount != -1 else 0
+            return {"info": f"Query \"{sql_query}\" executed successfully. {affected} row(s) affected."}
+
     def run_query(self, sql_query: str):
-        is_safe, error_msg = self._is_safe_query(sql_query)
+        is_safe, error_msg = self._validate_query(sql_query)
         if not is_safe:
             return {"error": error_msg}
 
         try:
             with self.engine.connect() as conn:
                 result = conn.execute(text(sql_query))
-                rows = [dict(r) for r in result.mappings()]
-
-                return json.loads(json.dumps(rows, default=str))
+                return self._format_result(result, sql_query)
         except Exception as e:
             return {"error": str(e)}
 
 
-def main(sql_query: str):
+def main(sql_query):
     executor = MySQLSearchTool()
     return executor.run_query(sql_query)
