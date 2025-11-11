@@ -24,10 +24,10 @@ FOR %%i IN (
     redis-monitor
     crew
 ) DO (
-    ECHO ⏳ Tagging %%i as %%i:%BRANCH_NAME%...
+    ECHO Tagging %%i as %%i:%BRANCH_NAME%...
     docker tag %%i %%i:%BRANCH_NAME%
 )
 
 ECHO.
-ECHO ✅ All images tagged.
+ECHO All images tagged.
 ENDLOCAL
