@@ -46,6 +46,7 @@ class PostgreSQLSearchTool:
         try:
             with self.engine.connect() as conn:
                 result = conn.execute(text(sql_query))
+                conn.commit()
                 return self._format_result(result, sql_query)
         except Exception as e:
             return {"error": str(e)}
