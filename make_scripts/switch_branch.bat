@@ -1,3 +1,4 @@
+@echo off
 SETLOCAL
 
 REM Get the target branch name from the first argument
