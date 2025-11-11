@@ -39,9 +39,9 @@ REM %cd% works here because 'make' has already CRed to the project root
 docker run --rm -v "%VOLUME_NAME%":/volume_data -v "%cd%\\make_scripts\\backups":/backup_dir alpine sh -c "rm -rf /volume_data/* && tar -xf /backup_dir/%BRANCH_NAME%.tar -C /volume_data"
 
 IF %ERRORLEVEL% EQU 0 (
-    ECHO ✅ Restore complete.
+    ECHO Restore complete.
 ) ELSE (
-    ECHO ❌ ERROR: Restore failed.
+    ECHO ERROR Restore failed.
 )
 
 ENDLOCAL

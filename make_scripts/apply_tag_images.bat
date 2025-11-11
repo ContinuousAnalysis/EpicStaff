@@ -1,5 +1,5 @@
 @echo off
-ECHO 🏷️ Applying stashed branch tags to images...
+ECHO Applying stashed branch tags to images...
 SETLOCAL
 
 REM Get the current Git branch name
@@ -29,5 +29,5 @@ FOR %%i IN (
 )
 
 ECHO.
-ECHO ✅ All images re-tagged.
+ECHO All images re-tagged.
 ENDLOCAL
