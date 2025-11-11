@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject } from '@angular/core';
-import { ReactiveFormsModule, FormGroup } from '@angular/forms';
+import { ReactiveFormsModule, FormGroup, Validators } from '@angular/forms';
 import { WebhookTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
@@ -8,6 +8,9 @@ import { CommonModule } from '@angular/common';
 import { WebhookTriggerNodeService } from '../../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
 import { Clipboard, ClipboardModule } from '@angular/cdk/clipboard';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { startWith } from 'rxjs';
+
+const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
 
 @Component({
     standalone: true,
@@ -38,6 +41,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
                         formControlName="webhookName"
                         placeholder="Enter webhook name"
                         [activeColor]="activeColor"
+                        [errorMessage]="getWebhookNameErrorMessage()"
                     ></app-custom-input>
                     <div class="webhook-url-display">
                         @if (webhookUrlDisplay; as url) {
@@ -222,18 +226,18 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
                     this.tunnelUrl = response.tunnel_url;
                     this.webhookUrlBase = this.normalizeWebhookBase(response.tunnel_url);
                     this.tunnelErrorMessage = '';
-                    this.updateWebhookUrlDisplay();
+                    this.updateWebhookUrlDisplay(this.form?.get('webhookName')?.value);
                 } else {
                     this.tunnelErrorMessage = 'set your tunnel in .env configurations';
                     this.webhookUrlBase = '';
-                    this.updateWebhookUrlDisplay();
+                    this.updateWebhookUrlDisplay(this.form?.get('webhookName')?.value);
                 }
                 this.cdr.markForCheck();
             },
             error: () => {
                 this.tunnelErrorMessage = 'set your tunnel in .env configurations';
                 this.webhookUrlBase = '';
-                this.updateWebhookUrlDisplay();
+                this.updateWebhookUrlDisplay(this.form?.get('webhookName')?.value);
                 this.cdr.markForCheck();
             },
         });
@@ -255,18 +259,23 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
             libraries: [this.node().data.python_code.libraries?.join(', ') || ''],
-            webhookName: [this.extractWebhookName(this.node().data.webhook_trigger_path || '')],
+            webhookName: [
+                this.extractWebhookName(this.node().data.webhook_trigger_path || ''),
+                [Validators.pattern(WEBHOOK_NAME_PATTERN)],
+            ],
         });
         form
             .get('webhookName')
-            ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(() => {
-                this.updateWebhookUrlDisplay();
+            ?.valueChanges.pipe(
+                startWith(form.get('webhookName')?.value ?? ''),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe((value: string | null) => {
+                this.updateWebhookUrlDisplay(value ?? '');
                 this.cdr.markForCheck();
             });
         this.pythonCode = this.node().data.python_code.code || '';
         this.initialPythonCode = this.pythonCode;
-        this.updateWebhookUrlDisplay();
         return form;
     }
 
@@ -320,13 +329,29 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
         return path.substring(lastSlashIndex + 1);
     }
 
-    private updateWebhookUrlDisplay(): void {
-        const webhookName = (this.form?.value.webhookName || '').trim();
+    private updateWebhookUrlDisplay(webhookNameValue?: string | null): void {
+        const control = this.form?.get('webhookName');
+        if (control && control.invalid) {
+            this.webhookUrlDisplay = '';
+            return;
+        }
+        const webhookName = (webhookNameValue ?? control?.value ?? '').trim();
         if (!this.webhookUrlBase) {
             this.webhookUrlDisplay = '';
             return;
         }
         this.webhookUrlDisplay = `${this.webhookUrlBase}${webhookName}`;
+    }
+
+    getWebhookNameErrorMessage(): string {
+        const control = this.form?.get('webhookName');
+        if (!control || control.valid || !control.errors) {
+            return '';
+        }
+        if (control.errors['pattern']) {
+            return 'Use only letters, numbers, "-", "_", ".", "~", or "/"';
+        }
+        return '';
     }
 
     copyWebhookUrl(): void {
