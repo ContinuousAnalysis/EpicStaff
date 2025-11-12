@@ -153,6 +153,7 @@ class SessionGraphBuilder:
             session_id=self.session_id,
             decision_table_node_data=decision_table_node_data,
             graph_builder=subgraph_builder,
+            stop_event=self.stop_event,
         )
         subgraph: CompiledStateGraph = builder.build()
 

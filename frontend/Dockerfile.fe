@@ -6,7 +6,7 @@ COPY . .
 
 RUN npm install --force && npm cache clean --force
 
-RUN NG_BUILD_CACHE=false npm run build --
+RUN npm run build -- --configuration production
 
 FROM docker.io/library/nginx:alpine AS production-stage
 
