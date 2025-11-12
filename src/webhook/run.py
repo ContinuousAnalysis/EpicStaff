@@ -10,7 +10,7 @@ from app.services.webhook_service import WebhookService
 from loguru import logger
 from typing import Optional
 
-PORT = 8000
+
 
 async def main():
     
@@ -21,7 +21,7 @@ async def main():
         try:
             tunnel_provider = get_provider(
                 provider_name=settings.WEBHOOK_TUNNEL,
-                port=PORT,
+                port=settings.WEBHOOK_PORT,
                 auth_token=settings.WEBHOOK_AUTH
             )
         except ProviderNotFoundException as e:
@@ -32,10 +32,10 @@ async def main():
             sys.exit(1)
 
 
-    webhook_service = WebhookService(port=PORT, tunnel_provider=tunnel_provider)
+    webhook_service = WebhookService(port=settings.WEBHOOK_PORT, tunnel_provider=tunnel_provider)
     
     app = create_app(webhook_service)
-    config = uvicorn.Config(app, host="0.0.0.0", port=PORT)
+    config = uvicorn.Config(app, host="0.0.0.0", port=settings.WEBHOOK_PORT)
     server = uvicorn.Server(config)
     
     asyncio.create_task(webhook_service.run())
