@@ -222,6 +222,7 @@ export class FlowsStorageService {
                     llm_node_list: sourceFlow.llm_node_list,
                     file_extractor_node_list:
                         sourceFlow.file_extractor_node_list,
+                    webhook_trigger_node_list: sourceFlow.webhook_trigger_node_list,
                     end_node_list: sourceFlow.end_node_list,
                     decision_table_node_list: sourceFlow.decision_table_node_list,
                 };
