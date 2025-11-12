@@ -21,10 +21,10 @@ class WebhookService:
                 # A tunnel provider was given, so connect it.
                 await self.tunnel.connect()                
                 logger.info(f" ✅ Tunnel is LIVE: {self.tunnel.public_url}")
-                logger.info(f" 🌐 Tunnel endpoint is: {self.tunnel.public_url}/webhooks/<path>/")
+                logger.info(f" 🌐 Tunnel endpoint is: {self.tunnel.public_url}/webhooks/<path>")
             else:
                 logger.info(" ✅ Running in LOCAL-ONLY mode (no tunnel).")
-            logger.info(f" 🖥️  Local endpoint is: http://0.0.0.0:{self.port}/webhooks/<path>/")
+            logger.info(f" 🖥️  Local endpoint is: http://0.0.0.0:{self.port}/webhooks/<path>")
             while True:
                 await asyncio.sleep(0.001) 
         except KeyboardInterrupt:
