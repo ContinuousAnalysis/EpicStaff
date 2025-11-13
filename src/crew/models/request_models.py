@@ -346,6 +346,11 @@ class ConditionalEdgeData(BaseModel):
     input_map: dict[str, Any]
 
 
+class WebhookTriggerNodeData(BaseModel):
+    node_name: str
+    python_code: PythonCodeData
+
+
 class GraphData(BaseModel):
     name: str
     crew_node_list: list[CrewNodeData] = []
@@ -368,5 +373,25 @@ class GraphSessionMessageData(BaseModel):
 
 
 
+
 class StopSessionMessage(BaseModel):
     session_id: int
+
+
+class KnowledgeChunkDTO(BaseModel):
+    chunk_order: int
+    chunk_similarity: float
+    chunk_text: str
+    chunk_source: str = ""
+
+
+class KnowledgeQueryResultDTO(BaseModel):
+    uuid: str
+    collection_id: int
+    retrieved_chunks: int
+    similarity_threshold: float
+    search_limit: int
+    knowledge_query: str
+    chunks: List[KnowledgeChunkDTO]
+    # Support backwards compatibility
+    results: List[str] = []  # deprecated, use chunks instead
