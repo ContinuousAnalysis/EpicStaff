@@ -1,3 +1,4 @@
+from tables.models.webhook_models import WebhookTrigger
 from tables.models.knowledge_models import Chunk
 from django_filters import rest_framework as filters
 from tables.models.crew_models import (
@@ -35,6 +36,7 @@ from tables.models.graph_models import (
     OrganizationUser,
     GraphOrganization,
     GraphOrganizationUser,
+    WebhookTriggerNode,
 )
 from tables.models.realtime_models import (
     RealtimeSessionItem,
@@ -70,6 +72,8 @@ from tables.serializers.model_serializers import (
     TaskConfiguredTools,
     TaskPythonCodeTools,
     McpToolSerializer,
+    WebhookTriggerNodeSerializer,
+    WebhookTriggerSerializer,
 )
 from tables.serializers.export_serializers import (
     AgentExportSerializer,
@@ -579,6 +583,10 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
                     queryset=LLMNode.objects.select_related("llm_config"),
                 ),
                 Prefetch(
+                    "webhook_trigger_node_list",
+                    queryset=WebhookTriggerNode.objects.all(),
+                ),
+                Prefetch(
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
@@ -1005,6 +1013,7 @@ class McpToolViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
         return Response(serializer.data)
 
+
 class ChunkViewSet(ReadOnlyModelViewSet):
     queryset = Chunk.objects.all()
     serializer_class = ChunkSerializer
@@ -1034,3 +1043,16 @@ class GraphOrganizationUserViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = GraphOrganizationUser.objects.all()
     serializer_class = GraphOrganizationUserSerializer
+
+
+class WebhookTriggerNodeViewSet(viewsets.ModelViewSet):
+    queryset = WebhookTriggerNode.objects.all()
+    serializer_class = WebhookTriggerNodeSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["graph", "node_name", "webhook_trigger__path"]
+
+
+class WebhookTriggerViewSet(viewsets.ModelViewSet):
+    queryset = WebhookTrigger.objects.all()
+    serializer_class = WebhookTriggerSerializer
+    filter_backends = [DjangoFilterBackend]

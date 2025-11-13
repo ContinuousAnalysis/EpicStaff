@@ -33,6 +33,7 @@ import {
 
 import { IPoint, IRect, PointExtensions } from '@foblex/2d';
 import { FlowService } from '../services/flow.service';
+import { SidePanelService } from '../services/side-panel.service';
 
 import { ShortcutListenerDirective } from '../core/directives/shortcut-listener.directive';
 import { UndoRedoService } from '../services/undo-redo.service';
@@ -148,17 +149,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public isLoaded = signal<boolean>(false);
     public showContextMenu = signal(false);
 
-    // node side panel logic
-    public selectedNodeId = signal<string | null>(null);
-    public selectedNode = computed(() => {
-        const nodeId = this.selectedNodeId();
-        if (!nodeId) return null;
-        return (
-            this.flowService.nodes().find((node) => node.id === nodeId) || null
-        );
-    });
-    //end node side panel logic
-
     private readonly destroy$ = new Subject<void>();
     public showVariables = signal<boolean>(false);
 
@@ -169,6 +159,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         private readonly undoRedoService: UndoRedoService,
         private readonly clipboardService: ClipboardService,
         private readonly groupCollapserService: GroupCollapserService,
+        public readonly sidePanelService: SidePanelService,
         private readonly cd: ChangeDetectorRef,
         private readonly dialog: Dialog,
         private readonly toastService: ToastService
@@ -750,7 +741,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
 
     // side panel logic
     public onOpenNodePanel(node: NodeModel): void {
-        if (this.selectedNodeId() === node.id) {
+        if (this.sidePanelService.selectedNodeId() === node.id) {
             return;
         }
 
@@ -802,7 +793,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                 }
             });
         } else {
-            this.selectedNodeId.set(node.id);
+            void this.sidePanelService.trySelectNode(node);
         }
     }
 
@@ -812,8 +803,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             updatedNode
         );
         this.flowService.updateNode(updatedNode);
-        this.scheduleFlowRedraw();
-        this.selectedNodeId.set(null);
+        this.sidePanelService.clearSelection();
     }
 
     public onNodePanelAutosaved(updatedNode: NodeModel): void {
@@ -822,7 +812,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             updatedNode
         );
         this.flowService.updateNode(updatedNode);
-        this.scheduleFlowRedraw();
     }
 
     public onGroupSizeChanged(event: IRect, group: GroupNodeModel): void {
@@ -2259,13 +2248,5 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
-    }
-
-    private scheduleFlowRedraw(): void {
-        requestAnimationFrame(() => {
-            if (this.fFlowComponent) {
-                this.fFlowComponent.redraw();
-            }
-        });
     }
 }

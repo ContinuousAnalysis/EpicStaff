@@ -57,6 +57,8 @@ import {
     CreateEndNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import { WebhookTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
+import { CreateWebhookTriggerNodeRequest, GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import {
     GetDecisionTableNodeRequest,
     CreateDecisionTableNodeRequest,
@@ -76,10 +78,11 @@ export class GraphUpdateService {
         private graphService: FlowsApiService,
         private llmNodeService: LLMNodeService,
         private fileExtractorService: FileExtractorService,
+        private webhookTriggerService: WebhookTriggerNodeService,
         private endNodeService: EndNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
         private toastService: ToastService
-    ) {}
+    ) { }
 
     /**
      * Clears all ports on nodes to null before saving
@@ -112,6 +115,7 @@ export class GraphUpdateService {
             fileExtractorNodes: any[];
             conditionalEdges: any[];
             edges: Edge[];
+
             endNodes: EndNode[];
             decisionTableNodes: GetDecisionTableNodeRequest[];
         };
@@ -296,6 +300,39 @@ export class GraphUpdateService {
                     return this.endNodeService
                         .createEndNode(payload)
                         .pipe(catchError((err) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
+        // ---- Handle Webhook Trigger Nodes ----
+        let deleteWebhookTriggerNodes$: Observable<any> = of(null);
+        if (graph.webhook_trigger_node_list && graph.webhook_trigger_node_list.length > 0) {
+            const deleteWebhookTriggerReqs = graph.webhook_trigger_node_list.map(
+                (webhookTriggerNode: GetWebhookTriggerNodeRequest) =>
+                    this.webhookTriggerService
+                        .deleteWebhookTriggerNode(webhookTriggerNode.id.toString())
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteWebhookTriggerNodes$ = forkJoin(deleteWebhookTriggerReqs);
+        }
+
+        const webhookTriggerNodes$ = deleteWebhookTriggerNodes$.pipe(
+            switchMap(() => {
+                const webhookTriggerNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.WEBHOOK_TRIGGER
+                );
+
+                const requests = webhookTriggerNodes.map((node) => {
+                    const request: CreateWebhookTriggerNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        python_code: node.data.python_code,
+                        input_map: node.input_map || {},
+                        output_variable_path: node.output_variable_path,
+                        webhook_trigger_path: node.data.webhook_trigger_path
+                    };
+                    return this.webhookTriggerService.createWebhookTriggerNode(request);
                 });
                 return requests.length ? forkJoin(requests) : of([]);
             })
@@ -492,6 +529,7 @@ export class GraphUpdateService {
             pythonNodes: pythonNodes$,
             llmNodes: llmNodes$,
             fileExtractorNodes: fileExtractorNodes$,
+            webhookTriggerNodes: webhookTriggerNodes$,
             conditionalEdges: conditionalEdges$,
             endNodes: endNodes$,
             edges: createEdges$,
@@ -503,6 +541,7 @@ export class GraphUpdateService {
                     pythonNodes: PythonNode[];
                     llmNodes: any[];
                     fileExtractorNodes: GetFileExtractorNodeRequest[];
+                    webhookTriggerNodes: GetWebhookTriggerNodeRequest[];
                     conditionalEdges: ConditionalEdge[];
                     edges: Edge[];
                     endNodes: EndNode[];
@@ -538,6 +577,7 @@ export class GraphUpdateService {
                                             results.fileExtractorNodes,
                                         conditionalEdges:
                                             results.conditionalEdges,
+                                        webhookTriggerNodes: results.webhookTriggerNodes,
                                         edges: results.edges,
                                         endNodes: results.endNodes,
                                         decisionTableNodes:

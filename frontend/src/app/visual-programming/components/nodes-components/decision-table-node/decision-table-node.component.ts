@@ -8,7 +8,7 @@ import {
 import { CommonModule, NgStyle } from '@angular/common';
 import { DecisionTableNodeModel } from '../../../core/models/node.model';
 import { FormsModule } from '@angular/forms';
-import { ClickOrDragDirective } from '../../flow-base-node/directives/click-or-drag.directive';
+import { ClickOrDragDirective } from '../../../core/directives/click-or-drag.directive';
 import { FFlowModule } from '@foblex/flow';
 
 @Component({

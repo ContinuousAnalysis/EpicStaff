@@ -32,6 +32,7 @@ class Session(models.Model):
     graph_user = models.ForeignKey(
         GraphOrganizationUser, on_delete=models.SET_NULL, default=None, null=True
     )
+    entrypoint = models.CharField(null=True, default=None)
 
     def save(self, *args, **kwargs):
         now = timezone.now()

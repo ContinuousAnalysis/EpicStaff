@@ -72,21 +72,7 @@
     </div>
     <span class="port-label">{{ port.label }}</span>
 </div>
-}
-} @if (node.type === NodeType.TABLE) {
-<app-decision-table-node
-    [node]="tableNode"
-    (actualClick)="onEditClick()"
-></app-decision-table-node>
-} @else if (edgeNode) {
-<app-conditional-edge-node
-    clickOrDrag
-    (actualClick)="onEditClick()"
-></app-conditional-edge-node>
-} @else if (noteNode) {
-<app-note-node [node]="noteNode"></app-note-node>
-} @else if (!edgeNode && !noteNode) {
-
+}} <ng-template #interactiveNode>
 <div class="interactive-node-body" clickOrDrag (actualClick)="onEditClick()">
     <!-- Header Section -->
     <div class="header">
@@ -98,51 +84,24 @@
         </div>
     </div>
 </div>
-} @if (showVariables && isBaseNode(node) && node.input_map &&
-objectKeys(node.input_map).length > 0) {
-<div
-    class="inputs-overlay"
-    [ngStyle]="{ '--node-overlay-color': node.color || '#23272e' }"
->
-    <div
-        style="
-            font-size: 11px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            letter-spacing: 0.5px;
-            color: #aaa;
-        "
-    >
-        Inputs
-    </div>
-    <div class="inputs-list">
-        @for (key of objectKeys(node.input_map); track key) {
-        <div class="input-item">
-            <span class="input-key" [title]="key">{{ key }}</span>
-            <span class="equals-sign">=</span>
-            <span class="input-value" [title]="node.input_map[key]">{{
-                node.input_map[key]
-            }}</span>
-        </div>
-        }
-    </div>
-</div>
-} @if (showVariables && isBaseNode(node) && node.output_variable_path) {
-<div
-    class="output-overlay"
-    [ngStyle]="{ '--node-overlay-color': node.color || '#23272e' }"
->
-    <div
-        style="
-            font-size: 11px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            letter-spacing: 0.5px;
-            color: #aaa;
-        "
-    >
-        Output
-    </div>
-    <span class="output-label">{{ node.output_variable_path }}</span>
-</div>
+</ng-template>
+@switch (node.type) {
+@case (NodeType.EDGE) {
+<app-conditional-edge-node
+    clickOrDrag
+    (actualClick)="onEditClick()"
+></app-conditional-edge-node>
+} @case (NodeType.NOTE) {
+<app-note-node [node]="noteNode!"></app-note-node>
+} @case (NodeType.TABLE) {
+<ng-container *ngTemplateOutlet="interactiveNode"></ng-container>
+<app-decision-table-node [node]="tableNode!"></app-decision-table-node>
+} @default {
+<ng-container *ngTemplateOutlet="interactiveNode"></ng-container>
+}
+} @if (showVariables) {
+<app-flow-node-variables-overlay
+    [node]="node"
+    [showVariables]="showVariables"
+></app-flow-node-variables-overlay>
 }
