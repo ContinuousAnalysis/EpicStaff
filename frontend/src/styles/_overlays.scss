@@ -1,0 +1,20 @@
+.cdk-overlay-container {
+    z-index: 10500 !important;
+}
+
+.cdk-overlay-pane.domain-dialog-panel {
+    z-index: 10600 !important;
+}
+
+.cdk-overlay-backdrop.domain-dialog-backdrop {
+    z-index: 10550 !important;
+}
+
+.cdk-overlay-pane.settings-dialog-panel {
+    z-index: 11000 !important;
+}
+
+.cdk-overlay-backdrop.settings-dialog-backdrop {
+    z-index: 10950 !important;
+}
+

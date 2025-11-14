@@ -14,6 +14,8 @@ export class SettingsDialogService {
       maxWidth: '95vw',
       height: '700px',
       maxHeight: '95vh',
+      panelClass: 'settings-dialog-panel',
+      backdropClass: 'settings-dialog-backdrop',
     });
   }
 }
