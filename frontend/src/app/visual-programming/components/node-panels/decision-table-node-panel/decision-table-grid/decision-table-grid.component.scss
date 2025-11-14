@@ -65,6 +65,7 @@
     .ag-layout-auto-height, .ag-layout-print {
         .ag-center-cols-container, .ag-center-cols-viewport {
             min-height: 0px !important;
+            overflow: visible;
         }
     }
 }
