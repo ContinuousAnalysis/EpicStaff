@@ -92,7 +92,7 @@ export interface Tab {
         border-radius: 8px;
         color: var(--color-text-primary);
         position: relative;
-        z-index: 11000;
+        z-index: 10000;
 
         header {
           display: flex;
