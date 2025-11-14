@@ -70,11 +70,18 @@ export class DecisionTableGridComponent implements OnInit {
         if (groups.length === 0) {
             this.rowData.set([this.createEmptyGroup()]);
         } else {
-            const groupsWithValidFlag = groups.map(group => {
-                this.updateGroupValidFlag(group);
-                return group;
-            });
-            this.rowData.set([...groupsWithValidFlag]);
+            const normalizedGroups = [...groups]
+                .sort(
+                    (a, b) =>
+                        (a.order ?? Number.MAX_SAFE_INTEGER) -
+                        (b.order ?? Number.MAX_SAFE_INTEGER)
+                )
+                .map((group, index) => {
+                    const normalizedGroup = { ...group, order: index + 1 };
+                    this.updateGroupValidFlag(normalizedGroup, index);
+                    return normalizedGroup;
+                });
+            this.rowData.set(normalizedGroups);
         }
     }
 
@@ -95,6 +102,8 @@ export class DecisionTableGridComponent implements OnInit {
             conditions: [],
             manipulation: null,
             next_node: null,
+            order: this.rowData().length + 1,
+            valid: false,
         };
     }
 
@@ -176,9 +185,6 @@ export class DecisionTableGridComponent implements OnInit {
             cellEditorParams: {
                 maxLength: 10000,
             },
-            cellClassRules: {
-                'cell-warning': (params) => !!(params.data as any).manipulationWarning,
-            },
             cellStyle: {
                 fontSize: '14px',
             },
@@ -257,30 +263,28 @@ export class DecisionTableGridComponent implements OnInit {
         } else if (colId === 'expression') {
             (event.data as any).expressionWarning = !event.newValue?.trim();
         } else if (colId === 'manipulation') {
-            (event.data as any).manipulationWarning = !event.newValue?.trim();
+            (event.data as any).manipulationWarning = false;
         }
         
-        this.updateGroupValidFlag(event.data);
+        this.updateGroupValidFlag(event.data, rowIndex);
         
-        this.gridApi.refreshCells({
-            rowNodes: [event.node],
-            columns: [colId],
-        });
-        
-        const updatedData = [...this.rowData()];
+        const updatedData = this.rowData().map((group) => ({ ...group }));
         this.rowData.set(updatedData);
         this.emitChanges();
     }
 
-    private updateGroupValidFlag(group: ConditionGroup): void {
+    private updateGroupValidFlag(
+        group: ConditionGroup,
+        groupIndex: number
+    ): void {
         const hasValidName = !!(group.group_name?.trim());
         const hasNoDuplicateName = !this.rowData().some(
-            (g) => g !== group && g.group_name === group.group_name
+            (g, idx) => idx !== groupIndex && g.group_name === group.group_name
         );
         const hasExpression = !!(group.expression?.trim());
-        const hasManipulation = !!(group.manipulation?.trim());
-        
-        group.valid = hasValidName && hasNoDuplicateName && hasExpression && hasManipulation;
+
+        group.valid = hasValidName && hasNoDuplicateName && hasExpression;
+
     }
 
     public onCellClicked(event: CellClickedEvent): void {
@@ -294,7 +298,7 @@ export class DecisionTableGridComponent implements OnInit {
 
     public addConditionGroup(): void {
         const newGroup = this.createEmptyGroup();
-        this.updateGroupValidFlag(newGroup);
+        this.updateGroupValidFlag(newGroup, this.rowData().length);
         const updated = [...this.rowData(), newGroup];
         this.rowData.set(updated);
 
@@ -317,11 +321,16 @@ export class DecisionTableGridComponent implements OnInit {
     }
 
     private emitChanges(): void {
-        const updatedGroups = this.rowData().map(group => {
-            this.updateGroupValidFlag(group);
-            return group;
+        const updatedGroups = this.rowData().map((group, index) => {
+            const normalizedGroup: ConditionGroup = {
+                ...group,
+                order: index + 1,
+            };
+            this.updateGroupValidFlag(normalizedGroup, index);
+            return normalizedGroup;
         });
-        
+
+        this.rowData.set(updatedGroups);
         this.conditionGroupsChange.emit(updatedGroups);
     }
 }
