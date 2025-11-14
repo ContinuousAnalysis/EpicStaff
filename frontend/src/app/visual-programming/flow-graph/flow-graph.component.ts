@@ -817,6 +817,13 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         this.flowService.updateNode(updatedNode);
     }
 
+    public flushOpenSidePanelState(): void {
+        const updatedNode = this.nodePanelShell?.captureCurrentNodeState();
+        if (updatedNode) {
+            this.flowService.updateNode(updatedNode);
+        }
+    }
+
     public onGroupSizeChanged(event: IRect, group: GroupNodeModel): void {
         this.undoRedoService.stateChanged();
         console.log('Group size changed:', event, group);
