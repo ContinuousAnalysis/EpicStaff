@@ -147,9 +147,9 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             flex: 1,
             minWidth: 180,
-            cellEditor: 'agLargeTextCellEditor',
+            cellEditor: 'agTextCellEditor',
             cellEditorParams: {
-                maxLength: 10000,
+                maxLength: 255,
             },
             cellClassRules: {
                 'cell-warning': (params) => !!(params.data as any).group_nameWarning,
@@ -164,9 +164,9 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             flex: 1,
             minWidth: 200,
-            cellEditor: 'agLargeTextCellEditor',
+            cellEditor: 'agTextCellEditor',
             cellEditorParams: {
-                maxLength: 10000,
+                maxLength: 2000,
             },
             cellClassRules: {
                 'cell-warning': (params) => !!(params.data as any).expressionWarning,
@@ -181,9 +181,9 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             flex: 1,
             minWidth: 200,
-            cellEditor: 'agLargeTextCellEditor',
+            cellEditor: 'agTextCellEditor',
             cellEditorParams: {
-                maxLength: 10000,
+                maxLength: 2000,
             },
             cellStyle: {
                 fontSize: '14px',

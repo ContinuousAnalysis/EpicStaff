@@ -53,6 +53,7 @@ export class FlowGraphContextMenuComponent
   implements AfterViewInit, OnDestroy
 {
   private static readonly VIEWPORT_MARGIN = 16;
+  private static readonly VIEWPORT_BOTTOM_MARGIN = 64;
   private static readonly OFFSCREEN_COORD = -10000;
   private positionValue: { x: number; y: number } = { x: 0, y: 0 };
 
@@ -201,7 +202,9 @@ export class FlowGraphContextMenuComponent
     const maxLeft =
       viewportWidth - menuWidth - FlowGraphContextMenuComponent.VIEWPORT_MARGIN;
     const maxTop =
-      viewportHeight - menuHeight - FlowGraphContextMenuComponent.VIEWPORT_MARGIN;
+      viewportHeight -
+      menuHeight -
+      FlowGraphContextMenuComponent.VIEWPORT_BOTTOM_MARGIN;
 
     this.leftValue = this.clamp(
       desiredLeft,
