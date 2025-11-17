@@ -201,6 +201,9 @@ import { expandCollapseAnimation } from '../../../../../../shared/animations/ani
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
+        max-height: 600px;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
 
       .chunk-card {
@@ -246,8 +249,7 @@ import { expandCollapseAnimation } from '../../../../../../shared/animations/ani
         background: var(--gray-900);
         border-radius: 6px;
         padding: 0.75rem;
-        max-height: 300px;
-        overflow: auto;
+        overflow: visible;
       }
     `,
   ],
