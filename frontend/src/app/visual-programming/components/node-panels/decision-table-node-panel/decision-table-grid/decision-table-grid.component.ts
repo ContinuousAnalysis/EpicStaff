@@ -68,7 +68,7 @@ export class DecisionTableGridComponent implements OnInit {
     ngOnInit(): void {
         const groups = this.conditionGroups();
         if (groups.length === 0) {
-            this.rowData.set([this.createEmptyGroup()]);
+            this.rowData.set([this.createEmptyGroup(0)]);
         } else {
             const normalizedGroups = [...groups]
                 .sort(
@@ -77,7 +77,13 @@ export class DecisionTableGridComponent implements OnInit {
                         (b.order ?? Number.MAX_SAFE_INTEGER)
                 )
                 .map((group, index) => {
-                    const normalizedGroup = { ...group, order: index + 1 };
+                    // Update group name if it matches the default pattern "Group X" to reflect current position
+                    const groupNameMatch = group.group_name?.match(/^Group (\d+)$/);
+                    const normalizedGroup = {
+                        ...group,
+                        group_name: groupNameMatch ? `Group ${index + 1}` : group.group_name,
+                        order: index + 1,
+                    };
                     this.updateGroupValidFlag(normalizedGroup, index);
                     return normalizedGroup;
                 });
@@ -85,24 +91,16 @@ export class DecisionTableGridComponent implements OnInit {
         }
     }
 
-    private createEmptyGroup(): ConditionGroup {
-        const existingNames = this.rowData().map(g => g.group_name);
-        let newName = '';
-        let counter = this.rowData().length + 1;
-        
-        do {
-            newName = `Group ${counter}`;
-            counter++;
-        } while (existingNames.includes(newName));
-        
+    private createEmptyGroup(index?: number): ConditionGroup {
+        const position = index !== undefined ? index + 1 : this.rowData().length + 1;
         return {
-            group_name: newName,
+            group_name: `Group ${position}`,
             group_type: 'complex',
             expression: null,
             conditions: [],
             manipulation: null,
             next_node: null,
-            order: this.rowData().length + 1,
+            order: position,
             valid: false,
         };
     }
@@ -297,8 +295,9 @@ export class DecisionTableGridComponent implements OnInit {
     }
 
     public addConditionGroup(): void {
-        const newGroup = this.createEmptyGroup();
-        this.updateGroupValidFlag(newGroup, this.rowData().length);
+        const insertIndex = this.rowData().length;
+        const newGroup = this.createEmptyGroup(insertIndex);
+        this.updateGroupValidFlag(newGroup, insertIndex);
         const updated = [...this.rowData(), newGroup];
         this.rowData.set(updated);
 
@@ -310,7 +309,23 @@ export class DecisionTableGridComponent implements OnInit {
     }
 
     public removeConditionGroup(index: number): void {
-        const updated = this.rowData().filter((_, i) => i !== index);
+        const updated = this.rowData()
+            .filter((_, i) => i !== index)
+            .map((group, newIndex) => {
+                // Update group name if it matches the default pattern "Group X"
+                const groupNameMatch = group.group_name?.match(/^Group (\d+)$/);
+                if (groupNameMatch) {
+                    return {
+                        ...group,
+                        group_name: `Group ${newIndex + 1}`,
+                        order: newIndex + 1,
+                    };
+                }
+                return {
+                    ...group,
+                    order: newIndex + 1,
+                };
+            });
         this.rowData.set(updated);
 
         if (this.gridApi) {
