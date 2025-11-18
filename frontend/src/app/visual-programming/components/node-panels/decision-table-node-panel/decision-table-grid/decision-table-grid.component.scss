@@ -61,12 +61,6 @@
             border: 1px solid #ff3b30 !important;
         }
 
-        // Enable horizontal scrolling for small screens
-        .ag-body-viewport,
-        .ag-body-horizontal-scroll-viewport {
-            overflow-x: auto !important;
-        }
-
         // Fix for "No Rows To Show" message being cut off - only when empty
         &.empty-state {
             .ag-center-cols-container,
@@ -103,12 +97,11 @@
         }
     }
 
-    // Handle autoHeight layout
+    // Handle autoHeight layout - let AG Grid handle overflow naturally
     .ag-layout-auto-height {
         .ag-center-cols-container,
         .ag-center-cols-viewport {
             min-height: 0px !important;
-            overflow: visible;
         }
     }
 
@@ -118,7 +111,6 @@
             .ag-center-cols-container,
             .ag-center-cols-viewport {
                 min-height: 150px !important;
-                overflow: visible !important;
             }
         }
     }

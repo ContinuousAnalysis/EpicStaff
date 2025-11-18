@@ -239,7 +239,6 @@ export class DecisionTableGridComponent implements OnInit {
         animateRows: true,
         suppressColumnVirtualisation: false,
         stopEditingWhenCellsLoseFocus: true,
-        suppressHorizontalScroll: false,
         onCellValueChanged: (event: CellValueChangedEvent) =>
             this.onCellValueChanged(event),
         onCellClicked: (event: CellClickedEvent) => this.onCellClicked(event),
