@@ -49,6 +49,8 @@ export class DecisionTableGridComponent implements OnInit {
     private gridApi!: GridApi;
     public rowData = signal<ConditionGroup[]>([]);
 
+    public isEmpty = computed(() => this.rowData().length === 0);
+
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
         const currentId = this.currentNodeId();
@@ -57,6 +59,7 @@ export class DecisionTableGridComponent implements OnInit {
             .filter((node) => 
                 node.type !== NodeType.NOTE && 
                 node.type !== NodeType.START &&
+                node.type !== NodeType.WEBHOOK_TRIGGER &&
                 node.id !== currentId
             )
             .map((node) => ({
@@ -236,6 +239,7 @@ export class DecisionTableGridComponent implements OnInit {
         animateRows: true,
         suppressColumnVirtualisation: false,
         stopEditingWhenCellsLoseFocus: true,
+        suppressHorizontalScroll: false,
         onCellValueChanged: (event: CellValueChangedEvent) =>
             this.onCellValueChanged(event),
         onCellClicked: (event: CellClickedEvent) => this.onCellClicked(event),
