@@ -3,7 +3,8 @@ FROM node:20.17.0 AS build-stage
 WORKDIR /home/user/root/app
 
 # Copy package files first for better layer caching
-COPY package.json package-lock.json ./
+
+COPY package*.json ./
 
 # Install dependencies (this layer will be cached if package files don't change)
 RUN npm install --force && npm cache clean --force
