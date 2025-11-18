@@ -669,6 +669,8 @@ export class TasksTableComponent implements OnChanges {
             mcp_tools: mergedTools
                 .filter((tool: any) => tool.type === 'mcp-tool')
                 .map((tool: any) => tool.id),
+            // Explicitly preserve mergedTools for state updates
+            mergedTools: mergedTools,
         };
 
         // Delete tools field to ensure it's never included in update requests
@@ -822,7 +824,22 @@ export class TasksTableComponent implements OnChanges {
             next: (updatedResponse) => {
                 console.log('Task updated successfully:', updatedResponse);
                 this.toastService.success('Task updated successfully');
-                this.projectStateService.updateTask(parsedUpdateData);
+                
+                // Preserve mergedTools from the original task in state or from event.data
+                // First try to get it from the current tasks array (from state service)
+                const originalTask = this.tasks.find(
+                    (t) => t.id === parsedUpdateData.id
+                );
+                const preservedMergedTools = 
+                    originalTask?.mergedTools || 
+                    (event.data as any).mergedTools || 
+                    [];
+                
+                const taskForState: FullTask = {
+                    ...parsedUpdateData,
+                    mergedTools: preservedMergedTools,
+                };
+                this.projectStateService.updateTask(taskForState);
             },
             error: (error) => {
                 console.error('Error updating task:', error);
@@ -967,26 +984,33 @@ export class TasksTableComponent implements OnChanges {
             tool_ids: settingsToolIds,
         };
 
-        // Call the update service
         this.tasksService.updateTask(updateTaskData).subscribe({
             next: (updatedResponse) => {
                 console.log('Task updated successfully:', updatedResponse);
 
-                // Create a properly typed version of the task for the project state service
+             
+                const originalTask = this.tasks.find(
+                    (t) => t.id === +updatedTask.id
+                );
+                const preservedMergedTools = 
+                    originalTask?.mergedTools || 
+                    (updatedTask as any).mergedTools || 
+                    [];
+
+               
                 const taskForState: FullTask = {
                     ...updatedTask,
-                    id: +updatedTask.id, // Convert to number
+                    id: +updatedTask.id,
+                    mergedTools: preservedMergedTools,
                 };
 
-                // Update the project state
+             
                 this.projectStateService.updateTask(taskForState);
 
-                // Notify user of success
                 this.toastService.success('Task updated successfully');
             },
             error: (error) => {
                 console.error('Error updating task:', error);
-                // Optionally show error toast
                 this.toastService.error('Failed to update task');
             },
             complete: () => {
