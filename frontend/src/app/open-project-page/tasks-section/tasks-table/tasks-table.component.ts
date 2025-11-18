@@ -184,8 +184,27 @@ export class TasksTableComponent implements OnChanges {
     }
 
     private updateRowData(): void {
+        // Create a map of existing rowData by task ID to preserve mergedTools
+        const existingRowDataMap = new Map<string | number, TableFullTask>();
+        this.rowData.forEach((row) => {
+            if (row.id && !(typeof row.id === 'string' && row.id.startsWith('temp_'))) {
+                const key = typeof row.id === 'string' ? +row.id : row.id;
+                existingRowDataMap.set(key, row);
+            }
+        });
+
+        // Merge tasks from state with existing rowData to preserve mergedTools
+        const mergedTasks = this.tasks.map((task) => {
+            const existingRow = existingRowDataMap.get(task.id);
+            // Preserve mergedTools from existing rowData if available, otherwise use task's mergedTools
+            return {
+                ...task,
+                mergedTools: existingRow?.mergedTools || task.mergedTools || [],
+            };
+        });
+
         this.rowData = [
-            ...this.tasks,
+            ...mergedTasks,
             this.createEmptyFullTask(),
             this.createEmptyFullTask(),
         ];
@@ -749,9 +768,11 @@ export class TasksTableComponent implements OnChanges {
                         (agent) => agent.id === newTask.agent
                     );
 
+                    // Preserve mergedTools from event.data if they exist (from tools popup)
                     const fullTask: FullTask = {
                         ...newTask,
                         agentData: agentData || null,
+                        mergedTools: (event.data as any).mergedTools || [],
                     };
 
                     this.projectStateService.addTask(fullTask);
@@ -1223,9 +1244,11 @@ export class TasksTableComponent implements OnChanges {
                 );
 
                 // Create a FullTask by merging GetTaskRequest and agent data
+                // Preserve mergedTools from newTaskData (which was copied from the original)
                 const fullTask: FullTask = {
                     ...newTask,
                     agentData: agentData || null,
+                    mergedTools: (newTaskData as any).mergedTools || [],
                 };
 
                 this.projectStateService.addTask(fullTask);
@@ -1357,7 +1380,7 @@ export class TasksTableComponent implements OnChanges {
 
                     // Notify the state service with proper FullTask objects
                     results.forEach((updatedTask) => {
-                        // Find the corresponding row to get the agentData
+                        // Find the corresponding row to get the agentData and mergedTools
                         const rowWithAgentData = this.rowData.find((row) => {
                             if (typeof row.id === 'string') {
                                 return +row.id === updatedTask.id;
@@ -1366,10 +1389,11 @@ export class TasksTableComponent implements OnChanges {
                         });
 
                         if (rowWithAgentData) {
-                            // Create a FullTask object with the agentData from our original row
+                            // Create a FullTask object preserving agentData and mergedTools from our original row
                             const fullTask: FullTask = {
                                 ...updatedTask,
                                 agentData: rowWithAgentData.agentData,
+                                mergedTools: (rowWithAgentData as any).mergedTools || [],
                             };
                             this.projectStateService.updateTask(fullTask);
                         }
@@ -1634,10 +1658,36 @@ export class TasksTableComponent implements OnChanges {
                         const rowNode =
                             this.gridApi.getDisplayedRowAtIndex(rowIndex);
                         if (rowNode) {
+                            const taskData = rowNode.data as TableFullTask;
+                            // Update the grid row data
                             rowNode.setDataValue(
                                 'mergedTools',
                                 updatedMergedTools
                             );
+                            
+                            // Also update the rowData array to keep it in sync
+                            const rowDataIndex = this.rowData.findIndex(
+                                (row) => row === taskData
+                            );
+                            if (rowDataIndex !== -1) {
+                                this.rowData[rowDataIndex] = {
+                                    ...this.rowData[rowDataIndex],
+                                    mergedTools: updatedMergedTools,
+                                };
+                            }
+                            
+                            // Update the state service if this is a real task (not temp)
+                            if (taskData.id && !(typeof taskData.id === 'string' && taskData.id.startsWith('temp_'))) {
+                                const taskId = typeof taskData.id === 'string' ? +taskData.id : taskData.id;
+                                const originalTask = this.tasks.find((t) => t.id === taskId);
+                                if (originalTask) {
+                                    const updatedTask: FullTask = {
+                                        ...originalTask,
+                                        mergedTools: updatedMergedTools,
+                                    };
+                                    this.projectStateService.updateTask(updatedTask);
+                                }
+                            }
                         }
                     }
                     this.closePopup();
