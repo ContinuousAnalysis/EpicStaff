@@ -81,6 +81,7 @@ import {
 } from './advanced-task-settings-dialog/advanced-task-settings-dialog.component';
 import { AsyncHeaderComponent } from './header-renderers/async-exec-header/async-header.component';
 import { HumanInputHeaderComponent } from './header-renderers/human-input-header/human-input.component';
+import { KnowledgeQueryHeaderComponent } from './header-renderers/knowledge-query-header/knowledge-query-header.component';
 import { forkJoin, Observable } from 'rxjs';
 import { ToastService } from '../../../services/notifications/toast.service';
 
@@ -101,6 +102,8 @@ type PopupEvent = CellClickedEvent<any, any> | CellKeyDownEvent<any, any>;
         ClickOutsideDirective,
         PreventContextMenuDirective,
         AgGridContextMenuComponent,
+        // Knowledge Query header component (tooltip icon)
+        KnowledgeQueryHeaderComponent,
     ],
     templateUrl: './tasks-table.component.html',
     styleUrls: ['./tasks-table.component.scss'],
@@ -181,8 +184,27 @@ export class TasksTableComponent implements OnChanges {
     }
 
     private updateRowData(): void {
+        // Create a map of existing rowData by task ID to preserve mergedTools
+        const existingRowDataMap = new Map<string | number, TableFullTask>();
+        this.rowData.forEach((row) => {
+            if (row.id && !(typeof row.id === 'string' && row.id.startsWith('temp_'))) {
+                const key = typeof row.id === 'string' ? +row.id : row.id;
+                existingRowDataMap.set(key, row);
+            }
+        });
+
+        // Merge tasks from state with existing rowData to preserve mergedTools
+        const mergedTasks = this.tasks.map((task) => {
+            const existingRow = existingRowDataMap.get(task.id);
+            // Preserve mergedTools from existing rowData if available, otherwise use task's mergedTools
+            return {
+                ...task,
+                mergedTools: existingRow?.mergedTools || task.mergedTools || [],
+            };
+        });
+
         this.rowData = [
-            ...this.tasks,
+            ...mergedTasks,
             this.createEmptyFullTask(),
             this.createEmptyFullTask(),
         ];
@@ -345,7 +367,8 @@ export class TasksTableComponent implements OnChanges {
             editable: true,
         },
         {
-            headerName: 'Knowledge Query',
+            // Use a custom header component so we can render the material icon + tooltip
+            headerComponent: KnowledgeQueryHeaderComponent,
             field: 'knowledge_query',
             cellEditor: 'agLargeTextCellEditor',
             cellEditorParams: {
@@ -665,6 +688,8 @@ export class TasksTableComponent implements OnChanges {
             mcp_tools: mergedTools
                 .filter((tool: any) => tool.type === 'mcp-tool')
                 .map((tool: any) => tool.id),
+            // Explicitly preserve mergedTools for state updates
+            mergedTools: mergedTools,
         };
 
         // Delete tools field to ensure it's never included in update requests
@@ -743,9 +768,11 @@ export class TasksTableComponent implements OnChanges {
                         (agent) => agent.id === newTask.agent
                     );
 
+                    // Preserve mergedTools from event.data if they exist (from tools popup)
                     const fullTask: FullTask = {
                         ...newTask,
                         agentData: agentData || null,
+                        mergedTools: (event.data as any).mergedTools || [],
                     };
 
                     this.projectStateService.addTask(fullTask);
@@ -818,7 +845,22 @@ export class TasksTableComponent implements OnChanges {
             next: (updatedResponse) => {
                 console.log('Task updated successfully:', updatedResponse);
                 this.toastService.success('Task updated successfully');
-                this.projectStateService.updateTask(parsedUpdateData);
+                
+                // Preserve mergedTools from the original task in state or from event.data
+                // First try to get it from the current tasks array (from state service)
+                const originalTask = this.tasks.find(
+                    (t) => t.id === parsedUpdateData.id
+                );
+                const preservedMergedTools = 
+                    originalTask?.mergedTools || 
+                    (event.data as any).mergedTools || 
+                    [];
+                
+                const taskForState: FullTask = {
+                    ...parsedUpdateData,
+                    mergedTools: preservedMergedTools,
+                };
+                this.projectStateService.updateTask(taskForState);
             },
             error: (error) => {
                 console.error('Error updating task:', error);
@@ -963,26 +1005,33 @@ export class TasksTableComponent implements OnChanges {
             tool_ids: settingsToolIds,
         };
 
-        // Call the update service
         this.tasksService.updateTask(updateTaskData).subscribe({
             next: (updatedResponse) => {
                 console.log('Task updated successfully:', updatedResponse);
 
-                // Create a properly typed version of the task for the project state service
+             
+                const originalTask = this.tasks.find(
+                    (t) => t.id === +updatedTask.id
+                );
+                const preservedMergedTools = 
+                    originalTask?.mergedTools || 
+                    (updatedTask as any).mergedTools || 
+                    [];
+
+               
                 const taskForState: FullTask = {
                     ...updatedTask,
-                    id: +updatedTask.id, // Convert to number
+                    id: +updatedTask.id,
+                    mergedTools: preservedMergedTools,
                 };
 
-                // Update the project state
+             
                 this.projectStateService.updateTask(taskForState);
 
-                // Notify user of success
                 this.toastService.success('Task updated successfully');
             },
             error: (error) => {
                 console.error('Error updating task:', error);
-                // Optionally show error toast
                 this.toastService.error('Failed to update task');
             },
             complete: () => {
@@ -1195,9 +1244,11 @@ export class TasksTableComponent implements OnChanges {
                 );
 
                 // Create a FullTask by merging GetTaskRequest and agent data
+                // Preserve mergedTools from newTaskData (which was copied from the original)
                 const fullTask: FullTask = {
                     ...newTask,
                     agentData: agentData || null,
+                    mergedTools: (newTaskData as any).mergedTools || [],
                 };
 
                 this.projectStateService.addTask(fullTask);
@@ -1329,7 +1380,7 @@ export class TasksTableComponent implements OnChanges {
 
                     // Notify the state service with proper FullTask objects
                     results.forEach((updatedTask) => {
-                        // Find the corresponding row to get the agentData
+                        // Find the corresponding row to get the agentData and mergedTools
                         const rowWithAgentData = this.rowData.find((row) => {
                             if (typeof row.id === 'string') {
                                 return +row.id === updatedTask.id;
@@ -1338,10 +1389,11 @@ export class TasksTableComponent implements OnChanges {
                         });
 
                         if (rowWithAgentData) {
-                            // Create a FullTask object with the agentData from our original row
+                            // Create a FullTask object preserving agentData and mergedTools from our original row
                             const fullTask: FullTask = {
                                 ...updatedTask,
                                 agentData: rowWithAgentData.agentData,
+                                mergedTools: (rowWithAgentData as any).mergedTools || [],
                             };
                             this.projectStateService.updateTask(fullTask);
                         }
@@ -1606,10 +1658,36 @@ export class TasksTableComponent implements OnChanges {
                         const rowNode =
                             this.gridApi.getDisplayedRowAtIndex(rowIndex);
                         if (rowNode) {
+                            const taskData = rowNode.data as TableFullTask;
+                            // Update the grid row data
                             rowNode.setDataValue(
                                 'mergedTools',
                                 updatedMergedTools
                             );
+                            
+                            // Also update the rowData array to keep it in sync
+                            const rowDataIndex = this.rowData.findIndex(
+                                (row) => row === taskData
+                            );
+                            if (rowDataIndex !== -1) {
+                                this.rowData[rowDataIndex] = {
+                                    ...this.rowData[rowDataIndex],
+                                    mergedTools: updatedMergedTools,
+                                };
+                            }
+                            
+                            // Update the state service if this is a real task (not temp)
+                            if (taskData.id && !(typeof taskData.id === 'string' && taskData.id.startsWith('temp_'))) {
+                                const taskId = typeof taskData.id === 'string' ? +taskData.id : taskData.id;
+                                const originalTask = this.tasks.find((t) => t.id === taskId);
+                                if (originalTask) {
+                                    const updatedTask: FullTask = {
+                                        ...originalTask,
+                                        mergedTools: updatedMergedTools,
+                                    };
+                                    this.projectStateService.updateTask(updatedTask);
+                                }
+                            }
                         }
                     }
                     this.closePopup();
