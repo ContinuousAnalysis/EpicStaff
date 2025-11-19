@@ -1,5 +1,5 @@
 ENV
 */.venv
 **/venv
-**/*venv*
+**/*venv
 executions
