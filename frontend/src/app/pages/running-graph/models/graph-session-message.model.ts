@@ -25,6 +25,8 @@ export enum MessageType {
   USER = 'user',
   TASK = 'task',
   UPDATE_SESSION_STATUS = 'update_session_status',
+  SUBGRAPH_START = 'subgraph_start',
+  SUBGRAPH_FINISH = 'subgraph_finish',
 }
 
 // Message data interfaces - these match the camelCase structure used in your code
@@ -108,6 +110,34 @@ export interface UpdateSessionStatusMessageData {
   associatedProject?: GetProjectRequest;
 }
 
+// State history item interface for subflow messages
+export interface StateHistoryItem {
+  name: string;
+  type: string;
+  input: Record<string, any>;
+  output: Record<string, any>;
+  variables: Record<string, any>;
+  additional_data: Record<string, any>;
+}
+
+// Subflow state interface
+export interface SubflowState {
+  variables: Record<string, any>;
+  state_history: StateHistoryItem[];
+}
+
+export interface StartSubflowMessageData {
+  input: Record<string, any>;
+  state: SubflowState;
+  message_type: MessageType.SUBGRAPH_START;
+}
+
+export interface FinishSubflowMessageData {
+  output: any;
+  state: SubflowState;
+  message_type: MessageType.SUBGRAPH_FINISH;
+}
+
 // Type union for all message data types
 export type MessageData =
   | FinishMessageData
@@ -119,4 +149,6 @@ export type MessageData =
   | AgentFinishMessageData
   | UserMessageData
   | TaskMessageData
-  | UpdateSessionStatusMessageData;
+  | UpdateSessionStatusMessageData
+  | StartSubflowMessageData
+  | FinishSubflowMessageData;
