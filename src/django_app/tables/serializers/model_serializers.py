@@ -2,6 +2,10 @@ from typing import Any, Literal
 from decimal import Decimal
 from itertools import chain
 
+from tables.validators.python_code_tool_config_validator import (
+    PythonCodeToolConfigValidator,
+)
+from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import WebhookTrigger
 from tables.models.graph_models import WebhookTriggerNode
 from tables.models.mcp_models import McpTool
@@ -32,7 +36,7 @@ from tables.models import (
     FileExtractorNode,
 )
 from rest_framework import serializers
-from tables.exceptions import BuiltInToolModificationError, ToolConfigSerializerError
+from tables.exceptions import BuiltInToolModificationError, PythonCodeToolConfigSerializerError, ToolConfigSerializerError
 from tables.models import PythonCode, PythonCodeResult, PythonCodeTool
 from tables.models.crew_models import (
     AgentConfiguredTools,
@@ -163,6 +167,7 @@ class PythonCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = PythonCode
         fields = "__all__"
+        read_only_fields = ["id"]
 
     def to_representation(self, instance):
         """Convert 'libraries' string to a list of strings for output."""
@@ -177,14 +182,33 @@ class PythonCodeSerializer(serializers.ModelSerializer):
     def to_internal_value(self, data):
         """Convert 'libraries' list of strings to a space-separated string for storage."""
         internal_value = super().to_internal_value(data)
-        libraries = data.get("libraries", [])
+        libraries = data.get("libraries") or []
         if isinstance(libraries, list):
             internal_value["libraries"] = " ".join(libraries)
         return internal_value
 
 
+class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
+    default_value = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PythonCodeToolConfigField
+        fields = [
+            "name",
+            "description",
+            "data_type",
+            "required",
+            "secret",
+            "default_value",
+        ]
+
+    def get_default_value(self, obj: PythonCodeToolConfigField):
+        return obj.get_default_value()
+
+
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
+    tool_fields = PythonCodeToolConfigFieldSerializer(many=True, read_only=True)
     built_in = serializers.ReadOnlyField()
 
     class Meta:
@@ -197,7 +221,9 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
             "python_code",
             "favorite",
             "built_in",
+            "tool_fields",
         ]
+        read_only_fields = ["id", "built_in", "tool_fields"]
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
@@ -226,8 +252,45 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
 
         return instance
 
-    def partial_update(self, instance, validated_data):
-        return self.update(instance, validated_data)
+
+class PythonCodeToolConfigSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, tool_config_validator=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.tool_config_validator = (
+            tool_config_validator
+            or PythonCodeToolConfigValidator(
+                validate_null_fields=True,
+                validate_missing_required_fields=True,
+            )
+        )
+
+    class Meta:
+        model = PythonCodeToolConfig
+        fields = "__all__"
+
+    def validate(self, data: dict):
+        name = data.get("name")
+        tool = data.get("tool")
+        configuration = data.get("configuration", dict())
+
+        if name is None:
+            raise PythonCodeToolConfigSerializerError("Name for configuration is not provided.")
+        if tool is None:
+            raise PythonCodeToolConfigSerializerError("Tool is not provided.")
+        if configuration is None:
+            raise PythonCodeToolConfigSerializerError("Configuration is not provided.")
+
+        try:
+            self.tool_config_validator.validate(
+                name=name,
+                tool=tool,
+                configuration=configuration,
+            )
+        except ValidationError as e:
+            raise PythonCodeToolConfigSerializerError(e.message)
+
+        return data
 
 
 class McpToolSerializer(serializers.ModelSerializer):

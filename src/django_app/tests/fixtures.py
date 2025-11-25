@@ -5,6 +5,7 @@ import shutil
 import pytest
 from django.core.management import call_command
 from django.core.cache import cache
+from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.realtime_models import RealtimeAgent
 from tables.models.llm_models import (
     RealtimeConfig,
@@ -731,3 +732,57 @@ def crew_data():
             "similarity_threshold": "0.20",
         }
     ]
+
+
+@pytest.fixture
+def python_code() -> PythonCode:
+    return PythonCode.objects.create(
+        code="def main(): return 42",
+        entrypoint="main",
+        libraries="requests json",
+        global_kwargs={}
+    )
+
+
+@pytest.fixture
+def python_code_tool(python_code) -> PythonCodeTool:
+    return PythonCodeTool.objects.create(
+        name="MyTool",
+        description="Test PythonCodeTool",
+        args_schema={"type": "object"},
+        python_code=python_code,
+        favorite=False,
+        built_in=False,
+    )
+
+
+@pytest.fixture
+def python_code_tool_fields(python_code_tool) -> list[PythonCodeToolConfigField]:
+    fields = [
+        PythonCodeToolConfigField.objects.create(
+            tool=python_code_tool,
+            name="arg1",
+            description="Argument 1",
+            data_type=PythonCodeToolConfigField.FieldType.STRING,
+            default_value="default",
+            required=True,
+        ),
+        PythonCodeToolConfigField.objects.create(
+            tool=python_code_tool,
+            name="arg2",
+            description="Argument 2",
+            data_type=PythonCodeToolConfigField.FieldType.INTEGER,
+            default_value=5,
+            required=False,
+        ),
+    ]
+    return fields
+
+
+@pytest.fixture
+def python_code_tool_config(python_code_tool) -> PythonCodeToolConfig:
+    return PythonCodeToolConfig.objects.create(
+        name="config1",
+        tool=python_code_tool,
+        configuration={"arg1": "value1", "arg2": 10},
+    )
