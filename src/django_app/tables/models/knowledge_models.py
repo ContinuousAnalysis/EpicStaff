@@ -24,6 +24,7 @@ class SourceCollection(models.Model):
 
     collection_id = models.AutoField(primary_key=True)
     collection_name = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True, null=True)
 
     # TODO: change to OneToMany relation with User model after implementation auth
     user_id = models.CharField(max_length=120, default="dummy_user", blank=True)
