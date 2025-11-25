@@ -20,7 +20,8 @@
 
     <ag-grid-angular
         class="decision-grid ag-theme-quartz-dark"
-        style="width: 100%"
+        [class.empty-state]="isEmpty()"
+        style="width: 100%; min-height: 0"
         [rowData]="rowData()"
         [columnDefs]="columnDefs"
         [defaultColDef]="defaultColDef"

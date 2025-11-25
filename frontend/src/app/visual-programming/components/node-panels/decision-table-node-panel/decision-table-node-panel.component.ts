@@ -52,6 +52,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
             .filter((node) => 
                 node.type !== NodeType.NOTE && 
                 node.type !== NodeType.START &&
+                node.type !== NodeType.WEBHOOK_TRIGGER &&
                 node.id !== currentNodeId
             )
             .map((node) => ({
