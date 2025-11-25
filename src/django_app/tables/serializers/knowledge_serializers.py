@@ -42,11 +42,13 @@ class UploadSourceCollectionSerializer(
             "status",
             "embedder",
             "created_at",
+            "description",
             "files",
             "chunk_sizes",
             "chunk_strategies",
             "chunk_overlaps",
             "additional_params",
+            
         ]
         read_only_fields = ["collection_id", "created_at", "status"]
 
@@ -198,6 +200,7 @@ class SourceCollectionReadSerializer(serializers.ModelSerializer):
             "status",
             "embedder",
             "created_at",
+            "description",
             "document_metadata",
         ]
         read_only_fields = fields

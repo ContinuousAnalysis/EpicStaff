@@ -88,18 +88,7 @@ async def light_scroll(page):
         await asyncio.sleep(random.uniform(0.1, 0.25))
 
 
-async def scrape_url_async(url: str):
-    p = await async_playwright().start()
-    browser = await p.chromium.launch(
-        headless=True,
-        args=[
-            "--disable-blink-features=AutomationControlled",
-            "--disable-infobars",
-            "--no-sandbox",
-            "--disable-dev-shm-usage"
-        ],
-    )
-
+async def scrape_url_async(url: str, browser: str):
     context = await browser.new_context(
         user_agent=f"Mozilla/5.0 ... Chrome/{random.randint(120,130)}.0.0.0 Safari/537.36",
         viewport={"width": random.randint(1200,1920), "height": random.randint(700,1080)},
@@ -121,7 +110,17 @@ async def scrape_url_async(url: str):
 
 
 async def scrape_all_urls(urls: list[str]):
-    results = await asyncio.gather(*(scrape_url_async(url) for url in urls), return_exceptions=True)
+    playwright = await async_playwright().start()
+    browser = await playwright.chromium.launch(
+        headless=True,
+        args=[
+            "--disable-blink-features=AutomationControlled",
+            "--disable-infobars",
+            "--no-sandbox",
+            "--disable-dev-shm-usage"
+        ],
+    )
+    results = await asyncio.gather(*(scrape_url_async(url, browser) for url in urls), return_exceptions=True)
     for r in results:
         if isinstance(r, Exception):
             logger.error(r)
@@ -141,14 +140,13 @@ def main(collection_name: str, urls: list[str], time_to_expired: int, embedder: 
 
     existing = get_collection_by_name(collection_name)
     if existing:
-        print(is_collection_expired(existing, time_to_expired))
         if not is_collection_expired(existing, time_to_expired) and urls_match(existing, urls):
             return {"status": "exists", "collection": existing}
         try:
             requests.delete(f"{API_BASE}/source-collections/{existing['collection_id']}/")
         except Exception as e:
             logger.error(f"Failed to delete collection: {e}")
-    print('build')
+
     base_dir = prepare_save_folder(collection_name)
     scraped_contents = asyncio.run(scrape_all_urls(urls))
     file_names = [save_scraped_file(base_dir, url, content) for url, content in zip(urls, scraped_contents)]
@@ -163,6 +161,6 @@ def main(collection_name: str, urls: list[str], time_to_expired: int, embedder: 
 
     return {"status": "created", "collection": response}
 
-args = ["test2", ["https://uk.wikipedia.org/wiki/%D0%9F%D1%80%D0%B8%D1%80%D0%BE%D0%B4%D0%BD%D0%B8%D1%87%D1%96_%D0%BD%D0%B0%D1%83%D0%BA%D0%B8", "https://pidru4niki.com/12461220/prirodoznavstvo/zarodzhennya_stanovlennya_rozvitok_prirodoznavstva", "https://pidru4niki.com/14170120/prirodoznavstvo/prirodoznavstvo_nauka_naukoviy_metod_piznannya_yogo_struktura#460"]]
+args = ["test2", ["https://uk.wikipedia.org/wiki/%D0%9F%D1%80%D0%B8%D1%80%D0%BE%D0%B4%D0%BD%D0%B8%D1%87%D1%96_%D0%BD%D0%B0%D1%83%D0%BA%D0%B8", "https://pidru4niki.com/12461220/prirodoznavstvo/zarodzhennya_stanovlennya_rozvitok_prirodoznavstva", "https://pidru4niki.com/14170120/prirodoznavstvo/prirodoznavstvo_nauka_naukoviy_metod_piznannya_yogo_struktura#460", "https://osvita.ua/vnz/reports/biolog/27502/"]]
 collection_name = main(*args, time_to_expired=20, embedder=2)
 print(collection_name)
