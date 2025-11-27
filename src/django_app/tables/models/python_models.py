@@ -1,5 +1,3 @@
-import json
-import struct
 from django.db import models
 
 
@@ -44,7 +42,7 @@ class PythonCodeToolConfigField(models.Model):
     tool = models.ForeignKey(
         "PythonCodeTool",
         on_delete=models.CASCADE,
-        null=True,
+        null=False,
         related_name="tool_fields",
     )
 
