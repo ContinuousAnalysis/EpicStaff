@@ -8,6 +8,8 @@ class PythonCodeToolConfigValidator:
         self.validate_missing_required_fields = validate_missing_required_fields
 
     def validate(self, name, tool: PythonCodeTool, configuration: dict):
+        if not isinstance(configuration, dict):
+            raise PythonCodeToolConfigSerializerError(f"Field configuration must be an object")
         fields = tool.get_tool_config_fields()
         validated = {}
 
@@ -26,17 +28,19 @@ class PythonCodeToolConfigValidator:
 
     def _cast_value(self, value, data_type):
         from tables.models import PythonCodeToolConfigField as Field
-
-        match data_type:
-            case Field.FieldType.STRING:
-                return str(value)
-            case Field.FieldType.BOOLEAN:
-                return bool(value)
-            case Field.FieldType.INTEGER | Field.FieldType.LLM_CONFIG | Field.FieldType.EMBEDDING_CONFIG:
-                return int(value)
-            case Field.FieldType.FLOAT:
-                return float(value)
-            case Field.FieldType.ANY:
-                return value
-            case _:
-                return value
+        try:
+            match data_type:
+                case Field.FieldType.STRING:
+                    return str(value)
+                case Field.FieldType.BOOLEAN:
+                    return bool(value)
+                case Field.FieldType.INTEGER | Field.FieldType.LLM_CONFIG | Field.FieldType.EMBEDDING_CONFIG:
+                    return int(value)
+                case Field.FieldType.FLOAT:
+                    return float(value)
+                case Field.FieldType.ANY:
+                    return value
+                case _:
+                    return value
+        except ValueError as e:
+            raise PythonCodeToolConfigSerializerError(f"Error casting value '{value}' into '{data_type}'")
