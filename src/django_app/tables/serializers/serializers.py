@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
-from tables.models.python_models import PythonCodeTool
+from tables.models.python_models import PythonCodeTool, PythonCodeToolConfig
 from tables.models.realtime_models import VoiceChoices
 
 
@@ -44,6 +44,7 @@ class BaseToolSerializer(serializers.Serializer):
             PythonCodeToolSerializer,
             McpToolSerializer,
             ToolConfigSerializer,
+            PythonCodeToolConfigSerializer
         )
 
         repr = {}
@@ -56,15 +57,20 @@ class BaseToolSerializer(serializers.Serializer):
         elif isinstance(instance, McpTool):
             repr["unique_name"] = f"mcp-tool:{instance.pk}"
             repr["data"] = McpToolSerializer(instance).data
+        elif isinstance(instance, PythonCodeToolConfig):
+            repr["unique_name"] = f"python-code-tool-config:{instance.pk}"
+            repr["data"] = PythonCodeToolConfigSerializer(instance).data
         else:
             raise TypeError(
                 f"Unsupported tool type for serialization: {type(instance)}"
             )
 
         return repr
-    
+
+
 class ProcessDocumentChunkingSerializer(serializers.Serializer):
     document_id = serializers.IntegerField(required=True)
+
 
 class ProcessCollectionEmbeddingSerializer(serializers.Serializer):
     collection_id = serializers.IntegerField(required=True)
