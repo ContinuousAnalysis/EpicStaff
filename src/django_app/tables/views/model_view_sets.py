@@ -7,6 +7,7 @@ from tables.models.crew_models import (
     AgentMcpTools,
     AgentPythonCodeTools,
     TaskMcpTools,
+    TaskPythonCodeToolConfigs,
 )
 from tables.exceptions import TaskSerializerError, AgentSerializerError
 from tables.models.llm_models import (
@@ -61,6 +62,7 @@ from tables.serializers.model_serializers import (
     EndNodeSerializer,
     GraphLightSerializer,
     GraphTagSerializer,
+    PythonCodeToolConfigFieldSerializer,
     PythonCodeToolConfigSerializer,
     RealtimeConfigSerializer,
     RealtimeSessionItemSerializer,
@@ -421,6 +423,11 @@ class TaskReadWriteViewSet(ModelViewSet):
             to_attr="prefetched_python_code_tools",
         ),
         Prefetch(
+            "task_python_code_tool_config_list",
+            queryset=TaskPythonCodeToolConfigs.objects.select_related("tool__tool__python_code"),
+            to_attr="prefetched_python_code_tool_configs",
+        ),
+        Prefetch(
             "task_context_list",
             queryset=TaskContext.objects.select_related("context"),
             to_attr="prefetched_contexts",
@@ -564,6 +571,14 @@ class PythonCodeToolConfigViewSet(viewsets.ModelViewSet):
     serializer_class = PythonCodeToolConfigSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["tool", "name"]
+
+class PythonCodeToolConfigFieldViewSet(viewsets.ModelViewSet):
+    """
+    A viewset for viewing and editing PythonCodeToolConfigFields instances.
+    """
+    queryset = PythonCodeToolConfigField.objects.all()
+    serializer_class = PythonCodeToolConfigFieldSerializer
+    filter_backends = [DjangoFilterBackend]
 
 
 class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
