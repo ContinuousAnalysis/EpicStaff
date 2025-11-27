@@ -291,11 +291,12 @@ class PythonCodeToolConfigSerializer(serializers.ModelSerializer):
             raise PythonCodeToolConfigSerializerError("Configuration is not provided.")
 
         try:
-            self.tool_config_validator.validate(
+            validated_configuration = self.tool_config_validator.validate(
                 name=name,
                 tool=tool,
                 configuration=configuration,
             )
+            data["configuration"] = validated_configuration
         except ValidationError as e:
             raise PythonCodeToolConfigSerializerError(e.message)
 
