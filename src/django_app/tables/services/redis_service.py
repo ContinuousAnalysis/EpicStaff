@@ -156,8 +156,8 @@ class RedisService(metaclass=SingletonMeta):
                 await pubsub.unsubscribe(*channels)
                 await pubsub.close()
 
-    def publish_process_document_chunking(self, document_id):
-        message = ChunkDocumentMessage(document_id=document_id)
+    def publish_process_document_chunking(self, naive_rag_document_id):
+        message = ChunkDocumentMessage(naive_rag_document_id=naive_rag_document_id)
         self.redis_client.publish(
             KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL, json.dumps(message.model_dump())
         )

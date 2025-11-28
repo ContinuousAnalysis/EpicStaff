@@ -8,11 +8,12 @@ class KnowledgeSearchMessage(BaseModel):
     search_limit: int | None
     similarity_threshold: float | None
 
+
 class ChunkDocumentMessage(BaseModel):
-    document_id: int
+    naive_rag_document_id: int
+
 
 class ChunkDocumentMessageResponse(BaseModel):
-    document_id: int
+    naive_rag_document_id: int
     success: bool
     message: str | None = None
-
