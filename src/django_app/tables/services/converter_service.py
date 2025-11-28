@@ -206,7 +206,7 @@ class ConverterService(metaclass=SingletonMeta):
         if isinstance(tool, PythonCodeTool):
             unique_name = f"python-code-tool:{tool.pk}"
             data = self.convert_python_code_tool_to_pydantic(tool)
-        if isinstance(tool, PythonCodeToolConfig):
+        elif isinstance(tool, PythonCodeToolConfig):
             unique_name = f"python-code-tool-config:{tool.pk}"
             data = self.convert_python_code_tool_config_to_pydantic(tool)
         elif isinstance(tool, ToolConfig):
