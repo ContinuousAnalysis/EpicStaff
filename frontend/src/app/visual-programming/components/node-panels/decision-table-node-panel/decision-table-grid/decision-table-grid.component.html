@@ -21,12 +21,11 @@
     <ag-grid-angular
         class="decision-grid ag-theme-quartz-dark"
         [class.empty-state]="isEmpty()"
-        style="width: 100%; min-height: 0"
+        style="width: 100%;"
         [rowData]="rowData()"
         [columnDefs]="columnDefs"
         [defaultColDef]="defaultColDef"
         [gridOptions]="gridOptions"
-        [domLayout]="'autoHeight'"
         (gridReady)="onGridReady($event)"
     >
     </ag-grid-angular>
