@@ -1,0 +1,132 @@
+:host {
+    display: block;
+    width: 250px;
+    background-color: #27272b;
+    border: 1px solid var(--color-divider-subtle, #333);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    // Remove overflow: hidden to allow tooltip to display outside if positioned relatively or absolute
+    position: relative; 
+}
+
+.tooltip-wrapper {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 8px;
+    z-index: 1200;
+    pointer-events: none; // Let mouse pass through
+}
+
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    background-color: #1e1e20;
+    border-bottom: 1px solid var(--color-divider-subtle, #333);
+    font-size: 11px;
+    color: #888;
+    overflow-x: auto;
+    white-space: nowrap;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    .crumb {
+        cursor: pointer;
+        &:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+    }
+
+    .separator {
+        margin: 0 4px;
+        color: #555;
+    }
+}
+
+.autocomplete-list {
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    color: #d9d9de;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+
+    li {
+        padding: 6px 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        transition: background-color 0.15s;
+
+        &.active,
+        &:hover {
+            background-color: rgba(104, 95, 255, 0.2);
+            color: #fff;
+        }
+
+        &.no-results {
+            color: #888;
+            font-style: italic;
+            justify-content: center;
+            cursor: default;
+            &:hover {
+                background-color: transparent;
+            }
+        }
+        
+        .item-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-icon {
+            display: flex;
+            align-items: center;
+            color: #888;
+            i {
+                font-size: 14px;
+            }
+        }
+
+        .item-key {
+            font-weight: 600;
+            color: #a5a5ff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .item-type {
+            font-size: 10px;
+            color: #888;
+            margin-left: auto;
+            padding-left: 8px;
+            flex-shrink: 0;
+        }
+    }
+
+    /* Scrollbar styling */
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: #444;
+        border-radius: 3px;
+    }
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+}
+

@@ -26,12 +26,15 @@ import { FlowService } from '../../../../services/flow.service';
 import { NodeType } from '../../../../core/enums/node-type';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 
+import { ExpressionEditorComponent } from './cell-editors/expression-editor/expression-editor.component';
+import { ExpressionRendererComponent } from './cell-renderers/expression-renderer/expression-renderer.component';
+
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
     selector: 'app-decision-table-grid',
     standalone: true,
-    imports: [AgGridModule, ButtonComponent],
+    imports: [AgGridModule, ButtonComponent, ExpressionEditorComponent, ExpressionRendererComponent],
     templateUrl: './decision-table-grid.component.html',
     styleUrls: ['./decision-table-grid.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -148,12 +151,9 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             flex: 1,
             minWidth: 180,
-            cellEditor: 'agTextCellEditor',
+            cellEditor: 'agLargeTextCellEditor',
             cellEditorParams: {
                 maxLength: 255,
-            },
-            cellClassRules: {
-                'cell-warning': (params) => !!(params.data as any).group_nameWarning,
             },
             cellStyle: {
                 fontSize: '14px',
@@ -165,13 +165,9 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             flex: 1,
             minWidth: 200,
-            cellEditor: 'agTextCellEditor',
-            cellEditorParams: {
-                maxLength: 2000,
-            },
-            cellClassRules: {
-                'cell-warning': (params) => !!(params.data as any).expressionWarning,
-            },
+            cellEditor: ExpressionEditorComponent,
+            cellEditorPopup: true,
+            cellRenderer: ExpressionRendererComponent,
             cellStyle: {
                 fontSize: '14px',
             },
@@ -182,7 +178,7 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             flex: 1,
             minWidth: 200,
-            cellEditor: 'agTextCellEditor',
+            cellEditor: 'agLargeTextCellEditor',
             cellEditorParams: {
                 maxLength: 2000,
             },
