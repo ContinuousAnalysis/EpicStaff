@@ -64,5 +64,5 @@ class BaseToolSerializer(serializers.Serializer):
         return repr
 
 
-class ProcessCollectionEmbeddingSerializer(serializers.Serializer):
+class ProcessCollectionIndexingSerializer(serializers.Serializer):
     collection_id = serializers.IntegerField(required=True)
