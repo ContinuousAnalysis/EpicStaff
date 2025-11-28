@@ -264,7 +264,7 @@ export function generatePortsForDecisionTableNode(
         ...(inputPortConfig ?? {
             port_type: 'input',
             role: 'table-in',
-            multiple: false,
+            multiple: true,
             label: 'In',
             allowedConnections: [
                 'project-out',
