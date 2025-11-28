@@ -3,7 +3,6 @@ from decimal import Decimal
 from itertools import chain
 
 from tables.models.mcp_models import McpTool
-from tables.models.knowledge_models import Chunk, DocumentMetadata
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
     Agent,
@@ -1289,12 +1288,3 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "persistent_variables"]
 
 
-class ChunkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Chunk
-        fields = "__all__"
-
-    def validate_document_id(self, value):
-        if not DocumentMetadata.objects.filter(document_id=value).exists():
-            raise serializers.ValidationError("Document with this id does not exist.")
-        return value
