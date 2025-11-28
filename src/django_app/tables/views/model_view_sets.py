@@ -1,4 +1,3 @@
-from tables.models.knowledge_models import Chunk
 from django_filters import rest_framework as filters
 from tables.models.crew_models import (
     AgentConfiguredTools,
@@ -6,7 +5,10 @@ from tables.models.crew_models import (
     AgentPythonCodeTools,
     TaskMcpTools,
 )
-from tables.exceptions import TaskSerializerError, AgentSerializerError
+from tables.exceptions import (
+    TaskSerializerError,
+    AgentSerializerError,
+)
 from tables.models.llm_models import (
     RealtimeConfig,
     RealtimeTranscriptionConfig,
@@ -51,7 +53,6 @@ from django.db.models.functions import Cast
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentWriteSerializer,
-    ChunkSerializer,
     CrewTagSerializer,
     AgentTagSerializer,
     DecisionTableNodeSerializer,
@@ -123,9 +124,7 @@ from tables.models import (
 from tables.models import (
     AgentSessionMessage,
     TaskSessionMessage,
-    UserSessionMessage,
-    SourceCollection,
-    DocumentMetadata,
+    UserSessionMessage
 )
 
 from tables.serializers.model_serializers import (
@@ -161,14 +160,6 @@ from tables.serializers.model_serializers import (
     GraphOrganizationUserSerializer,
 )
 
-from tables.serializers.knowledge_serializers import (
-    SourceCollectionReadSerializer,
-    UploadSourceCollectionSerializer,
-    UpdateSourceCollectionSerializer,
-    CopySourceCollectionSerializer,
-    AddSourcesSerializer,
-    DocumentMetadataSerializer,
-)
 from tables.services.redis_service import RedisService
 from tables.utils.mixins import ImportExportMixin, DeepCopyMixin
 from tables.exceptions import BuiltInToolModificationError
@@ -641,115 +632,6 @@ class GraphSessionMessageReadOnlyViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["session_id"]
 
 
-class SourceCollectionViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for SourceCollection.
-
-    - GET: all collections.
-    - GET: collection by id.
-    - POST: create a collection with multiple file uploads.
-    - PATCH: Update allowed fields (collection_name).
-    - DELETE: Delete a collection (and its related documents).
-
-    Custom action:
-    - PATCH: /add-sources/ endpoint to add new documents to an existing collection.
-    """
-
-    http_method_names = ["get", "post", "patch", "delete"]
-
-    queryset = SourceCollection.objects.prefetch_related("document_metadata")
-
-    def get_serializer_class(self):
-        if self.action in ["list", "retrieve"]:
-            return SourceCollectionReadSerializer
-        elif self.action in ["partial_update", "update"]:
-            return UpdateSourceCollectionSerializer
-        return UploadSourceCollectionSerializer
-
-    def create(self, request, *args, **kwargs):
-        with transaction.atomic():
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            collection = serializer.save()
-        redis_service.publish_source_collection(collection_id=collection.pk)
-        return Response(
-            SourceCollectionReadSerializer(collection).data,
-            status=status.HTTP_201_CREATED,
-        )
-
-    def partial_update(self, request, *args, **kwargs):
-        """
-        Only allow updating collection_name.
-        """
-        instance = self.get_object()
-        serializer = UpdateSourceCollectionSerializer(
-            instance, data=request.data, partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response(
-            {"message": "Collection deleted successfully"},
-            status=status.HTTP_200_OK,
-        )
-
-    @action(detail=True, methods=["patch"], url_path="add-sources")
-    def add_sources(self, request, pk=None):
-        """
-        Custom action to add new documents (files) to an existing collection.
-        Accepts multipart/form-data with a "files" field.
-        """
-        collection = self.get_object()
-        serializer = AddSourcesSerializer(data=request.data)
-        if serializer.is_valid():
-            with transaction.atomic():
-                serializer.create_documents(collection)
-
-            read_serializer = SourceCollectionReadSerializer(collection)
-            return Response(read_serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CopySourceCollectionViewSet(viewsets.ModelViewSet):
-    http_method_names = ["post"]
-
-    queryset = SourceCollection.objects.all()
-    serializer_class = CopySourceCollectionSerializer
-
-    def create(self, request):
-        with transaction.atomic():
-            serializer = self.serializer_class(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            collection = serializer.save()
-
-        return Response(
-            SourceCollectionReadSerializer(collection).data,
-            status=status.HTTP_201_CREATED,
-        )
-
-
-class DocumentMetadataViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = DocumentMetadata.objects.select_related("source_collection")
-    serializer_class = DocumentMetadataSerializer
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        collection: SourceCollection = instance.source_collection
-        instance.delete()
-
-        collection.update_collection_status()
-
-        return Response(
-            {
-                "message": f"Source '{instance.file_name}' from colection '{instance.source_collection.collection_name}' deleted successfully"
-            },
-            status=status.HTTP_200_OK,
-        )
-
 
 class MemoryFilter(FilterSet):
     run_id = NumberFilter(method="filter_run_id")
@@ -1004,12 +886,6 @@ class McpToolViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
-
-class ChunkViewSet(ReadOnlyModelViewSet):
-    queryset = Chunk.objects.all()
-    serializer_class = ChunkSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["document_id"]
 
 
 class OrganizationViewSet(viewsets.ModelViewSet):

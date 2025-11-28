@@ -45,7 +45,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from tables.models import (
     Session,
     SourceCollection,
-    DocumentMetadata,
+    # DocumentMetadata,
     GraphOrganization,
     GraphOrganizationUser,
     OrganizationUser,
@@ -62,13 +62,12 @@ from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
-    ProcessDocumentChunkingSerializer,
-    ProcessCollectionEmbeddingSerializer,
+    ProcessCollectionIndexingSerializer,
     RunSessionSerializer,
 )
-from tables.serializers.knowledge_serializers import CollectionStatusSerializer
+# from tables.serializers.knowledge_serializers import CollectionStatusSerializer
 from tables.serializers.quickstart_serializers import QuickstartSerializer
-from tables.filters import CollectionFilter, SessionFilter
+from tables.filters import SessionFilter  # CollectionFilter,
 
 from .default_config import *
 
@@ -753,52 +752,53 @@ class InitRealtimeAPIView(APIView):
             )
 
 
-class CollectionStatusAPIView(ListAPIView):
-    serializer_class = CollectionStatusSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = CollectionFilter
+# class CollectionStatusAPIView(ListAPIView):
+#     serializer_class = CollectionStatusSerializer
+#     filter_backends = [DjangoFilterBackend]
+#     filterset_class = CollectionFilter
 
-    def get_queryset(self):
-        return (
-            SourceCollection.objects.only(
-                "collection_id", "collection_name", "status"
-            )
-            .annotate(
-                total_documents=Count("document_metadata"),
-                new_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.NEW
-                    ),
-                ),
-                completed_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.COMPLETED
-                    ),
-                ),
-                processing_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.PROCESSING
-                    ),
-                ),
-                failed_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.FAILED
-                    ),
-                ),
-            )
-            .prefetch_related(
-                Prefetch(
-                    "document_metadata",
-                    queryset=DocumentMetadata.objects.only(
-                        "document_id", "file_name", "status", "source_collection_id"
-                    ),
-                )
-            )
-        )
+#     def get_queryset(self):
+#         return (
+#             SourceCollection.objects.only(
+#                 "collection_id", "collection_name", "status"
+#             )
+#             .annotate(
+#                 total_documents=Count("document_metadata"),
+#                 new_documents=Count(
+#                     "document_metadata",
+#                     filter=Q(
+#                         document_metadata__status=DocumentMetadata.DocumentStatus.NEW
+#                     ),
+#                 ),
+#                 completed_documents=Count(
+#                     "document_metadata",
+#                     filter=Q(
+#                         document_metadata__status=DocumentMetadata.DocumentStatus.COMPLETED
+#                     ),
+#                 ),
+#                 processing_documents=Count(
+#                     "document_metadata",
+#                     filter=Q(
+#                         document_metadata__status=DocumentMetadata.DocumentStatus.PROCESSING
+#                     ),
+#                 ),
+#                 failed_documents=Count(
+#                     "document_metadata",
+#                     filter=Q(
+#                         document_metadata__status=DocumentMetadata.DocumentStatus.FAILED
+#                     ),
+#                 ),
+#             )
+#             .prefetch_related(
+#                 Prefetch(
+#                     "document_metadata",
+#                     queryset=DocumentMetadata.objects.only(
+#                         "document_id", "file_name", "status", "source_collection_id"
+#                     ),
+#                 )
+#             )
+#         )
+
 
 class QuickstartView(APIView):
     """
@@ -864,24 +864,10 @@ class QuickstartView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ProcessDocumentChunkingView(APIView):
-    @swagger_auto_schema(request_body=ProcessDocumentChunkingSerializer)
+class ProcessCollectionIndexingView(APIView):
+    @swagger_auto_schema(request_body=ProcessCollectionIndexingSerializer)
     def post(self, request):
-        serializer = ProcessDocumentChunkingSerializer(data=request.data)
-        if serializer.is_valid():
-            document_id = serializer["document_id"].value
-
-            if not DocumentMetadata.objects.filter(document_id=document_id).exists():
-                return Response(status=status.HTTP_404_NOT_FOUND)
-
-            redis_service.publish_process_document_chunking(document_id=document_id)
-            return Response(status=status.HTTP_202_ACCEPTED)
-
-
-class ProcessCollectionEmbeddingView(APIView):
-    @swagger_auto_schema(request_body=ProcessCollectionEmbeddingSerializer)
-    def post(self, request):
-        serializer = ProcessCollectionEmbeddingSerializer(data=request.data)
+        serializer = ProcessCollectionIndexingSerializer(data=request.data)
         if serializer.is_valid():
             collection_id = serializer["collection_id"].value
             if not SourceCollection.objects.filter(
