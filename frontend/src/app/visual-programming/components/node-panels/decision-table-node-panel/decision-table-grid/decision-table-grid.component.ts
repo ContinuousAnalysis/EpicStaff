@@ -8,6 +8,7 @@ import {
     ChangeDetectorRef,
     inject,
     OnInit,
+    effect,
 } from '@angular/core';
 import { AgGridModule } from 'ag-grid-angular';
 import {
@@ -66,13 +67,75 @@ export class DecisionTableGridComponent implements OnInit {
                 node.id !== currentId
             )
             .map((node) => ({
-                value: node.node_name || node.id,
+                value: node.id,
                 label: node.node_name || node.id,
             }));
     });
 
+    constructor() {
+        effect(() => {
+            const nodes = this.availableNodes();
+            const refData: Record<string, string> = {};
+            nodes.forEach((n) => {
+                refData[n.value] = n.label;
+            });
+
+            if (this.gridApi) {
+                const colDefs = this.gridApi.getColumnDefs();
+                if (colDefs) {
+                    const newColDefs = colDefs.map((col: any) => {
+                        if (col.field === 'next_node' || col.colId === 'next_node') {
+                            return {
+                                ...col,
+                                refData,
+                                cellEditorParams: {
+                                    values: ['', ...nodes.map((n) => n.value)],
+                                },
+                            };
+                        }
+                        return col;
+                    });
+                    this.gridApi.setGridOption('columnDefs', newColDefs);
+                }
+            }
+        });
+    }
+
     ngOnInit(): void {
         const groups = this.conditionGroups();
+        const nodes = this.flowService.nodes();
+        const connections = this.flowService.connections();
+        const currentNodeId = this.currentNodeId();
+        
+        console.log('[DecisionTableGrid] Initializing with groups:', groups);
+
+        const findNodeId = (value: string | null, groupName: string): string | null => {
+            // 1. Try direct lookup
+            if (value) {
+                const foundNode = nodes.find(n => n.id === value || n.node_name === value);
+                if (foundNode) return foundNode.id;
+                console.warn(`[DecisionTableGrid] Node not found for value: '${value}'`);
+            }
+
+            // 2. Fallback: Visual Connection lookup
+            // Port ID: `${nodeId}_decision-out-${normalizedGroupName}`
+            if (groupName) {
+                 const normalizedGroupName = groupName.toLowerCase().replace(/\s+/g, '-');
+                 const portId = `${currentNodeId}_decision-out-${normalizedGroupName}`;
+                 
+                 const connection = connections.find(
+                    c => c.sourceNodeId === currentNodeId && c.sourcePortId === portId
+                 );
+
+                 if (connection) {
+                     console.log(`[DecisionTableGrid] Recovered connection for group '${groupName}' -> ${connection.targetNodeId}`);
+                     return connection.targetNodeId;
+                 }
+            }
+
+            return value;
+        };
+
         if (groups.length === 0) {
             this.rowData.set([this.createEmptyGroup(0)]);
         } else {
@@ -89,6 +152,7 @@ export class DecisionTableGridComponent implements OnInit {
                         ...group,
                         group_name: groupNameMatch ? `Group ${index + 1}` : group.group_name,
                         order: index + 1,
+                        next_node: findNodeId(group.next_node, group.group_name) // Ensure we use ID with fallback
                     };
                     this.updateGroupValidFlag(normalizedGroup, index);
                     return normalizedGroup;
@@ -197,6 +261,12 @@ export class DecisionTableGridComponent implements OnInit {
                 return {
                     values: ['', ...nodes.map((n) => n.value)],
                 };
+            },
+            valueFormatter: (params) => {
+                if (!params.value) return '';
+                const nodes = this.availableNodes();
+                const node = nodes.find((n) => n.value === params.value);
+                return node ? node.label : params.value;
             },
             cellStyle: {
                 fontSize: '14px',

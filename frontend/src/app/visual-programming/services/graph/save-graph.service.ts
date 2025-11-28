@@ -483,6 +483,16 @@ export class GraphUpdateService {
                 const requests = decisionTableNodes.map((node) => {
                     const tableData = (node as any).data?.table;
 
+                    // Helper to resolve node ID (or name) to current node name
+                    const resolveNodeName = (idOrName: string | null): string | null => {
+                        if (!idOrName) return null;
+                        // Try to find by ID first
+                        const targetNode = flowState.nodes.find((n) => n.id === idOrName);
+                        if (targetNode) return targetNode.node_name;
+                        // Fallback: maybe it's already a name?
+                        return idOrName;
+                    };
+
                     const conditionGroups: CreateConditionGroupRequest[] = (
                         tableData?.condition_groups || []
                     )
@@ -507,7 +517,7 @@ export class GraphUpdateService {
                                 expression: group.expression,
                                 conditions,
                                 manipulation: group.manipulation,
-                                next_node: group.next_node || null,
+                                next_node: resolveNodeName(group.next_node),
                                 order:
                                     typeof group.order === 'number'
                                         ? group.order
@@ -519,8 +529,8 @@ export class GraphUpdateService {
                         graph: graph.id,
                         node_name: node.node_name,
                         condition_groups: conditionGroups,
-                        default_next_node: tableData?.default_next_node || null,
-                        next_error_node: tableData?.next_error_node || null,
+                        default_next_node: resolveNodeName(tableData?.default_next_node),
+                        next_error_node: resolveNodeName(tableData?.next_error_node),
                     };
 
                     return this.decisionTableNodeService
