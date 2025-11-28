@@ -9,6 +9,7 @@ class TablesConfig(AppConfig):
     name = "tables"
 
     def ready(self):
+        import tables.signals.session_signals
         import tables.signals.crew_signals
         import tables.signals.graph_signals
         from tables.services.config_service import YamlConfigService
