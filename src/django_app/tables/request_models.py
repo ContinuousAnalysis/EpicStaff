@@ -328,3 +328,10 @@ class ChunkDocumentMessageResponse(BaseModel):
 
 class StopSessionMessage(BaseModel):
     session_id: int
+
+
+class ProcessRagIndexingMessage(BaseModel):
+
+    rag_id: int
+    rag_type: str  # "naive" or "graph"
+    collection_id: int

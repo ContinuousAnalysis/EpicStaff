@@ -38,6 +38,7 @@ from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
 from tables.services.run_python_code_service import RunPythonCodeService
 from tables.services.quickstart_service import QuickstartService
+from tables.services.knowledge_services.indexing_service import IndexingService
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -62,7 +63,7 @@ from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
-    ProcessCollectionIndexingSerializer,
+    ProcessRagIndexingSerializer,
     RunSessionSerializer,
 )
 # from tables.serializers.knowledge_serializers import CollectionStatusSerializer
@@ -864,15 +865,50 @@ class QuickstartView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ProcessCollectionIndexingView(APIView):
-    @swagger_auto_schema(request_body=ProcessCollectionIndexingSerializer)
+class ProcessRagIndexingView(APIView):
+    """
+    View for triggering RAG indexing (chunking + embedding).
+    All business logic is handled by IndexingService.
+    """
+
+    @swagger_auto_schema(
+        request_body=ProcessRagIndexingSerializer,
+        responses={
+            202: "Indexing process accepted and queued",
+            400: "Invalid request or RAG not ready for indexing",
+            404: "RAG configuration not found",
+        }
+    )
     def post(self, request):
-        serializer = ProcessCollectionIndexingSerializer(data=request.data)
-        if serializer.is_valid():
-            collection_id = serializer["collection_id"].value
-            if not SourceCollection.objects.filter(
-                collection_id=collection_id
-            ).exists():
-                return Response(status=status.HTTP_404_NOT_FOUND)
-            redis_service.publish_source_collection(collection_id=collection_id)
-            return Response(status=status.HTTP_202_ACCEPTED)
+        serializer = ProcessRagIndexingSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        rag_id = serializer.validated_data["rag_id"]
+        rag_type = serializer.validated_data["rag_type"]
+
+        try:
+            indexing_data = IndexingService.validate_and_prepare_indexing(
+                rag_id=rag_id,
+                rag_type=rag_type
+            )
+
+            redis_service.publish_rag_indexing(
+                rag_id=indexing_data["rag_id"],
+                rag_type=indexing_data["rag_type"],
+                collection_id=indexing_data["collection_id"]
+            )
+
+            return Response(
+                data={
+                    "detail": "Indexing process accepted",
+                    "rag_id": indexing_data["rag_id"],
+                    "rag_type": indexing_data["rag_type"],
+                    "collection_id": indexing_data["collection_id"]
+                },
+                status=status.HTTP_202_ACCEPTED
+            )
+
+        except Exception as e:
+            # DRF handle 
+            raise

@@ -51,7 +51,7 @@ from tables.views.views import (
     AnswerToLLM,
     EnvironmentConfig,
     InitRealtimeAPIView,
-    ProcessCollectionIndexingView,
+    ProcessRagIndexingView,
     RunPythonCodeAPIView,
     ToolListRetrieveUpdateGenericViewSet,
     SessionViewSet,
@@ -240,9 +240,9 @@ urlpatterns = [
         name="process-document-chunking",
     ),
     path(
-        "process-collection-indexing/",
-        ProcessCollectionIndexingView.as_view(),
-        name="process-collection-indexing",
+        "process-rag-indexing/",
+        ProcessRagIndexingView.as_view(),
+        name="process-rag-indexing",
     ),
     path(
         "documents/source-collection/<int:collection_id>/upload/",

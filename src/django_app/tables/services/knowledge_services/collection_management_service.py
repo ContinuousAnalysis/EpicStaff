@@ -1,8 +1,9 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from django.db import transaction, models
 from loguru import logger
 
 from tables.models import SourceCollection, DocumentMetadata, DocumentContent
+from tables.models.knowledge_models import BaseRagType, NaiveRag
 from tables.exceptions import CollectionNotFoundException
 
 
@@ -292,3 +293,121 @@ class CollectionManagementService:
         )
 
         return new_collection
+
+    @staticmethod
+    def get_rag_configurations(collection_id: int) -> List[Dict[str, Any]]:
+        """
+        Get all RAG configurations for a collection.
+
+        This method aggregates all RAG implementations (NaiveRag, GraphRag, etc.)
+        for a given collection, returning summary data for each.
+
+        Args:
+            collection_id: ID of the source collection
+
+        Returns:
+            List[Dict]: List of RAG configuration summaries, each containing:
+                - rag_id: ID of the specific RAG implementation
+                - rag_type: Type of RAG ("naive", "graph", etc.)
+                - status
+                - is_ready_for_indexing
+                - embedder_name
+                - embedder_id
+                - document_configs_count
+                - chunks_count
+                - embeddings_count
+                - created_at
+                - updated_at
+        """
+        # Validate collection exists
+        try:
+            SourceCollection.objects.get(collection_id=collection_id)
+        except SourceCollection.DoesNotExist:
+            raise CollectionNotFoundException(collection_id)
+
+        rag_configurations = []
+
+        # Get all BaseRagType entries for this collection
+        base_rag_types = BaseRagType.objects.filter(
+            source_collection_id=collection_id
+        ).select_related("source_collection")
+
+        for base_rag_type in base_rag_types:
+            if base_rag_type.rag_type == BaseRagType.RagType.NAIVE:
+                # Get NaiveRag configuration
+                naive_rag_config = CollectionManagementService._get_naive_rag_summary(
+                    base_rag_type
+                )
+                if naive_rag_config:
+                    rag_configurations.append(naive_rag_config)
+
+            elif base_rag_type.rag_type == BaseRagType.RagType.GRAPH:
+                # Future: Get GraphRag configuration
+                # For now, return basic info
+                rag_configurations.append(
+                    {
+                        "rag_id": None,
+                        "rag_type": "graph",
+                        "status": "not_implemented",
+                        "is_ready_for_indexing": False,
+                        "message": "GraphRag is not yet implemented",
+                        "created_at": base_rag_type.created_at,
+                        "updated_at": base_rag_type.updated_at,
+                    }
+                )
+
+        return rag_configurations
+
+    @staticmethod
+    def _get_naive_rag_summary(base_rag_type: BaseRagType) -> Optional[Dict[str, Any]]:
+        """
+        Get summary data for a NaiveRag configuration.
+
+        Args:
+            base_rag_type: BaseRagType instance
+
+        Returns:
+            Dict with NaiveRag summary or None if not found
+        """
+        try:
+            naive_rag = (
+                NaiveRag.objects.select_related("embedder")
+                .prefetch_related(
+                    "naive_rag_configs",
+                    "naive_rag_configs__chunks",
+                    "naive_rag_configs__embeddings",
+                )
+                .get(base_rag_type=base_rag_type)
+            )
+        except NaiveRag.DoesNotExist:
+            return None
+
+        # Count document configs, chunks, and embeddings
+        document_configs_count = naive_rag.naive_rag_configs.count()
+        chunks_count = sum(
+            config.chunks.count() for config in naive_rag.naive_rag_configs.all()
+        )
+        embeddings_count = sum(
+            config.embeddings.count() for config in naive_rag.naive_rag_configs.all()
+        )
+
+        # Determine if ready for indexing
+        is_ready_for_indexing = (
+            naive_rag.embedder is not None and document_configs_count > 0
+        )
+
+        return {
+            "rag_id": naive_rag.naive_rag_id,
+            "rag_type": "naive",
+            "status": naive_rag.rag_status,
+            "is_ready_for_indexing": is_ready_for_indexing,
+            "embedder_name": (
+                naive_rag.embedder.custom_name if naive_rag.embedder else None
+            ),
+            "embedder_id": naive_rag.embedder.id if naive_rag.embedder else None,
+            "document_configs_count": document_configs_count,
+            "chunks_count": chunks_count,
+            "embeddings_count": embeddings_count,
+            "created_at": naive_rag.created_at,
+            "updated_at": naive_rag.updated_at,
+        }

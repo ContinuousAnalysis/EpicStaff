@@ -189,3 +189,17 @@ class NaiveRagAlreadyExistsException(RagException):
         super().__init__(
             f"NaiveRag already exists for collection {collection_id}. Use update endpoint instead."
         )
+
+
+class RagNotReadyForIndexingException(RagException):
+    """Raised when RAG configuration is not ready for indexing."""
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class GraphRagNotImplementedException(RagException):
+    """GraphRag not yet implemented."""
+
+    def __init__(self):
+        super().__init__("GraphRag is not yet implemented")
