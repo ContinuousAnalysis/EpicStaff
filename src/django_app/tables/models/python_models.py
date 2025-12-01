@@ -46,7 +46,7 @@ class PythonCodeToolConfigField(models.Model):
         related_name="tool_fields",
     )
 
-    name = models.CharField(blank=False, null=False, max_length=255, unique=True)
+    name = models.CharField(blank=False, null=False, max_length=255)
     description = models.TextField(blank=True)
     data_type = models.CharField(
         choices=FieldType.choices,
@@ -80,6 +80,11 @@ class PythonCodeToolConfig(models.Model):
         return PythonCodeToolConfigField.objects.filter(
             tool=self.tool, name=name
         ).first()
+    class Meta:
+        unique_together = (
+            "tool",
+            "name",
+        )
 
 
 class PythonCodeResult(models.Model):
