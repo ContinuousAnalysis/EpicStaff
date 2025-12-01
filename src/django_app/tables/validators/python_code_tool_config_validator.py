@@ -14,7 +14,7 @@ class PythonCodeToolConfigValidator:
         validated = {}
 
         for field_name, field_obj in fields.items():
-            value = configuration.get(field_name, field_obj.get_default_value())
+            value = configuration.get(field_name)
 
             if value is None and field_obj.required and self.validate_missing_required_fields:
                 raise PythonCodeToolConfigSerializerError(f"Field '{field_name}' is required")

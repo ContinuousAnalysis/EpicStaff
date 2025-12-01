@@ -32,7 +32,7 @@ def test_validate_missing_required_field_raises_error(validator, mock_tool):
     """Test that missing a required field raises an error."""
     # Setup
     field_name = "api_key"
-    mock_field = create_mock_field(field_name, PythonCodeToolConfigField.FieldType.STRING, required=True, default_value=None)
+    mock_field = create_mock_field(field_name, PythonCodeToolConfigField.FieldType.STRING, required=True)
     mock_tool.get_tool_config_fields.return_value = {field_name: mock_field}
     
     config = {} # Empty config
@@ -48,7 +48,7 @@ def test_validate_missing_required_field_allowed_flag(mock_tool):
     validator = PythonCodeToolConfigValidator(validate_missing_required_fields=False)
     
     field_name = "api_key"
-    mock_field = create_mock_field(field_name, PythonCodeToolConfigField.FieldType.STRING, required=True, default_value=None)
+    mock_field = create_mock_field(field_name, PythonCodeToolConfigField.FieldType.STRING, required=True)
     mock_tool.get_tool_config_fields.return_value = {field_name: mock_field}
     
     config = {}
@@ -58,22 +58,6 @@ def test_validate_missing_required_field_allowed_flag(mock_tool):
     
     # Assert: Should pass, but value should be None (or absent depending on logic, here it will be None)
     assert result[field_name] is None
-
-@pytest.mark.django_db
-def test_validate_uses_default_value_when_missing(validator, mock_tool):
-    """Test that the default value is used when input is missing, validation passes."""
-    # Setup
-    field_name = "temperature"
-    mock_field = create_mock_field(field_name, PythonCodeToolConfigField.FieldType.FLOAT, required=True, default_value=0.7)
-    mock_tool.get_tool_config_fields.return_value = {field_name: mock_field}
-    
-    config = {} # Missing the field
-    
-    # Execute
-    result = validator.validate("tool", mock_tool, config)
-    
-    # Assert
-    assert result[field_name] == 0.7
 
 @pytest.mark.django_db
 def test_validate_ignores_extra_config_fields(validator, mock_tool):
@@ -138,7 +122,7 @@ def test_validate_none_value_not_cast(validator, mock_tool):
     
     field_name = "count"
     # Even if it's an INTEGER field
-    mock_field = create_mock_field(field_name, PythonCodeToolConfigField.FieldType.INTEGER, required=True, default_value=None)
+    mock_field = create_mock_field(field_name, PythonCodeToolConfigField.FieldType.INTEGER, required=True)
     mock_tool.get_tool_config_fields.return_value = {field_name: mock_field}
     
     config = {} # Missing input

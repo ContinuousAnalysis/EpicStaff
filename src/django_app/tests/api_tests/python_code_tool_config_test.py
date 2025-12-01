@@ -28,7 +28,6 @@ def test_field_viewset_list(api_client, tool_config_field_int):
         
     assert len(results) == 1
     assert results[0]["name"] == "batch_size"
-    assert results[0]["default_value"] == 10
 
 @pytest.mark.django_db
 def test_field_viewset_create(api_client, python_code_tool):
@@ -78,7 +77,6 @@ def test_config_viewset_create_validation_missing_required(api_client, python_co
         name="mandatory_field",
         data_type=PythonCodeToolConfigField.FieldType.STRING,
         required=True,
-        default_value=None
     )
 
     url = reverse("pythoncodetoolconfig-list")

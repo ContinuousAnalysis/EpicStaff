@@ -125,16 +125,3 @@ def test_python_code_tool_config_serializer_validation():
     serializer = PythonCodeToolConfigSerializer(data=invalid_data)
     with pytest.raises(PythonCodeToolConfigSerializerError):
         serializer.is_valid(raise_exception=True)
-
-
-@pytest.mark.django_db
-def test_python_code_tool_config_field_serializer():
-    field = PythonCodeToolConfigField.objects.create(
-        tool=None,
-        name="field1",
-        data_type=PythonCodeToolConfigField.FieldType.STRING,
-        default_value="abc",
-    )
-    serializer = PythonCodeToolConfigFieldSerializer(field)
-    data = serializer.data
-    assert data["default_value"] == "abc"

@@ -195,7 +195,6 @@ class PythonCodeSerializer(serializers.ModelSerializer):
 
 
 class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
-    default_value = serializers.SerializerMethodField()
 
     class Meta:
         model = PythonCodeToolConfigField
@@ -207,11 +206,7 @@ class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
             "data_type",
             "required",
             "secret",
-            "default_value",
         ]
-
-    def get_default_value(self, obj: PythonCodeToolConfigField):
-        return obj.get_default_value()
 
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()

@@ -46,7 +46,7 @@ class PythonCodeToolConfigField(models.Model):
         related_name="tool_fields",
     )
 
-    name = models.CharField(blank=False, null=False, max_length=255)
+    name = models.CharField(blank=False, null=False, max_length=255, unique=True)
     description = models.TextField(blank=True)
     data_type = models.CharField(
         choices=FieldType.choices,
@@ -55,30 +55,8 @@ class PythonCodeToolConfigField(models.Model):
         null=False,
         default=FieldType.STRING,
     )
-    default_value = models.JSONField(null=True, blank=True)
     required = models.BooleanField(default=True)
     secret = models.BooleanField(default=False)
-
-    def get_default_value(self):
-        value = self.default_value
-        if value is None:
-            return None
-
-        match self.data_type:
-            case self.FieldType.STRING:
-                return str(value)
-            case self.FieldType.BOOLEAN:
-                return bool(value)
-            case (
-                self.FieldType.INTEGER
-                | self.FieldType.LLM_CONFIG
-                | self.FieldType.EMBEDDING_CONFIG
-            ):
-                return int(value)
-            case self.FieldType.FLOAT:
-                return float(value)
-            case self.FieldType.ANY:
-                return value
 
     class Meta:
         unique_together = (

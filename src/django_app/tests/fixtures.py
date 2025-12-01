@@ -765,7 +765,6 @@ def python_code_tool_fields(python_code_tool) -> list[PythonCodeToolConfigField]
             name="arg1",
             description="Argument 1",
             data_type=PythonCodeToolConfigField.FieldType.STRING,
-            default_value="default",
             required=True,
         ),
         PythonCodeToolConfigField.objects.create(
@@ -773,7 +772,6 @@ def python_code_tool_fields(python_code_tool) -> list[PythonCodeToolConfigField]
             name="arg2",
             description="Argument 2",
             data_type=PythonCodeToolConfigField.FieldType.INTEGER,
-            default_value=5,
             required=False,
         ),
     ]
@@ -798,14 +796,12 @@ def mock_tool(mocker):
     tool = MagicMock(spec=PythonCodeTool)
     return tool
 
-def create_mock_field(name, data_type, required=True, default_value=None):
+def create_mock_field(name, data_type, required=True):
     """Helper to create a mock configuration field."""
     field = MagicMock(spec=PythonCodeToolConfigField)
     field.name = name
     field.data_type = data_type
     field.required = required
-    # The validator calls get_default_value()
-    field.get_default_value.return_value = default_value
     return field
 
 
@@ -818,7 +814,6 @@ def tool_config_field_int(db, python_code_tool):
         description="Size of the batch",
         data_type=PythonCodeToolConfigField.FieldType.INTEGER,
         required=True,
-        default_value=10
     )
 
 @pytest.fixture
@@ -829,7 +824,6 @@ def tool_config_field_str(db, python_code_tool):
         name="api_key",
         data_type=PythonCodeToolConfigField.FieldType.STRING,
         required=False,
-        default_value="default_key"
     )
 
 @pytest.fixture
