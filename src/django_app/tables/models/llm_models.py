@@ -111,3 +111,10 @@ class RealtimeTranscriptionConfig(models.Model):
         "RealtimeTranscriptionModel", on_delete=models.CASCADE
     )
     api_key = models.TextField(null=True, blank=True)
+
+
+class QuickstartStatus(models.Model):
+    # Make sure only single record exists
+    # Update this when auth system is done to move quickstart flag to user profile
+    singleton = models.BooleanField(default=True, unique=True)
+    quickstart_completed = models.BooleanField(default=False)

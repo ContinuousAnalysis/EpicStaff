@@ -50,6 +50,7 @@ from tables.models import (
     GraphOrganizationUser,
     OrganizationUser,
     Graph,
+    QuickstartStatus,
 )
 from tables.serializers.model_serializers import (
     SessionSerializer,
@@ -65,6 +66,7 @@ from tables.serializers.serializers import (
     ProcessDocumentChunkingSerializer,
     ProcessCollectionEmbeddingSerializer,
     RunSessionSerializer,
+    QuickstartStatusSerializer,
 )
 from tables.serializers.knowledge_serializers import CollectionStatusSerializer
 from tables.serializers.quickstart_serializers import QuickstartSerializer
@@ -888,3 +890,61 @@ class ProcessCollectionEmbeddingView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             redis_service.publish_source_collection(collection_id=collection_id)
             return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class QuickstartStatusView(APIView):
+    @swagger_auto_schema(
+        operation_description="Get quickstart status",
+        responses={
+            200: QuickstartStatusSerializer,
+            404: openapi.Response(description="Object not found"),
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        obj = QuickstartStatus.objects.first()
+        if not obj:
+            return Response(
+                {"error": "Object not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = QuickstartStatusSerializer(obj, many=False)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_description="Update quickstart status",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "quickstart_completed": openapi.Schema(
+                    type=openapi.TYPE_BOOLEAN,
+                    description="Flag indicating whether quickstart is completed",
+                ),
+            },
+            required=["quickstart_completed"],
+        ),
+        responses={
+            200: QuickstartStatusSerializer,
+            400: openapi.Response(description="Invalid input"),
+            404: openapi.Response(description="QuickstartStatus not found"),
+        },
+    )
+    def put(self, request, *args, **kwargs):
+        quickstart_completed = request.data.get("quickstart_completed")
+
+        if quickstart_completed is None:
+            return Response(
+                {"error": "quickstart_completed flag is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        obj = QuickstartStatus.objects.first()
+        if not obj:
+            return Response(
+                {"error": "QuickstartStatus object not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        obj.quickstart_completed = quickstart_completed
+        obj.save()
+
+        serializer = QuickstartStatusSerializer(obj)
+        return Response(serializer.data, status=status.HTTP_200_OK)
