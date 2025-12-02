@@ -26,7 +26,7 @@ export function getNodeTitle(node: NodeModel): string {
         case NodeType.FILE_EXTRACTOR:
             return node.node_name;
         case NodeType.AUDIO_TO_TEXT:
-            return (node as any).node_name || '';
+            return node.node_name;
         case NodeType.WEBHOOK_TRIGGER:
             return (node as any).node_name || '';
         case NodeType.TELEGRAM_TRIGGER:
