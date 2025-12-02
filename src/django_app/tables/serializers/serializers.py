@@ -5,7 +5,6 @@ from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
 from tables.models.python_models import PythonCodeTool
 from tables.models.graph_models import GraphFile, Graph
-from tables.models.python_models import PythonCodeToolConfig
 
 
 class RunSessionSerializer(serializers.Serializer):
