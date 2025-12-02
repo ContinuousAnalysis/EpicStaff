@@ -34,6 +34,7 @@ from tables.models import (
     GraphSessionMessage,
     PythonNode,
     FileExtractorNode,
+    SubGraphNode,
     AudioTranscriptionNode,
     GraphFile,
 )
@@ -1163,6 +1164,21 @@ class EdgeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class SubGraphNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubGraphNode
+        fields = "__all__"
+
+    def validate(self, attrs):
+        graph = attrs.get("graph") or getattr(self.instance, "graph", None)
+        subgraph = attrs.get("subgraph") or getattr(self.instance, "subgraph", None)
+
+        if graph and subgraph and graph == subgraph:
+            raise serializers.ValidationError("Graph and subgraph cannot be the same.")
+
+        return attrs
+
+
 class ConditionalEdgeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
@@ -1439,6 +1455,7 @@ class GraphSerializer(serializers.ModelSerializer):
     webhook_trigger_node_list = WebhookTriggerNodeSerializer(many=True, read_only=True)
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
+    subgraph_node_list = SubGraphNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
@@ -1460,6 +1477,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "llm_node_list",
             "webhook_trigger_node_list",
             "decision_table_node_list",
+            "subgraph_node_list",
             "start_node_list",
             "end_node_list",
             "time_to_live",

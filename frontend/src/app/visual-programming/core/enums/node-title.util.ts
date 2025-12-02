@@ -32,6 +32,9 @@ export function getNodeTitle(node: NodeModel): string {
             return (node as any).node_name || '';
         case NodeType.END:
             return 'End';
+        case NodeType.SUBGRAPH:
+            return node.data.name 
+            ;
         default:
             return '';
     }
