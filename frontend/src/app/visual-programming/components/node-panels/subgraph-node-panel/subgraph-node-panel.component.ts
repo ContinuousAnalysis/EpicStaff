@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal, inject, OnInit, input, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, inject, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, Validators, FormArray } from '@angular/forms';
 import { SubGraphNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
@@ -51,25 +51,16 @@ interface InputMapPair {
                             Selected Flow
                             <i class="ti ti-help-circle tooltip-icon" title="Select the flow that this node will execute"></i>
                         </label>
-                        <div class="selected-flow-row">
-                            <select
-                                formControlName="selectedFlowId"
-                                class="select-field"
-                                (change)="onFlowChange()"
-                            >
-                                <option [value]="null" disabled>Select a flow</option>
-                                @for (flow of filteredFlows(); track flow.id) {
-                                <option [value]="flow.id">{{ flow.name }}</option>
-                                }
-                            </select>
-                            <app-go-to-button
-                                variant="full"
-                                label="Go to flow"
-                                [href]="getSelectedFlowUrl()"
-                                target="_blank"
-                                [disabled]="!selectedFlowExists()"
-                            ></app-go-to-button>
-                        </div>
+                        <select
+                            formControlName="selectedFlowId"
+                            class="select-field"
+                            (change)="onFlowChange()"
+                        >
+                            <option [value]="null" disabled>Select a flow</option>
+                            @for (flow of availableFlows(); track flow.id) {
+                            <option [value]="flow.id">{{ flow.name }}</option>
+                            }
+                        </select>
                     </div>
                 </form>
             </div>
@@ -161,14 +152,6 @@ export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel>
     private flowsApiService = inject(FlowsApiService);
     
     public availableFlows = signal<GraphDto[]>([]);
-    public readonly currentFlowId = input<number | null>(null);
-    public readonly filteredFlows = computed(() => {
-        const currentId = this.currentFlowId();
-        if (!currentId) {
-            return this.availableFlows();
-        }
-        return this.availableFlows().filter((flow) => flow.id !== currentId);
-    });
 
     constructor() {
         super();
@@ -192,16 +175,11 @@ export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel>
     }
 
     protected initializeForm(): FormGroup {
-        const currentFlowId = this.currentFlowId();
-        const selectedId = this.node().data.id ?? null;
-        const initialSelectedId =
-            currentFlowId && selectedId === currentFlowId ? null : selectedId;
-
         const form = this.fb.group({
             node_name: [this.node().node_name || '', this.createNodeNameValidators()],
             input_map: this.fb.array([]),
             output_variable_path: [this.node().output_variable_path || ''],
-            selectedFlowId: [initialSelectedId, Validators.required],
+            selectedFlowId: [this.node().data.id, Validators.required],
         });
 
         this.initializeInputMap(form);

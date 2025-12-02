@@ -15,5 +15,5 @@ export enum NodeType {
     TELEGRAM_TRIGGER = 'telegram-trigger',
     END = 'end',
     SUBGRAPH = 'subgraph',
-    AUDIO_TO_TEXT = 'audio-to-text-node'
+    AUDIO_TO_TEXT = 'audio-to-text-node',
 }

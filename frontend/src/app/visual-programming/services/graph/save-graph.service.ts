@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 import {EMPTY, forkJoin, Observable, of, throwError} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
+
 import { FlowsApiService } from '../../../features/flows/services/flows-api.service';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
 import { NodeType } from '../../core/enums/node-type';
@@ -15,6 +16,7 @@ import {
     NodeModel,
     SubGraphNodeModel,
 } from '../../core/models/node.model';
+
 import {ToastService} from '../../../services/notifications/toast.service';
 import {
     ConditionalEdge,
@@ -59,19 +61,15 @@ import {
     CreateEndNodeRequest,
     EndNode,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
+import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
 import {
     SubGraphNode,
     CreateSubGraphNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
+import { AudioToTextService } from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
+import { WebhookTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
 import { CreateWebhookTriggerNodeRequest, GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
-import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
-import {
-    AudioToTextService
-} from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
-import {
-    WebhookTriggerNodeService
-} from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
 import {
     CreateConditionGroupRequest,
     CreateDecisionTableNodeRequest,
@@ -398,6 +396,40 @@ export class GraphUpdateService {
                     return this.subGraphNodeService
                         .createSubGraphNode(payload)
                         .pipe(catchError((err: any) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
+        // ---- Handle SubGraph Nodes ----
+        let deleteSubGraphNodes$: Observable<any> = of(null);
+        if (graph.subgraph_node_list && graph.subgraph_node_list.length > 0) {
+            const deleteSubGraphReqs = graph.subgraph_node_list.map(
+                (subGraphNode: SubGraphNode) =>
+                    this.subGraphNodeService
+                        .deleteSubGraphNode(subGraphNode.id)
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteSubGraphNodes$ = forkJoin(deleteSubGraphReqs);
+        }
+
+        const subGraphNodes$ = deleteSubGraphNodes$.pipe(
+            switchMap(() => {
+                const subGraphNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.SUBGRAPH
+                ) as SubGraphNodeModel[];
+
+                const requests = subGraphNodes.map((node) => {
+                    const payload: CreateSubGraphNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        subgraph: node.data.id,
+                        input_map: node.input_map || {},
+                        output_variable_path: node.output_variable_path || null,
+                    };
+                    return this.subGraphNodeService
+                        .createSubGraphNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
                 });
                 return requests.length ? forkJoin(requests) : of([]);
             })
@@ -738,8 +770,7 @@ export class GraphUpdateService {
                                         edges: results.edges,
                                         endNodes: results.endNodes,
                                         subGraphNodes: results.subGraphNodes,
-                                        decisionTableNodes:
-                                            results.decisionTableNodes,
+                                        decisionTableNodes: results.decisionTableNodes,
                                     },
                                 };
                             })

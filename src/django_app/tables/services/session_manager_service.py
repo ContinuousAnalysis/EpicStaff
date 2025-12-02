@@ -1,6 +1,6 @@
 from tables.validators.end_node_validator import EndNodeValidator
 from tables.validators.subgraph_validator import SubGraphValidator
-from tables.exceptions import GraphEntryPointException
+from tables.exceptions import EndNodeValidationError, GraphEntryPointException
 from tables.models.graph_models import (
     ConditionalEdge,
     DecisionTableNode,
@@ -8,7 +8,6 @@ from tables.models.graph_models import (
     LLMNode,
     StartNode,
     SubGraphNode,
-    TelegramTriggerNode,
     WebhookTriggerNode,
 )
 
@@ -32,7 +31,6 @@ from tables.request_models import (
     SessionData,
     SubGraphNodeData,
     SubGraphData,
-    TelegramTriggerNodeData,
 )
 from tables.models import (
     CrewNode,
@@ -105,7 +103,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         self.subgraph_validator.validate(session.graph)
 
         unique_subgraphs: dict[int, SubGraphData] = {}
-        graph_data = self._build_graph_data(session.graph, unique_subgraphs, session)
+        graph_data = self._build_graph_data(session.graph, unique_subgraphs)
 
         return SessionData(
             id=session.pk,
@@ -232,10 +230,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         return variables
 
     def _build_graph_data(
-        self,
-        graph: Graph,
-        unique_subgraphs: dict[int, SubGraphData] | None = None,
-        session: Session = None,
+        self, graph: Graph, unique_subgraphs: dict[int, SubGraphData] | None = None
     ) -> GraphData:
         """Recursively build GraphData for a graph to handle subgraphs
 
@@ -246,23 +241,18 @@ class SessionManagerService(metaclass=SingletonMeta):
         crew_node_list = CrewNode.objects.filter(graph=graph.pk)
         python_node_list = PythonNode.objects.filter(graph=graph.pk)
         file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
-        audio_transcription_node_list = AudioTranscriptionNode.objects.filter(
-            graph=graph.pk
-        )
         edge_list = Edge.objects.filter(graph=graph.pk)
         conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         subgraph_node_list = SubGraphNode.objects.filter(graph=graph.pk)
-        webhook_trigger_node_list = WebhookTriggerNode.objects.filter(graph=graph.pk)
-        telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
+        crew_node_data_list: list[CrewNodeData] = []
 
         if file_extractor_node_list:
-            self.file_node_validator.validate_file_nodes(file_extractor_node_list)
-        if audio_transcription_node_list:
-            self.file_node_validator.validate_file_nodes(audio_transcription_node_list)
+            self.file_extractor_node_validator.validate_file_extractor_nodes(
+                file_extractor_node_list
+            )
 
-        crew_node_data_list: list[CrewNodeData] = []
         for item in crew_node_list:
             crew_node_data_list.append(
                 self.converter_service.convert_crew_node_to_pydantic(crew_node=item)
@@ -274,36 +264,10 @@ class SessionManagerService(metaclass=SingletonMeta):
                 self.converter_service.convert_python_node_to_pydantic(python_node=item)
             )
 
-        webhook_trigger_node_data_list: list[PythonNodeData] = []
-        for item in webhook_trigger_node_list:
-            webhook_trigger_node_data_list.append(
-                self.converter_service.convert_webhook_trigger_node_to_pydantic(
-                    webhook_trigger_node=item
-                )
-            )
-
-        telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
-        for item in telegram_trigger_node_list:
-            telegram_trigger_node_data_list.append(
-                self.converter_service.convert_telegram_trigger_node_to_pydantic(
-                    telegram_trigger_node=item
-                )
-            )
-
         file_extractor_node_data_list: list[FileExtractorNodeData] = []
         for item in file_extractor_node_list:
             file_extractor_node_data_list.append(
                 FileExtractorNodeData(
-                    node_name=item.node_name,
-                    input_map=item.input_map,
-                    output_variable_path=item.output_variable_path,
-                )
-            )
-
-        audio_transcription_node_data_list: list[AudioTranscriptionNode] = []
-        for item in audio_transcription_node_list:
-            audio_transcription_node_data_list.append(
-                AudioTranscriptionNodeData(
                     node_name=item.node_name,
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
@@ -317,21 +281,10 @@ class SessionManagerService(metaclass=SingletonMeta):
             )
 
         edge_data_list: list[EdgeData] = []
-
-        # If entrypoint is set for session than use it. If not, than use entrypoint from edges.
-        entrypoint = session.entrypoint
-
         for item in edge_list:
-            if item.start_key == "__start__":
-                if entrypoint is None:
-                    entrypoint = item.end_key
-                continue
             edge_data_list.append(
                 EdgeData(start_key=item.start_key, end_key=item.end_key)
             )
-
-        if entrypoint is None:
-            raise GraphEntryPointException()
 
         conditional_edge_data_list: list[ConditionalEdgeData] = []
         for item in conditional_edge_list:
@@ -360,9 +313,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                 unique_subgraphs is not None
                 and item.subgraph_id not in unique_subgraphs
             ):
-                subgraph_data = self._build_graph_data(
-                    subgraph, unique_subgraphs, session
-                )
+                subgraph_data = self._build_graph_data(subgraph, unique_subgraphs)
 
                 variables = subgraph.start_node_list.first().variables
                 if not variables:
@@ -393,19 +344,17 @@ class SessionManagerService(metaclass=SingletonMeta):
         else:
             end_node_data = None
 
+        entry_point = start_edge.end_key
         return GraphData(
             name=graph.name,
             crew_node_list=crew_node_data_list,
-            webhook_trigger_node_data_list=webhook_trigger_node_data_list,
             python_node_list=python_node_data_list,
             file_extractor_node_list=file_extractor_node_data_list,
-            audio_transcription_node_list=audio_transcription_node_data_list,
             llm_node_list=llm_node_data_list,
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,
             decision_table_node_list=decision_table_node_data_list,
             subgraph_node_list=subgraph_node_data_list,
-            entrypoint=entrypoint,
+            entry_point=entry_point,
             end_node=end_node_data,
-            telegram_trigger_node_data_list=telegram_trigger_node_data_list,
         )

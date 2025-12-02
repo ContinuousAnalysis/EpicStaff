@@ -17,6 +17,7 @@ import { MenuType } from '../../core/enums/menu-type.enum';
 import { FlowGraphCoreContextMenuComponent } from './flow-graph-core-context-menu/flow-graph-core-context-menu.component';
 import { TemplatesContextMenuComponent } from './templates-context-menu/templates-context-menu.component';
 import { LlmMenuComponent } from './llm-menu/llm-menu.component';
+import { FlowsMenuComponent } from './flows-menu/flows-menu.component';
 
 @Component({
   selector: 'app-flow-graph-context-menu',
@@ -28,6 +29,7 @@ import { LlmMenuComponent } from './llm-menu/llm-menu.component';
     NgStyle,
     FlowGraphCoreContextMenuComponent,
     TemplatesContextMenuComponent,
+    FlowsMenuComponent,
     LlmMenuComponent,
   ],
 })
@@ -47,6 +49,8 @@ export class FlowGraphContextMenuComponent
   get position(): { x: number; y: number } {
     return this.positionValue;
   }
+
+  @Input() public currentFlowId: number | null = null;
 
   @ViewChild('menuContainer')
   private menuContainer?: ElementRef<HTMLDivElement>;
@@ -81,7 +85,7 @@ export class FlowGraphContextMenuComponent
     return [
       { label: 'Core', type: MenuType.FlowCore },
       { label: 'Templates', type: MenuType.Templates },
-      // { label: 'Models', type: MenuType.Llms },
+      { label: 'Flows', type: MenuType.Flows },
     ];
   }
 
