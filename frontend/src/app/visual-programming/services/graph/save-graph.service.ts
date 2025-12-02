@@ -2,12 +2,20 @@ import {Injectable} from '@angular/core';
 import {EMPTY, forkJoin, Observable, of, throwError} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
 
-import {FlowsApiService} from '../../../features/flows/services/flows-api.service';
-import {GetProjectRequest} from '../../../features/projects/models/project.model';
-import {NodeType} from '../../core/enums/node-type';
-import {ConnectionModel} from '../../core/models/connection.model';
-import {FlowModel} from '../../core/models/flow.model';
-import {EdgeNodeModel, LLMNodeModel, ProjectNodeModel, PythonNodeModel,} from '../../core/models/node.model';
+import { FlowsApiService } from '../../../features/flows/services/flows-api.service';
+import { GetProjectRequest } from '../../../features/projects/models/project.model';
+import { NodeType } from '../../core/enums/node-type';
+import { ConnectionModel } from '../../core/models/connection.model';
+import { FlowModel } from '../../core/models/flow.model';
+import {
+    ProjectNodeModel,
+    PythonNodeModel,
+    EdgeNodeModel,
+    StartNodeModel,
+    LLMNodeModel,
+    NodeModel,
+    SubGraphNodeModel,
+} from '../../core/models/node.model';
 
 import {ToastService} from '../../../services/notifications/toast.service';
 import {
@@ -53,17 +61,15 @@ import {
     CreateEndNodeRequest,
     EndNode,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
-import {EndNodeService} from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
 import {
-    AudioToTextService
-} from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
-import {
-    WebhookTriggerNodeService
-} from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
-import {
-    CreateWebhookTriggerNodeRequest,
-    GetWebhookTriggerNodeRequest
-} from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
+    SubGraphNode,
+    CreateSubGraphNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
+import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
+import { AudioToTextService } from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
+import { WebhookTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
+import { CreateWebhookTriggerNodeRequest, GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import {
     CreateConditionGroupRequest,
     CreateDecisionTableNodeRequest,
@@ -96,6 +102,7 @@ export class GraphUpdateService {
         private webhookTriggerService: WebhookTriggerNodeService,
         private telegramTriggerService: TelegramTriggerNodeService,
         private endNodeService: EndNodeService,
+        private subGraphNodeService: SubGraphNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
         private toastService: ToastService
     ) { }
@@ -134,6 +141,7 @@ export class GraphUpdateService {
             edges: Edge[];
 
             endNodes: EndNode[];
+            subGraphNodes: SubGraphNode[];
             decisionTableNodes: GetDecisionTableNodeRequest[];
         };
     }> {
@@ -353,6 +361,40 @@ export class GraphUpdateService {
                     };
                     return this.endNodeService
                         .createEndNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
+        // ---- Handle SubGraph Nodes ----
+        let deleteSubGraphNodes$: Observable<any> = of(null);
+        if (graph.subgraph_node_list && graph.subgraph_node_list.length > 0) {
+            const deleteSubGraphReqs = graph.subgraph_node_list.map(
+                (subGraphNode: SubGraphNode) =>
+                    this.subGraphNodeService
+                        .deleteSubGraphNode(subGraphNode.id)
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteSubGraphNodes$ = forkJoin(deleteSubGraphReqs);
+        }
+
+        const subGraphNodes$ = deleteSubGraphNodes$.pipe(
+            switchMap(() => {
+                const subGraphNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.SUBGRAPH
+                ) as SubGraphNodeModel[];
+
+                const requests = subGraphNodes.map((node) => {
+                    const payload: CreateSubGraphNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        subgraph: node.data.id,
+                        input_map: node.input_map || {},
+                        output_variable_path: node.output_variable_path || null,
+                    };
+                    return this.subGraphNodeService
+                        .createSubGraphNode(payload)
                         .pipe(catchError((err) => throwError(err)));
                 });
                 return requests.length ? forkJoin(requests) : of([]);
@@ -638,6 +680,7 @@ export class GraphUpdateService {
             telegramTriggerNodes: telegramTriggerNodes$,
             conditionalEdges: conditionalEdges$,
             endNodes: endNodes$,
+            subGraphNodes: subGraphNodes$,
             edges: createEdges$,
             decisionTableNodes: decisionTableNodes$,
         }).pipe(
@@ -653,6 +696,7 @@ export class GraphUpdateService {
                     conditionalEdges: ConditionalEdge[];
                     edges: Edge[];
                     endNodes: EndNode[];
+                    subGraphNodes: SubGraphNode[];
                     decisionTableNodes: GetDecisionTableNodeRequest[];
                 }) => {
                     const updateGraphRequest: UpdateGraphDtoRequest = {
@@ -691,8 +735,8 @@ export class GraphUpdateService {
                                         telegramTriggerNodes: results.telegramTriggerNodes,
                                         edges: results.edges,
                                         endNodes: results.endNodes,
-                                        decisionTableNodes:
-                                            results.decisionTableNodes,
+                                        subGraphNodes: results.subGraphNodes,
+                                        decisionTableNodes: results.decisionTableNodes,
                                     },
                                 };
                             })
