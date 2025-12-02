@@ -27,6 +27,10 @@ import {
     GetFileExtractorNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import {
+    GetAudioToTextNodeRequest,
+    CreateAudioToTextNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
+import {
     CrewNode,
     CreateCrewNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
@@ -57,6 +61,7 @@ import {
     CreateEndNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import { AudioToTextService } from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
 import { WebhookTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
 import { CreateWebhookTriggerNodeRequest, GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import {
@@ -78,6 +83,7 @@ export class GraphUpdateService {
         private graphService: FlowsApiService,
         private llmNodeService: LLMNodeService,
         private fileExtractorService: FileExtractorService,
+        private audioToTextService: AudioToTextService,
         private webhookTriggerService: WebhookTriggerNodeService,
         private endNodeService: EndNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
@@ -111,6 +117,7 @@ export class GraphUpdateService {
         updatedNodes: {
             crewNodes: CrewNode[];
             pythonNodes: PythonNode[];
+            audioToTextNodes: any[];
             llmNodes: any[];
             fileExtractorNodes: any[];
             conditionalEdges: any[];
@@ -232,6 +239,43 @@ export class GraphUpdateService {
                     };
                     return this.fileExtractorService
                         .createFileExtractorNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
+        // ---- Handle Audio Transcription (Audio -> Text) Nodes ----
+        let deleteAudioToTextNodes$: Observable<any> = of(null);
+        if (
+            graph.audio_transcription_node_list &&
+            graph.audio_transcription_node_list.length > 0
+        ) {
+            const deleteATReqs = graph.audio_transcription_node_list.map(
+                (atNode: GetAudioToTextNodeRequest) =>
+                    this.audioToTextService
+                        .deleteAudioToTextNode(atNode.id.toString())
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteAudioToTextNodes$ = forkJoin(deleteATReqs);
+        }
+
+        const audioToTextNodes$ = deleteAudioToTextNodes$.pipe(
+            switchMap(() => {
+                const atNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.AUDIO_TO_TEXT
+                );
+
+                const requests = atNodes.map((node) => {
+                    const payload: CreateAudioToTextNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        input_map: node.input_map || {},
+                        output_variable_path:
+                            node.output_variable_path || null,
+                    };
+                    return this.audioToTextService
+                        .createAudioToTextNode(payload)
                         .pipe(catchError((err) => throwError(err)));
                 });
                 return requests.length ? forkJoin(requests) : of([]);
@@ -546,6 +590,7 @@ export class GraphUpdateService {
         return forkJoin({
             crewNodes: crewNodes$,
             pythonNodes: pythonNodes$,
+            audioToTextNodes: audioToTextNodes$,
             llmNodes: llmNodes$,
             fileExtractorNodes: fileExtractorNodes$,
             webhookTriggerNodes: webhookTriggerNodes$,
@@ -558,6 +603,7 @@ export class GraphUpdateService {
                 (results: {
                     crewNodes: CrewNode[];
                     pythonNodes: PythonNode[];
+                    audioToTextNodes: GetAudioToTextNodeRequest[];
                     llmNodes: any[];
                     fileExtractorNodes: GetFileExtractorNodeRequest[];
                     webhookTriggerNodes: GetWebhookTriggerNodeRequest[];
@@ -591,6 +637,8 @@ export class GraphUpdateService {
                                     updatedNodes: {
                                         crewNodes: results.crewNodes,
                                         pythonNodes: results.pythonNodes,
+                                        audioToTextNodes:
+                                            results.audioToTextNodes,
                                         llmNodes: results.llmNodes,
                                         fileExtractorNodes:
                                             results.fileExtractorNodes,
