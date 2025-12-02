@@ -21,10 +21,24 @@ from src.crew.services.graph.events import StopEvent
 from src.crew.services.graph.subgraphs.decision_table_node import (
     DecisionTableNodeSubgraph,
 )
-from src.crew.services.graph.subgraphs.subgraph_node import SubGraphNode
-from src.crew.services.crew.crew_parser_service import CrewParserService
-from src.crew.services.redis_service import RedisService
-from src.crew.models.request_models import (
+from src.crew.services.graph.nodes.llm_node import LLMNode
+from src.crew.services.graph.nodes.end_node import EndNode
+
+
+from callbacks.session_callback_factory import CrewCallbackFactory
+from services.graph.events import StopEvent
+from services.graph.subgraphs.decision_table_node import DecisionTableNodeSubgraph
+from services.graph.subgraphs.subgraph_node import SubGraphNode
+from services.graph.nodes.llm_node import LLMNode
+from services.graph.nodes.end_node import EndNode
+from models.state import *
+from services.graph.nodes import *
+from models.request_models import SubGraphData
+
+from services.crew.crew_parser_service import CrewParserService
+from services.redis_service import RedisService
+from models.request_models import (
+    ConditionGroupData,
     DecisionTableNodeData,
     PythonCodeData,
     SessionData,
@@ -326,18 +340,10 @@ class SessionGraphBuilder:
                     python_code_data=webhook_trigger_node_data.python_code,
                 )
             )
-        for telegram_trigger_node_data in schema.telegram_trigger_node_data_list:
-            self.add_node(
-                node=TelegramTriggerNode(
-                    session_id=self.session_id,
-                    node_name=telegram_trigger_node_data.node_name,
-                    stop_event=self.stop_event,
-                    field_list=telegram_trigger_node_data.field_list,
-                )
-            )
 
         if schema.entrypoint is not None:
             self.set_entrypoint(schema.entrypoint)
+
         # name always __end_node__
         # TODO: remove validation here and in request model
         if schema.end_node is not None:

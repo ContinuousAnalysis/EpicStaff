@@ -21,5 +21,5 @@ export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
     [NodeType.WEBHOOK_TRIGGER]: WebhookTriggerNodePanelComponent,
     [NodeType.END]: EndNodePanelComponent,
     [NodeType.TABLE]: DecisionTableNodePanelComponent,
-    // start: StartNodePanelComponent,
+    [NodeType.SUBGRAPH]: SubGraphNodePanelComponent,
 };

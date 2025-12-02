@@ -90,7 +90,7 @@ import { expandCollapseAnimation } from '../../../../../../shared/animations/ani
           </div>
 
           <!-- State History Section -->
-          <!-- <div class="state-history-container" *ngIf="hasStateHistory()">
+          <div class="state-history-container" *ngIf="hasStateHistory()">
             <div class="section-heading" (click)="toggleStateHistory($event)">
               <i
                 class="ti"
@@ -157,7 +157,7 @@ import { expandCollapseAnimation } from '../../../../../../shared/animations/ani
                 </div>
               </div>
             </div>
-          </div> -->
+          </div>
         </div>
       </div>
     </div>

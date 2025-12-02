@@ -113,7 +113,6 @@ interface RootDrilldownView {
     WaitForUserInputComponent,
     UserMessageComponent,
     ExtractedChunksMessageComponent,
-    WarningMessagesComponent,
     SubgraphStartMessageComponent,
     SubgraphFinishMessageComponent,
   ],
@@ -614,184 +613,83 @@ export class GraphMessagesComponent
     );
   }
 
-  public isIndideSubFlow(message: GraphMessage): boolean {
-    return isMessageType(message, MessageType.SUBGRAPH_START) || isMessageType(message, MessageType.SUBGRAPH_FINISH);
-  }
+  // Check if message is inside a subflow (but not the start/finish messages themselves)
+  public isInsideSubflow(message: GraphMessage, index: number): boolean {
+    const messages = this.sseService.messages();
+    if (index === 0) return false;
 
-  public onViewNestedMessages(message: GraphMessage): void {
-    const context = this.getMessageContext(message);
-    if (!context || !context.isSubgraphStart) return;
-    const rootKey = this.getRootKeyForContext(context);
-    if (!rootKey) return;
-    const nextPath = [...context.path, context.key];
-    const currentPath = this.drillPaths.get(rootKey);
-    if (currentPath && this.pathsEqual(currentPath, nextPath)) {
-      this.closingRootKeys.add(rootKey);
-      this.cdr.markForCheck();
-      setTimeout(() => {
-        this.drillPaths.delete(rootKey);
-        this.closingRootKeys.delete(rootKey);
-        this.updateDrilldownView();
-        this.cdr.markForCheck();
-      }, this.drilldownCloseDelayMs);
-    } else {
-      this.closingRootKeys.delete(rootKey);
-      this.drillPaths.set(rootKey, nextPath);
+    const msgType = message.message_data?.message_type;
+    // Don't mark subgraph_start and subgraph_finish as inside subflow
+    if (
+      msgType === MessageType.SUBGRAPH_START ||
+      msgType === MessageType.SUBGRAPH_FINISH
+    ) {
+      return false;
     }
-    this.updateDrilldownView();
-  }
 
-  public onBreadcrumbClick(rootKey: string, index: number): void {
-    const currentPath = this.drillPaths.get(rootKey);
-    if (!currentPath) return;
-    this.drillPaths.set(rootKey, currentPath.slice(0, index + 1));
-    this.updateDrilldownView();
-  }
+    // Track active subflows (stack-based for nested subflows)
+    const subflowStack: Array<{ name: string; startIndex: number }> = [];
 
-  public isDrilldownRoot(message: GraphMessage): boolean {
-    const context = this.getMessageContext(message);
-    return (
-      !!context &&
-      context.isSubgraphStart &&
-      context.path.length === 0 &&
-      this.drillPaths.has(context.key)
-    );
-  }
+    for (let i = 0; i < index; i++) {
+      const msg = messages[i];
+      const currentMsgType = msg.message_data?.message_type;
 
-  public isDrilldownClosing(message: GraphMessage): boolean {
-    const rootKey = this.getRootKeyForMessage(message);
-    if (!rootKey) return false;
-    return this.closingRootKeys.has(rootKey);
-  }
-
-  public hasNestedMessages(message: GraphMessage): boolean {
-    const context = this.getMessageContext(message);
-    if (!context) return false;
-    return this.hasNestedMessagesForContext(context);
-  }
-
-  public isNestedMessagesOpen(message: GraphMessage): boolean {
-    const context = this.getMessageContext(message);
-    if (!context) return false;
-    return this.isNestedMessagesOpenForContext(context);
-  }
-
-  private hasNestedMessagesForContext(context: MessageContext): boolean {
-    if (!context.isSubgraphStart) return false;
-    const nestedPath = [...context.path, context.key];
-    return this.messageContexts.some((ctx) => this.pathsEqual(ctx.path, nestedPath));
-  }
-
-  private isNestedMessagesOpenForContext(context: MessageContext): boolean {
-    if (!context.isSubgraphStart) return false;
-    const rootKey = this.getRootKeyForContext(context);
-    if (!rootKey) return false;
-    if (this.closingRootKeys.has(rootKey)) return false;
-    const currentPath = this.drillPaths.get(rootKey);
-    if (!currentPath) return false;
-    const targetPath = [...context.path, context.key];
-    return this.pathsEqual(currentPath, targetPath);
-  }
-
-  public getBreadcrumbs(message: GraphMessage): { key: string; label: string }[] {
-    const rootKey = this.getRootKeyForMessage(message);
-    if (!rootKey) return [];
-    return this.breadcrumbsByRoot.get(rootKey) ?? [];
-  }
-
-  public getFilteredBreadcrumbs(
-    message: GraphMessage
-  ): { key: string; label: string; index: number }[] {
-    const rootKey = this.getRootKeyForMessage(message);
-    if (!rootKey) return [];
-    return this.filteredBreadcrumbsByRoot.get(rootKey) ?? [];
-  }
-
-  public onBreadcrumbSearch(rootKey: string, value: string): void {
-    const nextValue = value ?? '';
-    if (nextValue.trim().length === 0) {
-      this.breadcrumbSearchByRoot.delete(rootKey);
-    } else {
-      this.breadcrumbSearchByRoot.set(rootKey, nextValue);
+      if (currentMsgType === MessageType.SUBGRAPH_START) {
+        subflowStack.push({ name: msg.name, startIndex: i });
+      } else if (currentMsgType === MessageType.SUBGRAPH_FINISH) {
+        // Find matching subflow start (by name, most recent)
+        const matchingIndex = subflowStack.findIndex(
+          (sf) => sf.name === msg.name
+        );
+        if (matchingIndex !== -1) {
+          // Remove this subflow and all nested ones after it
+          subflowStack.splice(matchingIndex);
+        }
+      }
     }
-    this.updateFilteredBreadcrumbs(rootKey);
-    this.updateRootViews();
-    this.cdr.markForCheck();
-    this.scheduleBreadcrumbOverflowRefresh();
+
+    // If there are active subflows, this message is inside one
+    return subflowStack.length > 0;
   }
 
-  public getBreadcrumbSearchTerm(rootKey: string): string {
-    return this.breadcrumbSearchByRoot.get(rootKey) ?? '';
-  }
+  // Get the level of subflow nesting (0 = not in subflow, 1 = in one subflow, etc.)
+  public getSubflowLevel(message: GraphMessage, index: number): number {
+    const messages = this.sseService.messages();
+    if (index === 0) return 0;
 
-  public isBreadcrumbSearchExpanded(rootKey: string): boolean {
-    return this.breadcrumbSearchExpandedByRoot.get(rootKey) ?? false;
-  }
+    const msgType = message.message_data?.message_type;
 
-  public toggleBreadcrumbSearch(rootKey: string): void {
-    const nextValue = !this.isBreadcrumbSearchExpanded(rootKey);
-    if (nextValue) {
-      this.breadcrumbSearchExpandedByRoot.set(rootKey, true);
-    } else {
-      this.breadcrumbSearchExpandedByRoot.delete(rootKey);
-      this.breadcrumbSearchByRoot.delete(rootKey);
+    // Track active subflows (stack-based for nested subflows)
+    const subflowStack: Array<{ name: string; startIndex: number }> = [];
+
+    for (let i = 0; i < index; i++) {
+      const msg = messages[i];
+      const currentMsgType = msg.message_data?.message_type;
+
+      if (currentMsgType === MessageType.SUBGRAPH_START) {
+        subflowStack.push({ name: msg.name, startIndex: i });
+      } else if (currentMsgType === MessageType.SUBGRAPH_FINISH) {
+        // Find matching subflow start (by name, most recent)
+        const matchingIndex = subflowStack.findIndex(
+          (sf) => sf.name === msg.name
+        );
+        if (matchingIndex !== -1) {
+          // Remove this subflow and all nested ones after it
+          subflowStack.splice(matchingIndex);
+        }
+      }
     }
-    this.updateFilteredBreadcrumbs(rootKey);
-    this.updateRootViews();
-    this.cdr.markForCheck();
-    this.scheduleBreadcrumbOverflowRefresh();
-  }
 
-  public onBreadcrumbSearchBlur(rootKey: string): void {
-    if (!this.getBreadcrumbSearchTerm(rootKey).trim()) {
-      this.breadcrumbSearchExpandedByRoot.delete(rootKey);
-      this.breadcrumbSearchByRoot.delete(rootKey);
-      this.updateFilteredBreadcrumbs(rootKey);
-      this.updateRootViews();
-      this.cdr.markForCheck();
-      this.scheduleBreadcrumbOverflowRefresh();
+    // For subgraph_start and subgraph_finish, return the level they are starting/finishing at
+    // (which is the current stack length before they are added/removed)
+    if (
+      msgType === MessageType.SUBGRAPH_START ||
+      msgType === MessageType.SUBGRAPH_FINISH
+    ) {
+      return subflowStack.length;
     }
-  }
 
-  public scrollBreadcrumbs(
-    container: HTMLElement,
-    direction: 'left' | 'right'
-  ): void {
-    if (!container) return;
-    const baseOffset = Math.max(container.clientWidth * 0.6, 140);
-    const offset = direction === 'left' ? -baseOffset : baseOffset;
-    container.scrollBy({ left: offset, behavior: 'smooth' });
-  }
-
-  public onBreadcrumbsScroll(rootKey: string, container: HTMLElement): void {
-    this.updateBreadcrumbOverflow(rootKey, container);
-  }
-
-  public hasBreadcrumbOverflow(rootKey: string): boolean {
-    return this.breadcrumbOverflowByRoot.get(rootKey) ?? false;
-  }
-
-  public getDrilldownEntries(message: GraphMessage): MessageViewEntry[] {
-    const rootKey = this.getRootKeyForMessage(message);
-    if (!rootKey) return [];
-    return this.drilldownEntriesByRoot.get(rootKey) ?? [];
-  }
-
-  public getRootKeyForMessage(message: GraphMessage): string | null {
-    const context = this.getMessageContext(message);
-    if (!context) return null;
-    return this.getRootKeyForContext(context);
-  }
-
-  public getCurrentDrillEntry(message: GraphMessage): MessageViewEntry | null {
-    const rootKey = this.getRootKeyForMessage(message);
-    if (!rootKey) return null;
-    return this.currentDrillEntryByRoot.get(rootKey) ?? null;
-  }
-
-  public getBreadcrumbLabel(key: string): string {
-    const message = this.messageByKey.get(key);
-    return message?.name || 'Subgraph';
+    return subflowStack.length;
   }
 
   onUserMessageSubmitted(message: string) {
