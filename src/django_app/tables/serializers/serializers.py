@@ -6,7 +6,6 @@ from tables.models.crew_models import ToolConfig
 from tables.models.python_models import PythonCodeTool
 from tables.models.realtime_models import VoiceChoices
 from tables.models.graph_models import GraphFile, Graph
-from tables.models.python_models import PythonCodeTool, PythonCodeToolConfig
 
 
 class RunSessionSerializer(serializers.Serializer):
