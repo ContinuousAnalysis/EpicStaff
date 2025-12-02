@@ -34,11 +34,8 @@ export function getNodeTitle(node: NodeModel): string {
         case NodeType.END:
             return 'End';
         case NodeType.SUBGRAPH:
-            const subgraphNode = node as SubGraphNodeModel;
-            if (subgraphNode.isBlocked || !subgraphNode.data?.name) {
-                return 'Deleted Flow';
-            }
-            return subgraphNode.data.name;
+            return node.data.name 
+            ;
         default:
             return '';
     }

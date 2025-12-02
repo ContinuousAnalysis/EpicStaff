@@ -14,9 +14,6 @@ import { ConnectionModel } from './connection.model';
 import { ViewPort } from './port.model';
 import { GroupNodeModel } from './group.model';
 import { DecisionTableNode } from './decision-table.model';
-import {
-    TelegramTriggerNodeField
-} from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
 import { GetGraphLightRequest } from '../../../features/flows/models/graph.model';
 
 export interface BaseNodeModel {
@@ -151,5 +148,5 @@ export type NodeModel =
     | AudioToTextNodeModel
     | SubGraphNodeModel
     | WebhookTriggerNodeModel
-    | TelegramTriggerNodeModel
-    | EndNodeModel;
+    | EndNodeModel
+    | SubGraphNodeModel;

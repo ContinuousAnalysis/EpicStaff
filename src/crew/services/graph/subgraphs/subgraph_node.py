@@ -170,15 +170,15 @@ class SubGraphNode:
 
         temp_state = {"variables": DotDict(state["variables"].model_dump())}
 
-        if self.output_variable_path == "variables":
-            temp_state["variables"] = DotDict(subgraph_output)
-        elif self.output_variable_path:
+        if self.output_variable_path:
             if self.output_variable_path.startswith("variables."):
                 full_path = self.output_variable_path
             else:
                 full_path = f"variables.{self.output_variable_path}"
+        else:
+            full_path = "variables"
 
-            set_output_variables(temp_state, full_path, subgraph_output)
+        set_output_variables(temp_state, full_path, subgraph_output)
 
         state_history_item = self._create_state_history_item(
             subgraph_input, subgraph_output, dict(temp_state["variables"])

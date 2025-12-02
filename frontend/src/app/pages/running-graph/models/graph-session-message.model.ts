@@ -28,7 +28,6 @@ export enum MessageType {
   EXTRACTED_CHUNKS = 'extracted_chunks',
   SUBGRAPH_START = 'subgraph_start',
   SUBGRAPH_FINISH = 'subgraph_finish',
-  GRAPH_END = 'graph_end',
 }
 
 export interface FinishMessageData {
@@ -164,10 +163,6 @@ export interface FinishSubflowMessageData {
   message_type: MessageType.SUBGRAPH_FINISH;
 }
 
-export interface GraphEndMessageData {
-  message_type: MessageType.GRAPH_END;
-}
-
 // Type union for all message data types
 export type MessageData =
   | FinishMessageData
@@ -182,5 +177,4 @@ export type MessageData =
   | UpdateSessionStatusMessageData
   | ExtractedChunksMessageData
   | StartSubflowMessageData
-  | FinishSubflowMessageData
-  | GraphEndMessageData;
+  | FinishSubflowMessageData;
