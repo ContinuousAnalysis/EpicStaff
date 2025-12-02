@@ -13,4 +13,5 @@ export enum NodeType {
     FILE_EXTRACTOR = 'file-extractor',
     WEBHOOK_TRIGGER = 'webhook-trigger',
     END = 'end',
+    AUDIO_TO_TEXT = 'audio-to-text-node'
 }

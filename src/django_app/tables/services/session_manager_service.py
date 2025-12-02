@@ -14,7 +14,7 @@ from utils.singleton_meta import SingletonMeta
 from utils.logger import logger
 from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
-from tables.validators.file_extractor_node_validator import FileExtractorNodeValidator
+from tables.validators.file_node_validator import FileNodeValidator
 
 from tables.request_models import (
     ConditionalEdgeData,
@@ -26,6 +26,7 @@ from tables.request_models import (
     LLMNodeData,
     PythonNodeData,
     FileExtractorNodeData,
+    AudioTranscriptionNodeData,
     SessionData,
 )
 
@@ -37,6 +38,9 @@ from tables.models import (
     PythonNode,
     EndNode,
     FileExtractorNode,
+    AudioTranscriptionNode,
+    Organization,
+    OrganizationUser,
     GraphOrganizationUser,
 )
 
@@ -50,7 +54,7 @@ class SessionManagerService(metaclass=SingletonMeta):
     ) -> None:
         self.redis_service = redis_service
         self.converter_service = converter_service
-        self.file_extractor_node_validator = FileExtractorNodeValidator()
+        self.file_node_validator: FileNodeValidator = FileNodeValidator()
         self.end_node_validator: EndNodeValidator = EndNodeValidator()
 
     def get_session(self, session_id: int) -> Session:
@@ -102,6 +106,9 @@ class SessionManagerService(metaclass=SingletonMeta):
         crew_node_list = CrewNode.objects.filter(graph=graph.pk)
         python_node_list = PythonNode.objects.filter(graph=graph.pk)
         file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
+        audio_transcription_node_list = AudioTranscriptionNode.objects.filter(
+            graph=graph.pk
+        )
         edge_list = Edge.objects.filter(graph=graph.pk)
         conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
@@ -110,9 +117,9 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         crew_node_data_list: list[CrewNodeData] = []
         if file_extractor_node_list:
-            self.file_extractor_node_validator.validate_file_extractor_nodes(
-                file_extractor_node_list
-            )
+            self.file_node_validator.validate_file_nodes(file_extractor_node_list)
+        if audio_transcription_node_list:
+            self.file_node_validator.validate_file_nodes(audio_transcription_node_list)
 
         for item in crew_node_list:
 
@@ -137,6 +144,16 @@ class SessionManagerService(metaclass=SingletonMeta):
         for item in file_extractor_node_list:
             file_extractor_node_data_list.append(
                 FileExtractorNodeData(
+                    node_name=item.node_name,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                )
+            )
+
+        audio_transcription_node_data_list: list[AudioTranscriptionNode] = []
+        for item in audio_transcription_node_list:
+            audio_transcription_node_data_list.append(
+                AudioTranscriptionNodeData(
                     node_name=item.node_name,
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
@@ -198,6 +215,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             webhook_trigger_node_data_list=webhook_trigger_node_data_list,
             python_node_list=python_node_data_list,
             file_extractor_node_list=file_extractor_node_data_list,
+            audio_transcription_node_list=audio_transcription_node_data_list,
             llm_node_list=llm_node_data_list,
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,
