@@ -59,6 +59,7 @@ from tables.serializers.model_serializers import (
     AgentTagSerializer,
     DecisionTableNodeSerializer,
     EndNodeSerializer,
+    SubGraphNodeSerializer,
     GraphLightSerializer,
     GraphTagSerializer,
     RealtimeConfigSerializer,
@@ -124,6 +125,7 @@ from tables.models import (
     PythonCodeTool,
     PythonNode,
     FileExtractorNode,
+    SubGraphNode,
     AudioTranscriptionNode,
     RealtimeModel,
     StartNode,
@@ -650,6 +652,7 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
                 Prefetch(
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
+                Prefetch("subgraph_node_list", queryset=SubGraphNode.objects.all()),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
             )
             .all()
@@ -964,6 +967,11 @@ class StartNodeModelViewSet(viewsets.ModelViewSet):
 class EndNodeModelViewSet(viewsets.ModelViewSet):
     queryset = EndNode.objects.all()
     serializer_class = EndNodeSerializer
+
+
+class SubGraphNodeModelViewSet(viewsets.ModelViewSet):
+    queryset = SubGraphNode.objects.all()
+    serializer_class = SubGraphNodeSerializer
 
 
 class ConditionGroupModelViewSet(viewsets.ModelViewSet):

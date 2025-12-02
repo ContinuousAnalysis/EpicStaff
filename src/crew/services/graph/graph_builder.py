@@ -11,10 +11,12 @@ from loguru import logger
 from callbacks.session_callback_factory import CrewCallbackFactory
 from services.graph.events import StopEvent
 from services.graph.subgraphs.decision_table_node import DecisionTableNodeSubgraph
+from services.graph.subgraphs.subgraph_node import SubGraphNode
 from services.graph.nodes.llm_node import LLMNode
 from services.graph.nodes.end_node import EndNode
 from models.state import *
 from services.graph.nodes import *
+from models.request_models import SubGraphData
 
 from services.crew.crew_parser_service import CrewParserService
 from services.redis_service import RedisService
@@ -169,6 +171,29 @@ class SessionGraphBuilder:
             decision_table_node_data.node_name, condition
         )
 
+    def add_subgraph_node(
+        self,
+        subgraph_node_data: SubGraphNode,
+        unique_subgraph_list: list[SubGraphData],
+        stop_event,
+    ) -> str:
+        """
+        Adds a subgraph node to the graph builder.
+        """
+        builder = SubGraphNode(
+            session_id=self.session_id,
+            subgraph_node_data=subgraph_node_data,
+            unique_subgraph_list=unique_subgraph_list,
+            graph_builder=StateGraph(State),
+            session_graph_builder=self,
+            stop_event=stop_event,
+        )
+
+        async def inner(state: State, writer: StreamWriter):
+            return await builder.run(state, writer)
+
+        self._graph_builder.add_node(subgraph_node_data.node_name, inner)
+
     @property
     def end_node_result(self):
         """Getter for end_node_result"""
@@ -280,6 +305,14 @@ class SessionGraphBuilder:
             self.add_decision_table_node(
                 decision_table_node_data=decision_table_node_data
             )
+
+        for subgraph_node_data in schema.subgraph_node_list:
+            self.add_subgraph_node(
+                subgraph_node_data=subgraph_node_data,
+                unique_subgraph_list=session_data.unique_subgraph_list,
+                stop_event=self.stop_event,
+            )
+
         for webhook_trigger_node_data in schema.webhook_trigger_node_data_list:
             self.add_node(
                 node=WebhookTriggerNode(
@@ -290,8 +323,10 @@ class SessionGraphBuilder:
                     python_code_data=webhook_trigger_node_data.python_code,
                 )
             )
+
         if schema.entrypoint is not None:
             self.set_entrypoint(schema.entrypoint)
+
         # name always __end_node__
         # TODO: remove validation here and in request model
         if schema.end_node is not None:
