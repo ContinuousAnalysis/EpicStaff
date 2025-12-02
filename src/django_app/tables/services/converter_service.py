@@ -1,10 +1,8 @@
 from typing import Iterable
-from tables.models.python_models import PythonCodeToolConfig
 from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
     AgentPythonCodeTools,
-    AgentPythonCodeToolConfigs,
 )
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
@@ -38,6 +36,7 @@ from tables.models.graph_models import (
     DecisionTableNode,
     EndNode,
     PythonNode,
+    SubGraphNode,
     WebhookTriggerNode,
 )
 from tables.request_models import *
@@ -164,11 +163,6 @@ class ConverterService(metaclass=SingletonMeta):
             id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id).values_list(
                 "pythoncodetool_id", flat=True
             )
-        )
-        python_tool_configs = PythonCodeToolConfig.objects.filter(
-            id__in=AgentPythonCodeToolConfigs.objects.filter(
-                agent_id=agent.id
-            ).values_list("pythoncodetoolconfig_id", flat=True)
         )
         configured_tools = ToolConfig.objects.filter(
             id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id).values_list(
