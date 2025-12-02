@@ -240,6 +240,7 @@
     @if (showContextMenu()) {
     <app-flow-graph-context-menu
         [position]="contextMenuPostion"
+        [currentFlowId]="currentFlowId"
         clickOutside
         (clickOutside)="onCloseContextMenu()"
         (nodeSelected)="onAddNodeFromContextMenu($event)"

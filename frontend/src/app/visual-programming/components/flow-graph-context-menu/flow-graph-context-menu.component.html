@@ -46,6 +46,13 @@
           (createNewProject)="onCreateNewProject()"
         ></app-templates-context-menu>
       }
+      @case (MenuType.Flows) {
+        <app-flows-menu
+          [searchTerm]="searchTerm"
+          [currentFlowId]="currentFlowId"
+          (nodeSelected)="onNodeSelected($event)"
+        ></app-flows-menu>
+      }
       @case (MenuType.Llms) {
         <app-llm-menu
           [searchTerm]="searchTerm"

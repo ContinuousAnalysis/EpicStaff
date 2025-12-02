@@ -14,6 +14,7 @@ export const DEFAULT_PROJECT_NODE_PORTS: BasePort[] = [
             'table-out',
             'file-extractor-out',
             'llm-out-right',
+            'subgraph-out',
             'audio-to-text-out',
             'webhook-trigger-out',
         ],
@@ -33,8 +34,9 @@ export const DEFAULT_PROJECT_NODE_PORTS: BasePort[] = [
             'table-in',
             'file-extractor-in',
             'end-in',
+            'subgraph-in',
             'audio-to-text-in',
-            'webhook-trigger-in'
+            'webhook-trigger-in',
         ],
         position: 'right',
         color: '#5672cd',
