@@ -16,7 +16,8 @@ export const NODE_ICONS: Record<NodeType, string> = {
     [NodeType.WEBHOOK_TRIGGER]: 'ti ti-world',
     [NodeType.TELEGRAM_TRIGGER]: 'ti ti-brand-telegram',
     [NodeType.END]: 'ti ti-square-rounded',
-    [NodeType.AUDIO_TO_TEXT]: 'ti ti-music'
+    [NodeType.SUBGRAPH]: 'ti ti-hierarchy-2',
+    [NodeType.AUDIO_TO_TEXT]: 'ti ti-music',
 };
 
 export const NODE_COLORS: Record<NodeType, string> = {
@@ -35,5 +36,6 @@ export const NODE_COLORS: Record<NodeType, string> = {
     [NodeType.WEBHOOK_TRIGGER]: '#21f367ff',
     [NodeType.TELEGRAM_TRIGGER]: '#229ED9',
     [NodeType.END]: '#d3d3d3',
-    [NodeType.AUDIO_TO_TEXT]: '#ff7be9ff'
+    [NodeType.SUBGRAPH]: '#00bfa5',
+    [NodeType.AUDIO_TO_TEXT]: '#ff7be9ff',
 };
