@@ -1,7 +1,9 @@
 import {
     Component,
     ChangeDetectionStrategy,
-    input,
+    ChangeDetectorRef,
+    ElementRef,
+    inject,
     output,
     signal,
     computed,
@@ -26,12 +28,9 @@ export interface AutocompleteItem {
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AutocompleteOverlayComponent {
-    // Using input/output model now, but to make signals writable from parent component (ExpressionEditor)
-    // which creates this component dynamically, we need to expose the signals directly or use input signals.
-    // Input signals are read-only from the outside in terms of .set(), but the parent binds to them.
-    // Since we are manually creating the component instance, we can manually set the input signals 
-    // if we cast them or if we change them to ModelSignals (Angular 17.2+) or just WritableSignals.
-    // For compatibility and ease with manual component creation:
+    private cdr = inject(ChangeDetectorRef);
+    private elementRef = inject(ElementRef);
+    
     public items = signal<AutocompleteItem[]>([]);
     public currentPath = signal<string[]>([]);
     public filterText = signal<string>('');
@@ -39,8 +38,10 @@ export class AutocompleteOverlayComponent {
     public itemSelected = output<AutocompleteItem>();
     public navigateUp = output<void>();
     public navigateDown = output<AutocompleteItem>();
+    public navigateToPath = output<number>(); 
 
     public activeItem = signal<AutocompleteItem | null>(null);
+    public tooltipPosition = signal<'left' | 'right'>('right');
 
     public filteredItems = computed(() => {
         const filter = this.filterText().toLowerCase();
@@ -55,25 +56,40 @@ export class AutocompleteOverlayComponent {
     public hoveredItem = signal<AutocompleteItem | null>(null);
 
     constructor() {
+        // Effect to reset active item when filtered items change
         effect(() => {
             const items = this.filteredItems();
-            // Reset active item when items change, effectively selecting first one
             if (items.length > 0) {
                 this.activeItem.set(items[0]);
             } else {
                 this.activeItem.set(null);
             }
-        }, { allowSignalWrites: true });
+        });
+    }
+    
+    // Public method to update data and force refresh (for dynamic component usage)
+    public updateData(items: AutocompleteItem[], path: string[], filter: string): void {
+        this.items.set(items);
+        this.currentPath.set(path);
+        this.filterText.set(filter);
+        this.cdr.detectChanges();
     }
 
     public selectItem(item: AutocompleteItem): void {
         this.itemSelected.emit(item);
     }
 
-    public onBreadcrumbClick(event: MouseEvent): void {
+    public onBackClick(event: MouseEvent): void {
         event.stopPropagation();
         event.preventDefault();
         this.navigateUp.emit();
+    }
+    
+    public onCrumbClick(event: MouseEvent, index: number): void {
+        event.stopPropagation();
+        event.preventDefault();
+        // Emit the target path index (-1 for root, or specific index)
+        this.navigateToPath.emit(index);
     }
     
     public typeof(value: any): string {
@@ -91,6 +107,27 @@ export class AutocompleteOverlayComponent {
     public onMouseEnter(item: AutocompleteItem): void {
         this.activeItem.set(item);
         this.hoveredItem.set(item);
+        this.calculateTooltipPosition();
+    }
+    
+    private calculateTooltipPosition(): void {
+        const el = this.elementRef.nativeElement;
+        const rect = el.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const tooltipWidth = 300; // Approximate tooltip width
+        
+        // Check if there's enough space on the right
+        const spaceOnRight = viewportWidth - rect.right;
+        const spaceOnLeft = rect.left;
+        
+        if (spaceOnRight >= tooltipWidth + 16) {
+            this.tooltipPosition.set('right');
+        } else if (spaceOnLeft >= tooltipWidth + 16) {
+            this.tooltipPosition.set('left');
+        } else {
+            // Default to whichever side has more space
+            this.tooltipPosition.set(spaceOnRight >= spaceOnLeft ? 'right' : 'left');
+        }
     }
 
     public onMouseLeave(): void {
