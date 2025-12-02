@@ -275,6 +275,20 @@ class Crew(AbstractDefaultFillableModel):
         related_name="planning_llm_config",
     )
     default_temperature = models.FloatField(null=True, default=None)
+    knowledge_collection = models.ForeignKey(
+        "SourceCollection", on_delete=models.SET_NULL, blank=True, null=True
+    )
+    search_limit = models.PositiveIntegerField(
+        default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
+    )
+    similarity_threshold = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.2,
+        blank=True,
+        help_text="Float between 0.00 and 1.00 for knowledge",
+    )
+    is_template = models.BooleanField(default=False)
 
     def get_default_model(self):
         return DefaultCrewConfig.load()

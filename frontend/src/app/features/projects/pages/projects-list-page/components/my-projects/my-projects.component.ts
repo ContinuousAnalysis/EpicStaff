@@ -35,7 +35,7 @@ import { ConfirmationDialogService } from '../../../../../../shared/components/c
             @if (!isProjectsLoaded()) {
             <app-loading-spinner
                 size="md"
-                message="Loading projects..."
+                message="Loading templates..."
             ></app-loading-spinner>
             } @else { @if (error()) {
             <div class="error">{{ error() }}</div>
@@ -49,7 +49,7 @@ import { ConfirmationDialogService } from '../../../../../../shared/components/c
                 @if (filteredProjects().length === 0) {
                 <div class="empty-message">
                     <p>
-                        No projects found. Create your first project to get
+                        No templates found. Create your first template to get
                         started.
                     </p>
                 </div>
