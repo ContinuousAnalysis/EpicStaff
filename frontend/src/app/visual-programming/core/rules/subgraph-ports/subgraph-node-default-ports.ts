@@ -1,45 +1,41 @@
 import { BasePort } from '../../models/port.model';
 
-export const DEFAULT_FILE_EXTRACTOR_NODE_PORTS: BasePort[] = [
+export const DEFAULT_SUBGRAPH_NODE_PORTS: BasePort[] = [
     {
         port_type: 'input',
-        role: 'file-extractor-in',
+        role: 'subgraph-in',
         multiple: true,
         label: 'In',
         allowedConnections: [
             'project-out',
             'python-out',
+            'file-extractor-out',
             'edge-out',
-            'start-start',
             'table-out',
             'llm-out-right',
-            'file-extractor-out',
+            'start-start',
             'subgraph-out',
-            'audio-to-text-out',
-            'webhook-trigger-out',
         ],
         position: 'left',
-        color: '#2196F3',
+        color: '#00bfa5',
     },
-
     {
         port_type: 'output',
-        role: 'file-extractor-out',
+        role: 'subgraph-out',
         multiple: false,
         label: 'Out',
         allowedConnections: [
             'project-in',
             'python-in',
             'edge-in',
-            'table-in',
+            'table-out',
             'llm-out-left',
             'file-extractor-in',
-            'webhook-trigger-in',
             'end-in',
             'subgraph-in',
-            'audio-to-text-in',
         ],
         position: 'right',
-        color: '#2196F3',
+        color: '#00bfa5',
     },
 ];
+
