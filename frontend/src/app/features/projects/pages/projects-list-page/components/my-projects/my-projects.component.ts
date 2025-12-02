@@ -189,14 +189,6 @@ export class MyProjectsComponent implements OnInit {
                 break;
         }
     }
-    private openCopyDialog(project: GetProjectRequest): void {
-        const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
-            data: {
-                flowName: `${project.name} Copy`,
-                title: 'Copy Project',
-            },
-        });
-    }
 
     private confirmAndDeleteProject(project: GetProjectRequest): void {
         this.confirmationDialogService
