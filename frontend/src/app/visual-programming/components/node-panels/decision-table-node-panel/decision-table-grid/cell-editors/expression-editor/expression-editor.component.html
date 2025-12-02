@@ -11,8 +11,12 @@
             (keydown)="onKeyDown($event)"
             (input)="onInput($event)"
             (scroll)="onScroll()"
-            (click)="onInput($event)" 
+            (click)="onInput($event)"
+            (blur)="onBlur($event)"
         ></textarea>
+        <div class="python-badge" title="Python expression syntax">
+            <i class="ti ti-brand-python"></i>
+        </div>
     </div>
 </div>
 

@@ -1,48 +1,88 @@
 :host {
     display: block;
-    width: 250px;
+    width: 280px;
     background-color: #27272b;
     border: 1px solid var(--color-divider-subtle, #333);
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    // Remove overflow: hidden to allow tooltip to display outside if positioned relatively or absolute
     position: relative; 
 }
 
 .tooltip-wrapper {
     position: absolute;
-    left: 100%;
     top: 0;
-    margin-left: 8px;
     z-index: 1200;
-    pointer-events: none; // Let mouse pass through
+    pointer-events: none;
+    
+    &.position-right {
+        left: 100%;
+        right: auto;
+        margin-left: 8px;
+        margin-right: 0;
+    }
+    
+    &.position-left {
+        right: 100%;
+        left: auto;
+        margin-right: 8px;
+        margin-left: 0;
+    }
 }
 
 .breadcrumbs {
     display: flex;
     align-items: center;
-    padding: 6px 8px;
+    padding: 8px 10px;
     background-color: #1e1e20;
     border-bottom: 1px solid var(--color-divider-subtle, #333);
     font-size: 11px;
     color: #888;
     overflow-x: auto;
     white-space: nowrap;
+    gap: 4px;
 
     &::-webkit-scrollbar {
         display: none;
     }
 
+    .back-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 4px;
+        background: rgba(104, 95, 255, 0.15);
+        color: #685fff;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+        margin-right: 4px;
+
+        i {
+            font-size: 14px;
+        }
+
+        &:hover {
+            background: rgba(104, 95, 255, 0.3);
+            color: #fff;
+        }
+    }
+
     .crumb {
         cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 3px;
+        transition: all 0.15s ease;
+        
         &:hover {
             color: #fff;
-            text-decoration: underline;
+            background: rgba(255, 255, 255, 0.1);
         }
     }
 
     .separator {
-        margin: 0 4px;
+        margin: 0 2px;
         color: #555;
     }
 }
@@ -51,14 +91,14 @@
     list-style: none;
     margin: 0;
     padding: 4px;
-    max-height: 200px;
+    max-height: 220px;
     overflow-y: auto;
     color: #d9d9de;
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
 
     li {
-        padding: 6px 8px;
+        padding: 8px 10px;
         cursor: pointer;
         border-radius: 4px;
         display: flex;
@@ -71,6 +111,11 @@
         &:hover {
             background-color: rgba(104, 95, 255, 0.2);
             color: #fff;
+
+            .drill-arrow {
+                background: rgba(104, 95, 255, 0.4);
+                color: #fff;
+            }
         }
 
         &.no-results {
@@ -91,15 +136,6 @@
             min-width: 0;
         }
 
-        .item-icon {
-            display: flex;
-            align-items: center;
-            color: #888;
-            i {
-                font-size: 14px;
-            }
-        }
-
         .item-key {
             font-weight: 600;
             color: #a5a5ff;
@@ -110,10 +146,32 @@
         
         .item-type {
             font-size: 10px;
-            color: #888;
-            margin-left: auto;
-            padding-left: 8px;
+            color: #666;
             flex-shrink: 0;
+        }
+
+        .drill-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #888;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+
+            i {
+                font-size: 16px;
+            }
+
+            &:hover {
+                background: #685fff;
+                color: #fff;
+                transform: translateX(2px);
+            }
         }
     }
 
@@ -129,4 +187,3 @@
         background: transparent;
     }
 }
-
