@@ -13,6 +13,7 @@ export const DEFAULT_END_NODE_PORTS: BasePort[] = [
             'edge-out',
             'table-out',
             'llm-out-right',
+            'audio-to-text-out',
             'webhook-trigger-out',
         ],
         position: 'left',

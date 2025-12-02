@@ -15,6 +15,7 @@ export const NODE_ICONS: Record<NodeType, string> = {
     [NodeType.FILE_EXTRACTOR]: 'ti ti-file',
     [NodeType.WEBHOOK_TRIGGER]: 'ti ti-world',
     [NodeType.END]: 'ti ti-square-rounded',
+    [NodeType.AUDIO_TO_TEXT]: 'ti ti-music'
 };
 
 export const NODE_COLORS: Record<NodeType, string> = {
@@ -32,4 +33,5 @@ export const NODE_COLORS: Record<NodeType, string> = {
     [NodeType.FILE_EXTRACTOR]: '#2196F3',
     [NodeType.WEBHOOK_TRIGGER]: '#21f367ff',
     [NodeType.END]: '#d3d3d3',
+    [NodeType.AUDIO_TO_TEXT]: '#ff7be9ff'
 };
