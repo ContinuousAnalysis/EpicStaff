@@ -215,11 +215,9 @@ export class FlowGraphCoreContextMenuComponent {
             };
         } else if (type === NodeType.FILE_EXTRACTOR) {
             data = null; // File extractor data is unknown as specified
-
         } else if (type === NodeType.AUDIO_TO_TEXT) {
             data = null; // audio to text data is unknown as specified
-        }
-        else if (type === NodeType.WEBHOOK_TRIGGER) {
+        } else if (type === NodeType.WEBHOOK_TRIGGER) {
             data = {
                 webhook_trigger: 0,
                 python_code: {
