@@ -18,9 +18,12 @@ export const DEFAULT_LLM_NODE_PORTS: BasePort[] = [
       'python-out',
       'python-in',
       'table-in',
+      'subgraph-in',
+      'audio-to-text-in',
+      'audio-to-text-out',
     ],
     position: 'right',
-    color: '#e0575b', // LLM color mapping
+    color: '#e0575b',
   },
 
   {
@@ -38,8 +41,11 @@ export const DEFAULT_LLM_NODE_PORTS: BasePort[] = [
       'project-out',
       'python-out',
       'python-in',
+      'subgraph-out',
+      'audio-to-text-out',
+      'audio-to-text-in',
     ],
     position: 'left',
-    color: '#e0575b', // LLM color mapping
+    color: '#e0575b',
   },
 ];

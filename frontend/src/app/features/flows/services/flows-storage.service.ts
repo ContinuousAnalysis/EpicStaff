@@ -116,7 +116,7 @@ export class FlowsStorageService {
             tap((flows) => {
                 this.setFlows(flows);
             }),
-            delay(this.flowsLoaded() ? 0 : 300),
+        
             shareReplay(1),
             catchError(() => {
                 this.flowsLoaded.set(false);
@@ -224,6 +224,8 @@ export class FlowsStorageService {
                         sourceFlow.file_extractor_node_list,
                     webhook_trigger_node_list: sourceFlow.webhook_trigger_node_list,
                     end_node_list: sourceFlow.end_node_list,
+                    subgraph_node_list: sourceFlow.subgraph_node_list,
+                    audio_transcription_node_list: sourceFlow.audio_transcription_node_list,
                     decision_table_node_list: sourceFlow.decision_table_node_list,
                 };
                 return this.flowsApiService.copyGraph(payload).pipe(

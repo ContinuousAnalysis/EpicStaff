@@ -14,6 +14,7 @@ import { ConnectionModel } from './connection.model';
 import { ViewPort } from './port.model';
 import { GroupNodeModel } from './group.model';
 import { DecisionTableNode } from './decision-table.model';
+import { GetGraphLightRequest } from '../../../features/flows/models/graph.model';
 
 export interface BaseNodeModel {
     id: string;
@@ -93,6 +94,11 @@ export interface FileExtractorNodeModel extends BaseNodeModel {
     data: unknown;
 }
 
+export interface AudioToTextNodeModel extends BaseNodeModel {
+    type: NodeType.AUDIO_TO_TEXT;
+    data: unknown;
+}
+
 export interface WebhookTriggerNodeModel extends BaseNodeModel {
     type: NodeType.WEBHOOK_TRIGGER;
     data: {
@@ -110,6 +116,12 @@ export interface EndNodeModel extends BaseNodeModel {
     data: EndNodeData;
 }
 
+
+export interface SubGraphNodeModel extends BaseNodeModel {
+    type: NodeType.SUBGRAPH;
+    data: GetGraphLightRequest;
+}
+
 export type NodeModel =
     | AgentNodeModel
     | TaskNodeModel
@@ -123,5 +135,7 @@ export type NodeModel =
     | DecisionTableNodeModel
     | NoteNodeModel
     | FileExtractorNodeModel
+    | AudioToTextNodeModel
     | WebhookTriggerNodeModel
-    | EndNodeModel;
+    | EndNodeModel
+    | SubGraphNodeModel;

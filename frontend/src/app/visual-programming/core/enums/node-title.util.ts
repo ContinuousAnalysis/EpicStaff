@@ -30,11 +30,16 @@ export function getNodeTitle(node: NodeModel): string {
         case NodeType.NOTE:
             return 'Note';
         case NodeType.FILE_EXTRACTOR:
-            return 'File Extractor';
+            return node.node_name;
+        case NodeType.AUDIO_TO_TEXT:
+            return node.node_name;
         case NodeType.WEBHOOK_TRIGGER:
             return (node as any).node_name || '';
         case NodeType.END:
             return 'End';
+        case NodeType.SUBGRAPH:
+            return node.data.name 
+            ;
         default:
             return '';
     }
