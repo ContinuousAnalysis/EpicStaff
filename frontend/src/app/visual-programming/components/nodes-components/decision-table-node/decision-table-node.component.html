@@ -67,10 +67,10 @@
         <div class="decision-table__group">
             <span class="group-name">
                 Default
-                @if (!defaultNextNode) {
+                @if (!defaultNextNodeName) {
                 <span class="group-status">(not set)</span>
                 } @else {
-                <span class="group-status">({{ defaultNextNode }})</span>
+                <span class="group-status">({{ defaultNextNodeName }})</span>
                 }
             </span>
 
@@ -99,10 +99,10 @@
         <div class="decision-table__group">
             <span class="group-name">
                 Error
-                @if (!nextErrorNode) {
+                @if (!nextErrorNodeName) {
                 <span class="group-status">(not set)</span>
                 } @else {
-                <span class="group-status">({{ nextErrorNode }})</span>
+                <span class="group-status">({{ nextErrorNodeName }})</span>
                 }
             </span>
 

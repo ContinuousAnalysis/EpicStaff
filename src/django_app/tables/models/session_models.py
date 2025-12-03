@@ -59,11 +59,9 @@ class Session(models.Model):
 
         super().save(*args, **kwargs)
 
-    def delete(self, using=None, keep_parents=False, callback: Any = None):
-        if callback is not None:
-            callback()
-        result = super().delete(using, False)
+    def delete(self, using=None, keep_parents=False):
 
+        result = super().delete(using, False)
         return result
     class Meta:
         get_latest_by = ["id"]

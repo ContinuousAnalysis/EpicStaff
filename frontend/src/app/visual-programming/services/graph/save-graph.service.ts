@@ -14,6 +14,7 @@ import {
     StartNodeModel,
     LLMNodeModel,
     NodeModel,
+    SubGraphNodeModel,
 } from '../../core/models/node.model';
 
 import { ToastService } from '../../../services/notifications/toast.service';
@@ -26,6 +27,10 @@ import {
     CreateFileExtractorNodeRequest,
     GetFileExtractorNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
+import {
+    GetAudioToTextNodeRequest,
+    CreateAudioToTextNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
 import {
     CrewNode,
     CreateCrewNodeRequest,
@@ -57,6 +62,12 @@ import {
     CreateEndNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import {
+    SubGraphNode,
+    CreateSubGraphNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
+import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
+import { AudioToTextService } from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
 import { WebhookTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
 import { CreateWebhookTriggerNodeRequest, GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import {
@@ -78,8 +89,10 @@ export class GraphUpdateService {
         private graphService: FlowsApiService,
         private llmNodeService: LLMNodeService,
         private fileExtractorService: FileExtractorService,
+        private audioToTextService: AudioToTextService,
         private webhookTriggerService: WebhookTriggerNodeService,
         private endNodeService: EndNodeService,
+        private subGraphNodeService: SubGraphNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
         private toastService: ToastService
     ) { }
@@ -111,12 +124,14 @@ export class GraphUpdateService {
         updatedNodes: {
             crewNodes: CrewNode[];
             pythonNodes: PythonNode[];
+            audioToTextNodes: any[];
             llmNodes: any[];
             fileExtractorNodes: any[];
             conditionalEdges: any[];
             edges: Edge[];
 
             endNodes: EndNode[];
+            subGraphNodes: SubGraphNode[];
             decisionTableNodes: GetDecisionTableNodeRequest[];
         };
     }> {
@@ -238,6 +253,43 @@ export class GraphUpdateService {
             })
         );
 
+        // ---- Handle Audio Transcription (Audio -> Text) Nodes ----
+        let deleteAudioToTextNodes$: Observable<any> = of(null);
+        if (
+            graph.audio_transcription_node_list &&
+            graph.audio_transcription_node_list.length > 0
+        ) {
+            const deleteATReqs = graph.audio_transcription_node_list.map(
+                (atNode: GetAudioToTextNodeRequest) =>
+                    this.audioToTextService
+                        .deleteAudioToTextNode(atNode.id.toString())
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteAudioToTextNodes$ = forkJoin(deleteATReqs);
+        }
+
+        const audioToTextNodes$ = deleteAudioToTextNodes$.pipe(
+            switchMap(() => {
+                const atNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.AUDIO_TO_TEXT
+                );
+
+                const requests = atNodes.map((node) => {
+                    const payload: CreateAudioToTextNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        input_map: node.input_map || {},
+                        output_variable_path:
+                            node.output_variable_path || null,
+                    };
+                    return this.audioToTextService
+                        .createAudioToTextNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
         // ---- Handle LLM Nodes ----
         let deleteLLMNodes$: Observable<any> = of(null);
         if (graph.llm_node_list && graph.llm_node_list.length > 0) {
@@ -299,6 +351,40 @@ export class GraphUpdateService {
                     };
                     return this.endNodeService
                         .createEndNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
+        // ---- Handle SubGraph Nodes ----
+        let deleteSubGraphNodes$: Observable<any> = of(null);
+        if (graph.subgraph_node_list && graph.subgraph_node_list.length > 0) {
+            const deleteSubGraphReqs = graph.subgraph_node_list.map(
+                (subGraphNode: SubGraphNode) =>
+                    this.subGraphNodeService
+                        .deleteSubGraphNode(subGraphNode.id)
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteSubGraphNodes$ = forkJoin(deleteSubGraphReqs);
+        }
+
+        const subGraphNodes$ = deleteSubGraphNodes$.pipe(
+            switchMap(() => {
+                const subGraphNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.SUBGRAPH
+                ) as SubGraphNodeModel[];
+
+                const requests = subGraphNodes.map((node) => {
+                    const payload: CreateSubGraphNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        subgraph: node.data.id,
+                        input_map: node.input_map || {},
+                        output_variable_path: node.output_variable_path || null,
+                    };
+                    return this.subGraphNodeService
+                        .createSubGraphNode(payload)
                         .pipe(catchError((err) => throwError(err)));
                 });
                 return requests.length ? forkJoin(requests) : of([]);
@@ -483,6 +569,16 @@ export class GraphUpdateService {
                 const requests = decisionTableNodes.map((node) => {
                     const tableData = (node as any).data?.table;
 
+                    // Helper to resolve node ID (or name) to current node name
+                    const resolveNodeName = (idOrName: string | null): string | null => {
+                        if (!idOrName) return null;
+                        // Try to find by ID first
+                        const targetNode = flowState.nodes.find((n) => n.id === idOrName);
+                        if (targetNode) return targetNode.node_name;
+                        // Fallback: maybe it's already a name?
+                        return idOrName;
+                    };
+
                     const conditionGroups: CreateConditionGroupRequest[] = (
                         tableData?.condition_groups || []
                     )
@@ -507,7 +603,7 @@ export class GraphUpdateService {
                                 expression: group.expression,
                                 conditions,
                                 manipulation: group.manipulation,
-                                next_node: group.next_node || null,
+                                next_node: resolveNodeName(group.next_node),
                                 order:
                                     typeof group.order === 'number'
                                         ? group.order
@@ -519,8 +615,8 @@ export class GraphUpdateService {
                         graph: graph.id,
                         node_name: node.node_name,
                         condition_groups: conditionGroups,
-                        default_next_node: tableData?.default_next_node || null,
-                        next_error_node: tableData?.next_error_node || null,
+                        default_next_node: resolveNodeName(tableData?.default_next_node),
+                        next_error_node: resolveNodeName(tableData?.next_error_node),
                     };
 
                     return this.decisionTableNodeService
@@ -536,11 +632,13 @@ export class GraphUpdateService {
         return forkJoin({
             crewNodes: crewNodes$,
             pythonNodes: pythonNodes$,
+            audioToTextNodes: audioToTextNodes$,
             llmNodes: llmNodes$,
             fileExtractorNodes: fileExtractorNodes$,
             webhookTriggerNodes: webhookTriggerNodes$,
             conditionalEdges: conditionalEdges$,
             endNodes: endNodes$,
+            subGraphNodes: subGraphNodes$,
             edges: createEdges$,
             decisionTableNodes: decisionTableNodes$,
         }).pipe(
@@ -548,12 +646,14 @@ export class GraphUpdateService {
                 (results: {
                     crewNodes: CrewNode[];
                     pythonNodes: PythonNode[];
+                    audioToTextNodes: GetAudioToTextNodeRequest[];
                     llmNodes: any[];
                     fileExtractorNodes: GetFileExtractorNodeRequest[];
                     webhookTriggerNodes: GetWebhookTriggerNodeRequest[];
                     conditionalEdges: ConditionalEdge[];
                     edges: Edge[];
                     endNodes: EndNode[];
+                    subGraphNodes: SubGraphNode[];
                     decisionTableNodes: GetDecisionTableNodeRequest[];
                 }) => {
                     const updateGraphRequest: UpdateGraphDtoRequest = {
@@ -581,6 +681,8 @@ export class GraphUpdateService {
                                     updatedNodes: {
                                         crewNodes: results.crewNodes,
                                         pythonNodes: results.pythonNodes,
+                                        audioToTextNodes:
+                                            results.audioToTextNodes,
                                         llmNodes: results.llmNodes,
                                         fileExtractorNodes:
                                             results.fileExtractorNodes,
@@ -589,8 +691,8 @@ export class GraphUpdateService {
                                         webhookTriggerNodes: results.webhookTriggerNodes,
                                         edges: results.edges,
                                         endNodes: results.endNodes,
-                                        decisionTableNodes:
-                                            results.decisionTableNodes,
+                                        subGraphNodes: results.subGraphNodes,
+                                        decisionTableNodes: results.decisionTableNodes,
                                     },
                                 };
                             })
