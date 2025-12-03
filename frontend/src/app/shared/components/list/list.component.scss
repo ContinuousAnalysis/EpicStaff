@@ -1,0 +1,31 @@
+:host {
+    height: 100%;
+    display: block;
+    overflow: hidden;
+}
+
+.list {
+    &__wrapper {
+        display: block;
+        height: 100%;
+        overflow: auto;
+    }
+
+    &__content {
+        width: calc(100% - 1rem);
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--color-divider-subtle);
+    }
+
+    &__item {
+
+        &:hover {
+            background-color: var(--color-ks-line);
+        }
+
+        &--dark {
+            background-color: var(--color-drag-drop-active);
+        }
+    }
+}

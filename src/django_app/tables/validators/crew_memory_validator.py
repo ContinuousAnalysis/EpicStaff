@@ -35,14 +35,12 @@ class CrewMemoryValidator:
             raise CrewMemoryValidationError(error_message)
 
     def _validate_memory_llm_config(self, memory_llm_config):
-
         if memory_llm_config is None:
             raise CrewMemoryValidationError(
                 "Memory LLM configuration cannot be None. Please set the 'Memory LLM config'"
             )
 
     def _validate_embedding_config(self, embedding_config):
-
         if embedding_config is None:
             raise CrewMemoryValidationError(
                 "Memory embedding configuration cannot be None. Please set the 'Memory embedding config'"

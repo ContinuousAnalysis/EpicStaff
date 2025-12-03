@@ -1,5 +1,25 @@
 :host ::ng-deep .monaco-editor {
   --vscode-focusBorder: transparent !important;
+
+  // Fix line number gutter padding
+  .margin-view-overlays {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .line-numbers {
+    padding-left: 4px !important;
+    padding-right: 8px !important;
+  }
+
+  .margin {
+    width: auto !important;
+    min-width: 32px !important;
+  }
+}
+
+:host(.collapsed) {
+    height: fit-content;
 }
 
 :host {
@@ -49,6 +69,14 @@
         line-height: 1;
       }
     }
+    .right-section {
+      display: flex;
+      align-items: center;
+      column-gap: 1rem;
+      .action-icon {
+          cursor: pointer;
+      }
+    }
 
     .copy-btn {
       background: transparent;
@@ -69,6 +97,10 @@
     background-color: #1b1b1b;
     height: 100%;
     width: 100%;
+    opacity: 1;
+    transition:
+      max-height 300ms ease,
+      opacity 200ms ease;
 
     .editor-loading-overlay {
       position: absolute;
@@ -90,6 +122,10 @@
         font-size: 1rem;
       }
     }
+  }
+  .editor-container.collapsed {
+      max-height: 0;
+      opacity: 0;
   }
 
   /* Static resize handle below the editor container */

@@ -1,15 +1,24 @@
 @use '../../../styles/node-panel-mixins.scss' as mixins;
 
+:host {
+    display: block;
+    height: 100%;
+}
+
 .panel-container {
     display: flex;
     flex-direction: column;
     width: 100%;
+    height: 100%;
 }
 
 .panel-content {
     @include mixins.panel-content;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    padding: 0;
 }
 
 .form-container {
@@ -17,6 +26,8 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    height: 100%;
+    overflow: hidden;
 }
 
 .form-header {
@@ -24,7 +35,7 @@
     grid-template-columns: 1fr 1fr 1fr;
     gap: 1.5rem;
     flex-shrink: 0;
-    padding: 0 0.5rem;
+    padding: 1.5rem 1.5rem 0 1.5rem;
 }
 
 .select-wrapper {
@@ -93,5 +104,9 @@
 .grid-section {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+    padding: 0 1.5rem 1.5rem 1.5rem;
 }
 

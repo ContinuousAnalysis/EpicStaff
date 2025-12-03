@@ -1,10 +1,10 @@
 from django.db import models
+from tables.models.tag_models import EmbeddingModelTag
 from tables.models import DefaultBaseModel
 from tables.models import EmbedderTask
 
 
 class EmbeddingModel(models.Model):
-
     name = models.TextField()
     predefined = models.BooleanField(default=False)
     embedding_provider = models.ForeignKey(
@@ -14,9 +14,21 @@ class EmbeddingModel(models.Model):
     base_url = models.URLField(null=True, blank=True, default=None)
     is_visible = models.BooleanField(default=True)
     is_custom = models.BooleanField(default=False)
+    tags = models.ManyToManyField(
+        EmbeddingModelTag,
+        blank=True,
+        related_name="embedding_models"
+    )
+
+    class Meta:
+        unique_together = (
+            "name",
+            "embedding_provider",
+        )
+
+
 
 class EmbeddingConfig(models.Model):
-
     model = models.ForeignKey("EmbeddingModel", on_delete=models.SET_NULL, null=True)
     custom_name = models.TextField(unique=True)
     task_type = models.CharField(
@@ -38,7 +50,6 @@ class EmbeddingConfig(models.Model):
 
 
 class DefaultEmbeddingConfig(DefaultBaseModel):
-
     model = models.ForeignKey("EmbeddingModel", on_delete=models.SET_NULL, null=True)
     task_type = models.CharField(
         max_length=255, choices=EmbedderTask.choices, default=EmbedderTask.RETRIEVAL_DOC

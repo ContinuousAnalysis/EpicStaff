@@ -6,13 +6,12 @@ import redis
 import redis.asyncio as aioredis
 from redis import Redis
 from loguru import logger
-from typing import Any, List, Union
+from typing import List, Union
 from redis.client import PubSub
 from redis.retry import Retry
 from redis.backoff import ExponentialBackoff
-from utils.memory_monitor import MemoryMonitor
 
-from utils.singleton_meta import SingletonMeta
+from src.crew.utils.singleton_meta import SingletonMeta
 
 SESSION_STATUS_CHANNEL = os.environ.get(
     "SESSION_STATUS_CHANNEL", "sessions:session_status"
@@ -31,7 +30,6 @@ class AsyncPubsubSubscriber:
 
 class AsyncPubSubGroup:
     def __init__(self, channel: str, redis: aioredis.Redis):
-
         self._channel = channel
         self._redis = redis
         self._subscribers: list[AsyncPubsubSubscriber] = []
@@ -141,9 +139,10 @@ class SyncPubSubGroup:
 
 
 class RedisService(metaclass=SingletonMeta):
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, password: str):
         self.host = host
         self.port = port
+        self.password = password
 
         self.aioredis_client: aioredis.Redis | None = None
         self.sync_redis_client: Redis | None = None
@@ -167,11 +166,13 @@ class RedisService(metaclass=SingletonMeta):
         try:
             self.aioredis_client = await aioredis.from_url(
                 f"redis://{self.host}:{self.port}",
+                password=self.password,
                 decode_responses=True,
                 retry=self._retry,
             )
             self.sync_redis_client = Redis.from_url(
                 f"redis://{self.host}:{self.port}",
+                password=self.password,
                 decode_responses=True,
                 retry=self._retry,
             )
@@ -212,7 +213,6 @@ class RedisService(metaclass=SingletonMeta):
     def subscribe(
         self, channels: Union[str, List[str]], subscriber: AsyncPubsubSubscriber
     ) -> PubSub:
-
         if isinstance(channels, str):
             # Single channel
             if channels not in self._sync_pubsub_groups:
@@ -244,7 +244,6 @@ class RedisService(metaclass=SingletonMeta):
         await self.apublish(SESSION_STATUS_CHANNEL, message)
 
     def update_session_status(self, session_id: int, status: str, **kwargs):
-
         message = {
             "session_id": session_id,
             "status": status,

@@ -1,7 +1,6 @@
 from enum import Enum
-from typing import Any, List, Literal, Optional, Union
-from pydantic import AnyUrl, BaseModel, HttpUrl, model_validator, root_validator
-from decimal import Decimal
+from typing import Annotated, Any, List, Literal, Optional, Union
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class LLMConfigData(BaseModel):
@@ -9,20 +8,20 @@ class LLMConfigData(BaseModel):
     timeout: float | int | None = None
     temperature: float | None = None
     top_p: float | None = None
-    n: int | None = None
     stop: str | list[str] | None = None
-    max_completion_tokens: int | None = None
     max_tokens: int | None = None
     presence_penalty: float | None = None
     frequency_penalty: float | None = None
     logit_bias: dict[int, float] | None = None
     response_format: dict[str, Any] | None = None
     seed: int | None = None
-    logprobs: bool | None = None
-    top_logprobs: int | None = None
     base_url: str | None = None
     api_version: str | None = None
     api_key: str | None = None
+    deployment_id: str | None = None
+    headers: dict[str, str] | None = None
+    extra_headers: dict[str, str] | None = None
+    
 
 
 class EmbedderConfigData(BaseModel):
@@ -52,6 +51,7 @@ class ToolConfigData(BaseModel):
 class ConfiguredToolData(BaseModel):
     name_alias: str
     tool_config: ToolConfigData
+
 
 class McpToolData(BaseModel):
     """
@@ -102,6 +102,52 @@ class RunToolParamsModel(BaseModel):
     run_kwargs: dict[str, Any]
 
 
+# RAG Search Configuration Models
+class BaseRagSearchConfig(BaseModel):
+    """Base class for RAG-specific search parameters."""
+
+    rag_type: str  # Discriminator field for polymorphism
+
+
+class NaiveRagSearchConfig(BaseRagSearchConfig):
+    """Search parameters specific to naive RAG implementation."""
+
+    rag_type: Literal["naive"] = "naive"
+    search_limit: int = 3
+    similarity_threshold: float = 0.2
+
+
+class GraphRagSearchConfig(BaseRagSearchConfig):
+    """Search parameters specific to graph RAG implementation"""
+
+    rag_type: Literal["graph"] = "graph"
+    pass
+
+
+RagSearchConfig = Annotated[
+    Union[NaiveRagSearchConfig, GraphRagSearchConfig],
+    Field(discriminator="rag_type"),
+]
+
+
+class BaseKnowledgeSearchMessage(BaseModel):
+    """
+    Base message for searching in a RAG implementation.
+
+    Uses discriminated union for rag_search_config to automatically
+    handle different RAG types (naive, graph, etc.) during serialization.
+    """
+
+    collection_id: int
+    rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
+    rag_type: Literal["naive", "graph"]
+    uuid: str
+    query: str
+    rag_search_config: (
+        RagSearchConfig  # Discriminated union automatically handles subtypes
+    )
+
+
 class AgentData(BaseModel):
     id: int
     role: str
@@ -120,8 +166,8 @@ class AgentData(BaseModel):
     embedder: EmbedderData | None = None
     function_calling_llm: LLMData | None
     knowledge_collection_id: int | None
-    search_limit: int = 3
-    similarity_threshold: Decimal = 0.2
+    rag_type_id: str | None = None
+    rag_search_config: RagSearchConfig | None = None
 
 
 class RealtimeAgentChatData(BaseModel):
@@ -129,14 +175,14 @@ class RealtimeAgentChatData(BaseModel):
     goal: str
     backstory: str
     knowledge_collection_id: int | None
+    rag_type_id: str | None = None
+    rag_search_config: RagSearchConfig | None = None
     llm: LLMData | None = None
     rt_model_name: str
     rt_api_key: str
     transcript_model_name: str
     transcript_api_key: str
     temperature: float | None
-    search_limit: int = 3
-    similarity_threshold: Decimal = 0.2
     memory: bool
     tools: list[BaseToolData] = []
     connection_key: str
@@ -145,6 +191,8 @@ class RealtimeAgentChatData(BaseModel):
     language: str | None
     voice_recognition_prompt: str | None
     voice: str
+    input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
+    output_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
 
 
 class CrewData(BaseModel):
@@ -168,9 +216,6 @@ class CrewData(BaseModel):
     manager_llm: LLMData | None
     planning_llm: LLMData | None
     tools: List[BaseToolData]
-    knowledge_collection_id: int | None
-    search_limit: int = 3
-    similarity_threshold: Decimal = 0.2
 
 
 class TaskData(BaseModel):
@@ -192,6 +237,7 @@ class TaskData(BaseModel):
 class SessionData(BaseModel):
     id: int
     graph: "GraphData"
+    unique_subgraph_list: list["SubGraphData"] = []
     initial_state: dict[str, Any] = {}
 
 
@@ -247,6 +293,12 @@ class FileExtractorNodeData(BaseModel):
     output_variable_path: str | None = None
 
 
+class AudioTranscriptionNodeData(BaseModel):
+    node_name: str
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
 class LLMNodeData(BaseModel):
     node_name: str
     llm_data: LLMData
@@ -289,9 +341,22 @@ class ConditionalEdgeData(BaseModel):
     then: str | None
     input_map: dict[str, Any]
 
+
 class WebhookTriggerNodeData(BaseModel):
     node_name: str
     python_code: PythonCodeData
+
+
+class TelegramTriggerNodeFieldData(BaseModel):
+    parent: Literal["message", "callback_query"]
+    field_name: str
+    variable_path: str
+
+
+class TelegramTriggerNodeData(BaseModel):
+    node_name: str
+    field_list: list[TelegramTriggerNodeFieldData] = []
+
 
 class GraphData(BaseModel):
     name: str
@@ -299,12 +364,28 @@ class GraphData(BaseModel):
     webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
+    subgraph_node_list: list["SubGraphNodeData"] = []
+    audio_transcription_node_list: list[AudioTranscriptionNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
     entrypoint: str
     end_node: EndNodeData | None
+    telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
+
+
+class SubGraphNodeData(BaseModel):
+    node_name: str
+    subgraph_id: int
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
+class SubGraphData(BaseModel):
+    id: int
+    data: GraphData
+    initial_state: dict[str, Any] = {}
 
 
 class GraphSessionMessageData(BaseModel):
@@ -314,7 +395,8 @@ class GraphSessionMessageData(BaseModel):
     timestamp: str
     message_data: dict
     uuid: str
-    
+
+
 class KnowledgeSearchMessage(BaseModel):
     collection_id: int
     uuid: str
@@ -322,13 +404,22 @@ class KnowledgeSearchMessage(BaseModel):
     search_limit: int | None
     similarity_threshold: float | None
 
+
 class ChunkDocumentMessage(BaseModel):
-    document_id: int
+    chunking_job_id: str  # UUID
+    rag_type: Literal["naive", "graph"]
+    document_config_id: int
+
 
 class ChunkDocumentMessageResponse(BaseModel):
-    document_id: int
-    success: bool
-    message: str | None
+    chunking_job_id: str  # UUID
+    rag_type: Literal["naive", "graph"]
+    document_config_id: int
+    status: str  # "completed", "failed", "cancelled"
+    chunk_count: int | None = None
+    message: str | None = None
+    elapsed_time: float | None = None
+
 
 class StopSessionMessage(BaseModel):
     session_id: int
@@ -337,3 +428,9 @@ class StopSessionMessage(BaseModel):
 class WebhookEventData(BaseModel):
     path: str
     payload: dict
+
+
+class ProcessRagIndexingMessage(BaseModel):
+    rag_id: int
+    rag_type: Literal["naive", "graph"]
+    collection_id: int

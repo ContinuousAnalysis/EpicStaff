@@ -44,13 +44,13 @@ class ChatSummarizedBufferClient:
             # if chunks are full -- summarize them with a separate request
             await self.summarize_chunks()
 
-        logger.debug(f"Preparing to summarize the buffer")
+        logger.debug("Preparing to summarize the buffer")
         summarized_text: str = await self.summ_client.summarize_buffer(buffer_text)
         if not summarized_text:
-            logger.error(f"Couldn't summarize the buffer")
+            logger.error("Couldn't summarize the buffer")
             return
 
-        logger.debug(f"Buffer was successfully summarized")
+        logger.debug("Buffer was successfully summarized")
         self.buffer.flush_buffer()
         self.buffer.append_chunk(summarized_text)
 
@@ -65,12 +65,12 @@ class ChatSummarizedBufferClient:
         chunks_data = self.buffer.get_chunks()
         chunks_text = " ".join(chunks_data)
 
-        logger.debug(f"Preparing to summarize the chunks")
+        logger.debug("Preparing to summarize the chunks")
         summarized_chunks = await self.summ_client.summarize_chunks(chunks_text)
         if not summarized_chunks:
-            logger.error(f"Couldn't summarize the chunks")
+            logger.error("Couldn't summarize the chunks")
             return
 
-        logger.debug(f"Chunks were successfully summarized")
+        logger.debug("Chunks were successfully summarized")
         self.buffer.flush_chunks()
         self.buffer.append_chunk(summarized_chunks)

@@ -2,6 +2,7 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    output,
     computed,
     EventEmitter,
     Input,
@@ -10,6 +11,8 @@ import {
     signal,
     ViewChild,
     OnDestroy,
+    ElementRef, 
+    HostListener,
     Type,
 } from '@angular/core';
 import {
@@ -92,6 +95,8 @@ import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util';
 import { ToastService } from '../../services/notifications/toast.service';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
+import { CreateProjectComponent } from '../../features/projects/components/create-project-form-dialog/create-project.component';
+import { GetProjectRequest } from '../../features/projects/models/project.model';
 
 @Component({
     selector: 'app-flow-graph',
@@ -115,11 +120,13 @@ import { NodePanelShellComponent } from '../components/node-panels/node-panel-sh
         FlowNodePanelComponent,
         NodesSearchComponent,
         NodePanelShellComponent,
+        FlowShortcutsButtonComponent
     ],
 })
 export class FlowGraphComponent implements OnInit, OnDestroy {
     @Input() flowState!: FlowModel;
     @Input() nodesMode!: 'project-graph' | 'flow-graph';
+    @Input() currentFlowId: number | null = null;
 
     @Output() save = new EventEmitter<void>();
 
@@ -163,7 +170,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         private readonly cd: ChangeDetectorRef,
         private readonly dialog: Dialog,
         private readonly toastService: ToastService
-    ) {}
+    ) { }
 
     public ngOnInit(): void {
         this.initializeFlowStateIfEmpty();
@@ -242,7 +249,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         });
     }
 
-    public onSave(): void {}
+    public onSave(): void { }
 
     ngDoCheck() {
         console.log('PERFORMANCE!');
@@ -417,6 +424,10 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     public onCopy(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         // Assume fFlowComponent.getSelection() returns a FSelectionChangeEvent
 
         const selections: FSelectionChangeEvent =
@@ -426,6 +437,10 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
     // Triggered on paste
     public onPaste(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         let pastePosition: IRect;
 
         if (this.mouseCursorPosition) {
@@ -462,14 +477,26 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     public onUndo(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         console.log('component triggered undo');
         this.undoRedoService.onUndo();
     }
 
     public onRedo(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         this.undoRedoService.onRedo();
     }
     public onDelete(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         const selections: ICurrentSelection =
             this.fFlowComponent.getSelection();
 
@@ -594,6 +621,30 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         console.log('closing');
 
         this.showContextMenu.set(false);
+    }
+    public onCreateNewProject(): void {
+        this.showContextMenu.set(false);
+
+        const dialogRef = this.dialog.open<
+            GetProjectRequest,
+            { isTemplate: boolean },
+            CreateProjectComponent
+        >(CreateProjectComponent, {
+            width: '500px',
+            disableClose: false,
+            data: { isTemplate: false },
+        });
+
+        dialogRef.closed.subscribe((newProject) => {
+            if (!newProject) {
+                return;
+            }
+
+            this.onAddNodeFromContextMenu({
+                type: NodeType.PROJECT,
+                data: newProject,
+            });
+        });
     }
     public onAddNodeFromContextMenu(event: {
         type: NodeType;
@@ -1869,9 +1920,9 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                         },
                         collapsedPosition: childGroup.collapsedPosition
                             ? {
-                                  x: childGroup.collapsedPosition.x + deltaX,
-                                  y: childGroup.collapsedPosition.y + deltaY,
-                              }
+                                x: childGroup.collapsedPosition.x + deltaX,
+                                y: childGroup.collapsedPosition.y + deltaY,
+                            }
                             : childGroup.collapsedPosition,
                     });
                 }
@@ -2254,11 +2305,21 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             },
         });
 
-        dialogRef.closed.subscribe(() => {});
+        dialogRef.closed.subscribe(() => { });
+    }
+
+    private isDialogOpen(): boolean {
+        return this.dialog.openDialogs.length > 0;
     }
 
     public ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
+    }
+
+    openShortcuts = output<DOMRect>();
+
+    public onOpenShortcuts(anchorEl: HTMLElement): void {
+        this.openShortcuts.emit(anchorEl.getBoundingClientRect());
     }
 }

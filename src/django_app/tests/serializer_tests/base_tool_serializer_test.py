@@ -5,9 +5,10 @@ from tables.serializers.serializers import BaseToolSerializer
 from tests.fixtures import *
 
 
-
 @pytest.mark.django_db
-def test_custom_base_tool_serialization(test_tool_with_fields, llm_config, embedding_config):
+def test_custom_base_tool_serialization(
+    test_tool_with_fields, llm_config, embedding_config
+):
     tool = test_tool_with_fields
     data = {
         "name": "Config serialization test tool config",

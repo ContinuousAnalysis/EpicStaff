@@ -7,16 +7,20 @@ from loguru import logger
 
 
 class RedisService:
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, password: str):
         self.host = host
         self.port = port
+        self.password = password
 
         self.aioredis_client: aioredis.Redis | None = None
         self._retry = Retry(backoff=ExponentialBackoff(cap=3), retries=10)
 
     async def connect(self):
         self.aioredis_client = await aioredis.from_url(
-            f"redis://{self.host}:{self.port}", decode_responses=True, retry=self._retry
+            f"redis://{self.host}:{self.port}",
+            password=self.password,
+            decode_responses=True,
+            retry=self._retry,
         )
 
     async def async_subscribe(self, channel: str) -> PubSub:

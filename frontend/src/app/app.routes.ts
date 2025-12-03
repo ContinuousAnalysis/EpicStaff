@@ -10,7 +10,6 @@ import { OpenProjectPageComponent } from './open-project-page/open-project-page.
 import { FlowVisualProgrammingComponent } from './pages/flows-page/components/flow-visual-programming/flow-visual-programming.component';
 import { StaffPageComponent } from './pages/staff-page/staff-page.component';
 import { RunningGraphComponent } from './pages/running-graph/running-graph-page.component';
-import { KnowledgeSourcesComponent } from './pages/knowledge-sources/knowledge-sources.component';
 import { ChatsPageComponent } from './pages/chats-page/chats-page.component';
 
 import { ProjectsListPageComponent } from './features/projects/pages/projects-list-page/projects-list-page.component';
@@ -21,6 +20,9 @@ import { FlowTemplatesComponent } from './features/flows/pages/flows-list-page/c
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { ToolsListPageComponent } from './features/tools/pages/tools-list-page/tools-list-page.component';
 import { FlowsListPageComponent } from './features/flows/pages/flows-list-page/flows-list-page.component';
+import {
+    CollectionsListPageComponent
+} from "./features/knowledge-sources/pages/collections-list-page/collections-list-page.component";
 
 export const routes: Routes = [
     {
@@ -79,7 +81,7 @@ export const routes: Routes = [
             },
             {
                 path: 'knowledge-sources',
-                component: KnowledgeSourcesComponent,
+                component: CollectionsListPageComponent,
             },
             {
                 path: 'chats',

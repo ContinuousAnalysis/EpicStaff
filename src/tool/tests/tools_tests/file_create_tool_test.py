@@ -2,31 +2,30 @@ from crewai import Task
 from pathlib import Path
 
 import pytest
-import pytest_mock
-from pytest_mock import mocker
 
 from tests.tools_tests.mocks.tools_mocks import mock_empty_file
-from tests.tools_tests.fixtures import create_file_tool_setup_test_dir
 from tests.conftest import test_dir
 
 
 class TestFileCreateTool:
-
-    @pytest.mark.parametrize("is_filepath_passed_to_run", [
-        True, False
-    ])
-    def test_create_tool(self, 
-                         mocker, 
-                         create_file_tool_setup_test_dir,
-                         is_filepath_passed_to_run):
+    @pytest.mark.parametrize("is_filepath_passed_to_run", [True, False])
+    def test_create_tool(
+        self, mocker, create_file_tool_setup_test_dir, is_filepath_passed_to_run
+    ):
         """Test file creation"""
 
         tool = create_file_tool_setup_test_dir
         mocked_open = mocker.patch("builtins.open", mock_empty_file())
 
-        result = tool._run(file_path="dummy.txt") if is_filepath_passed_to_run else tool._run()
+        result = (
+            tool._run(file_path="dummy.txt")
+            if is_filepath_passed_to_run
+            else tool._run()
+        )
         if is_filepath_passed_to_run:
-            mocked_open.assert_called_once_with((Path(test_dir) / Path("dummy.txt")).resolve(), "x")
+            mocked_open.assert_called_once_with(
+                (Path(test_dir) / Path("dummy.txt")).resolve(), "x"
+            )
             assert result == "File created successfully in dummy.txt"
         else:
             mocked_open.assert_called_once_with(Path(test_dir).resolve(), "x")
@@ -40,7 +39,9 @@ class TestFileCreateTool:
 
         result = tool._run(file_path="newfile.txt")
         assert result == "File created successfully in newfile.txt"
-        mocked_open.assert_called_once_with((Path(test_dir) / Path("newfile.txt")).resolve(), "x")
+        mocked_open.assert_called_once_with(
+            (Path(test_dir) / Path("newfile.txt")).resolve(), "x"
+        )
 
         mocked_open.side_effect = FileExistsError
         result = tool._run(file_path="newfile.txt")

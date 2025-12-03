@@ -47,16 +47,17 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
         const currentNodeId = this.node().id;
-        
+
         return nodes
-            .filter((node) => 
-                node.type !== NodeType.NOTE && 
+            .filter((node) =>
+                node.type !== NodeType.NOTE &&
                 node.type !== NodeType.START &&
                 node.type !== NodeType.WEBHOOK_TRIGGER &&
+                node.type !== NodeType.TELEGRAM_TRIGGER &&
                 node.id !== currentNodeId
             )
             .map((node) => ({
-                value: node.node_name || node.id,
+                value: node.id,
                 label: node.node_name || node.id,
             }));
     });
@@ -68,11 +69,47 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
     initializeForm(): FormGroup {
         const node = this.node();
         const decisionTableData = (node.data as any).table as DecisionTableNode;
+        const nodes = this.flowService.nodes();
+        const connections = this.flowService.connections();
+
+        const findNodeId = (value: string | null, role: 'default' | 'error'): string => {
+            // 1. Try to find by ID or Name directly
+            if (value) {
+                console.log(`[DecisionTable] Resolving node reference for ${role}: '${value}'`);
+                const foundNode = nodes.find(n => n.id === value || n.node_name === value);
+                if (foundNode) {
+                    console.log(`[DecisionTable] Found node: ${foundNode.node_name} (${foundNode.id})`);
+                    return foundNode.id;
+                }
+                console.warn(`[DecisionTable] Node not found for value: '${value}'`);
+            }
+
+            // 2. Fallback: Check visual connections
+            // The port ID follows the convention: `${nodeId}_decision-${role}`
+            // For default: decision-default
+            // For error: decision-error
+            const portSuffix = role === 'default' ? 'decision-default' : 'decision-error';
+            const portId = `${node.id}_${portSuffix}`;
+
+            const connection = connections.find(
+                c => c.sourceNodeId === node.id && c.sourcePortId === portId
+            );
+
+            if (connection) {
+                 console.log(`[DecisionTable] Found visual connection for ${role} to node: ${connection.targetNodeId}`);
+                 return connection.targetNodeId;
+            }
+
+            return value || '';
+        };
+
+        const defaultNext = findNodeId(decisionTableData.default_next_node, 'default');
+        const errorNext = findNodeId(decisionTableData.next_error_node, 'error');
 
         const form = this.fb.group({
             node_name: [node.node_name, this.createNodeNameValidators()],
-            default_next_node: [decisionTableData.default_next_node || ''],
-            next_error_node: [decisionTableData.next_error_node || ''],
+            default_next_node: [defaultNext],
+            next_error_node: [errorNext],
         });
 
         const groupsCopy = this.cloneConditionGroups(

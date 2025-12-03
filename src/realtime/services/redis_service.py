@@ -1,4 +1,3 @@
-import asyncio
 import json
 import redis.asyncio as aioredis
 from loguru import logger
@@ -7,15 +6,18 @@ from utils.singleton_meta import SingletonMeta
 
 
 class RedisService(metaclass=SingletonMeta):
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, password: str):
         self.host = host
         self.port = port
+        self.password = password
         self.aioredis_client: aioredis.Redis | None = None
 
     async def connect(self):
         """Establish connection with Redis."""
         self.aioredis_client = await aioredis.from_url(
-            f"redis://{self.host}:{self.port}", decode_responses=True
+            f"redis://{self.host}:{self.port}",
+            password=self.password,
+            decode_responses=True,
         )
         logger.info("Connected to Redis.")
 
