@@ -255,6 +255,7 @@ class LLM:
         api_key: Optional[str] = None,
         callbacks: List[Any] = [],
         stop_event: Any = None,
+        **kwargs,
     ):
         self.model = model
         self.timeout = timeout
@@ -277,6 +278,7 @@ class LLM:
         self.callbacks = callbacks
         self.context_window_size = 0
         self.stop_event = stop_event
+        self.extra_params = kwargs
 
         litellm.drop_params = True
 
@@ -360,9 +362,13 @@ class LLM:
                     "stream": True,
                     "tools": tools,
                 }
+                params.update(self.extra_params)
 
                 # Remove None values from params
                 params = {k: v for k, v in params.items() if v is not None}
+
+                if not self.supports_stop_words():
+                    del params["stop"]
 
                 # --- 2) Make the completion call
                 text_response = ""
@@ -449,12 +455,14 @@ class LLM:
             return False
 
     def supports_stop_words(self) -> bool:
-        try:
-            params = get_supported_openai_params(model=self.model)
-            return "stop" in params
-        except Exception as e:
-            logging.error(f"Failed to get supported params: {str(e)}")
-            return False
+        # workaround
+        return False
+        # try:
+        #     params = get_supported_openai_params(model=self.model)
+        #     return "stop" in params
+        # except Exception as e:
+        #     logging.error(f"Failed to get supported params: {str(e)}")
+        #     return False
 
     def get_context_window_size(self) -> int:
         """

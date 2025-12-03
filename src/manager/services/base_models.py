@@ -12,9 +12,10 @@ class Callable(BaseModel):
         None
     )
 
+
 class ImportToolData(BaseModel):
     image_name: str
     tool_dict: Dict[str, Callable]  # alias, Callable
-    
+
     dependencies: list[str] | None = None
     force_build: bool = False

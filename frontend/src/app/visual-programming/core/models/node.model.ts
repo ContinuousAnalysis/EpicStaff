@@ -14,6 +14,7 @@ import { ConnectionModel } from './connection.model';
 import { ViewPort } from './port.model';
 import { GroupNodeModel } from './group.model';
 import { DecisionTableNode } from './decision-table.model';
+import { GetGraphLightRequest } from '../../../features/flows/models/graph.model';
 
 export interface BaseNodeModel {
     id: string;
@@ -28,6 +29,8 @@ export interface BaseNodeModel {
         width: number;
         height: number;
     };
+    // UI-only flag for invalid references (e.g. deleted subgraph)
+    isBlocked?: boolean;
     // New fields
     input_map: Record<string, any>;
     output_variable_path: string | null;
@@ -93,11 +96,24 @@ export interface FileExtractorNodeModel extends BaseNodeModel {
     data: unknown;
 }
 
+export interface AudioToTextNodeModel extends BaseNodeModel {
+    type: NodeType.AUDIO_TO_TEXT;
+    data: unknown;
+}
+
 export interface WebhookTriggerNodeModel extends BaseNodeModel {
     type: NodeType.WEBHOOK_TRIGGER;
     data: {
         webhook_trigger_path: string;
         python_code: CustomPythonCode;
+    }
+}
+
+export interface TelegramTriggerNodeModel extends BaseNodeModel {
+    type: NodeType.TELEGRAM_TRIGGER;
+    data: {
+        telegram_bot_api_key: string;
+        fields: TelegramTriggerNodeField[];
     }
 }
 
@@ -108,6 +124,12 @@ export interface EndNodeData {
 export interface EndNodeModel extends BaseNodeModel {
     type: NodeType.END;
     data: EndNodeData;
+}
+
+
+export interface SubGraphNodeModel extends BaseNodeModel {
+    type: NodeType.SUBGRAPH;
+    data: GetGraphLightRequest;
 }
 
 export type NodeModel =
@@ -123,5 +145,8 @@ export type NodeModel =
     | DecisionTableNodeModel
     | NoteNodeModel
     | FileExtractorNodeModel
+    | AudioToTextNodeModel
+    | SubGraphNodeModel
     | WebhookTriggerNodeModel
-    | EndNodeModel;
+    | EndNodeModel
+    | SubGraphNodeModel;

@@ -3,6 +3,7 @@ from django.urls import reverse
 from tests.fixtures import *
 from rest_framework import status
 
+
 @pytest.mark.django_db
 @pytest.mark.skip
 def test_get_environment_config(api_client, yaml_config_service_patched_config_path):

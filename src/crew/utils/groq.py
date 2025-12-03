@@ -188,7 +188,6 @@ class TokenThrottledChatGroq(ChatGroq):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> ChatResult:
-
         # Throttle
         # for message in messages:
         #    logger.debug("Debug: Type of message.content is", type(message.content))

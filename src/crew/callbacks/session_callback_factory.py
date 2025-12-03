@@ -2,25 +2,25 @@ import json
 import os
 import time
 from typing import Callable, Optional, Union
-from crewai.agents.crew_agent_executor import KNOWLEDGE_KEYWORD
 
-from services.graph.events import StopEvent
-from models.graph_models import (
+import asyncio
+
+from crewai.agents.crew_agent_executor import KNOWLEDGE_KEYWORD
+from crewai.agents.parser import AgentAction, AgentFinish
+from crewai.task import TaskOutput
+from langgraph.types import StreamWriter
+from loguru import logger
+
+from src.crew.services.graph.events import StopEvent
+from src.crew.models.graph_models import (
     GraphMessage,
     AgentMessageData,
     AgentFinishMessageData,
     TaskMessageData,
     UpdateSessionStatusMessageData,
 )
-from services.redis_service import RedisService, SyncPubsubSubscriber
-from services.knowledge_search_service import KnowledgeSearchService
-from datetime import datetime
-from crewai.agents.parser import AgentAction, AgentFinish
-from crewai.task import TaskOutput
-from langgraph.types import StreamWriter
-
-import asyncio
-from loguru import logger
+from src.crew.services.redis_service import RedisService, SyncPubsubSubscriber
+from src.crew.services.knowledge_search_service import KnowledgeSearchService
 
 
 SESSION_STATUS_CHANNEL = os.environ.get(
@@ -29,7 +29,6 @@ SESSION_STATUS_CHANNEL = os.environ.get(
 
 
 class GraphSessionCallbackFactory:
-
     def __init__(
         self, session_id: int, redis_service: RedisService, crewai_output_channel: str
     ):
@@ -119,7 +118,6 @@ class CrewCallbackFactory:
         self, agent_id: int
     ) -> Callable[[Union[AgentAction, AgentFinish]], None]:
         def inner(output: AgentAction | AgentFinish) -> None:
-
             if isinstance(output, AgentAction):
                 self._publish_agent_action(
                     agent_id=agent_id,
@@ -246,12 +244,9 @@ class CrewCallbackFactory:
 
     def get_wait_for_user_callback(
         self,
-        crew_knowledge_collection_id=None,
-        crew_similarity_threshold=0.2,
-        crew_search_limit=3,
-        agent_similarity_threshold=0.1,
-        agent_search_limit=3,
         agent_knowledge_collection_id=None,
+        rag_type_id=None,
+        rag_search_config=None,
         stop_event: Optional[StopEvent] = None,
     ) -> Callable[[], str]:
         def inner() -> str:
@@ -289,7 +284,7 @@ class CrewCallbackFactory:
             if self.stream_writer is not None:
                 self.stream_writer(graph_message)
 
-            logger.info(f"Waiting for user input...")
+            logger.info("Waiting for user input...")
             while True:
                 user_input = crew_callback_receiver.results
                 if user_input is not None:
@@ -328,33 +323,21 @@ class CrewCallbackFactory:
                 self.stream_writer(graph_message)
 
             if user_input != "</done/>":
-
                 user_input_with_knowledges = ""
                 user_input_with_knowledges += user_input
-
                 # TODO: make one search and combine crew_knowledge_collection_id
                 # TODO: potential bugs with: classification user_input if knowledge will be added
                 if agent_knowledge_collection_id is not None:
                     agent_knowledges = self.knowledge_search_service.search_knowledges(
                         sender="human_agent",
                         knowledge_collection_id=agent_knowledge_collection_id,
+                        rag_type_id=rag_type_id,
                         query=str(user_input),
-                        search_limit=agent_search_limit,
-                        similarity_threshold=agent_similarity_threshold,
+                        rag_search_config=rag_search_config,
                     )
                     user_input_with_knowledges += self._extract_knowledges(
                         agent_knowledges
                     )
-
-                elif crew_knowledge_collection_id is not None:
-                    crew_results = self.knowledge_search_service.search_knowledges(
-                        sender="human_crew",
-                        knowledge_collection_id=crew_knowledge_collection_id,
-                        query=str(user_input),
-                        search_limit=crew_search_limit,
-                        similarity_threshold=crew_similarity_threshold,
-                    )
-                    user_input_with_knowledges += self._extract_knowledges(crew_results)
 
                 logger.info(f"{user_input_with_knowledges=}")
 
@@ -374,7 +357,6 @@ class CrewCallbackFactory:
 
 
 class CrewUserCallbackReceiver:
-
     def __init__(self, crew_id: int, node_name: str, execution_order: int):
         self.crew_id = crew_id
         self.node_name = node_name
@@ -392,7 +374,6 @@ class CrewUserCallbackReceiver:
             and message_data.get("node_name") == self.node_name
             and message_data.get("execution_order") == self.execution_order
         ):
-
             self._results = message_data.get("text", "<NO USER INPUT>")
             # TODO: remove logging
             logger.success(f"CrewUserCallbackReceiver, {self._results=}")

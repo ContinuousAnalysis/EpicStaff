@@ -52,6 +52,7 @@ import { CommonModule } from '@angular/common';
       }
 
       .spinner {
+        flex-shrink: 0;
         border-radius: 50%;
         animation: spin 1s ease-in-out infinite;
         margin-bottom: 16px;

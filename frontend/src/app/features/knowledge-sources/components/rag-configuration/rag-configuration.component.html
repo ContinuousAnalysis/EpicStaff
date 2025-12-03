@@ -1,0 +1,50 @@
+<div class="configure">
+    <div class="configure__files-section">
+        <div class="configure__files-searchbar">
+            <app-search
+                class="configure__input"
+                placeholder="Search files..."
+                [(searchTerm)]="searchTerm"
+            />
+
+            <app-button
+                type="outline-primary"
+                (click)="initDocuments()"
+            >
+                Re-include Files
+            </app-button>
+            @if (filteredAndCheckedDocIds().length) {
+                <app-button
+                    [type]="bulkBtnActive() ? 'primary' : 'outline-primary'"
+                    (click)="bulkBtnActive.set(!bulkBtnActive())"
+                >
+                    Bulk configuration
+                </app-button>
+                <app-icon
+                    class="configure__bulk-delete"
+                    [icon]="'ui/trash'"
+                    [size]="'1.5rem'"
+                    (click)="applyBulkDelete()"
+                />
+            }
+        </div>
+
+        <app-configuration-table
+            [searchTerm]="searchTerm()"
+            [showBulkRow]="showBulkRow()"
+            [ragId]="naiveRagId()"
+            [(selectedRagDocId)]="selectedRagDocId"
+            (docsCheckChange)="filteredAndCheckedDocIds.set($event)"
+            (docFieldChange)="onDocFieldChange($event)"
+            (applyBulkUpdate)="applyBulkEdit($event)"
+            (onTuneChunk)="openTuneChunkModal($event)"
+        />
+    </div>
+
+    @if (!tuneChunkOpened()) {
+        <app-document-chunks-section
+            [naiveRagId]="naiveRagId()"
+            [selectedDocumentId]="selectedRagDocId()"
+        />
+    }
+</div>

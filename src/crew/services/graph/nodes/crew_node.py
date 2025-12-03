@@ -1,12 +1,18 @@
 import json
-from typing import override
-from callbacks.session_callback_factory import CrewCallbackFactory
-from services.crew.crew_parser_service import CrewParserService
-from services.redis_service import RedisService
-from services.knowledge_search_service import KnowledgeSearchService
-from models.request_models import CrewData
-from .base_node import *
-from models.state import *
+from typing import Any
+
+from loguru import logger
+from langgraph.types import StreamWriter
+
+from src.crew.callbacks.session_callback_factory import CrewCallbackFactory
+from src.crew.services.crew.crew_parser_service import CrewParserService
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.graph.nodes import BaseNode
+from src.crew.services.redis_service import RedisService
+from src.crew.services.knowledge_search_service import KnowledgeSearchService
+from src.crew.models.request_models import CrewData
+
+from src.crew.models.state import State
 
 
 class CrewNode(BaseNode):
@@ -41,7 +47,6 @@ class CrewNode(BaseNode):
     async def execute(
         self, state: State, writer: StreamWriter, execution_order: int, input_: Any
     ):
-
         crew_callback_factory = CrewCallbackFactory(
             redis_service=self.redis_service,
             session_id=self.session_id,
@@ -74,15 +79,28 @@ class CrewNode(BaseNode):
         )
         crew_output = await crew.kickoff_async(inputs=input_)
 
+        token_usage = None
+        if hasattr(crew_output, "token_usage") and crew_output.token_usage:
+            token_usage = {
+                "total_tokens": crew_output.token_usage.total_tokens,
+                "prompt_tokens": crew_output.token_usage.prompt_tokens,
+                "completion_tokens": crew_output.token_usage.completion_tokens,
+                "successful_requests": crew_output.token_usage.successful_requests,
+            }
+
+            logger.info(f"Crew {self.node_name} token usage: {token_usage}")
+
         output = (
             json.loads(crew_output.pydantic.model_dump_json())
             if crew_output.pydantic
             else {"raw": crew_output.raw}
         )
+        if token_usage:
+            output["token_usage"] = token_usage
+
         return output
 
     def update_state_history(self, state, type, name, input, output, **kwargs):
-
         return super().update_state_history(
             state=state,
             type=type,

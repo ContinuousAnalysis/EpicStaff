@@ -1,3 +1,23 @@
+$envFile = "../debug.env"
+
+if (Test-Path $envFile) {
+    Write-Output "Loading variables from $envFile"
+    Get-Content $envFile | ForEach-Object {
+        # Игнорируем пустые строки и комментарии
+        if ($_ -and $_ -notmatch '^#') {
+            $name, $value = $_ -split '=', 2
+            if ($name -and $value) {
+                # Устанавливаем переменную окружения для текущей сессии
+                [System.Environment]::SetEnvironmentVariable($name.Trim(), $value.Trim())
+            }
+        }
+    }
+} else {
+    Write-Output "Warning: $envFile not found."
+}
+
+$PORT = if ($env:DJANGO_PORT) { $env:DJANGO_PORT } else { "8000" }
+
 # Run database migrations
 Write-Output "Activate venv (Chose your venv)"
 venv/Scripts/activate.ps1
@@ -26,5 +46,5 @@ Write-Output "Starting Redis caching..."
 Start-Process -NoNewWindow -FilePath "python" -ArgumentList "manage.py cache_redis"
 
 # Start Django application
-Write-Output "Starting Django server..."
-uvicorn django_app.asgi:application --reload --host 0.0.0.0 --port 8000
+Write-Output "Starting Django server on port $PORT..."
+uvicorn django_app.asgi:application --reload --host 0.0.0.0 --port $PORT

@@ -11,25 +11,25 @@ from tables.models.realtime_models import DefaultRealtimeAgentConfig
 class DefaultRealtimeAgentConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = DefaultRealtimeAgentConfig
-        fields = '__all__'
+        fields = "__all__"
 
 
 class DefaultAgentConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = DefaultAgentConfig
-        fields = '__all__'
+        fields = "__all__"
 
 
 class DefaultCrewConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = DefaultCrewConfig
-        fields = '__all__'
+        fields = "__all__"
 
 
 class DefaultToolConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = DefaultToolConfig
-        fields = '__all__'
+        fields = "__all__"
 
 
 class DefaultConfigSerializer(serializers.Serializer):

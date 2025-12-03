@@ -10,7 +10,6 @@ def obj_to_txt(obj) -> str:
         string serialized object
     """
 
-
     message_bytes = pickle.dumps(obj)
     base64_bytes = base64.b64encode(message_bytes)
     txt = base64_bytes.decode("utf-8")

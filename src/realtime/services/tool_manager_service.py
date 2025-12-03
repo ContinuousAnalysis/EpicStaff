@@ -17,7 +17,6 @@ from tool_executors import (
 
 
 class ToolManagerService(metaclass=SingletonMeta):
-
     def __init__(
         self,
         redis_service: RedisService,
@@ -44,7 +43,6 @@ class ToolManagerService(metaclass=SingletonMeta):
         self.connection_tool_executors[connection_key] = []
 
         if chat_executor is not None:
-
             stop_agent_tool_executor = StopAgentToolExecutor(
                 stop_prompt=realtime_agent_chat_data.stop_prompt,
                 chat_executor=chat_executor,
@@ -53,11 +51,20 @@ class ToolManagerService(metaclass=SingletonMeta):
                 stop_agent_tool_executor
             )
 
-        if realtime_agent_chat_data.knowledge_collection_id is not None:
+        if (
+            realtime_agent_chat_data.knowledge_collection_id is not None
+            and realtime_agent_chat_data.rag_type_id is not None
+        ):
+            rag_search_config = None
+            if realtime_agent_chat_data.rag_search_config:
+                rag_search_config = (
+                    realtime_agent_chat_data.rag_search_config.model_dump()
+                )
+
             knowledge_tool_executor = KnowledgeSearchToolExecutor(
                 knowledge_collection_id=realtime_agent_chat_data.knowledge_collection_id,
-                similarity_threshold=realtime_agent_chat_data.similarity_threshold,
-                search_limit=realtime_agent_chat_data.search_limit,
+                rag_type_id=realtime_agent_chat_data.rag_type_id,
+                rag_search_config=rag_search_config,
                 redis_service=self.redis_service,
                 knowledge_search_get_channel=self.knowledge_search_get_channel,
                 knowledge_search_response_channel=self.knowledge_search_response_channel,

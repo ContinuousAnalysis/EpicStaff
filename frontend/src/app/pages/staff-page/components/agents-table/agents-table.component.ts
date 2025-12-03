@@ -215,13 +215,16 @@ export class AgentsTableComponent {
             default_temperature: null,
             tags: [],
             knowledge_collection: null,
+            rag: null,
             tools: [],
-            search_limit: 3,
-            similarity_threshold: '0.65',
+            search_configs: {
+                naive: {
+                    search_limit: 3,
+                    similarity_threshold: '0.2',
+                }
+            },
             // Replace realtime_config with realtime_agent object using provided defaults
             realtime_agent: {
-                similarity_threshold: '0.65',
-                search_limit: 3,
                 wake_word: '',
                 stop_prompt: 'stop',
                 language: null,
@@ -593,9 +596,6 @@ export class AgentsTableComponent {
             ...(agentData.realtime_agent || {}),
             realtime_config: realtimeConfigId,
             // Include other realtime_agent properties if they exist in agentData
-            similarity_threshold:
-                agentData.realtime_agent?.similarity_threshold,
-            search_limit: agentData.realtime_agent?.search_limit,
             wake_word: agentData.realtime_agent?.wake_word,
             stop_prompt: agentData.realtime_agent?.stop_prompt,
             language: agentData.realtime_agent?.language,
@@ -806,6 +806,7 @@ export class AgentsTableComponent {
     openSettingsDialog(agentData: TableFullAgent) {
         const dialogRef = this.dialog.open(AdvancedSettingsDialogComponent, {
             data: {
+                id: agentData.id,
                 agentRole: agentData.role,
                 fullFcmLlmConfig: agentData.fullFcmLlmConfig,
                 max_iter: agentData.max_iter ?? 20,
@@ -818,8 +819,13 @@ export class AgentsTableComponent {
                     agentData.respect_context_window ?? false,
                 default_temperature: null,
                 knowledge_collection: agentData.knowledge_collection ?? null, // Changed parameter name
-                similarity_threshold: agentData.similarity_threshold ?? null,
-                search_limit: agentData.search_limit ?? null,
+                rag: agentData.rag ?? null,
+                search_configs: {
+                    naive: {
+                        similarity_threshold: agentData.search_configs.naive.similarity_threshold ?? null,
+                        search_limit: agentData.search_configs.naive.search_limit ?? null,
+                    }
+                },
                 memory: agentData.memory ?? true,
             },
         });
@@ -1181,8 +1187,6 @@ export class AgentsTableComponent {
         // Create or update the realtime_agent object
         const realtime_agent = {
             ...(newAgentData.realtime_agent || {
-                similarity_threshold: '0.65',
-                search_limit: 3,
                 wake_word: '',
                 stop_prompt: 'stop',
                 language: null,
@@ -1195,7 +1199,7 @@ export class AgentsTableComponent {
 
         // Parse the agent data to extract proper tools
         const parsedAgentData = this.parseAgentData(newAgentData);
-        
+
         const configuredToolIds = parsedAgentData.configured_tools || [];
         const pythonToolIds = parsedAgentData.python_code_tools || [];
         const mcpToolIds = parsedAgentData.mcp_tools || [];

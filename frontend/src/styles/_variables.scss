@@ -1,7 +1,7 @@
 :root {
     //colors
     --color-sidenav-background: #222225;
-    --color-background-body: #1e1e20;
+    --color-background-body: #212325;
 
     --accent-color: #685fff;
     --accent-color-hover: #574fd6;
@@ -17,6 +17,9 @@
     --color-input-background: #27272b;
     --color-input-border: #c8ceda24;
     --color-modals-background: #222225;
+    --color-drag-drop-active: rgba(15, 15, 15, .28);
+    --color-nodes-flow-link: #00bfa5;
+    --color-nodes-flow-link-hover-bg: rgba(0, 191, 165, 0.08);
 
     //border colors
     --color-components-card-border: #ffffff08;
@@ -47,6 +50,38 @@
     --color-nodes-actionbar-bg: #222225;
     --color-nodes-actionbar-border: #c8ceda14;
     --color-nodes-sidepanel-bg: #222225;
+
+    //knowledge-sources
+    --color-ks-primary: #0a0a0a;
+    --color-ks-secondary: #666666;
+    --color-ks-tetriary: #cccccc;
+    --color-ks-quarternary: #f5f5f5;
+    --color-ks-white: #ffffff;
+
+    --color-ks-card-background: #1e1e1e;
+    --color-ks-background: #212325;
+    --color-ks-text: #d9d9de;
+    --color-ks-button-activated: #685fff;
+    --color-ks-line: #2c2c2e;
+    --color-ks-hover-row: #3a3e48;
+
+    --color-ks-transparent-black-72: rgba(21, 21, 21, 0.72);
+    --color-ks-transparent-black-60: rgba(21, 21, 21, 0.6);
+    --color-ks-transparent-black-28: rgba(21, 21, 21, 0.28);
+    --color-ks-transparent-text-80: rgba(217, 217, 222, 0.80);
+    --color-ks-transparent-text-60: rgba(217, 217, 222, 0.60);
+    --color-ks-transparent-text-20: rgba(217, 217, 222, 0.20);
+    --color-ks-transparent-blue: rgba(72, 203, 255, 0.06);
+    --color-ks-transparent-purple: rgba(104, 95, 255, 0.06);
+    --color-ks-transparent-yellow: rgba(255, 207, 0, 0.06);
+    --color-ks-transparent-red: rgba(220, 91, 96, 0.06);
+
+    --color-ks-status-blue: #48cbff;
+    --color-ks-status-completed: #685fff;
+    --color-ks-status-new: #2aba6b;
+    --color-ks-status-warning: #ffcf00;
+    --color-ks-status-processing: #ff8f3f;
+    --color-ks-status-failed: #dc5b60;
 }
 
 .my-app-light {

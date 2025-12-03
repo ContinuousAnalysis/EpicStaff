@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
 from datetime import datetime
+
+
 class DockerVolumeManager:
     def __init__(self, export_path: str):
         self.export_path = Path(export_path)
@@ -8,7 +10,12 @@ class DockerVolumeManager:
 
     def ensure_docker_running(self) -> bool:
         try:
-            subprocess.run(["docker", "info"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(
+                ["docker", "info"],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             return True
         except subprocess.CalledProcessError:
             return False
@@ -26,14 +33,26 @@ class DockerVolumeManager:
             print(f"Exporting volume '{volume_name}' to {archive_path}...")
 
             # Create a temporary container from a minimal image and export the volume
-            subprocess.run([
-                "docker", "run", "--rm", 
-                "-v", f"{volume_name}:/data",
-                "--name", container_name,
-                "alpine",
-                "tar", "cf", "-",
-                "-C", "/data", "."
-            ], check=True, stdout=open(archive_path, "wb"))
+            subprocess.run(
+                [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{volume_name}:/data",
+                    "--name",
+                    container_name,
+                    "alpine",
+                    "tar",
+                    "cf",
+                    "-",
+                    "-C",
+                    "/data",
+                    ".",
+                ],
+                check=True,
+                stdout=open(archive_path, "wb"),
+            )
 
             print(f"Export complete: {archive_path}")
             return archive_path
@@ -45,7 +64,7 @@ class DockerVolumeManager:
         archive_path = Path(archive_path)
         if not archive_path.exists():
             raise FileNotFoundError(f"Archive not found: {archive_path}")
-        
+
         if not self.ensure_docker_running():
             raise RuntimeError("Docker is not running or could not be started.")
 
@@ -55,15 +74,27 @@ class DockerVolumeManager:
             print(f"Importing archive {archive_path} into volume '{volume_name}'...")
 
             # Run an alpine container, mount the volume and the archive, extract it
-            subprocess.run([
-                "docker", "run", "--rm",
-                "-v", f"{volume_name}:/data",
-                "-v", f"{archive_path.absolute()}:/archive.tar:ro",
-                "--name", container_name,
-                "alpine",
-                "sh", "-c", "cd /data && tar xf /archive.tar"
-            ], check=True)
+            subprocess.run(
+                [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{volume_name}:/data",
+                    "-v",
+                    f"{archive_path.absolute()}:/archive.tar:ro",
+                    "--name",
+                    container_name,
+                    "alpine",
+                    "sh",
+                    "-c",
+                    "cd /data && tar xf /archive.tar",
+                ],
+                check=True,
+            )
 
             print(f"Import complete: {volume_name}")
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to import archive into volume {volume_name}: {e}")
+            raise RuntimeError(
+                f"Failed to import archive into volume {volume_name}: {e}"
+            )

@@ -1,0 +1,72 @@
+:host {
+    overflow: hidden;
+}
+
+.files {
+    height: 100%;
+    &__file {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.625rem;
+        column-gap: 1rem;
+    }
+
+    &__name-column {
+        display: flex;
+        align-items: center;
+        column-gap: 0.5rem;
+        min-width: 0;
+        flex: 1;
+    }
+
+    &__name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__file-error {
+        border-radius: 5px;
+        background-color: var(--color-ks-transparent-red);
+        color: var(--color-ks-status-failed);
+        padding: 0.25rem 0.5rem;
+        font-size: 0.625rem;
+    }
+
+    &__size-column {
+        display: flex;
+        column-gap: 1rem;
+        flex-shrink: 0;
+    }
+
+    &__size {
+        color: var(--color-ks-transparent-text-80);
+    }
+
+    &__error {
+        border-radius: 5px;
+        background-color: var(--color-ks-transparent-red);
+        color: var(--color-ks-status-failed);
+        padding: 0.25rem 0.5rem;
+
+        &--medium {
+            font-size: 0.875rem;
+        }
+
+        &--small {
+            font-size: 0.625rem;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        column-gap: 0.5rem;
+    }
+
+    &__file-action {
+        color: var(--color-ks-transparent-text-80);
+    }
+}

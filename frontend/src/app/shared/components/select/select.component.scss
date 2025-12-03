@@ -1,0 +1,121 @@
+:host {
+    width: 100%;
+}
+
+.selector {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+
+    &__btn {
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        border-radius: 0.5rem;
+        border: 1px solid var(--color-input-border);
+        background-color: var(--color-input-background);
+        color: var(--color-text-primary);
+        transition: border-color 0.2s ease;
+
+        &:hover {
+            border-color: var(--accent-color, #685fff);
+        }
+
+        &--mod-default {
+            height: 40px;
+            padding: 0.5rem 2rem 0.5rem 1rem;
+            font-size: 0.875rem;
+            line-height: 130%;
+        }
+
+        &--mod-small {
+            height: 28px;
+            font-weight: 200;
+            font-size: 0.625rem;
+            padding: 0.625rem 1.5rem 0.625rem 0.5rem;
+        }
+
+        &--invalid {
+            border-color: var(--color-ks-status-failed);
+        }
+
+        &--placeholder {
+            color: var(--color-input-text-placeholder);
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+    }
+
+    &__chevron {
+        transition: transform 0.2s ease;
+        display: inline-block;
+        position: absolute;
+        color: var(--color-input-text-placeholder);
+
+        &--mod-default {
+            right: 10px;
+            top: 12px;
+        }
+
+        &--mod-small {
+            right: 5px;
+            top: 6px;
+        }
+
+        &--open {
+            transform: rotate(180deg);
+        }
+    }
+
+    &__dropdown {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--color-input-border);
+        background-color: var(--color-input-background);
+        color: var(--color-text-primary);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+        z-index: 1005;
+        max-height: 240px;
+        overflow-y: auto;
+        white-space: nowrap;
+    }
+
+    &__option {
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        &--mod-default {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 200;
+            line-height: 130%;
+        }
+
+        &--mod-small {
+            font-weight: 200;
+            font-size: 0.625rem;
+            padding: 0.625rem 0.5rem;
+        }
+
+        &--exists {
+            cursor: pointer;
+            &:hover {
+                background: var(--color-ks-transparent-black-72);
+            }
+        }
+
+        &--empty {
+            padding: 0.5rem 1rem;
+            color: var(--color-input-text-placeholder);
+        }
+    }
+}

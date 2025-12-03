@@ -1,13 +1,9 @@
-import os
-import json
 import importlib
 import importlib.metadata
 import pkgutil
-import logging
 
 
 class ToolsScanner:
-
     def find_tool(self, class_name, package_name):
         """
         Recursively search through the target packages for the tool classes and their paths.
@@ -27,12 +23,10 @@ class ToolsScanner:
                             class_name=class_name, package_name=module_info.name
                         )
 
-                except (ImportError, AttributeError, ModuleNotFoundError) as e:
+                except (ImportError, AttributeError, ModuleNotFoundError):
                     continue
-        except ImportError as e:
+        except ImportError:
             # TODO: Need to log this error case here
             pass
 
         return None
-
-

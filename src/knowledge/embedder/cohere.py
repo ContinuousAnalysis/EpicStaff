@@ -7,7 +7,6 @@ import cohere
 
 class CohereEmbedder(BaseEmbedder):
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
-
         # dims=1536
         self.model_name = model_name or "embed-v4.0"
         self.input_type = "search_query"
