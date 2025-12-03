@@ -14,9 +14,15 @@ import os
 import sys
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv, find_dotenv
+from loguru import logger
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+if os.getenv("LOAD_DEBUG_ENV", "True").lower() in ("true", "1", "yes", "on"):
+    logger.info("LOAD_DEBUG_ENV=True")
+    load_dotenv(find_dotenv(BASE_DIR.parent / "debug.env"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -25,9 +31,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # SECURITY WARNING: keep the secret key used in production secret!
-
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes", "on")
-
 
 SECRET_KEY = os.getenv("SECRET_KEY") or (
     "321567143216717121" if DEBUG else get_random_secret_key()
@@ -51,7 +55,7 @@ LOGGING = {
     },
     "root": {
         "handlers": ["loguru"],
-        "level": "INFO",
+        "level": "DEBUG",
     },
 }
 
@@ -150,6 +154,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+TELEGRAM_TRIGGER_FIELDS_PATH = (
+    BASE_DIR / "tables" / "utils" / "data" / "telegram_fields.json"
+)
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -177,6 +184,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -184,16 +192,23 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+            "PASSWORD": REDIS_PASSWORD,
         },
     }
 }
+MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
+MEDIA_URL = "/media/"
 
+MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL = os.getenv(
     "KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL", "knowledge:chunk"
 )
 KNOWLEDGE_DOCUMENT_CHUNK_RESPONSE = os.getenv(
     "KNOWLEDGE_DOCUMENT_CHUNK_RESPONSE", "knowledge:chunk:response"
+)
+KNOWLEDGE_INDEXING_CHANNEL = os.getenv(
+    "KNOWLEDGE_INDEXING_CHANNEL", "knowledge:indexing"
 )
 STOP_SESSION_CHANNEL = os.getenv("STOP_SESSION_CHANNEL", "sessions:stop")
 
@@ -203,3 +218,5 @@ if WEBHOOK_USE_TUNNEL:
     WEBHOOK_TUNNEL = os.getenv("WEBHOOK_TUNNEL", None)
 else:
     WEBHOOK_TUNNEL = None
+WEBHOOK_HOST_NAME = os.getenv("WEBHOOK_HOST_NAME", "localhost")
+WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", 8009))

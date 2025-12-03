@@ -48,8 +48,9 @@ class BaseAgent(ABC, BaseModel):
         cache_handler (InstanceOf[CacheHandler]): An instance of the CacheHandler class.
         tools_handler (InstanceOf[ToolsHandler]): An instance of the ToolsHandler class.
         max_tokens: Maximum number of tokens for the agent to generate in a response.
-
-        knowledge_collection_id: A unique identifier of the knowledgecollection instance for agent. Now fields "knowledge_sources" and "knowledge" are unnecessary.
+        knowledge_collection_id: A unique identifier of the knowledgecollection instance for agent.
+        rag_type_id: RAG type and ID in format 'rag_type:id' (e.g., 'naive:6', 'graph:10').
+        rag_search_config: RAG-specific search configuration parameters as dict (e.g., {'search_limit': 3, 'similarity_threshold': 0.2}).
 
 
     Methods:
@@ -136,11 +137,13 @@ class BaseAgent(ABC, BaseModel):
         default=None,
         description="Knowledge collection id for the agent",
     )
-    search_limit: Optional[int] = Field(
-        default=None, description="search_limit for knowledge"
+    rag_type_id: Optional[str] = Field(
+        default=None,
+        description="RAG type and ID in format 'rag_type:id' (e.g., 'naive:6', 'graph:10')",
     )
-    similarity_threshold: Optional[Any] = Field(
-        default=None, description="similarity_threshold for knowledge"
+    rag_search_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="RAG-specific search configuration parameters (e.g., {'rag_type': 'naive', 'search_limit': 3, 'similarity_threshold': 0.2})",
     )
 
     @model_validator(mode="before")

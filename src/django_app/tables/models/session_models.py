@@ -1,4 +1,3 @@
-from typing import Any
 from django.utils import timezone
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
@@ -33,6 +32,7 @@ class Session(models.Model):
         GraphOrganizationUser, on_delete=models.SET_NULL, default=None, null=True
     )
     entrypoint = models.CharField(null=True, default=None)
+    token_usage = models.JSONField(default=dict)
 
     def save(self, *args, **kwargs):
         now = timezone.now()
@@ -59,12 +59,10 @@ class Session(models.Model):
 
         super().save(*args, **kwargs)
 
-    def delete(self, using=None, keep_parents=False, callback: Any = None):
-        if callback is not None:
-            callback()
+    def delete(self, using=None, keep_parents=False):
         result = super().delete(using, False)
-
         return result
+
     class Meta:
         get_latest_by = ["id"]
 
@@ -94,7 +92,6 @@ class Session(models.Model):
 
 
 class UserSessionMessage(CrewSessionMessage):
-
     text = models.TextField()
 
 

@@ -113,6 +113,3 @@ class CrewSessionMessage(BaseSessionMessage):
 
     class Meta:
         abstract = True
-
-
-

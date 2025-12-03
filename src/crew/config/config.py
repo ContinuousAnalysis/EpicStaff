@@ -3,7 +3,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
 class OllamaConfig:
     # patch_stop_words = True
     # patch_num_ctx = True

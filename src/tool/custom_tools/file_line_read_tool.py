@@ -22,9 +22,7 @@ class LineReadFileToolSchema(BaseModel):
 
 class LineReadFileTool(RouteTool):
     name: str = "Read a file's content starting with line number given"
-    description: str = (
-        "A tool that can be used to read a file's content starting with the line number given."
-    )
+    description: str = "A tool that can be used to read a file's content starting with the line number given."
     args_schema: Type[BaseModel] = LineReadFileToolSchema
 
     def __init__(self, **kwargs):

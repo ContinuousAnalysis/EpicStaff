@@ -20,7 +20,6 @@ def running_in_docker():
 
 
 class OllamaLoader:
-
     def handle_progress_updates(progress_update, progress, llm_task):
         """
         Handles progress updates during model download and initialization.

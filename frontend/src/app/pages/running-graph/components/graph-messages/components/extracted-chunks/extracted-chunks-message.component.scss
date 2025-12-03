@@ -1,0 +1,168 @@
+.extracted-chunks-container {
+    border-left: 4px solid #5c7cfa;
+    border-radius: 8px;
+    background: var(--color-nodes-background);
+    padding: 1rem;
+
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.play-arrow {
+    margin-right: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.play-arrow i {
+    color: #5c7cfa;
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.icon-container {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #5c7cfa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.icon-container i {
+    font-size: 1.1rem;
+    color: var(--gray-900);
+}
+
+.title h3 {
+    margin: 0;
+    color: var(--gray-050);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.subtitle {
+    margin: 0;
+    color: var(--gray-300);
+    font-size: 0.85rem;
+}
+
+.query {
+    color: var(--gray-050);
+    font-weight: 500;
+}
+
+.meta {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--gray-200);
+}
+
+.chip {
+    background: rgba(92, 124, 250, 0.15);
+    color: #bec8ff;
+    padding: 0.15rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+}
+
+.content {
+    margin-top: 1rem;
+    overflow: hidden;
+    transition: margin-top 0.2s ease;
+}
+
+.content.collapsed {
+    margin-top: 0;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.stat {
+    background: var(--gray-850);
+    border-radius: 6px;
+    padding: 0.65rem;
+}
+
+.label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--gray-400);
+}
+
+.value {
+    font-size: 0.95rem;
+    color: var(--gray-050);
+    font-weight: 600;
+}
+
+.chunks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.chunk-card {
+    background: var(--gray-850);
+    border: 1px solid var(--gray-775);
+    border-radius: 8px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chunk-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.chunk-order {
+    font-weight: 600;
+    color: #5c7cfa;
+}
+
+.chunk-source {
+    color: var(--gray-200);
+    font-size: 0.85rem;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.similarity {
+    font-size: 0.8rem;
+    color: var(--gray-300);
+}
+
+.chunk-text {
+    margin: 0;
+    font-family: var(--font-family-monospace, 'Fira Code', monospace);
+    white-space: pre-wrap;
+    color: var(--gray-050);
+    background: var(--gray-900);
+    border-radius: 6px;
+    padding: 0.75rem;
+    overflow: visible;
+}

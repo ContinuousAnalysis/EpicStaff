@@ -7,8 +7,16 @@
         <span>Projects</span>
       </div>
       <span class="separator"> / </span>
-      <div class="project-name" (click)="openEditTitleDialog()">
-        {{ project.name }}
+      <div class="project-name" >
+        <span class="project-name__text">
+          {{ project.name }}
+        </span>
+        <app-icon
+          icon="ui/edit"
+          size="1rem"
+          class="project-name__edit"
+          (click)="openEditTitleDialog()"
+        />
       </div>
     </div>
   </div>

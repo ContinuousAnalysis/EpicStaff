@@ -1,13 +1,11 @@
 from typing import Any
 from django.db import models
 from django.db.models import CheckConstraint
-from tables.models.python_models import PythonCodeTool
 from tables.models import DefaultBaseModel, AbstractDefaultFillableModel, Process
 from django.core.exceptions import ValidationError
 
 
 class DefaultCrewConfig(DefaultBaseModel):
-
     embedding_config = models.ForeignKey(
         "EmbeddingConfig",
         on_delete=models.SET_NULL,
@@ -36,7 +34,6 @@ class DefaultCrewConfig(DefaultBaseModel):
 
 
 class DefaultAgentConfig(DefaultBaseModel):
-
     max_iter = models.IntegerField(null=True, default=20)
     max_rpm = models.IntegerField(null=True, default=100)
     max_execution_time = models.IntegerField(null=True, default=True)
@@ -88,16 +85,6 @@ class Agent(AbstractDefaultFillableModel):
     knowledge_collection = models.ForeignKey(
         "SourceCollection", on_delete=models.SET_NULL, blank=True, null=True
     )
-    search_limit = models.PositiveIntegerField(
-        default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
-    )
-    similarity_threshold = models.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        default=0.2,
-        blank=True,
-        help_text="Float between 0.00 and 1.00 for knowledge",
-    )
 
     llm_config = models.ForeignKey(
         "LLMConfig",
@@ -124,7 +111,6 @@ class Agent(AbstractDefaultFillableModel):
         return None
 
     def fill_with_defaults(self, crew_id: int | None):
-
         if self.llm_config is not None:
             if self.default_temperature is not None:
                 self.llm_config.temperature = self.default_temperature
@@ -147,6 +133,46 @@ class Agent(AbstractDefaultFillableModel):
             self.default_temperature
             or DefaultAgentConfig.load().get_default_temperature()
         )
+
+    def get_rag_type_and_id(self) -> str | None:
+        """
+        Get assigned RAG type and ID in format "rag_type:id".
+        """
+        try:
+            # Get the AgentNaiveRag link (currently only one due to unique=True constraint)
+            agent_naive_rag = self.agent_naive_rags.select_related("naive_rag").get()
+            naive_rag = agent_naive_rag.naive_rag
+            return f"naive:{naive_rag.naive_rag_id}"
+        except Exception:
+            return None
+
+    def get_search_configs(self) -> dict | None:
+        """
+        Get all RAG search configurations as nested dictionary.
+        """
+        configs = {}
+
+        # Collect NaiveRag search config
+        try:
+            naive_config = self.naive_search_config
+            configs["naive"] = {
+                "search_limit": naive_config.search_limit,
+                "similarity_threshold": round(
+                    float(naive_config.similarity_threshold), 2
+                ),
+            }
+        except Exception:
+            pass
+
+        # Collect GraphRag search config
+        # try:
+        #     graph_config = self.graph_search_config
+        #     configs["graph"] ={...}}
+        # except Exception:
+        #     pass
+
+        # Return None if no configs found, otherwise return dict
+        return configs if configs else None
 
     def __str__(self):
         return self.role
@@ -262,6 +288,7 @@ class Crew(AbstractDefaultFillableModel):
         blank=True,
         help_text="Float between 0.00 and 1.00 for knowledge",
     )
+    is_template = models.BooleanField(default=False)
 
     def get_default_model(self):
         return DefaultCrewConfig.load()
@@ -513,7 +540,6 @@ def set_field_value_null_in_tool_configs(field_type: str, value: Any):
         # Get all tool configs for this tool
         tool_config_set = ToolConfig.objects.filter(tool=tool)
         for tool_config in tool_config_set:
-
             # Set configuration key to None if current value match
             if not tool_config.configuration.get(field.name):
                 # if config not set then skip setting None

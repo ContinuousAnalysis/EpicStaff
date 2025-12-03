@@ -1,30 +1,34 @@
-from unittest.mock import Mock, MagicMock, patch
-from docker.models.images import Image
+from unittest.mock import Mock, patch
 
-from tests.tool_container.fixtures import tool_container_service, mocktool_image, manager_container
-from tests.tool_container.fixtures import test_network, docker_client
 import pytest
 
+
 @pytest.mark.skip
-def test_request_class_data_image_exist(tool_container_service, mocktool_image, manager_container):
+def test_request_class_data_image_exist(
+    tool_container_service, mocktool_image, manager_container
+):
     """
-        - Given an existing container image for 'mock_tool',
-        - When `request_class_data` is called with the alias 'mock_alias',
-        - Then a container for 'mock_tool' should be running, and a request should be sent to its endpoint.
+    - Given an existing container image for 'mock_tool',
+    - When `request_class_data` is called with the alias 'mock_alias',
+    - Then a container for 'mock_tool' should be running, and a request should be sent to its endpoint.
     """
 
-    with patch('requests.get') as mock_requests_get:
+    with patch("requests.get") as mock_requests_get:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {}
         mock_requests_get.return_value = mock_response
 
-        tool_alias = 'mock_alias'
-        response_data = tool_container_service.request_class_data(tool_alias=tool_alias, tool_init_configuration=None)
+        tool_alias = "mock_alias"
+        response_data = tool_container_service.request_class_data(
+            tool_alias=tool_alias, tool_init_configuration=None
+        )
 
         running_containers = tool_container_service.docker_client.containers.list()
-        matching_containers = [c for c in running_containers if 'mock_tool' in c.name]
-        assert matching_containers, "No container found with name containing 'mock_tool'"
+        matching_containers = [c for c in running_containers if "mock_tool" in c.name]
+        assert (
+            matching_containers
+        ), "No container found with name containing 'mock_tool'"
 
         container = matching_containers[0]
 

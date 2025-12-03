@@ -4,6 +4,7 @@ import {
     Output,
     EventEmitter,
     ChangeDetectionStrategy,
+    inject,
 } from '@angular/core';
 import { CommonModule, NgStyle } from '@angular/common';
 import { DecisionTableNodeModel } from '../../../core/models/node.model';
@@ -11,6 +12,7 @@ import { ConditionGroup } from '../../../core/models/decision-table.model';
 import { FormsModule } from '@angular/forms';
 import { ClickOrDragDirective } from '../../../core/directives/click-or-drag.directive';
 import { FFlowModule } from '@foblex/flow';
+import { FlowService } from '../../../services/flow.service';
 
 @Component({
     selector: 'app-decision-table-node',
@@ -23,6 +25,8 @@ import { FFlowModule } from '@foblex/flow';
 export class DecisionTableNodeComponent {
     @Input({ required: true }) node!: DecisionTableNodeModel;
     @Output() actualClick = new EventEmitter<MouseEvent>();
+
+    private flowService = inject(FlowService);
 
     get conditionGroups(): ConditionGroup[] {
         const allGroups = this.node.data.table?.condition_groups ?? [];
@@ -39,8 +43,28 @@ export class DecisionTableNodeComponent {
         return this.node.data.table?.default_next_node;
     }
 
+    get defaultNextNodeName(): string | null {
+        const idOrName = this.defaultNextNode;
+        if (!idOrName) return null;
+        const nodes = this.flowService.nodes();
+        const node = nodes.find(
+            (n) => n.id === idOrName || n.node_name === idOrName
+        );
+        return node ? node.node_name : idOrName;
+    }
+
     get nextErrorNode() {
         return this.node.data.table?.next_error_node;
+    }
+
+    get nextErrorNodeName(): string | null {
+        const idOrName = this.nextErrorNode;
+        if (!idOrName) return null;
+        const nodes = this.flowService.nodes();
+        const node = nodes.find(
+            (n) => n.id === idOrName || n.node_name === idOrName
+        );
+        return node ? node.node_name : idOrName;
     }
 
     get inputPort() {

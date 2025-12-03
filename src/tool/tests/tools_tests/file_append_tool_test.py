@@ -2,18 +2,14 @@ from crewai import Task
 from pathlib import Path
 
 import pytest
-import pytest_mock
-from pytest_mock import mocker, MockerFixture
-from unittest.mock import patch, call, Mock
+from pytest_mock import MockerFixture
 
 from custom_tools import AppendFileTool
 from tests.tools_tests.mocks.tools_mocks import mock_empty_file
-from tests.tools_tests.fixtures import append_file_tool
 from tests.conftest import test_dir
 
 
 class TestFileAppendTool:
-
     def test_append_tool(self, append_file_tool: AppendFileTool):
         """Test file append tool"""
 
@@ -36,13 +32,22 @@ class TestFileAppendTool:
         """Test running file append tool with no append text"""
         tool = append_file_tool
         mocker.patch("builtins.open", mock_empty_file())
-        mocker.patch("custom_tools.file_append_tool.AppendFileTool.construct_savepath", return_value=test_dir)
-        mocker.patch("custom_tools.file_append_tool.AppendFileTool.is_path_has_permission", return_vaue=True)
+        mocker.patch(
+            "custom_tools.file_append_tool.AppendFileTool.construct_savepath",
+            return_value=test_dir,
+        )
+        mocker.patch(
+            "custom_tools.file_append_tool.AppendFileTool.is_path_has_permission",
+            return_vaue=True,
+        )
 
-        result = tool._run(file_path='dummy.txt')
+        result = tool._run(file_path="dummy.txt")
 
-        assert result == f"append_text argument is mandatory and it wasn't given to the tool"
-    
+        assert (
+            result
+            == "append_text argument is mandatory and it wasn't given to the tool"
+        )
+
     @pytest.mark.skip
     @pytest.mark.vcr(filter_headers=["authorization"], record_mode="once")
     def test_append_tool_with_crewai(self, agent, append_file_tool):

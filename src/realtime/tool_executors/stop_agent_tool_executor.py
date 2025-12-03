@@ -6,7 +6,6 @@ from services.chat_mode import ChatMode
 
 
 class StopAgentToolExecutor(BaseToolExecutor):
-
     def __init__(
         self,
         stop_prompt: str,

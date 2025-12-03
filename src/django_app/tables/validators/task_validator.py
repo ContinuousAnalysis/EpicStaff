@@ -4,7 +4,6 @@ from tables.exceptions import TaskValidationError
 
 
 class TaskValidator:
-
     def validate_assigned_agents(self, task_list: QuerySet[Task]) -> None:
         """
         Validate that all tasks in the queryset have an assigned agent.
