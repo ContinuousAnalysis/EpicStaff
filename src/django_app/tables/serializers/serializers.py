@@ -3,7 +3,7 @@ from django.conf import settings
 from rest_framework import serializers
 from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
-from tables.models.python_models import PythonCodeTool
+from tables.models.python_models import PythonCodeTool, PythonCodeToolConfig
 from tables.models.realtime_models import VoiceChoices
 from tables.models.graph_models import GraphFile, Graph
 
