@@ -24,7 +24,7 @@ import { ComponentPortal } from '@angular/cdk/portal';
 @Component({
     selector: 'app-expression-editor',
     standalone: true,
-    imports: [CommonModule, FormsModule, AutocompleteOverlayComponent, EditorToolbarComponent, OverlayModule],
+    imports: [CommonModule, FormsModule, EditorToolbarComponent, OverlayModule],
     templateUrl: './expression-editor.component.html',
     styleUrls: ['./expression-editor.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

@@ -3,7 +3,7 @@ import {
     Component,
     Input,
 } from '@angular/core';
-import { NgFor, NgIf, NgStyle } from '@angular/common';
+import { NgStyle } from '@angular/common';
 
 import {
     BaseNodeModel,
@@ -50,7 +50,7 @@ import {
         }
     `,
     styleUrls: ['./flow-node-variables-overlay.component.scss'],
-    imports: [NgIf, NgFor, NgStyle],
+    imports: [NgStyle],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FlowNodeVariablesOverlayComponent {
