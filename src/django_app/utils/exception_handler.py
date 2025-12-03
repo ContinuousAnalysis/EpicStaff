@@ -19,7 +19,6 @@ def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     if isinstance(exc, APIException):
-
         response.data = {
             "status_code": exc.status_code,
             "code": exc.default_code,

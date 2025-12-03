@@ -3,7 +3,6 @@ from enum import Enum
 from pydantic import BaseModel, HttpUrl
 
 
-
 # TODO we use session status in the manager and crew, so we should move it to a shared location
 #  look at SessionCallbackFactory in crew
 class SessionStatus(Enum):

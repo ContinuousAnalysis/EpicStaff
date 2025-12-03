@@ -16,15 +16,13 @@ import {
     ReactiveFormsModule,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { map, Subscription, switchMap, takeUntil, forkJoin } from 'rxjs';
+import {Subscription, switchMap, takeUntil, of} from 'rxjs';
 import { Subject } from 'rxjs';
 import { MATERIAL_FORMS } from '../../material-forms';
 
 import { RealtimeAgentService } from '../../../services/realtime-agent.service';
 import { AgentsService } from '../../../services/staff.service';
 import { ToastService } from '../../../services/notifications/toast.service';
-import { CollectionsService } from '../../../pages/knowledge-sources/services/source-collections.service';
-import { GetSourceCollectionRequest } from '../../../pages/knowledge-sources/models/source-collection.model';
 import { ToolsSelectorComponent } from '../../components/tools-selector/tools-selector.component';
 import {
     FullLLMConfigService,
@@ -40,6 +38,13 @@ import { CustomErrorStateMatcher } from '../../error-state-matcher/custom-error-
 import { ErrorStateMatcher } from '@angular/material/core';
 import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
 import { AppIconComponent } from '../app-icon/app-icon.component';
+import {CollectionsApiService} from "../../../features/knowledge-sources/services/collections-api.service";
+import {
+    GetCollectionRagsResponse,
+    GetCollectionRequest
+} from "../../../features/knowledge-sources/models/collection.model";
+import {tap} from "rxjs/operators";
+import {ValidationErrorsComponent} from "../app-validation-errors/validation-errors.component";
 
 interface AgentFormData {
     role: string;
@@ -55,6 +60,7 @@ interface AgentFormData {
     llm_config: number | null;
     fcm_llm_config: number | null;
     knowledge_collection: number | null;
+    rag_id: number | null;
     configured_tools: number[];
     python_code_tools: number[];
     mcp_tools: number[];
@@ -76,6 +82,7 @@ interface AgentFormData {
         ...MATERIAL_FORMS,
         ToolsSelectorComponent,
         AppIconComponent,
+        ValidationErrorsComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [
@@ -100,6 +107,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         llm_config: FormControl<number | null>;
         fcm_llm_config: FormControl<number | null>;
         knowledge_collection: FormControl<number | null>;
+        rag_id: FormControl<number | null>;
         configured_tools: FormControl<number[]>;
         python_code_tools: FormControl<number[]>;
         mcp_tools: FormControl<number[]>;
@@ -126,7 +134,8 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
     public llmConfigs: FullLLMConfig[] = [];
 
     // Knowledge sources
-    public allKnowledgeSources: GetSourceCollectionRequest[] = [];
+    public allKnowledgeSources: GetCollectionRequest[] = [];
+    public collectionRags = signal<GetCollectionRagsResponse[]>([]);
     public isLoadingKnowledgeSources = false;
     public selectedKnowledgeSourceId: number | null = null;
 
@@ -142,7 +151,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         private realtimeAgentService: RealtimeAgentService,
         private toastService: ToastService,
         private fullLLMConfigService: FullLLMConfigService,
-        private collectionsService: CollectionsService,
+        private collectionsService: CollectionsApiService,
         public dialogRef: DialogRef<GetAgentRequest | undefined>
     ) {
         // Check edit mode
@@ -160,6 +169,32 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         this.initializeForm();
         this.loadLLMConfigs();
         this.loadKnowledgeSources();
+
+        this.trackKnowledgeSourceChange();
+    }
+
+    private trackKnowledgeSourceChange(): void {
+        const ragCtrl = this.agentForm.get('rag_id');
+
+        this.agentForm.controls['knowledge_collection'].valueChanges.pipe(
+            tap((value) => {
+                if (value !== null) {
+                    ragCtrl?.setValidators(Validators.required);
+                } else {
+                    ragCtrl?.clearValidators();
+                }
+
+                ragCtrl?.setValue(null);
+                ragCtrl?.markAsTouched();
+                ragCtrl?.updateValueAndValidity();
+            }),
+            takeUntil(this.destroy$),
+            switchMap(id =>
+                id ? this.collectionsService.getRagsByCollectionId(id) : of([])
+            )
+        ).subscribe(rags => {
+            this.collectionRags.set(rags);
+        });
     }
 
     private initializeForm(): void {
@@ -201,6 +236,9 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 knowledge_collection: new FormControl<number | null>(
                     agent.knowledge_collection
                 ),
+                rag_id: new FormControl<number | null>(
+                    agent.rag?.rag_id || null
+                ),
                 configured_tools: new FormControl<number[]>(
                     agent.configured_tools || []
                 ),
@@ -211,11 +249,11 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     agent.mcp_tools || []
                 ),
                 search_limit: new FormControl<number>(
-                    agent.search_limit || 10,
+                    agent.search_configs.naive.search_limit || 3,
                     [Validators.min(1), Validators.max(1000)]
                 ),
                 similarity_threshold: new FormControl<number>(
-                    Number(agent.similarity_threshold ?? 0.7),
+                    Number(agent.search_configs.naive.similarity_threshold ?? 0.2),
                     [Validators.min(0), Validators.max(1.0)]
                 ),
                 cache: new FormControl<boolean>(agent.cache ?? true),
@@ -236,6 +274,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 llm_config: FormControl<number | null>;
                 fcm_llm_config: FormControl<number | null>;
                 knowledge_collection: FormControl<number | null>;
+                rag_id: FormControl<number | null>;
                 configured_tools: FormControl<number[]>;
                 python_code_tools: FormControl<number[]>;
                 mcp_tools: FormControl<number[]>;
@@ -274,14 +313,15 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 llm_config: new FormControl<number | null>(null),
                 fcm_llm_config: new FormControl<number | null>(null),
                 knowledge_collection: new FormControl<number | null>(null),
+                rag_id: new FormControl<number | null>(null),
                 configured_tools: new FormControl<number[]>([]),
                 python_code_tools: new FormControl<number[]>([]),
                 mcp_tools: new FormControl<number[]>([]),
-                search_limit: new FormControl<number>(10, [
+                search_limit: new FormControl<number>(3, [
                     Validators.min(1),
                     Validators.max(1000),
                 ]),
-                similarity_threshold: new FormControl<number>(0.7, [
+                similarity_threshold: new FormControl<number>(0.2, [
                     Validators.min(0),
                     Validators.max(1.0),
                 ]),
@@ -301,6 +341,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 llm_config: FormControl<number | null>;
                 fcm_llm_config: FormControl<number | null>;
                 knowledge_collection: FormControl<number | null>;
+                rag_id: FormControl<number | null>;
                 configured_tools: FormControl<number[]>;
                 python_code_tools: FormControl<number[]>;
                 mcp_tools: FormControl<number[]>;
@@ -324,7 +365,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
 
     private loadKnowledgeSources(): void {
         this.isLoadingKnowledgeSources = true;
-        this.collectionsService.getGetSourceCollectionRequests().subscribe({
+        this.collectionsService.getCollections().subscribe({
             next: (collections) => {
                 this.allKnowledgeSources = collections;
                 this.isLoadingKnowledgeSources = false;
@@ -467,14 +508,24 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 llm_config: formData.llm_config,
                 fcm_llm_config: formData.fcm_llm_config,
                 knowledge_collection: formData.knowledge_collection,
+                rag: formData.rag_id ? {
+                    rag_type: 'naive',
+                    rag_id: formData.rag_id,
+                } : null,
                 configured_tools: configuredToolIds,
                 python_code_tools: pythonToolIds,
                 mcp_tools: mcpToolIds,
                 tool_ids: toolIds as ToolUniqueName[],
-                search_limit: formData.search_limit,
-                similarity_threshold: formData.similarity_threshold.toString(),
+                // search_limit: formData.search_limit,
+                // similarity_threshold: formData.similarity_threshold.toString(),
                 cache: formData.cache,
                 respect_context_window: formData.respect_context_window,
+                search_configs: {
+                    naive: {
+                        search_limit: formData.search_limit,
+                        similarity_threshold: formData.similarity_threshold.toString(),
+                    }
+                }
             };
 
             console.log('Update request:', updateRequest);
@@ -512,14 +563,24 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 llm_config: formData.llm_config,
                 fcm_llm_config: formData.fcm_llm_config,
                 knowledge_collection: formData.knowledge_collection,
+                rag: formData.rag_id ? {
+                    rag_type: 'naive',
+                    rag_id: formData.rag_id,
+                } : null,
                 configured_tools: configuredToolIds,
                 python_code_tools: pythonToolIds,
                 mcp_tools: mcpToolIds,
                 tool_ids: toolIds as ToolUniqueName[],
-                search_limit: formData.search_limit,
-                similarity_threshold: formData.similarity_threshold.toString(),
+                // search_limit: formData.search_limit,
+                // similarity_threshold: formData.similarity_threshold.toString(),
                 cache: formData.cache,
                 respect_context_window: formData.respect_context_window,
+                search_configs: {
+                    naive: {
+                        search_limit: formData.search_limit,
+                        similarity_threshold: formData.similarity_threshold.toString(),
+                    }
+                }
             };
 
             console.log('Create request:', agentRequest);

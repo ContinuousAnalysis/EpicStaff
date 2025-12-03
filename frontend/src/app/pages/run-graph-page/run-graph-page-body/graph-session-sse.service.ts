@@ -31,6 +31,10 @@ export class RunSessionSSEService {
   public readonly memories = this.memoriesSignal.asReadonly();
   public readonly connectionStatus = this.connectionStatusSignal.asReadonly();
 
+  public setStatus(status: GraphSessionStatus): void {
+    this.statusSignal.set(status);
+  }
+
   // Reconnection configuration
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;

@@ -13,14 +13,14 @@ class CreateFileSchema(BaseModel):
 
     file_path: Optional[str] = Field(
         ...,
-        description=f"""The relative path where the file 
+        description="""The relative path where the file 
                                      should be created, including the file name itself""",
     )
 
 
 class CreateFileTool(RouteTool):
     name: str = "Create a file"
-    description: str = f"""A tool that's used to create a file in 
+    description: str = """A tool that's used to create a file in 
     a user-provided file path"""
     args_schema: Type[BaseModel] = CreateFileSchema
 

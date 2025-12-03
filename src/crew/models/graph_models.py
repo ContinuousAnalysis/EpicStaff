@@ -1,4 +1,3 @@
-from typing import Any, TypedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -15,6 +14,20 @@ class GraphMessage:
     execution_order: int
     message_data: dict
     timestamp: str = field(default_factory=iso_utc_timestamp)
+
+
+@dataclass
+class SubGraphStartMessageData:
+    state: dict
+    input: object
+    message_type: str = "subgraph_start"
+
+
+@dataclass
+class SubGraphFinishMessageData:
+    state: dict
+    output: object
+    message_type: str = "subgraph_finish"
 
 
 @dataclass

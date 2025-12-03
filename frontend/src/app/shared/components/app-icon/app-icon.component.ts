@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import {ChangeDetectionStrategy, Component, HostBinding, input, Input} from '@angular/core';
 import { InlineSvgDirective } from '../../../core/directives/inline-svg.directive';
 
 @Component({
@@ -8,23 +8,46 @@ import { InlineSvgDirective } from '../../../core/directives/inline-svg.directiv
   template: `
     <span
       class="app-icon"
-      [style.width]="size"
-      [style.height]="size"
+      [style.width]="size()"
+      [style.height]="size()"
       appInlineSvg
       [path]="iconPath"
-      [svgSize]="size"
-      [attr.aria-label]="ariaLabel"
+      [svgSize]="size()"
+      [attr.aria-label]="ariaLabel()"
       aria-hidden="true"
     ></span>
   `,
-  styles: [``],
+  styles: [`
+      :host {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-shrink: 0;
+      }
+
+      :host(.rounded) {
+          border-radius: 50%;
+          cursor: pointer;
+          &:hover {
+              transition: .3s;
+              background-color: var(--color-ks-hover-row);
+          }
+      }
+  `],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppIconComponent {
-  @Input() icon: string = '';
-  @Input() ariaLabel: string = '';
-  @Input() size: string = '2rem';
+  icon = input.required<string>();
+  ariaLabel = input<string>('');
+  size= input<string>('2rem');
+  isAction= input<boolean>(false);
+
+  @HostBinding('class.rounded')
+  get isRounded() {
+    return this.isAction();
+  }
 
   get iconPath(): string {
-    return this.icon ? `assets/icons/${this.icon}.svg` : '';
+    return this.icon() ? `assets/icons/${this.icon()}.svg` : '';
   }
 }

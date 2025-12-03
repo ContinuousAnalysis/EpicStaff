@@ -147,7 +147,6 @@ def test_to_representation_with_valid_data(
 def test_to_representation_with_invalid_data(
     llm_config, embedding_config, test_tool_github_search_with_fields
 ):
-
     tool = test_tool_github_search_with_fields
 
     configuration = {

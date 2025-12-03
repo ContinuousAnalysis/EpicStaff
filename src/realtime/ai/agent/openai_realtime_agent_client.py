@@ -1,5 +1,3 @@
-import uuid
-
 from models.ai_models import RealtimeTool
 import websockets
 import json
@@ -39,6 +37,8 @@ class OpenaiRealtimeAgentClient:
         instructions: str = "You are a helpful assistant",
         temperature: float = 0.8,
         turn_detection_mode: TurnDetectionMode = TurnDetectionMode.SERVER_VAD,
+        input_audio_format: str = "pcm16",
+        output_audio_format: str = "pcm16",
     ):
         self.api_key = api_key
         self.connection_key = connection_key
@@ -51,6 +51,8 @@ class OpenaiRealtimeAgentClient:
         self.temperature = temperature
         self.base_url = "wss://api.openai.com/v1/realtime"
         self.turn_detection_mode = turn_detection_mode
+        self.input_audio_format = input_audio_format
+        self.output_audio_format = output_audio_format
 
         self.server_event_handler = ServerEventHandler(self)
         self.client_event_handler = ClientEventHandler(self)
@@ -89,6 +91,14 @@ class OpenaiRealtimeAgentClient:
                 "tools": self.tools,
                 "tool_choice": "auto",
                 "temperature": self.temperature,
+                "turn_detection": {
+                    "type": self.turn_detection_mode.value,
+                    "threshold": 0.5,
+                    "prefix_padding_ms": 300,
+                    "silence_duration_ms": 500,
+                },
+                "input_audio_format": self.input_audio_format,
+                "output_audio_format": self.output_audio_format,
             }
         )
 
@@ -100,12 +110,12 @@ class OpenaiRealtimeAgentClient:
         voice = config.get("voice", self.voice)
         turn_detection = config.get(
             "turn_detection",
-            {
-                "type": "server_vad",
-                "threshold": 0.5,
-                "prefix_padding_ms": 500,
-                "silence_duration_ms": 200,
-            },
+            # {
+            #     "type": "server_vad",
+            #     "threshold": 0.5,
+            #     "prefix_padding_ms": 500,
+            #     "silence_duration_ms": 200,
+            # },
         )
         tool_choice = config.get("tool_choice", "auto")
         input_audio_transcription = config.get(
@@ -113,13 +123,14 @@ class OpenaiRealtimeAgentClient:
         )
         modalities = config.get("modalities", ["text", "audio"])
         temperature = config.get("temperature", self.temperature)
-
+        input_audio_format = config.get("input_audio_format", "pcm16")
+        output_audio_format = config.get("output_audio_format", "pcm16")
         data = {
             "modalities": modalities,
             "instructions": self.instructions,
             "voice": voice,
-            "input_audio_format": "pcm16",
-            "output_audio_format": "pcm16",
+            "input_audio_format": input_audio_format,
+            "output_audio_format": output_audio_format,
             "input_audio_transcription": input_audio_transcription,
             "turn_detection": turn_detection,
             "tools": self.tools,
@@ -218,7 +229,6 @@ class OpenaiRealtimeAgentClient:
         await self.ws.send(json.dumps(event))
 
     async def send_conversation_item_to_server(self, text: str):
-
         event = {
             "type": "conversation.item.create",
             "item": {

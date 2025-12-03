@@ -1,5 +1,4 @@
 from typing import Optional
-from app.providers.base import AbstractTunnelProvider
 from fastapi import FastAPI
 from app.controllers import webhook_routes
 from app.services.redis_service import close_redis_connection

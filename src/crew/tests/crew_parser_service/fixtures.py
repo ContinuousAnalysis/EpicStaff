@@ -138,7 +138,9 @@ def graph_session_callback_factory(mock_redis_service) -> GraphSessionCallbackFa
 
 
 @pytest.fixture
-def crew_callback_factory(mock_redis_service, knowledge_search_service) -> CrewCallbackFactory:
+def crew_callback_factory(
+    mock_redis_service, knowledge_search_service
+) -> CrewCallbackFactory:
     """
     Fixture for creating a SessionCallbackFactory instance with mocked dependencies.
     """
@@ -151,7 +153,7 @@ def crew_callback_factory(mock_redis_service, knowledge_search_service) -> CrewC
         execution_order=0,
         crewai_output_channel="crewai_output_channel",
         stream_writer=None,
-        knowledge_search_service=knowledge_search_service
+        knowledge_search_service=knowledge_search_service,
     )
 
     get_task_callback_mock = MagicMock()
@@ -180,6 +182,7 @@ def crew_callback_factory(mock_redis_service, knowledge_search_service) -> CrewC
 @pytest.fixture
 def python_code_executor_service(mock_redis_service) -> RunPythonCodeService:
     return RunPythonCodeService(redis_service=mock_redis_service)
+
 
 @pytest.fixture
 def knowledge_search_service(mock_redis_service) -> KnowledgeSearchService:

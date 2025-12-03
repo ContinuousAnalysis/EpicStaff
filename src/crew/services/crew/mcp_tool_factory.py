@@ -1,20 +1,18 @@
 import asyncio
-import os
-from crewai.tools.base_tool import Tool as CrewaiTool
-
-from utils.sync_wrapper import sync_wrapper
-from models.request_models import McpToolData
-from fastmcp import Client
-from fastmcp.exceptions import ToolError
-from mcp.types import Tool as FastMCPTool
-from services.schema_converter.converter import generate_model_from_schema
-
 from functools import partial
-from services.graph.events import StopEvent
+
+from fastmcp import Client
+from mcp.types import Tool as FastMCPTool
+
+from crewai.tools.base_tool import Tool as CrewaiTool
+from src.crew.utils.sync_wrapper import sync_wrapper
+from src.crew.models.request_models import McpToolData
+
+from src.crew.services.schema_converter.converter import generate_model_from_schema
+from src.crew.services.graph.events import StopEvent
 
 
 class McpTool:
-
     def __init__(
         self,
         fast_mcp_client: Client,
@@ -63,11 +61,9 @@ class McpTool:
 
 
 class CrewaiMcpToolFactory:
-
     async def create(
         self, tool_data: McpToolData, stop_event: StopEvent | None = None
     ) -> CrewaiTool:
-
         mcp_tool = McpTool(
             fast_mcp_client=Client(
                 transport=tool_data.transport,

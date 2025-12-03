@@ -1,5 +1,6 @@
 import asyncio
 
+
 def sync_wrapper(coro_func, *args, **kwargs):
     """Wrap an async function so it can be called synchronously."""
     try:

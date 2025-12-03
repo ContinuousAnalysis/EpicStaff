@@ -1,6 +1,10 @@
 # Makefile for managing Docker volume backups and image tags
 # Use cmd.exe as the shell for executing .bat files on Windows
-SHELL = cmd.exe
+ifeq ($(OS),Windows_NT)
+    SHELL := cmd.exe
+else
+    SHELL := /bin/sh
+endif
 
 # IMPORTANT: This Makefile must be run from the project's root directory
 # (the same directory this file is in).
@@ -44,3 +48,13 @@ apply-tags:
 switch:
 	@echo "--- Switching Full Branch Environment ---"
 	@.\\make_scripts\\switch_branch.bat $(b)
+
+
+start-prod:
+	@echo "--- Starting prod services ---"
+	@cd src && docker compose -f docker-compose.yaml up --build -d
+
+docker-generate-certs:
+	docker run --rm -v "$(CURDIR)/src/nginx/certs:/certs" -w /certs alpine \
+		sh -c "apk add openssl && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout privkey.pem -out fullchain.pem -subj '/CN=localhost'"
+	@echo "SSL certificates generated!"

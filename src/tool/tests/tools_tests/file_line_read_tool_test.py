@@ -2,12 +2,9 @@ from crewai import Task
 from pathlib import Path
 
 import pytest
-import pytest_mock
-from pytest_mock import mocker
-from unittest.mock import patch
 
-from tests.tools_tests.mocks.tools_mocks import mock_file_with_content, mock_empty_file
-from tests.tools_tests.fixtures import file_line_read_tool, lorem_text
+from tests.tools_tests.mocks.tools_mocks import mock_file_with_content
+from tests.tools_tests.fixtures import lorem_text
 from custom_tools import LineReadFileTool
 from tests.conftest import test_dir
 
@@ -63,9 +60,9 @@ class TestFileLineReadTool:
         )
 
         result = tool._run(
-            file_path=file_path, 
-            line_number=line_number_out_of_max_range, 
-            number_of_lines=None
+            file_path=file_path,
+            line_number=line_number_out_of_max_range,
+            number_of_lines=None,
         )
 
         mocked_open.assert_called_once_with(Path(test_dir) / file_path, "r")
@@ -85,11 +82,14 @@ class TestFileLineReadTool:
         file_path = "dummy.txt"
         tool = file_line_read_tool
 
-        result = tool._run(file_path=file_path,
-                           line_number=line_number, 
-                           number_of_lines=None)
+        result = tool._run(
+            file_path=file_path, line_number=line_number, number_of_lines=None
+        )
 
-        assert result == f"Line number should be at least 1, because it's 1-based, but {line_number} was given instead."
+        assert (
+            result
+            == f"Line number should be at least 1, because it's 1-based, but {line_number} was given instead."
+        )
 
     @pytest.mark.parametrize(
         "file_path, line_number, num_lines",
@@ -119,9 +119,7 @@ class TestFileLineReadTool:
             line_number=line_number,
         )
         result = tool._run(
-            file_path=file_path, 
-            line_number=line_number, 
-            num_lines=num_lines
+            file_path=file_path, line_number=line_number, num_lines=num_lines
         )
 
         mocked_open.assert_called_once_with(Path(test_dir) / file_path, "r")
@@ -142,11 +140,7 @@ class TestFileLineReadTool:
         tool = file_line_read_tool
 
         expected = f"Number of lines argument has to be positive, num_lines = {num_lines} given instead."
-        result = tool._run(
-            file_path=file_path,
-            line_number = 1,
-            num_lines=num_lines
-        )
+        result = tool._run(file_path=file_path, line_number=1, num_lines=num_lines)
 
         assert result == expected
 
@@ -155,9 +149,7 @@ class TestFileLineReadTool:
     # Also, maybe shorten lorem_text in size to save tokens
     @pytest.mark.skip
     @pytest.mark.vcr(filter_headers=["authorization"], record_mode="once")
-    def test_line_read_tool_with_crewai(
-        self, agent, file_line_read_tool
-    ):
+    def test_line_read_tool_with_crewai(self, agent, file_line_read_tool):
 
         filename = "dummy.txt"
         path = Path(test_dir)
@@ -182,5 +174,6 @@ class TestFileLineReadTool:
         output = agent.execute_task(task)
 
         assert (
-            output == f"I read from the file {filename} and here are the lines I found:\n{expected}"
+            output
+            == f"I read from the file {filename} and here are the lines I found:\n{expected}"
         )
