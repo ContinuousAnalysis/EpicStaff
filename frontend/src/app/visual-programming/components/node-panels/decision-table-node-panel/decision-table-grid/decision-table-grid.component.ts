@@ -8,6 +8,7 @@ import {
     ChangeDetectorRef,
     inject,
     OnInit,
+    effect,
 } from '@angular/core';
 import { AgGridModule } from 'ag-grid-angular';
 import {
@@ -25,6 +26,9 @@ import { ConditionGroup } from '../../../../core/models/decision-table.model';
 import { FlowService } from '../../../../services/flow.service';
 import { NodeType } from '../../../../core/enums/node-type';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
+
+import { ExpressionEditorComponent } from './cell-editors/expression-editor/expression-editor.component';
+import { ExpressionRendererComponent } from './cell-renderers/expression-renderer/expression-renderer.component';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -54,22 +58,85 @@ export class DecisionTableGridComponent implements OnInit {
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
         const currentId = this.currentNodeId();
-        
+
         return nodes
-            .filter((node) => 
-                node.type !== NodeType.NOTE && 
+            .filter((node) =>
+                node.type !== NodeType.NOTE &&
                 node.type !== NodeType.START &&
                 node.type !== NodeType.WEBHOOK_TRIGGER &&
+                node.type !== NodeType.TELEGRAM_TRIGGER &&
                 node.id !== currentId
             )
             .map((node) => ({
-                value: node.node_name || node.id,
+                value: node.id,
                 label: node.node_name || node.id,
             }));
     });
 
+    constructor() {
+        effect(() => {
+            const nodes = this.availableNodes();
+            const refData: Record<string, string> = {};
+            nodes.forEach((n) => {
+                refData[n.value] = n.label;
+            });
+
+            if (this.gridApi) {
+                const colDefs = this.gridApi.getColumnDefs();
+                if (colDefs) {
+                    const newColDefs = colDefs.map((col: any) => {
+                        if (col.field === 'next_node' || col.colId === 'next_node') {
+                            return {
+                                ...col,
+                                refData,
+                                cellEditorParams: {
+                                    values: ['', ...nodes.map((n) => n.value)],
+                                },
+                            };
+                        }
+                        return col;
+                    });
+                    this.gridApi.setGridOption('columnDefs', newColDefs);
+                }
+            }
+        });
+    }
+
     ngOnInit(): void {
         const groups = this.conditionGroups();
+        const nodes = this.flowService.nodes();
+        const connections = this.flowService.connections();
+        const currentNodeId = this.currentNodeId();
+
+        console.log('[DecisionTableGrid] Initializing with groups:', groups);
+
+        const findNodeId = (value: string | null, groupName: string): string | null => {
+            // 1. Try direct lookup
+            if (value) {
+                const foundNode = nodes.find(n => n.id === value || n.node_name === value);
+                if (foundNode) return foundNode.id;
+                console.warn(`[DecisionTableGrid] Node not found for value: '${value}'`);
+            }
+
+            // 2. Fallback: Visual Connection lookup
+            // Port ID: `${nodeId}_decision-out-${normalizedGroupName}`
+            if (groupName) {
+                 const normalizedGroupName = groupName.toLowerCase().replace(/\s+/g, '-');
+                 const portId = `${currentNodeId}_decision-out-${normalizedGroupName}`;
+
+                 const connection = connections.find(
+                    c => c.sourceNodeId === currentNodeId && c.sourcePortId === portId
+                 );
+
+                 if (connection) {
+                     console.log(`[DecisionTableGrid] Recovered connection for group '${groupName}' -> ${connection.targetNodeId}`);
+                     return connection.targetNodeId;
+                 }
+            }
+
+            return value;
+        };
+
         if (groups.length === 0) {
             this.rowData.set([this.createEmptyGroup(0)]);
         } else {
@@ -80,12 +147,13 @@ export class DecisionTableGridComponent implements OnInit {
                         (b.order ?? Number.MAX_SAFE_INTEGER)
                 )
                 .map((group, index) => {
-                    // Update group name if it matches the default pattern "Group X" to reflect current position
-                    const groupNameMatch = group.group_name?.match(/^Group (\d+)$/);
+                    // Update group name if it matches the default pattern "Condition X" to reflect current position
+                    const groupNameMatch = group.group_name?.match(/^(Condition|Group) (\d+)$/);
                     const normalizedGroup = {
                         ...group,
-                        group_name: groupNameMatch ? `Group ${index + 1}` : group.group_name,
+                        group_name: groupNameMatch ? `Condition ${index + 1}` : group.group_name,
                         order: index + 1,
+                        next_node: findNodeId(group.next_node, group.group_name) // Ensure we use ID with fallback
                     };
                     this.updateGroupValidFlag(normalizedGroup, index);
                     return normalizedGroup;
@@ -97,7 +165,7 @@ export class DecisionTableGridComponent implements OnInit {
     private createEmptyGroup(index?: number): ConditionGroup {
         const position = index !== undefined ? index + 1 : this.rowData().length + 1;
         return {
-            group_name: `Group ${position}`,
+            group_name: `Condition ${position}`,
             group_type: 'complex',
             expression: null,
             conditions: [],
@@ -143,17 +211,14 @@ export class DecisionTableGridComponent implements OnInit {
             },
         },
         {
-            headerName: 'Group Name',
+            headerName: 'Condition Name',
             field: 'group_name',
             editable: true,
             flex: 1,
             minWidth: 180,
-            cellEditor: 'agTextCellEditor',
+            cellEditor: 'agLargeTextCellEditor',
             cellEditorParams: {
                 maxLength: 255,
-            },
-            cellClassRules: {
-                'cell-warning': (params) => !!(params.data as any).group_nameWarning,
             },
             cellStyle: {
                 fontSize: '14px',
@@ -165,13 +230,9 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             flex: 1,
             minWidth: 200,
-            cellEditor: 'agTextCellEditor',
-            cellEditorParams: {
-                maxLength: 2000,
-            },
-            cellClassRules: {
-                'cell-warning': (params) => !!(params.data as any).expressionWarning,
-            },
+            cellEditor: ExpressionEditorComponent,
+            cellEditorPopup: true,
+            cellRenderer: ExpressionRendererComponent,
             cellStyle: {
                 fontSize: '14px',
             },
@@ -182,7 +243,7 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             flex: 1,
             minWidth: 200,
-            cellEditor: 'agTextCellEditor',
+            cellEditor: 'agLargeTextCellEditor',
             cellEditorParams: {
                 maxLength: 2000,
             },
@@ -201,6 +262,12 @@ export class DecisionTableGridComponent implements OnInit {
                 return {
                     values: ['', ...nodes.map((n) => n.value)],
                 };
+            },
+            valueFormatter: (params) => {
+                if (!params.value) return '';
+                const nodes = this.availableNodes();
+                const node = nodes.find((n) => n.value === params.value);
+                return node ? node.label : params.value;
             },
             cellStyle: {
                 fontSize: '14px',
@@ -252,23 +319,23 @@ export class DecisionTableGridComponent implements OnInit {
     public onCellValueChanged(event: CellValueChangedEvent): void {
         const colId = event.column.getColId();
         const rowIndex = event.rowIndex!;
-        
+
         if (colId === 'group_name') {
             const newName = event.newValue?.trim();
             const isEmpty = !newName;
-            const isDuplicate = !isEmpty && this.rowData().some((row, idx) => 
+            const isDuplicate = !isEmpty && this.rowData().some((row, idx) =>
                 idx !== rowIndex && row.group_name === newName
             );
-            
+
             (event.data as any).group_nameWarning = isEmpty || isDuplicate;
         } else if (colId === 'expression') {
             (event.data as any).expressionWarning = !event.newValue?.trim();
         } else if (colId === 'manipulation') {
             (event.data as any).manipulationWarning = false;
         }
-        
+
         this.updateGroupValidFlag(event.data, rowIndex);
-        
+
         const updatedData = this.rowData().map((group) => ({ ...group }));
         this.rowData.set(updatedData);
         this.emitChanges();
@@ -315,12 +382,12 @@ export class DecisionTableGridComponent implements OnInit {
         const updated = this.rowData()
             .filter((_, i) => i !== index)
             .map((group, newIndex) => {
-                // Update group name if it matches the default pattern "Group X"
-                const groupNameMatch = group.group_name?.match(/^Group (\d+)$/);
+                // Update group name if it matches the default pattern "Condition X" or "Group X"
+                const groupNameMatch = group.group_name?.match(/^(Condition|Group) (\d+)$/);
                 if (groupNameMatch) {
                     return {
                         ...group,
-                        group_name: `Group ${newIndex + 1}`,
+                        group_name: `Condition ${newIndex + 1}`,
                         order: newIndex + 1,
                     };
                 }
@@ -352,4 +419,3 @@ export class DecisionTableGridComponent implements OnInit {
         this.conditionGroupsChange.emit(updatedGroups);
     }
 }
-

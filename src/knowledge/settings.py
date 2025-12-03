@@ -6,9 +6,7 @@ from dotenv import find_dotenv, load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session, Session
 
-from storage.document_chunk_storage import ORMDocumentChunkStorage
-from storage.document_storage import ORMDocumentStorage
-from storage.knowledge_storage import ORMKnowledgeStorage
+from storage import ORMNaiveRagStorage
 
 
 def get_required_env_var(key: str) -> str:
@@ -55,20 +53,50 @@ SessionLocal = scoped_session(sessionmaker(bind=ENGINE))
 
 
 class UnitOfWork:
+    """
+    Unit of Work pattern for managing database transactions.
+
+    Provides a single session context with storage repositories:
+    - naive_rag_storage: NaiveRag-specific operations (ORMNaiveRagStorage)
+
+    Key Design:
+    - ONE session per UnitOfWork (no nested sessions)
+    - Context can be passed to services for operations within the same transaction
+    - Automatically commits on success, rolls back on exception
+
+    Usage Pattern 1 - Direct storage access:
+        with UnitOfWork().start() as uow_ctx:
+            chunks = uow_ctx.naive_rag_storage.save_document_chunks(config_id, chunk_list)
+
+    Usage Pattern 2 - Pass context to services (RECOMMENDED):
+        with UnitOfWork().start() as uow_ctx:
+            # Pass context to service - everything in same transaction
+            chunk_data = ChunkDocumentService().process_chunk_document_in_session(
+                uow_ctx=uow_ctx,
+                naive_rag_document_config_id=config_id
+            )
+    """
+
     def __init__(self):
         self.session: Session | None = None
         self.document_storage = None
-        self.chunk_storage = None
-        self.knowledge_storage = None
+        self.naive_rag_storage = None
 
     @contextmanager
     def start(self):
-        """Start a transactional Unit of Work."""
+        """
+        Start a transactional Unit of Work.
+
+        Yields:
+            self: UnitOfWork instance with initialized storage repositories
+
+        Raises:
+            Exception: Any exception from storage operations (triggers rollback)
+        """
         self.session = SessionLocal()
         try:
-            self.document_storage = ORMDocumentStorage(session=self.session)
-            self.chunk_storage = ORMDocumentChunkStorage(session=self.session)
-            self.knowledge_storage = ORMKnowledgeStorage(session=self.session)
+            # self.document_storage = ORMDocumentStorage(session=self.session)
+            self.naive_rag_storage = ORMNaiveRagStorage(session=self.session)
 
             yield self
 

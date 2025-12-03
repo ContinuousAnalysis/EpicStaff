@@ -9,6 +9,7 @@ class Tokenizer:
     This class provides methods to encode text into tokens and decode tokens back into text
     for a specified OpenAI model.
     """
+
     def __init__(self, model):
         self._tokenizer = self.__set_tokenizer(model)
 

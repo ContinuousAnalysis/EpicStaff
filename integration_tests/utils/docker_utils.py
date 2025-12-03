@@ -12,7 +12,7 @@ def docker_compose_up(project_dir):
             cwd=project_path,
             check=True,
             capture_output=True,
-            text=True
+            text=True,
         )
         logger.info(build_result.stdout)
 
@@ -21,7 +21,7 @@ def docker_compose_up(project_dir):
             cwd=project_path,
             check=True,
             capture_output=True,
-            text=True
+            text=True,
         )
         logger.info(result.stdout)
     except subprocess.CalledProcessError as e:
@@ -36,8 +36,8 @@ def docker_compose_down(project_dir):
             cwd=project_path,
             check=True,
             capture_output=True,
-            text=True
+            text=True,
         )
         logger.info(result.stdout)
     except subprocess.CalledProcessError as e:
-        logger.exception(e.stderr)    
+        logger.exception(e.stderr)

@@ -1,5 +1,3 @@
-import pytest
-from tests.tool_factory_tests.fixtures import dynamic_tool_factory
 from unittest.mock import MagicMock
 from tool_factory import DynamicToolFactory
 
@@ -35,11 +33,13 @@ def test_create_tool(dynamic_tool_factory: DynamicToolFactory):
         *(default_args + create_args), **{**default_kwargs, **create_kwargs}
     )
 
-def test_create_tool_without_default_arguments(dynamic_tool_factory: DynamicToolFactory):
+
+def test_create_tool_without_default_arguments(
+    dynamic_tool_factory: DynamicToolFactory,
+):
 
     mock_tool_alias = "mock tool"
     mock_test_tool_class = MagicMock()
-
 
     create_args = (
         7,
@@ -52,12 +52,11 @@ def test_create_tool_without_default_arguments(dynamic_tool_factory: DynamicTool
     }
 
     dynamic_tool_factory.register_tool_class(
-        mock_tool_alias, mock_test_tool_class, 
+        mock_tool_alias,
+        mock_test_tool_class,
     )
     created_tool = dynamic_tool_factory.create(
         mock_tool_alias, create_args, create_kwargs
     )
 
-    mock_test_tool_class.assert_called_once_with(
-        *create_args, **create_kwargs
-    )
+    mock_test_tool_class.assert_called_once_with(*create_args, **create_kwargs)

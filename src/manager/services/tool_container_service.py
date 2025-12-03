@@ -33,7 +33,6 @@ class ToolContainerService:
         network_settings = manager_container.attrs["NetworkSettings"]
         self.network_name = list(network_settings["Networks"].keys())[0]
 
-
     def post_data_with_retry(self, url, json, retries=30, delay=3):
         if json is None:
             json = dict()

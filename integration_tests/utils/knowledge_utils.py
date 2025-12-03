@@ -18,7 +18,9 @@ from utils.variables import DJANGO_URL, rhost
 def validate_response(response):
     """Validate API response."""
     if not response.ok:
-        import pdb; pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()
 
         raise Exception(f"API call failed: {response.status_code}, {response.text}")
 
@@ -168,7 +170,8 @@ def check_statuses_for_embedding_creation(collection_id: int, max_timeout: int =
     for i in range(max_timeout):
         time.sleep(3)
         response = requests.get(
-            f"{DJANGO_URL}/collection_statuses/?collection_id={collection_id}", headers={"Host": rhost}
+            f"{DJANGO_URL}/collection_statuses/?collection_id={collection_id}",
+            headers={"Host": rhost},
         )
         validate_response(response)
         collection_status_data = response.json()

@@ -1,7 +1,7 @@
-from services.graph.events import StopEvent
-from services.graph.nodes.python_node import PythonNode
-from models.request_models import PythonCodeData
-from services.run_python_code_service import RunPythonCodeService
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.graph.nodes.python_node import PythonNode
+from src.crew.models.request_models import PythonCodeData
+from src.crew.services.run_python_code_service import RunPythonCodeService
 
 
 class FileContentExtractorNode(PythonNode):
@@ -17,7 +17,7 @@ class FileContentExtractorNode(PythonNode):
         python_code_executor_service: RunPythonCodeService,
     ):
         if not input_map:
-            raise ValueError(f"FileContentExtractor input cannot be empty.")
+            raise ValueError("FileContentExtractor input cannot be empty.")
 
         arg_names = input_map.keys()
         code_data = PythonCodeData(
@@ -131,7 +131,7 @@ def extract_content(file_name: str, file_data_base64: str) -> str:
 def get_files_content(**files):
     content = dict()
     for key, file_ in files.items():
-        content[key] = extract_content(file_.name, file_.data)
+        content[key] = extract_content(file_.name, file_.base64_data)
     return content
 
 

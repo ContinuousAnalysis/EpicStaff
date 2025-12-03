@@ -3,9 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 
 from tables.models import Session
-from tables.serializers.nested_model_serializers import NestedSessionSerializer
 from tests.fixtures import *
-from tables.services import converter_service
 
 
 @pytest.mark.django_db

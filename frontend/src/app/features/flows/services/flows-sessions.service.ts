@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { ConfigService } from '../../../services/config/config.service';
 import { ApiGetRequest } from '../../../shared/models/api-request.model';
+import { WarningMessages } from '../../../pages/running-graph/models/warning-messages.model';
 
 export interface GraphSessionGraph {
   id: number;
@@ -28,6 +29,10 @@ export interface GraphSession {
   initial_state: Record<string, any>;
   created_at: string;
   finished_at: string | null;
+}
+
+export interface SessionUpdates {
+  status: GraphSessionStatus;
 }
 
 export interface GraphSessionLight {
@@ -102,6 +107,10 @@ export class GraphSessionService {
     return this.http.get<GraphSession>(`${this.apiUrl}${sessionId}/`);
   }
 
+  getSessionUpdates(sessionId: string): Observable<SessionUpdates> {
+    return this.http.get<SessionUpdates>(`${this.apiUrl}${sessionId}/get-updates/`);
+  }
+
   getSessionsByGraphId(
     graphId: number,
     detailed: true,
@@ -155,5 +164,9 @@ export class GraphSessionService {
 
   stopSessionById(sessionId: number): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}${sessionId}/stop/`, {});
+  }
+
+  getSessionWarnings(sessionId: string): Observable<WarningMessages> {
+    return this.http.get<WarningMessages>(`${this.apiUrl}${sessionId}/warnings/`);
   }
 }

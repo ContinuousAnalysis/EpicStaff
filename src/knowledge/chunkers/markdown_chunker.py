@@ -4,7 +4,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 class MarkdownChunker(BaseChunker):
-
     def __init__(self, chunk_size, chunk_overlap, additional_params):
         markdowm_params = additional_params.get("markdown", {})
 

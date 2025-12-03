@@ -16,6 +16,7 @@ from services.redis_service import RedisService
 # Constants
 REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
 
 # Fixture for embedder configuration
@@ -52,7 +53,7 @@ def collection_id(embedder_config_id):
 @pytest_asyncio.fixture
 async def redis_service():
     """Create and connect Redis service."""
-    service = RedisService(host=REDIS_HOST, port=REDIS_PORT)
+    service = RedisService(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
     await service.connect()
     yield service
     if service.aioredis_client:
