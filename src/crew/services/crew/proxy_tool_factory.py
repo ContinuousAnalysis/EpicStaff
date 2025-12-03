@@ -45,11 +45,12 @@ class ProxyToolFactory:
 
         def _run(*_, **kwargs):
             # TODO: fix workaround after making crewai async
-
+            python_code_kwargs = python_code_tool_data.python_code.global_kwargs or dict() 
+            inputs = {**python_code_kwargs, **kwargs}
             future = asyncio.run_coroutine_threadsafe(
                 self.python_code_executor_service.run_code(
                     python_code_data=python_code_tool_data.python_code,
-                    inputs=kwargs,
+                    inputs=inputs,
                     additional_global_kwargs=global_kwargs,
                     stop_event=stop_event,
                 ),

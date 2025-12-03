@@ -1,3 +1,4 @@
+from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import WebhookTrigger
 from tables.models.knowledge_models import Chunk
 from django_filters import rest_framework as filters
@@ -6,6 +7,7 @@ from tables.models.crew_models import (
     AgentMcpTools,
     AgentPythonCodeTools,
     TaskMcpTools,
+    TaskPythonCodeToolConfigs,
 )
 from tables.exceptions import TaskSerializerError, AgentSerializerError
 from tables.models.llm_models import (
@@ -62,6 +64,8 @@ from tables.serializers.model_serializers import (
     SubGraphNodeSerializer,
     GraphLightSerializer,
     GraphTagSerializer,
+    PythonCodeToolConfigFieldSerializer,
+    PythonCodeToolConfigSerializer,
     RealtimeConfigSerializer,
     RealtimeSessionItemSerializer,
     RealtimeAgentSerializer,
@@ -478,6 +482,11 @@ class TaskReadWriteViewSet(ModelViewSet):
             to_attr="prefetched_python_code_tools",
         ),
         Prefetch(
+            "task_python_code_tool_config_list",
+            queryset=TaskPythonCodeToolConfigs.objects.select_related("tool__tool__python_code"),
+            to_attr="prefetched_python_code_tool_configs",
+        ),
+        Prefetch(
             "task_context_list",
             queryset=TaskContext.objects.select_related("context"),
             to_attr="prefetched_contexts",
@@ -587,7 +596,17 @@ class PythonCodeToolViewSet(viewsets.ModelViewSet):
     Prevents modifications or deletions of built-in tools.
     """
 
-    queryset = PythonCodeTool.objects.all()
+    queryset = (
+        PythonCodeTool.objects.all()
+        .select_related("python_code")
+        .prefetch_related(
+            Prefetch(
+                "tool_fields",
+                queryset=PythonCodeToolConfigField.objects.all(),
+                to_attr="prefetched_config_fields",
+            )
+        )
+    )
     serializer_class = PythonCodeToolSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name", "python_code"]
@@ -597,6 +616,28 @@ class PythonCodeToolViewSet(viewsets.ModelViewSet):
         if instance.built_in:
             raise BuiltInToolModificationError()
         return super().destroy(request, *args, **kwargs)
+
+
+class PythonCodeToolConfigViewSet(viewsets.ModelViewSet):
+
+    queryset = PythonCodeToolConfig.objects.select_related("tool").prefetch_related(
+        Prefetch(
+            "tool__tool_fields",
+            queryset=PythonCodeToolConfigField.objects.all(),
+            to_attr="prefetched_config_fields",
+        )
+    )
+    serializer_class = PythonCodeToolConfigSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["tool", "name"]
+
+class PythonCodeToolConfigFieldViewSet(viewsets.ModelViewSet):
+    """
+    A viewset for viewing and editing PythonCodeToolConfigFields instances.
+    """
+    queryset = PythonCodeToolConfigField.objects.all()
+    serializer_class = PythonCodeToolConfigFieldSerializer
+    filter_backends = [DjangoFilterBackend]
 
 
 class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
