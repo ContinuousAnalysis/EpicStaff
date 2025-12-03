@@ -18,8 +18,11 @@ class RedisService:
     async def init_redis(self):
         host = os.environ.get("REDIS_HOST", "localhost")
         port = os.environ.get("REDIS_PORT", 6379)
+        password = os.environ.get("REDIS_PASSWORD")
         self.aioredis_client = await aioredis.from_url(
-            f"redis://{host}:{port}", retry=self._retry
+            f"redis://{host}:{port}",
+            retry=self._retry,
+            password=password,
         )
         self.pubsub = self.aioredis_client.pubsub()
         await self.pubsub.subscribe(self.session_start_channel)

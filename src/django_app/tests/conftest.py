@@ -14,3 +14,7 @@ def tmp_path():
 @pytest.fixture
 def api_client() -> APIClient:
     return APIClient()
+
+@pytest.fixture
+def mock_telegram_service(mocker):
+    return mocker.patch("tables.services.telegram_trigger_service.TelegramTriggerService.register_telegram_trigger")

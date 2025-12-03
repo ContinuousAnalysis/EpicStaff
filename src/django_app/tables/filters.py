@@ -1,6 +1,6 @@
 from django_filters import rest_framework as filters
 from tables.models.session_models import Session
-from tables.models import SourceCollection, Provider
+from tables.models import  Provider # SourceCollection,
 
 class CharInFilter(filters.BaseInFilter, filters.CharFilter):
     pass
@@ -14,12 +14,12 @@ class SessionFilter(filters.FilterSet):
         fields = ["graph_id", "status"]
         
 
-class CollectionFilter(filters.FilterSet):
-    collection_id = filters.CharFilter(field_name="collection_id", lookup_expr="exact")
+# class CollectionFilter(filters.FilterSet):
+#     collection_id = filters.CharFilter(field_name="collection_id", lookup_expr="exact")
 
-    class Meta:
-        model = SourceCollection
-        fields = ["collection_id"]
+#     class Meta:
+#         model = SourceCollection
+#         fields = ["collection_id"]
 
 class ProviderFilter(filters.FilterSet):
     model_type = filters.CharFilter(method='filter_by_model_type')

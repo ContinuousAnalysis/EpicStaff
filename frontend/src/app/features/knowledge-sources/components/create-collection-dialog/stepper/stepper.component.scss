@@ -1,0 +1,103 @@
+:host {
+    width: 100%;
+}
+
+.stepper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    position: relative;
+
+    &__step {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        &::before {
+            content: "";
+            position: absolute;
+            top: 16px;
+            left: 0;
+            width: calc(50% - 25px);
+            height: 2px;
+            background: var(--color-divider-subtle);
+            z-index: 1;
+        }
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 16px;
+            right: 0;
+            width: calc(50% - 25px);
+            height: 2px;
+            background:  var(--color-divider-subtle);
+            z-index: 1;
+        }
+
+        &:first-child::before {
+            display: none;
+        }
+
+        &:last-child::after {
+            display: none;
+        }
+    }
+
+    &__circle {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid var(--color-divider-subtle);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-ks-transparent-text-80);
+        background-color: var(--color-background-body);
+        line-height: 130%;
+        font-size: 0.875rem;
+        font-weight: bold;
+        z-index: 2;
+        transition: 0.25s;
+    }
+
+    &__label {
+        margin-top: 6px;
+        font-size: 0.875rem;
+        line-height: 130%;
+        color: var(--color-ks-transparent-text-80);
+        transition: 0.25s;
+    }
+
+    &__step--active {
+        .stepper__circle {
+            border-color: var(--color-ks-status-completed);
+            color: var(--color-ks-status-completed);
+        }
+
+        .stepper__label {
+            color: var(--color-ks-text);
+        }
+
+        &::before {
+            background: var(--color-ks-status-completed);
+        }
+    }
+
+    &__step--completed {
+        .stepper__circle {
+            background: var(--color-ks-status-completed);
+            border-color: var(--color-ks-status-completed);
+            color: var(--color-background-body);
+        }
+
+        &::before {
+            background: var(--color-ks-status-completed);
+        }
+
+        &::after {
+            background: var(--color-ks-status-completed);
+        }
+    }
+}

@@ -246,12 +246,9 @@ class CrewCallbackFactory:
 
     def get_wait_for_user_callback(
         self,
-        crew_knowledge_collection_id=None,
-        crew_similarity_threshold=0.2,
-        crew_search_limit=3,
-        agent_similarity_threshold=0.1,
-        agent_search_limit=3,
         agent_knowledge_collection_id=None,
+        rag_type_id=None,
+        rag_search_config=None,
         stop_event: Optional[StopEvent] = None,
     ) -> Callable[[], str]:
         def inner() -> str:
@@ -331,30 +328,19 @@ class CrewCallbackFactory:
 
                 user_input_with_knowledges = ""
                 user_input_with_knowledges += user_input
-
                 # TODO: make one search and combine crew_knowledge_collection_id
                 # TODO: potential bugs with: classification user_input if knowledge will be added
                 if agent_knowledge_collection_id is not None:
                     agent_knowledges = self.knowledge_search_service.search_knowledges(
                         sender="human_agent",
                         knowledge_collection_id=agent_knowledge_collection_id,
+                        rag_type_id=rag_type_id,
                         query=str(user_input),
-                        search_limit=agent_search_limit,
-                        similarity_threshold=agent_similarity_threshold,
+                        rag_search_config=rag_search_config,
                     )
                     user_input_with_knowledges += self._extract_knowledges(
                         agent_knowledges
                     )
-
-                elif crew_knowledge_collection_id is not None:
-                    crew_results = self.knowledge_search_service.search_knowledges(
-                        sender="human_crew",
-                        knowledge_collection_id=crew_knowledge_collection_id,
-                        query=str(user_input),
-                        search_limit=crew_search_limit,
-                        similarity_threshold=crew_similarity_threshold,
-                    )
-                    user_input_with_knowledges += self._extract_knowledges(crew_results)
 
                 logger.info(f"{user_input_with_knowledges=}")
 

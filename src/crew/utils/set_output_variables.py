@@ -35,9 +35,10 @@ def set_output_variables(
         if key.startswith("[") and key.endswith("]"):  # List index
             index = int(key[1:-1])
             value = value[index]
-        else:
+        else:        
+            if not hasattr(value, key):
+                setattr(value, key, DotDict())
             value = getattr(value, key)
-
 
     last_key_name = keys[-1]
     if last_key_name.startswith("[") and last_key_name.endswith("]"):

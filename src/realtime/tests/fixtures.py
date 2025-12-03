@@ -62,7 +62,11 @@ def sample_chat_data() -> RealtimeAgentChatData:
 
 @pytest.fixture
 def redis_service():
-    return RedisService(host="localhost", port=6379)
+    return RedisService(
+        host="localhost",
+        port=6379,
+        password="redis_password",
+    )
 
 
 @pytest.fixture

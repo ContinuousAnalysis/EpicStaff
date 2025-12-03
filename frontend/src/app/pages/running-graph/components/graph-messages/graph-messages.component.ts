@@ -25,7 +25,7 @@ import { takeUntil, map, exhaustMap } from 'rxjs/operators';
 
 import {
   GraphSessionStatus,
-  GraphSession,
+  GraphSession, GraphSessionService, SessionUpdates,
 } from '../../../../features/flows/services/flows-sessions.service';
 import {
   GraphMessage,
@@ -44,6 +44,8 @@ import { WaitForUserInputComponent } from './components/user-input-component/use
 import { SessionStatusMessageData } from '../../models/update-session-status.model';
 import { AnswerToLLMService } from '../../../../services/answerToLLMService.service';
 import { UserMessageComponent } from './components/user-message/user-message.component';
+import { SubgraphStartMessageComponent } from './components/subgraph-start-message/subgraph-start-message.component';
+import { SubgraphFinishMessageComponent } from './components/subgraph-finish-message/subgraph-finish-message.component';
 import { isMessageType } from './helper_functions/message-helper';
 import { RunGraphPageService } from '../../run-graph-page.service';
 import { RunSessionSSEService } from '../../../run-graph-page/run-graph-page-body/graph-session-sse.service';
@@ -69,6 +71,8 @@ import { ExtractedChunksMessageComponent } from './components/extracted-chunks/e
     WaitForUserInputComponent,
     UserMessageComponent,
     ExtractedChunksMessageComponent,
+    SubgraphStartMessageComponent,
+    SubgraphFinishMessageComponent,
   ],
   templateUrl: './graph-messages.component.html',
   styleUrls: ['./graph-messages.component.scss'],
@@ -120,7 +124,8 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
     private cdr: ChangeDetectorRef,
     private answerToLLMService: AnswerToLLMService,
     private runGraphPageService: RunGraphPageService,
-    private flowService: FlowsApiService
+    private flowService: FlowsApiService,
+    private graphSessionService: GraphSessionService,
   ) {
     effect(() => {
       const messages = this.sseService.messages();
@@ -135,7 +140,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       this.sessionStatusChanged.emit(status);
       this.statusWaitForUser = status === GraphSessionStatus.WAITING_FOR_USER;
       this.showUserInputWithDelay = this.statusWaitForUser;
-      this.checkIfFinish();
+
       this.cdr.markForCheck();
     });
 
@@ -152,6 +157,17 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   get isProcessing(): boolean {
+    const status = this.sseService.status();
+    const isTerminalStatus =
+      status === GraphSessionStatus.ERROR ||
+      status === GraphSessionStatus.STOP ||
+      status === GraphSessionStatus.ENDED ||
+      status === GraphSessionStatus.EXPIRED;
+
+    if (isTerminalStatus) {
+      return false;
+    }
+
     return this.isLoading || this.sseService.isStreaming();
   }
 
@@ -280,6 +296,8 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  // UPD (EST-904 Mark message final in session)
+  // Stop session only after message with type 'graph_end'
   private checkIfFinish() {
     const messages = this.sseService.messages();
     if (messages.length > 0) {
@@ -290,21 +308,18 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       );
       const sessionStatus = this.sseService.status();
 
+      // Check for graph_end message - marks the session as finished
       if (
         sameTimeMessages.some(
-          (msg) => msg.message_data.message_type === 'finish'
-        ) &&
-        sessionStatus === GraphSessionStatus.ENDED
+          (msg) => msg.message_data.message_type === MessageType.GRAPH_END
+        )
       ) {
         this.sseService.stopStream();
-      } else if (
-        sameTimeMessages.some(
-          (msg) => msg.message_data.message_type === 'error'
-        ) &&
-        sessionStatus === GraphSessionStatus.ERROR
-      ) {
-        this.sseService.stopStream();
-      } else if (
+        this.updateSessionStatus();
+        return;
+      }
+
+      if (
         sameTimeMessages.some(
           (msg) =>
             msg.message_data.message_type === 'update_session_status' &&
@@ -313,13 +328,43 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
         sessionStatus === GraphSessionStatus.WAITING_FOR_USER
       ) {
         this.sseService.stopStream();
-      } else if (sessionStatus === GraphSessionStatus.EXPIRED) {
-        this.sseService.stopStream();
+        this.updateSessionStatus();
       }
-      else if (sessionStatus === GraphSessionStatus.STOP) {
-        this.sseService.stopStream();
-      }
+
+      // if (
+      //   sameTimeMessages.some(
+      //     (msg) => msg.message_data.message_type === 'finish'
+      //   ) &&
+      //   sessionStatus === GraphSessionStatus.ENDED
+      // ) {
+      //   this.sseService.stopStream();
+      // } else if (
+      //   sameTimeMessages.some(
+      //     (msg) => msg.message_data.message_type === 'error'
+      //   ) &&
+      //   sessionStatus === GraphSessionStatus.ERROR
+      // ) {
+      //   this.sseService.stopStream();
+      // } else if (sessionStatus === GraphSessionStatus.EXPIRED) {
+      //   this.sseService.stopStream();
+      // } else if (sessionStatus === GraphSessionStatus.STOP) {
+      //   this.sseService.stopStream();
+      // } else if (sessionStatus === GraphSessionStatus.ERROR) {
+      //   this.sseService.stopStream();
+      // } else if (sessionStatus === GraphSessionStatus.ENDED) {
+      //   this.sseService.stopStream();
+      // }
+      // Note: PENDING is a transitional state - don't stop stream, wait for final status
     }
+  }
+
+  private updateSessionStatus(): void {
+    this.graphSessionService.getSessionUpdates(this.sessionId!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ status }: SessionUpdates) => this.sseService.setStatus(status),
+        error: (err) => console.log(err),
+      });
   }
 
   public getAgentFromMessage(message: GraphMessage): GetAgentRequest | null {
@@ -364,6 +409,85 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       isMessageType(currentMessage, MessageType.START) &&
       isMessageType(prevMessage, MessageType.FINISH)
     );
+  }
+
+  // Check if message is inside a subflow (but not the start/finish messages themselves)
+  public isInsideSubflow(message: GraphMessage, index: number): boolean {
+    const messages = this.sseService.messages();
+    if (index === 0) return false;
+
+    const msgType = message.message_data?.message_type;
+    // Don't mark subgraph_start and subgraph_finish as inside subflow
+    if (
+      msgType === MessageType.SUBGRAPH_START ||
+      msgType === MessageType.SUBGRAPH_FINISH
+    ) {
+      return false;
+    }
+
+    // Track active subflows (stack-based for nested subflows)
+    const subflowStack: Array<{ name: string; startIndex: number }> = [];
+
+    for (let i = 0; i < index; i++) {
+      const msg = messages[i];
+      const currentMsgType = msg.message_data?.message_type;
+
+      if (currentMsgType === MessageType.SUBGRAPH_START) {
+        subflowStack.push({ name: msg.name, startIndex: i });
+      } else if (currentMsgType === MessageType.SUBGRAPH_FINISH) {
+        // Find matching subflow start (by name, most recent)
+        const matchingIndex = subflowStack.findIndex(
+          (sf) => sf.name === msg.name
+        );
+        if (matchingIndex !== -1) {
+          // Remove this subflow and all nested ones after it
+          subflowStack.splice(matchingIndex);
+        }
+      }
+    }
+
+    // If there are active subflows, this message is inside one
+    return subflowStack.length > 0;
+  }
+
+  // Get the level of subflow nesting (0 = not in subflow, 1 = in one subflow, etc.)
+  public getSubflowLevel(message: GraphMessage, index: number): number {
+    const messages = this.sseService.messages();
+    if (index === 0) return 0;
+
+    const msgType = message.message_data?.message_type;
+
+    // Track active subflows (stack-based for nested subflows)
+    const subflowStack: Array<{ name: string; startIndex: number }> = [];
+
+    for (let i = 0; i < index; i++) {
+      const msg = messages[i];
+      const currentMsgType = msg.message_data?.message_type;
+
+      if (currentMsgType === MessageType.SUBGRAPH_START) {
+        subflowStack.push({ name: msg.name, startIndex: i });
+      } else if (currentMsgType === MessageType.SUBGRAPH_FINISH) {
+        // Find matching subflow start (by name, most recent)
+        const matchingIndex = subflowStack.findIndex(
+          (sf) => sf.name === msg.name
+        );
+        if (matchingIndex !== -1) {
+          // Remove this subflow and all nested ones after it
+          subflowStack.splice(matchingIndex);
+        }
+      }
+    }
+
+    // For subgraph_start and subgraph_finish, return the level they are starting/finishing at
+    // (which is the current stack length before they are added/removed)
+    if (
+      msgType === MessageType.SUBGRAPH_START ||
+      msgType === MessageType.SUBGRAPH_FINISH
+    ) {
+      return subflowStack.length;
+    }
+
+    return subflowStack.length;
   }
 
   onUserMessageSubmitted(message: string) {

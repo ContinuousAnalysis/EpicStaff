@@ -141,9 +141,10 @@ class SyncPubSubGroup:
 
 
 class RedisService(metaclass=SingletonMeta):
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, password: str):
         self.host = host
         self.port = port
+        self.password = password
 
         self.aioredis_client: aioredis.Redis | None = None
         self.sync_redis_client: Redis | None = None
@@ -167,11 +168,13 @@ class RedisService(metaclass=SingletonMeta):
         try:
             self.aioredis_client = await aioredis.from_url(
                 f"redis://{self.host}:{self.port}",
+                password=self.password,
                 decode_responses=True,
                 retry=self._retry,
             )
             self.sync_redis_client = Redis.from_url(
                 f"redis://{self.host}:{self.port}",
+                password=self.password,
                 decode_responses=True,
                 retry=self._retry,
             )

@@ -85,11 +85,11 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         this.settingsForm = this.fb.group({
             voice: [this.data.agent.realtime_agent.voice, Validators.required],
             threshold: [
-                parseFloat(this.data.agent.realtime_agent.similarity_threshold),
+                parseFloat(this.data.agent.search_configs.naive.similarity_threshold || '0.2'),
                 [Validators.required, Validators.min(0), Validators.max(1)],
             ],
             searchLimit: [
-                this.data.agent.realtime_agent.search_limit,
+                this.data.agent.search_configs.naive.search_limit,
                 [Validators.required, Validators.min(0), Validators.max(1000)],
             ],
             wakeword: [this.data.agent.realtime_agent.wake_word],
@@ -207,8 +207,6 @@ export class RealtimeSettingsDialogComponent implements OnInit {
 
             // Prepare the data for API request
             const realtimeAgentData: RealtimeAgentConfig = {
-                similarity_threshold: formValues.threshold.toString(),
-                search_limit: formValues.searchLimit,
                 wake_word: formValues.wakeword,
                 stop_prompt: formValues.stopword,
                 language: formValues.preferredLanguage,
@@ -218,6 +216,13 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                     formValues.realtime_transcription_config,
                 realtime_config: this.data.agent.realtime_agent.realtime_config,
             };
+
+            const searchConfigsData = {
+                naive: {
+                    similarity_threshold: formValues.threshold.toString(),
+                    search_limit: formValues.searchLimit,
+                }
+            }
 
             const getToolIds = (tools: any[]) => {
                 const configured_tool: number[] = [];
@@ -251,6 +256,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                 goal: this.data.agent.goal,
                 backstory: this.data.agent.backstory,
                 realtime_agent: realtimeAgentData,
+                search_configs: searchConfigsData,
                 configured_tools: configured_tool,
                 python_code_tools: python_code_tool,
                 tool_ids: settingsToolIds,

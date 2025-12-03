@@ -268,7 +268,7 @@ class CrewExportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Crew
-        exclude = ["id", "tags", "knowledge_collection"]
+        exclude = ["id", "tags"]
 
     def get_tasks(self, crew: Crew):
         tasks = crew.task_set.all()
@@ -402,7 +402,7 @@ class NestedCrewExportSerializer(NestedCrewExportMixin, CrewExportSerializer):
     realtime_agents = None
 
     class Meta(CrewExportSerializer.Meta):
-        exclude = ["tags", "knowledge_collection"]
+        exclude = ["tags"]
 
 
 class CrewNodeExportSerializer(CrewNodeSerializer):
