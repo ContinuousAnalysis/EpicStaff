@@ -3,7 +3,7 @@ from django.conf import settings
 from rest_framework import serializers
 from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
-from tables.models.python_models import PythonCodeTool
+from tables.models.python_models import PythonCodeTool, PythonCodeToolConfig
 from tables.models.realtime_models import VoiceChoices
 from tables.models.graph_models import GraphFile, Graph
 
@@ -47,6 +47,7 @@ class BaseToolSerializer(serializers.Serializer):
             PythonCodeToolSerializer,
             McpToolSerializer,
             ToolConfigSerializer,
+            PythonCodeToolConfigSerializer
         )
 
         repr = {}
@@ -59,6 +60,9 @@ class BaseToolSerializer(serializers.Serializer):
         elif isinstance(instance, McpTool):
             repr["unique_name"] = f"mcp-tool:{instance.pk}"
             repr["data"] = McpToolSerializer(instance).data
+        elif isinstance(instance, PythonCodeToolConfig):
+            repr["unique_name"] = f"python-code-tool-config:{instance.pk}"
+            repr["data"] = PythonCodeToolConfigSerializer(instance).data
         else:
             raise TypeError(
                 f"Unsupported tool type for serialization: {type(instance)}"
