@@ -33,7 +33,7 @@ async def main():
         "CREWAI_OUTPUT_CHANNEL", "sessions:crewai_output"
     )
     stop_session_channel = os.getenv("STOP_SESSION_CHANNEL", "sessions:stop")
-
+    MAX_CONCURRENT_SESSIONS = int(os.getenv("MAX_CONCURRENT_SESSIONS", "20"))
     # Initialize services
     redis_service = RedisService(host=redis_host, port=redis_port)
     python_code_executor_service = RunPythonCodeService(redis_service=redis_service)
@@ -56,6 +56,7 @@ async def main():
         crewai_output_channel=crewai_output_channel,
         # Note:  Used for process human_input
         knowledge_search_service=knowledge_search_service,
+        max_concurrent_sessions=MAX_CONCURRENT_SESSIONS,
     )
 
     try:

@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     USE_TUNNEL: bool = False
     WEBHOOK_TUNNEL: Optional[str] = None
     WEBHOOK_AUTH: Optional[str] = None
+    NGROK_DOMAIN: Optional[str] = None
     WEBHOOK_PORT: int = 8009
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379

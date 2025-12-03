@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { SpinnerComponent } from '../../../../../../shared/components/spinner-type2/spinner.component';
+import { Spinner2Component } from '../../../../../../shared/components/spinner-type2/spinner.component';
 import { AppIconComponent } from '../../../../../../shared/components/app-icon/app-icon.component';
 import { Router } from '@angular/router';
 import { RunGraphService } from '../../../../../../services/run-graph-session.service';
@@ -19,7 +19,7 @@ import { FlowService } from '../../../../../../visual-programming/services/flow.
 @Component({
     selector: 'app-flow-header',
     standalone: true,
-    imports: [CommonModule, RouterModule, SpinnerComponent, AppIconComponent],
+    imports: [CommonModule, RouterModule, Spinner2Component, AppIconComponent],
     templateUrl: './flow-header.component.html',
     styleUrls: ['./flow-header.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

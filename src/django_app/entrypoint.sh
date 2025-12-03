@@ -32,9 +32,12 @@ echo "Starting Redis caching..."
 python manage.py cache_redis &
 
 # Start Django application
-echo "Starting Django server..."
+PORT="${DJANGO_PORT:-8000}"
+
+echo "Starting Django server on port $PORT..."
+
 exec gunicorn django_app.asgi:application \
   -k uvicorn.workers.UvicornWorker \
-  --bind 0.0.0.0:8000 \
+  --bind "0.0.0.0:$PORT" \
   --workers "${GUNICORN_WORKERS:-1}" \
   --threads "${GUNICORN_THREADS:-4}"
