@@ -85,7 +85,6 @@ class Crew(BaseModel):
         planning: Plan the crew execution and add the plan to the crew.
         chat_llm: The language model used for orchestrating chat interactions with the crew.
 
-        knowledge_collection_id: A unique identifier of the knowledgecollection instance for crew. Now fields "knowledge_sources" and "knowledge" are unnecessary.
     """
 
     __hash__ = object.__hash__  # type: ignore
@@ -211,16 +210,6 @@ class Crew(BaseModel):
     manager_ask_human_input_callback: Optional[Any] = Field(
         default=None,
         description="Callback to be executed for human input by manager agent",
-    )
-    knowledge_collection_id: Optional[int] = Field(
-        default=None,
-        description="Knowledge collection id for the crew.",
-    )
-    search_limit: Optional[int] = Field(
-        default=None, description="search_limit for knowledge"
-    )
-    similarity_threshold: Optional[Any] = Field(
-        default=None, description="similarity_threshold for knowledge"
     )
 
     @field_validator("id", mode="before")

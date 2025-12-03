@@ -661,8 +661,6 @@ def agents_data():
             "max_retry_limit": 3,
             "respect_context_window": True,
             "default_temperature": 0.0,
-            "search_limit": 3,
-            "similarity_threshold": "0.20",
             "tags": [],
         },
         {
@@ -685,8 +683,6 @@ def agents_data():
             "max_retry_limit": 0,
             "respect_context_window": False,
             "default_temperature": 0.0,
-            "search_limit": 3,
-            "similarity_threshold": "0.20",
             "tags": [],
         },
     ]
@@ -729,8 +725,6 @@ def crew_data():
             "full_output": True,
             "planning": False,
             "default_temperature": 0.0,
-            "search_limit": 3,
-            "similarity_threshold": "0.20",
         }
     ]
 

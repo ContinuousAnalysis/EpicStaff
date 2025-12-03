@@ -1,14 +1,17 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject } from '@angular/core';
-import { ReactiveFormsModule, FormGroup, Validators } from '@angular/forms';
-import { WebhookTriggerNodeModel } from '../../../core/models/node.model';
-import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
-import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
-import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
-import { CommonModule } from '@angular/common';
-import { WebhookTriggerNodeService } from '../../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
-import { Clipboard, ClipboardModule } from '@angular/cdk/clipboard';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, input} from '@angular/core';
+import {FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {WebhookTriggerNodeModel} from '../../../core/models/node.model';
+import {BaseSidePanel} from '../../../core/models/node-panel.abstract';
+import {CustomInputComponent} from '../../../../shared/components/form-input/form-input.component';
+import {
+    CodeEditorComponent
+} from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
+import {CommonModule} from '@angular/common';
+import {WebhookService} from "../../../../pages/flows-page/components/flow-visual-programming/services/webhook.service";
+import {Clipboard, ClipboardModule} from '@angular/cdk/clipboard';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {startWith} from 'rxjs';
+import {WebhookStatus} from "../../../../pages/flows-page/components/flow-visual-programming/models/webhook.model";
 
 const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
 
@@ -26,62 +29,66 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
         <div class="panel-container">
             <div class="panel-content">
                 <form [formGroup]="form" class="form-container">
-                    <app-custom-input
-                        label="Node Name"
-                        tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
-                        formControlName="node_name"
-                        placeholder="Enter node name"
-                        [activeColor]="activeColor"
-                        [errorMessage]="getNodeNameErrorMessage()"
-                    ></app-custom-input>
+                    <div class="form-layout" [class.expanded]="isExpanded()" [class.collapsed]="!isExpanded()">
+                        <div class="form-fields">
+                            <app-custom-input
+                                label="Node Name"
+                                tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
+                                formControlName="node_name"
+                                placeholder="Enter node name"
+                                [activeColor]="activeColor"
+                                [errorMessage]="getNodeNameErrorMessage()"
+                            ></app-custom-input>
 
-                    <app-custom-input
-                        label="Webhook Name"
-                        tooltipText="Only enter the webhook name. The base URL is shown below."
-                        formControlName="webhookName"
-                        placeholder="Enter webhook name"
-                        [activeColor]="activeColor"
-                        [errorMessage]="getWebhookNameErrorMessage()"
-                    ></app-custom-input>
-                    <div class="webhook-url-display">
-                        @if (webhookUrlDisplay; as url) {
-                            <span class="webhook-url-text" [style.color]="activeColor">
-                                {{ url }}
-                            </span>
-                            <button
-                                type="button"
-                                class="copy-button"
-                                (click)="copyWebhookUrl()"
-                                [disabled]="!url"
-                                aria-label="Copy webhook URL"
-                            >
-                                <span class="copy-icon" aria-hidden="true"></span>
-                                <span>Copy</span>
-                            </button>
-                        } @else {
-                            @if (tunnelErrorMessage) {
-                                <div class="webhook-url-error">
-                                    {{ tunnelErrorMessage }}
-                                </div>
-                            } @else {
-                                <div class="webhook-url-placeholder">Fetching tunnel URL...</div>
-                            }
-                        }
+                            <app-custom-input
+                                label="Webhook Name"
+                                tooltipText="Only enter the webhook name. The base URL is shown below."
+                                formControlName="webhookName"
+                                placeholder="Enter webhook name"
+                                [activeColor]="activeColor"
+                                [errorMessage]="getWebhookNameErrorMessage()"
+                            ></app-custom-input>
+                            <div class="webhook-url-display">
+                                @if (webhookUrlDisplay; as url) {
+                                    <span class="webhook-url-text" [style.color]="activeColor">
+                                        {{ url }}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        class="copy-button"
+                                        (click)="copyWebhookUrl()"
+                                        [disabled]="!url"
+                                        aria-label="Copy webhook URL"
+                                    >
+                                        <span class="copy-icon" aria-hidden="true"></span>
+                                        <span>Copy</span>
+                                    </button>
+                                } @else {
+                                    @if (tunnelErrorMessage) {
+                                        <div class="webhook-url-error">
+                                            {{ tunnelErrorMessage }}
+                                        </div>
+                                    } @else {
+                                        <div class="webhook-url-placeholder">Fetching tunnel URL...</div>
+                                    }
+                                }
+                            </div>
+                            <app-custom-input
+                                label="Libraries"
+                                tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
+                                formControlName="libraries"
+                                placeholder="Enter libraries (e.g., requests, pandas, numpy)"
+                                [activeColor]="activeColor"
+                            ></app-custom-input>
+                        </div>
+                        <div class="code-editor-section">
+                            <app-code-editor
+                                [pythonCode]="pythonCode"
+                                (pythonCodeChange)="onPythonCodeChange($event)"
+                                (errorChange)="onCodeErrorChange($event)"
+                            ></app-code-editor>
+                        </div>
                     </div>
-                    <div class="code-editor-section">
-                        <app-code-editor
-                            [pythonCode]="pythonCode"
-                            (pythonCodeChange)="onPythonCodeChange($event)"
-                            (errorChange)="onCodeErrorChange($event)"
-                        ></app-code-editor>
-                    </div>
-                    <app-custom-input
-                        label="Libraries"
-                        tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
-                        formControlName="libraries"
-                        placeholder="Enter libraries (e.g., requests, pandas, numpy)"
-                        [activeColor]="activeColor"
-                    ></app-custom-input>
                 </form>
             </div>
         </div>
@@ -99,6 +106,10 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
 
             .panel-content {
                 @include mixins.panel-content;
+                height: 100%;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
             }
 
             .section-header {
@@ -107,6 +118,38 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
 
             .form-container {
                 @include mixins.form-container;
+                height: 100%;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .form-layout {
+                height: 100%;
+                min-height: 0;
+
+                &.expanded {
+                    display: flex;
+                    gap: 1rem;
+                    height: 100%;
+                }
+
+                &.collapsed {
+                    display: flex;
+                    flex-direction: column;
+                }
+            }
+
+            .form-fields {
+                display: flex;
+                flex-direction: column;
+
+                .expanded & {
+                    flex: 0 0 400px;
+                    max-width: 400px;
+                    height: 100%;
+                    overflow-y: auto;
+                }
             }
 
             .btn-primary {
@@ -118,10 +161,21 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
             }
 
             .code-editor-section {
-                height: 300px;
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 8px;
                 overflow: hidden;
+                display: flex;
+                flex-direction: column;
+
+                .expanded & {
+                    flex: 1;
+                    height: 100%;
+                    min-height: 0;
+                }
+
+                .collapsed & {
+                    height: 300px;
+                }
             }
 
             .webhook-url-display {
@@ -204,6 +258,8 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTriggerNodeModel> {
+    public readonly isExpanded = input<boolean>(false);
+
     pythonCode: string = '';
     initialPythonCode: string = '';
     codeEditorHasError: boolean = false;
@@ -215,14 +271,14 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
     private readonly destroyRef = inject(DestroyRef);
 
     constructor(
-        private webhookTriggerNodeService: WebhookTriggerNodeService,
+        private webhookService: WebhookService,
         private cdr: ChangeDetectorRef,
         private clipboard: Clipboard
     ) {
         super();
-        this.webhookTriggerNodeService.getTunnelUrl().subscribe({
+        this.webhookService.getTunnel().subscribe({
             next: (response) => {
-                if (response?.status === 'success' && response.tunnel_url) {
+                if (response?.status === WebhookStatus.SUCCESS && response.tunnel_url) {
                     this.tunnelUrl = response.tunnel_url;
                     this.webhookUrlBase = this.normalizeWebhookBase(response.tunnel_url);
                     this.tunnelErrorMessage = '';

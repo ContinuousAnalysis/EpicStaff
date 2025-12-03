@@ -81,6 +81,9 @@ class CrewParserService(metaclass=SingletonMeta):
             function_calling_llm = parse_llm(
                 agent_data.function_calling_llm, stop_event=stop_event
             )
+        rag_search_config = None
+        if agent_data.rag_search_config:
+            rag_search_config = agent_data.rag_search_config.model_dump()
 
         knowledge_search_service = KnowledgeSearchService(
             redis_service=self.redis_service,
@@ -109,9 +112,9 @@ class CrewParserService(metaclass=SingletonMeta):
             "ask_human_input_callback": wait_for_user_callback,
             "step_callback": step_callback,
             "knowledge_collection_id": agent_data.knowledge_collection_id,
+            "rag_type_id": agent_data.rag_type_id,
+            "rag_search_config": rag_search_config,
             "search_knowledges": knowledge_search_service.search_knowledges,
-            "search_limit": agent_data.search_limit,
-            "similarity_threshold": agent_data.similarity_threshold,
             "stop_event": stop_event,
         }
 
@@ -175,9 +178,6 @@ class CrewParserService(metaclass=SingletonMeta):
             "cache": False,  # crew_data.cache, # TODO: remove False after frontend create cache field
             "full_output": crew_data.full_output,
             "planning_llm": crew_data.planning,
-            "knowledge_collection_id": crew_data.knowledge_collection_id,
-            "search_limit": crew_data.search_limit,
-            "similarity_threshold": crew_data.similarity_threshold,
             "stop_event": stop_event,
         }
 
@@ -239,7 +239,9 @@ class CrewParserService(metaclass=SingletonMeta):
                 tool_map[unique_name]
                 for unique_name in agent_data.tool_unique_name_list
             ]
-
+            rag_search_config = None
+            if agent_data.rag_search_config:
+                rag_search_config = agent_data.rag_search_config.model_dump()
             id_agent_map[agent_data.id] = self.parse_agent(
                 agent_data,
                 stop_event=stop_event,
@@ -247,12 +249,9 @@ class CrewParserService(metaclass=SingletonMeta):
                     agent_id=agent_data.id,
                 ),
                 wait_for_user_callback=crew_callback_factory.get_wait_for_user_callback(
-                    crew_knowledge_collection_id=crew_data.knowledge_collection_id,
-                    crew_similarity_threshold=crew_data.similarity_threshold,
-                    crew_search_limit=crew_data.search_limit,
                     agent_knowledge_collection_id=agent_data.knowledge_collection_id,
-                    agent_similarity_threshold=agent_data.similarity_threshold,
-                    agent_search_limit=agent_data.search_limit,
+                    rag_type_id=agent_data.rag_type_id,
+                    rag_search_config=rag_search_config,
                     stop_event=stop_event,
                 ),
                 inputs=inputs,

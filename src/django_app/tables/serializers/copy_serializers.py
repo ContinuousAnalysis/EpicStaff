@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from tables.models import SourceCollection
+from tables.models import SourceCollection, Agent
+from tables.services.import_services import TasksImportService, ToolsImportService
 from tables.serializers.export_serializers import (
     AgentExportSerializer,
     CrewExportSerializer,
@@ -68,14 +69,14 @@ class NestedAgentCopyDeserializer(AgentCopyDeserializer):
 
 class CrewCopySerializer(CrewExportSerializer):
 
-    knowledge_collection = serializers.PrimaryKeyRelatedField(
-        queryset=SourceCollection.objects.all(), allow_null=True, required=False
-    )
-
     agent_serializer_class = NestedAgentCopySerializer
 
     class Meta(CrewExportSerializer.Meta):
         exclude = ["id", "tags"]
+
+    def get_agents(self, obj):
+        agents = obj.agents.all().values_list("id", flat=True)
+        return agents
 
 
 class NestedCrewCopySerializer(NestedCrewExportMixin, CrewCopySerializer):
@@ -95,7 +96,6 @@ class NestedCrewCopySerializer(NestedCrewExportMixin, CrewCopySerializer):
 class CrewCopyDeserializer(CrewImportSerializer):
 
     agents = NestedAgentCopyDeserializer(many=True, required=False)
-    knowledge_collection = serializers.IntegerField(required=False, allow_null=True)
 
     agent_serializer_class = NestedAgentCopyDeserializer
 
@@ -103,12 +103,32 @@ class CrewCopyDeserializer(CrewImportSerializer):
         exclude = ["id", "tags"]
 
     def create(self, validated_data):
-        knowledge_collection_id = validated_data.pop("knowledge_collection", None)
         crew = super().create(validated_data)
-        crew.knowledge_collection = SourceCollection.objects.filter(
-            collection_id=knowledge_collection_id
-        ).first()
         crew.save()
+
+        if tools_data:
+            tools_service = ToolsImportService(tools_data)
+            tools_service.create_tools()
+
+        for t_data in tasks_data:
+            tool_ids_data = t_data.pop("tools", {})
+            agent_id = t_data.pop("agent", None)
+
+            task = tasks_service.create_task(t_data, crew)
+
+            for agent in agents:
+                if agent.id == agent_id:
+                    task.agent = agent
+                    task.save()
+
+            if tools_service:
+                tools_service.assign_tools_to_task(task, tool_ids_data)
+
+            tasks.append(task)
+
+        for task, t_data in zip(tasks, tasks_data):
+            context_ids = t_data.pop("context_tasks", [])
+            tasks_service.add_task_context(task, context_ids)
 
         return crew
 
@@ -120,7 +140,6 @@ class NestedCrewCopyDeserializer(CrewCopyDeserializer):
     realtime_agents = None
 
     agents = serializers.ListField(child=serializers.IntegerField(), required=False)
-    knowledge_collection = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta(CrewCopyDeserializer.Meta):
         exclude = ["tags"]

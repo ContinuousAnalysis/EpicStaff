@@ -20,12 +20,6 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import func
 
 
-@dataclass
-class GetDocumentData:
-    document_hash: str
-    document_content: bytes
-    params: Any
-
 
 class ORMDocumentStorage(BaseORMStorage):
     def get_documents_in_collection(

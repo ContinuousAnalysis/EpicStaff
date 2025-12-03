@@ -1,10 +1,10 @@
 <div class="decision-table-grid-container">
     <div class="grid-header">
         <h3>
-            Condition Groups
+            Conditions
             <span
                 class="tooltip-icon"
-                title="Evaluate groups top-to-bottom; first match routes the flow."
+                title="Evaluate conditions top-to-bottom; first match routes the flow."
             >
                 <i class="ti ti-help-circle"></i>
             </span>
@@ -14,21 +14,19 @@
             [leftIcon]="'ui/plus'"
             (click)="addConditionGroup()"
         >
-            Add Group
+            Add Condition
         </app-button>
     </div>
 
     <ag-grid-angular
         class="decision-grid ag-theme-quartz-dark"
         [class.empty-state]="isEmpty()"
-        style="width: 100%; min-height: 0"
+        style="width: 100%;"
         [rowData]="rowData()"
         [columnDefs]="columnDefs"
         [defaultColDef]="defaultColDef"
         [gridOptions]="gridOptions"
-        [domLayout]="'autoHeight'"
         (gridReady)="onGridReady($event)"
     >
     </ag-grid-angular>
 </div>
-
