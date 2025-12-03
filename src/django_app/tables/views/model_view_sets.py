@@ -26,6 +26,7 @@ from django_filters.rest_framework import (
 from rest_framework import viewsets, mixins, status, filters as drf_filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
 from django.db.models import Prefetch
 from tables.models.graph_models import (
@@ -60,6 +61,7 @@ from tables.serializers.model_serializers import (
     AgentTagSerializer,
     DecisionTableNodeSerializer,
     EndNodeSerializer,
+    SubGraphNodeSerializer,
     GraphLightSerializer,
     GraphTagSerializer,
     PythonCodeToolConfigFieldSerializer,
@@ -76,6 +78,7 @@ from tables.serializers.model_serializers import (
     TaskConfiguredTools,
     TaskPythonCodeTools,
     McpToolSerializer,
+    GraphFileReadSerializer,
     WebhookTriggerNodeSerializer,
     WebhookTriggerSerializer,
 )
@@ -97,6 +100,10 @@ from tables.serializers.copy_serializers import (
     CrewCopyDeserializer,
     GraphCopySerializer,
     GraphCopyDeserializer,
+)
+from tables.serializers.serializers import (
+    UploadGraphFileSerializer,
+    GraphFileUpdateSerializer,
 )
 
 
@@ -122,10 +129,13 @@ from tables.models import (
     PythonCodeTool,
     PythonNode,
     FileExtractorNode,
+    SubGraphNode,
+    AudioTranscriptionNode,
     RealtimeModel,
     StartNode,
     ToolConfigField,
     TaskContext,
+    GraphFile,
 )
 
 from tables.models import (
@@ -150,6 +160,7 @@ from tables.serializers.model_serializers import (
     PythonCodeToolSerializer,
     PythonNodeSerializer,
     FileExtractorNodeSerializer,
+    AudioTranscriptionNodeSerializer,
     TaskSessionMessageSerializer,
     TemplateAgentSerializer,
     LLMConfigSerializer,
@@ -178,8 +189,10 @@ from tables.serializers.knowledge_serializers import (
     DocumentMetadataSerializer,
 )
 from tables.services.redis_service import RedisService
+from tables.services.copy_services import CrewCopyService, AgentCopyService
 from tables.utils.mixins import ImportExportMixin, DeepCopyMixin
 from tables.exceptions import BuiltInToolModificationError
+
 
 redis_service = RedisService()
 
@@ -284,7 +297,7 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     filterset_class = EmbeddingConfigFilter
 
 
-class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
+class AgentViewSet(ModelViewSet, ImportExportMixin):
     queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
         Prefetch(
             "python_code_tools",
@@ -324,10 +337,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
     export_prefix = "agent"
     filename_attr = "role"
     serializer_response_class = AgentReadSerializer
-
-    copy_serializer_class = AgentCopySerializer
-    copy_deserializer_class = AgentCopyDeserializer
-    copy_serializer_response_class = AgentReadSerializer
+    anget_copy_service = AgentCopyService()
 
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
@@ -380,8 +390,24 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"], url_path="copy")
+    def copy(self, request, pk: int):
+        """Create a copy of an agent."""
+        agent = self.get_object()
 
-class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
+        try:
+            with transaction.atomic():
+                created_agent = self.agent_copy_service.copy(agent)
+                serializer = self.get_serializer(created_agent)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {"error": "Failed to copy agent", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin):
     queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
@@ -396,6 +422,7 @@ class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         "full_output",
         "planning",
         "planning_llm_config",
+        "is_template",
     ]
 
     entity_type = EntityType.CREW.value
@@ -403,9 +430,7 @@ class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
     filename_attr = "name"
     serializer_response_class = CrewSerializer
 
-    copy_serializer_class = CrewCopySerializer
-    copy_deserializer_class = CrewCopyDeserializer
-    copy_serializer_response_class = CrewSerializer
+    crew_copy_service = CrewCopyService()
 
     def get_serializer_class(self):
         if self.action == "export":
@@ -413,6 +438,40 @@ class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         if self.action == "import_entity":
             return CrewImportSerializer
         return super().get_serializer_class()
+
+    @action(detail=True, methods=["post"], url_path="copy")
+    def copy(self, request, pk=None):
+        """Create a copy of a crew along with its tasks and contexts."""
+        crew = self.get_object()
+
+        try:
+            with transaction.atomic():
+                created_crew = self.crew_copy_service.copy(crew)
+                serializer = self.get_serializer(created_crew)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {"error": "Failed to copy crew", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=True, methods=["post"], url_path="save_as_project")
+    def save_as_project(self, request, pk=None):
+        """
+        Custom action to save a template as a project.
+        """
+        crew = self.get_object()
+        if not crew.is_template:
+            return Response(
+                "Project is not a template", status=status.HTTP_400_BAD_REQUEST
+            )
+
+        created_project = self.crew_copy_service.copy(crew)
+        created_project.is_template = False
+        created_project.save()
+
+        serializer = self.get_serializer(created_project)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TaskReadWriteViewSet(ModelViewSet):
@@ -614,6 +673,10 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
                 Prefetch(
                     "file_extractor_node_list", queryset=FileExtractorNode.objects.all()
                 ),
+                Prefetch(
+                    "audio_transcription_node_list",
+                    queryset=AudioTranscriptionNode.objects.all(),
+                ),
                 Prefetch("edge_list", queryset=Edge.objects.all()),
                 Prefetch(
                     "conditional_edge_list",
@@ -630,6 +693,7 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
                 Prefetch(
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
+                Prefetch("subgraph_node_list", queryset=SubGraphNode.objects.all()),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
             )
             .all()
@@ -641,6 +705,15 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
         if self.action == "import_entity":
             return GraphImportSerializer
         return super().get_serializer_class()
+
+    @action(detail=True, methods=["get"], url_path="files")
+    def get_files(self, request, pk=None):
+        graph = self.get_object()
+        files = graph.uploaded_files.all()
+        serializer = GraphFileReadSerializer(
+            instance=files, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
 
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
@@ -666,6 +739,11 @@ class PythonNodeViewSet(viewsets.ModelViewSet):
 class FileExtractorNodeViewSet(viewsets.ModelViewSet):
     queryset = FileExtractorNode.objects.all()
     serializer_class = FileExtractorNodeSerializer
+
+
+class AudioTranscriptionNodeViewSet(viewsets.ModelViewSet):
+    queryset = AudioTranscriptionNode.objects.all()
+    serializer_class = AudioTranscriptionNodeSerializer
 
 
 class LLMNodeViewSet(viewsets.ModelViewSet):
@@ -932,6 +1010,11 @@ class EndNodeModelViewSet(viewsets.ModelViewSet):
     serializer_class = EndNodeSerializer
 
 
+class SubGraphNodeModelViewSet(viewsets.ModelViewSet):
+    queryset = SubGraphNode.objects.all()
+    serializer_class = SubGraphNodeSerializer
+
+
 class ConditionGroupModelViewSet(viewsets.ModelViewSet):
     queryset = ConditionGroup.objects.all()
     serializer_class = ConditionGroupSerializer
@@ -1053,6 +1136,68 @@ class McpToolViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
+
+
+class GraphFileViewSet(ModelViewSet):
+    queryset = GraphFile.objects.all()
+    parser_classes = [MultiPartParser, FormParser]
+    http_method_names = ["get", "post", "put", "delete", "head", "options"]
+
+    def get_serializer_class(self):
+        if self.action in ["list", "retrieve"]:
+            return GraphFileReadSerializer
+        if self.action in ["update"]:
+            return GraphFileUpdateSerializer
+        return UploadGraphFileSerializer
+
+    def create(self, request, *args, **kwargs):
+        graph = request.data.get("graph")
+        if not graph:
+            return Response(
+                {"message": "Graph is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        files = {k: v for k, v in request.FILES.items()}
+        if not files:
+            return Response(
+                {"files": "This field is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if isinstance(graph, list):
+            graph = graph[0]
+
+        data = {"graph": graph, "files": files}
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(data=data)
+        serializer.is_valid(raise_exception=True)
+        instances = serializer.save()
+
+        serializer = GraphFileReadSerializer(
+            instance=instances, many=True, context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        data = {}
+        for key, file in request.FILES.items():
+            data["domain_key"] = key
+            data["file"] = file
+
+        if not data:
+            return Response(
+                {"file": "This field is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        instance = self.get_object()
+
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(
+            instance=instance, data=data, context={"graph": instance.graph}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({"detail": "File updated successfully."})
 
 
 class ChunkViewSet(ReadOnlyModelViewSet):
