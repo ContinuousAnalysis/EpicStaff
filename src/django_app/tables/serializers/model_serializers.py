@@ -30,6 +30,7 @@ from tables.models import (
     GraphSessionMessage,
     PythonNode,
     FileExtractorNode,
+    WebScraperKnowledgeNode,
 )
 from rest_framework import serializers
 from tables.exceptions import BuiltInToolModificationError, ToolConfigSerializerError
@@ -979,6 +980,12 @@ class LLMNodeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class WebScraperKnowledgeNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WebScraperKnowledgeNode
+        fields = "__all__"
+
+
 class EdgeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Edge
@@ -1252,6 +1259,7 @@ class GraphSerializer(serializers.ModelSerializer):
     crew_node_list = CrewNodeSerializer(many=True, read_only=True)
     python_node_list = PythonNodeSerializer(many=True, read_only=True)
     file_extractor_node_list = FileExtractorNodeSerializer(many=True, read_only=True)
+    web_scraper_knowledge_node_list = FileExtractorNodeSerializer(many=True, read_only=True)
     edge_list = EdgeSerializer(many=True, read_only=True)
     conditional_edge_list = ConditionalEdgeSerializer(many=True, read_only=True)
     llm_node_list = LLMNodeSerializer(many=True, read_only=True)
@@ -1270,6 +1278,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "crew_node_list",
             "python_node_list",
             "file_extractor_node_list",
+            "web_scraper_knowledge_node_list",
             "edge_list",
             "conditional_edge_list",
             "llm_node_list",

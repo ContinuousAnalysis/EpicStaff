@@ -16,6 +16,7 @@ from tables.views.model_view_sets import (
     PythonNodeViewSet,
     FileExtractorNodeViewSet,
     LLMNodeViewSet,
+    WebScraperKnowledgeNodeViewSet,
     StartNodeModelViewSet,
     RealtimeConfigModelViewSet,
     RealtimeSessionItemViewSet,
@@ -113,6 +114,7 @@ router.register(r"file-extractor-nodes", FileExtractorNodeViewSet)
 router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
+router.register(r"web-scraper-knowledge-nodes", WebScraperKnowledgeNodeViewSet)
 
 router.register(r"edges", EdgeViewSet)
 router.register(r"conditionaledges", ConditionalEdgeViewSet)

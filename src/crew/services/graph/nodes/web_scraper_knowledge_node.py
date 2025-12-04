@@ -1,166 +1,205 @@
+from services.graph.events import StopEvent
+from services.graph.nodes.python_node import PythonNode
+from models.request_models import PythonCodeData
+from services.run_python_code_service import RunPythonCodeService
+
+
+class WebScraperKnowledgeNode(PythonNode):
+    TYPE = "WEB_SCRAPER"
+
+    def __init__( 
+        self, 
+        session_id: int, 
+        node_name: str, 
+        stop_event: StopEvent, 
+        input_map: dict, 
+        output_variable_path: str, 
+        python_code_executor_service: RunPythonCodeService, 
+        collection_name: str,
+        time_to_expired: int,
+        embedder: int
+        ):
+            self.embedder = embedder 
+
+            urls = list(input_map.keys())
+            code_data = PythonCodeData(
+                venv_name="default",
+                code=self._get_extractor_code(urls, collection_name, time_to_expired, embedder),
+                entrypoint="main",
+                libraries = ["loguru", "requests", "tldextract", "aiohttp", "beautifulsoup4", "readability-lxml"],
+            )
+
+            super().__init__(
+                session_id=session_id,
+                node_name=node_name,
+                stop_event=stop_event,
+                input_map=input_map,
+                output_variable_path=output_variable_path,
+                python_code_executor_service=python_code_executor_service,
+                python_code_data=code_data,
+            )
+
+    def _get_extractor_code(self, urls: list[str], collection_name: str, time_to_expired: int, embedder: int):
+        return f"""
 import os
-import sys
 import time
 import json
 import random
 import asyncio
-import subprocess
-import shutil
 from loguru import logger
 from datetime import datetime, timezone
-
 import requests
 import tldextract
-from playwright.async_api import async_playwright
+import shutil
+import aiohttp
+from readability import Document
+from bs4 import BeautifulSoup
 
-API_BASE = "http://127.0.0.1:8000/api"
-
+HEADERS_LIST = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+]
+API_BASE = "http://host.docker.internal:8000/api"
 
 def get_collection_by_name(name: str):
-    r = requests.get(f"{API_BASE}/source-collections/")
+    r = requests.get(f"{{API_BASE}}/source-collections/")
     r.raise_for_status()
-    return next((col for col in r.json().get("results", []) if col.get("collection_name") == name), None)
+    results = r.json().get("results", [])
+    matched = [col for col in results if col.get("collection_name") == name]
+    return matched[0] if matched else None
 
-
-def create_collection(collection_name: str, base_dir: str, file_names: list[str], embedder: int, urls: list[str]):
-    data = {
+def create_collection(collection_name: str, file_names: list[str], embedder: int, urls: list[str]):
+    data = {{
         "collection_name": collection_name,
         "embedder": embedder,
         "description": json.dumps(urls),
         "chunk_sizes": [1000] * len(file_names),
         "chunk_strategies": ["token"] * len(file_names),
         "chunk_overlaps": [200] * len(file_names),
-        "additional_params": [{} for _ in file_names],
-    }
-    files = []
-    for fname in file_names:
-        path = os.path.join(base_dir, fname)
-        if os.path.exists(path):
-            files.append(("files", open(path, "rb")))
+        "additional_params": [{{}} for _ in file_names],
+    }}
 
+    opened_files = []
+    for fpath in file_names:
+        f = open(fpath, "rb")
+        opened_files.append(("files", (os.path.basename(fpath), f, "text/plain")))
+    
     try:
-        r = requests.post(f"{API_BASE}/source-collections/", data=data, files=files)
+        r = requests.post(f"{{API_BASE}}/source-collections/", data=data, files=opened_files)
         r.raise_for_status()
         return r.json()
     except Exception as e:
         logger.error(e)
     finally:
-        for _, file in files:
-            file.close()
-
+        for _, (_, file_obj, _) in opened_files:
+            file_obj.close()
 
 def wait_completed(collection_name: str):
     collection = get_collection_by_name(collection_name)
-    url = f"{API_BASE}/collection_statuses/?collection_id={collection['collection_id']}"
+    url = f"{{API_BASE}}/collection_statuses/?collection_id={{collection['collection_id']}}"
     while True:
         r = requests.get(url).json()
         if r["results"][0]["collection_status"] == "completed":
             return r["results"][0]
         time.sleep(2)
 
+    
 
 def is_collection_expired(collection: dict, time_to_expired: int) -> bool:
+    if time_to_expired == -1:
+        return False
     try:
         dt = datetime.fromisoformat(collection["created_at"].replace("Z", "+00:00"))
     except Exception as e:
-        logger.error(f"Failed to parse created_at '{collection.get('created_at')}': {e}")
+        logger.error(f"Failed to parse created_at '{{collection.get('created_at')}}': {{e}}")
         return True
     return (datetime.now(timezone.utc) - dt).total_seconds() / 60 > time_to_expired
 
-
 def prepare_save_folder(collection_name: str) -> str:
-    base_dir = f"savefiles/{collection_name}"
+    base_dir = os.path.join("savefiles", collection_name)
     os.makedirs(base_dir, exist_ok=True)
     return base_dir
 
-
 def save_scraped_file(base_dir: str, url: str, content: str) -> str:
     parsed = tldextract.extract(url)
-    file_name = f"scrape_result_{parsed.domain}_{datetime.now().strftime('%Y%m%d')}.txt"
-    with open(os.path.join(base_dir, file_name), "w", encoding="utf-8") as f:
+    filename = f"scraped_file_{{parsed.domain}}_{{datetime.now().strftime('%Y%m%d')}}.txt"
+    filepath = os.path.join(base_dir, filename)
+    with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
-    return file_name
 
+    return filepath
 
-async def light_scroll(page):
-    for _ in range(random.randint(2, 5)):
-        await page.evaluate(f"window.scrollBy(0, {random.randint(200,600)})")
-        await asyncio.sleep(random.uniform(0.1, 0.25))
+async def fetch(session: aiohttp.ClientSession, url: str):
+    headers = {{"User-Agent": random.choice(HEADERS_LIST)}}
+    try:
+        async with session.get(url, headers=headers, timeout=30) as response:
+            return await response.text()
+    except Exception as e:
+        logger.error(f"Failed to extract text from URL '{{url}}': {{e}}")
+        return None
 
+def extract_text(html: str):
+    try:
+        doc = Document(html)
+        content_html = doc.summary()
+        soup = BeautifulSoup(content_html, "html.parser")
+        return soup.get_text(separator="\\n", strip=True)
+    except:
+        soup = BeautifulSoup(html, "html.parser")
+        return soup.get_text(separator="\\n", strip=True)
 
-async def scrape_url_async(url: str, browser: str):
-    context = await browser.new_context(
-        user_agent=f"Mozilla/5.0 ... Chrome/{random.randint(120,130)}.0.0.0 Safari/537.36",
-        viewport={"width": random.randint(1200,1920), "height": random.randint(700,1080)},
-        locale="en-US"
-    )
-
-    await context.add_init_script("Object.defineProperty(navigator,'webdriver',{get:()=>false})")
-
-    page = await context.new_page()
-    await page.goto(url, timeout=45000, wait_until="domcontentloaded")
-    await light_scroll(page)
-    await asyncio.sleep(random.uniform(0.2, 0.5))
-
-    text = await page.inner_text("body")
-
-    await browser.close()
-    await p.stop()
-    return text
-
+async def scrape_url(url: str, session: aiohttp.ClientSession):
+    html = await fetch(session, url)
+    if html:
+        text = await asyncio.to_thread(extract_text, html)
+        return text
+    return None
 
 async def scrape_all_urls(urls: list[str]):
-    playwright = await async_playwright().start()
-    browser = await playwright.chromium.launch(
-        headless=True,
-        args=[
-            "--disable-blink-features=AutomationControlled",
-            "--disable-infobars",
-            "--no-sandbox",
-            "--disable-dev-shm-usage"
-        ],
-    )
-    results = await asyncio.gather(*(scrape_url_async(url, browser) for url in urls), return_exceptions=True)
-    for r in results:
-        if isinstance(r, Exception):
-            logger.error(r)
-    return [r for r in results if not isinstance(r, Exception)]
+    async with aiohttp.ClientSession() as session:
+        tasks = [scrape_url(url, session) for url in urls]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return [r for r in results if r and not isinstance(r, Exception)]
 
-
-def urls_match(existing: dict, new_urls: list[str]) -> bool:
+def urls_match(existing: dict, new_urls: list[str]):
     try:
         old_urls = json.loads(existing.get("description", "[]"))
         return sorted(old_urls) == sorted(new_urls)
     except:
         return False
-
-
-def main(collection_name: str, urls: list[str], time_to_expired: int, embedder: int):
-    subprocess.run([sys.executable, "-m", "playwright", "install"], check=True)
-
+    
+def if_exists(collection_name, time_to_expired, urls):
     existing = get_collection_by_name(collection_name)
+
     if existing:
         if not is_collection_expired(existing, time_to_expired) and urls_match(existing, urls):
-            return {"status": "exists", "collection": existing}
+            return existing
         try:
-            requests.delete(f"{API_BASE}/source-collections/{existing['collection_id']}/")
+            requests.delete(f"{{API_BASE}}/source-collections/{{existing['collection_id']}}/")
         except Exception as e:
-            logger.error(f"Failed to delete collection: {e}")
+            logger.error(f"Failed to delete collection: {{e}}")
+    return False
+
+def main(urls: list[str] = {urls}):
+    collection_name = {collection_name!r}
+    time_to_expired = {time_to_expired!r}
+    embedder = {embedder!r}
+
+    existing_collection = if_exists(collection_name, time_to_expired, urls)
+    if existing_collection:
+        return existing_collection
 
     base_dir = prepare_save_folder(collection_name)
     scraped_contents = asyncio.run(scrape_all_urls(urls))
     file_names = [save_scraped_file(base_dir, url, content) for url, content in zip(urls, scraped_contents)]
-    response = create_collection(collection_name, base_dir, file_names, embedder, urls)
-
+    response = create_collection(collection_name, file_names, embedder, urls)
     wait_completed(collection_name)
 
     try:
         shutil.rmtree(base_dir)
     except Exception as e:
-        logger.error(f"Error deleting temp folder {base_dir}: {e}")
+        logger.error(f"Failed to remove folder {{base_dir}}: {{e}}")
 
-    return {"status": "created", "collection": response}
-
-args = ["test2", ["https://uk.wikipedia.org/wiki/%D0%9F%D1%80%D0%B8%D1%80%D0%BE%D0%B4%D0%BD%D0%B8%D1%87%D1%96_%D0%BD%D0%B0%D1%83%D0%BA%D0%B8", "https://pidru4niki.com/12461220/prirodoznavstvo/zarodzhennya_stanovlennya_rozvitok_prirodoznavstva", "https://pidru4niki.com/14170120/prirodoznavstvo/prirodoznavstvo_nauka_naukoviy_metod_piznannya_yogo_struktura#460", "https://osvita.ua/vnz/reports/biolog/27502/"]]
-collection_name = main(*args, time_to_expired=20, embedder=2)
-print(collection_name)
+    return response
+"""

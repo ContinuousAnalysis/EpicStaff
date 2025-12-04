@@ -122,6 +122,23 @@ class EndNode(models.Model):
         super().save(*args, **kwargs)
 
 
+class WebScraperKnowledgeNode(BaseNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="web_scraper_knowledge_node_list"
+    )
+    collection_name = models.CharField(max_length=255)
+    time_to_expired = models.IntegerField()
+    embedder = models.IntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_web_scraper_knowledge_node",
+            )
+        ]
+
+
 class Edge(models.Model):
 
     graph = models.ForeignKey(

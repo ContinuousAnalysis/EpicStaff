@@ -254,6 +254,20 @@ class SessionGraphBuilder:
             )
             self.add_node(llm_node)
 
+        for web_scraper_node_data in schema.web_scraper_knowledge_node_list:
+            web_scraper_node = WebScraperKnowledgeNode(
+                session_id=self.session_id,
+                node_name=web_scraper_node_data.node_name,
+                python_code_executor_service=self.python_code_executor_service,
+                collection_name=web_scraper_node_data.collection_name,
+                time_to_expired=web_scraper_node_data.time_to_expired,
+                embedder=web_scraper_node_data.embedder,
+                input_map=web_scraper_node_data.input_map,
+                output_variable_path=web_scraper_node_data.output_variable_path,
+                stop_event=self.stop_event,
+            )
+            self.add_node(web_scraper_node)
+
         for edge in schema.edge_list:
             self.add_edge(edge.start_key, edge.end_key)
 

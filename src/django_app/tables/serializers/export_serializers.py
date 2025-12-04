@@ -23,6 +23,7 @@ from tables.serializers.model_serializers import (
     PythonNodeSerializer,
     ConditionalEdgeSerializer,
     FileExtractorNodeSerializer,
+    WebScraperKnowledgeNodeSerializer,
     EndNodeSerializer,
 )
 from tables.serializers.utils.mixins import (
@@ -430,6 +431,7 @@ class GraphExportSerializer(GraphSerializer):
     python_node_list = PythonNodeExportSerializer(many=True)
     conditional_edge_list = ConditionalEdgeExportSerializer(many=True)
     file_extractor_node_list = FileExtractorNodeSerializer(many=True)
+    web_scraper_knowledge_node_list = WebScraperKnowledgeNodeSerializer(many=True)
     end_node_list = EndNodeSerializer(many=True, source="end_node")
     crews = serializers.SerializerMethodField()
     agents = serializers.SerializerMethodField()

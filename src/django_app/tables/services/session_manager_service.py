@@ -26,6 +26,7 @@ from tables.request_models import (
     LLMNodeData,
     PythonNodeData,
     FileExtractorNodeData,
+    WebScraperKnowledgeNodeData,
     SessionData,
 )
 
@@ -37,6 +38,7 @@ from tables.models import (
     PythonNode,
     EndNode,
     FileExtractorNode,
+    WebScraperKnowledgeNode,
     GraphOrganizationUser,
 )
 
@@ -102,6 +104,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         crew_node_list = CrewNode.objects.filter(graph=graph.pk)
         python_node_list = PythonNode.objects.filter(graph=graph.pk)
         file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
+        web_scraper_knowledge_node_list = WebScraperKnowledgeNode.objects.filter(graph=graph.pk)
         edge_list = Edge.objects.filter(graph=graph.pk)
         conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
@@ -138,6 +141,19 @@ class SessionManagerService(metaclass=SingletonMeta):
             file_extractor_node_data_list.append(
                 FileExtractorNodeData(
                     node_name=item.node_name,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                )
+            )
+
+        web_scraper_knowledge_node_data_list: list[WebScraperKnowledgeNodeData] = []
+        for item in web_scraper_knowledge_node_list:
+            web_scraper_knowledge_node_data_list.append(
+                WebScraperKnowledgeNodeData(
+                    node_name=item.node_name,
+                    collection_name=item.collection_name,
+                    time_to_expired=item.time_to_expired,
+                    embedder=item.embedder,
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
                 )
@@ -198,6 +214,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             webhook_trigger_node_data_list=webhook_trigger_node_data_list,
             python_node_list=python_node_data_list,
             file_extractor_node_list=file_extractor_node_data_list,
+            web_scraper_knowledge_node_list=web_scraper_knowledge_node_data_list,
             llm_node_list=llm_node_data_list,
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,

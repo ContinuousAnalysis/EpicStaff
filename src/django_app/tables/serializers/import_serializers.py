@@ -28,6 +28,7 @@ from tables.serializers.model_serializers import (
     ConditionalEdgeSerializer,
     StartNodeSerializer,
     FileExtractorNodeSerializer,
+    WebScraperKnowledgeNodeSerializer,
     EndNodeSerializer,
     LLMNodeSerializer,
     DecisionTableNodeSerializer,
@@ -838,6 +839,18 @@ class FileExtractorNodeImportSerializer(FileExtractorNodeSerializer):
         data = {"graph": self.context.get("graph"), **validated_data}
         return super().create(data)
 
+class WebScraperKnowledgeNodeImportSerializer(WebScraperKnowledgeNodeSerializer):
+
+    graph = None
+
+    class Meta(WebScraperKnowledgeNodeSerializer.Meta):
+        fields = None
+        exclude = ["graph"]
+        validators = []
+
+    def create(self, validated_data):
+        data = {"graph": self.context.get("graph"), **validated_data}
+        return super().create(data)
 
 class EdgeImportSerializer(EdgeSerializer):
 
@@ -963,6 +976,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
     file_extractor_node_list = FileExtractorNodeImportSerializer(
         many=True, required=False
     )
+    web_scraper_knowledge_node_list = WebScraperKnowledgeNodeImportSerializer(
+        many=True, required=False
+    )
     end_node_list = EndNodeImportSerializer(many=True, required=False)
     # llm_node_list = LLMNodeSerializer(many=True)
     # decision_table_node_list = DecisionTableNodeSerializer(many=True)
@@ -991,6 +1007,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
         end_node_list_data = validated_data.pop("end_node_list", [])
         file_extractor_node_list_data = validated_data.pop(
             "file_extractor_node_list", []
+        )
+        web_scraper_knowledge_node_list_data = validated_data.pop(
+            "web_scraper_knowledge_node_list", []
         )
         # llm_node_list_data = validated_data.pop("llm_node_list", [])
         # decision_table_node_list_data = validated_data.pop(
@@ -1081,6 +1100,15 @@ class GraphImportSerializer(serializers.ModelSerializer):
             data = self._prepare_node_data(node_data, mapped_node_names)
 
             serializer = FileExtractorNodeImportSerializer(
+                data=data, context={"graph": graph}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        for node_data in web_scraper_knowledge_node_list_data:
+            data = self._prepare_node_data(node_data, mapped_node_names)
+
+            serializer = WebScraperKnowledgeNodeImportSerializer(
                 data=data, context={"graph": graph}
             )
             serializer.is_valid(raise_exception=True)

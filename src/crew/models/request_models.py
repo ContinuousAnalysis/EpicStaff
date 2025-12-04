@@ -40,7 +40,6 @@ class EmbedderData(BaseModel):
     provider: str
     config: EmbedderConfigData
 
-
 class ToolConfigData(BaseModel):
     id: int
     llm: LLMData | None = None
@@ -268,6 +267,13 @@ class LLMNodeData(BaseModel):
     input_map: dict[str, Any]
     output_variable_path: str | None = None
 
+class WebScraperKnowledgeNodeData(BaseModel):
+    node_name: str
+    collection_name: str
+    time_to_expired: int
+    embedder: int
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
 
 class ConditionData(BaseModel):
     condition: str
@@ -317,6 +323,7 @@ class GraphData(BaseModel):
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
     llm_node_list: list[LLMNodeData] = []
+    web_scraper_knowledge_node_list: list[WebScraperKnowledgeNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
