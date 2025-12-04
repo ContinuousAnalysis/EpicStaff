@@ -757,7 +757,7 @@ export class ToolsSelectorComponent implements OnInit, OnDestroy {
     @Output() configuredToolsChange = new EventEmitter<number[]>();
     @Output() pythonCodeToolsChange = new EventEmitter<number[]>();
     @Output() mcpToolsChange = new EventEmitter<number[]>();
-
+    //test
     public builtinTools: FullToolConfig[] = [];
     public pythonTools: GetPythonCodeToolRequest[] = [];
     public mcpTools: GetMcpToolRequest[] = [];
