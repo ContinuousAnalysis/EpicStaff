@@ -1,7 +1,11 @@
 from dotdict import DotDict
 import re
+from loguru import logger
 
-def map_variables_to_input(variables: DotDict, map: dict)-> dict:
+
+def map_variables_to_input(
+    variables: DotDict, map: dict, set_missing_variables: bool = False
+) -> dict:
     """
     Map values from `variables` to a new dictionary using a mapping.
 
@@ -54,22 +58,33 @@ def map_variables_to_input(variables: DotDict, map: dict)-> dict:
                 f"`{input_key}` does not contain name `variables` for {output_key}"
             )
         keys = keys[1:]
-        
+
         value = variables
         for key in keys:
             if key.startswith("[") and key.endswith("]"):  # Handle list indices
                 index = int(key[1:-1])
                 value = value[index]
             else:
-                value = getattr(value, key)
+                try:
+                    value = getattr(value, key)
+                except AttributeError:
+                    if set_missing_variables:
+                        # end_node behavior
+                        logger.warning(
+                            f"Cannot find variable `{key}` for `{input_key}`. Setted {key} = 'not found'"
+                        )
+                        value = "not found"
+                except Exception as e:
+                    raise Exception(e)
 
         if isinstance(value, DotDict):
             value = value.model_dump()
         if isinstance(value, list):
-            converted_list = [v.model_dump() if isinstance(v, DotDict) else v for v in value]
+            converted_list = [
+                v.model_dump() if isinstance(v, DotDict) else v for v in value
+            ]
             value = converted_list
 
         output_dict[output_key] = value
 
     return output_dict
-

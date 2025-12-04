@@ -23,7 +23,7 @@ import { AgentMenuComponent } from './header-sub-menu/header-sub-menu.component'
 import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
 import { getProviderIconPath } from '../../../../../features/settings-dialog/utils/get-provider-icon';
 
-export type CardState = 'default' | 'adding' | 'removing';
+export type CardState = 'adding' | 'removing';
 
 interface SectionStates {
   goal: boolean;
@@ -60,7 +60,7 @@ export class StaffAgentCardComponent implements OnInit, OnChanges {
   @HostBinding('attr.size') @Input() size: 'small' | 'medium' | 'large' =
     'medium';
   @Input() agent!: FullAgent;
-  @Input() cardState: CardState = 'default';
+  @Input() cardState: CardState = 'removing';
 
   @Output() public addAgent = new EventEmitter<FullAgent>();
   @Output() public showAdvancedSettings = new EventEmitter<void>();

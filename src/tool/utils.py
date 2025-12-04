@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 import json
 import os
 from typing import Any, Type
-from dotenv import load_dotenv
 import yaml
 from base_models import Callable
 from pickle_encode import txt_to_obj

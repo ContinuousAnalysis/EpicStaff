@@ -1,4 +1,4 @@
-FROM ankane/pgvector:v0.5.1
+FROM docker.io/ankane/pgvector:v0.5.1
 
 
 #for django healthcheck

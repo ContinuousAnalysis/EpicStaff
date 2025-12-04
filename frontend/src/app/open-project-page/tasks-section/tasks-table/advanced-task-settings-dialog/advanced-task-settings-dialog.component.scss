@@ -71,43 +71,6 @@
                 padding-bottom: 0;
             }
 
-            .section-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                margin-bottom: 16px;
-                gap: 16px;
-
-                .section-title {
-                    font-size: 16px;
-                    color: rgba(255, 255, 255, 0.8);
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    margin: 0;
-                }
-
-                .section-title app-help-tooltip {
-                    display: inline-flex;
-                    align-items: center;
-                }
-
-                .toggle-container {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-end;
-                    gap: 6px;
-
-                    .toggle-label {
-                        font-size: 12px;
-                        color: rgba(255, 255, 255, 0.6);
-                        margin: 0;
-                        white-space: nowrap;
-                    }
-                }
-            }
-
-            // Fallback for sections without toggle
             .section-title {
                 font-size: 16px;
                 color: rgba(255, 255, 255, 0.8);
@@ -271,63 +234,75 @@
     }
 }
 
+.toggle-group {
+    margin-bottom: 16px;
+
+    .toggle-setting {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background-color: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+
+        .setting-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        mat-slide-toggle {
+            ::ng-deep {
+                .mdc-switch__track {
+                    background-color: rgba(255, 255, 255, 0.2);
+                }
+
+                .mdc-switch__handle-track {
+                    background-color: rgba(255, 255, 255, 0.3);
+                }
+
+                &.mdc-switch--checked {
+                    .mdc-switch__track {
+                        background-color: #685fff;
+                    }
+
+                    .mdc-switch__handle-track {
+                        background-color: #685fff;
+                    }
+                }
+            }
+        }
+    }
+}
+
 .json-group {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     overflow: hidden;
 }
 
-// PrimeNG ToggleSwitch custom styles
-:host ::ng-deep {
-    .custom-toggle {
-        .p-toggleswitch {
-            // Custom sizing for the toggle switch
-            width: 44px;
-            height: 24px;
+.reset-button {
+    margin-top: 12px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.8);
 
-            // Background for unchecked state
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 12px !important;
-            transition: all 0.2s ease !important;
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
 
-            &:hover {
-                background-color: rgba(255, 255, 255, 0.15) !important;
-                border-color: rgba(255, 255, 255, 0.3) !important;
-            }
-
-            // Checked state
-            &.p-toggleswitch-checked {
-                background-color: #685fff !important;
-                border-color: #685fff !important;
-
-                &:hover {
-                    background-color: #7a70ff !important;
-                    border-color: #7a70ff !important;
-                }
-            }
-
-            &:focus-visible {
-                outline: none !important;
-                box-shadow: 0 0 0 2px rgba(104, 95, 255, 0.3) !important;
-            }
-
-            // Customize the slider handle
-            .p-toggleswitch-slider {
-                &:before {
-                    background-color: white !important;
-                    border-radius: 50% !important;
-                    transition: all 0.2s ease !important;
-                    width: 18px !important;
-                    height: 18px !important;
-                    top: 2px !important;
-                    left: 2px !important;
-                }
-            }
-
-            &.p-toggleswitch-checked .p-toggleswitch-slider:before {
-                transform: translateX(20px) !important;
-            }
-        }
+    &:active {
+        background-color: rgba(255, 255, 255, 0.15);
     }
 }

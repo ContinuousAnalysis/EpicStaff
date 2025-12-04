@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Any, List, Literal, Union
-from pydantic import BaseModel, HttpUrl, model_validator, root_validator
+from typing import Any, List, Literal, Optional, Union
+from pydantic import AnyUrl, BaseModel, HttpUrl, model_validator, root_validator
 from decimal import Decimal
 
 
@@ -53,6 +53,27 @@ class ConfiguredToolData(BaseModel):
     name_alias: str
     tool_config: ToolConfigData
 
+class McpToolData(BaseModel):
+    """
+    Configuration for a FastMCP client connecting to remote MCP tools via SSE.
+    """
+
+    transport: str
+    """URL of the remote MCP server (SSE). Required."""
+    tool_name: str
+
+    timeout: Optional[float] = 30
+    """Request timeout in seconds. Recommended to set."""
+
+    auth: Optional[str] = None
+    """Authorization token or OAuth string, if the server requires it."""
+
+    init_timeout: Optional[float] = 10
+    """Timeout for session initialization. Optional, default is 10 seconds."""
+
+    class Config:
+        extra = "ignore"
+
 
 class PythonCodeData(BaseModel):
     venv_name: str
@@ -72,7 +93,7 @@ class PythonCodeToolData(BaseModel):
 
 class BaseToolData(BaseModel):
     unique_name: str
-    data: PythonCodeToolData | ConfiguredToolData
+    data: PythonCodeToolData | ConfiguredToolData | McpToolData
 
 
 class RunToolParamsModel(BaseModel):
@@ -157,6 +178,7 @@ class TaskData(BaseModel):
     name: str
     agent_id: int
     instructions: str
+    knowledge_query: str | None
     expected_output: str
     order: int = 1
     human_input: bool
@@ -219,6 +241,12 @@ class PythonNodeData(BaseModel):
     output_variable_path: str | None = None
 
 
+class FileExtractorNodeData(BaseModel):
+    node_name: str
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
 class LLMNodeData(BaseModel):
     node_name: str
     llm_data: LLMData
@@ -246,6 +274,10 @@ class DecisionTableNodeData(BaseModel):
     next_error_node: str | None = None
 
 
+class EndNodeData(BaseModel):
+    output_map: dict[str, Any]
+
+
 class EdgeData(BaseModel):
     start_key: str
     end_key: str
@@ -257,16 +289,22 @@ class ConditionalEdgeData(BaseModel):
     then: str | None
     input_map: dict[str, Any]
 
+class WebhookTriggerNodeData(BaseModel):
+    node_name: str
+    python_code: PythonCodeData
 
 class GraphData(BaseModel):
     name: str
     crew_node_list: list[CrewNodeData] = []
+    webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []
     python_node_list: list[PythonNodeData] = []
+    file_extractor_node_list: list[FileExtractorNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
-    entry_point: str
+    entrypoint: str
+    end_node: EndNodeData | None
 
 
 class GraphSessionMessageData(BaseModel):
@@ -276,3 +314,26 @@ class GraphSessionMessageData(BaseModel):
     timestamp: str
     message_data: dict
     uuid: str
+    
+class KnowledgeSearchMessage(BaseModel):
+    collection_id: int
+    uuid: str
+    query: str
+    search_limit: int | None
+    similarity_threshold: float | None
+
+class ChunkDocumentMessage(BaseModel):
+    document_id: int
+
+class ChunkDocumentMessageResponse(BaseModel):
+    document_id: int
+    success: bool
+    message: str | None
+
+class StopSessionMessage(BaseModel):
+    session_id: int
+
+
+class WebhookEventData(BaseModel):
+    path: str
+    payload: dict

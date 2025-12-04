@@ -4,7 +4,7 @@ export const DEFAULT_TABLE_NODE_PORTS: BasePort[] = [
   {
     port_type: 'input',
     role: 'table-in',
-    multiple: false,
+    multiple: true,
     label: 'In',
     allowedConnections: [
       'project-out',
@@ -13,6 +13,7 @@ export const DEFAULT_TABLE_NODE_PORTS: BasePort[] = [
       'table-out',
       'start-start',
       'llm-out-right',
+      'webhook-trigger-out',
     ],
     position: 'left',
     color: '#00aaff',
@@ -28,6 +29,9 @@ export const DEFAULT_TABLE_NODE_PORTS: BasePort[] = [
       'edge-in',
       'table-in',
       'llm-out-left',
+      'end-in',
+      'webhook-trigger-in',
+      'file-extractor-in',
     ],
     position: 'right',
     color: '#00aaff',

@@ -8,7 +8,7 @@
         }
     },
     "dependencies": [
-      "langchain_community", "langchain_core"
+      "langchain_community==0.3", "langchain_core==0.3.63"
     ]
   },
   {
@@ -202,7 +202,7 @@
         "class_name": "WolframAlphaQueryRun",
         "kwargs": {
           "api_wrapper": {
-            "package": "langchain_community",
+            "package": "langchain_community==0.3",
             "callable_name": "WolframAlphaAPIWrapper",
             "kwargs": {
               "wolfram_alpha_appid": "123"
@@ -212,7 +212,7 @@
       }
     },
     "dependencies": [
-      "wolframalpha", "langchain", "langchain_community"
+      "wolframalpha", "langchain", "langchain_community==0.3"
     ]
   },
   {
@@ -228,7 +228,7 @@
         }
     },
     "dependencies": [
-      "wikipedia", "langchain_community"
+      "wikipedia", "langchain_community==0.3"
     ]
   },
   {
@@ -239,7 +239,7 @@
         }
     },
     "dependencies": [
-      "langchain_community", "duckduckgo-search"
+      "langchain_community==0.3", "duckduckgo-search"
     ]
   },
   {

@@ -2,8 +2,8 @@ services:
   django_app:
     image: django_app
     build:
-      context: ./django_app
-      dockerfile: Dockerfile.dj
+      context: .
+      dockerfile: ./django_app/Dockerfile.dj
     command: ./entrypoint.sh
     container_name: django_app
     ports:
@@ -29,6 +29,8 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - DB_NAME=${POSTGRES_DB}      
       
+      - WEBHOOK_USE_TUNNEL=${USE_TUNNEL}
+      - WEBHOOK_TUNNEL=${WEBHOOK_TUNNEL}
 
       - GUNICORN_WORKERS=${GUNICORN_WORKERS}
       - GUNICORN_THREADS=${GUNICORN_THREADS}
@@ -40,7 +42,9 @@ services:
     depends_on:
       crewdb:
         condition: service_started
-    
+      redis:
+        condition: service_healthy
+  
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/ht/"]
       interval: 30s
@@ -78,7 +82,7 @@ services:
       manager:
         condition: service_started
       redis:
-        condition: service_started
+        condition: service_healthy
       knowledge:
         condition: service_started
       django_app:
@@ -117,7 +121,7 @@ services:
       crewdb:
         condition: service_healthy
       redis:
-        condition: service_started      
+        condition: service_healthy      
 
   crewdb:
     image: crewdb
@@ -231,7 +235,9 @@ services:
       crewdb:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   sandbox:
     image: sandbox
@@ -283,7 +289,7 @@ services:
       crewdb:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
 
   frontend:
     image: frontend
@@ -297,7 +303,26 @@ services:
      - frontend-network
     volumes:
      - ../frontend-config/frontend-config.json:/usr/share/nginx/html/config.json:ro
-
+  
+  webhook:
+    image: webhook
+    container_name: webhook
+    build:
+      context: .
+      dockerfile: ./webhook/Dockerfile
+    ports:
+      - "8009:8000"
+    environment:
+      - USE_TUNNEL=${USE_TUNNEL}
+      - WEBHOOK_TUNNEL=${WEBHOOK_TUNNEL}
+      - WEBHOOK_AUTH=${WEBHOOK_AUTH}
+      - WEBHOOK_PORT=${WEBHOOK_PORT}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}  
+    depends_on:
+      - redis
+    networks:
+      - backend-network
 volumes:
   sandbox_venvs:
     external: true

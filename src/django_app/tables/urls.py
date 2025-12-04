@@ -2,15 +2,19 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from tables.views.model_view_sets import (
+    ChunkViewSet,
     ConditionGroupModelViewSet,
     ConditionModelViewSet,
     ConditionalEdgeViewSet,
     CrewNodeViewSet,
     DecisionTableNodeModelViewSet,
     EdgeViewSet,
+    EndNodeModelViewSet,
     GraphLightViewSet,
     GraphViewSet,
+    McpToolViewSet,
     PythonNodeViewSet,
+    FileExtractorNodeViewSet,
     LLMNodeViewSet,
     StartNodeModelViewSet,
     RealtimeConfigModelViewSet,
@@ -41,12 +45,20 @@ from tables.views.model_view_sets import (
     RealtimeModelViewSet,
     RealtimeAgentViewSet,
     RealtimeAgentChatViewSet,
+    OrganizationViewSet,
+    OrganizationUserViewSet,
+    GraphOrganizationViewSet,
+    GraphOrganizationUserViewSet,
+    WebhookTriggerNodeViewSet,
+    WebhookTriggerViewSet,
 )
 
 from tables.views.views import (
     AnswerToLLM,
     EnvironmentConfig,
     InitRealtimeAPIView,
+    ProcessDocumentChunkingView,
+    ProcessCollectionEmbeddingView,
     RunPythonCodeAPIView,
     ToolListRetrieveUpdateGenericViewSet,
     SessionViewSet,
@@ -97,8 +109,10 @@ router.register(r"sources", DocumentMetadataViewSet)
 router.register(r"graphs", GraphViewSet, basename="graphs")
 router.register(r"crewnodes", CrewNodeViewSet)
 router.register(r"pythonnodes", PythonNodeViewSet)
+router.register(r"file-extractor-nodes", FileExtractorNodeViewSet)
 router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
+router.register(r"endnodes", EndNodeModelViewSet)
 
 router.register(r"edges", EdgeViewSet)
 router.register(r"conditionaledges", ConditionalEdgeViewSet)
@@ -118,13 +132,18 @@ router.register(
 router.register(r"realtime-session-items", RealtimeSessionItemViewSet)
 router.register(r"realtime-agents", RealtimeAgentViewSet)
 router.register(r"realtime-agent-chats", RealtimeAgentChatViewSet)
-
-
 router.register(r"decision-table-node", DecisionTableNodeModelViewSet)
-router.register(r"condition-group", ConditionGroupModelViewSet)
-router.register(r"condition", ConditionModelViewSet)
 
 router.register(r"sessions", SessionViewSet, basename="session")
+router.register(r"mcp-tools", McpToolViewSet)
+router.register(r"organizations", OrganizationViewSet)
+router.register(r"organization-users", OrganizationUserViewSet)
+router.register(r"graph-organizations", GraphOrganizationViewSet)
+router.register(r"graph-organization-users", GraphOrganizationUserViewSet)
+router.register(r"document-chunks", ChunkViewSet)
+router.register(r"webhook-trigger-nodes", WebhookTriggerNodeViewSet)
+router.register(r"webhook-triggers", WebhookTriggerViewSet)
+
 
 urlpatterns = [
     path("", include(router.urls)),
@@ -203,5 +222,15 @@ urlpatterns = [
         "run-session/subscribe/<int:session_id>/swagger/",
         RunSessionSSEViewSwagger.as_view(),
         name="run-session-subscribe-swagger",
+    ),
+    path(
+        "process-document-chunking/",
+        ProcessDocumentChunkingView.as_view(),
+        name="process-document-chunking",
+    ),
+    path(
+        "process-collection-embedding/",
+        ProcessCollectionEmbeddingView.as_view(),
+        name="process-collection-embedding",
     ),
 ]

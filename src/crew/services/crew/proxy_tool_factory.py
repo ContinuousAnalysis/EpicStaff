@@ -1,17 +1,18 @@
+import concurrent.futures
+
 import time
 from typing import Any, Type
 from crewai.tools.base_tool import Tool
-from models.request_models import CodeResultData, CodeTaskData
-from services.redis_service import RedisService
+from services.graph.events import StopEvent
 from models.response_models import ToolResponse
 from models.request_models import (
+    McpToolData,
     PythonCodeToolData,
     ConfiguredToolData,
     ToolInitConfigurationModel,
 )
 from crewai.tools import BaseTool
 import requests
-from pydantic import BaseModel
 from services.schema_converter.converter import generate_model_from_schema
 from services.pickle_encode import txt_to_obj
 from loguru import logger
@@ -33,10 +34,12 @@ class ProxyToolFactory:
         self.loop = asyncio.get_event_loop()
 
     def create_python_code_proxy_tool(
-        self, python_code_tool_data: PythonCodeToolData, global_kwargs: dict[str, Any]
-    ):
+        self,
+        python_code_tool_data: PythonCodeToolData,
+        global_kwargs: dict[str, Any],
+        stop_event: StopEvent,
+    ) -> Tool:
         args_schema = generate_model_from_schema(python_code_tool_data.args_schema)
-        args_schema.model_rebuild()
         name = python_code_tool_data.name
         description = python_code_tool_data.description
 
@@ -48,6 +51,7 @@ class ProxyToolFactory:
                     python_code_data=python_code_tool_data.python_code,
                     inputs=kwargs,
                     additional_global_kwargs=global_kwargs,
+                    stop_event=stop_event,
                 ),
                 self.loop,
             )
@@ -62,7 +66,11 @@ class ProxyToolFactory:
             name=name, description=description, args_schema=args_schema, func=_run
         )
 
-    def create_proxy_tool(self, tool_data: ConfiguredToolData) -> Type[BaseTool]:
+    def create_proxy_tool(
+        self,
+        tool_data: ConfiguredToolData,
+        stop_event: StopEvent | None = None,
+    ) -> Tool:
 
         tool_init_configuration = None
         if tool_data.tool_config is not None:
@@ -73,13 +81,13 @@ class ProxyToolFactory:
             json=ToolInitConfigurationModel(
                 tool_init_configuration=tool_init_configuration
             ).model_dump(),
+            stop_event=stop_event,
         )
         data_txt = resp.json()["classdata"]
         data: dict = txt_to_obj(data_txt)
         data["args_schema"] = generate_model_from_schema(
             data["args_schema"]
         )  # TODO: rename
-        data["args_schema"].model_rebuild()
 
         logger.info(data)
 
@@ -98,7 +106,9 @@ class ProxyToolFactory:
             logger.info(f"kwargs = {kw}")
 
             return proxy_tool_factory.run_tool_in_container(
-                tool_data=tool_data, run_kwargs=kw
+                tool_data=tool_data,
+                run_kwargs=kw,
+                stop_event=stop_event,
             )
 
         return Tool(
@@ -112,46 +122,50 @@ class ProxyToolFactory:
         self,
         tool_data: ConfiguredToolData,
         run_kwargs: dict[str, Any],
+        stop_event: StopEvent | None = None,
     ) -> str:
 
-        response = requests.post(
+        response = self.post_data_with_retry(
             url=f"http://{self.host}:{self.port}/tool/{tool_data.name_alias}/run",
             json={
                 "tool_config": tool_data.tool_config.model_dump(),
                 "run_kwargs": run_kwargs,
             },
+            retries=3,
+            stop_event=stop_event,
         )
 
         return ToolResponse.model_validate(response.json()).data
 
-    # TODO: make async
-    def fetch_data_with_retry(self, url, retries=15, delay=3):
-        for attempt in range(retries):
-            try:
-                print(f"Attempt {attempt + 1} to fetch data...")
-                resp = requests.get(url)
-                if resp.status_code == 200:
-                    return resp
-            except requests.exceptions.RequestException as e:
-                print(f"Request failed: {e}")
-            # Wait before retrying
-            if attempt < retries - 1:
-                time.sleep(delay)
-        raise Exception(f"Failed to fetch data after {retries} attempts.")
-
-    def post_data_with_retry(self, url, json=None, retries=15, delay=3):
+    def post_data_with_retry(
+        self, url, json=None, retries=15, delay=3, stop_event: StopEvent | None = None
+    ):
         if json is None:
-            json = dict()
+            json = {}
 
         for attempt in range(retries):
             try:
-                print(f"Attempt {attempt + 1} to fetch data...")
-                resp = requests.post(url=url, json=json)
-                if resp.status_code == 200:
-                    return resp
+                logger.info(f"Attempt {attempt + 1} to post data...")
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(requests.post, url, json=json)
+
+                    while True:
+                        if stop_event is not None:
+                            stop_event.check_stop()
+
+                        try:
+                            resp = future.result(timeout=0.01)
+                            if resp.status_code == 200:
+                                return resp
+                            else:
+                                logger.error(f"Bad status: {resp.status_code}")
+                                break
+                        except concurrent.futures.TimeoutError:
+                            continue
+
             except requests.exceptions.RequestException as e:
-                print(f"Request failed: {e}")
-            # Wait before retrying
+                logger.error(f"Request failed: {e}")
             if attempt < retries - 1:
                 time.sleep(delay)
+
         raise Exception(f"Failed to post data after {retries} attempts.")

@@ -1,17 +1,20 @@
 import json
-from tables.exceptions import GraphEntryPointException
+from tables.validators.end_node_validator import EndNodeValidator
+from tables.exceptions import EndNodeValidationError, GraphEntryPointException
 from tables.models.graph_models import (
     ConditionalEdge,
     DecisionTableNode,
     GraphSessionMessage,
     LLMNode,
     StartNode,
+    WebhookTriggerNode,
 )
 
 from utils.singleton_meta import SingletonMeta
 from utils.logger import logger
 from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
+from tables.validators.file_extractor_node_validator import FileExtractorNodeValidator
 
 from tables.request_models import (
     ConditionalEdgeData,
@@ -22,6 +25,7 @@ from tables.request_models import (
     GraphSessionMessageData,
     LLMNodeData,
     PythonNodeData,
+    FileExtractorNodeData,
     SessionData,
 )
 
@@ -31,6 +35,9 @@ from tables.models import (
     Edge,
     Graph,
     PythonNode,
+    EndNode,
+    FileExtractorNode,
+    GraphOrganizationUser,
 )
 
 
@@ -43,16 +50,14 @@ class SessionManagerService(metaclass=SingletonMeta):
     ) -> None:
         self.redis_service = redis_service
         self.converter_service = converter_service
+        self.file_extractor_node_validator = FileExtractorNodeValidator()
+        self.end_node_validator: EndNodeValidator = EndNodeValidator()
 
     def get_session(self, session_id: int) -> Session:
         return Session.objects.get(id=session_id)
 
     def stop_session(self, session_id: int) -> None:
-        session: Session = self.get_session(session_id=session_id)
-        # TODO: Send notify to redis channel to stop container
-
-        session.status = Session.SessionStatus.END
-        session.save()
+        self.redis_service.publish_stop_session(session_id=session_id)
 
     def get_session_status(self, session_id: int) -> Session.SessionStatus:
         session: Session = self.get_session(session_id=session_id)
@@ -62,23 +67,29 @@ class SessionManagerService(metaclass=SingletonMeta):
         self,
         graph_id: int,
         variables: dict | None = None,
+        username: str | None = None,
+        entrypoint: str | None = None,
     ) -> Session:
 
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
 
-        if variables is not None:
-            pass
-        elif start_node.variables is not None:
-            variables = start_node.variables
-        else:
+        if variables is None:
             variables = dict()
 
+        if variables and start_node.variables:
+            variables = {**start_node.variables, **variables}
+        elif start_node.variables:
+            variables = start_node.variables
+
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
+        graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
         session = Session.objects.create(
             graph_id=graph_id,
             status=Session.SessionStatus.PENDING,
             variables=variables,
             time_to_live=time_to_live,
+            graph_user=graph_user,
+            entrypoint=entrypoint,
         )
         return session
 
@@ -90,11 +101,18 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         crew_node_list = CrewNode.objects.filter(graph=graph.pk)
         python_node_list = PythonNode.objects.filter(graph=graph.pk)
+        file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
         edge_list = Edge.objects.filter(graph=graph.pk)
         conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
+        webhook_trigger_node_list = WebhookTriggerNode.objects.filter(graph=graph.pk)
+
         crew_node_data_list: list[CrewNodeData] = []
+        if file_extractor_node_list:
+            self.file_extractor_node_validator.validate_file_extractor_nodes(
+                file_extractor_node_list
+            )
 
         for item in crew_node_list:
 
@@ -107,6 +125,23 @@ class SessionManagerService(metaclass=SingletonMeta):
             python_node_data_list.append(
                 self.converter_service.convert_python_node_to_pydantic(python_node=item)
             )
+        webhook_trigger_node_data_list: list[PythonNodeData] = []
+        for item in webhook_trigger_node_list:
+            webhook_trigger_node_data_list.append(
+                self.converter_service.convert_webhook_trigger_node_to_pydantic(
+                    webhook_trigger_node=item
+                )
+            )
+
+        file_extractor_node_data_list: list[FileExtractorNodeData] = []
+        for item in file_extractor_node_list:
+            file_extractor_node_data_list.append(
+                FileExtractorNodeData(
+                    node_name=item.node_name,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                )
+            )
 
         llm_node_data_list: list[LLMNodeData] = []
 
@@ -117,21 +152,26 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         edge_data_list: list[EdgeData] = []
 
+        # If entrypoint is set for session than use it. If not, than use entrypoint from edges.
+        entrypoint = session.entrypoint
+
         for item in edge_list:
+            if item.start_key == "__start__":
+                if entrypoint is None:
+                    entrypoint = item.end_key
+                continue
             edge_data_list.append(
                 EdgeData(start_key=item.start_key, end_key=item.end_key)
             )
+
+        if entrypoint is None:
+            raise GraphEntryPointException()
 
         conditional_edge_data_list: list[ConditionalEdgeData] = []
         for item in conditional_edge_list:
             conditional_edge_data_list.append(
                 self.converter_service.convert_conditional_edge_to_pydantic(item)
             )
-
-        start_edge = Edge.objects.filter(start_key="__start__", graph=graph).first()
-
-        if start_edge is None:
-            raise GraphEntryPointException()
 
         decision_table_node_data_list: list[DecisionTableNodeData] = []
         for decision_table_node_list_item in decision_table_node_list:
@@ -141,17 +181,29 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
             decision_table_node_data_list.append(decision_table_node_data)
+        
+        end_node = self.end_node_validator.validate(graph_id=graph.pk)
+        
+        # TODO: remove validation
+        if end_node is not None:
+            end_node_data = self.converter_service.convert_end_node_to_pydantic(
+                end_node=end_node
+            )
+        else:
+            end_node_data = None
 
-        entry_point = start_edge.end_key
         graph_data = GraphData(
             name=graph.name,
             crew_node_list=crew_node_data_list,
+            webhook_trigger_node_data_list=webhook_trigger_node_data_list,
             python_node_list=python_node_data_list,
+            file_extractor_node_list=file_extractor_node_data_list,
             llm_node_list=llm_node_data_list,
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,
             decision_table_node_list=decision_table_node_data_list,
-            entry_point=entry_point,
+            entrypoint=entrypoint,
+            end_node=end_node_data,
         )
         session_data = SessionData(
             id=session.pk, graph=graph_data, initial_state=session.variables
@@ -161,13 +213,22 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         return session_data
 
-    def run_session(self, graph_id: int, variables: dict | None = None) -> int:
+    def run_session(
+        self,
+        graph_id: int,
+        variables: dict | None = None,
+        username: str | None = None,
+        entrypoint: str | None = None,
+    ) -> int:
+
         logger.info(f"'run_session' got variables: {variables}")
 
         # Choose to use variables from previous flow or left 'variables' param None
         variables = self.choose_variables(graph_id, variables)
 
-        session: Session = self.create_session(graph_id=graph_id, variables=variables)
+        session: Session = self.create_session(
+            graph_id=graph_id, variables=variables, username=username, entrypoint=entrypoint,
+        )
         session_data: SessionData = self.create_session_data(session=session)
 
         session.graph_schema = session_data.graph.model_dump()

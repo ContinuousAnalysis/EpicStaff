@@ -1,10 +1,9 @@
+from typing import Any
 from django.utils import timezone
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
 
-from tables.models import (
-    CrewSessionMessage,
-)
+from tables.models import CrewSessionMessage, GraphOrganizationUser
 
 
 class Session(models.Model):
@@ -14,6 +13,7 @@ class Session(models.Model):
         WAIT_FOR_USER = "wait_for_user"
         ERROR = "error"
         END = "end"
+        STOP = "stop"
         EXPIRED = "expired"
 
     graph = models.ForeignKey("Graph", on_delete=models.CASCADE, null=True)
@@ -29,6 +29,10 @@ class Session(models.Model):
     variables = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=timezone.now)
     graph_schema = models.JSONField(default=dict, encoder=DjangoJSONEncoder)
+    graph_user = models.ForeignKey(
+        GraphOrganizationUser, on_delete=models.SET_NULL, default=None, null=True
+    )
+    entrypoint = models.CharField(null=True, default=None)
 
     def save(self, *args, **kwargs):
         now = timezone.now()
@@ -47,6 +51,7 @@ class Session(models.Model):
                 self.SessionStatus.END,
                 self.SessionStatus.ERROR,
                 self.SessionStatus.EXPIRED,
+                self.SessionStatus.STOP,
             }
             and not self.finished_at
         ):
@@ -54,6 +59,10 @@ class Session(models.Model):
 
         super().save(*args, **kwargs)
 
+    def delete(self, using=None, keep_parents=False):
+
+        result = super().delete(using, False)
+        return result
     class Meta:
         get_latest_by = ["id"]
 

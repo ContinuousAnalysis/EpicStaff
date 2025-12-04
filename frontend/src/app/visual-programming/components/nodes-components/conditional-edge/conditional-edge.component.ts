@@ -11,14 +11,12 @@ import { CommonModule } from '@angular/common';
       [attr.height]="height"
       [attr.viewBox]="'0 0 ' + width + ' ' + height"
     >
-      <!-- Use a path to create a diamond with rounded corners -->
       <path
         [attr.d]="roundedDiamondPath"
-        [attr.fill]="fillColor"
-        [attr.stroke]="strokeColor"
+        [style.fill]="'var(--color-nodes-background)'"
+        [style.stroke]="'var(--edge-node-border-color)'"
         stroke-width="2"
       ></path>
-      <!-- Place the icon and text inside the diamond -->
       <foreignObject
         [attr.x]="contentX"
         [attr.y]="contentY"
@@ -62,29 +60,22 @@ import { CommonModule } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConditionalEdgeNodeComponent {
-  // Dynamic sizing inputs (you can override these from the parent)
   @Input() width: number = 300;
   @Input() height: number = 180;
-  @Input() fillColor: string = 'var(--vp-node-color)';
-  @Input() strokeColor: string = 'var(--vp-node-border-color)';
-  @Input() cornerRadius: number = 10; // adjustable corner radius
 
-  // Compute a rounded diamond path
+  @Input() cornerRadius: number = 10;
+
   get roundedDiamondPath(): string {
     const w = this.width;
     const h = this.height;
-    // Ensure the radius is not too large for the given dimensions
+
     const r = Math.min(this.cornerRadius, w / 2, h / 2);
 
-    // Define the four diamond corner points
     const top = { x: w / 2, y: 0 };
     const right = { x: w, y: h / 2 };
     const bottom = { x: w / 2, y: h };
     const left = { x: 0, y: h / 2 };
 
-    // Calculate offsets along the edges for the rounded corners.
-    // Here we approximate by moving r units along the edge direction.
-    // For the top corner:
     const topRightOffset = {
       x: top.x + (right.x - top.x) * (r / Math.hypot(w / 2, h / 2)),
       y: top.y + (right.y - top.y) * (r / Math.hypot(w / 2, h / 2)),
@@ -94,7 +85,6 @@ export class ConditionalEdgeNodeComponent {
       y: top.y + (left.y - top.y) * (r / Math.hypot(w / 2, h / 2)),
     };
 
-    // Similar approximations for the other corners:
     const rightTopOffset = {
       x: right.x + (top.x - right.x) * (r / Math.hypot(w / 2, h / 2)),
       y: right.y + (top.y - right.y) * (r / Math.hypot(w / 2, h / 2)),
@@ -122,7 +112,6 @@ export class ConditionalEdgeNodeComponent {
       y: left.y + (top.y - left.y) * (r / Math.hypot(w / 2, h / 2)),
     };
 
-    // Build the path using quadratic curves for rounded corners.
     return `
       M ${topLeftOffset.x} ${topLeftOffset.y}
       Q ${top.x} ${top.y} ${topRightOffset.x} ${topRightOffset.y}
@@ -136,7 +125,6 @@ export class ConditionalEdgeNodeComponent {
     `;
   }
 
-  // Center the foreignObject content
   get contentX(): number {
     return this.width * 0.18;
   }

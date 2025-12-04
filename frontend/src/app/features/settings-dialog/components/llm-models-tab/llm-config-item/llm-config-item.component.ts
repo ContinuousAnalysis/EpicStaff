@@ -69,4 +69,12 @@ export class LlmConfigItemComponent {
     public onDelete(): void {
         this.deleteClicked.emit(this.config.id);
     }
+
+    public getFormattedTemperature(): string {
+        if (this.config && typeof this.config.temperature === 'number') {
+            const temp = Math.round(this.config.temperature * 100);
+            return `${temp}°`;
+        }
+        return 'N/A';
+    }
 }

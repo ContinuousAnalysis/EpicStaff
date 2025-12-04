@@ -1,8 +1,11 @@
 import os
+from typing import Optional
 from textwrap import dedent
 from typing import Any, Type
+from services.graph.events import StopEvent
 from crewai import Agent, Crew, Task, LLM
 from langchain_core.tools import BaseTool
+from langgraph.types import StreamWriter
 from utils.parse_llm import parse_llm, parse_memory_llm, parse_memory_embedder
 from callbacks.session_callback_factory import CrewCallbackFactory
 from services.schema_converter.converter import generate_model_from_schema
@@ -14,6 +17,7 @@ from models.request_models import (
     AgentData,
     ConfiguredToolData,
     CrewData,
+    McpToolData,
     PythonCodeToolData,
     TaskData,
 )
@@ -21,6 +25,7 @@ from models.request_models import (
 from settings import PGVECTOR_MEMORY_CONFIG
 import copy
 from services.crew.proxy_tool_factory import ProxyToolFactory
+from services.crew.mcp_tool_factory import CrewaiMcpToolFactory
 from loguru import logger
 
 
@@ -32,7 +37,7 @@ class CrewParserService(metaclass=SingletonMeta):
         manager_port: int,
         redis_service: RedisService,
         python_code_executor_service: RunPythonCodeService,
-        knowledge_search_service: KnowledgeSearchService,
+        mcp_tool_factory: CrewaiMcpToolFactory,
     ):
         self.redis_service = redis_service
 
@@ -41,7 +46,7 @@ class CrewParserService(metaclass=SingletonMeta):
             port=manager_port,
             python_code_executor_service=python_code_executor_service,
         )
-        self.knowledge_search_service = knowledge_search_service
+        self.mcp_tool_factory = mcp_tool_factory
 
     def parse_agent(
         self,
@@ -49,7 +54,13 @@ class CrewParserService(metaclass=SingletonMeta):
         step_callback: Any,
         wait_for_user_callback: Any,
         inputs: dict[str, Any],
+        stop_event: StopEvent,
+        node_name: str,
+        session_id: int,
+        crew_id: int,
+        execution_order: int,
         tool_list: list[BaseTool] | None = None,
+        stream_writer: Optional[StreamWriter] = None,
     ) -> Agent:
 
         llm = None
@@ -60,15 +71,26 @@ class CrewParserService(metaclass=SingletonMeta):
                 )
             except Exception as e:
                 logger.warning(f"Cannot log agent temperature")
-            llm = parse_llm(agent_data.llm)
+            llm = parse_llm(agent_data.llm, stop_event=stop_event)
 
         if tool_list is None:
             tool_list = []
 
         function_calling_llm = None
         if agent_data.function_calling_llm is not None:
-            function_calling_llm = parse_llm(agent_data.function_calling_llm)
+            function_calling_llm = parse_llm(
+                agent_data.function_calling_llm, stop_event=stop_event
+            )
 
+        knowledge_search_service = KnowledgeSearchService(
+            redis_service=self.redis_service,
+            session_id=session_id,
+            node_name=node_name,
+            crew_id=crew_id,
+            agent_id=agent_data.id,
+            execution_order=execution_order,
+            stream_writer=stream_writer,
+        )
         agent_config = {
             "role": agent_data.role,
             "goal": agent_data.goal,
@@ -87,10 +109,14 @@ class CrewParserService(metaclass=SingletonMeta):
             "ask_human_input_callback": wait_for_user_callback,
             "step_callback": step_callback,
             "knowledge_collection_id": agent_data.knowledge_collection_id,
-            "search_knowledges": self.knowledge_search_service.search_knowledges,
+            "search_knowledges": knowledge_search_service.search_knowledges,
             "search_limit": agent_data.search_limit,
             "similarity_threshold": agent_data.similarity_threshold,
+            "stop_event": stop_event,
         }
+
+        if not tool_list:
+            agent_config["tool_choice"] = "none"
 
         return Agent(**agent_config)
 
@@ -105,13 +131,13 @@ class CrewParserService(metaclass=SingletonMeta):
         output_model = None
         if task_data.output_model is not None:
             output_model = generate_model_from_schema(task_data.output_model)
-            output_model.model_rebuild()
         tools = [
             tool_map[unique_name] for unique_name in task_data.tool_unique_name_list
         ]
         return Task(
             name=task_data.name,
             description=task_data.instructions,
+            knowledge_query=task_data.knowledge_query,
             agent=agent,
             expected_output=task_data.expected_output,
             human_input=task_data.human_input,
@@ -123,12 +149,16 @@ class CrewParserService(metaclass=SingletonMeta):
             tools=tools,
         )
 
-    def parse_crew(
+    async def parse_crew(
         self,
         crew_data: CrewData,
         session_id: int,
         crew_callback_factory: CrewCallbackFactory,
+        stop_event: StopEvent,
+        node_name: str,
+        execution_order: int,
         inputs: dict[str, Any] | None = None,
+        stream_writer: Optional[StreamWriter] = None,
         global_kwargs: dict[str, Any] | None = None,
     ) -> Crew:
         if inputs is None:
@@ -148,6 +178,7 @@ class CrewParserService(metaclass=SingletonMeta):
             "knowledge_collection_id": crew_data.knowledge_collection_id,
             "search_limit": crew_data.search_limit,
             "similarity_threshold": crew_data.similarity_threshold,
+            "stop_event": stop_event,
         }
 
         if crew_data.memory:
@@ -180,20 +211,25 @@ class CrewParserService(metaclass=SingletonMeta):
         for base_tool_data in crew_data.tools:
 
             if isinstance(base_tool_data.data, PythonCodeToolData):
-                callback = self.proxy_tool_factory.create_python_code_proxy_tool(
+                tool = self.proxy_tool_factory.create_python_code_proxy_tool(
                     python_code_tool_data=base_tool_data.data,
                     global_kwargs=global_kwargs,
+                    stop_event=stop_event,
                 )
             elif isinstance(base_tool_data.data, ConfiguredToolData):
-                callback = self.proxy_tool_factory.create_proxy_tool(
-                    tool_data=base_tool_data.data,
+                tool = self.proxy_tool_factory.create_proxy_tool(
+                    tool_data=base_tool_data.data, stop_event=stop_event
+                )
+            elif isinstance(base_tool_data.data, McpToolData):
+                tool = await self.mcp_tool_factory.create(
+                    tool_data=base_tool_data.data, stop_event=stop_event
                 )
             else:
                 raise TypeError(
                     f"Tool with type {type(base_tool_data.data)} is not supported."
                 )
 
-            tool_map[base_tool_data.unique_name] = callback
+            tool_map[base_tool_data.unique_name] = tool
 
         agent_data_list: list[AgentData] = crew_data.agents
 
@@ -206,6 +242,7 @@ class CrewParserService(metaclass=SingletonMeta):
 
             id_agent_map[agent_data.id] = self.parse_agent(
                 agent_data,
+                stop_event=stop_event,
                 step_callback=crew_callback_factory.get_step_callback(
                     agent_id=agent_data.id,
                 ),
@@ -216,9 +253,15 @@ class CrewParserService(metaclass=SingletonMeta):
                     agent_knowledge_collection_id=agent_data.knowledge_collection_id,
                     agent_similarity_threshold=agent_data.similarity_threshold,
                     agent_search_limit=agent_data.search_limit,
+                    stop_event=stop_event,
                 ),
                 inputs=inputs,
                 tool_list=tool_list,
+                session_id=session_id,
+                node_name=node_name,
+                crew_id=crew_data.id,
+                execution_order=execution_order,
+                stream_writer=stream_writer,
             )
         crew_config["agents"] = id_agent_map.values()
 
@@ -228,10 +271,14 @@ class CrewParserService(metaclass=SingletonMeta):
             crew_config["embedder"] = embedder.model_dump(exclude_none=True)
 
         if crew_data.manager_llm:
-            crew_config["manager_llm"] = parse_llm(llm=crew_data.manager_llm)
+            crew_config["manager_llm"] = parse_llm(
+                llm=crew_data.manager_llm, stop_event=stop_event
+            )
 
         if crew_data.planning_llm:
-            crew_config["planning_llm"] = parse_llm(llm=crew_data.planning_llm)
+            crew_config["planning_llm"] = parse_llm(
+                llm=crew_data.planning_llm, stop_event=stop_event
+            )
 
         task_list_data: list[TaskData] = crew_data.tasks
         task_list_data.sort(key=lambda item: int(item.order))
@@ -261,7 +308,7 @@ class CrewParserService(metaclass=SingletonMeta):
         # add context
         # TODO: add knowledge collection here also
         crew_config["manager_ask_human_input_callback"] = (
-            crew_callback_factory.get_wait_for_user_callback()
+            crew_callback_factory.get_wait_for_user_callback(stop_event=stop_event)
         )
 
         return Crew(

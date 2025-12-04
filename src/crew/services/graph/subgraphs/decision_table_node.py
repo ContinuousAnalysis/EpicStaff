@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 from loguru import logger
+from services.graph.events import StopEvent
 from services.graph.custom_message_writer import CustomSessionMessageWriter
 from models.graph_models import FinishMessageData, GraphMessage, StartMessageData
 from models.request_models import (
@@ -29,12 +30,14 @@ class DecisionTableNodeSubgraph:
         session_id: int,
         decision_table_node_data: DecisionTableNodeData,
         graph_builder: StateGraph,
+        stop_event: StopEvent,
         custom_session_message_writer: CustomSessionMessageWriter | None = None,
     ):
         self.decision_table_node_data = decision_table_node_data
         self._graph_builder = graph_builder
         self.session_id = session_id
         self.node_name = decision_table_node_data.node_name
+        self.stop_event = stop_event
         self.input_map = None
         self.output_variable_path = None
         self.custom_session_message_writer = (
@@ -93,6 +96,7 @@ def main(**kwargs) -> bool:
         python_code_execution_data: dict = await RunPythonCodeService().run_code(
             python_code_data=python_code_data,
             inputs={"variables": state["variables"].model_dump()},
+            stop_event=self.stop_event,
         )
 
         logger.info(f"Python code execution data: {python_code_execution_data}")
@@ -126,6 +130,7 @@ def main(variables: dict) -> bool:
         python_code_execution_data: dict = await RunPythonCodeService().run_code(
             python_code_data=python_code_data,
             inputs={"variables": state["variables"].model_dump()},
+            stop_event=self.stop_event,
         )
         logger.info(f"Python code execution data: {python_code_execution_data}")
         if python_code_execution_data["returncode"] != 0:
@@ -224,7 +229,7 @@ def main(variables: dict) -> bool:
             ):
                 # If all condition groups are processed, go to the default next node
                 decision_node_variables["result_node"] = (
-                    self.decision_table_node_data.default_next_node
+                    self.decision_table_node_data.default_next_node or END
                 )
                 decision_node_variables["next_node"] = END
                 self.custom_session_message_writer.add_finish_message(
@@ -297,7 +302,7 @@ def main(variables: dict) -> bool:
                     error = f"Error executing condition group '{condition_group.group_name}': {e}"
                     logger.error(error)
                     decision_node_variables["result_node"] = (
-                        self.decision_table_node_data.next_error_node
+                        self.decision_table_node_data.next_error_node or END
                     )
                     decision_node_variables["next_node"] = END
                     self.custom_session_message_writer.add_error_message(

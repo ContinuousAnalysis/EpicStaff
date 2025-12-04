@@ -5,6 +5,10 @@ venv/Scripts/activate.ps1
 Write-Output "Applying database migrations..."
 python manage.py migrate
 
+# Fix PostgreSQL sequences for all tables
+Write-Output "Fixing PostgreSQL sequences..."
+python manage.py fix_sequences
+
 # Upload models (custom command)
 Write-Output "Uploading models..."
 python manage.py upload_models

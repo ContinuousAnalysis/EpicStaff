@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
 from tables.models.python_models import PythonCodeTool
 from tables.models.realtime_models import VoiceChoices
@@ -6,7 +7,11 @@ from tables.models.realtime_models import VoiceChoices
 
 class RunSessionSerializer(serializers.Serializer):
     graph_id = serializers.IntegerField(required=True)
-    variables = serializers.DictField(required=False)
+    variables = serializers.JSONField(required=False)
+    files = serializers.DictField(
+        child=serializers.CharField(), required=False, allow_null=True, default=dict
+    )
+    username = serializers.CharField(required=False)
 
 
 class GetUpdatesSerializer(serializers.Serializer):
@@ -35,7 +40,11 @@ class BaseToolSerializer(serializers.Serializer):
     data = serializers.DictField(required=True)
 
     def to_representation(self, instance):  # instance is a Tool instance
-        from tables.serializers.model_serializers import PythonCodeToolSerializer, ToolConfigSerializer
+        from tables.serializers.model_serializers import (
+            PythonCodeToolSerializer,
+            McpToolSerializer,
+            ToolConfigSerializer,
+        )
 
         repr = {}
         if isinstance(instance, PythonCodeTool):
@@ -44,6 +53,9 @@ class BaseToolSerializer(serializers.Serializer):
         elif isinstance(instance, ToolConfig):
             repr["unique_name"] = f"configured-tool:{instance.pk}"
             repr["data"] = ToolConfigSerializer(instance).data
+        elif isinstance(instance, McpTool):
+            repr["unique_name"] = f"mcp-tool:{instance.pk}"
+            repr["data"] = McpToolSerializer(instance).data
         else:
             raise TypeError(
                 f"Unsupported tool type for serialization: {type(instance)}"
@@ -51,4 +63,8 @@ class BaseToolSerializer(serializers.Serializer):
 
         return repr
     
-    
+class ProcessDocumentChunkingSerializer(serializers.Serializer):
+    document_id = serializers.IntegerField(required=True)
+
+class ProcessCollectionEmbeddingSerializer(serializers.Serializer):
+    collection_id = serializers.IntegerField(required=True)

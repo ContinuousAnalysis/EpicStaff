@@ -1,23 +1,23 @@
 import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  OnDestroy,
-  OnInit,
-  signal,
-  inject,
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    OnDestroy,
+    OnInit,
+    signal,
+    inject,
 } from '@angular/core';
 import {
-  GraphDto,
-  CreateGraphDtoRequest,
-  UpdateGraphDtoRequest,
+    GraphDto,
+    CreateGraphDtoRequest,
+    UpdateGraphDtoRequest,
 } from '../../models/graph.model';
 import { FlowsApiService } from '../../services/flows-api.service';
 import {
-  Router,
-  RouterOutlet,
-  RouterLink,
-  RouterLinkActive,
+    Router,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
 } from '@angular/router';
 
 import { CreateFlowDialogComponent } from '../../components/create-flow-dialog/create-flow-dialog.component';
@@ -28,92 +28,118 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
 import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import {
-  FiltersListComponent,
-  SearchFilterChange,
+    FiltersListComponent,
+    SearchFilterChange,
 } from '../../../../shared/components/filters-list/filters-list.component';
 import { FlowsStorageService } from '../../services/flows-storage.service';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
+import { ImportExportService } from '../../../../core/services/import-export.service';
+import { FlowService } from '../../../../visual-programming/services/flow.service';
 
 @Component({
-  selector: 'app-flows-list-page',
-  standalone: true,
-  templateUrl: './flows-list-page.component.html',
-  styleUrls: ['./flows-list-page.component.scss'],
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    ButtonComponent,
-    TabButtonComponent,
-    FormsModule,
-    AppIconComponent,
-  ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-flows-list-page',
+    standalone: true,
+    templateUrl: './flows-list-page.component.html',
+    styleUrls: ['./flows-list-page.component.scss'],
+    imports: [
+        RouterOutlet,
+        RouterLink,
+        RouterLinkActive,
+        ButtonComponent,
+        TabButtonComponent,
+        FormsModule,
+        AppIconComponent,
+    ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FlowsListPageComponent implements OnDestroy {
-  public tabs = [
-    { label: 'My Flows', link: 'my' },
-    { label: 'Templates', link: 'templates' },
-  ];
+    public tabs = [
+        { label: 'My Flows', link: 'my' },
+        { label: 'Templates', link: 'templates' },
+    ];
 
-  public searchTerm: string = '';
+    public searchTerm: string = '';
 
-  private searchTerms = new Subject<string>();
-  private subscription: Subscription;
+    private searchTerms = new Subject<string>();
+    private subscription: Subscription;
 
-  private dialog = inject(Dialog);
-  private flowStorageService = inject(FlowsStorageService);
-  private router = inject(Router);
-  private cdr = inject(ChangeDetectorRef);
+    private dialog = inject(Dialog);
+    private flowStorageService = inject(FlowsStorageService);
+    private router = inject(Router);
+    private cdr = inject(ChangeDetectorRef);
+    private importExportService = inject(ImportExportService);
 
-  constructor() {
-    this.subscription = this.searchTerms
-      .pipe(debounceTime(300), distinctUntilChanged())
-      .subscribe((term) => {
-        this.updateSearch(term);
-      });
-  }
-
-  ngOnDestroy(): void {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
+    constructor() {
+        this.subscription = this.searchTerms
+            .pipe(debounceTime(300), distinctUntilChanged())
+            .subscribe((term) => {
+                this.updateSearch(term);
+            });
     }
 
-    this.searchTerm = '';
-    this.flowStorageService.setFilter(null);
-  }
+    ngOnDestroy(): void {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
 
-  public onSearchTermChange(term: string): void {
-    this.searchTerms.next(term);
-  }
+        this.searchTerm = '';
+        this.flowStorageService.setFilter(null);
+    }
 
-  public clearSearch(): void {
-    this.searchTerm = '';
-    this.updateSearch('');
-  }
+    public onSearchTermChange(term: string): void {
+        this.searchTerms.next(term);
+    }
 
-  private updateSearch(searchTerm: string): void {
-    const filter: SearchFilterChange = {
-      searchTerm,
-    };
-    this.flowStorageService.setFilter(filter);
-    this.cdr.markForCheck();
-  }
+    public clearSearch(): void {
+        this.searchTerm = '';
+        this.updateSearch('');
+    }
 
-  public openCreateFlowDialog(): void {
-    const dialogRef = this.dialog.open<GraphDto | undefined>(
-      CreateFlowDialogComponent,
-      {
-        width: '500px',
-      }
-    );
+    private updateSearch(searchTerm: string): void {
+        const filter: SearchFilterChange = {
+            searchTerm,
+        };
+        this.flowStorageService.setFilter(filter);
+        this.cdr.markForCheck();
+    }
 
-    dialogRef.closed.subscribe((result: GraphDto | undefined) => {
-      if (result) {
-        this.router.navigate(['/flows', result.id]);
-      }
-    });
-  }
+    public openCreateFlowDialog(): void {
+        const dialogRef = this.dialog.open<GraphDto | undefined>(
+            CreateFlowDialogComponent,
+            {
+                width: '500px',
+            }
+        );
+
+        dialogRef.closed.subscribe((result: GraphDto | undefined) => {
+            if (result) {
+                this.router.navigate(['/flows', result.id]);
+            }
+        });
+    }
+
+    public onImportClick(): void {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (event: any) => {
+            const file = event.target.files[0];
+            if (file) {
+                this.importExportService.importFlow(file).subscribe({
+                    next: (result) => {
+                        console.log('Flow imported successfully:', result);
+                        // Reload the page on successful import
+                        window.location.reload();
+                    },
+                    error: (error) => {
+                        console.error('Import failed:', error);
+                        // TODO: Show error message to user
+                    },
+                });
+            }
+        };
+        input.click();
+    }
 }

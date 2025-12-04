@@ -32,15 +32,16 @@ class ToolDockerImageBuilder:
 
     def build_tool_image(self, image_name: str | None = None) -> Image:
 
-        requirements = " ".join(self.import_list)
-
+        requirements = " ".join(self.import_list)        
+        alias_callable = obj_to_txt(self.tool_dict)
+        
         return client.images.build(
             path=str(self.image_files.resolve()),
             tag=image_name,
             dockerfile=str(self.dockerfile.resolve()),
             buildargs={
                 "PIP_REQUIREMENTS": requirements,
-                "ALIAS_CALLABLE": obj_to_txt(self.tool_dict),
+                "ALIAS_CALLABLE": alias_callable,
             },
         )[0]
 

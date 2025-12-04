@@ -10,6 +10,7 @@ import {
     signal,
     ViewChild,
     OnDestroy,
+    Type,
 } from '@angular/core';
 import {
     FCreateNodeEvent,
@@ -32,6 +33,7 @@ import {
 
 import { IPoint, IRect, PointExtensions } from '@foblex/2d';
 import { FlowService } from '../services/flow.service';
+import { SidePanelService } from '../services/side-panel.service';
 
 import { ShortcutListenerDirective } from '../core/directives/shortcut-listener.directive';
 import { UndoRedoService } from '../services/undo-redo.service';
@@ -61,7 +63,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { FlowGraphContextMenuComponent } from '../components/flow-graph-context-menu/flow-graph-context-menu.component';
 
 import { ClickOutsideDirective } from '../../shared/directives/click-outside.directive';
-import { DynamicSidePanelHostComponent } from '../components/side-panel-host/dynamic-side-panel.component';
 import { FlowBaseNodeComponent } from '../components/flow-base-node/flow-base-node.component';
 import { NODE_COLORS, NODE_ICONS } from '../core/enums/node-config';
 
@@ -83,12 +84,14 @@ import { convertJsonToMap } from '../core/helpers/convert-json-to-map.util';
 import { FlowNodePanelComponent } from '../components/flow-nodes-panel/flow-nodes-panel.component';
 import { NodesSearchComponent } from '../components/nodes-search/nodes-search.component';
 import { generateNodeDisplayName } from '../core/helpers/generate-node-display-name.util';
-import { SidePanelService } from '../services/side-panel.service';
-import { map, takeUntil } from 'rxjs/operators';
 import { Dialog } from '@angular/cdk/dialog';
 import { ProjectDialogComponent } from '../components/project-dialog/project-dialog.component';
 import { NoteNodeComponent } from '../components/nodes-components/note-node/note-node.component';
 import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edit-dialog.component';
+import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util'; // Adjust path
+import { ToastService } from '../../services/notifications/toast.service';
+import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
+import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
 
 @Component({
     selector: 'app-flow-graph',
@@ -105,13 +108,13 @@ import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edi
         ShortcutListenerDirective,
         MouseTrackerDirective,
         FlowGraphContextMenuComponent,
-        NgIf,
         GroupNodeComponent,
         ClickOutsideDirective,
-        DynamicSidePanelHostComponent,
+
         FlowActionPanelComponent,
         FlowNodePanelComponent,
         NodesSearchComponent,
+        NodePanelShellComponent,
     ],
 })
 export class FlowGraphComponent implements OnInit, OnDestroy {
@@ -129,6 +132,11 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     @ViewChild(FZoomDirective, { static: true })
     public fZoomDirective!: FZoomDirective;
 
+    @ViewChild('nodePanelShell', { static: false })
+    public nodePanelShell?: NodePanelShellComponent;
+
+    public getMinimapClassForNode = getMinimapClassForNode;
+
     public readonly eMarkerType = EFMarkerType;
     public readonly eResizeHandleType = EFResizeHandleType;
 
@@ -141,11 +149,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public isLoaded = signal<boolean>(false);
     public showContextMenu = signal(false);
 
-    public selectedNode: NodeModel | null = null;
-
     private readonly destroy$ = new Subject<void>();
-    private selectedNode$!: Observable<NodeModel | null>;
-
     public showVariables = signal<boolean>(false);
 
     public NodeType = NodeType;
@@ -155,25 +159,17 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         private readonly undoRedoService: UndoRedoService,
         private readonly clipboardService: ClipboardService,
         private readonly groupCollapserService: GroupCollapserService,
-        private readonly sidePanelService: SidePanelService,
+        public readonly sidePanelService: SidePanelService,
         private readonly cd: ChangeDetectorRef,
-        private readonly dialog: Dialog
+        private readonly dialog: Dialog,
+        private readonly toastService: ToastService
     ) {}
 
     public ngOnInit(): void {
-        this.selectedNode$ = this.sidePanelService.getState().pipe(
-            map((state) => state.selectedNode),
-            takeUntil(this.destroy$)
-        );
-
         this.initializeFlowStateIfEmpty();
         this.addStartNodeIfNeeded();
         this.generatePortsForNodesIfNeeded();
         this.flowService.setFlow(this.flowState);
-        this.selectedNode$.subscribe((node) => {
-            this.selectedNode = node;
-            this.cd.detectChanges();
-        });
     }
 
     private initializeFlowStateIfEmpty(): void {
@@ -221,19 +217,33 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     private generatePortsForNodesIfNeeded(): void {
-        // Check each node and generate ports if they are null
         this.flowState.nodes = this.flowState.nodes.map((node) => {
             if (node.ports === null) {
-                node.ports = generatePortsForNode(node.id, node.type);
+                node.ports = generatePortsForNode(node.id, node.type, node.data);
+            } else if (node.type === NodeType.TABLE) {
+                const tableData = (node as any)?.data?.table ?? {};
+                const conditionGroups = tableData?.condition_groups ?? [];
+                const validGroups = conditionGroups.filter(
+                    (group: any) => group?.valid === true
+                );
+                const expectedPortCount =
+                    1 + validGroups.length + 2;
+
+                if (node.ports.length !== expectedPortCount) {
+                    node.ports = generatePortsForDecisionTableNode(
+                        node.id,
+                        conditionGroups,
+                        true,
+                        true
+                    );
+                }
             }
             return node;
         });
     }
 
-    public onSave(): void {
-        console.log('saving');
-        this.save.emit();
-    }
+    public onSave(): void {}
+
     ngDoCheck() {
         console.log('PERFORMANCE!');
     }
@@ -245,61 +255,87 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public updateMouseTrackerPosition(event: { x: number; y: number }) {
         this.mouseCursorPosition = event;
     }
+    public onReassignConnection(event: FReassignConnectionEvent): void {
+        console.log('Reassigning connection:', event);
 
-    //   public onReassignConnection(event: FReassignConnectionEvent): void {
-    //     this.undoRedoService.stateChanged();
+        // Validate that we have the necessary information
+        if (!event.newTargetId && !event.newSourceId) {
+            console.warn('No new target or source provided for reassignment');
+            return;
+        }
 
-    //     // Step 1: find the old connection from the connections list
-    //     const oldConnection: ConnectionModel | undefined = this.flowService
-    //       .connections()
-    //       .find((conn) => conn.id === event.fConnectionId);
-    //     if (!oldConnection) {
-    //       console.warn('Old connection not found:', event.fConnectionId);
-    //       return;
-    //     }
-    //     // Step 2: Construct the new connection from the new input port (if available)
-    //     if (!event.newFInputId) {
-    //       console.warn(
-    //         'No new input ID provided. Connection cannot be reassigned.'
-    //       );
-    //       return;
-    //     }
-    //     const newTargetNodeId: string = event.newFInputId.split('_')[0];
-    //     const nodes = this.flowService.nodes();
-    //     const sourceNode = nodes.find(
-    //       (node) => node.id === oldConnection.sourceNodeId
-    //     );
-    //     const targetNode = nodes.find((node) => node.id === newTargetNodeId);
+        this.undoRedoService.stateChanged();
 
-    //     const startColor = sourceNode ? NODE_COLORS[sourceNode.type] : '#ddd';
-    //     const endColor = targetNode ? NODE_COLORS[targetNode.type] : '#ddd';
-    //     const newConnection: ConnectionModel = {
-    //       id: `${event.fOutputId}+${event.newFInputId}`,
-    //       category: 'default',
-    //       sourceNodeId: oldConnection.sourceNodeId,
-    //       targetNodeId: newTargetNodeId,
-    //       sourcePortId: event.fOutputId as CustomPortId,
-    //       targetPortId: event.newFInputId as CustomPortId,
-    //       startColor,
-    //       endColor,
-    //       behavior: 'fixed',
-    //       type: 'segment',
-    //     };
-    //     // Step 3: Validate the new connection
-    //     if (
-    //       !isConnectionValid(newConnection.sourcePortId, newConnection.targetPortId)
-    //     ) {
-    //       console.warn(
-    //         'New connection is invalid. Reassigning aborted.',
-    //         newConnection
-    //       );
-    //       return;
-    //     }
-    //     // Step 4: Remove the old connection and add the new one
-    //     this.flowService.removeConnection(event.fConnectionId);
-    //     this.flowService.addConnection(newConnection);
-    //     console.log(this.flowService.getFlowState());
-    //   }
+        // Find the existing connection to reassign
+        const existingConnection = this.flowService
+            .connections()
+            .find((conn) => conn.id === event.connectionId);
+
+        if (!existingConnection) {
+            console.warn(
+                'Connection not found for reassignment:',
+                event.connectionId
+            );
+            return;
+        }
+
+        // Determine the new source and target ports
+        const newSourcePortId =
+            event.newSourceId || existingConnection.sourcePortId;
+        const newTargetPortId =
+            event.newTargetId || existingConnection.targetPortId;
+
+        // Validate the new connection using the existing validation rules
+        if (
+            !isConnectionValid(
+                newSourcePortId as CustomPortId,
+                newTargetPortId as CustomPortId
+            )
+        ) {
+            console.warn('New connection is invalid. Reassignment aborted.');
+            this.toastService.warning(
+                'Cannot reassign connection: Invalid port combination',
+                5000,
+                'bottom-right'
+            );
+            return;
+        }
+
+        // Extract node IDs from the new port IDs
+        const newSourceNodeId = newSourcePortId.split('_')[0];
+        const newTargetNodeId = newTargetPortId.split('_')[0];
+
+        // Create the updated connection
+        const updatedConnection: ConnectionModel = {
+            id: `${newSourcePortId}+${newTargetPortId}`,
+            category: 'default',
+            sourceNodeId: newSourceNodeId,
+            targetNodeId: newTargetNodeId,
+            sourcePortId: newSourcePortId as CustomPortId,
+            targetPortId: newTargetPortId as CustomPortId,
+            behavior: 'fixed',
+            type: 'segment',
+        };
+
+        // Remove the old connection and add the new one
+        this.flowService.removeConnection(event.connectionId);
+        this.flowService.addConnection(updatedConnection);
+
+        console.log('Connection reassigned successfully:', {
+            oldConnectionId: event.connectionId,
+            newConnectionId: updatedConnection.id,
+            oldSource: existingConnection.sourcePortId,
+            newSource: newSourcePortId,
+            oldTarget: existingConnection.targetPortId,
+            newTarget: newTargetPortId,
+        });
+
+        this.toastService.success(
+            'Connection reassigned successfully',
+            3000,
+            'bottom-right'
+        );
+    }
 
     public onConnectionAdded(event: FCreateConnectionEvent): void {
         // Save the state for undo before adding the connection
@@ -365,19 +401,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         const sourceNodeId = pair.sourcePortId.split('_')[0];
         const targetNodeId = pair.targetPortId.split('_')[0];
 
-        // Find the corresponding nodes in the flow state
-        const sourceNode = this.flowService
-            .nodes()
-            .find((node) => node.id === sourceNodeId);
-        const targetNode = this.flowService
-            .nodes()
-            .find((node) => node.id === targetNodeId);
-
-        // Get the start and end colors based on node type, using the NODE_COLORS mapping
-        const startColor = sourceNode ? NODE_COLORS[sourceNode.type] : '#ddd';
-        const endColor = targetNode ? NODE_COLORS[targetNode.type] : '#ddd';
-
-        // Create the new connection object based on your models with added color properties
+        // Create the new connection object based on your models
         const newConnection: ConnectionModel = {
             id: newConnectionId,
             category: 'default',
@@ -385,8 +409,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             targetNodeId: targetNodeId,
             sourcePortId: pair.sourcePortId as CustomPortId,
             targetPortId: pair.targetPortId as CustomPortId,
-            startColor,
-            endColor,
             behavior: 'fixed',
             type: 'segment',
         };
@@ -542,7 +564,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public onCreateNode(event: FCreateNodeEvent) {
         if (event.data && typeof event.data === 'object') {
             const nodeData = event.data as NodeModel;
-
             // Create a copy of the node with updated position and category
             const updatedNode: NodeModel = {
                 ...nodeData,
@@ -581,6 +602,15 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         this.undoRedoService.stateChanged();
         this.showContextMenu.set(false);
 
+        if (event.type === NodeType.END && this.flowService.hasEndNode()) {
+            this.toastService.warning(
+                'Only one End node is allowed',
+                4000,
+                'bottom-right'
+            );
+            return;
+        }
+
         // Generate common values
         const newNodeId = uuidv4();
         const nodeColor = NODE_COLORS[event.type] || '#ddd';
@@ -592,12 +622,28 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             )
         );
 
-        // Set different size for note nodes
         let nodeSize: { width: number; height: number };
         if (event.type === NodeType.NOTE) {
             nodeSize = {
                 width: 200,
                 height: 150,
+            };
+        } else if (event.type === NodeType.TABLE) {
+            const tableData = event.data?.table;
+            const conditionGroups = tableData?.condition_groups ?? [];
+            const headerHeight = 60;
+            const rowHeight = 46;
+            const validGroupsCount = conditionGroups.filter((g: any) => g.valid).length;
+            const hasDefaultRow = 1;
+            const hasErrorRow = 1;
+            const totalRows = Math.max(
+                validGroupsCount + hasDefaultRow + hasErrorRow,
+                2
+            );
+            const calculatedHeight = headerHeight + rowHeight * totalRows;
+            nodeSize = {
+                width: 330,
+                height: Math.max(calculatedHeight, 152),
             };
         } else {
             nodeSize = {
@@ -663,6 +709,18 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             this.onDropToGroup(dropEvent);
         } else {
             // Create and add a regular node
+            let nodeData = event.data;
+
+            // Add default output_map for end nodes
+            if (event.type === NodeType.END) {
+                nodeData = {
+                    ...event.data,
+                    output_map: {
+                        context: 'variables',
+                    },
+                };
+            }
+
             const newNode: NodeModel = {
                 id: newNodeId,
                 category: 'web',
@@ -671,7 +729,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                 parentId: null,
                 type: event.type,
                 node_name: newNodeName,
-                data: event.data,
+                data: nodeData,
                 color: nodeColor,
                 icon: nodeIcon,
                 input_map: {},
@@ -683,20 +741,20 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     // side panel logic
-    public onEditNode(node: NodeModel): void {
-        // Special handling for note nodes
+    public onOpenNodePanel(node: NodeModel): void {
+        if (this.sidePanelService.selectedNodeId() === node.id) {
+            return;
+        }
+
         if (node.type === NodeType.NOTE) {
             const noteNode = node as NoteNodeModel;
 
-            // Open the note edit dialog
             const dialogRef = this.dialog.open(NoteEditDialogComponent, {
                 data: { node: noteNode },
             });
 
-            // Handle dialog close with save
             dialogRef.closed.subscribe((result: any) => {
                 if (result && result.content !== undefined) {
-                    // Update the note content
                     const updatedNode: NoteNodeModel = {
                         ...noteNode,
                         data: {
@@ -705,32 +763,65 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                         },
                     };
 
-                    // Update the node in the flow service
                     this.flowService.updateNode(updatedNode);
 
-                    // Trigger change detection to refresh the view
                     this.cd.detectChanges();
                 }
             });
-        } else {
-            // For all other node types, use the existing side panel method
-            this.sidePanelService.trySelectNode(node).then((selected) => {
-                if (!selected) {
-                    console.log('Node selection was cancelled or failed');
+        } else if (node.type === NodeType.START) {
+            const startNode = node as StartNodeModel;
+            const startNodeInitialState = startNode.data?.initialState || {};
+
+            const dialogRef = this.dialog.open(DomainDialogComponent, {
+                width: '1000px',
+                height: '800px',
+                maxWidth: '90vw',
+                maxHeight: '90vh',
+                panelClass: 'domain-dialog-panel',
+                backdropClass: 'domain-dialog-backdrop',
+                data: {
+                    initialData: startNodeInitialState,
+                },
+            });
+
+            dialogRef.closed.subscribe((result: unknown) => {
+                if (
+                    result !== null &&
+                    typeof result === 'object' &&
+                    result !== undefined
+                ) {
+                    this.updateStartNodeInitialState(
+                        result as Record<string, unknown>
+                    );
                 }
             });
+        } else {
+            void this.sidePanelService.trySelectNode(node);
         }
     }
 
-    public onCloseSidePanel(): void {
-        this.sidePanelService.tryClosePanel();
+    public onNodePanelSaved(updatedNode: NodeModel): void {
+        console.log(
+            'Parent received save event. Calling service with:',
+            updatedNode
+        );
+        this.flowService.updateNode(updatedNode);
+        this.sidePanelService.clearSelection();
     }
 
-    public onSidePanelSaved(updatedNode: NodeModel): void {
-        console.log('Node updated:', updatedNode);
+    public onNodePanelAutosaved(updatedNode: NodeModel): void {
+        console.log(
+            'Parent received autosave event. Calling service with:',
+            updatedNode
+        );
         this.flowService.updateNode(updatedNode);
-        this.sidePanelService.setHasUnsavedChanges(false);
-        this.sidePanelService.tryClosePanel();
+    }
+
+    public flushOpenSidePanelState(): void {
+        const updatedNode = this.nodePanelShell?.captureCurrentNodeState();
+        if (updatedNode) {
+            this.flowService.updateNode(updatedNode);
+        }
     }
 
     public onGroupSizeChanged(event: IRect, group: GroupNodeModel): void {
@@ -748,6 +839,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
 
         this.flowService.updateGroup(updatedGroup);
     }
+
     public onNodeSizeChanged(
         event: { width: number; height: number },
         node: NodeModel
@@ -755,7 +847,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         this.undoRedoService.stateChanged();
         console.log('Node size changed:', event, node);
 
-        // Create an updated node with the new size
         const updatedNode = {
             ...node,
             size: {
@@ -785,6 +876,28 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         const elementsToGroup: string[] = event.fNodes || [];
         if (elementsToGroup.length === 0) {
             console.warn('No elements to add to the group');
+            return;
+        }
+
+        // Check if any of the elements being grouped is a start node
+        const startNodeIds: string[] = [];
+        elementsToGroup.forEach((elementId) => {
+            const node = this.flowService
+                .nodes()
+                .find((n) => n.id === elementId);
+            if (node && node.type === NodeType.START) {
+                startNodeIds.push(elementId);
+            }
+        });
+
+        // If start nodes are being grouped, show warning and prevent the action
+        if (startNodeIds.length > 0) {
+            this.toastService.warning(
+                'Start nodes cannot be added to groups. Please remove the start node from your selection.',
+                6000,
+                'bottom-right'
+            );
+            console.warn('Attempted to group start node(s):', startNodeIds);
             return;
         }
 
@@ -2075,14 +2188,66 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         console.log('Show Variables:', this.showVariables());
     }
 
+    public onDomainClick(): void {
+        const startNodeInitialState = this.flowService.startNodeInitialState();
+
+        const dialogRef = this.dialog.open(DomainDialogComponent, {
+            width: '1000px',
+            height: '800px',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            panelClass: 'domain-dialog-panel',
+            backdropClass: 'domain-dialog-backdrop',
+            data: {
+                initialData: startNodeInitialState,
+            },
+        });
+
+        dialogRef.closed.subscribe((result: unknown) => {
+            if (
+                result !== null &&
+                typeof result === 'object' &&
+                result !== undefined
+            ) {
+                this.updateStartNodeInitialState(
+                    result as Record<string, unknown>
+                );
+            }
+        });
+    }
+
+    private updateStartNodeInitialState(
+        newState: Record<string, unknown>
+    ): void {
+        const startNode = this.flowService
+            .nodes()
+            .find((node) => node.type === NodeType.START) as
+            | StartNodeModel
+            | undefined;
+
+        if (startNode) {
+            const updatedStartNode: StartNodeModel = {
+                ...startNode,
+                data: {
+                    ...startNode.data,
+                    initialState: newState,
+                },
+            };
+
+            this.flowService.updateNode(updatedStartNode);
+            this.toastService.success('Domain variables updated successfully');
+        } else {
+            this.toastService.error('Start node not found');
+        }
+    }
+
     public onProjectExpandToggled(project: ProjectNodeModel): void {
         console.log('Project expanded:', project.data.id);
 
         const dialogRef = this.dialog.open(ProjectDialogComponent, {
             width: '90vw',
             height: '90vh',
-            maxWidth: '100vw',
-            maxHeight: '100vh',
+
             data: {
                 projectId: project.data.id,
                 projectName: project.data.name,
@@ -2093,8 +2258,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     public ngOnDestroy(): void {
-        this.sidePanelService.tryClosePanel().then(() => {});
-
         this.destroy$.next();
         this.destroy$.complete();
     }

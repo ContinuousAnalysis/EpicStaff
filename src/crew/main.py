@@ -1,6 +1,9 @@
 import asyncio
 import os
-import psutil
+import sys
+
+from services.crew.mcp_tool_factory import CrewaiMcpToolFactory
+from dotenv import load_dotenv, find_dotenv
 from utils.memory_monitor import MemoryMonitor
 from services.graph.graph_session_manager_service import GraphSessionManagerService
 from services.run_python_code_service import RunPythonCodeService
@@ -8,7 +11,12 @@ from services.crew.crew_parser_service import CrewParserService
 from services.knowledge_search_service import KnowledgeSearchService
 from services.redis_service import RedisService
 from utils.logger import logger
-from gc import collect as gc_collect
+
+if "--debug" in sys.argv:
+    logger.info("RUNNING IN DEBUG MODE")
+    load_dotenv(find_dotenv("debug.env"), override=True)
+else:
+    load_dotenv(find_dotenv(".env"))
 
 
 async def main():
@@ -24,26 +32,29 @@ async def main():
     crewai_output_channel = os.environ.get(
         "CREWAI_OUTPUT_CHANNEL", "sessions:crewai_output"
     )
+    stop_session_channel = os.getenv("STOP_SESSION_CHANNEL", "sessions:stop")
 
     # Initialize services
     redis_service = RedisService(host=redis_host, port=redis_port)
     python_code_executor_service = RunPythonCodeService(redis_service=redis_service)
     knowledge_search_service = KnowledgeSearchService(redis_service=redis_service)
-
+    mcp_tool_factory = CrewaiMcpToolFactory()
     crew_parser_service = CrewParserService(
         manager_host=manager_host,
         manager_port=manager_port,
         redis_service=redis_service,
         python_code_executor_service=python_code_executor_service,
-        knowledge_search_service=knowledge_search_service,
+        mcp_tool_factory=mcp_tool_factory,
     )
     session_manager_service = GraphSessionManagerService(
         redis_service=redis_service,
         crew_parser_service=crew_parser_service,
         session_schema_channel=session_schema_channel,
         session_timeout_channel=session_timeout_channel,
+        stop_session_channel=stop_session_channel,
         python_code_executor_service=python_code_executor_service,
         crewai_output_channel=crewai_output_channel,
+        # Note:  Used for process human_input
         knowledge_search_service=knowledge_search_service,
     )
 
@@ -61,7 +72,6 @@ async def main():
         while True:
             await asyncio.sleep(1)
             # monitor.log_memory_usage()
-
 
     except Exception as e:
         logger.error(f"An error occurred: {e}", exc_info=True)

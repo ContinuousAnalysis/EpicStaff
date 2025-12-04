@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Any, List, Literal, Union
-from pydantic import BaseModel, HttpUrl, model_validator
+from typing import Any, List, Literal, Optional, Union
+from pydantic import AnyUrl, BaseModel, HttpUrl, model_validator
 
 
 class LLMConfigData(BaseModel):
@@ -53,6 +53,28 @@ class ConfiguredToolData(BaseModel):
     tool_config: ToolConfigData
 
 
+class McpToolData(BaseModel):
+    """
+    Configuration for a FastMCP client connecting to remote MCP tools via SSE.
+    """
+
+    transport: str
+    """URL of the remote MCP server (SSE). Required."""
+    tool_name: str
+
+    timeout: Optional[float] = 30
+    """Request timeout in seconds. Recommended to set."""
+
+    auth: Optional[str] = None
+    """Authorization token or OAuth string, if the server requires it."""
+
+    init_timeout: Optional[float] = 10
+    """Timeout for session initialization. Optional, default is 10 seconds."""
+
+    class Config:
+        extra = "ignore"
+
+
 class PythonCodeData(BaseModel):
     venv_name: str
     code: str
@@ -71,7 +93,7 @@ class PythonCodeToolData(BaseModel):
 
 class BaseToolData(BaseModel):
     unique_name: str
-    data: PythonCodeToolData | ConfiguredToolData
+    data: PythonCodeToolData | ConfiguredToolData | McpToolData
 
     @model_validator(mode="before")
     @classmethod
@@ -91,6 +113,8 @@ class BaseToolData(BaseModel):
             values["data"] = PythonCodeToolData(**data)
         elif prefix == "configured-tool":
             values["data"] = ConfiguredToolData(**data)
+        elif prefix == "mcp-tool":
+            values["data"] = McpToolData(**data)
         else:
             raise ValueError(f"Unknown tool prefix: {prefix}")
 
@@ -168,6 +192,7 @@ class TaskData(BaseModel):
     name: str
     agent_id: int
     instructions: str
+    knowledge_query: str | None
     expected_output: str
     order: int = 1
     human_input: bool
@@ -182,6 +207,7 @@ class SessionData(BaseModel):
     id: int
     graph: "GraphData"
     initial_state: dict[str, Any] = {}
+    output_state: dict[str, Any] = {}
 
 
 class TaskMessageData(BaseModel):
@@ -230,6 +256,12 @@ class PythonNodeData(BaseModel):
     output_variable_path: str | None = None
 
 
+class FileExtractorNodeData(BaseModel):
+    node_name: str
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
 class LLMNodeData(BaseModel):
     node_name: str
     llm_data: LLMData
@@ -257,6 +289,10 @@ class DecisionTableNodeData(BaseModel):
     next_error_node: str | None = None
 
 
+class EndNodeData(BaseModel):
+    output_map: dict[str, Any]
+
+
 class EdgeData(BaseModel):
     start_key: str
     end_key: str
@@ -269,15 +305,23 @@ class ConditionalEdgeData(BaseModel):
     input_map: dict[str, Any]
 
 
+class WebhookTriggerNodeData(BaseModel):
+    node_name: str
+    python_code: PythonCodeData
+
+
 class GraphData(BaseModel):
     name: str
     crew_node_list: list[CrewNodeData] = []
+    webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []
     python_node_list: list[PythonNodeData] = []
+    file_extractor_node_list: list[FileExtractorNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
-    entry_point: str
+    entrypoint: str
+    end_node: EndNodeData | None
 
 
 class GraphSessionMessageData(BaseModel):
@@ -294,3 +338,26 @@ class KnowledgeSearchMessage(BaseModel):
     query: str
     search_limit: int | None
     similarity_threshold: float | None
+
+
+class StopSessionMessage(BaseModel):
+    session_id: int
+
+
+class KnowledgeChunkDTO(BaseModel):
+    chunk_order: int
+    chunk_similarity: float
+    chunk_text: str
+    chunk_source: str = ""
+
+
+class KnowledgeQueryResultDTO(BaseModel):
+    uuid: str
+    collection_id: int
+    retrieved_chunks: int
+    similarity_threshold: float
+    search_limit: int
+    knowledge_query: str
+    chunks: List[KnowledgeChunkDTO]
+    # Support backwards compatibility
+    results: List[str] = []  # deprecated, use chunks instead

@@ -11,43 +11,56 @@
                 </h1>
             </div>
             <div class="header-actions">
-                <p-button
-                    label="Import"
-                    icon="pi pi-upload"
-                    severity="secondary"
-                    [outlined]="true"
-                ></p-button>
-                <p-button
-                    label="Create project"
-                    icon="pi pi-plus"
-                    severity="primary"
-                    (onClick)="openCreateProjectDialog()"
-                ></p-button>
+                <app-button
+                    type="primary"
+                    class="btn-primary create-btn"
+                    [leftIcon]="'ui/plus'"
+                    (click)="openCreateProjectDialog()"
+                >
+                    Create project
+                </app-button>
             </div>
         </header>
         <nav class="tabs">
             <div class="tabs-left">
-                <p-selectButton
-                    [options]="tabs"
-                    [(ngModel)]="selectedTab"
-                    (ngModelChange)="onTabChange($event)"
-                    optionLabel="label"
-                    optionValue="value"
-                ></p-selectButton>
+                @for (tab of tabs; track tab.link) {
+                <app-tab-button
+                    routerLink="{{ tab.link }}"
+                    routerLinkActive="active"
+                    #rla="routerLinkActive"
+                    [active]="rla.isActive"
+                >
+                    {{ tab.label }}
+                </app-tab-button>
+                }
             </div>
             <div class="tabs-right">
-                <app-project-tags-filter (change)="onProjectTagsChange($event)">
-                </app-project-tags-filter>
+                <!-- <app-project-tags-filter (change)="onProjectTagsChange($event)">
+                </app-project-tags-filter> -->
 
                 <div class="search-container">
+                    <app-icon
+                        icon="ui/search"
+                        class="search-icon"
+                        size="1.1rem"
+                    ></app-icon>
                     <input
                         type="text"
-                        pInputText
+                        class="search-input"
                         placeholder="Search projects..."
                         [(ngModel)]="searchTerm"
                         (ngModelChange)="onSearchTermChange($event)"
-                        class="simple-search"
                     />
+                    @if (searchTerm) {
+                    <button
+                        type="button"
+                        class="clear-btn"
+                        aria-label="Clear"
+                        (click)="clearSearch()"
+                    >
+                        <app-icon icon="ui/x" size="1.1rem"></app-icon>
+                    </button>
+                    }
                 </div>
             </div>
         </nav>

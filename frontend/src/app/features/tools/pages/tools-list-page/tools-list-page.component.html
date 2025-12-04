@@ -10,14 +10,14 @@
         </h1>
       </div>
       <div class="header-actions">
-        <app-button type="ghost" [leftIcon]="'ui/upload'"> Import </app-button>
+        <!-- <app-button type="ghost" [leftIcon]="'ui/upload'"> Import </app-button> -->
         <app-button
           type="primary"
           class="btn-primary create-btn"
-          [leftIcon]="'ui/plus'"
-          (click)="openCustomToolDialog()"
+          [leftIcon]="createButtonIcon"
+          (click)="onCreateToolClick()"
         >
-          Create custom tool
+          {{ createButtonLabel }}
         </app-button>
       </div>
     </header>

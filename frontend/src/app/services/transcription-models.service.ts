@@ -2,18 +2,13 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable, of, shareReplay, switchMap } from 'rxjs';
 import { ConfigService } from './config/config.service';
+import { GetRealtimeTranscriptionModelRequest } from '../shared/models/transcription-config.model';
 
 export interface ApiGetResponse<T> {
   count: number;
   next: string | null;
   previous: string | null;
   results: T[];
-}
-
-export interface GetRealtimeTranscriptionModelRequest {
-  id: number;
-  name: string;
-  provider: number;
 }
 
 @Injectable({
@@ -51,8 +46,9 @@ export class RealtimeTranscriptionModelsService {
    * Gets all realtime transcription models, fetching from API only on first call
    * and returning cached data for subsequent calls
    */
-  getAllModels(): Observable<GetRealtimeTranscriptionModelRequest[]> {
-    return this.models$;
+  getAllModels(): Observable<ApiGetResponse<GetRealtimeTranscriptionModelRequest>> {
+    return this.http
+      .get<ApiGetResponse<GetRealtimeTranscriptionModelRequest>>(this.apiUrl)
   }
 
   /**

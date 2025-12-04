@@ -1,428 +1,557 @@
-<div class="wrapper" appShortcutListener (escape)="onCancelForm()">
-  <!-- Header -->
-  <div class="dialog-header">
-    <div class="icon-and-title">
-      <app-icon
-        icon="ui/agent"
-        size="2rem"
-        ariaLabel="Agent icon"
-        style="color: var(--accent-color); margin-right: 12px"
-      ></app-icon>
-      <span class="title">{{
-        isEditMode ? "Edit Agent" : "Create New Agent"
-      }}</span>
-    </div>
-    <app-icon-button
-      icon="ui/x"
-      ariaLabel="Close dialog"
-      size="2rem"
-      (onClick)="onCancelForm()"
-    >
-    </app-icon-button>
-  </div>
-
-  <!-- Tabs Navigation -->
-  <div class="tabs-navigation">
-    <button
-      class="tab-button"
-      [class.active]="activeTab === 'overview'"
-      (click)="switchTab('overview')"
-    >
-      Overview
-    </button>
-    <button
-      class="tab-button"
-      [class.active]="activeTab === 'configurations'"
-      (click)="switchTab('configurations')"
-    >
-      Configurations
-    </button>
-  </div>
-
-  <form [formGroup]="agentForm" (ngSubmit)="$event.preventDefault()">
-    <!-- Body -->
-    <div class="dialog-content">
-      <!-- Overview Tab -->
-      <div class="tab-content" [hidden]="activeTab !== 'overview'">
-        <!-- Agent Role with Icon -->
-        <div class="form-group">
-          <div class="label-row">
-            <label for="role" class="field-label">
-              Agent Role
-              <span class="required">
-                @if (agentForm.get('role')?.errors?.['required'] &&
-                agentForm.get('role')?.touched) { Role is required } *
-              </span>
-            </label>
-            <app-help-tooltip
-              [text]="
-                'The specific role this agent will play in your project. Choose a clear, descriptive title.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <div class="input-with-icon">
-            <input
-              id="role"
-              type="text"
-              formControlName="role"
-              placeholder="Enter agent role..."
-              autocomplete="off"
-              [style.--active-color]="activeColor"
-            />
-          </div>
-        </div>
-
-        <!-- Goal -->
-        <div class="form-group">
-          <div class="label-row">
-            <label for="goal" class="field-label">
-              Goal
-              <span class="required">
-                @if (agentForm.get('goal')?.errors?.['required'] &&
-                agentForm.get('goal')?.touched) { Goal is required } *
-              </span>
-            </label>
-            <app-help-tooltip
-              [text]="
-                'Define the main objective or task this agent should accomplish.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <textarea
-            id="goal"
-            formControlName="goal"
-            placeholder="Enter agent goal..."
-            rows="3"
-            autocomplete="off"
-            [style.--active-color]="activeColor"
-          ></textarea>
-        </div>
-
-        <!-- Backstory -->
-        <div class="form-group">
-          <div class="label-row">
-            <label for="backstory" class="field-label">
-              Backstory
-              <span class="required">
-                @if (agentForm.get('backstory')?.errors?.['required'] &&
-                agentForm.get('backstory')?.touched) { Backstory is required } *
-              </span>
-            </label>
-            <app-help-tooltip
-              [text]="
-                'Provide context, history, and personality for this agent. A rich backstory helps the agent generate more relevant responses.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <textarea
-            id="backstory"
-            formControlName="backstory"
-            placeholder="Enter agent backstory..."
-            rows="3"
-            autocomplete="off"
-            [style.--active-color]="activeColor"
-          ></textarea>
-        </div>
-
-        <!-- Agent LLM -->
-        <div class="form-group">
-          <div class="label-row">
-            <label class="field-label">Agent LLM</label>
-            <app-help-tooltip
-              [text]="
-                'Select the language model that will power this agent. Different models have different capabilities and costs.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <app-llm-model-selector
-            [llmConfigs]="llmConfigs"
-            formControlName="llmId"
-            placeholder="Select agent LLM"
-          ></app-llm-model-selector>
-          <div
-            *ngIf="
-              agentForm.get('llmId')?.invalid && agentForm.get('llmId')?.touched
-            "
-            class="error-message"
-          >
-            Please select an LLM
-          </div>
-        </div>
-
-        <!-- Creativity Level Slider -->
-        <div class="form-group">
-          <div class="label-row">
-            <label class="field-label">Agent Creativity Level</label>
-            <app-help-tooltip
-              [text]="
-                'Adjust how creative the agent should be. Higher values lead to more varied responses, while lower values keep responses more predictable.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <app-form-slider
-            [value]="temperatureValue"
-            [min]="0"
-            [max]="100"
-            [step]="1"
-            valueFormat="decimal"
-            (valueChange)="onSliderInput($event)"
-          ></app-form-slider>
-        </div>
-      </div>
-
-      <!-- Configurations Tab -->
-      <div class="tab-content" [hidden]="activeTab !== 'configurations'">
-        <!-- Function LLM -->
-        <div class="form-group">
-          <div class="label-row">
-            <label class="field-label">Function LLM</label>
-            <app-help-tooltip
-              [text]="
-                'Select a language model specifically for function calling. This can be different from the main agent LLM.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <app-llm-model-selector
-            [llmConfigs]="llmConfigs"
-            formControlName="functionLlmId"
-            placeholder="Select function LLM"
-          ></app-llm-model-selector>
-        </div>
-
-        <!-- Knowledge Source -->
-        <div class="form-group">
-          <div class="label-row">
-            <label class="field-label">Knowledge Source</label>
-            <app-help-tooltip
-              [text]="
-                'Choose a knowledge source to provide additional context and information for this agent.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <app-knowledge-selector
-            [collections]="allKnowledgeSources"
-            [selectedCollectionId]="selectedKnowledgeSourceId"
-            [loading]="isLoadingKnowledgeSources"
-            (collectionChange)="onKnowledgeSourceChange($event)"
-          ></app-knowledge-selector>
-        </div>
-
-        <!-- Tools Selection -->
-        <div class="form-group">
-          <div class="label-row">
-            <label class="field-label">Tools</label>
-            <app-help-tooltip
-              [text]="
-                'Select the tools this agent will have access to. Tools provide additional capabilities for the agent.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <app-tools-selector
-            [selectedConfiguredTools]="
-              agentForm.get('configured_tools')?.value || []
-            "
-            [selectedPythonCodeTools]="
-              agentForm.get('python_code_tools')?.value || []
-            "
-            (configuredToolsChange)="onConfiguredToolsChange($event)"
-            (pythonCodeToolsChange)="onPythonToolsChange($event)"
-          ></app-tools-selector>
-        </div>
-
-        <!-- Advanced Options Section -->
-        <h4 class="section-title">Advanced Options</h4>
-
-        <!-- Toggle Fields -->
-        <div class="configurations-settings">
-          <div class="form-group">
-            <div class="label-row toggle-container">
-              <div class="toggle-label-wrapper">
-                <label class="toggle-label">Allow Delegation</label>
-                <app-help-tooltip
-                  [text]="
-                    'When enabled, this agent can delegate tasks to other agents in the project.'
-                  "
-                ></app-help-tooltip>
-              </div>
-              <app-toggle-switch
-                formControlName="allow_delegation"
-              ></app-toggle-switch>
-            </div>
-          </div>
-
-          <!-- Commented out memory field
-          <div class="form-group">
-            <div class="label-row toggle-container">
-              <div class="toggle-label-wrapper">
-                <label class="toggle-label">Memory</label>
-                <app-help-tooltip
-                  [text]="
-                    'Enable to give the agent memory of past interactions and results.'
-                  "
-                ></app-help-tooltip>
-              </div>
-              <app-toggle-switch formControlName="memory"></app-toggle-switch>
-            </div>
-          </div>
-          -->
-
-          <div class="form-group">
-            <div class="label-row toggle-container">
-              <div class="toggle-label-wrapper">
-                <label class="toggle-label">Cache</label>
-                <app-help-tooltip
-                  [text]="
-                    'Enable to cache responses for repeated queries, improving performance and reducing costs.'
-                  "
-                ></app-help-tooltip>
-              </div>
-              <app-toggle-switch formControlName="cache"></app-toggle-switch>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <div class="label-row toggle-container">
-              <div class="toggle-label-wrapper">
-                <label class="toggle-label">Allow Code Execution</label>
-                <app-help-tooltip
-                  [text]="
-                    'Enable to allow the agent to run code. Use with caution as this gives the agent more capabilities.'
-                  "
-                ></app-help-tooltip>
-              </div>
-              <app-toggle-switch
-                formControlName="allow_code_execution"
-              ></app-toggle-switch>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <div class="label-row toggle-container">
-              <div class="toggle-label-wrapper">
-                <label class="toggle-label">Respect Context Window</label>
-                <app-help-tooltip
-                  [text]="
-                    'When enabled, the agent will be aware of context window limitations and adjust accordingly.'
-                  "
-                ></app-help-tooltip>
-              </div>
-              <app-toggle-switch
-                formControlName="respect_context_window"
-              ></app-toggle-switch>
-            </div>
-          </div>
-        </div>
-
-        <!-- Execution Settings Section -->
-        <h4 class="section-title">Execution Settings</h4>
-
-        <!-- Numeric Fields Row -->
-        <div class="numeric-row">
-          <div class="form-group">
-            <div class="label-row">
-              <label for="max_iter" class="field-label">Max Iterations</label>
-              <app-help-tooltip
-                [text]="
-                  'The maximum number of iterations the agent will perform before stopping.'
-                "
-              ></app-help-tooltip>
-            </div>
-            <input
-              id="max_iter"
-              type="number"
-              formControlName="max_iter"
-              placeholder="Enter max iterations"
-              min="1"
-              [style.--active-color]="activeColor"
-            />
-          </div>
-
-          <div class="form-group">
-            <div class="label-row">
-              <label for="max_execution_time" class="field-label"
-                >Max Execution Time (seconds)</label
-              >
-              <app-help-tooltip
-                [text]="
-                  'The maximum time in seconds the agent will run before timing out.'
-                "
-              ></app-help-tooltip>
-            </div>
-            <input
-              id="max_execution_time"
-              type="number"
-              formControlName="max_execution_time"
-              placeholder="Enter execution time"
-              [style.--active-color]="activeColor"
-            />
-          </div>
-
-          <div class="form-group">
-            <div class="label-row">
-              <label for="max_retry_limit" class="field-label"
-                >Max Retry Limit</label
-              >
-              <app-help-tooltip
-                [text]="
-                  'The maximum number of times the agent will retry failed operations.'
-                "
-              ></app-help-tooltip>
-            </div>
-            <input
-              id="max_retry_limit"
-              type="number"
-              formControlName="max_retry_limit"
-              placeholder="Enter max retry limit"
-              [style.--active-color]="activeColor"
-            />
-          </div>
-
-          <!-- Max Requests Per Minute -->
-          <div class="form-group">
-            <div class="label-row">
-              <label for="max_rpm" class="field-label"
-                >Max Requests Per Minute</label
-              >
-              <app-help-tooltip
-                [text]="
-                  'Set the maximum number of API requests the agent can make per minute. Higher values allow more throughput but may increase costs.'
-                "
-              ></app-help-tooltip>
-            </div>
-            <input
-              id="max_rpm"
-              type="number"
-              formControlName="max_rpm"
-              placeholder="Enter max requests per minute"
-              min="1"
-              [style.--active-color]="activeColor"
-            />
-          </div>
-        </div>
-      </div>
+<div class="create-agent">
+    <div class="create-agent__header">
+        <h2 class="create-agent__title">
+            {{ isEditMode ? "Edit Agent" : "Create New Agent" }}
+        </h2>
+        <button
+            mat-icon-button
+            class="create-agent__close-button"
+            (click)="onCancelForm()"
+            [disabled]="isSubmitting()"
+        >
+            <mat-icon>close</mat-icon>
+        </button>
     </div>
 
-    <!-- Footer -->
-    <div class="actions">
-      <button type="button" class="btn-cancel" (click)="onCancelForm()">
-        Cancel
-      </button>
-      <button
-        type="button"
-        class="btn-create"
-        (click)="onSubmitForm()"
-        [disabled]="agentForm.invalid || isSubmitting"
-      >
-        {{
-          isSubmitting
-            ? isEditMode
-              ? "Updating..."
-              : "Creating..."
-            : isEditMode
-            ? "Update Agent"
-            : "Create Agent"
-        }}
-      </button>
+    <form [formGroup]="agentForm" class="create-agent__form">
+        <div class="create-agent__body">
+            <!-- Left Side - Basic Information -->
+            <div class="create-agent__content">
+                <mat-form-field
+                    appearance="outline"
+                    class="create-agent__field create-agent__field--full-width"
+                >
+                    <mat-label>Agent Role</mat-label>
+                    <input
+                        matInput
+                        formControlName="role"
+                        placeholder="Enter agent role"
+                        required
+                    />
+                    @if (agentForm.get('role')?.hasError('required') &&
+                    agentForm.get('role')?.touched) {
+                    <mat-error>Agent role is required</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field
+                    appearance="outline"
+                    class="create-agent__field create-agent__field--full-width"
+                >
+                    <mat-label>Goal</mat-label>
+                    <textarea
+                        matInput
+                        formControlName="goal"
+                        placeholder="Enter agent goal"
+                        rows="3"
+                        required
+                    ></textarea>
+                    @if (agentForm.get('goal')?.hasError('required') &&
+                    agentForm.get('goal')?.touched) {
+                    <mat-error>Goal is required</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field
+                    appearance="outline"
+                    class="create-agent__field create-agent__field--full-width"
+                >
+                    <mat-label>Backstory</mat-label>
+                    <textarea
+                        matInput
+                        formControlName="backstory"
+                        placeholder="Enter agent backstory"
+                        rows="4"
+                        required
+                    ></textarea>
+                    @if (agentForm.get('backstory')?.hasError('required') &&
+                    agentForm.get('backstory')?.touched) {
+                    <mat-error>Backstory is required</mat-error>
+                    }
+                </mat-form-field>
+
+                <!-- LLM Selector -->
+                <div
+                    class="create-agent__field create-agent__field--full-width create-agent__field--agent-llm"
+                >
+                    <div
+                        class="create-agent__setting-label create-agent__setting-label--with-margin"
+                    >
+                        Agent LLM
+                        <mat-icon
+                            class="create-agent__help-icon"
+                            matTooltip="Select the language model that will power this agent's reasoning and responses."
+                            matTooltipPosition="above"
+                            matTooltipClass="create-agent__tooltip"
+                        >
+                            help_outline
+                        </mat-icon>
+                    </div>
+                    <mat-select
+                        formControlName="llm_config"
+                        placeholder="Select agent LLM"
+                    >
+                        <mat-option
+                            *ngFor="let config of llmConfigs"
+                            [value]="config.id"
+                            [matTooltip]="getLLMTooltipText(config)"
+                            matTooltipPosition="above"
+                            matTooltipClass="create-agent__tooltip"
+                        >
+                            <div class="create-agent__llm-option">
+                                <app-icon
+                                    [icon]="getProviderIcon(config)"
+                                    size="20px"
+                                    [ariaLabel]="
+                                        config.providerDetails?.name || ''
+                                    "
+                                    class="create-agent__llm-icon"
+                                ></app-icon>
+                                <span class="create-agent__llm-name">{{
+                                    config.modelDetails?.name || "Unknown Model"
+                                }}</span>
+                                <span
+                                    *ngIf="config.custom_name"
+                                    class="create-agent__llm-custom"
+                                >
+                                    ({{ config.custom_name }})
+                                </span>
+                                <span class="create-agent__llm-temperature">
+                                    {{ getFormattedTemperature(config) }}
+                                </span>
+                            </div>
+                        </mat-option>
+                    </mat-select>
+                    @if (agentForm.get('llm_config')?.hasError('required') &&
+                    agentForm.get('llm_config')?.touched) {
+                    <mat-error>Please select an LLM</mat-error>
+                    }
+                </div>
+
+                <!-- Function LLM Selector -->
+                <div
+                    class="create-agent__field create-agent__field--full-width"
+                >
+                    <div
+                        class="create-agent__setting-label create-agent__setting-label--with-margin"
+                    >
+                        Function LLM
+                        <mat-icon
+                            class="create-agent__help-icon"
+                            matTooltip="Select the language model that will be used for function calling and tool execution by this agent."
+                            matTooltipPosition="above"
+                            matTooltipClass="create-agent__tooltip"
+                        >
+                            help_outline
+                        </mat-icon>
+                    </div>
+                    <mat-select
+                        formControlName="fcm_llm_config"
+                        placeholder="Select function LLM"
+                    >
+                        <mat-option
+                            *ngFor="let config of llmConfigs"
+                            [value]="config.id"
+                            [matTooltip]="getLLMTooltipText(config)"
+                            matTooltipPosition="above"
+                            matTooltipClass="create-agent__tooltip"
+                        >
+                            <div class="create-agent__llm-option">
+                                <app-icon
+                                    [icon]="getProviderIcon(config)"
+                                    size="20px"
+                                    [ariaLabel]="
+                                        config.providerDetails?.name || ''
+                                    "
+                                    class="create-agent__llm-icon"
+                                ></app-icon>
+                                <span class="create-agent__llm-name">{{
+                                    config.modelDetails?.name || "Unknown Model"
+                                }}</span>
+                                <span
+                                    *ngIf="config.custom_name"
+                                    class="create-agent__llm-custom"
+                                >
+                                    ({{ config.custom_name }})
+                                </span>
+                                <span class="create-agent__llm-temperature">
+                                    {{ getFormattedTemperature(config) }}
+                                </span>
+                            </div>
+                        </mat-option>
+                    </mat-select>
+                </div>
+            </div>
+
+            <!-- Right Side - Advanced Settings -->
+            <div class="create-agent__sidebar">
+                <div class="create-agent__settings">
+                    <!-- Knowledge Source -->
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-label">
+                            Knowledge Source
+                            <mat-icon
+                                class="create-agent__help-icon"
+                                matTooltip="Choose a knowledge source to provide additional context and information for this agent."
+                                matTooltipPosition="above"
+                                matTooltipClass="create-agent__tooltip"
+                            >
+                                help_outline
+                            </mat-icon>
+                        </div>
+                        <mat-select
+                            formControlName="knowledge_collection"
+                            placeholder="Select knowledge source"
+                        >
+                            <mat-option [value]="null"
+                                >No knowledge source</mat-option
+                            >
+                            <mat-option
+                                *ngFor="let collection of allKnowledgeSources"
+                                [value]="collection.collection_id"
+                                [matTooltip]="collection.collection_name"
+                                matTooltipPosition="above"
+                                matTooltipClass="create-agent__tooltip"
+                            >
+                                {{ collection.collection_name }}
+                            </mat-option>
+                        </mat-select>
+                    </div>
+
+                    <!-- Tools Selection -->
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-label">
+                            Tools
+                            <mat-icon
+                                class="create-agent__help-icon"
+                                matTooltip="Select the tools this agent will have access to. Tools provide additional capabilities for the agent."
+                                matTooltipPosition="above"
+                                matTooltipClass="create-agent__tooltip"
+                            >
+                                help_outline
+                            </mat-icon>
+                        </div>
+                        <app-tools-selector
+                            [selectedConfiguredTools]="
+                                agentForm.get('configured_tools')?.value || []
+                            "
+                            [selectedPythonCodeTools]="
+                                agentForm.get('python_code_tools')?.value || []
+                            "
+                            [selectedMcpTools]="
+                                agentForm.get('mcp_tools')?.value || []
+                            "
+                            (configuredToolsChange)="
+                                onConfiguredToolsChange($event)
+                            "
+                            (pythonCodeToolsChange)="
+                                onPythonToolsChange($event)
+                            "
+                            (mcpToolsChange)="
+                                onMcpToolsChange($event)
+                            "
+                        ></app-tools-selector>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-label">
+                            Allow Delegation
+                            <mat-icon
+                                class="create-agent__help-icon"
+                                matTooltip="When enabled, this agent can delegate tasks to other agents in the project."
+                                matTooltipPosition="above"
+                                matTooltipClass="create-agent__tooltip"
+                            >
+                                help_outline
+                            </mat-icon>
+                        </div>
+                        <mat-slide-toggle formControlName="allow_delegation">
+                        </mat-slide-toggle>
+                    </div>
+
+                    <!-- <div class="create-agent__setting">
+                        <div class="create-agent__setting-label">
+                            Memory
+                            <mat-icon
+                                class="create-agent__help-icon"
+                                matTooltip="Enable to give the agent memory of past interactions and results."
+                                matTooltipPosition="above"
+                                matTooltipClass="create-agent__tooltip"
+                            >
+                                help_outline
+                            </mat-icon>
+                        </div>
+                        <mat-slide-toggle formControlName="memory">
+                        </mat-slide-toggle>
+                    </div> -->
+
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-label">
+                            Cache
+                            <mat-icon
+                                class="create-agent__help-icon"
+                                matTooltip="Enable caching to store and reuse previous responses for better performance and cost efficiency."
+                                matTooltipPosition="above"
+                                matTooltipClass="create-agent__tooltip"
+                            >
+                                help_outline
+                            </mat-icon>
+                        </div>
+                        <mat-slide-toggle formControlName="cache">
+                        </mat-slide-toggle>
+                    </div>
+
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-label">
+                            Respect Context Window
+                            <mat-icon
+                                class="create-agent__help-icon"
+                                matTooltip="Enable to respect the LLM's context window limits and manage conversation length automatically."
+                                matTooltipPosition="above"
+                                matTooltipClass="create-agent__tooltip"
+                            >
+                                help_outline
+                            </mat-icon>
+                        </div>
+                        <mat-slide-toggle
+                            formControlName="respect_context_window"
+                        >
+                        </mat-slide-toggle>
+                    </div>
+
+                    <!-- Execution Settings -->
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-header">
+                            <div class="create-agent__setting-label">
+                                Max Iterations
+                                <mat-icon
+                                    class="create-agent__help-icon"
+                                    matTooltip="The maximum number of iterations the agent will perform before stopping."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-agent__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-agent__setting-value">
+                                {{ agentForm.get("max_iter")?.value || 10 }}
+                            </div>
+                        </div>
+                        <div class="create-agent__slider-container">
+                            <mat-slider
+                                min="1"
+                                max="30"
+                                step="1"
+                                discrete
+                                [displayWith]="formatIterationLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="max_iter"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-header">
+                            <div class="create-agent__setting-label">
+                                Max Execution Time (seconds)
+                                <mat-icon
+                                    class="create-agent__help-icon"
+                                    matTooltip="The maximum time in seconds the agent will run before timing out."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-agent__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-agent__setting-value">
+                                {{
+                                    agentForm.get("max_execution_time")
+                                        ?.value || 60
+                                }}s
+                            </div>
+                        </div>
+                        <div class="create-agent__slider-container">
+                            <mat-slider
+                                min="1"
+                                max="300"
+                                step="1"
+                                discrete
+                                [displayWith]="formatExecutionTimeLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="max_execution_time"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-header">
+                            <div class="create-agent__setting-label">
+                                Max Retry Limit
+                                <mat-icon
+                                    class="create-agent__help-icon"
+                                    matTooltip="The maximum number of times the agent will retry failed operations."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-agent__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-agent__setting-value">
+                                {{
+                                    agentForm.get("max_retry_limit")?.value ?? 3
+                                }}
+                            </div>
+                        </div>
+                        <div class="create-agent__slider-container">
+                            <mat-slider
+                                min="0"
+                                max="10"
+                                step="1"
+                                discrete
+                                [displayWith]="formatRetryLimitLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="max_retry_limit"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-header">
+                            <div class="create-agent__setting-label">
+                                Max RPM
+                                <mat-icon
+                                    class="create-agent__help-icon"
+                                    matTooltip="Set the maximum number of API requests the agent can make per minute. Higher values allow more throughput but may increase costs."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-agent__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-agent__setting-value">
+                                {{ agentForm.get("max_rpm")?.value || 10 }} RPM
+                            </div>
+                        </div>
+                        <div class="create-agent__slider-container">
+                            <mat-slider
+                                min="1"
+                                max="30"
+                                step="1"
+                                discrete
+                                [displayWith]="formatRpmLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="max_rpm"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-header">
+                            <div class="create-agent__setting-label">
+                                Search Limit
+                                <mat-icon
+                                    class="create-agent__help-icon"
+                                    matTooltip="Maximum number of search results to retrieve from the knowledge base. Higher values provide more context but may slow down processing."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-agent__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-agent__setting-value">
+                                {{ agentForm.get("search_limit")?.value || 10 }}
+                            </div>
+                        </div>
+                        <div class="create-agent__slider-container">
+                            <mat-slider
+                                min="1"
+                                max="1000"
+                                step="1"
+                                discrete
+                                [displayWith]="formatSearchLimitLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="search_limit"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-header">
+                            <div class="create-agent__setting-label">
+                                Similarity Threshold
+                                <mat-icon
+                                    class="create-agent__help-icon"
+                                    matTooltip="Minimum similarity score (0.1-1.0) for knowledge base search results. Higher values return more relevant but fewer results."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-agent__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-agent__setting-value">
+                                {{
+                                    agentForm.get("similarity_threshold")
+                                        ?.value ?? 0.7
+                                }}
+                            </div>
+                        </div>
+                        <div class="create-agent__slider-container">
+                            <mat-slider
+                                min="0.0"
+                                max="1.0"
+                                step="0.01"
+                                discrete
+                                [displayWith]="formatThresholdLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="similarity_threshold"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="create-agent__footer">
+        <button
+            mat-button
+            type="button"
+            class="create-agent__button create-agent__button--cancel"
+            (click)="onCancelForm()"
+            [disabled]="isSubmitting()"
+        >
+            Cancel
+        </button>
+        <button
+            mat-flat-button
+            class="create-agent__button create-agent__button--submit"
+            [disabled]="isSubmitting() || agentForm.invalid"
+            (click)="onSubmitForm()"
+        >
+            @if (isSubmitting()) {
+            <mat-spinner diameter="16"></mat-spinner>
+            } @else {
+            {{ isEditMode ? "Update Agent" : "Create Agent" }}
+            }
+        </button>
     </div>
-  </form>
 </div>

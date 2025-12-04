@@ -19,7 +19,7 @@ export class RunGraphService {
     private graphService: FlowsApiService,
     private crewNodeService: CrewNodeService,
     private configService: ConfigService
-  ) {}
+  ) { }
 
   private get apiUrl(): string {
     return this.configService.apiUrl;
@@ -27,14 +27,11 @@ export class RunGraphService {
 
   runGraph(graphId: number, initialState?: any): Observable<RunGraphResponse> {
     const url = `${this.apiUrl}run-session/`;
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-    });
-    const body = {
-      graph_id: graphId,
-      initial_state: initialState || {},
-    };
-    return this.http.post<RunGraphResponse>(url, body, { headers });
+    const formData = new FormData();
+    formData.append('graph_id', graphId.toString());
+    formData.append('initial_state', JSON.stringify(initialState || {}));
+
+    return this.http.post<RunGraphResponse>(url, formData);
   }
 
   /*

@@ -167,7 +167,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -187,3 +187,19 @@ CACHES = {
         },
     }
 }
+
+
+KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL = os.getenv(
+    "KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL", "knowledge:chunk"
+)
+KNOWLEDGE_DOCUMENT_CHUNK_RESPONSE = os.getenv(
+    "KNOWLEDGE_DOCUMENT_CHUNK_RESPONSE", "knowledge:chunk:response"
+)
+STOP_SESSION_CHANNEL = os.getenv("STOP_SESSION_CHANNEL", "sessions:stop")
+
+WEBHOOK_USE_TUNNEL = os.getenv("WEBHOOK_USE_TUNNEL", "False") in ["True", "true", 1]
+
+if WEBHOOK_USE_TUNNEL:
+    WEBHOOK_TUNNEL = os.getenv("WEBHOOK_TUNNEL", None)
+else:
+    WEBHOOK_TUNNEL = None

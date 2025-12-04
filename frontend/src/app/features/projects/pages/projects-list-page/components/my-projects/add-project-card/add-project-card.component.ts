@@ -4,47 +4,44 @@ import {
     Output,
     EventEmitter,
 } from '@angular/core';
-
-import { CardModule } from 'primeng/card';
+import { AppIconComponent } from '../../../../../../../shared/components/app-icon/app-icon.component';
 
 @Component({
     selector: 'app-add-project-card',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CardModule],
+    imports: [AppIconComponent],
     template: `
-        <p-card (click)="createClick.emit()" class="add-project-card">
+        <div class="add-project-card" (click)="createClick.emit()">
             <div class="content">
                 <div class="plus-icon">
-                    <i class="pi pi-plus"></i>
+                    <app-icon icon="ui/plus" size="2.5rem"></app-icon>
                 </div>
                 <div class="title">Create New Project</div>
             </div>
-        </p-card>
+        </div>
     `,
     styles: [
         `
-            :host ::ng-deep .add-project-card {
+            .add-project-card {
+                background: transparent;
+                border-radius: 12px;
+                padding: 1.5rem;
+                color: var(--color-text-primary);
+                font-size: 1rem;
+                display: flex;
+                flex-direction: column;
+                height: 168px;
+                transition: all 0.2s ease;
+                position: relative;
+                border: 1px dashed #3a3e48;
                 cursor: pointer;
-                height: 165px;
+            }
 
-                .p-card {
-                    height: 100%;
-                    border: 1px dashed rgba(255, 255, 255, 0.2);
-                    background: transparent;
-                    transition: all 0.2s ease;
-                }
-
-                .p-card:hover {
-                    border-color: var(--accent-color);
-                }
-
-                .p-card-body {
-                    height: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
+            .add-project-card:hover {
+                border-color: var(--accent-color);
+                box-shadow: 0 12px 20px rgba(0, 0, 0, 0.18),
+                    0 3px 6px rgba(0, 0, 0, 0.1);
             }
 
             .content {
@@ -52,8 +49,8 @@ import { CardModule } from 'primeng/card';
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
+                height: 100%;
                 text-align: center;
-                gap: 1rem;
             }
 
             .plus-icon {
@@ -62,24 +59,24 @@ import { CardModule } from 'primeng/card';
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.1);
+                margin-bottom: 0.5rem;
+            }
 
-                i {
-                    font-size: 2rem;
-                    color: var(--accent-color);
-                }
+            .plus-icon app-icon {
+                color: var(--accent-color);
+                width: 2.5rem;
+                height: 2.5rem;
             }
 
             .title {
                 font-size: 16px;
                 font-weight: 500;
-                color: var(--color-text-secondary);
+                color: #8b8e98;
                 transition: color 0.2s ease;
             }
 
-            :host ::ng-deep .add-project-card:hover .title {
-                color: var(--color-text-primary);
+            .add-project-card:hover .title {
+                color: #ffffff;
             }
         `,
     ],

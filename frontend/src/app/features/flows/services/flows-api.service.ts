@@ -57,6 +57,12 @@ export class FlowsApiService {
     return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
 
+  copyGraph(graph: GraphDto): Observable<GraphDto> {
+    return this.http.post<GraphDto>(`${this.apiUrl}${graph.id}/copy/`, graph, {
+      headers: this.httpHeaders,
+    });
+  }
+
   getGraphStatus(runId: string): Observable<any> {
     return this.http.get<any>(
       `${this.configService.apiUrl}graph_runs/${runId}/status/`

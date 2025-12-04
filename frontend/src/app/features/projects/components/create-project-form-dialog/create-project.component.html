@@ -1,300 +1,232 @@
-<div class="wrapper">
-  <!-- Header -->
-  <div class="dialog-header">
-    <div class="icon-and-title">
-      <app-icon
-        icon="ui/project"
-        size="2rem"
-        style="color: var(--accent-color); margin-right: 12px"
-      ></app-icon>
-      <span class="title">Create New Project</span>
-    </div>
-    <app-icon-button
-      icon="ui/x"
-      ariaLabel="Close dialog"
-      size="2rem"
-      (onClick)="onCancelForm()"
-    >
-    </app-icon-button>
-  </div>
-
-  <!-- Tabs Navigation -->
-  <div class="tabs-navigation">
-    <button
-      class="tab-button"
-      [class.active]="activeTab === 'overview'"
-      (click)="switchTab('overview')"
-    >
-      Overview
-    </button>
-    <button
-      class="tab-button"
-      [class.active]="activeTab === 'configurations'"
-      (click)="switchTab('configurations')"
-    >
-      Configurations
-    </button>
-  </div>
-
-  <form [formGroup]="projectForm" (ngSubmit)="$event.preventDefault()">
-    <div class="dialog-content">
-      <!-- Overview Tab -->
-      <div class="tab-content" [hidden]="activeTab !== 'overview'">
-        <!-- Project Name with Icon -->
-        <div class="form-group">
-          <div class="label-row">
-            <label for="name" class="field-label">
-              Project Name <span class="required-asterisk">*</span>
-              <span
-                class="required"
-                *ngIf="projectForm.get('name')?.errors?.['required'] && projectForm.get('name')?.dirty"
-              >
-                Name is required
-              </span>
-            </label>
-            <app-help-tooltip
-              [text]="'Enter a descriptive name for your project.'"
-            ></app-help-tooltip>
-          </div>
-          <div class="input-with-icon">
-            <!-- <app-icon-picker
-              [selectedIcon]="selectedIcon"
-              (iconSelected)="onIconSelected($event)"
-            ></app-icon-picker> -->
-            <input
-              id="name"
-              type="text"
-              formControlName="name"
-              placeholder="Enter project name..."
-              autocomplete="off"
-              [style.--active-color]="activeColor"
-            />
-          </div>
-        </div>
-
-        <!-- Description -->
-        <div class="form-group">
-          <div class="label-row">
-            <label for="description" class="field-label"
-              >Project Description</label
-            >
-            <app-help-tooltip
-              [text]="
-                'Provide a brief description of what this project aims to accomplish.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <textarea
-            id="description"
-            formControlName="description"
-            placeholder="Enter project description (optional)..."
-            rows="5"
-            [style.--active-color]="activeColor"
-          ></textarea>
-        </div>
-
-        <!-- Process Type -->
-        <div class="form-group">
-          <div class="label-row">
-            <label class="field-label">Process Type</label>
-            <app-help-tooltip
-              [text]="
-                'Select the process type for your project. Sequential runs tasks in order, hierarchical allows for more complex flows.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <app-process-selector
-            [initialValue]="projectForm.get('process_type')?.value"
-            (valueChange)="setProcessType($event)"
-          ></app-process-selector>
-        </div>
-
-        <!-- Manager Settings (only for hierarchical) -->
-        <div
-          class="manager-settings"
-          [hidden]="projectForm.get('process_type')?.value !== 'hierarchical'"
+<div class="create-project">
+    <div class="create-project__header">
+        <h2 class="create-project__title">Create New Project</h2>
+        <button
+            mat-icon-button
+            class="create-project__close-button"
+            (click)="onCancel()"
+            [disabled]="isSubmitting()"
         >
-          <p class="info-message">Required fields for hierarchical process:</p>
-
-          <div class="form-group">
-            <div class="label-row">
-              <label class="field-label"
-                >Manager LLM <span class="required-asterisk">*</span></label
-              >
-              <app-help-tooltip
-                [text]="
-                  'Choose the LLM configuration that will manage the hierarchical process.'
-                "
-              ></app-help-tooltip>
-            </div>
-            <app-llm-model-selector
-              [llmConfigs]="llmConfigs"
-              placeholder="Select a manager LLM configuration"
-              formControlName="manager_llm_config"
-              (modelSelected)="onManagerLLMChange($event)"
-            ></app-llm-model-selector>
-          </div>
-
-          <div class="form-group">
-            <div class="label-row">
-              <label class="field-label">Manager Creativity</label>
-              <app-help-tooltip
-                [text]="
-                  'Adjust the creativity level for the manager LLM. Higher values allow for more creative responses.'
-                "
-              ></app-help-tooltip>
-            </div>
-            <app-form-slider
-              [value]="sliderValue"
-              label=""
-              (valueChange)="onSliderInput($event)"
-            ></app-form-slider>
-          </div>
-        </div>
-      </div>
-
-      <!-- Configurations Tab -->
-      <div class="tab-content" [hidden]="activeTab !== 'configurations'">
-        <!-- Advanced Settings -->
-        <div class="configurations-settings">
-          <div class="form-group">
-            <div class="label-row toggle-container">
-              <div class="toggle-label-wrapper">
-                <label class="toggle-label">Memory</label>
-                <app-help-tooltip
-                  [text]="
-                    'Enable or disable memory for this project. Memory allows the agent to remember previous interactions.'
-                  "
-                ></app-help-tooltip>
-              </div>
-              <app-toggle-switch formControlName="memory"></app-toggle-switch>
-            </div>
-          </div>
-
-          <!-- Memory Settings (only when memory is enabled) -->
-          <div
-            class="memory-settings"
-            [hidden]="!projectForm.get('memory')?.value"
-          >
-            <p class="info-message">Memory configuration:</p>
-
-            <div class="form-group">
-              <div class="label-row">
-                <label class="field-label"
-                  >Memory LLM <span class="required-asterisk">*</span></label
-                >
-                <app-help-tooltip
-                  [text]="'Choose the LLM configuration for memory operations.'"
-                ></app-help-tooltip>
-              </div>
-              <app-llm-model-selector
-                [llmConfigs]="llmConfigs"
-                placeholder="Select a memory LLM configuration"
-                formControlName="memory_llm_config"
-                (modelSelected)="onMemoryLLMChange($event)"
-              ></app-llm-model-selector>
-            </div>
-
-            <div class="form-group">
-              <div class="label-row">
-                <label class="field-label"
-                  >Memory Embedding Model
-                  <span class="required-asterisk">*</span></label
-                >
-                <app-help-tooltip
-                  [text]="
-                    'Select the embedding model for memory operations and context storage.'
-                  "
-                ></app-help-tooltip>
-              </div>
-              <app-embedding-model-selector
-                [embeddingConfigs]="embeddingConfigs"
-                placeholder="Select an embedding configuration"
-                formControlName="embedding_config"
-                (modelSelected)="onEmbeddingChange($event)"
-              ></app-embedding-model-selector>
-            </div>
-          </div>
-
-          <!-- Cache Setting -->
-          <div class="form-group">
-            <div class="label-row toggle-container">
-              <div class="toggle-label-wrapper">
-                <label class="toggle-label">Cache</label>
-                <app-help-tooltip
-                  [text]="
-                    'Enable or disable caching for this project. Caching can improve performance by reusing previous results.'
-                  "
-                ></app-help-tooltip>
-              </div>
-              <app-toggle-switch formControlName="cache"></app-toggle-switch>
-            </div>
-          </div>
-
-          <!-- Full Output Setting - Commented -->
-          <!-- <div class="form-group">
-            <div class="label-row toggle-container">
-              <div class="toggle-label-wrapper">
-                <label class="toggle-label">Full Output</label>
-                <app-help-tooltip
-                  [text]="
-                    'Enable to get detailed output from all operations in the project.'
-                  "
-                ></app-help-tooltip>
-              </div>
-              <app-toggle-switch
-                formControlName="full_output"
-              ></app-toggle-switch>
-            </div>
-          </div> -->
-
-          <!-- Planning Setting - Commented -->
-          <!-- <div class="form-group">
-            <div class="label-row toggle-container">
-              <div class="toggle-label-wrapper">
-                <label class="toggle-label">Planning</label>
-                <app-help-tooltip
-                  [text]="'Enable to use planning in the project workflow.'"
-                ></app-help-tooltip>
-              </div>
-              <app-toggle-switch formControlName="planning"></app-toggle-switch>
-            </div>
-          </div> -->
-        </div>
-
-        <!-- Max Requests Per Minute -->
-        <div class="form-group">
-          <div class="label-row">
-            <label class="field-label">Max Requests Per Minute</label>
-            <app-help-tooltip
-              [text]="
-                'Set the maximum number of requests per minute (RPM) for this project.'
-              "
-            ></app-help-tooltip>
-          </div>
-          <app-form-slider
-            [value]="maxRpmSliderValue"
-            [max]="50"
-            label=""
-            (valueChange)="onMaxRpmSliderInput($event)"
-          ></app-form-slider>
-        </div>
-      </div>
+            <mat-icon>close</mat-icon>
+        </button>
     </div>
 
-    <!-- Footer -->
-    <div class="actions">
-      <button type="button" class="btn-cancel" (click)="onCancelForm()">
-        Cancel
-      </button>
-      <button
-        type="button"
-        class="btn-create"
-        (click)="onSubmitForm()"
-        [disabled]="projectForm.invalid || isSubmitting"
-      >
-        {{ isSubmitting ? "Creating..." : "Create Project" }}
-      </button>
+    <form [formGroup]="projectForm" class="create-project__form">
+        <div class="create-project__body">
+            <div class="create-project__content">
+                <mat-form-field
+                    appearance="outline"
+                    class="create-project__field create-project__field--full-width"
+                >
+                    <mat-label>Project Name</mat-label>
+                    <input
+                        matInput
+                        formControlName="name"
+                        placeholder="Enter project name"
+                        required
+                    />
+                    @if (nameField.hasError('required')) {
+                    <mat-error> Project name is required </mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field
+                    appearance="outline"
+                    class="create-project__field create-project__field--full-width"
+                >
+                    <mat-label>Description</mat-label>
+                    <textarea
+                        matInput
+                        formControlName="description"
+                        placeholder="Enter project description (optional)"
+                        rows="4"
+                    ></textarea>
+                </mat-form-field>
+
+                <div class="create-project__process-section">
+                    <h3 class="create-project__setting-label">Process Type</h3>
+                    <mat-radio-group
+                        formControlName="process"
+                        aria-label="Select process type"
+                        class="create-project__process-group"
+                    >
+                        <mat-radio-button [value]="ProjectProcess.SEQUENTIAL"
+                            >Sequential</mat-radio-button
+                        >
+                        <mat-radio-button
+                            [value]="ProjectProcess.HIERARCHICAL"
+                            [disabled]="true"
+                            >Hierarchical
+                            <span class="create-project__coming-soon-title"
+                                >Coming Soon</span
+                            >
+                        </mat-radio-button>
+                    </mat-radio-group>
+                </div>
+            </div>
+
+            <div class="create-project__sidebar">
+                <div class="create-project__settings">
+                    <div class="create-project__setting">
+                        <div class="create-project__setting-label">
+                            Memory
+                            <mat-icon
+                                class="create-project__help-icon"
+                                matTooltip="Enable persistent memory for agents to remember information across conversations and tasks."
+                                matTooltipPosition="above"
+                                matTooltipClass="create-project__tooltip"
+                            >
+                                help_outline
+                            </mat-icon>
+                        </div>
+                        <mat-slide-toggle
+                            formControlName="memory"
+                            class="create-project__setting-toggle"
+                        >
+                        </mat-slide-toggle>
+                    </div>
+
+                    <div class="create-project__setting">
+                        <div class="create-project__setting-label">
+                            Cache
+                            <mat-icon
+                                class="create-project__help-icon"
+                                matTooltip="Enable caching of API responses to improve performance and reduce costs for repeated requests."
+                                matTooltipPosition="above"
+                                matTooltipClass="create-project__tooltip"
+                            >
+                                help_outline
+                            </mat-icon>
+                        </div>
+                        <mat-slide-toggle
+                            formControlName="cache"
+                            class="create-project__setting-toggle"
+                        >
+                        </mat-slide-toggle>
+                    </div>
+
+                    <div class="create-project__setting">
+                        <div class="create-project__setting-header">
+                            <div class="create-project__setting-label">
+                                Max RPM
+                                <mat-icon
+                                    class="create-project__help-icon"
+                                    matTooltip="Maximum requests per minute for API calls. Higher values allow faster processing but may hit rate limits."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-project__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-project__setting-value">
+                                {{ maxRpmField.value }} RPM
+                            </div>
+                        </div>
+                        <div class="create-project__rpm-container">
+                            <mat-slider
+                                min="1"
+                                max="50"
+                                step="1"
+                                discrete
+                                [displayWith]="formatRpmLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="max_rpm"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+
+                    <div class="create-project__setting">
+                        <div class="create-project__setting-header">
+                            <div class="create-project__setting-label">
+                                Search Limit
+                                <mat-icon
+                                    class="create-project__help-icon"
+                                    matTooltip="Maximum number of search results to retrieve from the knowledge base. Higher values provide more context but may slow down processing."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-project__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-project__setting-value">
+                                {{ searchLimitField.value }}
+                            </div>
+                        </div>
+                        <div class="create-project__rpm-container">
+                            <mat-slider
+                                min="1"
+                                max="100"
+                                step="1"
+                                discrete
+                                [displayWith]="formatSearchLimitLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="search_limit"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+
+                    <div class="create-project__setting">
+                        <div class="create-project__setting-header">
+                            <div class="create-project__setting-label">
+                                Similarity Threshold
+                                <mat-icon
+                                    class="create-project__help-icon"
+                                    matTooltip="Minimum similarity score (0.1-1.0) for knowledge base search results. Higher values return more relevant but fewer results."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-project__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-project__setting-value">
+                                {{ thresholdField.value }}
+                            </div>
+                        </div>
+                        <div class="create-project__rpm-container">
+                            <mat-slider
+                                min="0.0"
+                                max="1.0"
+                                step="0.01"
+                                discrete
+                                [displayWith]="formatThresholdLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="similarity_threshold"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="create-project__footer">
+        <button
+            mat-button
+            type="button"
+            class="create-project__button create-project__button--cancel"
+            (click)="onCancel()"
+            [disabled]="isSubmitting()"
+        >
+            Cancel
+        </button>
+        <button
+            mat-flat-button
+            class="create-project__button create-project__button--submit"
+            [disabled]="isSubmitting() || projectForm.invalid"
+            (click)="onSubmit()"
+        >
+            @if (isSubmitting()) {
+            <mat-spinner diameter="16"></mat-spinner>
+            } @else { Create Project }
+        </button>
     </div>
-  </form>
 </div>

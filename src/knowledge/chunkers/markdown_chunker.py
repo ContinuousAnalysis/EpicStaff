@@ -36,7 +36,7 @@ class MarkdownChunker(BaseChunker):
         else:
             return []
 
-    def chunk(self, text):
+    def chunk(self, text: str) -> list[str]:
         md_splits = self.markdown_splitter.split_text(text)
         result_text_splits = []
         for doc in md_splits:
