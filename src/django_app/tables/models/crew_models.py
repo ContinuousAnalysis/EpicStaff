@@ -176,6 +176,21 @@ class AgentPythonCodeTools(models.Model):
         unique_together = ("agent_id", "pythoncodetool_id")
 
 
+class AgentPythonCodeToolConfigs(models.Model):
+    agent = models.ForeignKey(
+        "Agent", on_delete=models.CASCADE, related_name="python_code_tool_configs"
+    )
+    pythoncodetoolconfig = models.ForeignKey(
+        "PythonCodeToolConfig", on_delete=models.CASCADE
+    )
+
+    class Meta:
+        unique_together = (
+            "agent_id",
+            "pythoncodetoolconfig_id",
+        )
+
+
 class AgentMcpTools(models.Model):
     agent = models.ForeignKey(
         "Agent", on_delete=models.CASCADE, related_name="mcp_tools"
@@ -247,6 +262,7 @@ class Crew(AbstractDefaultFillableModel):
         blank=True,
         help_text="Float between 0.00 and 1.00 for knowledge",
     )
+    is_template = models.BooleanField(default=False)
 
     def get_default_model(self):
         return DefaultCrewConfig.load()
@@ -433,6 +449,18 @@ class TaskPythonCodeTools(models.Model):
         "Task", on_delete=models.CASCADE, related_name="task_python_code_tool_list"
     )
     tool = models.ForeignKey("PythonCodeTool", on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("task", "tool")
+
+
+class TaskPythonCodeToolConfigs(models.Model):
+    task = models.ForeignKey(
+        "Task",
+        on_delete=models.CASCADE,
+        related_name="task_python_code_tool_config_list",
+    )
+    tool = models.ForeignKey("PythonCodeToolConfig", on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ("task", "tool")

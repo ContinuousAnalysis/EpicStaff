@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 from typing import Any, List, Literal, Optional, Union
 from pydantic import AnyUrl, BaseModel, HttpUrl, model_validator
@@ -109,7 +110,7 @@ class BaseToolData(BaseModel):
             raise ValueError(
                 "Invalid unique_name. Unique name should be splited by `:`. \nFor example: python-code-tool:1"
             )
-        if prefix == "python-code-tool":
+        if prefix == "python-code-tool" or "python-code-tool-config":
             values["data"] = PythonCodeToolData(**data)
         elif prefix == "configured-tool":
             values["data"] = ConfiguredToolData(**data)
