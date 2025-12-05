@@ -88,12 +88,25 @@ def create_collection(collection_name: str, file_names: list[str], embedder: int
     try:
         r = requests.post(f"{{API_BASE}}/source-collections/", data=data, files=opened_files)
         r.raise_for_status()
-        return r.json()
+        return wait_collection(collection_name)
     except Exception as e:
         logger.error(e)
     finally:
         for _, (_, file_obj, _) in opened_files:
             file_obj.close()
+
+def wait_collection(collection_name: str, max_wait: int= 30, wait_interval: int= 2):
+    waited = 0
+    collection = get_collection_by_name(collection_name)
+    while collection is None:
+        if waited >= max_wait:
+            result = f"Collection '{{collection_name}}' did not appear after {{max_wait}} seconds"
+            logger.error(result)
+            return result
+        time.sleep(wait_interval)
+        waited += wait_interval
+        collection = get_collection_by_name(collection_name)
+    return collection
 
 def wait_completed(collection_name: str):
     collection = get_collection_by_name(collection_name)
