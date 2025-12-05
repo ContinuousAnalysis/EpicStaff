@@ -13,6 +13,8 @@ from tables.views.model_view_sets import (
     GraphLightViewSet,
     GraphViewSet,
     McpToolViewSet,
+    PythonCodeToolConfigFieldViewSet,
+    PythonCodeToolConfigViewSet,
     PythonNodeViewSet,
     FileExtractorNodeViewSet,
     LLMNodeViewSet,
@@ -143,7 +145,8 @@ router.register(r"graph-organization-users", GraphOrganizationUserViewSet)
 router.register(r"document-chunks", ChunkViewSet)
 router.register(r"webhook-trigger-nodes", WebhookTriggerNodeViewSet)
 router.register(r"webhook-triggers", WebhookTriggerViewSet)
-
+router.register(r"python-code-tool-configs", PythonCodeToolConfigViewSet)
+router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
