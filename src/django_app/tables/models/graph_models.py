@@ -127,7 +127,7 @@ class WebScraperKnowledgeNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="web_scraper_knowledge_node_list"
     )
     collection_name = models.CharField(max_length=255)
-    time_to_expired = models.IntegerField()
+    time_to_expired = models.IntegerField(default=-1, blank=True)
     embedder = models.IntegerField()
 
     class Meta:
