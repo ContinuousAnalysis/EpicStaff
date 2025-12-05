@@ -200,23 +200,11 @@ class SessionViewSet(
             session_list = Session.objects.filter(id__in=ids)
             deleted_count = session_list.count()
             for session in session_list:
-                session.delete(
-                    callback=lambda: session_manager_service.stop_session(
-                        session_id=session.pk
-                    )
-                )
+                session.delete()
 
         return Response(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
-
-    def destroy(self, request, *args, **kwargs):
-        session: Session = self.get_object()
-        session.delete(
-            callback=lambda: session_manager_service.stop_session(session_id=session.pk)
-        )
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class RunSession(APIView):
 
