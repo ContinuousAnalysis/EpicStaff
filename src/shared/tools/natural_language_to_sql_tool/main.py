@@ -1,10 +1,10 @@
-# NL2SQL Tool
+# Natural Language To SQL Tool
 
 from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_openai import ChatOpenAI
 
-class NL2SQLTool:
+class NaturalLanguageToSQLTool:
     def __init__(self):
         self.db_uri = state["variables"]["DB_URI"]
         self.openai_api_key = state["variables"]["OPENAI_API_KEY"]
@@ -34,5 +34,5 @@ class NL2SQLTool:
         return result["output"]
     
 def main(query_text):
-    nl2sql = NL2SQLTool()
+    nl2sql = NaturalLanguageToSQLTool()
     return nl2sql.run_query(query_text)

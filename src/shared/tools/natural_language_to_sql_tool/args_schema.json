@@ -1,5 +1,5 @@
 {
-  "title": "NL2SQLArgs",
+  "title": "NaturalLanguageToSQLArgs",
   "type": "object",
   "properties": {
     "query_text": {
