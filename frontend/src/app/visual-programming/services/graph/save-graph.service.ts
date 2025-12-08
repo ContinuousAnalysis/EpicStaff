@@ -14,6 +14,7 @@ import {
     StartNodeModel,
     LLMNodeModel,
     NodeModel,
+    WebScraperNodeModel,
 } from '../../core/models/node.model';
 
 import { ToastService } from '../../../services/notifications/toast.service';
@@ -42,11 +43,16 @@ import {
     PythonNode,
     CreatePythonNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
+import {
+    CreateWebScraperNodeRequest,
+    GetWebScraperNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/web-scraper.model';
 import { ConditionalEdgeService } from '../../../pages/flows-page/components/flow-visual-programming/services/conditional-edge.service';
 import { CrewNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/crew-node.service';
 import { EdgeService } from '../../../pages/flows-page/components/flow-visual-programming/services/edge.service';
 import { LLMNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/llm-node.service';
 import { PythonNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/python-node.service';
+import { WebScraperNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/web-scraper-node.service';
 import { FileExtractorService } from '../../../pages/flows-page/components/flow-visual-programming/services/file-extractor.service';
 import {
     GraphDto,
@@ -79,6 +85,7 @@ export class GraphUpdateService {
         private llmNodeService: LLMNodeService,
         private fileExtractorService: FileExtractorService,
         private webhookTriggerService: WebhookTriggerNodeService,
+        private webScraperNodeService: WebScraperNodeService,
         private endNodeService: EndNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
         private toastService: ToastService
@@ -103,6 +110,20 @@ export class GraphUpdateService {
         return flowStateCopy;
     }
 
+    /**
+     * Resolve a node id or name to the current node_name within the flow state.
+     * If the value is already a name or cannot be matched, return it as-is.
+     */
+    private resolveNodeName(
+        flowState: FlowModel,
+        idOrName: string | null
+    ): string | null {
+        if (!idOrName) return null;
+        const targetNode = flowState.nodes.find((n) => n.id === idOrName);
+        if (targetNode) return targetNode.node_name;
+        return idOrName;
+    }
+
     public saveGraph(
         flowState: FlowModel,
         graph: GraphDto
@@ -113,6 +134,7 @@ export class GraphUpdateService {
             pythonNodes: PythonNode[];
             llmNodes: any[];
             fileExtractorNodes: any[];
+            webScraperNodes: GetWebScraperNodeRequest[];
             conditionalEdges: any[];
             edges: Edge[];
 
@@ -234,6 +256,76 @@ export class GraphUpdateService {
                         .createFileExtractorNode(payload)
                         .pipe(catchError((err) => throwError(err)));
                 });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
+        // ---- Handle Web Scraper Nodes ----
+        let deleteWebScraperNodes$: Observable<any> = of(null);
+        if (
+            graph.web_scraper_knowledge_node_list &&
+            graph.web_scraper_knowledge_node_list.length > 0
+        ) {
+            const deleteWebScraperReqs =
+                graph.web_scraper_knowledge_node_list.map(
+                    (wsNode: GetWebScraperNodeRequest) =>
+                        this.webScraperNodeService
+                            .deleteWebScraperNode(wsNode.id.toString())
+                            .pipe(catchError((err) => throwError(err)))
+                );
+            deleteWebScraperNodes$ = forkJoin(deleteWebScraperReqs);
+        }
+
+        const webScraperNodes$ = deleteWebScraperNodes$.pipe(
+            switchMap(() => {
+                const webScraperNodes = flowState.nodes.filter(
+                    (node): node is WebScraperNodeModel =>
+                        node.type === NodeType.WEB_SCRAPER
+                );
+
+                const requests = webScraperNodes
+                    .map((node) => {
+                        const collectionName = node.data.collection_name?.trim();
+                        const parsedEmbedder =
+                            typeof node.data.embedder === 'string'
+                                ? Number(node.data.embedder)
+                                : node.data.embedder;
+                        const hasEmbedder = !Number.isNaN(parsedEmbedder);
+
+                        if (!collectionName || !hasEmbedder) {
+                            console.warn(
+                                'WebScraper node skipped (missing collection/embedder):',
+                                node.node_name,
+                                node.data
+                            );
+                            return null;
+                        }
+
+                        const timeToExpired =
+                            typeof node.data.time_to_expired === 'number' &&
+                            !Number.isNaN(node.data.time_to_expired)
+                                ? node.data.time_to_expired
+                                : -1;
+
+                        const payload: CreateWebScraperNodeRequest = {
+                            node_name: node.node_name,
+                            graph: graph.id,
+                            collection_name: collectionName,
+                            time_to_expired: timeToExpired,
+                            embedder: parsedEmbedder,
+                            input_map: node.input_map || {},
+                            output_variable_path:
+                                node.output_variable_path || null,
+                        };
+                        console.log(
+                            'Creating WebScraper node payload:',
+                            payload
+                        );
+                        return this.webScraperNodeService
+                            .createWebScraperNode(payload)
+                            .pipe(catchError((err) => throwError(err)));
+                    })
+                    .filter(Boolean) as Observable<GetWebScraperNodeRequest>[];
                 return requests.length ? forkJoin(requests) : of([]);
             })
         );
@@ -474,73 +566,76 @@ export class GraphUpdateService {
         );
         console.log('before', graph.edge_list);
 
-        const decisionTableNodes$ = deleteDecisionTableNodes$.pipe(
-            switchMap(() => {
-                const decisionTableNodes = flowState.nodes.filter(
-                    (node) => node.type === NodeType.TABLE
-                );
+        const decisionTableNodes$: Observable<GetDecisionTableNodeRequest[]> =
+            deleteDecisionTableNodes$.pipe(
+                switchMap(() => {
+                    const decisionTableNodes = flowState.nodes.filter(
+                        (node) => node.type === NodeType.TABLE
+                    );
 
-                const requests = decisionTableNodes.map((node) => {
-                    const tableData = (node as any).data?.table;
+                    const requests = decisionTableNodes.map((node) => {
+                        const tableData = (node as any).data?.table;
 
-                    // Helper to resolve node ID (or name) to current node name
-                    const resolveNodeName = (idOrName: string | null): string | null => {
-                        if (!idOrName) return null;
-                        // Try to find by ID first
-                        const targetNode = flowState.nodes.find((n) => n.id === idOrName);
-                        if (targetNode) return targetNode.node_name;
-                        // Fallback: maybe it's already a name?
-                        return idOrName;
-                    };
-
-                    const conditionGroups: CreateConditionGroupRequest[] = (
-                        tableData?.condition_groups || []
-                    )
-                        .filter((group: any) => group.valid !== false)
-                        .sort(
-                            (a: any, b: any) =>
-                                (a.order ?? Number.MAX_SAFE_INTEGER) -
-                                (b.order ?? Number.MAX_SAFE_INTEGER)
+                        const conditionGroups: CreateConditionGroupRequest[] = (
+                            tableData?.condition_groups || []
                         )
-                        .map((group: any, index: number) => {
-                            const conditions =
-                                (group.conditions || []).map(
-                                    (condition: any) => ({
-                                        condition_name: condition.condition_name,
-                                        condition: condition.condition,
-                                    })
-                                ) || [];
+                            .filter((group: any) => group.valid !== false)
+                            .sort(
+                                (a: any, b: any) =>
+                                    (a.order ?? Number.MAX_SAFE_INTEGER) -
+                                    (b.order ?? Number.MAX_SAFE_INTEGER)
+                            )
+                            .map((group: any, index: number) => {
+                                const conditions =
+                                    (group.conditions || []).map(
+                                        (condition: any) => ({
+                                            condition_name:
+                                                condition.condition_name,
+                                            condition: condition.condition,
+                                        })
+                                    ) || [];
 
-                            return {
-                                group_name: group.group_name,
-                                group_type: group.group_type || 'complex',
-                                expression: group.expression,
-                                conditions,
-                                manipulation: group.manipulation,
-                                next_node: resolveNodeName(group.next_node),
-                                order:
-                                    typeof group.order === 'number'
-                                        ? group.order
-                                        : index + 1,
-                            };
-                        });
+                                return {
+                                    group_name: group.group_name,
+                                    group_type: group.group_type || 'complex',
+                                    expression: group.expression,
+                                    conditions,
+                                    manipulation: group.manipulation,
+                                    next_node: this.resolveNodeName(
+                                        flowState,
+                                        group.next_node
+                                    ),
+                                    order:
+                                        typeof group.order === 'number'
+                                            ? group.order
+                                            : index + 1,
+                                };
+                            });
 
-                    const payload: CreateDecisionTableNodeRequest = {
-                        graph: graph.id,
-                        node_name: node.node_name,
-                        condition_groups: conditionGroups,
-                        default_next_node: resolveNodeName(tableData?.default_next_node),
-                        next_error_node: resolveNodeName(tableData?.next_error_node),
-                    };
+                        const payload: CreateDecisionTableNodeRequest = {
+                            graph: graph.id,
+                            node_name: node.node_name,
+                            condition_groups: conditionGroups,
+                            default_next_node: this.resolveNodeName(
+                                flowState,
+                                tableData?.default_next_node
+                            ),
+                            next_error_node: this.resolveNodeName(
+                                flowState,
+                                tableData?.next_error_node
+                            ),
+                        };
 
-                    return this.decisionTableNodeService
-                        .createDecisionTableNode(payload)
-                        .pipe(catchError((err) => throwError(err)));
-                });
+                        return this.decisionTableNodeService
+                            .createDecisionTableNode(payload)
+                            .pipe(catchError((err) => throwError(err)));
+                    });
 
-                return requests.length ? forkJoin(requests) : of([]);
-            })
-        );
+                    return requests.length
+                        ? forkJoin<GetDecisionTableNodeRequest[]>(requests)
+                        : of([] as GetDecisionTableNodeRequest[]);
+                })
+            );
 
         // ---- Combine and Update Graph ----
         return forkJoin({
@@ -548,6 +643,7 @@ export class GraphUpdateService {
             pythonNodes: pythonNodes$,
             llmNodes: llmNodes$,
             fileExtractorNodes: fileExtractorNodes$,
+            webScraperNodes: webScraperNodes$,
             webhookTriggerNodes: webhookTriggerNodes$,
             conditionalEdges: conditionalEdges$,
             endNodes: endNodes$,
@@ -560,6 +656,7 @@ export class GraphUpdateService {
                     pythonNodes: PythonNode[];
                     llmNodes: any[];
                     fileExtractorNodes: GetFileExtractorNodeRequest[];
+                    webScraperNodes: GetWebScraperNodeRequest[];
                     webhookTriggerNodes: GetWebhookTriggerNodeRequest[];
                     conditionalEdges: ConditionalEdge[];
                     edges: Edge[];
@@ -594,6 +691,7 @@ export class GraphUpdateService {
                                         llmNodes: results.llmNodes,
                                         fileExtractorNodes:
                                             results.fileExtractorNodes,
+                                        webScraperNodes: results.webScraperNodes,
                                         conditionalEdges:
                                             results.conditionalEdges,
                                         webhookTriggerNodes: results.webhookTriggerNodes,
