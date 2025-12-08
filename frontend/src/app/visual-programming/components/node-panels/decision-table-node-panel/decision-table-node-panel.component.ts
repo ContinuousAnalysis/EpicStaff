@@ -126,15 +126,49 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
             this.conditionGroups() || []
         );
 
+        // Read current connections to get the up-to-date next_node values
+        // This ensures visual connection changes are preserved even if the form has stale data
+        const connections = this.flowService.connections();
+
+        // Helper to resolve next_node from visual connections
+        const resolveNextNodeFromConnection = (portSuffix: string): string | null => {
+            const portId = `${currentNode.id}_${portSuffix}`;
+            const connection = connections.find(
+                c => c.sourceNodeId === currentNode.id && c.sourcePortId === portId
+            );
+            return connection ? connection.targetNodeId : null;
+        };
+
+        // Get the next_node values from connections (source of truth) or fall back to form values
+        const defaultNextFromConnection = resolveNextNodeFromConnection('decision-default');
+        const errorNextFromConnection = resolveNextNodeFromConnection('decision-error');
+
+        // Use connection values if they exist, otherwise fall back to form values
+        const defaultNextNode = defaultNextFromConnection ?? this.form.value.default_next_node ?? null;
+        const errorNextNode = errorNextFromConnection ?? this.form.value.next_error_node ?? null;
+
+        // Update condition groups with current connection data
+        const updatedConditionGroups = conditionGroups.map(group => {
+            if (!group.group_name) return group;
+            
+            const normalizedGroupName = group.group_name.toLowerCase().replace(/\s+/g, '-');
+            const groupNextFromConnection = resolveNextNodeFromConnection(`decision-out-${normalizedGroupName}`);
+            
+            return {
+                ...group,
+                next_node: groupNextFromConnection ?? group.next_node ?? null,
+            };
+        });
+
         const decisionTableData: DecisionTableNode = {
-            default_next_node: this.form.value.default_next_node || null,
-            next_error_node: this.form.value.next_error_node || null,
-            condition_groups: conditionGroups,
+            default_next_node: defaultNextNode,
+            next_error_node: errorNextNode,
+            condition_groups: updatedConditionGroups,
         };
 
         const headerHeight = 60;
         const rowHeight = 46;
-        const validGroupsCount = conditionGroups.filter(g => g.valid).length;
+        const validGroupsCount = updatedConditionGroups.filter(g => g.valid).length;
         const hasDefaultRow = 1;
         const hasErrorRow = 1;
         const totalRows = Math.max(
@@ -150,7 +184,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
 
         const updatedPorts = generatePortsForDecisionTableNode(
             currentNode.id,
-            conditionGroups,
+            updatedConditionGroups,
             !!decisionTableData.default_next_node,
             !!decisionTableData.next_error_node
         );
