@@ -71,7 +71,7 @@ export class ExpressionEditorComponent
         return Object.keys(current).map(key => ({
             key,
             path: [...this.currentPath(), key].join('.'),
-            type: (typeof current[key] === 'object' && current[key] !== null && !Array.isArray(current[key])) ? 'group' : 'value',
+            type: (typeof current[key] === 'object' && current[key] !== null) ? 'group' : 'value',
             value: current[key]
         }));
     });
@@ -92,9 +92,11 @@ export class ExpressionEditorComponent
         // Effect to update overlay inputs when data changes
         effect(() => {
             if (this.autocompleteInstance) {
-                this.autocompleteInstance.items.set(this.autocompleteItems());
-                this.autocompleteInstance.currentPath.set(this.currentPath());
-                this.autocompleteInstance.filterText.set(this.filterText());
+                this.autocompleteInstance.updateData(
+                    this.autocompleteItems(),
+                    this.currentPath(),
+                    this.filterText()
+                );
             }
         });
     }
@@ -115,55 +117,85 @@ export class ExpressionEditorComponent
         // and position the overlay there.
         // OR simpler: position relative to the textarea but offset? No, that's static.
         
-        // Let's try to find the coordinates of the caret.
-        // We can use a hidden div that replicates the textarea's styling and content up to the caret.
-        const rect = this.getCursorCoordinates();
+        // Get cursor coordinates relative to textarea
+        const cursorCoords = this.getCursorCoordinates();
         
+        // Flexible position strategy with fallbacks for all directions
         const positionStrategy = this.overlay.position()
-            .flexibleConnectedTo(this.input) // Still connected to input for fallback/context
+            .flexibleConnectedTo(this.input)
             .withPositions([
+                // Below cursor (preferred)
                 {
                     originX: 'start',
                     originY: 'top',
                     overlayX: 'start',
                     overlayY: 'top',
-                    offsetX: rect.left, // Offset by cursor X
-                    offsetY: rect.top + 10 // Reduced offset to bring closer to @
+                    offsetX: cursorCoords.left,
+                    offsetY: cursorCoords.top + 10
+                },
+                // Above cursor (if no space below)
+                {
+                    originX: 'start',
+                    originY: 'top',
+                    overlayX: 'start',
+                    overlayY: 'bottom',
+                    offsetX: cursorCoords.left,
+                    offsetY: cursorCoords.top - 10
+                },
+                // Below, aligned right (if no space on left)
+                {
+                    originX: 'end',
+                    originY: 'top',
+                    overlayX: 'end',
+                    overlayY: 'top',
+                    offsetX: cursorCoords.left - 250, // Overlay width ~280px
+                    offsetY: cursorCoords.top + 10
+                },
+                // Above, aligned right
+                {
+                    originX: 'end',
+                    originY: 'top',
+                    overlayX: 'end',
+                    overlayY: 'bottom',
+                    offsetX: cursorCoords.left - 250,
+                    offsetY: cursorCoords.top - 10
                 }
             ])
-            .withPush(false); // Don't push it on screen if it goes off, let it clip or handle better? 
-                              // Actually .withPush(true) is better to keep it on screen.
-
-        // Update position strategy to be more robust
-        positionStrategy.withPush(true);
+            .withPush(true)
+            .withViewportMargin(8)
+            .withFlexibleDimensions(false);
 
         this.overlayRef = this.overlay.create({
             positionStrategy,
             scrollStrategy: this.overlay.scrollStrategies.reposition(),
-            hasBackdrop: true,
-            backdropClass: 'cdk-overlay-transparent-backdrop'
-        });
-
-        this.overlayRef.backdropClick().subscribe((event) => {
-            // Prevent backdrop click from propagating to the grid editor stopEditing
-            event.stopPropagation();
-            event.preventDefault();
-            this.showAutocomplete.set(false);
+            hasBackdrop: false // No backdrop - nothing closes the overlay except explicit actions
         });
 
         this.componentPortal = new ComponentPortal(AutocompleteOverlayComponent, this.viewContainerRef);
         const componentRef = this.overlayRef.attach(this.componentPortal);
         this.autocompleteInstance = componentRef.instance;
+        
+        // Prevent overlay interactions from stealing focus from input
+        const overlayElement = this.overlayRef.overlayElement;
+        overlayElement.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Keep focus on input
+            setTimeout(() => this.input.nativeElement.focus());
+        });
 
         // Subscribe to outputs manually
         this.autocompleteInstance.itemSelected.subscribe((item: AutocompleteItem) => this.onItemSelect(item));
         this.autocompleteInstance.navigateUp.subscribe(() => this.onNavigateUp());
         this.autocompleteInstance.navigateDown.subscribe((item: AutocompleteItem) => this.onNavigateDown(item));
+        this.autocompleteInstance.navigateToPath.subscribe((index: number) => this.onNavigateToPath(index));
         
         // Initial data set
-        this.autocompleteInstance.items.set(this.autocompleteItems());
-        this.autocompleteInstance.currentPath.set(this.currentPath());
-        this.autocompleteInstance.filterText.set(this.filterText());
+        this.autocompleteInstance.updateData(
+            this.autocompleteItems(),
+            this.currentPath(),
+            this.filterText()
+        );
     }
     
     private getCursorCoordinates(): { top: number, left: number } {
@@ -257,6 +289,17 @@ export class ExpressionEditorComponent
             this.backdrop.nativeElement.scrollLeft = this.input.nativeElement.scrollLeft;
         }
     }
+    
+    onBlur(event: FocusEvent): void {
+        // If autocomplete is showing, prevent blur from causing issues
+        // Refocus the input to keep editor open
+        if (this.showAutocomplete()) {
+            event.preventDefault();
+            setTimeout(() => {
+                this.input.nativeElement.focus();
+            });
+        }
+    }
 
     private updateHighlighting(): void {
         if (!this.backdrop) return;
@@ -327,8 +370,9 @@ export class ExpressionEditorComponent
                     this.onNavigateUp();
                 }
             } else if (event.key === 'Escape') {
+                // Don't close - do nothing on Escape
                 event.preventDefault();
-                this.showAutocomplete.set(false);
+                event.stopPropagation();
                 return;
             }
         }
@@ -429,11 +473,21 @@ export class ExpressionEditorComponent
             const suffix = this.value.substring(this.cursorPosition);
             this.value = `${prefix}@${suffix}`;
             
+            this.filterText.set('');
+            
+            // Directly update the overlay with new data
+            if (this.autocompleteInstance) {
+                this.autocompleteInstance.updateData(
+                    this.autocompleteItems(),
+                    this.currentPath(),
+                    this.filterText()
+                );
+            }
+            
             setTimeout(() => {
                 this.input.nativeElement.focus();
                 const newCursorPos = lastAtIndex + 1;
                 this.input.nativeElement.setSelectionRange(newCursorPos, newCursorPos);
-                this.filterText.set('');
                 this.cursorPosition = newCursorPos;
             });
         }
@@ -444,5 +498,32 @@ export class ExpressionEditorComponent
             if (path.length === 0) return path;
             return path.slice(0, -1);
         });
+        
+        // Update the overlay with new data
+        if (this.autocompleteInstance) {
+            this.autocompleteInstance.updateData(
+                this.autocompleteItems(),
+                this.currentPath(),
+                this.filterText()
+            );
+        }
+    }
+    
+    onNavigateToPath(index: number): void {
+        // index -1 means root, otherwise slice path to that index + 1
+        if (index === -1) {
+            this.currentPath.set([]);
+        } else {
+            this.currentPath.update(path => path.slice(0, index + 1));
+        }
+        
+        // Update the overlay with new data
+        if (this.autocompleteInstance) {
+            this.autocompleteInstance.updateData(
+                this.autocompleteItems(),
+                this.currentPath(),
+                this.filterText()
+            );
+        }
     }
 }

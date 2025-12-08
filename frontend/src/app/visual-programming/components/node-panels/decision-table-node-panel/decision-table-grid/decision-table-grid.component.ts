@@ -146,11 +146,11 @@ export class DecisionTableGridComponent implements OnInit {
                         (b.order ?? Number.MAX_SAFE_INTEGER)
                 )
                 .map((group, index) => {
-                    // Update group name if it matches the default pattern "Group X" to reflect current position
-                    const groupNameMatch = group.group_name?.match(/^Group (\d+)$/);
+                    // Update group name if it matches the default pattern "Condition X" to reflect current position
+                    const groupNameMatch = group.group_name?.match(/^(Condition|Group) (\d+)$/);
                     const normalizedGroup = {
                         ...group,
-                        group_name: groupNameMatch ? `Group ${index + 1}` : group.group_name,
+                        group_name: groupNameMatch ? `Condition ${index + 1}` : group.group_name,
                         order: index + 1,
                         next_node: findNodeId(group.next_node, group.group_name) // Ensure we use ID with fallback
                     };
@@ -164,7 +164,7 @@ export class DecisionTableGridComponent implements OnInit {
     private createEmptyGroup(index?: number): ConditionGroup {
         const position = index !== undefined ? index + 1 : this.rowData().length + 1;
         return {
-            group_name: `Group ${position}`,
+            group_name: `Condition ${position}`,
             group_type: 'complex',
             expression: null,
             conditions: [],
@@ -210,7 +210,7 @@ export class DecisionTableGridComponent implements OnInit {
             },
         },
         {
-            headerName: 'Group Name',
+            headerName: 'Condition Name',
             field: 'group_name',
             editable: true,
             flex: 1,
@@ -381,12 +381,12 @@ export class DecisionTableGridComponent implements OnInit {
         const updated = this.rowData()
             .filter((_, i) => i !== index)
             .map((group, newIndex) => {
-                // Update group name if it matches the default pattern "Group X"
-                const groupNameMatch = group.group_name?.match(/^Group (\d+)$/);
+                // Update group name if it matches the default pattern "Condition X" or "Group X"
+                const groupNameMatch = group.group_name?.match(/^(Condition|Group) (\d+)$/);
                 if (groupNameMatch) {
                     return {
                         ...group,
-                        group_name: `Group ${newIndex + 1}`,
+                        group_name: `Condition ${newIndex + 1}`,
                         order: newIndex + 1,
                     };
                 }
@@ -418,4 +418,3 @@ export class DecisionTableGridComponent implements OnInit {
         this.conditionGroupsChange.emit(updatedGroups);
     }
 }
-
