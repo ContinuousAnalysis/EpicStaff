@@ -223,6 +223,7 @@ services:
       - DB_CREW_PASSWORD=${DB_CREW_PASSWORD}
       - SESSION_STATUS_CHANNEL=sessions:session_status
       - CODE_RESULT_CHANNEL=code_results
+      - MAX_CONCURRENT_SESSIONS=${MAX_CONCURRENT_SESSIONS}
     volumes:
       - ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH}
       - ${DOCKER_BIN_PATH}:${DOCKER_BIN_PATH}

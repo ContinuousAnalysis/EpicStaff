@@ -206,6 +206,7 @@ class SessionViewSet(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
 
+
 class RunSession(APIView):
 
     @swagger_auto_schema(
@@ -367,9 +368,19 @@ class StopSession(APIView):
         session_id = kwargs.get("session_id", None)
         if session_id is None:
             return Response("Session id is missing", status=status.HTTP_404_NOT_FOUND)
-
         try:
-            session_manager_service.stop_session(session_id=session_id)
+            required_listeners = 2  # manager and crew
+            received_n = session_manager_service.stop_session(session_id=session_id)
+            if received_n < required_listeners:
+
+                logger.error(f"Stop session ({session_id}) was sent but not received.")
+                session = Session.objects.get(pk=session_id)
+                session.status = Session.SessionStatus.ERROR
+                session.status_data = {
+                    "reason": f"Data was sent and received by ({received_n}) listeners, but ({required_listeners}) required."
+                }
+                session.save()
+
         except Session.DoesNotExist:
             return Response("Session not found", status=status.HTTP_404_NOT_FOUND)
 
@@ -748,9 +759,7 @@ class CollectionStatusAPIView(ListAPIView):
 
     def get_queryset(self):
         return (
-            SourceCollection.objects.only(
-                "collection_id", "collection_name", "status"
-            )
+            SourceCollection.objects.only("collection_id", "collection_name", "status")
             .annotate(
                 total_documents=Count("document_metadata"),
                 new_documents=Count(
@@ -787,6 +796,7 @@ class CollectionStatusAPIView(ListAPIView):
                 )
             )
         )
+
 
 class QuickstartView(APIView):
     """
