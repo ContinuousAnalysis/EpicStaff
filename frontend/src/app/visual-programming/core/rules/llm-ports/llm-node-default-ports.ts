@@ -17,6 +17,8 @@ export const DEFAULT_LLM_NODE_PORTS: BasePort[] = [
       'project-out',
       'python-out',
       'python-in',
+      'web-scraper-out',
+      'web-scraper-in',
       'table-in',
     ],
     position: 'right',
@@ -38,6 +40,8 @@ export const DEFAULT_LLM_NODE_PORTS: BasePort[] = [
       'project-out',
       'python-out',
       'python-in',
+      'web-scraper-out',
+      'web-scraper-in',
     ],
     position: 'left',
     color: '#e0575b', // LLM color mapping

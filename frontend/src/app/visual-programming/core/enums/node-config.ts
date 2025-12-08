@@ -13,6 +13,7 @@ export const NODE_ICONS: Record<NodeType, string> = {
     [NodeType.TABLE]: 'ti ti-table',
     [NodeType.NOTE]: 'ti ti-note',
     [NodeType.FILE_EXTRACTOR]: 'ti ti-file',
+    [NodeType.WEB_SCRAPER]: 'ti ti-world-search',
     [NodeType.WEBHOOK_TRIGGER]: 'ti ti-world',
     [NodeType.END]: 'ti ti-square-rounded',
 };
@@ -30,6 +31,7 @@ export const NODE_COLORS: Record<NodeType, string> = {
     [NodeType.TABLE]: '#00aaff',
     [NodeType.NOTE]: '#ffffd1',
     [NodeType.FILE_EXTRACTOR]: '#2196F3',
+    [NodeType.WEB_SCRAPER]: '#ff9800',
     [NodeType.WEBHOOK_TRIGGER]: '#21f367ff',
     [NodeType.END]: '#d3d3d3',
 };

@@ -110,6 +110,12 @@ export class FlowGraphCoreMenuComponent {
             color: NODE_COLORS[NodeType.FILE_EXTRACTOR],
         },
         {
+            label: 'Web Scraper',
+            type: NodeType.WEB_SCRAPER,
+            icon: NODE_ICONS[NodeType.WEB_SCRAPER],
+            color: NODE_COLORS[NodeType.WEB_SCRAPER],
+        },
+        {
             label: 'End',
             type: NodeType.END,
             icon: NODE_ICONS[NodeType.END],
@@ -221,8 +227,14 @@ export class FlowGraphCoreMenuComponent {
                     entrypoint: 'main',
                 }
             };
+        } else if (type === NodeType.WEB_SCRAPER) {
+            data = {
+                collection_name: '',
+                time_to_expired: -1,
+                embedder: null,
+            };
         } else if (type === NodeType.END) {
-            data = null; // End node data is unknown as specified
+            data = null; 
         }
 
         this.nodeSelected.emit({ type, data });

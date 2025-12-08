@@ -9,6 +9,7 @@ export const DEFAULT_START_NODE_PORTS: BasePort[] = [
         allowedConnections: [
             'project-in',
             'python-in',
+            'web-scraper-in',
             'edge-in',
             'table-in',
             'llm-out-left',

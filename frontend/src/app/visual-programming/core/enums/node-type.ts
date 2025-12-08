@@ -11,6 +11,7 @@ export enum NodeType {
     TABLE = 'table',
     NOTE = 'note',
     FILE_EXTRACTOR = 'file-extractor',
+    WEB_SCRAPER = 'web-scraper',
     WEBHOOK_TRIGGER = 'webhook-trigger',
     END = 'end',
 }

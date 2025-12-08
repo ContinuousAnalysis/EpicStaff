@@ -9,6 +9,7 @@ export const DEFAULT_END_NODE_PORTS: BasePort[] = [
         allowedConnections: [
             'project-out',
             'python-out',
+            'web-scraper-out',
             'file-extractor-out',
             'edge-out',
             'table-out',

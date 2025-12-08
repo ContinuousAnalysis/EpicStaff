@@ -36,8 +36,10 @@ export class WebhookTriggerNodeService {
     return this.http.get<ApiGetRequest<GetWebhookTriggerNodeRequest>>(this.apiUrlTriggers)
   }
 
-  createWebhookTriggerNode(request: CreateWebhookTriggerNodeRequest): Observable<any> {
-    return this.http.post<any>(this.apiUrlNode, request, {
+  createWebhookTriggerNode(
+    request: CreateWebhookTriggerNodeRequest
+  ): Observable<GetWebhookTriggerNodeRequest> {
+    return this.http.post<GetWebhookTriggerNodeRequest>(this.apiUrlNode, request, {
       headers: this.headers,
     });
   }

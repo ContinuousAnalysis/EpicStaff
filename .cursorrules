@@ -1,0 +1,132 @@
+# Angular 19 Development Rules
+
+## Framework & Version
+- Angular 19 with standalone components (default)
+- SCSS for styling
+- TypeScript strict mode enabled
+- Signals for reactive state management
+
+## Code Style
+
+### Components
+- Use standalone components (no NgModules unless necessary)
+- Use the new control flow syntax: @if, @for, @switch (not *ngIf, *ngFor)
+- Use signals for component state: `signal()`, `computed()`, `effect()`
+- Use `input()` and `output()` signal-based APIs instead of @Input/@Output decorators
+- Use `inject()` function instead of constructor injection
+- Use `ChangeDetectionStrategy.OnPush` always
+- Keep components small and focused
+
+### File Structure
+- One component per file
+- Co-locate component, template, styles, and tests
+- Use kebab-case for file names: `user-profile.component.ts`
+
+### SCSS
+- Use BEM naming convention for CSS classes
+- Component styles should be scoped (default ViewEncapsulation)
+- Use SCSS variables and mixins for theming
+- Avoid deep nesting (max 3 levels)
+- Place shared styles in `src/styles/`
+
+### TypeScript
+- Prefer `readonly` for immutable properties
+- Use strict typing, avoid `any`
+- Use interfaces over types for object shapes
+- Prefer `const` over `let`
+
+### Templates
+- Use `@defer` for lazy loading heavy components
+- Use `track` with @for loops for performance
+- Prefer async pipe or toSignal() over manual subscriptions
+
+### RxJS & Subscriptions
+- Never subscribe manually without cleanup strategy
+- Use `toSignal()` to convert Observable to Signal
+- Use `async` pipe for template bindings
+- Use `takeUntilDestroyed()` for side effect subscriptions
+- In constructor: `takeUntilDestroyed()` - no argument needed
+- Outside constructor: `takeUntilDestroyed(this.destroyRef)` - pass DestroyRef
+- Place `takeUntilDestroyed()` last in pipe chain
+
+### Signals vs RxJS
+- Simple state: use `signal()`
+- Derived values: use `computed()`
+- React to changes: use `effect()`
+- HTTP data for template: use `toSignal()` or `async` pipe
+- Complex streams: use RxJS operators then convert with `toSignal()`
+- Side effects: use `takeUntilDestroyed()`
+
+## Example Component Structure
+```typescript
+@Component({
+  selector: 'app-example',
+  standalone: true,
+  imports: [],
+  templateUrl: './example.component.html',
+  styleUrl: './example.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class ExampleComponent {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly service = inject(ExampleService);
+  
+  // Inputs
+  name = input.required<string>();
+  showHeader = input<boolean>(true);
+  
+  // Outputs
+  clicked = output<void>();
+  
+  // State
+  items = signal<Item[]>([]);
+  isLoading = signal<boolean>(false);
+  
+  // Computed
+  filteredItems = computed(() => this.items().filter(i => i.active));
+  
+  // Observable to Signal
+  user = toSignal(this.service.user$, { initialValue: null });
+  
+  constructor() {
+    // Side effect subscription (auto-cleanup)
+    this.service.events$
+      .pipe(takeUntilDestroyed())
+      .subscribe(event => this.handleEvent(event));
+  }
+}
+```
+
+## Example Template
+```html
+@if (isLoading()) {
+  <app-spinner />
+} @else {
+  <div class="example">
+    @for (item of filteredItems(); track item.id) {
+      <app-item-card [item]="item" />
+    } @empty {
+      <p>No items found</p>
+    }
+  </div>
+}
+
+@defer (on viewport) {
+  <app-heavy-component />
+} @placeholder {
+  <div class="skeleton"></div>
+}
+```
+
+## Don't
+- Don't use NgModules for new features
+- Don't use *ngIf/*ngFor (use @if/@for)
+- Don't use @Input()/@Output() decorators (use input()/output())
+- Don't subscribe manually without takeUntilDestroyed()
+- Don't use takeUntil with Subject (old pattern)
+- Don't use inline styles
+- Don't forget `track` in @for loops
+- Don't use constructor injection (use inject())
+```
+
+##dont add dumb comments only if explciitly need something and very sharp and human like

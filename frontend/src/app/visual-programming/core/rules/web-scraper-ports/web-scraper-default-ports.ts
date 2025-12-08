@@ -1,44 +1,43 @@
 import { BasePort } from '../../models/port.model';
 
-export const DEFAULT_FILE_EXTRACTOR_NODE_PORTS: BasePort[] = [
+export const DEFAULT_WEB_SCRAPER_NODE_PORTS: BasePort[] = [
     {
         port_type: 'input',
-        role: 'file-extractor-in',
+        role: 'web-scraper-in',
         multiple: true,
         label: 'In',
         allowedConnections: [
             'project-out',
             'python-out',
-            'web-scraper-out',
             'edge-out',
-            'start-start',
             'table-out',
+            'start-start',
             'llm-out-right',
             'file-extractor-out',
             'webhook-trigger-out',
-            
+            'web-scraper-out',
         ],
         position: 'left',
-        color: '#2196F3',
+        color: '#ff9800',
     },
-
     {
         port_type: 'output',
-        role: 'file-extractor-out',
+        role: 'web-scraper-out',
         multiple: false,
         label: 'Out',
         allowedConnections: [
             'project-in',
             'python-in',
-            'web-scraper-in',
             'edge-in',
             'table-in',
             'llm-out-left',
             'file-extractor-in',
             'webhook-trigger-in',
             'end-in',
+            'web-scraper-in',
         ],
         position: 'right',
-        color: '#2196F3',
+        color: '#ff9800',
     },
 ];
+

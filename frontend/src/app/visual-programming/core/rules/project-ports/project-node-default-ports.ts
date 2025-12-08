@@ -9,6 +9,7 @@ export const DEFAULT_PROJECT_NODE_PORTS: BasePort[] = [
         allowedConnections: [
             'project-out',
             'python-out',
+            'web-scraper-out',
             'edge-out',
             'start-start',
             'table-out',
@@ -27,6 +28,7 @@ export const DEFAULT_PROJECT_NODE_PORTS: BasePort[] = [
         allowedConnections: [
             'project-in',
             'python-in',
+            'web-scraper-in',
             'edge-in',
             'llm-out-left',
             'table-in',

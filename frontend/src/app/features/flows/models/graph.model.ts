@@ -22,6 +22,7 @@ import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/component
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
 import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
+import { GetWebScraperNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/web-scraper.model';
 
 export interface GraphDto {
     id: number;
@@ -34,6 +35,7 @@ export interface GraphDto {
     llm_node_list: GetLLMNodeRequest[];
     file_extractor_node_list: GetFileExtractorNodeRequest[];
     webhook_trigger_node_list: GetWebhookTriggerNodeRequest[];
+    web_scraper_knowledge_node_list: GetWebScraperNodeRequest[];
     end_node_list: EndNode[];
     decision_table_node_list: GetDecisionTableNodeRequest[];
     description: string;
@@ -62,6 +64,7 @@ export interface CreateGraphDtoRequest {
     llm_node_list?: GetLLMNodeRequest[];
     file_extractor_node_list?: GetFileExtractorNodeRequest[];
     webhook_trigger_node_list?: GetWebhookTriggerNodeRequest[];
+    web_scraper_knowledge_node_list?: GetWebScraperNodeRequest[];
     end_node_list?: EndNode[];
     decision_table_node_list?: GetDecisionTableNodeRequest[];
 }

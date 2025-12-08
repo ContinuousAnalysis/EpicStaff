@@ -7,12 +7,14 @@ import { EndNodePanelComponent } from '../../components/node-panels/end-node-pan
 import { FileExtractorNodePanelComponent } from '../../components/node-panels/file-extractor-node-panel/file-extractor-node-panel.component';
 import { DecisionTableNodePanelComponent } from '../../components/node-panels/decision-table-node-panel/decision-table-node-panel.component';
 import { WebhookTriggerNodePanelComponent } from '../../components/node-panels/webhook-trigger-node-panel/webhook-trigger-node-panel';
+import { WebScraperNodePanelComponent } from '../../components/node-panels/web-scraper-node-panel/web-scraper-node-panel.component';
 
 export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
     python: PythonNodePanelComponent,
     project: ProjectNodePanelComponent,
     edge: ConditionalEdgeNodePanelComponent,
     'file-extractor': FileExtractorNodePanelComponent,
+    'web-scraper': WebScraperNodePanelComponent,
     'webhook-trigger': WebhookTriggerNodePanelComponent,
     end: EndNodePanelComponent,
     table: DecisionTableNodePanelComponent,

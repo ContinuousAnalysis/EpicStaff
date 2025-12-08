@@ -93,6 +93,15 @@ export interface FileExtractorNodeModel extends BaseNodeModel {
     data: unknown;
 }
 
+export interface WebScraperNodeModel extends BaseNodeModel {
+    type: NodeType.WEB_SCRAPER;
+    data: {
+        collection_name: string;
+        time_to_expired: number;
+        embedder: number;
+    };
+}
+
 export interface WebhookTriggerNodeModel extends BaseNodeModel {
     type: NodeType.WEBHOOK_TRIGGER;
     data: {
@@ -123,5 +132,6 @@ export type NodeModel =
     | DecisionTableNodeModel
     | NoteNodeModel
     | FileExtractorNodeModel
+    | WebScraperNodeModel
     | WebhookTriggerNodeModel
     | EndNodeModel;

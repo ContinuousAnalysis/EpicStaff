@@ -16,6 +16,7 @@ import { DEFAULT_END_NODE_PORTS } from '../rules/end-ports/end-ports-default-por
 import { NodeModel } from '../models/node.model';
 import { ConditionGroup } from '../models/decision-table.model';
 import { DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS } from '../rules/webhook-trigger-ports/webhook-trigger-default-ports';
+import { DEFAULT_WEB_SCRAPER_NODE_PORTS } from '../rules/web-scraper-ports/web-scraper-default-ports';
 
 export const isDecisionPortRole = (role: string) =>
     role.startsWith('decision-out-') ||
@@ -62,6 +63,8 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
             return DEFAULT_TABLE_NODE_PORTS;
         case NodeType.FILE_EXTRACTOR:
             return DEFAULT_FILE_EXTRACTOR_NODE_PORTS;
+        case NodeType.WEB_SCRAPER:
+            return DEFAULT_WEB_SCRAPER_NODE_PORTS;
         case NodeType.WEBHOOK_TRIGGER:
             return DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS;
         case NodeType.END:
