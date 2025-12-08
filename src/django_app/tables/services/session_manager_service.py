@@ -58,8 +58,8 @@ class SessionManagerService(metaclass=SingletonMeta):
     def get_session(self, session_id: int) -> Session:
         return Session.objects.get(id=session_id)
 
-    def stop_session(self, session_id: int) -> None:
-        self.redis_service.publish_stop_session(session_id=session_id)
+    def stop_session(self, session_id: int) -> int:
+        return self.redis_service.publish_stop_session(session_id=session_id)
 
     def get_session_status(self, session_id: int) -> Session.SessionStatus:
         session: Session = self.get_session(session_id=session_id)
@@ -197,9 +197,9 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
             decision_table_node_data_list.append(decision_table_node_data)
-        
+
         end_node = self.end_node_validator.validate(graph_id=graph.pk)
-        
+
         # TODO: remove validation
         if end_node is not None:
             end_node_data = self.converter_service.convert_end_node_to_pydantic(
@@ -244,18 +244,28 @@ class SessionManagerService(metaclass=SingletonMeta):
         variables = self.choose_variables(graph_id, variables)
 
         session: Session = self.create_session(
-            graph_id=graph_id, variables=variables, username=username, entrypoint=entrypoint,
+            graph_id=graph_id,
+            variables=variables,
+            username=username,
+            entrypoint=entrypoint,
         )
         session_data: SessionData = self.create_session_data(session=session)
+        # TODO: add ping or waiting for crew to accept connections
 
         session.graph_schema = session_data.graph.model_dump()
-        session.save()
-
-        # Subscribers: crew, manager
-        self.redis_service.publish_session_data(
+        received_n = self.redis_service.publish_session_data(
             session_data=session_data,
         )
+        required_listeners = 2
+        if received_n != required_listeners:
+            logger.error(f"Data was sent but not received.")
+            session.status = Session.SessionStatus.ERROR
+            session.status_data = {
+                "reason": f"Data was sent and received by ({received_n}) listeners, but ({required_listeners}) required."
+            }
         logger.info(f"Session data published in Redis for session ID: {session.pk}.")
+
+        session.save()
 
         return session.pk
 

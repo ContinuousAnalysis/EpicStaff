@@ -1,5 +1,5 @@
 tool-data:
-  name: "cli-executor"
+  name: "CLI Executor Tool"
   description: "Tool to create and execute code using python subprocesses. Takes in one parameter: 'command' - the command to be executed."
   args-schema: "args_schema.json"
   code-file: "main.py"
