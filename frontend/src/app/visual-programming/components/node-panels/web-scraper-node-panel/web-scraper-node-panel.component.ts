@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
+    FormArray,
     FormControl,
     FormGroup,
     ReactiveFormsModule,
@@ -18,7 +19,13 @@ import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { WebScraperNodeModel } from '../../../core/models/node.model';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { CustomSelectComponent } from '../../../../shared/components/form-select/form-select.component';
+import { InputMapComponent } from '../../input-map/input-map.component';
 import { FullEmbeddingConfig, FullEmbeddingConfigService } from '../../../../services/full-embedding.service';
+
+interface InputMapPair {
+    key: string;
+    value: string;
+}
 
 const MAX_EXPIRATION_MINUTES = 10080; // 7 days
 
@@ -30,6 +37,7 @@ const MAX_EXPIRATION_MINUTES = 10080; // 7 days
         ReactiveFormsModule,
         CustomInputComponent,
         CustomSelectComponent,
+        InputMapComponent,
     ],
     template: `
         <div class="panel-container">
@@ -42,6 +50,20 @@ const MAX_EXPIRATION_MINUTES = 10080; // 7 days
                         placeholder="Enter node name"
                         [activeColor]="activeColor"
                         [errorMessage]="getNodeNameErrorMessage()"
+                    ></app-custom-input>
+
+                    <div class="input-map">
+                        <app-input-map
+                            [activeColor]="activeColor"
+                        ></app-input-map>
+                    </div>
+
+                    <app-custom-input
+                        label="Output Variable Path"
+                        tooltipText="The path where the output of this node will be stored in your flow variables."
+                        formControlName="output_variable_path"
+                        placeholder="Enter output variable path (leave empty for null)"
+                        [activeColor]="activeColor"
                     ></app-custom-input>
 
                     <app-custom-input
@@ -129,9 +151,15 @@ export class WebScraperNodePanelComponent extends BaseSidePanel<WebScraperNodeMo
         return this.node().color || '#ff9800';
     }
 
+    get inputMapPairs(): FormArray {
+        return this.form.get('input_map') as FormArray;
+    }
+
     protected initializeForm(): FormGroup {
-        return this.fb.group({
+        const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
+            input_map: this.fb.array([]),
+            output_variable_path: [this.node().output_variable_path || ''],
             collection_name: [
                 this.node().data.collection_name || '',
                 [Validators.required, Validators.maxLength(255)],
@@ -145,6 +173,9 @@ export class WebScraperNodePanelComponent extends BaseSidePanel<WebScraperNodeMo
                 [Validators.min(1), Validators.max(MAX_EXPIRATION_MINUTES)]
             ),
         });
+
+        this.initializeInputMap(form);
+        return form;
     }
 
     protected createUpdatedNode(): WebScraperNodeModel {
