@@ -68,7 +68,6 @@ db.sqlite3
 db.sqlite3-journal
 db/*sqlite3
 *_stand/
-media/
 
 # Flask stuff:
 instance/
@@ -258,11 +257,6 @@ executions
 openai-realtime-console
 src/django_app/staticfiles/*
 
-# Cursor AI rules
-.cursorrules
 
 #knowledge data
 knowledge/graph_data/
-
-# Cursor
-.cursorrules

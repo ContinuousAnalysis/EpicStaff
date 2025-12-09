@@ -18,20 +18,6 @@ class GraphMessage:
 
 
 @dataclass
-class SubGraphStartMessageData:
-    state: dict
-    input: object
-    message_type: str = "subgraph_start"
-
-
-@dataclass
-class SubGraphFinishMessageData:
-    state: dict
-    output: object
-    message_type: str = "subgraph_finish"
-
-
-@dataclass
 class FinishMessageData:
     output: object
     state: dict

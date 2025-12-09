@@ -1,6 +1,7 @@
 # Use a base image with Python 3.12.10
 FROM python:3.12.10
 
+
 # Set environment variables for Poetry
 ENV POETRY_VERSION=1.8.3 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
@@ -36,3 +37,5 @@ RUN rm -rf /root/.cache
 #Copying file to workdir
 COPY ./crew .
 CMD ["poetry", "run", "python3", "/home/user/root/app/main.py"]
+
+

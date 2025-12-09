@@ -34,9 +34,6 @@ from tables.models import (
     GraphSessionMessage,
     PythonNode,
     FileExtractorNode,
-    SubGraphNode,
-    AudioTranscriptionNode,
-    GraphFile,
 )
 from rest_framework import serializers
 from tables.exceptions import (
@@ -1091,12 +1088,6 @@ class FileExtractorNodeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class AudioTranscriptionNodeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AudioTranscriptionNode
-        fields = "__all__"
-
-
 class LLMNodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LLMNode
@@ -1107,21 +1098,6 @@ class EdgeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Edge
         fields = "__all__"
-
-
-class SubGraphNodeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SubGraphNode
-        fields = "__all__"
-
-    def validate(self, attrs):
-        graph = attrs.get("graph") or getattr(self.instance, "graph", None)
-        subgraph = attrs.get("subgraph") or getattr(self.instance, "subgraph", None)
-
-        if graph and subgraph and graph == subgraph:
-            raise serializers.ValidationError("Graph and subgraph cannot be the same.")
-
-        return attrs
 
 
 class ConditionalEdgeSerializer(serializers.ModelSerializer):
@@ -1391,16 +1367,12 @@ class GraphSerializer(serializers.ModelSerializer):
     crew_node_list = CrewNodeSerializer(many=True, read_only=True)
     python_node_list = PythonNodeSerializer(many=True, read_only=True)
     file_extractor_node_list = FileExtractorNodeSerializer(many=True, read_only=True)
-    audio_transcription_node_list = AudioTranscriptionNodeSerializer(
-        many=True, read_only=True
-    )
     edge_list = EdgeSerializer(many=True, read_only=True)
     conditional_edge_list = ConditionalEdgeSerializer(many=True, read_only=True)
     llm_node_list = LLMNodeSerializer(many=True, read_only=True)
     webhook_trigger_node_list = WebhookTriggerNodeSerializer(many=True, read_only=True)
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
-    subgraph_node_list = SubGraphNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
 
     class Meta:
@@ -1413,38 +1385,16 @@ class GraphSerializer(serializers.ModelSerializer):
             "crew_node_list",
             "python_node_list",
             "file_extractor_node_list",
-            "audio_transcription_node_list",
             "edge_list",
             "conditional_edge_list",
             "llm_node_list",
             "webhook_trigger_node_list",
             "decision_table_node_list",
-            "subgraph_node_list",
             "start_node_list",
             "end_node_list",
             "time_to_live",
             "persistent_variables",
         ]
-
-
-class GraphFileReadSerializer(serializers.ModelSerializer):
-
-    file = serializers.FileField(use_url=True)
-
-    class Meta:
-        model = GraphFile
-        fields = [
-            "id",
-            "graph",
-            "domain_key",
-            "name",
-            "content_type",
-            "size",
-            "file",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = fields
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
