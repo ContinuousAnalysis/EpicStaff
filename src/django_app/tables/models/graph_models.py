@@ -234,8 +234,10 @@ class ConditionGroup(models.Model):
 
     group_type = models.CharField(max_length=255, blank=False)  # simple, complex
     order = models.PositiveIntegerField(blank=False, default=0)
-    expression = models.CharField(max_length=255, null=True, default=None)
-    manipulation = models.CharField(max_length=255, null=True, default=None)
+    expression = models.TextField(null=True, default=None)
+    ui_expression = models.TextField(blank=True, default="")
+    manipulation = models.TextField(null=True, default=None)
+    ui_manipulation = models.TextField(blank=True, default="")
     next_node = models.CharField(max_length=255, null=True, default=None)
 
     class Meta:
@@ -254,7 +256,8 @@ class Condition(models.Model):
     )
     condition_name = models.CharField(max_length=512, blank=False)
     order = models.PositiveIntegerField(blank=False, default=0)
-    condition = models.CharField(max_length=5000, blank=False)
+    condition = models.TextField(blank=False)
+    ui_condition = models.TextField(blank=True, default="")
 
     class Meta:
         constraints = [
