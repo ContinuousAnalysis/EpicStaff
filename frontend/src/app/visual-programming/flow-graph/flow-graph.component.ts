@@ -195,14 +195,14 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             // Generate unique ID
             const newStartNodeId: string = uuidv4();
 
-            // Create a new Start node
+            // Create a new Start node with context: null as default
             const startNode: StartNodeModel = {
                 id: newStartNodeId,
                 category: 'web',
                 type: NodeType.START,
                 node_name: '__start__',
                 data: {
-                    initialState: {},
+                    initialState: { context: null },
                 },
                 position: { x: 0, y: 0 },
                 ports: generatePortsForNode(newStartNodeId, NodeType.START),
@@ -364,6 +364,21 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                 'Connection is invalid and will not be added:',
                 fOutputId,
                 fInputId
+            );
+            return;
+        }
+
+        // Check if ports can still accept connections (respects multiple:false constraint)
+        const portMap = this.flowService.portConnectionsMap();
+        const outputAllowed = portMap[fOutputId as CustomPortId] || [];
+        const inputAllowed = portMap[fInputId as CustomPortId] || [];
+        
+        // If either port returns ['__none__'], it means it's already connected and multiple is false
+        if (outputAllowed.includes('__none__' as CustomPortId) || 
+            inputAllowed.includes('__none__' as CustomPortId)) {
+            console.warn(
+                'Connection rejected: port already has a connection and multiple is false',
+                { fOutputId, fInputId, outputAllowed, inputAllowed }
             );
             return;
         }

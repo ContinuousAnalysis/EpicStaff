@@ -31,6 +31,7 @@ import { ExpressionEditorComponent } from './cell-editors/expression-editor/expr
 import { ExpressionRendererComponent } from './cell-renderers/expression-renderer/expression-renderer.component';
 import { ManipulationEditorComponent } from './cell-editors/manipulation-editor/manipulation-editor.component';
 import { ManipulationRendererComponent } from './cell-renderers/manipulation-renderer/manipulation-renderer.component';
+import { HeaderWithTooltipComponent } from './header-with-tooltip/header-with-tooltip.component';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -148,13 +149,21 @@ export class DecisionTableGridComponent implements OnInit {
                         (b.order ?? Number.MAX_SAFE_INTEGER)
                 )
                 .map((group, index) => {
-                    // Update group name if it matches the default pattern "Condition X" to reflect current position
-                    const groupNameMatch = group.group_name?.match(/^(Condition|Group) (\d+)$/);
-                    const normalizedGroup = {
+                    // Update group name if it matches the default pattern "Rule X", "Condition X", or "Group X" to reflect current position
+                    const groupNameMatch = group.group_name?.match(/^(Rule|Condition|Group) (\d+)$/);
+                    
+                    // Backward compatibility: if ui_expression is missing, generate from expression
+                    // by adding @ prefix to variable references
+                    const uiExpression = group.ui_expression ?? this.generateUiExpression(group.expression);
+                    const uiManipulation = group.ui_manipulation ?? this.generateUiExpression(group.manipulation);
+                    
+                    const normalizedGroup: ConditionGroup = {
                         ...group,
                         group_name: groupNameMatch ? `Condition ${index + 1}` : group.group_name,
                         order: index + 1,
-                        next_node: findNodeId(group.next_node, group.group_name) // Ensure we use ID with fallback
+                        next_node: findNodeId(group.next_node, group.group_name), // Ensure we use ID with fallback
+                        ui_expression: uiExpression,
+                        ui_manipulation: uiManipulation,
                     };
                     this.updateGroupValidFlag(normalizedGroup, index);
                     return normalizedGroup;
@@ -163,18 +172,41 @@ export class DecisionTableGridComponent implements OnInit {
         }
     }
 
+    /**
+     * Generates UI expression (with @ prefix) from backend expression (without @ prefix)
+     * Example: "state.input.name == 'test'" → "@state.input.name == 'test'"
+     * Used for backward compatibility when loading data that only has expression field
+     */
+    private generateUiExpression(expression: string | null): string | null {
+        if (!expression) return null;
+        // Add @ prefix to variable references like state.path.to.value (but not if already prefixed)
+        return expression.replace(/(?<!@)(state(?:\.[\w$]+)+)/g, '@$1');
+    }
+
     private createEmptyGroup(index?: number): ConditionGroup {
         const position = index !== undefined ? index + 1 : this.rowData().length + 1;
         return {
             group_name: `Condition ${position}`,
             group_type: 'complex',
             expression: null,
+            ui_expression: null,
             conditions: [],
             manipulation: null,
+            ui_manipulation: null,
             next_node: null,
             order: position,
             valid: false,
         };
+    }
+
+    /**
+     * Converts UI expression (with @ prefix) to backend expression (without @ prefix)
+     * Example: "@state.input.name == 'test'" → "state.input.name == 'test'"
+     */
+    private cleanExpressionForBackend(uiValue: string | null): string | null {
+        if (!uiValue) return null;
+        // Remove @ prefix from variable references like @state.path.to.value
+        return uiValue.replace(/@(state(?:\.[\w$]+)+)/g, '$1');
     }
 
     public myTheme = themeQuartz.withParams({
@@ -227,7 +259,11 @@ export class DecisionTableGridComponent implements OnInit {
         },
         {
             headerName: 'Expression',
-            field: 'expression',
+            headerComponent: HeaderWithTooltipComponent,
+            headerComponentParams: {
+                tooltipText: 'Boolean expression to evaluate. Use @state.path to reference variables. Combine with AND/OR operators.',
+            },
+            field: 'ui_expression',
             editable: true,
             flex: 1,
             minWidth: 200,
@@ -240,7 +276,11 @@ export class DecisionTableGridComponent implements OnInit {
         },
         {
             headerName: 'Manipulation',
-            field: 'manipulation',
+            headerComponent: HeaderWithTooltipComponent,
+            headerComponentParams: {
+                tooltipText: 'Optional state manipulation to execute when this rule matches. Use @state.path = value syntax.',
+            },
+            field: 'ui_manipulation',
             editable: true,
             flex: 1,
             minWidth: 200,
@@ -306,6 +346,8 @@ export class DecisionTableGridComponent implements OnInit {
         animateRows: true,
         suppressColumnVirtualisation: false,
         stopEditingWhenCellsLoseFocus: true,
+        tooltipShowDelay: 200,
+        tooltipHideDelay: 2000,
         onCellValueChanged: (event: CellValueChangedEvent) =>
             this.onCellValueChanged(event),
         onCellClicked: (event: CellClickedEvent) => this.onCellClicked(event),
@@ -328,10 +370,14 @@ export class DecisionTableGridComponent implements OnInit {
             );
             
             (event.data as any).group_nameWarning = isEmpty || isDuplicate;
-        } else if (colId === 'expression') {
+        } else if (colId === 'ui_expression') {
+            // When ui_expression changes, also update the clean expression for backend
             (event.data as any).expressionWarning = !event.newValue?.trim();
-        } else if (colId === 'manipulation') {
+            event.data.expression = this.cleanExpressionForBackend(event.newValue);
+        } else if (colId === 'ui_manipulation') {
+            // When ui_manipulation changes, also update the clean manipulation for backend
             (event.data as any).manipulationWarning = false;
+            event.data.manipulation = this.cleanExpressionForBackend(event.newValue);
         }
         
         this.updateGroupValidFlag(event.data, rowIndex);
@@ -349,7 +395,8 @@ export class DecisionTableGridComponent implements OnInit {
         const hasNoDuplicateName = !this.rowData().some(
             (g, idx) => idx !== groupIndex && g.group_name === group.group_name
         );
-        const hasExpression = !!(group.expression?.trim());
+        // Check ui_expression for validation (it's the field being edited)
+        const hasExpression = !!(group.ui_expression?.trim() || group.expression?.trim());
 
         group.valid = hasValidName && hasNoDuplicateName && hasExpression;
 
@@ -359,12 +406,12 @@ export class DecisionTableGridComponent implements OnInit {
         if (event.colDef.field === 'actions') {
             const rowIndex = event.rowIndex;
             if (rowIndex !== null && rowIndex !== undefined) {
-                this.removeConditionGroup(rowIndex);
+                this.removeRule(rowIndex);
             }
         }
     }
 
-    public addConditionGroup(): void {
+    public addRule(): void {
         const insertIndex = this.rowData().length;
         const newGroup = this.createEmptyGroup(insertIndex);
         this.updateGroupValidFlag(newGroup, insertIndex);
@@ -378,12 +425,12 @@ export class DecisionTableGridComponent implements OnInit {
         this.emitChanges();
     }
 
-    public removeConditionGroup(index: number): void {
+    public removeRule(index: number): void {
         const updated = this.rowData()
             .filter((_, i) => i !== index)
             .map((group, newIndex) => {
-                // Update group name if it matches the default pattern "Condition X" or "Group X"
-                const groupNameMatch = group.group_name?.match(/^(Condition|Group) (\d+)$/);
+                // Update group name if it matches the default pattern "Rule X", "Condition X", or "Group X"
+                const groupNameMatch = group.group_name?.match(/^(Rule|Condition|Group) (\d+)$/);
                 if (groupNameMatch) {
                     return {
                         ...group,

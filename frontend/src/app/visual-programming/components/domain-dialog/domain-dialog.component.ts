@@ -197,29 +197,13 @@ export class DomainDialogComponent {
     }
 
     private initializeJsonEditor(): void {
-        const initial = this.data?.initialData as
-            | Record<string, unknown>
-            | undefined;
-        const isEmptyObject =
-            initial && typeof initial === 'object' && !Array.isArray(initial)
-                ? Object.keys(initial).length === 0
-                : true;
-
-        if (initial && !isEmptyObject) {
-            try {
-                this.initialStateJson = JSON.stringify(initial, null, 2);
-                this.isJsonValid = true;
-            } catch (e) {
-                this.initialStateJson = JSON.stringify(
-                    { context: null },
-                    null,
-                    2
-                );
-                this.isJsonValid = false;
-            }
-        } else {
-            this.initialStateJson = JSON.stringify({ context: null }, null, 2);
+        const initial = this.data?.initialData;
+        try {
+            this.initialStateJson = JSON.stringify(initial ?? {}, null, 2);
             this.isJsonValid = true;
+        } catch (e) {
+            this.initialStateJson = '{}';
+            this.isJsonValid = false;
         }
     }
 
@@ -237,18 +221,10 @@ export class DomainDialogComponent {
         }
 
         try {
-            let parsedData: unknown = JSON.parse(this.initialStateJson);
-            if (
-                parsedData &&
-                typeof parsedData === 'object' &&
-                !Array.isArray(parsedData) &&
-                Object.keys(parsedData as Record<string, unknown>).length === 0
-            ) {
-                parsedData = { context: null } as Record<string, unknown>;
-            }
+            const parsedData = JSON.parse(this.initialStateJson);
             this.dialogRef.close(parsedData as Record<string, unknown>);
         } catch (e) {
-            this.dialogRef.close({ context: null } as Record<string, unknown>);
+            this.dialogRef.close({});
         }
     }
 

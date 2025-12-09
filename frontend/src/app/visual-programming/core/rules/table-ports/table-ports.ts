@@ -16,6 +16,7 @@ export const DEFAULT_TABLE_NODE_PORTS: BasePort[] = [
       'subgraph-out',
       'audio-to-text-out',
       'webhook-trigger-out',
+      'file-extractor-out',
     ],
     position: 'left',
     color: '#00aaff',

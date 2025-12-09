@@ -40,9 +40,13 @@
                 <div class="port-wrapper">
                     <div
                         class="port-circle"
+                        fNodeInput
                         fNodeOutput
+                        [fInputMultiple]="port.multiple"
                         [fOutputMultiple]="port.multiple"
+                        [fInputId]="port.id"
                         [fOutputId]="port.id"
+                        [fInputConnectableSide]="port.position"
                         [fOutputConnectableSide]="port.position"
                         [ngStyle]="{
                             'border-color': port.color,
@@ -78,9 +82,13 @@
             <div class="port-wrapper">
                 <div
                     class="port-circle"
+                    fNodeInput
                     fNodeOutput
+                    [fInputMultiple]="port.multiple"
                     [fOutputMultiple]="port.multiple"
+                    [fInputId]="port.id"
                     [fOutputId]="port.id"
+                    [fInputConnectableSide]="port.position"
                     [fOutputConnectableSide]="port.position"
                     [ngStyle]="{
                         'border-color': port.color,
@@ -110,9 +118,13 @@
             <div class="port-wrapper">
                 <div
                     class="port-circle"
+                    fNodeInput
                     fNodeOutput
+                    [fInputMultiple]="port.multiple"
                     [fOutputMultiple]="port.multiple"
+                    [fInputId]="port.id"
                     [fOutputId]="port.id"
+                    [fInputConnectableSide]="port.position"
                     [fOutputConnectableSide]="port.position"
                     [ngStyle]="{
                         'border-color': port.color,

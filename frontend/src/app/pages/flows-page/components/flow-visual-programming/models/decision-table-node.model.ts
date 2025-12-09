@@ -4,8 +4,10 @@ export interface ConditionGroupBackend {
     group_name: string;
     group_type: string;
     expression: string | null;
+    ui_expression: string | null;
     conditions: ConditionBackend[];
     manipulation: string | null;
+    ui_manipulation: string | null;
     next_node: string | null;
     order: number;
 }
@@ -14,8 +16,10 @@ export interface CreateConditionGroupRequest {
     group_name: string;
     group_type: string;
     expression: string | null;
+    ui_expression: string | null;
     conditions: CreateConditionRequest[];
     manipulation: string | null;
+    ui_manipulation: string | null;
     next_node: string | null;
     order: number;
 }
@@ -25,11 +29,13 @@ export interface ConditionBackend {
     condition_group: number;
     condition_name: string;
     condition: string;
+    ui_condition: string;
 }
 
 export interface CreateConditionRequest {
     condition_name: string;
     condition: string;
+    ui_condition: string;
 }
 
 export interface GetDecisionTableNodeRequest {
