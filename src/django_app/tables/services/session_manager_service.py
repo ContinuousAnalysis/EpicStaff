@@ -340,7 +340,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         else:
             end_node_data = None
 
-        entry_point = start_edge.end_key
+        entrypoint = start_edge.end_key
         return GraphData(
             name=graph.name,
             crew_node_list=crew_node_data_list,
@@ -351,6 +351,6 @@ class SessionManagerService(metaclass=SingletonMeta):
             conditional_edge_list=conditional_edge_data_list,
             decision_table_node_list=decision_table_node_data_list,
             subgraph_node_list=subgraph_node_data_list,
-            entry_point=entry_point,
+            entrypoint=entrypoint,
             end_node=end_node_data,
         )

@@ -4,14 +4,14 @@ import { ICellRendererParams } from 'ag-grid-community';
 import { CommonModule } from '@angular/common';
 
 @Component({
-    selector: 'app-expression-renderer',
+    selector: 'app-manipulation-renderer',
     standalone: true,
     imports: [CommonModule],
-    template: `<div class="expression-renderer" [innerHTML]="highlightedValue"></div>`,
-    styleUrls: ['./expression-renderer.component.scss'],
+    template: `<div class="manipulation-renderer" [innerHTML]="highlightedValue"></div>`,
+    styleUrls: ['./manipulation-renderer.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ExpressionRendererComponent implements ICellRendererAngularComp {
+export class ManipulationRendererComponent implements ICellRendererAngularComp {
     public highlightedValue: string = '';
 
     agInit(params: ICellRendererParams): void {
@@ -39,9 +39,6 @@ export class ExpressionRendererComponent implements ICellRendererAngularComp {
 
         // Highlight variables (state.x.y)
         escaped = escaped.replace(/(@?state(?:\.[\w$]+)+)\b/g, '<span class="variable">$1</span>');
-
-        // Highlight AND/OR (case insensitive)
-        escaped = escaped.replace(/(\b(?:AND|OR|and|or)\b)/g, '<span class="keyword">$1</span>');
 
         // Highlight parentheses
         escaped = escaped.replace(/([()])/g, '<span class="paren">$1</span>');

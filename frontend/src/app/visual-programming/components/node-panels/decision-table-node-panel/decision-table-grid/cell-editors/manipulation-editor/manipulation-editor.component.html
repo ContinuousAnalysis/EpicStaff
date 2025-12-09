@@ -1,0 +1,22 @@
+<div class="manipulation-editor-container">
+    <app-manipulation-toolbar (tokenInserted)="insertToken($event)"></app-manipulation-toolbar>
+    <div class="editor-wrapper">
+        <div class="editor-backdrop" #backdrop></div>
+        <textarea
+            #input
+            [(ngModel)]="value"
+            class="manipulation-input"
+            [rows]="10"
+            [cols]="50"
+            (keydown)="onKeyDown($event)"
+            (input)="onInput($event)"
+            (scroll)="onScroll()"
+            (click)="onInput($event)"
+            (blur)="onBlur($event)"
+        ></textarea>
+        <div class="python-badge" title="Python expression syntax">
+            <i class="ti ti-brand-python"></i>
+        </div>
+    </div>
+</div>
+

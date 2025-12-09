@@ -29,6 +29,8 @@ import { ButtonComponent } from '../../../../../shared/components/buttons/button
 
 import { ExpressionEditorComponent } from './cell-editors/expression-editor/expression-editor.component';
 import { ExpressionRendererComponent } from './cell-renderers/expression-renderer/expression-renderer.component';
+import { ManipulationEditorComponent } from './cell-editors/manipulation-editor/manipulation-editor.component';
+import { ManipulationRendererComponent } from './cell-renderers/manipulation-renderer/manipulation-renderer.component';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -242,10 +244,9 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             flex: 1,
             minWidth: 200,
-            cellEditor: 'agLargeTextCellEditor',
-            cellEditorParams: {
-                maxLength: 2000,
-            },
+            cellEditor: ManipulationEditorComponent,
+            cellEditorPopup: true,
+            cellRenderer: ManipulationRendererComponent,
             cellStyle: {
                 fontSize: '14px',
             },

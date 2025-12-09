@@ -15,21 +15,21 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ICellEditorAngularComp } from 'ag-grid-angular';
 import { ICellEditorParams } from 'ag-grid-community';
-import { AutocompleteOverlayComponent, AutocompleteItem } from './autocomplete-overlay/autocomplete-overlay.component';
-import { EditorToolbarComponent } from './editor-toolbar/editor-toolbar.component';
+import { AutocompleteOverlayComponent, AutocompleteItem } from '../expression-editor/autocomplete-overlay/autocomplete-overlay.component';
+import { ManipulationToolbarComponent } from './manipulation-toolbar/manipulation-toolbar.component';
 import { FlowService } from '../../../../../../services/flow.service';
 import { Overlay, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 
 @Component({
-    selector: 'app-expression-editor',
+    selector: 'app-manipulation-editor',
     standalone: true,
-    imports: [CommonModule, FormsModule, EditorToolbarComponent, OverlayModule],
-    templateUrl: './expression-editor.component.html',
-    styleUrls: ['./expression-editor.component.scss'],
+    imports: [CommonModule, FormsModule, ManipulationToolbarComponent, OverlayModule],
+    templateUrl: './manipulation-editor.component.html',
+    styleUrls: ['./manipulation-editor.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ExpressionEditorComponent
+export class ManipulationEditorComponent
     implements ICellEditorAngularComp, AfterViewInit, OnDestroy
 {
     @ViewChild('input', { read: ElementRef })
@@ -110,13 +110,6 @@ export class ExpressionEditorComponent
             return; // Already open
         }
 
-        // We want to position the overlay near the cursor, or specifically near the '@' that triggered it.
-        // Since we can't easily get the exact pixel coordinates of the cursor in a textarea without a library,
-        // and we want a native-like feel, we can use a workaround:
-        // Create a temporary span element that mirrors the text up to the cursor, measure its position, 
-        // and position the overlay there.
-        // OR simpler: position relative to the textarea but offset? No, that's static.
-        
         // Get cursor coordinates relative to textarea
         const cursorCoords = this.getCursorCoordinates();
         
@@ -148,7 +141,7 @@ export class ExpressionEditorComponent
                     originY: 'top',
                     overlayX: 'end',
                     overlayY: 'top',
-                    offsetX: cursorCoords.left - 250, // Overlay width ~280px
+                    offsetX: cursorCoords.left - 250,
                     offsetY: cursorCoords.top + 10
                 },
                 // Above, aligned right
@@ -168,7 +161,7 @@ export class ExpressionEditorComponent
         this.overlayRef = this.overlay.create({
             positionStrategy,
             scrollStrategy: this.overlay.scrollStrategies.reposition(),
-            hasBackdrop: false // No backdrop - nothing closes the overlay except explicit actions
+            hasBackdrop: false
         });
 
         this.componentPortal = new ComponentPortal(AutocompleteOverlayComponent, this.viewContainerRef);
@@ -180,7 +173,6 @@ export class ExpressionEditorComponent
         overlayElement.addEventListener('mousedown', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Keep focus on input
             setTimeout(() => this.input.nativeElement.focus());
         });
 
@@ -220,7 +212,7 @@ export class ExpressionEditorComponent
         div.style.width = style.width;
         div.style.padding = style.padding;
         div.style.boxSizing = style.boxSizing;
-        div.style.position = 'fixed'; // Fixed to avoid scroll interfering with measurement
+        div.style.position = 'fixed';
         div.style.visibility = 'hidden';
         div.style.top = textarea.getBoundingClientRect().top + 'px';
         div.style.left = textarea.getBoundingClientRect().left + 'px';
@@ -235,8 +227,6 @@ export class ExpressionEditorComponent
         const spanRect = span.getBoundingClientRect();
         const textareaRect = textarea.getBoundingClientRect();
         
-        // Calculate relative offset from top-left of textarea
-        // Also account for scroll position of textarea
         const top = (spanRect.bottom - textareaRect.top) - textarea.scrollTop;
         const left = (spanRect.left - textareaRect.left) - textarea.scrollLeft;
         
@@ -291,8 +281,6 @@ export class ExpressionEditorComponent
     }
     
     onBlur(event: FocusEvent): void {
-        // If autocomplete is showing, prevent blur from causing issues
-        // Refocus the input to keep editor open
         if (this.showAutocomplete()) {
             event.preventDefault();
             setTimeout(() => {
@@ -316,10 +304,7 @@ export class ExpressionEditorComponent
         // Highlight variables (state.x.y)
         escaped = escaped.replace(/(@?state(?:\.[\w$]+)+)\b/g, '<span class="variable">$1</span>');
 
-        // Highlight AND/OR (case insensitive)
-        escaped = escaped.replace(/(\b(?:AND|OR|and|or)\b)/g, '<span class="keyword">$1</span>');
-
-        // Highlight parentheses
+        // Highlight parentheses (no AND/OR for manipulation)
         escaped = escaped.replace(/([()])/g, '<span class="paren">$1</span>');
 
         // Handle trailing newline
@@ -358,7 +343,7 @@ export class ExpressionEditorComponent
                 return;
             } else if (event.key === 'Enter' || event.key === 'Tab') {
                 event.preventDefault();
-                event.stopPropagation(); // Stop propagation to prevent grid editor from closing
+                event.stopPropagation();
                 this.autocompleteInstance.selectActive();
                 return;
             } else if (event.key === 'ArrowRight') {
@@ -373,7 +358,6 @@ export class ExpressionEditorComponent
                     this.onNavigateUp();
                 }
             } else if (event.key === 'Escape') {
-                // Don't close - do nothing on Escape
                 event.preventDefault();
                 event.stopPropagation();
                 return;
@@ -461,7 +445,7 @@ export class ExpressionEditorComponent
             }
 
             this.showAutocomplete.set(false);
-            this.currentPath.set([]); // Reset path
+            this.currentPath.set([]);
             
             textarea.focus();
         }
@@ -480,7 +464,6 @@ export class ExpressionEditorComponent
             
             this.filterText.set('');
             
-            // Directly update the overlay with new data
             if (this.autocompleteInstance) {
                 this.autocompleteInstance.updateData(
                     this.autocompleteItems(),
@@ -504,7 +487,6 @@ export class ExpressionEditorComponent
             return path.slice(0, -1);
         });
         
-        // Update the overlay with new data
         if (this.autocompleteInstance) {
             this.autocompleteInstance.updateData(
                 this.autocompleteItems(),
@@ -515,14 +497,12 @@ export class ExpressionEditorComponent
     }
     
     onNavigateToPath(index: number): void {
-        // index -1 means root, otherwise slice path to that index + 1
         if (index === -1) {
             this.currentPath.set([]);
         } else {
             this.currentPath.update(path => path.slice(0, index + 1));
         }
         
-        // Update the overlay with new data
         if (this.autocompleteInstance) {
             this.autocompleteInstance.updateData(
                 this.autocompleteItems(),
@@ -532,3 +512,4 @@ export class ExpressionEditorComponent
         }
     }
 }
+
