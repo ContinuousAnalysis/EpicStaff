@@ -594,6 +594,7 @@ export class GraphUpdateService {
                                     (condition: any) => ({
                                         condition_name: condition.condition_name,
                                         condition: condition.condition,
+                                        ui_condition: condition.ui_condition || condition.condition,
                                     })
                                 ) || [];
 
@@ -601,8 +602,10 @@ export class GraphUpdateService {
                                 group_name: group.group_name,
                                 group_type: group.group_type || 'complex',
                                 expression: group.expression,
+                                ui_expression: group.ui_expression || group.expression,
                                 conditions,
                                 manipulation: group.manipulation,
+                                ui_manipulation: group.ui_manipulation || group.manipulation,
                                 next_node: resolveNodeName(group.next_node),
                                 order:
                                     typeof group.order === 'number'

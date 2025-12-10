@@ -209,8 +209,14 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
     private cloneConditionGroups(groups: ConditionGroup[]): ConditionGroup[] {
         return groups.map((group) => ({
             ...group,
+            expression: group.expression,
+            ui_expression: group.ui_expression,
+            manipulation: group.manipulation,
+            ui_manipulation: group.ui_manipulation,
             conditions: (group.conditions || []).map((condition: Condition) => ({
                 ...condition,
+                condition: condition.condition,
+                ui_condition: condition.ui_condition,
             })),
         }));
     }

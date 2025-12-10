@@ -8,8 +8,10 @@ export interface ConditionGroup {
     group_name: string;
     group_type: 'simple' | 'complex';
     expression: string | null;
+    ui_expression: string | null;
     conditions: Condition[];
     manipulation: string | null;
+    ui_manipulation: string | null;
     next_node: string | null;
     valid?: boolean;
     order?: number;
@@ -18,4 +20,5 @@ export interface ConditionGroup {
 export interface Condition {
     condition_name: string;
     condition: string;
+    ui_condition: string;
 }

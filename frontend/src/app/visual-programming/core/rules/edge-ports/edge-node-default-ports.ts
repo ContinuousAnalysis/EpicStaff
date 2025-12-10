@@ -37,6 +37,7 @@ export const DEFAULT_EDGE_NODE_PORTS: BasePort[] = [
             'end-in',
             'subgraph-in',
             'audio-to-text-in',
+            'table-in',
         ],
         position: 'right',
         color: '#8e5cd9',

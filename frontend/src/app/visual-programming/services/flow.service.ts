@@ -15,7 +15,7 @@ import {
     DecisionTableNode,
     ConditionGroup,
 } from '../core/models/decision-table.model';
-import { generatePortsForDecisionTableNode } from '../core/helpers/helpers';
+import { generatePortsForDecisionTableNode, isDecisionPortRole } from '../core/helpers/helpers';
 
 import { NodeType } from '../core/enums/node-type';
 import { FDropToGroupEvent } from '@foblex/flow';
@@ -261,16 +261,69 @@ export class FlowService {
             nodes: [...flow.nodes, node],
         }));
     }
-    public addConnection(conn: ConnectionModel) {
+    public addConnection(conn: ConnectionModel): boolean {
+        const flow = this.flowSignal();
+        const existingConnections = flow.connections;
+        
+        // Check if connection would violate multiple:false constraint
+        if (!this.canAddConnection(conn, flow.nodes, existingConnections)) {
+            console.warn('Connection rejected: port already has a connection and multiple is false', conn);
+            return false;
+        }
+        
         // Update the flow state by adding the new connection
-        this.flowSignal.update((flow: FlowModel) => ({
-            ...flow,
-            connections: [...flow.connections, conn],
+        this.flowSignal.update((f: FlowModel) => ({
+            ...f,
+            connections: [...f.connections, conn],
         }));
 
         console.log('New connection added to the flow state:', conn);
 
         this.updateDecisionTableNextNodeFromConnection(conn);
+        return true;
+    }
+    
+    private canAddConnection(
+        conn: ConnectionModel,
+        nodes: NodeModel[],
+        existingConnections: ConnectionModel[]
+    ): boolean {
+        // Find source and target nodes
+        const sourceNode = nodes.find(n => n.id === conn.sourceNodeId);
+        const targetNode = nodes.find(n => n.id === conn.targetNodeId);
+        
+        if (!sourceNode || !targetNode) {
+            return true; // Let it through if nodes not found
+        }
+        
+        // Find source port
+        const sourcePort = sourceNode.ports?.find(p => p.id === conn.sourcePortId);
+        // Find target port
+        const targetPort = targetNode.ports?.find(p => p.id === conn.targetPortId);
+        
+        // Check source port multiple constraint
+        if (sourcePort && sourcePort.multiple === false) {
+            const existingFromSource = existingConnections.some(
+                c => c.sourcePortId === conn.sourcePortId
+            );
+            if (existingFromSource) {
+                console.warn('Source port already has a connection and multiple is false');
+                return false;
+            }
+        }
+        
+        // Check target port multiple constraint
+        if (targetPort && targetPort.multiple === false) {
+            const existingToTarget = existingConnections.some(
+                c => c.targetPortId === conn.targetPortId
+            );
+            if (existingToTarget) {
+                console.warn('Target port already has a connection and multiple is false');
+                return false;
+            }
+        }
+        
+        return true;
     }
     public addConnectionsInBatch(connections: ConnectionModel[]): void {
         if (!connections || connections.length === 0) {
@@ -901,16 +954,25 @@ export class FlowService {
 
         const a = portA.port;
         const b = portB.port;
+        
+        // Helper to check if a port allows connection to another, including decision table ports
+        const allowsConnection = (allowedConnections: string[], targetRole: string): boolean => {
+            if (allowedConnections.includes(targetRole)) return true;
+            // Allow connection if target is a decision table port and 'table-out' is allowed
+            if (allowedConnections.includes('table-out') && isDecisionPortRole(targetRole)) return true;
+            return false;
+        };
+        
         if (a.port_type === 'input' && b.port_type === 'output') {
-            return a.allowedConnections.includes(b.role);
+            return allowsConnection(a.allowedConnections, b.role);
         }
         if (a.port_type === 'output' && b.port_type === 'input') {
-            return b.allowedConnections.includes(a.role);
+            return allowsConnection(b.allowedConnections, a.role);
         }
         if (a.port_type === 'input-output' && b.port_type === 'input-output') {
             return (
-                a.allowedConnections.includes(b.role) ||
-                b.allowedConnections.includes(a.role)
+                allowsConnection(a.allowedConnections, b.role) ||
+                allowsConnection(b.allowedConnections, a.role)
             );
         }
         return false;
@@ -1198,20 +1260,42 @@ export class FlowService {
                 }
             });
 
-            const connectionCount: Record<CustomPortId, number> = {};
+            // Count connections for each port, using both original and normalized IDs
+            const connectionCount: Record<string, number> = {};
             connections.forEach((conn) => {
+                // Count with original ID
                 connectionCount[conn.sourcePortId] =
                     (connectionCount[conn.sourcePortId] || 0) + 1;
                 connectionCount[conn.targetPortId] =
                     (connectionCount[conn.targetPortId] || 0) + 1;
+                // Also count with normalized ID for decision table ports
+                const normalizedSource = this.normalizeDecisionPortId(conn.sourcePortId);
+                const normalizedTarget = this.normalizeDecisionPortId(conn.targetPortId);
+                if (normalizedSource !== conn.sourcePortId) {
+                    connectionCount[normalizedSource] =
+                        (connectionCount[normalizedSource] || 0) + 1;
+                }
+                if (normalizedTarget !== conn.targetPortId) {
+                    connectionCount[normalizedTarget] =
+                        (connectionCount[normalizedTarget] || 0) + 1;
+                }
             });
+
+            // Helper to get connection count for a port (checks both original and normalized)
+            const getPortConnectionCount = (portId: CustomPortId): number => {
+                const normalizedId = this.normalizeDecisionPortId(portId);
+                return Math.max(
+                    connectionCount[portId] || 0,
+                    connectionCount[normalizedId] || 0
+                );
+            };
 
             const map: Record<CustomPortId, CustomPortId[]> = {};
             allPorts.forEach((current) => {
                 // Start with an empty set so we don't include the port itself
                 const eligible = new Set<CustomPortId>();
 
-                const currentConnCount = connectionCount[current.port.id] || 0;
+                const currentConnCount = getPortConnectionCount(current.port.id);
                 if (!current.port.multiple && currentConnCount > 0) {
                     // If already connected and single-use, no allowed connections.
                     map[current.port.id] = ['__none__'];
@@ -1224,8 +1308,7 @@ export class FlowService {
 
                     // Pass the full connections array to our updated canPortsConnect check.
                     if (this.canPortsConnect(current, other, connections)) {
-                        const otherConnCount =
-                            connectionCount[other.port.id] || 0;
+                        const otherConnCount = getPortConnectionCount(other.port.id);
                         if (!other.port.multiple && otherConnCount > 0) {
                             return;
                         }
