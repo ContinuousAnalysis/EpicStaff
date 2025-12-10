@@ -6,6 +6,7 @@ from pgvector.django import VectorField
 
 from ..embedding_models import EmbeddingConfig
 from .collection_models import BaseRagType, DocumentMetadata
+from ..crew_models import Agent
 
 
 class NaiveRag(models.Model):
@@ -33,13 +34,23 @@ class NaiveRag(models.Model):
         null=True,
         blank=True,
     )
+    agents = models.ManyToManyField(
+        "Agent",
+        through="AgentNaiveRag",
+        related_name="naive_rags",  # Access from Agent: agent.naive_rags.all()
+        blank=True,
+        help_text="Agents that have access to this NaiveRag",
+    )
     rag_status = models.CharField(
         max_length=20,
         choices=NaiveRagStatus.choices,
         default=NaiveRagStatus.NEW,
     )
+    error_message = models.TextField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    indexed_at = models.DateTimeField(null=True, blank=True)
 
     def update_rag_status(self: "NaiveRag"):
         naive_rag_document_statuses = set(
@@ -239,3 +250,63 @@ class NaiveRagEmbedding(models.Model):
 
     def __str__(self):
         return f"Embedding for {self.chunk}"
+
+
+class AgentNaiveRag(models.Model):
+    """
+    Link table connecting Agents to NaiveRag implementations.
+
+    Purpose:
+    - Enables ManyToMany relationship without modifying Agent model
+    - Allows adding future RAG types (GraphRag, HybridRag) independently
+    - Could stores relationship metadata (priority, is_active)
+
+    Current Restriction:
+    - agent field has unique=True: temporarily enforces ONE NaiveRag per Agent
+    - Remove unique=True later to allow multiple NaiveRags per Agent
+
+    Design Pattern:
+    - Relationship defined on NaiveRag model, not Agent
+    - Agent accesses via reverse relation: agent.naive_rags.all()
+    - Keeps Agent model clean and unchanged when adding new RAG types
+    """
+
+    agent = models.ForeignKey(
+        Agent,
+        on_delete=models.CASCADE,
+        unique=True,  # TEMPORARY: Remove to allow multiple NaiveRags per Agent
+        related_name="agent_naive_rags",
+    )
+    naive_rag = models.ForeignKey(
+        NaiveRag, on_delete=models.CASCADE, related_name="agent_links"
+    )
+
+    @classmethod
+    def check(cls, **kwargs):
+        """
+        Suppress W342 warning about ForeignKey(unique=True).
+        This is intentional: currently 1-to-1, future Many-to-Many.
+        """
+        errors = super().check(**kwargs)
+        return [error for error in errors if error.id != "fields.W342"]
+
+
+class NaiveRagSearchConfig(models.Model):
+
+    agent = models.OneToOneField(
+        "Agent",
+        on_delete=models.CASCADE,
+        related_name="naive_search_config",  # Access via: agent.naive_search_config
+        help_text="Agent this search configuration belongs to",
+    )
+
+    search_limit = models.PositiveIntegerField(
+        default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
+    )
+    similarity_threshold = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.2,
+        blank=True,
+        help_text="Float between 0.00 and 1.00 for knowledge",
+    )

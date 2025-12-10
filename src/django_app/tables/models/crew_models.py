@@ -88,16 +88,6 @@ class Agent(AbstractDefaultFillableModel):
     knowledge_collection = models.ForeignKey(
         "SourceCollection", on_delete=models.SET_NULL, blank=True, null=True
     )
-    search_limit = models.PositiveIntegerField(
-        default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
-    )
-    similarity_threshold = models.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        default=0.2,
-        blank=True,
-        help_text="Float between 0.00 and 1.00 for knowledge",
-    )
 
     llm_config = models.ForeignKey(
         "LLMConfig",
@@ -147,6 +137,46 @@ class Agent(AbstractDefaultFillableModel):
             self.default_temperature
             or DefaultAgentConfig.load().get_default_temperature()
         )
+
+    def get_rag_type_and_id(self) -> str | None:
+        """
+        Get assigned RAG type and ID in format "rag_type:id".
+        """
+        try:
+            # Get the AgentNaiveRag link (currently only one due to unique=True constraint)
+            agent_naive_rag = self.agent_naive_rags.select_related("naive_rag").get()
+            naive_rag = agent_naive_rag.naive_rag
+            return f"naive:{naive_rag.naive_rag_id}"
+        except Exception:
+            return None
+
+    def get_search_configs(self) -> dict | None:
+        """
+        Get all RAG search configurations as nested dictionary.
+        """
+        configs = {}
+
+        # Collect NaiveRag search config
+        try:
+            naive_config = self.naive_search_config
+            configs["naive"] = {
+                "search_limit": naive_config.search_limit,
+                "similarity_threshold": round(
+                    float(naive_config.similarity_threshold), 2
+                ),
+            }
+        except Exception:
+            pass
+
+        # Collect GraphRag search config
+        # try:
+        #     graph_config = self.graph_search_config
+        #     configs["graph"] ={...}}
+        # except Exception:
+        #     pass
+
+        # Return None if no configs found, otherwise return dict
+        return configs if configs else None
 
     def __str__(self):
         return self.role
@@ -234,6 +264,7 @@ class Crew(AbstractDefaultFillableModel):
         related_name="planning_llm_config",
     )
     default_temperature = models.FloatField(null=True, default=None)
+    # TODO: deprecate: knowledge_collection, search_limit, similarity_threshold
     knowledge_collection = models.ForeignKey(
         "SourceCollection", on_delete=models.SET_NULL, blank=True, null=True
     )
