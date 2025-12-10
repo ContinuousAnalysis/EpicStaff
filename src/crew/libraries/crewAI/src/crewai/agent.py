@@ -84,6 +84,9 @@ class Agent(BaseAgent):
             step_callback: Callback to be executed after each step of the agent execution.
 
             knowledge_collection_id: A unique identifier of the knowledgecollection instance for agent. Now fields "knowledge_sources" and "knowledge" are unnecessary.
+            rag_type_id: RAG type and ID in format 'rag_type:id' (e.g., 'naive:6', 'graph:10').
+            rag_search_config: RAG-specific search configuration parameters as dict (e.g., {'search_limit': 3, 'similarity_threshold': 0.2}).
+
     """
 
     _times_executed: int = PrivateAttr(default=0)
@@ -245,17 +248,16 @@ class Agent(BaseAgent):
             )
 
         agent_knowledge_snippet = ""
-        crew_knowledge_snippet = ""
 
-        if self.knowledge_collection_id:
+        if self.knowledge_collection_id and self.rag_type_id:
             source = f"Agent {self.role}'s"
             knowledge_query = self._get_knowledge_query(task, context, source=source)
             agent_knowledges = self.search_knowledges(
                 sender="ag",
                 knowledge_collection_id=self.knowledge_collection_id,
+                rag_type_id=self.rag_type_id,
+                rag_search_config=self.rag_search_config,
                 query=knowledge_query,
-                search_limit=self.search_limit,
-                similarity_threshold=self.similarity_threshold,
             )
             agent_knowledge_snippet = self._extract_knowledges(agent_knowledges)
             task_prompt += (
@@ -264,29 +266,8 @@ class Agent(BaseAgent):
                 else ""
             )
 
-        if self.crew:
-            if self.crew.knowledge_collection_id:
-                source = f"Crew {self.crew}"
-                knowledge_query = self._get_knowledge_query(
-                    task, context, source=source
-                )
-                crew_knowledges = self.search_knowledges(
-                    sender="cr",
-                    knowledge_collection_id=self.crew.knowledge_collection_id,
-                    query=knowledge_query,
-                    search_limit=self.crew.search_limit,
-                    similarity_threshold=self.crew.similarity_threshold,
-                )
-                crew_knowledge_snippet = self._extract_knowledges(crew_knowledges)
-                if crew_knowledge_snippet:
-                    if not agent_knowledge_snippet:
-                        task_prompt += (
-                            f"{KNOWLEDGE_KEYWORD} \n\n{crew_knowledge_snippet}"
-                        )
-                    else:
-                        task_prompt += f"\n{crew_knowledge_snippet}"
 
-        if agent_knowledge_snippet or crew_knowledge_snippet:
+        if agent_knowledge_snippet:
             task_prompt += f"\n{END_OF_KNOWLEDGE_KEYWORD}"
 
         tools = tools or self.tools or []
