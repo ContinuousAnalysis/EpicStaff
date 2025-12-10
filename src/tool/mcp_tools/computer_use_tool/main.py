@@ -4,6 +4,7 @@ from os_computer_use.logging import Logger
 import asyncio
 import argparse
 import os
+import sys
 
 from dotenv import load_dotenv
 
@@ -43,8 +44,12 @@ async def start(user_input=None, output_dir=None):
     running = True
 
     try:
+        logger.log("Initializing sandbox...", "gray")
         sandbox = Sandbox()
         agent = SandboxAgent(sandbox, output_dir, system_prompt=SYSTEM_PROMPT)
+        logger.log(
+            f"Sandbox ready. Logs: {agent.tmp_dir if not agent else output_dir}", "gray"
+        )
 
         while running:
             # Ask for user input, and exit if the user presses ctl-c
@@ -54,13 +59,21 @@ async def start(user_input=None, output_dir=None):
                 except KeyboardInterrupt:
                     print("\nStopping agent...")
                     running = False
+                except EOFError:
+                    print("\nNo input provided. Stopping agent...")
+                    running = False
             # Run the agent, and go back to the prompt if the user presses ctl-c
             else:
                 try:
+                    logger.log(f"Running instruction: {user_input}", "blue")
                     agent.run(user_input)
+                    logger.log("Instruction finished.", "green")
                     user_input = None
                 except KeyboardInterrupt:
                     print("\nStopping agent...")
+                    running = False
+                except EOFError:
+                    print("\nNo input provided. Stopping agent...")
                     running = False
                 except Exception as e:
                     logger.print_colored(f"An error occurred: {e}", "red")
@@ -68,13 +81,12 @@ async def start(user_input=None, output_dir=None):
 
     finally:
         if sandbox:
-            print(
-                "\nSandbox is still running. You can resume by running the agent again."
-            )
-            print(f"View the desktop at: http://localhost:6080/vnc.html")
-            print("To stop the sandbox manually, run: docker compose down")
-            # Don't kill the sandbox - keep it running for resuming
-            # sandbox.kill()  # Uncomment this line if you want to auto-stop the sandbox
+            # print(
+            #     "\nSandbox is still running. You can resume by running the agent again."
+            # )
+            # print(f"View the desktop at: http://localhost:6080/vnc.html")
+            sandbox.kill()  # Uncomment this line if you want to auto-stop the sandbox
+            print("Sandbox stopped.")
 
 
 def initialize_output_directory(directory_format):
@@ -90,6 +102,18 @@ def main():
     parser.add_argument("--prompt", type=str, help="User prompt for the agent")
     args = parser.parse_args()
 
+    # If no prompt and not an interactive TTY, exit early with a message
+    if args.prompt is None and not sys.stdin.isatty():
+        print("No prompt provided and stdin is not interactive. Exiting.")
+        return
+
     output_dir = initialize_output_directory(lambda id: f"./output/run_{id}")
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(start(user_input=args.prompt, output_dir=output_dir))
+    try:
+        loop.run_until_complete(start(user_input=args.prompt, output_dir=output_dir))
+    except Exception as e:
+        print(f"Fatal error: {e}")
+
+
+if __name__ == "__main__":
+    main()

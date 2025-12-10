@@ -26,7 +26,7 @@ tools = {
 
 class SandboxAgent:
 
-    def __init__(self, sandbox, output_dir=".", save_logs=False, system_prompt=None):
+    def __init__(self, sandbox, output_dir=".", save_logs=True, system_prompt=None):
         super().__init__()
         self.messages = []  # Agent memory
         self.sandbox = sandbox  # Docker-backed sandbox
@@ -38,6 +38,7 @@ class SandboxAgent:
 
         # Set the log file location
         if save_logs:
+            os.makedirs(output_dir, exist_ok=True)
             logger.log_file = f"{output_dir}/log.html"
 
         print("The agent will use the following actions:")

@@ -2,7 +2,11 @@
 
 import os
 
+from dotenv import load_dotenv
 from os_computer_use import providers
+
+
+load_dotenv()
 
 
 def _make_grounding_provider(name: str, model: str):

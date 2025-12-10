@@ -47,16 +47,12 @@ class DockerCommands:
             text=True,
             timeout=timeout,
             check=False,
-            encoding="utf-8",  # ADD THIS
-            errors="replace",  # ADD THIS - replaces problematic characters instead of crashing
+            encoding="utf-8",
+            errors="replace",
         )
         return DockerCommandResult(
-            stdout=(
-                completed.stdout.strip() if completed.stdout else ""
-            ),  # ADD NULL CHECK
-            stderr=(
-                completed.stderr.strip() if completed.stderr else ""
-            ),  # ADD NULL CHECK
+            stdout=(completed.stdout.strip() if completed.stdout else ""),
+            stderr=(completed.stderr.strip() if completed.stderr else ""),
         )
 
 
