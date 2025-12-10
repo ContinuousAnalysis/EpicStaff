@@ -203,9 +203,9 @@ class ConditionGroup(models.Model):
     group_type = models.CharField(max_length=255, blank=False)  # simple, complex
     order = models.PositiveIntegerField(blank=False, default=0)
     expression = models.TextField(null=True, default=None)
-    ui_expression = models.TextField(blank=True, default="")
+    ui_expression = models.TextField(blank=True, default=None, null=True)
     manipulation = models.TextField(null=True, default=None)
-    ui_manipulation = models.TextField(blank=True, default="")
+    ui_manipulation = models.TextField(blank=True, default=None, null=True)
     next_node = models.CharField(max_length=255, null=True, default=None)
 
     class Meta:
@@ -225,7 +225,7 @@ class Condition(models.Model):
     condition_name = models.CharField(max_length=512, blank=False)
     order = models.PositiveIntegerField(blank=False, default=0)
     condition = models.TextField(blank=False)
-    ui_condition = models.TextField(blank=True, default="")
+    ui_condition = models.TextField(default=None, null=True, blank=True)
     class Meta:
         constraints = [
             models.UniqueConstraint(
