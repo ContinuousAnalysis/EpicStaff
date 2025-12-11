@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from django.http import Http404
+from rest_framework.exceptions import ValidationError
 
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -193,7 +194,7 @@ class NaiveRagDocumentConfigViewSet(
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
+    viewsets.GenericViewSet,
 ):
     """
     ViewSet for NaiveRag document configuration operations.
@@ -222,6 +223,38 @@ class NaiveRagDocumentConfigViewSet(
             return DocumentConfigUpdateSerializer
         return DocumentConfigSerializer
 
+    def get_queryset(self):
+        """
+        Filter queryset by naive_rag_id from URL.
+        This ensures all operations are scoped to the specific NaiveRag.
+        """
+        queryset = super().get_queryset()
+        naive_rag_id = self.kwargs.get("naive_rag_id")
+
+        if naive_rag_id is not None:
+            # Filter configs that belong to this naive_rag
+            queryset = queryset.filter(naive_rag_id=naive_rag_id)
+
+        return queryset
+
+    def initial(self, request, *args, **kwargs):
+        """
+        Validate naive_rag_id before processing request.
+        """
+        super().initial(request, *args, **kwargs)
+
+        naive_rag_id = self.kwargs.get("naive_rag_id")
+
+        if naive_rag_id is not None:
+            try:
+                self.kwargs["naive_rag_id"] = int(naive_rag_id)
+            except (ValueError, TypeError):
+                raise ValidationError(
+                    {
+                        "naive_rag_id": f"Invalid value '{naive_rag_id}'. Must be an integer."
+                    }
+                )
+
     @action(detail=False, methods=["post"], url_path="init")
     def init_configs(self, request, naive_rag_id=None):
         """
@@ -237,7 +270,9 @@ class NaiveRagDocumentConfigViewSet(
         Body: (empty - no request body needed)
         """
         try:
-            configs = NaiveRagService.init_document_configs(naive_rag_id=int(naive_rag_id))
+            configs = NaiveRagService.init_document_configs(
+                naive_rag_id=int(naive_rag_id)
+            )
 
             response_serializer = DocumentConfigSerializer(configs, many=True)
 
@@ -331,8 +366,7 @@ class NaiveRagDocumentConfigViewSet(
 
         try:
             result = NaiveRagService.bulk_delete_document_configs(
-                naive_rag_id=int(naive_rag_id),
-                config_ids=config_ids
+                naive_rag_id=int(naive_rag_id), config_ids=config_ids
             )
 
             return Response(
@@ -399,7 +433,9 @@ class NaiveRagDocumentConfigViewSet(
 
         except Http404:
             return Response(
-                {"error": f"Document config with id {pk} not found"},
+                {
+                    "error": f"Document config [{pk}] for naive_rag_id [{naive_rag_id}] not found"
+                },
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
@@ -427,7 +463,9 @@ class NaiveRagDocumentConfigViewSet(
 
         try:
             config = NaiveRagService.update_document_config(
-                config_id=int(pk), naive_rag_id=naive_rag_id,  **serializer.validated_data
+                config_id=int(pk),
+                naive_rag_id=naive_rag_id,
+                **serializer.validated_data,
             )
 
             response_serializer = DocumentConfigSerializer(config)
@@ -460,8 +498,7 @@ class NaiveRagDocumentConfigViewSet(
         """
         try:
             result = NaiveRagService.delete_document_config(
-                config_id=int(pk),
-                naive_rag_id=int(naive_rag_id)
+                config_id=int(pk), naive_rag_id=int(naive_rag_id)
             )
 
             return Response(

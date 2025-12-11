@@ -42,7 +42,6 @@ class DocumentManagementViewSet(viewsets.GenericViewSet):
             return DocumentBulkDeleteSerializer
         return DocumentMetadataSerializer
 
-    @swagger_auto_schema(auto_schema=None)  # Exclude from Swagger schema generation
     @action(
         detail=False,
         methods=["post"],
@@ -52,12 +51,10 @@ class DocumentManagementViewSet(viewsets.GenericViewSet):
     def upload_documents(self, request, collection_id=None):
         """
         Upload one or multiple files to a collection.
-        Supports drag & drop from UI (multiple files).
+        Request (multipart/form-data):
+            - files: List of files to upload
 
         URL: POST /documents/source-collections/{collection_id}/upload/
-
-        Request (multipart/form-data):
-        - files: List of files to upload
 
         Returns:
         - 201: Successfully uploaded documents

@@ -1,8 +1,9 @@
 from rest_framework import viewsets, status
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from utils.logger import logger
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django.db import transaction
 
 from tables.models.knowledge_models.collection_models import SourceCollection
 
@@ -164,17 +165,27 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @swagger_auto_schema(
+        method="post",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["collection_ids"],
+            properties={
+                "collection_ids": openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(type=openapi.TYPE_INTEGER),
+                    description="List of collection IDs to delete",
+                    example=[1, 2, 3],
+                )
+            },
+        ),
+    )
     @action(detail=False, methods=["post"], url_path="bulk-delete")
     def bulk_delete(self, request):
         """
         Bulk delete collections with automatic unreferenced content cleanup.
 
         URL: POST /source-collections/bulk-delete/
-
-        Body:
-        {
-            "collection_ids": [1, 2, 3]
-        }
         """
         collection_ids = request.data.get("collection_ids", [])
 

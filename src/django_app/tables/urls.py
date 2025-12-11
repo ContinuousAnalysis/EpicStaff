@@ -269,27 +269,29 @@ urlpatterns = [
     ),
     # NaiveRag document config endpoints
     path(
-        "naive-rag/<int:naive_rag_id>/document-configs/init/",
+        "naive-rag/<str:naive_rag_id>/document-configs/init/",
         NaiveRagDocumentConfigViewSet.as_view({"post": "init_configs"}),
         name="document-config-init",
     ),
     path(
-        "naive-rag/<int:naive_rag_id>/document-configs/",
+        "naive-rag/<str:naive_rag_id>/document-configs/",
         NaiveRagDocumentConfigViewSet.as_view({"get": "list_configs"}),
         name="document-config-list",
     ),
     path(
-        "naive-rag/<int:naive_rag_id>/document-configs/<int:pk>/",
-        NaiveRagDocumentConfigViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
+        "naive-rag/<str:naive_rag_id>/document-configs/<int:pk>/",
+        NaiveRagDocumentConfigViewSet.as_view(
+            {"get": "retrieve", "put": "update", "delete": "destroy"}
+        ),
         name="document-config-detail",
     ),
     path(
-        "naive-rag/<int:naive_rag_id>/document-configs/bulk-update/",
+        "naive-rag/<str:naive_rag_id>/document-configs/bulk-update/",
         NaiveRagDocumentConfigViewSet.as_view({"put": "bulk_update"}),
         name="document-config-bulk-update",
     ),
     path(
-        "naive-rag/<int:naive_rag_id>/document-configs/bulk-delete/",
+        "naive-rag/<str:naive_rag_id>/document-configs/bulk-delete/",
         NaiveRagDocumentConfigViewSet.as_view({"post": "bulk_delete"}),
         name="document-config-bulk-delete",
     ),

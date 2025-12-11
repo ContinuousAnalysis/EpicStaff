@@ -420,7 +420,9 @@ class NaiveRagService:
             DocumentConfigNotFoundException: If config not found or doesn't belong to naive_rag
         """
         try:
-            config = NaiveRagDocumentConfig.objects.select_related("document", "naive_rag").get(
+            config = NaiveRagDocumentConfig.objects.select_related(
+                "document", "naive_rag"
+            ).get(
                 naive_rag_document_id=config_id,
             )
         except NaiveRagDocumentConfig.DoesNotExist:
@@ -573,8 +575,9 @@ class NaiveRagService:
 
         # Get document IDs that already have configs
         existing_config_doc_ids = set(
-            NaiveRagDocumentConfig.objects.filter(naive_rag=naive_rag)
-            .values_list("document_id", flat=True)
+            NaiveRagDocumentConfig.objects.filter(naive_rag=naive_rag).values_list(
+                "document_id", flat=True
+            )
         )
 
         # Filter documents that need new configs
@@ -583,9 +586,7 @@ class NaiveRagService:
         )
 
         if not documents_without_configs.exists():
-            logger.info(
-                f"All documents already configured for NaiveRag {naive_rag_id}"
-            )
+            logger.info(f"All documents already configured for NaiveRag {naive_rag_id}")
             return []
 
         # Create configs with defaults for new documents
@@ -658,8 +659,7 @@ class NaiveRagService:
         # Get all configs that belong to this naive_rag
         configs = list(
             NaiveRagDocumentConfig.objects.filter(
-                naive_rag_id=naive_rag_id,
-                naive_rag_document_id__in=config_ids
+                naive_rag_id=naive_rag_id, naive_rag_document_id__in=config_ids
             ).select_related("document")
         )
 
@@ -691,7 +691,9 @@ class NaiveRagService:
         first_config = configs[0]
         final_chunk_size = updates.get("chunk_size", first_config.chunk_size)
         final_chunk_overlap = updates.get("chunk_overlap", first_config.chunk_overlap)
-        final_chunk_strategy = updates.get("chunk_strategy", first_config.chunk_strategy)
+        final_chunk_strategy = updates.get(
+            "chunk_strategy", first_config.chunk_strategy
+        )
 
         # Validate chunk parameters
         NaiveRagService.validate_chunk_parameters(
@@ -731,7 +733,9 @@ class NaiveRagService:
 
     @staticmethod
     @transaction.atomic
-    def bulk_delete_document_configs(naive_rag_id: int, config_ids: List[int]) -> Dict[str, Any]:
+    def bulk_delete_document_configs(
+        naive_rag_id: int, config_ids: List[int]
+    ) -> Dict[str, Any]:
         """
         Bulk delete multiple document configs by their config IDs.
 
@@ -754,15 +758,14 @@ class NaiveRagService:
 
         # Get configs that belong to this naive_rag
         configs = NaiveRagDocumentConfig.objects.filter(
-            naive_rag_id=naive_rag_id,
-            naive_rag_document_id__in=config_ids
+            naive_rag_id=naive_rag_id, naive_rag_document_id__in=config_ids
         )
 
         found_ids = list(configs.values_list("naive_rag_document_id", flat=True))
         missing_ids = set(config_ids) - set(found_ids)
 
         if missing_ids:
-            raise DocumentConfigNotFoundException(
+            logger.warning(
                 f"Configs not found or don't belong to NaiveRag {naive_rag_id}: {sorted(missing_ids)}"
             )
 
@@ -810,7 +813,9 @@ class NaiveRagService:
         document_name = config.document.file_name
         config.delete()
 
-        logger.info(f"Deleted document config {config_id} for document '{document_name}'")
+        logger.info(
+            f"Deleted document config {config_id} for document '{document_name}'"
+        )
 
         return {
             "config_id": config_id,
