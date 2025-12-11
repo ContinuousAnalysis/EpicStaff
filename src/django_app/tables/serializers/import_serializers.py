@@ -771,11 +771,11 @@ class NestedCrewImportSerializer(CrewImportSerializer):
         extra_kwargs = {
             "id": {"read_only": False, "required": False, "validators": []},
         }
-    # #TODO: double check
-    # def to_representation(self, instance):
-    #     if getattr(self, 'swagger_fake_view', False) or isinstance(instance, dict):
-    #         return instance
-    #     return super().to_representation(instance)
+
+    def to_representation(self, instance):
+        if getattr(self, "swagger_fake_view", False) or isinstance(instance, dict):
+            return instance
+        return super().to_representation(instance)
 
 
 class CrewNodeImportSerializer(serializers.ModelSerializer):
