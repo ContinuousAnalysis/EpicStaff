@@ -1,4 +1,6 @@
 from django_filters import rest_framework as filters
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
@@ -26,6 +28,7 @@ from rest_framework import viewsets, mixins, status, filters as drf_filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import transaction
+from django.core.exceptions import ValidationError
 from django.db.models import Prefetch
 from tables.models.graph_models import (
     Condition,
@@ -47,6 +50,7 @@ from tables.filters import ProviderFilter
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
 from tables.models.mcp_models import McpTool
+from tables.models.knowledge_models.naive_rag_models import NaiveRag
 from utils.logger import logger
 from django.db.models import IntegerField, NOT_PROVIDED
 from django.db.models.functions import Cast
@@ -91,7 +95,11 @@ from tables.serializers.copy_serializers import (
     GraphCopySerializer,
     GraphCopyDeserializer,
 )
-
+from tables.serializers.naive_rag_serializers import (
+    NaiveRagLightSerializer,
+    AssignRagSerializer,
+    NaiveRagSearchConfigSerializer,
+)
 
 from tables.models import (
     Agent,
@@ -121,11 +129,7 @@ from tables.models import (
     TaskContext,
 )
 
-from tables.models import (
-    AgentSessionMessage,
-    TaskSessionMessage,
-    UserSessionMessage
-)
+from tables.models import AgentSessionMessage, TaskSessionMessage, UserSessionMessage
 
 from tables.serializers.model_serializers import (
     AgentSessionMessageSerializer,
@@ -161,6 +165,10 @@ from tables.serializers.model_serializers import (
 )
 
 from tables.services.redis_service import RedisService
+from tables.services.rag_assignment_service import (
+    RagAssignmentService,
+    SearchConfigService,
+)
 from tables.utils.mixins import ImportExportMixin, DeepCopyMixin
 from tables.exceptions import BuiltInToolModificationError
 
@@ -362,6 +370,113 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
             instance, context=self.get_serializer_context()
         )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get"], url_path="available-rags")
+    def available_rags(self, request, pk=None):
+        """
+        GET /agents/{id}/available-rags/
+        Returns list of NaiveRags available for this agent's collection.
+        """
+        agent = self.get_object()
+
+        if not agent.knowledge_collection:
+            return Response(
+                {"detail": "Agent has no knowledge collection assigned"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        naive_rags = RagAssignmentService.get_available_naive_rags_for_agent(agent)
+        serializer = NaiveRagLightSerializer(naive_rags, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        method="post",
+        request_body=AssignRagSerializer,
+        responses={
+            200: openapi.Response(
+                description="NaiveRag assigned successfully",
+                examples={
+                    "application/json": {
+                        "detail": "NaiveRag assigned successfully",
+                        "naive_rag_id": 123,
+                    }
+                },
+            ),
+            404: "NaiveRag not found",
+            400: "Validation error",
+            409: "Assignment failed (already assigned)",
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="assign-rag")
+    def assign_rag(self, request, pk=None):
+        # TODO: make EP scalable for future RAG implementations
+        """
+        POST /agents/{id}/assign-rag/
+        Body: {"naive_rag_id": 123}
+
+        Assigns NaiveRag to agent and creates default search config.
+        """
+        agent = self.get_object()
+        serializer = AssignRagSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            naive_rag = RagAssignmentService.assign_naive_rag_to_agent(
+                agent=agent, naive_rag_id=serializer.validated_data["naive_rag_id"]
+            )
+            return Response(
+                {
+                    "detail": "NaiveRag assigned successfully",
+                    "naive_rag_id": naive_rag.naive_rag_id,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except NaiveRag.DoesNotExist:
+            return Response(
+                {"detail": "NaiveRag not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # IntegrityError if already assigned
+            return Response(
+                {"detail": f"Assignment failed: {str(e)}"},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+    @action(detail=True, methods=["get", "patch"], url_path="search-config")
+    def search_config(self, request, pk=None):
+        """
+        GET /agents/{id}/search-config/ - Get current config
+        PATCH /agents/{id}/search-config/ - Update config
+        Body: {"search_limit": 5, "similarity_threshold": 0.3}
+        """
+        agent = self.get_object()
+
+        if request.method == "GET":
+            config = SearchConfigService.get_config_for_agent(agent)
+            if not config:
+                return Response(
+                    {"detail": "No search config found for this agent"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            serializer = NaiveRagSearchConfigSerializer(config)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif request.method == "PATCH":
+            serializer = NaiveRagSearchConfigSerializer(data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+
+            config = SearchConfigService.update_search_config(
+                agent=agent,
+                search_limit=serializer.validated_data.get("search_limit"),
+                similarity_threshold=serializer.validated_data.get(
+                    "similarity_threshold"
+                ),
+            )
+
+            response_serializer = NaiveRagSearchConfigSerializer(config)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
@@ -630,7 +745,6 @@ class GraphSessionMessageReadOnlyViewSet(ReadOnlyModelViewSet):
     serializer_class = GraphSessionMessageSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["session_id"]
-
 
 
 class MemoryFilter(FilterSet):
