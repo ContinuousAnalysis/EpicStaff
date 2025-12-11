@@ -8,6 +8,7 @@ from tables.models.graph_models import (
     LLMNode,
     StartNode,
     SubGraphNode,
+    WebhookTriggerNode,
 )
 
 from utils.singleton_meta import SingletonMeta
@@ -59,8 +60,8 @@ class SessionManagerService(metaclass=SingletonMeta):
     def get_session(self, session_id: int) -> Session:
         return Session.objects.get(id=session_id)
 
-    def stop_session(self, session_id: int) -> None:
-        self.redis_service.publish_stop_session(session_id=session_id)
+    def stop_session(self, session_id: int) -> int:
+        return self.redis_service.publish_stop_session(session_id=session_id)
 
     def get_session_status(self, session_id: int) -> Session.SessionStatus:
         session: Session = self.get_session(session_id=session_id)
@@ -71,6 +72,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         graph_id: int,
         variables: dict | None = None,
         username: str | None = None,
+        entrypoint: str | None = None,
     ) -> Session:
 
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
@@ -91,6 +93,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             variables=variables,
             time_to_live=time_to_live,
             graph_user=graph_user,
+            entrypoint=entrypoint,
         )
         return session
 
@@ -101,7 +104,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         self.subgraph_validator.validate(session.graph)
 
         unique_subgraphs: dict[int, SubGraphData] = {}
-        graph_data = self._build_graph_data(session.graph, unique_subgraphs)
+        graph_data = self._build_graph_data(session.graph, unique_subgraphs, session)
 
         return SessionData(
             id=session.pk,
@@ -115,25 +118,37 @@ class SessionManagerService(metaclass=SingletonMeta):
         graph_id: int,
         variables: dict | None = None,
         username: str | None = None,
+        entrypoint: str | None = None,
     ) -> int:
+
         logger.info(f"'run_session' got variables: {variables}")
 
         # Choose to use variables from previous flow or left 'variables' param None
         variables = self.choose_variables(graph_id, variables)
 
         session: Session = self.create_session(
-            graph_id=graph_id, variables=variables, username=username
+            graph_id=graph_id,
+            variables=variables,
+            username=username,
+            entrypoint=entrypoint,
         )
         session_data: SessionData = self.create_session_data(session=session)
+        # TODO: add ping or waiting for crew to accept connections
 
         session.graph_schema = session_data.graph.model_dump()
-        session.save()
-
-        # Subscribers: crew, manager
-        self.redis_service.publish_session_data(
+        received_n = self.redis_service.publish_session_data(
             session_data=session_data,
         )
+        required_listeners = 2
+        if received_n != required_listeners:
+            logger.error(f"Data was sent but not received.")
+            session.status = Session.SessionStatus.ERROR
+            session.status_data = {
+                "reason": f"Data was sent and received by ({received_n}) listeners, but ({required_listeners}) required."
+            }
         logger.info(f"Session data published in Redis for session ID: {session.pk}.")
+
+        session.save()
 
         return session.pk
 
@@ -217,7 +232,10 @@ class SessionManagerService(metaclass=SingletonMeta):
         return variables
 
     def _build_graph_data(
-        self, graph: Graph, unique_subgraphs: dict[int, SubGraphData] | None = None
+        self,
+        graph: Graph,
+        unique_subgraphs: dict[int, SubGraphData] | None = None,
+        session: Session = None,
     ) -> GraphData:
         """Recursively build GraphData for a graph to handle subgraphs
 
@@ -233,13 +251,14 @@ class SessionManagerService(metaclass=SingletonMeta):
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         subgraph_node_list = SubGraphNode.objects.filter(graph=graph.pk)
-        crew_node_data_list: list[CrewNodeData] = []
+        webhook_trigger_node_list = WebhookTriggerNode.objects.filter(graph=graph.pk)
 
         if file_extractor_node_list:
             self.file_extractor_node_validator.validate_file_extractor_nodes(
                 file_extractor_node_list
             )
 
+        crew_node_data_list: list[CrewNodeData] = []
         for item in crew_node_list:
             crew_node_data_list.append(
                 self.converter_service.convert_crew_node_to_pydantic(crew_node=item)
@@ -249,6 +268,14 @@ class SessionManagerService(metaclass=SingletonMeta):
         for item in python_node_list:
             python_node_data_list.append(
                 self.converter_service.convert_python_node_to_pydantic(python_node=item)
+            )
+
+        webhook_trigger_node_data_list: list[PythonNodeData] = []
+        for item in webhook_trigger_node_list:
+            webhook_trigger_node_data_list.append(
+                self.converter_service.convert_webhook_trigger_node_to_pydantic(
+                    webhook_trigger_node=item
+                )
             )
 
         file_extractor_node_data_list: list[FileExtractorNodeData] = []
@@ -268,7 +295,15 @@ class SessionManagerService(metaclass=SingletonMeta):
             )
 
         edge_data_list: list[EdgeData] = []
+
+        # If entrypoint is set for session than use it. If not, than use entrypoint from edges.
+        entrypoint = session.entrypoint
+
         for item in edge_list:
+            if item.start_key == "__start__":
+                if entrypoint is None:
+                    entrypoint = item.end_key
+                continue
             edge_data_list.append(
                 EdgeData(start_key=item.start_key, end_key=item.end_key)
             )
@@ -300,7 +335,9 @@ class SessionManagerService(metaclass=SingletonMeta):
                 unique_subgraphs is not None
                 and item.subgraph_id not in unique_subgraphs
             ):
-                subgraph_data = self._build_graph_data(subgraph, unique_subgraphs)
+                subgraph_data = self._build_graph_data(
+                    subgraph, unique_subgraphs, session
+                )
 
                 variables = subgraph.start_node_list.first().variables
                 if not variables:

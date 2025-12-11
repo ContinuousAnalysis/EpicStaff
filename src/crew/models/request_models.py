@@ -110,7 +110,7 @@ class BaseToolData(BaseModel):
             raise ValueError(
                 "Invalid unique_name. Unique name should be splited by `:`. \nFor example: python-code-tool:1"
             )
-        if prefix == "python-code-tool":
+        if prefix == "python-code-tool" or "python-code-tool-config":
             values["data"] = PythonCodeToolData(**data)
         elif prefix == "configured-tool":
             values["data"] = ConfiguredToolData(**data)
@@ -307,9 +307,15 @@ class ConditionalEdgeData(BaseModel):
     input_map: dict[str, Any]
 
 
+class WebhookTriggerNodeData(BaseModel):
+    node_name: str
+    python_code: PythonCodeData
+
+
 class GraphData(BaseModel):
     name: str
     crew_node_list: list[CrewNodeData] = []
+    webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
     subgraph_node_list: list[SubGraphNodeData] = []
@@ -317,7 +323,7 @@ class GraphData(BaseModel):
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
-    entry_point: str
+    entrypoint: str
     end_node: EndNodeData | None
 
 
@@ -349,5 +355,25 @@ class KnowledgeSearchMessage(BaseModel):
     search_limit: int | None
     similarity_threshold: float | None
 
+
 class StopSessionMessage(BaseModel):
     session_id: int
+
+
+class KnowledgeChunkDTO(BaseModel):
+    chunk_order: int
+    chunk_similarity: float
+    chunk_text: str
+    chunk_source: str = ""
+
+
+class KnowledgeQueryResultDTO(BaseModel):
+    uuid: str
+    collection_id: int
+    retrieved_chunks: int
+    similarity_threshold: float
+    search_limit: int
+    knowledge_query: str
+    chunks: List[KnowledgeChunkDTO]
+    # Support backwards compatibility
+    results: List[str] = []  # deprecated, use chunks instead
