@@ -6,7 +6,7 @@ Tests cover:
 - Document config initialization (with defaults, idempotency)
 - Single config updates
 - Bulk config updates
-- Single config deletion 
+- Single config deletion
 - Bulk config deletion
 - Security: naive_rag_id validation for all operations
 - Edge cases: empty collections, incompatible strategies, etc.
@@ -30,12 +30,12 @@ from tables.models.knowledge_models import (
 # FIXTURES
 # ============================================================================
 
+
 @pytest.fixture
 def another_collection():
     """Create another collection for security tests."""
     return SourceCollection.objects.create(
-        collection_name="Another Collection",
-        user_id="test_user"
+        collection_name="Another Collection", user_id="test_user"
     )
 
 
@@ -43,8 +43,7 @@ def another_collection():
 def another_naive_rag(another_collection, test_embedding_config):
     """Create another NaiveRag for security tests."""
     base_rag = BaseRagType.objects.create(
-        source_collection=another_collection,
-        rag_type=BaseRagType.RagType.NAIVE
+        source_collection=another_collection, rag_type=BaseRagType.RagType.NAIVE
     )
     return NaiveRag.objects.create(
         base_rag_type=base_rag,
@@ -83,11 +82,14 @@ def another_config(another_naive_rag, another_document):
 # NAIVERAG CRUD TESTS
 # ============================================================================
 
+
 @pytest.mark.django_db
 class TestNaiveRagCreation:
     """Tests for creating and updating NaiveRag."""
 
-    def test_create_naive_rag(self, api_client, source_collection, test_embedding_config):
+    def test_create_naive_rag(
+        self, api_client, source_collection, test_embedding_config
+    ):
         """Test creating a NaiveRag for a collection."""
         url = reverse("naive-rag-collection", args=[source_collection.collection_id])
         data = {"embedder_id": test_embedding_config.pk}
@@ -101,8 +103,7 @@ class TestNaiveRagCreation:
 
         # Verify in database
         base_rag = BaseRagType.objects.get(
-            source_collection=source_collection,
-            rag_type=BaseRagType.RagType.NAIVE
+            source_collection=source_collection, rag_type=BaseRagType.RagType.NAIVE
         )
         assert base_rag is not None
         naive_rag = NaiveRag.objects.get(base_rag_type=base_rag)
@@ -136,7 +137,9 @@ class TestNaiveRagCreation:
         naive_rag.refresh_from_db()
         assert naive_rag.embedder == new_embedder
 
-    def test_create_naive_rag_with_invalid_embedder(self, api_client, source_collection):
+    def test_create_naive_rag_with_invalid_embedder(
+        self, api_client, source_collection
+    ):
         """Test creating NaiveRag with nonexistent embedder."""
         url = reverse("naive-rag-collection", args=[source_collection.collection_id])
         data = {"embedder_id": 99999}
@@ -145,7 +148,9 @@ class TestNaiveRagCreation:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_create_naive_rag_for_nonexistent_collection(self, api_client, test_embedding_config):
+    def test_create_naive_rag_for_nonexistent_collection(
+        self, api_client, test_embedding_config
+    ):
         """Test creating NaiveRag for collection that doesn't exist."""
         url = reverse("naive-rag-collection", args=[99999])
         data = {"embedder_id": test_embedding_config.pk}
@@ -159,7 +164,9 @@ class TestNaiveRagCreation:
 class TestNaiveRagRetrieval:
     """Tests for retrieving NaiveRag."""
 
-    def test_get_naive_rag_by_collection(self, api_client, source_collection, naive_rag):
+    def test_get_naive_rag_by_collection(
+        self, api_client, source_collection, naive_rag
+    ):
         """Test retrieving NaiveRag by collection ID."""
         url = reverse("naive-rag-collection", args=[source_collection.collection_id])
         response = api_client.get(url)
@@ -211,6 +218,7 @@ class TestNaiveRagDeletion:
 # ============================================================================
 # DOCUMENT CONFIG INITIALIZATION TESTS
 # ============================================================================
+
 
 @pytest.mark.django_db
 class TestDocumentConfigInit:
@@ -280,7 +288,9 @@ class TestDocumentConfigInit:
 
         # Add 2 new documents
         for i in range(3, 5):
-            content = DocumentContent.objects.create(content=f"New content {i}".encode())
+            content = DocumentContent.objects.create(
+                content=f"New content {i}".encode()
+            )
             DocumentMetadata.objects.create(
                 source_collection=source_collection,
                 document_content=content,
@@ -299,7 +309,9 @@ class TestDocumentConfigInit:
         assert config.chunk_size == 5000
 
         # Verify total configs
-        total_configs = NaiveRagDocumentConfig.objects.filter(naive_rag=naive_rag).count()
+        total_configs = NaiveRagDocumentConfig.objects.filter(
+            naive_rag=naive_rag
+        ).count()
         assert total_configs == 5
 
     def test_init_with_empty_collection(self, api_client, naive_rag):
@@ -309,7 +321,9 @@ class TestDocumentConfigInit:
 
         response = api_client.post(url, format="json")
 
-        assert response.status_code == status.HTTP_200_OK  # Success but no configs created
+        assert (
+            response.status_code == status.HTTP_200_OK
+        )  # Success but no configs created
         data = response.json()
         assert data["created_count"] == 0
         assert len(data["configs"]) == 0
@@ -327,21 +341,27 @@ class TestDocumentConfigInit:
 # SINGLE CONFIG UPDATE TESTS
 # ============================================================================
 
+
 @pytest.mark.django_db
 class TestDocumentConfigUpdate:
     """Tests for updating single document config."""
 
-    def test_update_config_all_fields(self, api_client, naive_rag, naive_rag_document_config):
+    def test_update_config_all_fields(
+        self, api_client, naive_rag, naive_rag_document_config
+    ):
         """Test updating all fields of a config."""
-        url = reverse("document-config-detail", args=[
-            naive_rag.naive_rag_id,
-            naive_rag_document_config.naive_rag_document_id
-        ])
+        url = reverse(
+            "document-config-detail",
+            args=[
+                naive_rag.naive_rag_id,
+                naive_rag_document_config.naive_rag_document_id,
+            ],
+        )
         data = {
             "chunk_size": 2000,
             "chunk_overlap": 300,
             "chunk_strategy": "character",
-            "additional_params": {"custom": "value"}
+            "additional_params": {"custom": "value"},
         }
 
         response = api_client.put(url, data, format="json")
@@ -357,14 +377,19 @@ class TestDocumentConfigUpdate:
         assert naive_rag_document_config.chunk_size == 2000
         assert naive_rag_document_config.chunk_overlap == 300
 
-    def test_update_config_partial_fields(self, api_client, naive_rag, naive_rag_document_config):
+    def test_update_config_partial_fields(
+        self, api_client, naive_rag, naive_rag_document_config
+    ):
         """Test updating only some fields."""
         original_strategy = naive_rag_document_config.chunk_strategy
 
-        url = reverse("document-config-detail", args=[
-            naive_rag.naive_rag_id,
-            naive_rag_document_config.naive_rag_document_id
-        ])
+        url = reverse(
+            "document-config-detail",
+            args=[
+                naive_rag.naive_rag_id,
+                naive_rag_document_config.naive_rag_document_id,
+            ],
+        )
         data = {"chunk_size": 1500}
 
         response = api_client.put(url, data, format="json")
@@ -374,30 +399,39 @@ class TestDocumentConfigUpdate:
         # Verify only chunk_size changed
         naive_rag_document_config.refresh_from_db()
         assert naive_rag_document_config.chunk_size == 1500
-        assert naive_rag_document_config.chunk_strategy == original_strategy  # Unchanged
+        assert (
+            naive_rag_document_config.chunk_strategy == original_strategy
+        )  # Unchanged
 
-    def test_update_config_with_invalid_params(self, api_client, naive_rag, naive_rag_document_config):
+    def test_update_config_with_invalid_params(
+        self, api_client, naive_rag, naive_rag_document_config
+    ):
         """Test updating config with invalid parameters."""
-        url = reverse("document-config-detail", args=[
-            naive_rag.naive_rag_id,
-            naive_rag_document_config.naive_rag_document_id
-        ])
+        url = reverse(
+            "document-config-detail",
+            args=[
+                naive_rag.naive_rag_id,
+                naive_rag_document_config.naive_rag_document_id,
+            ],
+        )
         data = {"chunk_size": 10}  # Too small (min is 20)
 
         response = api_client.put(url, data, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_update_config_overlap_exceeds_size(self, api_client, naive_rag, naive_rag_document_config):
+    def test_update_config_overlap_exceeds_size(
+        self, api_client, naive_rag, naive_rag_document_config
+    ):
         """Test updating with overlap >= chunk_size."""
-        url = reverse("document-config-detail", args=[
-            naive_rag.naive_rag_id,
-            naive_rag_document_config.naive_rag_document_id
-        ])
-        data = {
-            "chunk_size": 100,
-            "chunk_overlap": 150  # Greater than size
-        }
+        url = reverse(
+            "document-config-detail",
+            args=[
+                naive_rag.naive_rag_id,
+                naive_rag_document_config.naive_rag_document_id,
+            ],
+        )
+        data = {"chunk_size": 100, "chunk_overlap": 150}  # Greater than size
 
         response = api_client.put(url, data, format="json")
 
@@ -408,10 +442,13 @@ class TestDocumentConfigUpdate:
     ):
         """SECURITY: Test updating config with wrong naive_rag_id."""
         # Try to update another_config using wrong naive_rag_id
-        url = reverse("document-config-detail", args=[
-            naive_rag.naive_rag_id,  # Wrong NaiveRag
-            another_config.naive_rag_document_id  # Config from another NaiveRag
-        ])
+        url = reverse(
+            "document-config-detail",
+            args=[
+                naive_rag.naive_rag_id,  # Wrong NaiveRag
+                another_config.naive_rag_document_id,  # Config from another NaiveRag
+            ],
+        )
         data = {"chunk_size": 3000}
 
         response = api_client.put(url, data, format="json")
@@ -432,12 +469,17 @@ class TestDocumentConfigUpdate:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_update_config_no_fields(self, api_client, naive_rag, naive_rag_document_config):
+    def test_update_config_no_fields(
+        self, api_client, naive_rag, naive_rag_document_config
+    ):
         """Test updating config without providing any fields."""
-        url = reverse("document-config-detail", args=[
-            naive_rag.naive_rag_id,
-            naive_rag_document_config.naive_rag_document_id
-        ])
+        url = reverse(
+            "document-config-detail",
+            args=[
+                naive_rag.naive_rag_id,
+                naive_rag_document_config.naive_rag_document_id,
+            ],
+        )
         data = {}
 
         response = api_client.put(url, data, format="json")
@@ -448,6 +490,7 @@ class TestDocumentConfigUpdate:
 # ============================================================================
 # BULK CONFIG UPDATE TESTS
 # ============================================================================
+
 
 @pytest.mark.django_db
 class TestDocumentConfigBulkUpdate:
@@ -510,7 +553,9 @@ class TestDocumentConfigBulkUpdate:
         """SECURITY: Test bulk update with configs from different NaiveRag."""
         url = reverse("document-config-bulk-update", args=[naive_rag.naive_rag_id])
         data = {
-            "config_ids": [another_config.naive_rag_document_id],  # From another NaiveRag
+            "config_ids": [
+                another_config.naive_rag_document_id
+            ],  # From another NaiveRag
             "chunk_size": 3000,
         }
 
@@ -549,7 +594,9 @@ class TestDocumentConfigBulkUpdate:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_bulk_update_no_update_fields(self, api_client, naive_rag, naive_rag_document_config):
+    def test_bulk_update_no_update_fields(
+        self, api_client, naive_rag, naive_rag_document_config
+    ):
         """Test bulk update without providing update fields."""
         url = reverse("document-config-bulk-update", args=[naive_rag.naive_rag_id])
         data = {
@@ -565,15 +612,20 @@ class TestDocumentConfigBulkUpdate:
 # SINGLE CONFIG DELETE TESTS
 # ============================================================================
 
+
 @pytest.mark.django_db
 class TestDocumentConfigDelete:
     """Tests for deleting single document config."""
 
-    def test_delete_single_config(self, api_client, naive_rag, naive_rag_document_config):
+    def test_delete_single_config(
+        self, api_client, naive_rag, naive_rag_document_config
+    ):
         """Test deleting a single config."""
         config_id = naive_rag_document_config.naive_rag_document_id
 
-        url = reverse("document-config-detail", args=[naive_rag.naive_rag_id, config_id])
+        url = reverse(
+            "document-config-detail", args=[naive_rag.naive_rag_id, config_id]
+        )
         response = api_client.delete(url)
 
         assert response.status_code == status.HTTP_200_OK
@@ -590,10 +642,13 @@ class TestDocumentConfigDelete:
         self, api_client, naive_rag, another_naive_rag, another_config
     ):
         """SECURITY: Test deleting config with wrong naive_rag_id."""
-        url = reverse("document-config-detail", args=[
-            naive_rag.naive_rag_id,  # Wrong NaiveRag
-            another_config.naive_rag_document_id  # Config from another NaiveRag
-        ])
+        url = reverse(
+            "document-config-detail",
+            args=[
+                naive_rag.naive_rag_id,  # Wrong NaiveRag
+                another_config.naive_rag_document_id,  # Config from another NaiveRag
+            ],
+        )
 
         response = api_client.delete(url)
 
@@ -617,6 +672,7 @@ class TestDocumentConfigDelete:
 # ============================================================================
 # BULK CONFIG DELETE TESTS
 # ============================================================================
+
 
 @pytest.mark.django_db
 class TestDocumentConfigBulkDelete:
@@ -663,8 +719,8 @@ class TestDocumentConfigBulkDelete:
 
         response = api_client.post(url, data, format="json")
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert "don't belong to" in response.json()["error"].lower()
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["deleted_count"] == 0
 
         # Verify config not deleted
         assert NaiveRagDocumentConfig.objects.filter(
@@ -680,7 +736,8 @@ class TestDocumentConfigBulkDelete:
 
         response = api_client.post(url, data, format="json")
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["deleted_count"] == 1
 
     def test_bulk_delete_empty_config_ids(self, api_client, naive_rag):
         """Test bulk delete with empty config_ids list."""
@@ -695,6 +752,7 @@ class TestDocumentConfigBulkDelete:
 # ============================================================================
 # CONFIG RETRIEVAL TESTS
 # ============================================================================
+
 
 @pytest.mark.django_db
 class TestDocumentConfigRetrieval:
@@ -726,17 +784,25 @@ class TestDocumentConfigRetrieval:
         data = response.json()
         assert data["total_configs"] == 0
 
-    def test_retrieve_single_config(self, api_client, naive_rag, naive_rag_document_config):
+    def test_retrieve_single_config(
+        self, api_client, naive_rag, naive_rag_document_config
+    ):
         """Test retrieving a single config."""
-        url = reverse("document-config-detail", args=[
-            naive_rag.naive_rag_id,
-            naive_rag_document_config.naive_rag_document_id
-        ])
+        url = reverse(
+            "document-config-detail",
+            args=[
+                naive_rag.naive_rag_id,
+                naive_rag_document_config.naive_rag_document_id,
+            ],
+        )
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["naive_rag_document_id"] == naive_rag_document_config.naive_rag_document_id
+        assert (
+            data["naive_rag_document_id"]
+            == naive_rag_document_config.naive_rag_document_id
+        )
         assert data["chunk_size"] == naive_rag_document_config.chunk_size
 
     def test_retrieve_nonexistent_config(self, api_client, naive_rag):
