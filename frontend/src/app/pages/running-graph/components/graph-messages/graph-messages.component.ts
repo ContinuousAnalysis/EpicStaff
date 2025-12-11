@@ -50,6 +50,7 @@ import { isMessageType } from './helper_functions/message-helper';
 import { RunGraphPageService } from '../../run-graph-page.service';
 import { RunSessionSSEService } from '../../../run-graph-page/run-graph-page-body/graph-session-sse.service';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
+import { ExtractedChunksMessageComponent } from './components/extracted-chunks/extracted-chunks-message.component';
 
 @Component({
   selector: 'app-graph-messages',
@@ -69,6 +70,7 @@ import { FlowsApiService } from '../../../../features/flows/services/flows-api.s
     ProjectTransitionComponent,
     WaitForUserInputComponent,
     UserMessageComponent,
+    ExtractedChunksMessageComponent,
     SubgraphStartMessageComponent,
     SubgraphFinishMessageComponent,
   ],

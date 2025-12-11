@@ -25,6 +25,7 @@ export enum MessageType {
   USER = 'user',
   TASK = 'task',
   UPDATE_SESSION_STATUS = 'update_session_status',
+  EXTRACTED_CHUNKS = 'extracted_chunks',
   SUBGRAPH_START = 'subgraph_start',
   SUBGRAPH_FINISH = 'subgraph_finish',
 }
@@ -33,8 +34,8 @@ export enum MessageType {
 export interface FinishMessageData {
   output: any;
   state: Record<string, any>;
-  message_type: MessageType.FINISH; // Using snake_case from API
-  additional_data?: Record<string, any>; // Using snake_case from API
+  message_type: MessageType.FINISH; 
+  additional_data?: Record<string, any>; 
 }
 
 export interface StartMessageData {
@@ -110,6 +111,26 @@ export interface UpdateSessionStatusMessageData {
   associatedProject?: GetProjectRequest;
 }
 
+export interface ExtractedChunk {
+  chunk_text: string;
+  chunk_order: number;
+  chunk_source: string;
+  chunk_similarity: number;
+}
+
+export interface ExtractedChunksMessageData {
+  crew_id: number;
+  agent_id: number;
+  collection_id: number;
+  retrieved_chunks: number;
+  similarity_threshold: number;
+  search_limit: number;
+  knowledge_query: string;
+  chunks: ExtractedChunk[];
+  message_type: MessageType.EXTRACTED_CHUNKS;
+  associatedProject?: GetProjectRequest;
+}
+
 // State history item interface for subflow messages
 export interface StateHistoryItem {
   name: string;
@@ -150,5 +171,6 @@ export type MessageData =
   | UserMessageData
   | TaskMessageData
   | UpdateSessionStatusMessageData
+  | ExtractedChunksMessageData
   | StartSubflowMessageData
   | FinishSubflowMessageData;
