@@ -1,5 +1,9 @@
 from typing import Iterable
-from tables.models.crew_models import AgentConfiguredTools, AgentMcpTools, AgentPythonCodeTools
+from tables.models.crew_models import (
+    AgentConfiguredTools,
+    AgentMcpTools,
+    AgentPythonCodeTools,
+)
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models.llm_models import (
@@ -57,6 +61,45 @@ class ConverterService(metaclass=SingletonMeta):
     def __init__(self):
         self.memory_validator = CrewMemoryValidator()
         self.task_validator = TaskValidator()
+
+    def build_rag_search_config(
+        self, rag_type_id: str | None, all_search_configs: dict | None
+    ) -> RagSearchConfig | None:
+        """
+        Factory method to build appropriate RAG search config based on rag_type.
+        
+        Returns:
+            NaiveRagSearchConfig | GraphRagSearchConfig | None
+        """
+        
+        if not rag_type_id or not all_search_configs:
+            return None
+
+        try:
+            rag_type, _ = rag_type_id.split(":", 1)
+        except ValueError:
+            return None
+
+        rag_specific_config = all_search_configs.get(rag_type)
+        if not rag_specific_config:
+            return None
+
+        rag_config_map = {
+            "naive": lambda config: NaiveRagSearchConfig(
+                rag_type="naive",
+                **config
+            ),
+            "graph": lambda config: GraphRagSearchConfig(
+                rag_type="graph",
+                **config
+            ),
+        }
+
+        builder = rag_config_map.get(rag_type)
+        if not builder:
+            return None
+
+        return builder(rag_specific_config)
 
     def convert_crew_to_pydantic(self, crew_id: int) -> CrewData:
         crew = Crew.objects.get(pk=crew_id).fill_with_defaults()
@@ -122,6 +165,7 @@ class ConverterService(metaclass=SingletonMeta):
             agent_base_tools = self._get_agent_base_tools(agent=agent)
             crew_base_tools.extend(agent_base_tools)
 
+        # TODO: deprecate
         knowledge_collection_id = None
         if crew.knowledge_collection is not None:
             knowledge_collection_id = crew.knowledge_collection.pk
@@ -155,22 +199,25 @@ class ConverterService(metaclass=SingletonMeta):
     def _get_agent_base_tools(self, agent: Agent) -> list[BaseToolData]:
 
         python_tools = PythonCodeTool.objects.filter(
-            id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id)
-            .values_list("pythoncodetool_id", flat=True)
+            id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id).values_list(
+                "pythoncodetool_id", flat=True
+            )
         )
         configured_tools = ToolConfig.objects.filter(
-            id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id)
-            .values_list("toolconfig_id", flat=True)
+            id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id).values_list(
+                "toolconfig_id", flat=True
+            )
         )
         mcp_tools = McpTool.objects.filter(
-            id__in=AgentMcpTools.objects.filter(agent_id=agent.id)
-            .values_list("mcptool_id", flat=True)
+            id__in=AgentMcpTools.objects.filter(agent_id=agent.id).values_list(
+                "mcptool_id", flat=True
+            )
         )
 
         all_tools = list(python_tools) + list(configured_tools) + list(mcp_tools)
 
         return [self.convert_tool_to_base_tool_pydantic(tool) for tool in all_tools]
-    
+
     def _get_task_base_tools(self, task: Task) -> list[BaseToolData]:
         tools = (
             [entry.tool for entry in task.task_configured_tool_list.all()]
@@ -204,9 +251,15 @@ class ConverterService(metaclass=SingletonMeta):
 
         llm = self.convert_llm_config_to_pydantic(agent.llm_config)
         function_calling_llm = self.convert_llm_config_to_pydantic(agent.fcm_llm_config)
+
         knowledge_collection_id = None
         if agent.knowledge_collection is not None:
             knowledge_collection_id = agent.knowledge_collection.pk
+
+        # Build RAG search config using factory method
+        rag_type_id = agent.get_rag_type_and_id()
+        all_search_configs = agent.get_search_configs()
+        rag_search_config = self.build_rag_search_config(rag_type_id, all_search_configs)
 
         return AgentData(
             id=agent.pk,
@@ -226,8 +279,8 @@ class ConverterService(metaclass=SingletonMeta):
             llm=llm,
             function_calling_llm=function_calling_llm,
             knowledge_collection_id=knowledge_collection_id,
-            search_limit=agent.search_limit,
-            similarity_threshold=agent.similarity_threshold,
+            rag_type_id=rag_type_id,
+            rag_search_config=rag_search_config,
         )
 
     def convert_rt_agent_chat_to_pydantic(
