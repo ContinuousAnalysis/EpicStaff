@@ -10,7 +10,8 @@ from services.redis_service import RedisService
 from models.redis_models import (
     ChunkDocumentMessage,
     ChunkDocumentMessageResponse,
-    KnowledgeSearchMessage,
+    BaseKnowledgeSearchMessage,
+    ProcessRagIndexingMessage,
 )
 
 
@@ -33,34 +34,57 @@ knowledge_document_chunk_channel = os.getenv(
 knowledge_document_chunk_response = os.getenv(
     "KNOWLEDGE_DOCUMENT_CHUNK_RESPONSE", "knowledge:chunk:response"
 )
+knowledge_indexing_channel = os.getenv(
+    "KNOWLEDGE_INDEXING_CHANNEL", "knowledge:indexing"
+)
 
 
-def run_process_collection(collection_id):
-    """Runs the blocking embedding process in a separate process."""
-    collection_processor_service.process_collection(collection_id=collection_id)
+def run_chunk_document(naive_rag_document_config_id: int):
+    """Chunk a document based on its NaiveRagDocumentConfig."""
+    chunk_document_service.process_chunk_document_by_config_id(
+        naive_rag_document_config_id=naive_rag_document_config_id
+    )
 
 
-def run_chunk_document(document_id: int):
-    chunk_document_service.process_chunk_document_by_document_id(
-        document_id=document_id
+def run_rag_indexing(rag_id: int, rag_type: str, collection_id: int):
+    """Runs the RAG indexing process (chunking + embedding) in a separate process."""
+    collection_processor_service.process_rag_indexing(
+        rag_id=rag_id, rag_type=rag_type, collection_id=collection_id
     )
 
 
 async def indexing(redis_service: RedisService, executor: ThreadPoolExecutor):
-    """Handles embedding creation from the Redis queue asynchronously."""
-    logger.info(f"Subscribed to channel '{knowledge_sources_channel}' for embeddings.")
+    """Handles RAG indexing (+ force chunking) from the Redis queue asynchronously."""
+    logger.info(
+        f"Subscribed to channel '{knowledge_indexing_channel}' for RAG indexing."
+    )
 
-    pubsub = await redis_service.async_subscribe(knowledge_sources_channel)
+    pubsub = await redis_service.async_subscribe(knowledge_indexing_channel)
     async for message in pubsub.listen():
         if message["type"] == "message":
             try:
                 data = json.loads(message["data"])
-                collection_id = data["collection_id"]
+                indexing_message = ProcessRagIndexingMessage.model_validate(data)
 
-                # Run blocking function in a ProcessPoolExecutor for CPU-bound work
+                logger.info(
+                    f"Processing RAG indexing: rag_type={indexing_message.rag_type}, "
+                    f"rag_id={indexing_message.rag_id}, "
+                    f"collection_id={indexing_message.collection_id}"
+                )
+
+                # Run blocking function in executor for CPU-bound work
                 loop = asyncio.get_running_loop()
                 await loop.run_in_executor(
-                    executor, run_process_collection, collection_id
+                    executor,
+                    run_rag_indexing,
+                    indexing_message.rag_id,
+                    indexing_message.rag_type,
+                    indexing_message.collection_id,
+                )
+
+                logger.info(
+                    f"RAG indexing completed: rag_type={indexing_message.rag_type}, "
+                    f"rag_id={indexing_message.rag_id}"
                 )
 
             except Exception as e:
@@ -68,9 +92,13 @@ async def indexing(redis_service: RedisService, executor: ThreadPoolExecutor):
 
 
 async def chunking(redis_service: RedisService, executor: ThreadPoolExecutor):
-    """Handles document chunking from the Redis queue asynchronously."""
+    """
+    Handles document chunking from the Redis queue asynchronously.
+
+    Uses naive_rag_document_config_id instead of document_id.
+    """
     logger.info(
-        f"Subscribed to channel '{knowledge_document_chunk_channel}' for embeddings."
+        f"Subscribed to channel '{knowledge_document_chunk_channel}' for chunking."
     )
 
     pubsub = await redis_service.async_subscribe(knowledge_document_chunk_channel)
@@ -80,35 +108,41 @@ async def chunking(redis_service: RedisService, executor: ThreadPoolExecutor):
                 data = json.loads(message["data"])
                 chunk_document_message = ChunkDocumentMessage.model_validate(data)
 
-                # Run blocking function in a ProcessPoolExecutor for CPU-bound work
+                # Run blocking function in executor for CPU-bound work
                 loop = asyncio.get_running_loop()
                 await loop.run_in_executor(
-                    executor, run_chunk_document, chunk_document_message.document_id
+                    executor,
+                    run_chunk_document,
+                    chunk_document_message.naive_rag_document_config_id,
                 )
                 response = ChunkDocumentMessageResponse(
                     success=True,
-                    document_id=chunk_document_message.document_id,
+                    naive_rag_document_config_id=chunk_document_message.naive_rag_document_config_id,
                 )
                 await redis_service.async_publish(
                     channel=knowledge_document_chunk_response,
-                    message=response.model_dump()
+                    message=response.model_dump(),
                 )
             except Exception as e:
-                error_message = f"Error processing embedding: {e}"
+                error_message = f"Error processing chunking: {e}"
                 logger.error(error_message)
                 response = ChunkDocumentMessageResponse(
                     success=False,
-                    document_id=chunk_document_message.document_id,
+                    naive_rag_document_config_id=chunk_document_message.naive_rag_document_config_id,
                     message=error_message,
                 )
                 await redis_service.async_publish(
                     channel=knowledge_document_chunk_response,
-                    message=response.model_dump()
+                    message=response.model_dump(),
                 )
 
 
 async def searching(redis_service: RedisService):
-    """Handles search queries from the Redis queue asynchronously."""
+    """
+    Handles search queries from the Redis queue asynchronously.
+
+    Uses rag_id and rag_type instead of collection_id.
+    """
     logger.info(
         f"Subscribed to channel '{knowledge_search_get_channel}' for search queries."
     )
@@ -118,24 +152,28 @@ async def searching(redis_service: RedisService):
         if message["type"] == "message":
             try:
                 parsed_data = json.loads(message["data"])
-                data = KnowledgeSearchMessage(**parsed_data)
-                collection_id = data.collection_id
+                data = BaseKnowledgeSearchMessage(**parsed_data)
 
-                logger.info(f"Processing search for collection_id: {collection_id}")
-                
+                logger.info(
+                    f"Processing search for {data.rag_type}_rag_id: {data.rag_id}"
+                )
+
+                # Search using rag_id and rag_type
                 result = collection_processor_service.search(
-                    collection_id=collection_id,
+                    rag_id=data.rag_id,
+                    rag_type=data.rag_type,
                     uuid=data.uuid,
                     query=data.query,
-                    search_limit=data.search_limit,
-                    similarity_threshold=data.similarity_threshold,
+                    rag_search_config=data.rag_search_config,
                 )
 
                 await redis_service.async_publish(
                     knowledge_search_response_channel, result
                 )
 
-                logger.info(f"Search completed for collection_id: {collection_id}")
+                logger.info(
+                    f"Search completed for {data.rag_type}_rag_id: {data.rag_id}"
+                )
             except Exception as e:
                 logger.error(f"Error processing search: {e}")
 
