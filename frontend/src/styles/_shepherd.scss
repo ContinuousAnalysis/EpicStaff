@@ -1,0 +1,830 @@
+// Styles for Angular Shepherd tour
+// Uses application theme variables for design consistency
+
+// Overlay (darkened background) - covers the entire page
+// Use more specific selector to override base Shepherd styles
+body .shepherd-modal-overlay-container,
+html body .shepherd-modal-overlay-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+    z-index: 10001; // Above dialog (10000), but below tour element (10002)
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease-out, height 0s 0.3s, opacity 0.3s 0s;
+    
+    
+    // When overlay is visible, covers the full page height
+    &.shepherd-modal-is-visible {
+        height: 100vh;
+        opacity: 0.7;
+        pointer-events: all; // Block clicks on background, but mask will pass them through the cutout
+        transition: all 0.3s ease-out, height 0s 0s, opacity 0.3s 0s;
+         display: none;
+        // SVG elements for masking (cutout for highlighted element)
+        svg {
+            width: 100%;
+            height: 100%;
+            pointer-events: none; // SVG doesn't block clicks - they pass through to path
+            
+            path {
+                fill: rgba(0, 0, 0, 0.7);
+                // Path defines the mask - areas with fill allow clicks through
+                // Shepherd automatically creates path with cutout
+            }
+        }
+        
+    }
+}
+
+// SVG element in visible overlay - doesn't block clicks
+body .shepherd-modal-overlay-container.shepherd-modal-is-visible svg,
+html body .shepherd-modal-overlay-container.shepherd-modal-is-visible svg {
+    pointer-events: none; // Don't block clicks on SVG - cutout should pass events to target element
+    display: none;
+}
+
+// Main tour container
+// Use more specific selectors to override base Shepherd styles
+body .shepherd-element,
+html body .shepherd-element {
+    background: #2C2C2E;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    color: var(--color-text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    width: 324px;
+    max-width: 324px;
+    padding: 0;
+    z-index: 10002; // Above mask (10001) and dialog (10000)
+    opacity: 1;
+    position: relative; // For absolute positioning of progress bar
+    overflow: visible; // Allow arrow to extend beyond boundaries
+    
+    // Appearance animation
+    animation: shepherdFadeIn 0.3s ease-out;
+    
+    // Styles for first step (without element attachment)
+    // Positioned left 5%, bottom 3.5% (using percentages for responsiveness)
+    // This applies only to steps without element attachment
+    &.shepherd-centered,
+    &.tour-step-intro {
+        position: fixed !important;
+        left: 5% !important;
+        bottom: 1.5% !important;
+        top: auto !important;
+        right: auto !important;
+        transform: none !important;
+        width: 324px !important;
+        height: 545px !important;
+        margin: 0 !important;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+        max-width: 324px;
+        box-sizing: border-box;
+        
+        // Hide step if it's not active (doesn't have shepherd-enabled class)
+        &:not(.shepherd-enabled) {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+        
+        // Remove all internal padding, as padding is already on main container
+        .shepherd-header,
+        .shepherd-content,
+        .shepherd-footer {
+            padding: 0 !important;
+        }
+        
+        // Change order: image (from content) -> header -> text -> footer
+        // Use CSS to extract image from content and place it above header
+        position: relative; // For absolute positioning of image
+        
+        .shepherd-content {
+            order: 2; // Content after header
+            overflow: visible;
+        }
+        
+        .shepherd-header {
+            order: 1; // Header after image
+            margin-top: 307px; // 283px (image height) + 24px (top margin)
+            padding: 0;
+        }
+        
+        .shepherd-footer {
+            order: 3; // Footer last
+        }
+        
+        // Extract image from content and place it at the beginning of container
+        .shepherd-content .shepherd-text .shepherd-intro-image {
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 276px;
+            z-index: 10;
+            margin-bottom: 0;
+            
+            .intro-logo {
+                width: 276px;
+                height: 283px;
+            }
+        }
+    }
+    
+    // Other steps (with element attachment) will be positioned relative to their elements
+    // Shepherd.js will automatically handle positioning via Popper.js
+}
+
+@keyframes shepherdFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+// Step header
+body .shepherd-header,
+html body .shepherd-header {
+    background: transparent;
+    align-items: center;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    display: flex;
+    flex-wrap: wrap; // Allow progress bar to take full width
+    justify-content: flex-end;
+    line-height: 1.4;
+    padding: 0;
+    padding-bottom: 24px;
+    align-content: flex-start;
+    position: relative;
+    z-index: 0;
+    // Clip header to dialog boundaries
+    overflow: hidden;
+    
+
+    // For first step change structure - image above title
+    body .shepherd-element.tour-step-intro &,
+    html body .shepherd-element.tour-step-intro & {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 0;
+        overflow: visible;
+    }
+    
+    .shepherd-title {
+        color: var(--accent-color);
+        display: flex;
+        flex: 1 0 auto;
+        font-size: 18px;
+        font-weight: 500;
+        line-height: 1.4;
+        margin: 0;
+        padding: 0;
+        
+        // For first step - vertical element arrangement
+        body .shepherd-element.tour-step-intro &,
+        html body .shepherd-element.tour-step-intro & {
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        
+        // Image in first step header
+        .shepherd-intro-image {
+            text-align: center;
+            padding-bottom: 24px;
+            margin-bottom: 0;
+            width: 100%;
+            
+            .intro-logo {
+                width: 276px;
+                height: 283px;
+                margin: 0 auto;
+                display: block;
+                object-fit: contain;
+            }
+        }
+        
+        // Header text
+        .shepherd-title-text {
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+    }
+    
+    .shepherd-cancel-icon {
+        background: transparent;
+        border: none;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0;
+        opacity: 0.7;
+        padding: 0;
+        transition: all 0.2s ease;
+        
+        &:hover {
+            color: var(--color-text-primary);
+            opacity: 1;
+        }
+        
+        &::before {
+            content: '✕';
+            font-size: 18px;
+        }
+    }
+}
+
+// Specific styles for header with title (higher specificity)
+body .shepherd-has-title .shepherd-content .shepherd-header,
+html body .shepherd-has-title .shepherd-content .shepherd-header {
+    background: transparent;
+    flex-direction: column; // Vertical arrangement to place progress bar at top
+    padding: 0;
+    padding-bottom: 20px;
+    
+}
+
+// Specific styles for cancel icon inside content
+body .shepherd-has-title .shepherd-content .shepherd-cancel-icon,
+html body .shepherd-has-title .shepherd-content .shepherd-cancel-icon {
+    color: var(--color-text-secondary);
+    
+    &:hover {
+        color: var(--color-text-primary);
+    }
+}
+
+// Step content
+body .shepherd-content,
+html body .shepherd-content {
+    border-radius: 12px;
+    outline: none;
+    padding: 0;
+    position: relative;
+    z-index: 0;
+    // Clip header to dialog boundaries
+    overflow: hidden;
+    
+    // For first step keep padding
+    body .shepherd-element.tour-step-intro &,
+    html body .shepherd-element.tour-step-intro &,
+    body .shepherd-element.shepherd-centered &,
+    html body .shepherd-element.shepherd-centered & {
+        padding: 20px 24px;
+        padding-top: 26px;
+    }
+    
+    .shepherd-text {
+        color: var(--color-text-primary);
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0 0 20px;
+        padding: 0;
+        
+        // Image in first step
+        .shepherd-intro-image {
+            text-align: center;
+            margin-bottom: 24px;
+            
+            .intro-logo {
+                width: 276px;
+                height: 283px;
+                margin: 0 auto;
+                display: block;
+                object-fit: contain;
+            }
+        }
+        
+        p {
+            margin: 0 0 12px;
+            margin-top: 0;
+            
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+        
+        code {
+            background: var(--color-input-background);
+            border: 1px solid var(--color-input-border);
+            border-radius: 4px;
+            color: var(--accent-color);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            padding: 2px 6px;
+        }
+    }
+}
+
+// Left-align text for second step (settings)
+body .shepherd-element.tour-step-settings .shepherd-content .shepherd-text,
+html body .shepherd-element.tour-step-settings .shepherd-content .shepherd-text {
+    text-align: left !important;
+    
+    p {
+        text-align: left !important;
+    }
+}
+
+// For steps other than first, add margin for header, text and footer instead of padding on content
+body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-content .shepherd-header,
+html body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-content .shepherd-header {
+    margin: 26px 24px 0 24px;
+}
+
+body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-content .shepherd-text,
+html body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-content .shepherd-text {
+    margin: 0 24px 20px 24px;
+}
+
+body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-footer,
+html body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-footer {
+    margin: 0 24px 20px 24px;
+}
+
+// For header with title in steps other than first
+body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered).shepherd-has-title .shepherd-content .shepherd-header,
+html body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered).shepherd-has-title .shepherd-content .shepherd-header {
+    margin: 26px 24px 0 24px;
+}
+
+// Wrapper for progress bar (created in TypeScript to clip to dialog boundaries)
+body .shepherd-content > .shepherd-progress-wrapper,
+html body .shepherd-content > .shepherd-progress-wrapper {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important; // Explicitly specify width
+    height: 4px !important; // Progress bar height
+    max-height: 4px !important; // Limit maximum height
+    min-height: 4px !important; // Limit minimum height
+    z-index: 2 !important; // Above content, but below arrow
+    overflow: hidden !important; // Clip progress bar to dialog boundaries
+    border-top-left-radius: 12px !important; // Top-left rounding
+    border-top-right-radius: 12px !important; // Top-right rounding
+    pointer-events: none !important; // Don't block clicks
+    box-sizing: border-box !important; // Account for padding and border in dimensions
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    // Debug styles (can be removed after verification)
+    // border: 1px solid red !important; // Uncomment for visual wrapper verification
+    // background: rgba(255, 0, 0, 0.1) !important; // Uncomment for visual wrapper verification
+}
+
+// Tour progress bar (appears starting from second step, at the beginning of dialog element)
+// Progress bar should be clipped to dialog boundaries, but arrow remains visible
+body .shepherd-element > .shepherd-progress-container,
+html body .shepherd-element > .shepherd-progress-container,
+body .shepherd-element > [data-shepherd-progress="true"],
+html body .shepherd-element > [data-shepherd-progress="true"],
+// Progress bar container inside wrapper (correct styles for clipping)
+body .shepherd-content > .shepherd-progress-wrapper > .shepherd-progress-container,
+html body .shepherd-content > .shepherd-progress-wrapper > .shepherd-progress-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 100% !important; // Takes full wrapper height (8px)
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    position: relative !important; // Relative positioning inside wrapper
+    z-index: 2 !important; // Above content, but below arrow
+    background: transparent !important;
+    border-top-left-radius: 12px !important; // Top-left rounding, same as dialog
+    border-top-right-radius: 12px !important; // Top-right rounding, same as dialog
+    overflow: hidden !important; // Hide parts of progress bar extending beyond boundaries
+    max-height: 4px !important; // Limit height to 4px
+    // Remove clip-path, as clipping happens through wrapper overflow
+    
+    // Styles for progress bar inside wrapper
+    .shepherd-progress-bar {
+        height: 4px !important;
+        max-height: 4px !important;
+        min-height: 4px !important;
+        background-color: var(--color-input-background) !important;
+        border-top-left-radius: 12px !important;
+        border-top-right-radius: 12px !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        display: block !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+        line-height: 0 !important; // Remove extra height from line-height
+        
+        .shepherd-progress-fill {
+            height: 4px !important; // Explicitly specify height
+            max-height: 4px !important;
+            min-height: 4px !important;
+            background-color: var(--accent-color) !important;
+            border-top-left-radius: 12px !important;
+            border-top-right-radius: 12px !important;
+            transition: width 0.3s ease !important;
+            display: block !important;
+            min-width: 2px !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    }
+    
+    // Remove all margins from progress bar text
+    .shepherd-progress-text {
+        display: none !important; // Hide text if present
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 0 !important;
+    }
+}
+
+// General styles for progress bar (for backward compatibility)
+// Applied only if container is NOT inside wrapper
+body .shepherd-progress-container:not(.shepherd-progress-wrapper > .shepherd-progress-container),
+html body .shepherd-progress-container:not(.shepherd-progress-wrapper > .shepherd-progress-container),
+body [data-shepherd-progress="true"]:not(.shepherd-progress-wrapper > [data-shepherd-progress="true"]),
+html body [data-shepherd-progress="true"]:not(.shepherd-progress-wrapper > [data-shepherd-progress="true"]) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    position: absolute !important; // Absolute positioning to place at boundary (only if no wrapper)
+    top: 0 !important; // At top of dialog
+    left: 0 !important; // Left
+    right: 0 !important; // Right
+    z-index: 10 !important;
+    background: transparent !important;
+    border-top-left-radius: 12px !important; // Top-left rounding, same as dialog
+    border-top-right-radius: 12px !important; // Top-right rounding, same as dialog
+    overflow: hidden !important; // Hide parts of progress bar extending beyond boundaries
+    // Clip progress bar exactly to dialog boundaries (only top part 4px high)
+    clip-path: inset(0 0 calc(100% - 4px) 0) !important;
+    
+        .shepherd-progress-bar {
+            height: 4px !important;
+            background-color: var(--color-input-background) !important;
+            border-top-left-radius: 12px !important; // Top-left rounding
+            border-top-right-radius: 12px !important; // Top-right rounding
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        display: block !important;
+        position: relative !important;
+        
+        .shepherd-progress-fill {
+            height: 100% !important;
+            background-color: var(--accent-color) !important;
+            border-top-left-radius: 12px !important; // Top-left rounding
+            border-top-right-radius: 12px !important; // Top-right rounding
+            transition: width 0.3s ease !important;
+            display: block !important;
+            min-width: 2px !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+        }
+    }
+    
+    .shepherd-progress-text {
+        color: var(--color-text-secondary) !important;
+        font-size: 12px !important;
+        text-align: center !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+
+// Footer with buttons
+body .shepherd-footer,
+html body .shepherd-footer {
+    background: transparent;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    padding: 0;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    
+    // For first step buttons are positioned at edges (left and right)
+    body .shepherd-element.tour-step-intro &,
+    html body .shepherd-element.tour-step-intro &,
+    body .shepherd-element.shepherd-centered.tour-step-intro &,
+    html body .shepherd-element.shepherd-centered.tour-step-intro & {
+        border-top: none;
+        justify-content: space-between !important;
+        gap: 0 !important; // Remove gap so buttons are at edges
+        width: 100%;
+        padding: 0;
+
+    }
+}
+
+// Buttons - base styles with high specificity
+body .shepherd-button,
+html body .shepherd-button {
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 20px;
+    transition: all 0.2s ease;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    margin-right: 0.5rem;
+    
+    &:focus {
+        outline: 2px solid var(--accent-color);
+        outline-offset: 2px;
+    }
+    
+    &:disabled {
+        cursor: not-allowed;
+    }
+}
+
+// Last button in footer without right margin
+body .shepherd-footer .shepherd-button:last-child,
+html body .shepherd-footer .shepherd-button:last-child {
+    margin-right: 0;
+}
+
+// For first step remove margin from all buttons so they are exactly at edges
+body .shepherd-element.tour-step-intro .shepherd-footer .shepherd-button,
+html body .shepherd-element.tour-step-intro .shepherd-footer .shepherd-button,
+body .shepherd-element.shepherd-centered.tour-step-intro .shepherd-footer .shepherd-button,
+html body .shepherd-element.shepherd-centered.tour-step-intro .shepherd-footer .shepherd-button {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+    
+}
+
+// Primary button (Next, Complete) - use combined selectors for higher specificity
+// Apply hover styles from app-button component
+body .shepherd-button.shepherd-button-primary,
+html body .shepherd-button.shepherd-button-primary,
+body .shepherd-button-primary.shepherd-button,
+html body .shepherd-button-primary.shepherd-button {
+    background: var(--accent-color);
+    color: white;
+    border: 1px solid transparent;
+    
+    &:not(:disabled):hover {
+        background: var(--accent-color-hover);
+        color: white;
+    }
+    
+    &:active {
+        background: var(--accent-color-active);
+    }
+    
+    &:disabled,
+    &.shepherd-button-disabled {
+        background: var(--color-input-background);
+        color: var(--color-text-tertiary);
+        opacity: 0.5;
+        cursor: not-allowed;
+        
+        &:hover {
+            background: var(--color-input-background);
+            color: var(--color-text-tertiary);
+        }
+    }
+}
+
+// Secondary button (Exit, Back) - use combined selectors for higher specificity
+// Apply hover styles from app-button component
+body .shepherd-button.shepherd-button-secondary,
+html body .shepherd-button.shepherd-button-secondary,
+body .shepherd-button-secondary.shepherd-button,
+html body .shepherd-button-secondary.shepherd-button {
+    background: var(--color-nodes-background);
+    color: var(--accent-color);
+    border: 1px solid var(--color-divider-subtle);
+    
+    &:not(:disabled):hover {
+        background: var(--color-secondary-btn-background-hover);
+    }
+    
+    &:active {
+        background: var(--color-input-background);
+    }
+}
+
+// Element arrow
+body .shepherd-element .shepherd-arrow,
+html body .shepherd-element .shepherd-arrow {
+    position: absolute;
+    z-index: 10002;
+    isolation: isolate;
+    
+    &::before {
+        background: #2C2C2E;
+        border: 1px solid #2C2C2E;
+        position: absolute;
+        z-index: 10002;
+    }
+    
+    &::after {
+        background: #2C2C2E;
+        border: 1px solid #2C2C2E;
+        position: absolute;
+        z-index: 10002;
+    }
+}
+
+// Element highlight (for compatibility with old styles)
+body .shepherd-element[data-popper-placement^="top"] .shepherd-arrow,
+html body .shepherd-element[data-popper-placement^="top"] .shepherd-arrow,
+body .shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow,
+html body .shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow,
+body .shepherd-element[data-popper-placement^="left"] .shepherd-arrow,
+html body .shepherd-element[data-popper-placement^="left"] .shepherd-arrow,
+body .shepherd-element[data-popper-placement^="right"] .shepherd-arrow,
+html body .shepherd-element[data-popper-placement^="right"] .shepherd-arrow {
+    position: absolute;
+    z-index: 10002;
+    isolation: isolate;
+    
+    &::before {
+        background: #2C2C2E;
+        border: 1px solid #2C2C2E;
+        position: absolute;
+        z-index: 10002;
+    }
+    
+    &::after {
+        background: #2C2C2E;
+        border: 1px solid #2C2C2E;
+        position: absolute;
+        z-index: 10002;
+    }
+}
+
+// Class for element highlight (applied by Shepherd automatically)
+// Shepherd uses this class to create cutout in mask
+body .highlight,
+html body .highlight {
+    background: #2d2d30b4 !important;
+    border-radius: 4px;
+    transition: box-shadow 0.3s ease;
+    position: relative !important;
+    z-index: 10002 !important; // Above mask (10001), so element is visible and clickable
+    pointer-events: auto !important; // Ensure clickability
+    
+    // Additional styles for settings elements during tour
+    &.sidenav-nav-link {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        transition: all 0.2s ease-out;
+        z-index: 10002 !important; // Above mask
+        pointer-events: auto !important; // Ensure clickability
+        cursor: pointer !important;
+        
+        .sidenav-link-icon {
+            color: #e3e3e3 !important;
+            transition: color 0.2s ease-in-out;
+        }
+    }
+    
+    // Additional styles for tab buttons during tour
+    &.tab-button {
+        color: #ffffff !important;
+        transition: color 0.2s ease-out;
+        position: relative !important;
+        z-index: 10002 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+}
+
+// Ensure tabs-container and Quickstart button are clickable during tour
+// This is important when Shepherd overlay may block clicks
+// Use selector for dialog that is open during tour
+body .cdk-dialog-container .tabs-container,
+html body .cdk-dialog-container .tabs-container {
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 10001 !important;
+}
+
+// Ensure Quickstart button is always clickable during tour
+// Use highlight class that Shepherd applies automatically
+body .cdk-dialog-container .tab-button.highlight,
+html body .cdk-dialog-container .tab-button.highlight {
+    pointer-events: auto !important;
+    z-index: 10002 !important;
+    position: relative !important;
+}
+
+// Margin for step that is positioned to the right of element, to avoid overlapping button
+body .shepherd-element[data-popper-placement^="right"],
+html body .shepherd-element[data-popper-placement^="right"] {
+    margin-left: 16px !important;
+    
+}
+
+
+
+// Additional left margin for API key step via transform
+// This works even if popperOptions are not applied
+body .shepherd-element.tour-step-api-key[data-popper-placement^="left"],
+html body .shepherd-element.tour-step-api-key[data-popper-placement^="left"] {
+    transform: translateX(-20px) !important; // Shift element left by 40px
+}
+
+// Additional top margin for Start Building step via transform
+body .shepherd-element.tour-step-start-building[data-popper-placement^="top"],
+html body .shepherd-element.tour-step-start-building[data-popper-placement^="top"] {
+    transform: translateY(-20px) !important; // Shift element up by 20px
+}
+
+// Responsiveness for mobile devices
+@media (max-width: 768px) {
+    body .shepherd-element,
+    html body .shepherd-element {
+        max-width: calc(100vw - 32px);
+        margin: 16px;
+    }
+    
+    body .shepherd-header,
+    html body .shepherd-header {
+        padding: 0;
+        
+        .shepherd-title {
+            font-size: 16px;
+        }
+    }
+    
+    body .shepherd-content,
+    html body .shepherd-content {
+        padding: 0;
+        
+        // For first step keep padding
+        body .shepherd-element.tour-step-intro &,
+        html body .shepherd-element.tour-step-intro &,
+        body .shepherd-element.shepherd-centered &,
+        html body .shepherd-element.shepherd-centered & {
+            padding: 16px 20px;
+        }
+        
+        .shepherd-text {
+            font-size: 13px;
+        }
+    }
+    
+    // For steps other than first, add margin for header, text and footer in mobile version
+    body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-content .shepherd-header,
+    html body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-content .shepherd-header {
+        margin: 16px 20px 0 20px;
+    }
+    
+    body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-content .shepherd-text,
+    html body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-content .shepherd-text {
+        margin: 0 20px 16px 20px;
+    }
+    
+    body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-footer,
+    html body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) .shepherd-footer {
+        margin: 0 20px 16px 20px;
+    }
+    
+    body .shepherd-footer,
+    html body .shepherd-footer {
+        flex-direction: column-reverse;
+        padding: 0;
+        .shepherd-button {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+}
