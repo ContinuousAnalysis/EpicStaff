@@ -16,10 +16,32 @@ from os_computer_use.sandbox_agent import SandboxAgent
 # ===================================================================
 
 HOST = "0.0.0.0"
-PORT = int(os.getenv("PORT", 7001))
+PORT = int(os.getenv("MCP_COMPUTER_USE_PORT", 7001))
 DESKTOP_NOVNC_PORT = int(os.getenv("DESKTOP_NOVNC_EXTERNAL_PORT", 6081))
-# Directory where screenshots/logs will be written (defaults to mounted /app/output)
-OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/app/output"))
+
+
+def _normalize_base_output(raw_path: str | None) -> str:
+    """Normalize host paths, especially Windows-style /c/... -> C:/..."""
+    if not raw_path:
+        return raw_path
+    if os.name == "nt":
+        if (
+            raw_path.startswith(("/", "\\"))
+            and len(raw_path) > 2
+            and raw_path[1].isalpha()
+            and raw_path[2] in ("/", "\\")
+        ):
+            drive = raw_path[1].upper()
+            remainder = raw_path[2:].lstrip("\\/")
+            return f"{drive}:/{remainder}"
+    return raw_path
+
+
+OUTPUT_DIR = Path(
+    _normalize_base_output(
+        os.getenv("MCP_SAVEFILES_PATH") or os.getenv("OUTPUT_DIR") or "/app/output"
+    )
+)
 
 logger.info(f"Starting Computer Use Tool MCP server on port {PORT}")
 

@@ -33,12 +33,13 @@ class SandboxAgent:
         self.latest_screenshot = None  # Most recent PNG file path
         self.latest_screenshot_bytes = None  # Most recent PNG bytes
         self.image_counter = 0  # Current screenshot number
-        self.tmp_dir = tempfile.mkdtemp()  # Folder to store screenshots
+        # Store screenshots under the provided output_dir to honor MCP_SAVEFILES_PATH
+        os.makedirs(output_dir, exist_ok=True)
+        self.tmp_dir = tempfile.mkdtemp(dir=output_dir)  # Folder to store screenshots
         self.system_prompt = system_prompt or DEFAULT_SYSTEM_PROMPT
 
         # Set the log file location
         if save_logs:
-            os.makedirs(output_dir, exist_ok=True)
             logger.log_file = f"{output_dir}/log.html"
 
         print("The agent will use the following actions:")

@@ -77,8 +77,13 @@ class Sandbox:
     """Controls the Docker-based desktop environment."""
 
     def __init__(self):
-        self.project_root = Path(__file__).resolve().parent.parent
-        self.compose_file = self.project_root / "docker-compose.yml"
+        # docker-compose.yaml is at the mcp_tools level (two parents up from computer_use_tool) by default
+        self.project_root = Path(__file__).resolve().parents[2]
+        default_compose = self.project_root / "docker-compose.yaml"
+
+        # Allow overriding the compose file path or skipping compose entirely
+        self.compose_file = Path(os.getenv("OCU_COMPOSE_FILE", default_compose))
+        self.skip_compose = os.getenv("OCU_SKIP_COMPOSE", "0") in ("1", "true", "True")
         self.container_name = os.getenv("OCU_DESKTOP_CONTAINER", "ocu-desktop")
         # theasp/novnc uses DISPLAY=:0 by default
         self.display = os.getenv("OCU_DESKTOP_DISPLAY", ":0")
@@ -94,6 +99,10 @@ class Sandbox:
 
     def _ensure_container(self):
         """Start the desktop container if it is not already running."""
+        if self.skip_compose:
+            # Assume desktop is already running; just return
+            return
+
         if not self.compose_file.exists():
             raise SandboxError(f"docker-compose file not found at {self.compose_file}")
 
@@ -101,7 +110,7 @@ class Sandbox:
             subprocess.run(
                 self._compose_cmd("up", "-d", "desktop"),
                 check=True,
-                cwd=self.project_root,
+                cwd=self.compose_file.parent,
             )
         except subprocess.CalledProcessError as exc:
             raise SandboxError(

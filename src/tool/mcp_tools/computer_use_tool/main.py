@@ -97,17 +97,38 @@ def initialize_output_directory(directory_format):
     return directory_format(run_id)
 
 
+def _normalize_base_output(raw_path: str | None) -> str:
+    """Normalize host paths, especially Windows-style /c/... -> C:/..."""
+    if not raw_path:
+        return raw_path
+    if os.name == "nt":
+        # Convert /c/... or /C/... to C:/...
+        if (
+            raw_path.startswith(("/", "\\"))
+            and len(raw_path) > 2
+            and raw_path[1].isalpha()
+            and raw_path[2] in ("/", "\\")
+        ):
+            drive = raw_path[1].upper()
+            remainder = raw_path[2:].lstrip("\\/")
+            return f"{drive}:/{remainder}"
+    return raw_path
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--prompt", type=str, help="User prompt for the agent")
     args = parser.parse_args()
 
-    # If no prompt and not an interactive TTY, exit early with a message
     if args.prompt is None and not sys.stdin.isatty():
         print("No prompt provided and stdin is not interactive. Exiting.")
         return
 
-    output_dir = initialize_output_directory(lambda id: f"./output/run_{id}")
+    raw_base_output = (
+        os.getenv("MCP_SAVEFILES_PATH") or os.getenv("OUTPUT_DIR") or "./output"
+    )
+    base_output = _normalize_base_output(raw_base_output)
+    output_dir = initialize_output_directory(lambda id: f"{base_output}/run_{id}")
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(start(user_input=args.prompt, output_dir=output_dir))
