@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
                     "collection_name",
                     models.CharField(default="default_collection", max_length=255),
                 ),
-                ("embedder", models.IntegerField(default=2)),
+                ("embedder", models.IntegerField(default=1)),
                 ("time_to_expired", models.IntegerField(default=-1)),
             ],
             options={
