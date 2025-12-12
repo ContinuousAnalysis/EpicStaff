@@ -95,7 +95,7 @@ def create_collection(collection_name: str, file_names: list[str], embedder: int
         for _, (_, file_obj, _) in opened_files:
             file_obj.close()
 
-def wait_collection(collection_name: str, max_wait: int= 30, wait_interval: int= 2):
+def wait_collection(collection_name: str, max_wait: int= 60, wait_interval: int= 2):
     waited = 0
     collection = get_collection_by_name(collection_name)
     while collection is None:
@@ -108,18 +108,24 @@ def wait_collection(collection_name: str, max_wait: int= 30, wait_interval: int=
         collection = get_collection_by_name(collection_name)
     return collection
 
-def wait_completed(collection_name: str):
+def wait_completed(collection_name: str, max_wait: int= 60, wait_interval: int= 2):
+    waited = 0
     collection = get_collection_by_name(collection_name)
     url = f"{{API_BASE}}/collection_statuses/?collection_id={{collection['collection_id']}}"
     while True:
+        if waited >= max_wait:
+            result = f"Collection '{{collection_name}}' was not completed after {{max_wait}} seconds"
+            logger.error(result)
+            return result
         r = requests.get(url).json()
         if r["results"][0]["collection_status"] == "completed":
             return r["results"][0]
-        time.sleep(2)
+        waited += wait_interval
+        time.sleep(wait_interval)
 
     
 
-def is_collection_expired(collection: dict, time_to_expired: int) -> bool:
+def is_collection_expired(collection: dict, time_to_expired: int):
     if time_to_expired == -1:
         return False
     try:
@@ -129,12 +135,12 @@ def is_collection_expired(collection: dict, time_to_expired: int) -> bool:
         return True
     return (datetime.now(timezone.utc) - dt).total_seconds() / 60 > time_to_expired
 
-def prepare_save_folder(collection_name: str) -> str:
+def prepare_save_folder(collection_name: str):
     base_dir = os.path.join("savefiles", collection_name)
     os.makedirs(base_dir, exist_ok=True)
     return base_dir
 
-def save_scraped_file(base_dir: str, url: str, content: str) -> str:
+def save_scraped_file(base_dir: str, url: str, content: str):
     parsed = tldextract.extract(url)
     filename = f"scraped_file_{{parsed.domain}}_{{datetime.now().strftime('%Y%m%d')}}.txt"
     filepath = os.path.join(base_dir, filename)
