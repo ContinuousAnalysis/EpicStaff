@@ -92,6 +92,7 @@ class NaiveRAGStrategy(BaseRAGStrategy):
 
             # Logging results
             if knowledge_snippets:
+                logger.info(f"QUERY: [{query}]")
                 if len(knowledge_snippets) > 1:
                     logger.info(
                         f"KNOWLEDGES: {knowledge_snippets[0][:150]}\n.........\n{knowledge_snippets[-1][-150:]}"
@@ -141,7 +142,7 @@ class NaiveRAGStrategy(BaseRAGStrategy):
                 document_configs = (
                     uow_ctx.naive_rag_storage.get_naive_rag_document_configs(
                         naive_rag_id=naive_rag_id,
-                        status=("new", "warning", "chunked"),
+                        status=("new", "warning", "chunked", "completed"),
                     )
                 )
 
