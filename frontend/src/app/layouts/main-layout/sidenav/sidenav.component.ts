@@ -41,6 +41,13 @@ export class LeftSidebarComponent {
     ) {
         this.topNavItems = [
             {
+                id: 'flows',
+                routeLink: 'flows',
+                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.flows),
+                label: 'Flows',
+                showTooltip: false,
+            },
+            {
                 id: 'projects',
                 routeLink: 'projects',
                 svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.projects),
@@ -59,13 +66,6 @@ export class LeftSidebarComponent {
                 routeLink: 'tools',
                 svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.tools),
                 label: 'Tools',
-                showTooltip: false,
-            },
-            {
-                id: 'flows',
-                routeLink: 'flows',
-                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.flows),
-                label: 'Flows',
                 showTooltip: false,
             },
             {

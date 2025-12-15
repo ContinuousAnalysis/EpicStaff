@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { SettingsDialogService } from '../../../settings-dialog/settings-dialog.service';
 import { QuickstartStatusService } from '../../services/quickstart-status.service';
 import { TourStepModifierService, StepModifierContext } from '../../services/tour-step-modifier.service';
+import { OpenAiApiKeyValidatorService } from '../../services/openai-api-key-validator.service';
 import { firstValueFrom } from 'rxjs';
 import { findSettingsStepElement, isElementVisible } from '../../helpers/element-finder.helper';
 import { TOUR_DELAYS } from '../../constants/tour-constants';
@@ -25,18 +26,21 @@ import { TOUR_DELAYS } from '../../constants/tour-constants';
 })
 export class QuickStartComponent implements AfterViewInit, OnDestroy {
   private dialogOpenCallback: (() => void) | null = null;
+  private tourStartTimeoutId: number | null = null;
+  private dialogCallbackTimeoutId: number | null = null;
 
   constructor(
     private shepherdService: ShepherdService,
     private settingsDialogService: SettingsDialogService,
     private renderer: Renderer2,
     private quickstartStatusService: QuickstartStatusService,
-    private tourStepModifierService: TourStepModifierService
+    private tourStepModifierService: TourStepModifierService,
+    private openAiApiKeyValidatorService: OpenAiApiKeyValidatorService
   ) {}
 
   async ngAfterViewInit(): Promise<void> {
-    const shouldStartTour = await this.checkQuickstartStatus();
-    if (shouldStartTour) {
+    const shouldStart = await this.checkQuickstartStatus();
+    if (shouldStart) {
       this.initializeTour();
     }
   }
@@ -68,10 +72,12 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     this.setupTourOptions();
     const modifiedSteps = this.modifySteps();
     this.shepherdService.addSteps(modifiedSteps);
+    this.setupTourEvents();
 
     // Start tour with delay so DOM is fully loaded
-    setTimeout(() => {
+    this.tourStartTimeoutId = window.setTimeout(() => {
       this.shepherdService.start();
+      this.tourStartTimeoutId = null;
     }, TOUR_DELAYS.TOUR_START);
   }
 
@@ -82,8 +88,14 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     this.dialogOpenCallback = () => {
       const settingsStepElement = findSettingsStepElement();
       if (settingsStepElement && isElementVisible(settingsStepElement)) {
-        setTimeout(() => {
+        // Clear previous timeout if exists
+        if (this.dialogCallbackTimeoutId !== null) {
+          clearTimeout(this.dialogCallbackTimeoutId);
+        }
+        
+        this.dialogCallbackTimeoutId = window.setTimeout(() => {
           this.shepherdService.next();
+          this.dialogCallbackTimeoutId = null;
         }, TOUR_DELAYS.DIALOG_TRANSITION);
       }
     };
@@ -119,6 +131,7 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
       renderer: this.renderer,
       totalSteps,
       currentStepNumber: 0, // Will be set per step
+      openAiApiKeyValidatorService: this.openAiApiKeyValidatorService,
     };
 
     return defaultSteps.map((step, index) => {
@@ -138,9 +151,41 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
+   * Handles Shepherd tour events (skip/cancel)
+   */
+  private setupTourEvents(): void {
+    const tour = (this.shepherdService as any)?.tourObject;
+
+    if (!tour) {
+      return;
+    }
+
+    // Mark tour as completed when user clicks Skip
+    tour.once('cancel', () => {
+      this.quickstartStatusService.updateStatus(true).subscribe({
+        error: (error) => {
+          console.error('[Quick Start] Error marking tour as skipped:', error);
+        },
+      });
+    });
+  }
+
+  /**
    * Cleans up resources on component destruction
    */
   private cleanup(): void {
+    // Clear all timeouts
+    if (this.tourStartTimeoutId !== null) {
+      clearTimeout(this.tourStartTimeoutId);
+      this.tourStartTimeoutId = null;
+    }
+    
+    if (this.dialogCallbackTimeoutId !== null) {
+      clearTimeout(this.dialogCallbackTimeoutId);
+      this.dialogCallbackTimeoutId = null;
+    }
+    
+    // Clear dialog callback
     if (this.dialogOpenCallback) {
       this.settingsDialogService.clearOnDialogOpenCallback();
       this.dialogOpenCallback = null;

@@ -213,7 +213,7 @@ export const steps = [
     scrollTo: true,
     title: 'Provide API Key',
     text: [
-      '1. Go to the official <span style="color: var(--accent-color); text-decoration: underline;">website</span> of your provider <span style="color: var(--accent-color);">→</span> open Settings <span style="color: var(--accent-color);">→</span> API Keys. <br> <br> 2. Create or find a key. <br> <br> 3. Copy the key and paste it here.'
+      '1. Go to the official <a href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); text-decoration: underline;">website</a> of your provider <span style="color: var(--accent-color);">→</span> open Settings <span style="color: var(--accent-color);">→</span> API Keys. <br> <br> 2. Create or find a key. <br> <br> 3. Copy the key and paste it here.'
     ],
     when: {
       show: () => {

@@ -2,6 +2,7 @@ import { Injectable, Renderer2 } from '@angular/core';
 import { ShepherdService } from 'angular-shepherd';
 import { SettingsDialogService } from '../../settings-dialog/settings-dialog.service';
 import { QuickstartStatusService } from './quickstart-status.service';
+import { OpenAiApiKeyValidatorService } from './openai-api-key-validator.service';
 import {
   addProgressBarToStep,
   removeProgressBarFromStep,
@@ -21,12 +22,14 @@ export interface StepModifierContext {
   renderer: Renderer2;
   totalSteps: number;
   currentStepNumber: number;
+  openAiApiKeyValidatorService?: OpenAiApiKeyValidatorService;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class TourStepModifierService {
+  constructor(private openAiApiKeyValidatorService: OpenAiApiKeyValidatorService) {}
   /**
    * Modifies intro step to hide it properly when moving to next
    */
@@ -35,6 +38,7 @@ export class TourStepModifierService {
       return step;
     }
 
+    const originalShow = step.when?.show;
     const originalHide = step.when?.hide;
     const { renderer } = context;
 
@@ -42,7 +46,14 @@ export class TourStepModifierService {
       ...step,
       when: {
         ...step.when,
+        show: function (this: any) {
+          if (originalShow) {
+            originalShow.call(this);
+          }
+
+        },
         hide: function (this: any) {
+
           if (originalHide) {
             originalHide.call(this);
           }
@@ -78,13 +89,16 @@ export class TourStepModifierService {
 
             if (!dialogRef) {
               // Dialog already open, proceed to next step immediately
-              setTimeout(() => {
+              const timeoutId = setTimeout(() => {
                 if (originalAction) {
                   return originalAction.call(this);
                 } else {
                   return this.next();
                 }
               }, 100);
+              
+              // Store timeout ID for cleanup
+              (this as any).__settingsStepTimeoutId = timeoutId;
               return;
             }
 
@@ -93,13 +107,23 @@ export class TourStepModifierService {
               const dialog = findDialogContainer();
               if (dialog) {
                 obs.disconnect();
-                setTimeout(() => {
+                
+                // Clear cleanup timeout since observer is already disconnected
+                if ((this as any).__settingsStepCleanupTimeoutId) {
+                  clearTimeout((this as any).__settingsStepCleanupTimeoutId);
+                  delete (this as any).__settingsStepCleanupTimeoutId;
+                }
+                
+                const timeoutId = setTimeout(() => {
                   if (originalAction) {
                     originalAction.call(this);
                   } else {
                     this.next();
                   }
                 }, TOUR_DELAYS.STEP_NAVIGATION);
+                
+                // Store timeout ID for cleanup
+                (this as any).__settingsStepNavigationTimeoutId = timeoutId;
               }
             });
 
@@ -108,10 +132,20 @@ export class TourStepModifierService {
               subtree: true,
             });
 
+            // Store observer reference for cleanup
+            (this as any).__settingsStepObserver = observer;
+
             // Clear observer after timeout if dialog didn't open
-            setTimeout(() => {
-              observer.disconnect();
+            const cleanupTimeoutId = setTimeout(() => {
+              // Check if observer is still active before disconnecting
+              if ((this as any).__settingsStepObserver === observer) {
+                observer.disconnect();
+                delete (this as any).__settingsStepObserver;
+              }
             }, TOUR_DELAYS.MUTATION_OBSERVER_TIMEOUT);
+            
+            // Store cleanup timeout ID
+            (this as any).__settingsStepCleanupTimeoutId = cleanupTimeoutId;
 
             return;
           },
@@ -130,13 +164,44 @@ export class TourStepModifierService {
           }
 
           // Add progress bar
-          setTimeout(() => {
+          const timeoutId = setTimeout(() => {
             if (this?.el) {
               addProgressBarToStep(this.el, currentStepNumber, totalSteps, renderer);
             }
           }, TOUR_DELAYS.PROGRESS_BAR_ADD);
+          
+          // Store timeout ID for cleanup
+          (this as any).__settingsStepProgressBarTimeoutId = timeoutId;
         },
         hide: function (this: any) {
+          // Clear all timeouts
+          if ((this as any).__settingsStepTimeoutId) {
+            clearTimeout((this as any).__settingsStepTimeoutId);
+            delete (this as any).__settingsStepTimeoutId;
+          }
+          
+          if ((this as any).__settingsStepNavigationTimeoutId) {
+            clearTimeout((this as any).__settingsStepNavigationTimeoutId);
+            delete (this as any).__settingsStepNavigationTimeoutId;
+          }
+          
+          if ((this as any).__settingsStepCleanupTimeoutId) {
+            clearTimeout((this as any).__settingsStepCleanupTimeoutId);
+            delete (this as any).__settingsStepCleanupTimeoutId;
+          }
+          
+          if ((this as any).__settingsStepProgressBarTimeoutId) {
+            clearTimeout((this as any).__settingsStepProgressBarTimeoutId);
+            delete (this as any).__settingsStepProgressBarTimeoutId;
+          }
+          
+          // Disconnect MutationObserver if still active
+          const observer = (this as any).__settingsStepObserver;
+          if (observer) {
+            observer.disconnect();
+            delete (this as any).__settingsStepObserver;
+          }
+
           if (this?.el) {
             removeProgressBarFromStep(this.el, renderer);
           }
@@ -153,105 +218,91 @@ export class TourStepModifierService {
    * Modifies quickstart tab step to handle button click
    */
   modifyQuickstartTabStep(step: any, context: StepModifierContext): any {
-    console.log('[TourStepModifier] modifyQuickstartTabStep called, step.id:', step.id);
-    
     if (step.id !== 'quickstart-tab') {
-      console.log('[TourStepModifier] Step ID does not match quickstart-tab, returning unchanged');
       return step;
     }
 
-    console.log('[TourStepModifier] Processing quickstart-tab step');
     const originalShow = step.when?.show;
     const originalHide = step.when?.hide;
     const { shepherdService, settingsDialogService, renderer, totalSteps, currentStepNumber } = context;
-    
-    console.log('[TourStepModifier] Step buttons before modification:', step.buttons);
 
     // Modify buttons so Back closes settings dialog before going back
     const modifiedButtons = step.buttons?.map((button: any) => {
       if (button.type === 'back') {
         const originalAction = button.action;
-        console.log('[Quickstart Tab Step] Modifying Back button, originalAction:', originalAction);
         return {
           ...button,
           action: function (this: any) {
-            console.log('[Quickstart Tab Step] Back button clicked');
-            console.log('[Quickstart Tab Step] Shepherd step context:', this);
-            console.log('[Quickstart Tab Step] settingsDialogService:', settingsDialogService);
-            
             // Close settings dialog before going back
-            console.log('[Quickstart Tab Step] Calling closeSettingsDialog()');
             settingsDialogService.closeSettingsDialog();
             
-              // Wait a bit for dialog to close, then go back
-            setTimeout(() => {
-              console.log('[Quickstart Tab Step] Executing back action after delay');
+            // Wait a bit for dialog to close, then go back
+            const timeoutId = setTimeout(() => {
               if (originalAction) {
-                console.log('[Quickstart Tab Step] Calling originalAction');
                 return originalAction.call(this);
               } else {
-                console.log('[Quickstart Tab Step] Calling this.back()');
                 return this.back();
               }
             }, TOUR_DELAYS.DIALOG_TRANSITION);
+            
+            // Store timeout ID for cleanup
+            (this as any).__quickstartTabBackTimeoutId = timeoutId;
           },
         };
       }
       return button;
     }) || step.buttons || [];
-    
-    console.log('[Quickstart Tab Step] Modified buttons:', modifiedButtons);
 
     return {
       ...step,
       buttons: modifiedButtons,
       when: {
         show: function (this: any) {
-          console.log('[Quickstart Tab Step] Show handler called');
-          console.log('[Quickstart Tab Step] Step options:', this?.options);
-          console.log('[Quickstart Tab Step] Step buttons from options:', this?.options?.buttons);
-          console.log('[Quickstart Tab Step] Modified buttons:', modifiedButtons);
-          
           if (originalShow) {
             originalShow.call(this);
           }
 
           // Add progress bar
-          setTimeout(() => {
+          const progressBarTimeoutId = setTimeout(() => {
             if (this?.el) {
               addProgressBarToStep(this.el, currentStepNumber, totalSteps, renderer);
             }
           }, 50);
           
+          // Store timeout ID for cleanup
+          (this as any).__quickstartTabProgressBarTimeoutId = progressBarTimeoutId;
+          
           // Check buttons in DOM after step is shown and intercept Back button click
-          setTimeout(() => {
+          const buttonCheckTimeoutId = setTimeout(() => {
             const stepElement = this?.el as HTMLElement;
             if (stepElement) {
               const backButton = findShepherdSecondaryButton(stepElement);
-              console.log('[Quickstart Tab Step] Back button in DOM:', backButton);
               if (backButton) {
-                console.log('[Quickstart Tab Step] Back button text:', backButton.textContent);
+                // Initialize array for storing timeout IDs from event handlers
+                if (!(this as any).__quickstartTabEventTimeoutIds) {
+                  (this as any).__quickstartTabEventTimeoutIds = [];
+                }
                 
                 // Intercept click on Back button to close dialog
                 // Use capture phase to intercept before Shepherd handles it
                 const backButtonClickHandler = (e: MouseEvent) => {
-                  console.log('[Quickstart Tab Step] Back button clicked directly in DOM!', e);
                   e.preventDefault();
                   e.stopImmediatePropagation();
                   
                   // Close settings dialog
-                  console.log('[Quickstart Tab Step] Closing dialog from DOM click handler');
                   settingsDialogService.closeSettingsDialog();
                   
                   // Wait a bit for dialog to close, then trigger back
-                  setTimeout(() => {
-                    console.log('[Quickstart Tab Step] Triggering back after dialog close');
+                  const backTimeoutId = setTimeout(() => {
                     if (this?.back) {
                       this.back();
                     } else if (shepherdService) {
                       shepherdService.back();
                     }
                   }, TOUR_DELAYS.DIALOG_TRANSITION);
+                  
+                  // Store timeout ID for cleanup
+                  (this as any).__quickstartTabEventTimeoutIds.push(backTimeoutId);
                   
                   return false;
                 };
@@ -263,13 +314,12 @@ export class TourStepModifierService {
                 // 2. Direct onclick handler (highest priority)
                 const originalOnClick = backButton.onclick;
                 backButton.onclick = (e: MouseEvent) => {
-                  console.log('[Quickstart Tab Step] onclick handler triggered!', e);
                   e.preventDefault();
                   e.stopImmediatePropagation();
                   
                   settingsDialogService.closeSettingsDialog();
                   
-                  setTimeout(() => {
+                  const onclickTimeoutId = setTimeout(() => {
                     if (this?.back) {
                       this.back();
                     } else if (shepherdService) {
@@ -277,10 +327,11 @@ export class TourStepModifierService {
                     }
                   }, TOUR_DELAYS.DIALOG_TRANSITION);
                   
+                  // Store timeout ID for cleanup
+                  (this as any).__quickstartTabEventTimeoutIds.push(onclickTimeoutId);
+                  
                   return false;
                 };
-                
-                console.log('[Quickstart Tab Step] Added DOM click listener to Back button (capture phase + onclick)');
                 
                 // Save references for cleanup
                 (backButton as any).__shepherdBackClickHandler = backButtonClickHandler;
@@ -288,12 +339,20 @@ export class TourStepModifierService {
               }
             }
           }, 100);
+          
+          // Store timeout ID for cleanup
+          (this as any).__quickstartTabButtonCheckTimeoutId = buttonCheckTimeoutId;
 
           // Setup click handler for Quickstart button
-          setTimeout(() => {
+          const quickstartButtonTimeoutId = setTimeout(() => {
             const quickstartButton = this?.target as HTMLElement;
 
             if (quickstartButton) {
+              // Initialize array for storing timeout IDs from event handlers if not exists
+              if (!(this as any).__quickstartTabEventTimeoutIds) {
+                (this as any).__quickstartTabEventTimeoutIds = [];
+              }
+              
               const buttonClickHandler = (event: MouseEvent) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -302,17 +361,53 @@ export class TourStepModifierService {
                   buttonClickHandlerUnlisten();
                 }
 
-                setTimeout(() => {
+                const navigationTimeoutId = setTimeout(() => {
                   shepherdService.next();
                 }, TOUR_DELAYS.STEP_NAVIGATION);
+                
+                // Store timeout ID for cleanup
+                (this as any).__quickstartTabEventTimeoutIds.push(navigationTimeoutId);
               };
 
               const buttonClickHandlerUnlisten = renderer.listen(quickstartButton, 'click', buttonClickHandler);
               (quickstartButton as any).__shepherdButtonClickUnlisten = buttonClickHandlerUnlisten;
             }
           }, TOUR_DELAYS.CLICK_HANDLER_WITH_MASK);
+          
+          // Store timeout ID for cleanup
+          (this as any).__quickstartTabButtonSetupTimeoutId = quickstartButtonTimeoutId;
         },
         hide: function (this: any) {
+          // Clear all timeouts
+          if ((this as any).__quickstartTabProgressBarTimeoutId) {
+            clearTimeout((this as any).__quickstartTabProgressBarTimeoutId);
+            delete (this as any).__quickstartTabProgressBarTimeoutId;
+          }
+          
+          if ((this as any).__quickstartTabButtonCheckTimeoutId) {
+            clearTimeout((this as any).__quickstartTabButtonCheckTimeoutId);
+            delete (this as any).__quickstartTabButtonCheckTimeoutId;
+          }
+          
+          if ((this as any).__quickstartTabButtonSetupTimeoutId) {
+            clearTimeout((this as any).__quickstartTabButtonSetupTimeoutId);
+            delete (this as any).__quickstartTabButtonSetupTimeoutId;
+          }
+          
+          if ((this as any).__quickstartTabBackTimeoutId) {
+            clearTimeout((this as any).__quickstartTabBackTimeoutId);
+            delete (this as any).__quickstartTabBackTimeoutId;
+          }
+          
+          // Clear all event handler timeouts
+          const eventTimeoutIds = (this as any).__quickstartTabEventTimeoutIds;
+          if (eventTimeoutIds && Array.isArray(eventTimeoutIds)) {
+            eventTimeoutIds.forEach((timeoutId: number) => {
+              clearTimeout(timeoutId);
+            });
+            delete (this as any).__quickstartTabEventTimeoutIds;
+          }
+
           if (this?.el) {
             removeProgressBarFromStep(this.el, renderer);
           }
@@ -333,8 +428,6 @@ export class TourStepModifierService {
                 backButton.onclick = (backButton as any).__shepherdOriginalOnClick;
                 delete (backButton as any).__shepherdOriginalOnClick;
               }
-              
-              console.log('[Quickstart Tab Step] Removed Back button click handlers');
             }
           }
 
@@ -366,8 +459,9 @@ export class TourStepModifierService {
     const originalShow = step.when?.show;
     const originalHide = step.when?.hide;
     const { renderer, totalSteps, currentStepNumber } = context;
+    const validatorService = context.openAiApiKeyValidatorService || this.openAiApiKeyValidatorService;
 
-    // Modify buttons so Next is blocked if field is empty
+    // Modify buttons so Next is blocked if field is empty or key is invalid
     const modifiedButtons = step.buttons?.map((button: any) => {
       if (button.type === 'next') {
         const originalAction = button.action;
@@ -376,7 +470,10 @@ export class TourStepModifierService {
           disabled: function (this: any) {
             const apiKeyInput = findApiKeyInput();
             if (apiKeyInput) {
-              return !(apiKeyInput.value.trim().length > 0);
+              const hasValue = apiKeyInput.value.trim().length > 0;
+              const isValid = (apiKeyInput as any).__isValidApiKey !== false;
+              const isChecking = (apiKeyInput as any).__isCheckingApiKey === true;
+              return !hasValue || !isValid || isChecking;
             }
             return true;
           },
@@ -384,7 +481,8 @@ export class TourStepModifierService {
             const apiKeyInput = findApiKeyInput();
             if (apiKeyInput) {
               const hasValue = apiKeyInput.value.trim().length > 0;
-              if (!hasValue) {
+              const isValid = (apiKeyInput as any).__isValidApiKey === true;
+              if (!hasValue || !isValid) {
                 return;
               }
             }
@@ -410,14 +508,17 @@ export class TourStepModifierService {
           }
 
           // Add progress bar
-          setTimeout(() => {
+          const progressBarTimeoutId = setTimeout(() => {
             if (this?.el) {
               addProgressBarToStep(this.el, currentStepNumber, totalSteps, renderer);
             }
           }, TOUR_DELAYS.PROGRESS_BAR_ADD);
+          
+          // Store timeout ID for cleanup
+          (this as any).__apiKeyInputProgressBarTimeoutId = progressBarTimeoutId;
 
-          // Setup validation for Next button
-          setTimeout(() => {
+          // Setup validation for Next button and API key validation
+          const validationSetupTimeoutId = setTimeout(() => {
             const apiKeyInput = findApiKeyInput();
             const stepElement = this?.el as HTMLElement;
 
@@ -425,11 +526,64 @@ export class TourStepModifierService {
               return;
             }
 
+            // Initialize validation state
+            (apiKeyInput as any).__isValidApiKey = undefined;
+            (apiKeyInput as any).__isCheckingApiKey = false;
+            (apiKeyInput as any).__validationDebounceTimeout = null;
+
+            // Helper function to show/hide error message
+            const showErrorMessage = (message: string) => {
+              let errorElement = stepElement.querySelector('.api-key-validation-error') as HTMLElement;
+              if (!errorElement) {
+                errorElement = renderer.createElement('div');
+                errorElement.className = 'api-key-validation-error';
+                const shepherdContent = stepElement.querySelector('.shepherd-content');
+                if (shepherdContent) {
+                  renderer.appendChild(shepherdContent, errorElement);
+                }
+              }
+              errorElement.textContent = message;
+              errorElement.style.display = 'block';
+            };
+
+            const hideErrorMessage = () => {
+              const errorElement = stepElement.querySelector('.api-key-validation-error') as HTMLElement;
+              if (errorElement) {
+                errorElement.style.display = 'none';
+              }
+            };
+
+            // Helper function to show/hide loading indicator
+            const showLoadingIndicator = () => {
+              let loadingElement = stepElement.querySelector('.api-key-validation-loading') as HTMLElement;
+              if (!loadingElement) {
+                loadingElement = renderer.createElement('div');
+                loadingElement.className = 'api-key-validation-loading';
+                loadingElement.textContent = 'Checking API key...';
+                const shepherdContent = stepElement.querySelector('.shepherd-content');
+                if (shepherdContent) {
+                  renderer.appendChild(shepherdContent, loadingElement);
+                }
+              }
+              loadingElement.style.display = 'block';
+            };
+
+            const hideLoadingIndicator = () => {
+              const loadingElement = stepElement.querySelector('.api-key-validation-loading') as HTMLElement;
+              if (loadingElement) {
+                loadingElement.style.display = 'none';
+              }
+            };
+
+            // Function to update Next button state
             const updateNextButton = () => {
               const hasValue = apiKeyInput.value.trim().length > 0;
+              const isValid = (apiKeyInput as any).__isValidApiKey === true;
+              const isChecking = (apiKeyInput as any).__isCheckingApiKey === true;
               const nextButtonElement = findShepherdPrimaryButton(stepElement);
+              
               if (nextButtonElement) {
-                if (hasValue) {
+                if (hasValue && isValid && !isChecking) {
                   nextButtonElement.classList.remove('shepherd-button-disabled');
                   nextButtonElement.removeAttribute('disabled');
                   nextButtonElement.style.pointerEvents = '';
@@ -445,32 +599,150 @@ export class TourStepModifierService {
               }
             };
 
+            // Function to validate API key
+            const validateApiKey = (apiKey: string) => {
+              if (!apiKey || apiKey.trim().length === 0) {
+                (apiKeyInput as any).__isValidApiKey = undefined;
+                hideErrorMessage();
+                hideLoadingIndicator();
+                updateNextButton();
+                return;
+              }
+
+              // Clear previous debounce timeout
+              if ((apiKeyInput as any).__validationDebounceTimeout) {
+                clearTimeout((apiKeyInput as any).__validationDebounceTimeout);
+              }
+
+              // Set checking state
+              (apiKeyInput as any).__isCheckingApiKey = true;
+              (apiKeyInput as any).__isValidApiKey = undefined;
+              hideErrorMessage();
+              showLoadingIndicator();
+              updateNextButton();
+
+              // Debounce validation - wait 800ms after user stops typing
+              (apiKeyInput as any).__validationDebounceTimeout = setTimeout(() => {
+                validatorService.validateApiKey(apiKey).subscribe({
+                  next: (isValid) => {
+                    (apiKeyInput as any).__isValidApiKey = isValid;
+                    (apiKeyInput as any).__isCheckingApiKey = false;
+                    hideLoadingIndicator();
+
+                    if (isValid) {
+                      hideErrorMessage();
+                    } else {
+                      showErrorMessage('Invalid API key. Please check your key and try again.');
+                    }
+
+                    updateNextButton();
+                  },
+                  error: () => {
+                    (apiKeyInput as any).__isValidApiKey = false;
+                    (apiKeyInput as any).__isCheckingApiKey = false;
+                    hideLoadingIndicator();
+                    showErrorMessage('Invalid API key. Please check your key and try again.');
+                    updateNextButton();
+                  },
+                });
+              }, 1200);
+            };
+
             updateNextButton();
 
-            const inputHandler = () => updateNextButton();
-            const pasteHandler = () => setTimeout(() => updateNextButton(), TOUR_DELAYS.PASTE_HANDLER);
-            const changeHandler = () => updateNextButton();
+            const inputHandler = () => {
+              updateNextButton();
+              validateApiKey(apiKeyInput.value);
+            };
+
+            const pasteHandler = () => {
+              const pasteTimeoutId = setTimeout(() => {
+                updateNextButton();
+                validateApiKey(apiKeyInput.value);
+              }, TOUR_DELAYS.PASTE_HANDLER);
+              // Store paste timeout ID for cleanup
+              if (!(stepElement as any).__apiKeyInputPasteTimeoutIds) {
+                (stepElement as any).__apiKeyInputPasteTimeoutIds = [];
+              }
+              (stepElement as any).__apiKeyInputPasteTimeoutIds.push(pasteTimeoutId);
+            };
+
+            const changeHandler = () => {
+              updateNextButton();
+              validateApiKey(apiKeyInput.value);
+            };
+
+            const blurHandler = () => {
+              // Validate on blur if there's a value
+              if (apiKeyInput.value.trim().length > 0) {
+                validateApiKey(apiKeyInput.value);
+              }
+            };
 
             apiKeyInput.addEventListener('input', inputHandler);
             apiKeyInput.addEventListener('paste', pasteHandler);
             apiKeyInput.addEventListener('keyup', inputHandler);
             apiKeyInput.addEventListener('change', changeHandler);
+            apiKeyInput.addEventListener('blur', blurHandler);
 
             (stepElement as any).__apiKeyInputHandlers = {
               input: inputHandler,
               paste: pasteHandler,
               keyup: inputHandler,
               change: changeHandler,
+              blur: blurHandler,
             };
           }, TOUR_DELAYS.CLICK_HANDLER_SETUP);
+          
+          // Store timeout ID for cleanup
+          (this as any).__apiKeyInputValidationSetupTimeoutId = validationSetupTimeoutId;
         },
         hide: function (this: any) {
+          // Clear all timeouts
+          if ((this as any).__apiKeyInputProgressBarTimeoutId) {
+            clearTimeout((this as any).__apiKeyInputProgressBarTimeoutId);
+            delete (this as any).__apiKeyInputProgressBarTimeoutId;
+          }
+          
+          if ((this as any).__apiKeyInputValidationSetupTimeoutId) {
+            clearTimeout((this as any).__apiKeyInputValidationSetupTimeoutId);
+            delete (this as any).__apiKeyInputValidationSetupTimeoutId;
+          }
+
           if (this?.el) {
             const stepElement = this.el as HTMLElement;
             removeProgressBarFromStep(stepElement, renderer);
 
-            // Remove event handlers
+            // Clear paste handler timeouts
+            const pasteTimeoutIds = (stepElement as any).__apiKeyInputPasteTimeoutIds;
+            if (pasteTimeoutIds && Array.isArray(pasteTimeoutIds)) {
+              pasteTimeoutIds.forEach((timeoutId: number) => {
+                clearTimeout(timeoutId);
+              });
+              delete (stepElement as any).__apiKeyInputPasteTimeoutIds;
+            }
+
+            // Clear validation debounce timeout
             const apiKeyInput = findApiKeyInput();
+            if (apiKeyInput && (apiKeyInput as any).__validationDebounceTimeout) {
+              clearTimeout((apiKeyInput as any).__validationDebounceTimeout);
+              delete (apiKeyInput as any).__validationDebounceTimeout;
+            }
+
+            // Remove error and loading messages
+            const shepherdContent = stepElement.querySelector('.shepherd-content');
+            if (shepherdContent) {
+              const errorElement = stepElement.querySelector('.api-key-validation-error');
+              if (errorElement) {
+                renderer.removeChild(shepherdContent, errorElement);
+              }
+              const loadingElement = stepElement.querySelector('.api-key-validation-loading');
+              if (loadingElement) {
+                renderer.removeChild(shepherdContent, loadingElement);
+              }
+            }
+
+            // Remove event handlers
             const handlers = (stepElement as any).__apiKeyInputHandlers;
 
             if (apiKeyInput && handlers) {
@@ -478,7 +750,14 @@ export class TourStepModifierService {
               apiKeyInput.removeEventListener('paste', handlers.paste);
               apiKeyInput.removeEventListener('keyup', handlers.keyup);
               apiKeyInput.removeEventListener('change', handlers.change);
+              apiKeyInput.removeEventListener('blur', handlers.blur);
               delete (stepElement as any).__apiKeyInputHandlers;
+            }
+
+            // Clean up validation state
+            if (apiKeyInput) {
+              delete (apiKeyInput as any).__isValidApiKey;
+              delete (apiKeyInput as any).__isCheckingApiKey;
             }
           }
 
@@ -511,14 +790,17 @@ export class TourStepModifierService {
           }
 
           // Add progress bar for last step (100%)
-          setTimeout(() => {
+          const progressBarTimeoutId = setTimeout(() => {
             if (this?.el) {
               addProgressBarToStep(this.el, currentStepNumber, totalSteps, renderer, true);
             }
           }, TOUR_DELAYS.PROGRESS_BAR_ADD);
+          
+          // Store timeout ID for cleanup
+          (this as any).__startBuildingProgressBarTimeoutId = progressBarTimeoutId;
 
           // Setup click handler for Start Building button
-          setTimeout(() => {
+          const buttonSetupTimeoutId = setTimeout(() => {
             const startBuildingButton = this?.target as HTMLElement;
 
             if (startBuildingButton) {
@@ -530,7 +812,7 @@ export class TourStepModifierService {
                   buttonClickHandlerUnlisten();
                 }
 
-                setTimeout(() => {
+                const navigationTimeoutId = setTimeout(() => {
                   shepherdService.complete();
                   quickstartStatusService.updateStatus(true).subscribe({
                     next: () => {
@@ -541,14 +823,43 @@ export class TourStepModifierService {
                     },
                   });
                 }, TOUR_DELAYS.STEP_NAVIGATION);
+                
+                // Store timeout ID for cleanup (use array to handle multiple clicks)
+                if (!(this as any).__startBuildingEventTimeoutIds) {
+                  (this as any).__startBuildingEventTimeoutIds = [];
+                }
+                (this as any).__startBuildingEventTimeoutIds.push(navigationTimeoutId);
               };
 
               const buttonClickHandlerUnlisten = renderer.listen(startBuildingButton, 'click', buttonClickHandler);
               (startBuildingButton as any).__shepherdButtonClickUnlisten = buttonClickHandlerUnlisten;
             }
           }, TOUR_DELAYS.CLICK_HANDLER_WITH_MASK);
+          
+          // Store timeout ID for cleanup
+          (this as any).__startBuildingButtonSetupTimeoutId = buttonSetupTimeoutId;
         },
         hide: function (this: any) {
+          // Clear all timeouts
+          if ((this as any).__startBuildingProgressBarTimeoutId) {
+            clearTimeout((this as any).__startBuildingProgressBarTimeoutId);
+            delete (this as any).__startBuildingProgressBarTimeoutId;
+          }
+          
+          if ((this as any).__startBuildingButtonSetupTimeoutId) {
+            clearTimeout((this as any).__startBuildingButtonSetupTimeoutId);
+            delete (this as any).__startBuildingButtonSetupTimeoutId;
+          }
+          
+          // Clear all event handler timeouts
+          const eventTimeoutIds = (this as any).__startBuildingEventTimeoutIds;
+          if (eventTimeoutIds && Array.isArray(eventTimeoutIds)) {
+            eventTimeoutIds.forEach((timeoutId: number) => {
+              clearTimeout(timeoutId);
+            });
+            delete (this as any).__startBuildingEventTimeoutIds;
+          }
+
           if (this?.el) {
             removeProgressBarFromStep(this.el, renderer);
           }
@@ -598,12 +909,21 @@ export class TourStepModifierService {
           }
 
           if (this?.el) {
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
               addProgressBarToStep(this.el, currentStepNumber, totalSteps, renderer);
             }, TOUR_DELAYS.PROGRESS_BAR_ADD);
+            
+            // Store timeout ID for cleanup
+            (this as any).__genericStepProgressBarTimeoutId = timeoutId;
           }
         },
         hide: function (this: any) {
+          // Clear timeout
+          if ((this as any).__genericStepProgressBarTimeoutId) {
+            clearTimeout((this as any).__genericStepProgressBarTimeoutId);
+            delete (this as any).__genericStepProgressBarTimeoutId;
+          }
+
           if (this?.el) {
             removeProgressBarFromStep(this.el, renderer);
           }
