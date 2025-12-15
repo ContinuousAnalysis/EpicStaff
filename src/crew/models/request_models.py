@@ -226,9 +226,6 @@ class CrewData(BaseModel):
     manager_llm: LLMData | None
     planning_llm: LLMData | None
     tools: List[BaseToolData] = []
-    knowledge_collection_id: int | None
-    search_limit: int | None
-    similarity_threshold: float | None
 
 
 class TaskData(BaseModel):

@@ -76,8 +76,8 @@ class CrewParserService(metaclass=SingletonMeta):
             function_calling_llm = parse_llm(
                 agent_data.function_calling_llm, stop_event=stop_event
             )
-
-        rag_search_config = agent_data.rag_search_config.model_dump()
+        if agent_data.rag_search_config:
+            rag_search_config = agent_data.rag_search_config.model_dump()
         agent_config = {
             "role": agent_data.role,
             "goal": agent_data.goal,
@@ -159,9 +159,6 @@ class CrewParserService(metaclass=SingletonMeta):
             "cache": False,  # crew_data.cache, # TODO: remove False after frontend create cache field
             "full_output": crew_data.full_output,
             "planning_llm": crew_data.planning,
-            "knowledge_collection_id": crew_data.knowledge_collection_id,
-            "search_limit": crew_data.search_limit,
-            "similarity_threshold": crew_data.similarity_threshold,
             "stop_event": stop_event,
         }
 
@@ -223,7 +220,8 @@ class CrewParserService(metaclass=SingletonMeta):
                 tool_map[unique_name]
                 for unique_name in agent_data.tool_unique_name_list
             ]
-
+            if agent_data.rag_search_config:
+                rag_search_config = agent_data.rag_search_config.model_dump()
             id_agent_map[agent_data.id] = self.parse_agent(
                 agent_data,
                 stop_event=stop_event,
@@ -231,13 +229,9 @@ class CrewParserService(metaclass=SingletonMeta):
                     agent_id=agent_data.id,
                 ),
                 wait_for_user_callback=crew_callback_factory.get_wait_for_user_callback(
-                    crew_knowledge_collection_id=crew_data.knowledge_collection_id,
-                    crew_similarity_threshold=crew_data.similarity_threshold,
-                    crew_search_limit=crew_data.search_limit,
                     agent_knowledge_collection_id=agent_data.knowledge_collection_id,
-                    # TODO: REFACTOR
-                    agent_similarity_threshold=0.2,
-                    agent_search_limit=3,
+                    rag_type_id=agent_data.rag_type_id,
+                    rag_search_config=rag_search_config,
                     stop_event=stop_event,
                 ),
                 inputs=inputs,
