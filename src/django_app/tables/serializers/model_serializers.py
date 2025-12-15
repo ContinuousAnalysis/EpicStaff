@@ -747,14 +747,6 @@ class CrewSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
-    similarity_threshold = serializers.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        min_value=Decimal("0.00"),
-        max_value=Decimal("1.00"),
-        required=False,
-    )
-    search_limit = serializers.IntegerField(min_value=1, max_value=1000, required=False)
 
     class Meta:
         model = Crew

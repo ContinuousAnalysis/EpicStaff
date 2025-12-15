@@ -67,7 +67,7 @@ class ConverterService(metaclass=SingletonMeta):
     ) -> RagSearchConfig | None:
         """
         Factory method to build appropriate RAG search config based on rag_type.
-        
+
         Returns:
             NaiveRagSearchConfig | GraphRagSearchConfig | None
         """
@@ -165,11 +165,6 @@ class ConverterService(metaclass=SingletonMeta):
             agent_base_tools = self._get_agent_base_tools(agent=agent)
             crew_base_tools.extend(agent_base_tools)
 
-        # TODO: deprecate
-        knowledge_collection_id = None
-        if crew.knowledge_collection is not None:
-            knowledge_collection_id = crew.knowledge_collection.pk
-
         crew_data = CrewData(
             id=crew.pk,
             name=crew.name,
@@ -189,9 +184,6 @@ class ConverterService(metaclass=SingletonMeta):
             tools=list(
                 {tool.unique_name: tool for tool in crew_base_tools}.values()
             ),  # TODO: Unique only
-            knowledge_collection_id=knowledge_collection_id,
-            search_limit=crew.search_limit,
-            similarity_threshold=crew.similarity_threshold,
         )
 
         return crew_data

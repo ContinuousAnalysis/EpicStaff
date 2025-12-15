@@ -210,9 +210,6 @@ class CrewData(BaseModel):
     manager_llm: LLMData | None
     planning_llm: LLMData | None
     tools: List[BaseToolData]
-    knowledge_collection_id: int | None
-    search_limit: int = 3
-    similarity_threshold: Decimal = 0.2
 
 
 class TaskData(BaseModel):
