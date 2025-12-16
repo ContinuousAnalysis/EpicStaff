@@ -15,9 +15,6 @@ export interface ProgressBarHelper {
   removeProgressBar(stepElement: HTMLElement, renderer: Renderer2): void;
 }
 
-/**
- * Adds progress bar to Shepherd tour step using Renderer2
- */
 export function addProgressBarToStep(
   stepElement: HTMLElement,
   currentStepNumber: number,
@@ -83,9 +80,6 @@ export function addProgressBarToStep(
   }
 }
 
-/**
- * Removes progress bar from Shepherd tour step
- */
 export function removeProgressBarFromStep(stepElement: HTMLElement, renderer: Renderer2): void {
   const progressWrapper =
     stepElement.querySelector('.shepherd-progress-wrapper') ||

@@ -49,10 +49,6 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     this.cleanup();
   }
 
-  /**
-   * Checks if quickstart tour was already completed
-   * @returns true if tour should start, false if already completed
-   */
   private async checkQuickstartStatus(): Promise<boolean> {
     try {
       const status = await firstValueFrom(this.quickstartStatusService.getStatus());
@@ -64,9 +60,6 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  /**
-   * Initializes and starts the tour
-   */
   private initializeTour(): void {
     this.setupDialogCallback();
     this.setupTourOptions();
@@ -81,9 +74,6 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     }, TOUR_DELAYS.TOUR_START);
   }
 
-  /**
-   * Sets up callback for settings dialog opening
-   */
   private setupDialogCallback(): void {
     this.dialogOpenCallback = () => {
       const settingsStepElement = findSettingsStepElement();
@@ -103,9 +93,6 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     this.settingsDialogService.setOnDialogOpenCallback(this.dialogOpenCallback);
   }
 
-  /**
-   * Sets up default options for Shepherd tour
-   */
   private setupTourOptions(): void {
     this.shepherdService.defaultStepOptions = {
       classes: 'epic-staff-tour',
@@ -119,9 +106,6 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     this.shepherdService.confirmCancel = false;
   }
     
-  /**
-   * Modifies all tour steps using TourStepModifierService
-   */
   private modifySteps(): any[] {
     const totalSteps = defaultSteps.length;
     const context: StepModifierContext = {
@@ -150,9 +134,6 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  /**
-   * Handles Shepherd tour events (skip/cancel)
-   */
   private setupTourEvents(): void {
     const tour = (this.shepherdService as any)?.tourObject;
 
@@ -170,9 +151,6 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  /**
-   * Cleans up resources on component destruction
-   */
   private cleanup(): void {
     // Clear all timeouts
     if (this.tourStartTimeoutId !== null) {

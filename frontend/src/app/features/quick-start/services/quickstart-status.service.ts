@@ -22,19 +22,10 @@ export class QuickstartStatusService {
     return `${this.configService.apiUrl}quickstart-status/`;
   }
 
-  /**
-   * Gets quickstart tour completion status
-   * @returns Observable with object containing quickstart_completed field (true/false)
-   */
   getStatus(): Observable<QuickstartStatusResponse> {
     return this.http.get<QuickstartStatusResponse>(this.apiUrl);
   }
 
-  /**
-   * Updates quickstart tour completion status
-   * @param completed - true if tour is completed, false if not
-   * @returns Observable with updated status
-   */
   updateStatus(completed: boolean): Observable<QuickstartStatusResponse> {
     return this.http.put<QuickstartStatusResponse>(
       this.apiUrl,

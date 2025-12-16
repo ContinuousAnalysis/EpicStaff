@@ -4,9 +4,6 @@
 
 import { TOUR_SELECTORS, TOUR_BUTTON_TEXTS } from '../constants/tour-constants';
 
-/**
- * Finds settings element in bottom navigation
- */
 export function findSettingsElement(): HTMLElement | null {
   const bottomNav = document.querySelector('.bottom-nav');
   if (!bottomNav) {
@@ -15,9 +12,6 @@ export function findSettingsElement(): HTMLElement | null {
   return bottomNav.querySelector('.sidenav-nav-link') as HTMLElement;
 }
 
-/**
- * Finds Quickstart tab button in settings dialog
- */
 export function findQuickstartTabButton(): HTMLElement | null {
   const dialogContainer = document.querySelector(TOUR_SELECTORS.DIALOG_CONTAINER);
   if (!dialogContainer) {
@@ -36,9 +30,6 @@ export function findQuickstartTabButton(): HTMLElement | null {
   return dialogContainer.querySelector(TOUR_SELECTORS.QUICKSTART_TAB_BUTTON) as HTMLElement;
 }
 
-/**
- * Finds Start Building button in settings dialog
- */
 export function findStartBuildingButton(): HTMLElement | null {
   const dialogContainer = document.querySelector(TOUR_SELECTORS.DIALOG_CONTAINER);
   if (!dialogContainer) {
@@ -58,16 +49,10 @@ export function findStartBuildingButton(): HTMLElement | null {
   return dialogContainer.querySelector(TOUR_SELECTORS.START_BUILDING_BUTTON) as HTMLElement;
 }
 
-/**
- * Finds API key input field
- */
 export function findApiKeyInput(): HTMLInputElement | null {
   return document.querySelector(TOUR_SELECTORS.API_KEY_INPUT) as HTMLInputElement;
 }
 
-/**
- * Checks if element is visible in DOM
- */
 export function isElementVisible(element: HTMLElement | null): boolean {
   if (!element) {
     return false;
@@ -81,9 +66,6 @@ export function isElementVisible(element: HTMLElement | null): boolean {
   );
 }
 
-/**
- * Waits for element to appear in DOM with retry logic
- */
 export function waitForElement(
   finder: () => HTMLElement | null,
   isVisible: (element: HTMLElement | null) => boolean = isElementVisible,
@@ -114,9 +96,6 @@ export function waitForElement(
   });
 }
 
-/**
- * Finds dialog container (CDK overlay)
- */
 export function findDialogContainer(): HTMLElement | null {
   return (
     (document.querySelector(TOUR_SELECTORS.DIALOG_OVERLAY) as HTMLElement) ||
@@ -124,16 +103,10 @@ export function findDialogContainer(): HTMLElement | null {
   );
 }
 
-/**
- * Finds settings step element in DOM
- */
 export function findSettingsStepElement(): HTMLElement | null {
   return document.querySelector(TOUR_SELECTORS.SETTINGS_STEP) as HTMLElement;
 }
 
-/**
- * Finds shepherd button (secondary) within a step element
- */
 export function findShepherdSecondaryButton(stepElement: HTMLElement | null): HTMLElement | null {
   if (!stepElement) {
     return null;
@@ -141,9 +114,6 @@ export function findShepherdSecondaryButton(stepElement: HTMLElement | null): HT
   return stepElement.querySelector(TOUR_SELECTORS.SHEPHERD_BUTTON_SECONDARY) as HTMLElement;
 }
 
-/**
- * Finds shepherd button (primary) within a step element
- */
 export function findShepherdPrimaryButton(stepElement: HTMLElement | null): HTMLElement | null {
   if (!stepElement) {
     return null;

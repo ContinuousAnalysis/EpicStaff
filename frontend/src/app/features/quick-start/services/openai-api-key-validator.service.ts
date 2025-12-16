@@ -11,11 +11,6 @@ export class OpenAiApiKeyValidatorService {
 
   private readonly openAiApiUrl = 'https://api.openai.com/v1/models';
 
-  /**
-   * Validates OpenAI API key by making a request to OpenAI API
-   * @param apiKey The API key to validate
-   * @returns Observable<boolean> - true if key is valid, false otherwise
-   */
   validateApiKey(apiKey: string): Observable<boolean> {
     if (!apiKey || apiKey.trim().length === 0) {
       return of(false);

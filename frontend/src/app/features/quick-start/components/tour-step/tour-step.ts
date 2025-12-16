@@ -8,7 +8,6 @@ import {
 } from '../../helpers/element-finder.helper';
 import { TOUR_SELECTORS, TOUR_DELAYS } from '../../constants/tour-constants';
 
-// Helper function to get HTML for first step with image
 function getIntroStepContent(): string {
   return `
     <div class="shepherd-intro-image">

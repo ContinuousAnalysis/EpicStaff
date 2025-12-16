@@ -30,9 +30,6 @@ export interface StepModifierContext {
 })
 export class TourStepModifierService {
   constructor(private openAiApiKeyValidatorService: OpenAiApiKeyValidatorService) {}
-  /**
-   * Modifies intro step to hide it properly when moving to next
-   */
   modifyIntroStep(step: any, context: StepModifierContext): any {
     if (step.id !== 'intro' || context.currentStepNumber !== 1) {
       return step;
@@ -66,9 +63,6 @@ export class TourStepModifierService {
     };
   }
 
-  /**
-   * Modifies settings step to open dialog and handle navigation
-   */
   modifySettingsStep(step: any, context: StepModifierContext): any {
     if (step.id !== 'settings' || context.currentStepNumber !== 2) {
       return step;
@@ -214,9 +208,6 @@ export class TourStepModifierService {
     };
   }
 
-  /**
-   * Modifies quickstart tab step to handle button click
-   */
   modifyQuickstartTabStep(step: any, context: StepModifierContext): any {
     if (step.id !== 'quickstart-tab') {
       return step;
@@ -448,9 +439,6 @@ export class TourStepModifierService {
     };
   }
 
-  /**
-   * Modifies API key input step to validate input and block Next button
-   */
   modifyApiKeyInputStep(step: any, context: StepModifierContext): any {
     if (step.id !== 'api-key-input') {
       return step;
@@ -769,9 +757,6 @@ export class TourStepModifierService {
     };
   }
 
-  /**
-   * Modifies start building button step to complete tour on click
-   */
   modifyStartBuildingButtonStep(step: any, context: StepModifierContext): any {
     if (step.id !== 'start-building-button') {
       return step;
@@ -881,9 +866,6 @@ export class TourStepModifierService {
     };
   }
 
-  /**
-   * Adds progress bar to generic step (for steps that don't have special handling)
-   */
   modifyGenericStep(step: any, context: StepModifierContext): any {
     // Skip first step and steps that are already handled
     if (
