@@ -367,12 +367,6 @@ class GraphSessionMessageData(BaseModel):
     message_data: dict
 
 
-class KnowledgeSearchMessage(BaseModel):
-    collection_id: int
-    uuid: str
-    query: str
-    search_limit: int | None
-    similarity_threshold: float | None
 
 class StopSessionMessage(BaseModel):
     session_id: int
