@@ -291,3 +291,39 @@ class NaiveRagSearchConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = NaiveRagSearchConfig
         fields = ["search_limit", "similarity_threshold"]
+
+
+class NaiveSearchConfigInputSerializer(serializers.Serializer):
+    """Input serializer for naive RAG search config."""
+    search_limit = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=1000,
+        help_text="Number of chunks to retrieve (1-1000)"
+    )
+    similarity_threshold = serializers.FloatField(
+        required=False,
+        min_value=0.0,
+        max_value=1.0,
+        help_text="Similarity threshold for search (0.0-1.0)"
+    )
+
+
+class NestedSearchConfigSerializer(serializers.Serializer):
+    """
+    Nested search config serializer for PATCH requests.
+    Handles multiple RAG types: {"naive": {...}, "graph": {...}}
+    """
+    naive = NaiveSearchConfigInputSerializer(
+        required=False,
+        help_text="Naive RAG search config"
+    )
+    # Future: graph = GraphSearchConfigInputSerializer(required=False)
+
+    def validate(self, attrs):
+        """Ensure at least one RAG type is provided."""
+        if not attrs:
+            raise serializers.ValidationError(
+                "At least one RAG type must be provided (e.g., 'naive', 'graph')"
+            )
+        return attrs

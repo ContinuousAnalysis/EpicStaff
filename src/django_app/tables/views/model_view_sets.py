@@ -99,6 +99,7 @@ from tables.serializers.naive_rag_serializers import (
     NaiveRagLightSerializer,
     AssignRagSerializer,
     NaiveRagSearchConfigSerializer,
+    NestedSearchConfigSerializer,
 )
 
 from tables.models import (
@@ -444,39 +445,79 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
                 status=status.HTTP_409_CONFLICT,
             )
 
+    @swagger_auto_schema(
+        method="get",
+        operation_description="Get agent's search configurations for all RAG types",
+        responses={
+            200: openapi.Response(
+                description="Search configurations in nested format",
+                examples={
+                    "application/json": {
+                        "naive": {"search_limit": 3, "similarity_threshold": 0.2}
+                    }
+                },
+            ),
+        },
+    )
+    @swagger_auto_schema(
+        method="patch",
+        operation_description="Update agent's search configurations (nested format only)",
+        request_body=NestedSearchConfigSerializer,
+        responses={
+            200: openapi.Response(
+                description="Updated search configurations",
+                examples={
+                    "application/json": {
+                        "naive": {"search_limit": 5, "similarity_threshold": 0.3}
+                    }
+                },
+            ),
+            400: "Validation error",
+        },
+    )
     @action(detail=True, methods=["get", "patch"], url_path="search-config")
     def search_config(self, request, pk=None):
         """
-        GET /agents/{id}/search-config/ - Get current config
-        PATCH /agents/{id}/search-config/ - Update config
-        Body: {"search_limit": 5, "similarity_threshold": 0.3}
+        GET /agents/{id}/search-config/ - Get current config (nested format)
+        PATCH /agents/{id}/search-config/ - Update config (nested format only)
+
+        Request Body (PATCH):
+        {
+            "naive": {"search_limit": 5, "similarity_threshold": 0.3},
+        }
         """
         agent = self.get_object()
 
         if request.method == "GET":
-            config = SearchConfigService.get_config_for_agent(agent)
-            if not config:
-                return Response(
-                    {"detail": "No search config found for this agent"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-            serializer = NaiveRagSearchConfigSerializer(config)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            search_configs = agent.get_search_configs()
+            if not search_configs:
+                search_configs = {}
+
+            return Response(search_configs, status=status.HTTP_200_OK)
 
         elif request.method == "PATCH":
-            serializer = NaiveRagSearchConfigSerializer(data=request.data, partial=True)
+            # Validate nested format
+            serializer = NestedSearchConfigSerializer(data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
 
-            config = SearchConfigService.update_search_config(
-                agent=agent,
-                search_limit=serializer.validated_data.get("search_limit"),
-                similarity_threshold=serializer.validated_data.get(
-                    "similarity_threshold"
-                ),
-            )
+            # Update naive config if provided
+            if "naive" in serializer.validated_data:
+                naive_data = serializer.validated_data["naive"]
+                SearchConfigService.update_search_config(
+                    agent=agent,
+                    search_limit=naive_data.get("search_limit"),
+                    similarity_threshold=naive_data.get("similarity_threshold"),
+                )
 
-            response_serializer = NaiveRagSearchConfigSerializer(config)
-            return Response(response_serializer.data, status=status.HTTP_200_OK)
+            # Future: Update graph config if provided
+            # if "graph" in serializer.validated_data:
+            #     graph_data = serializer.validated_data["graph"]
+            #     GraphSearchConfigService.update_search_config(agent, **graph_data)
+
+            # Return updated configs in nested format
+            search_configs = agent.get_search_configs() or {}
+
+            return Response(search_configs, status=status.HTTP_200_OK)
 
 
 class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):

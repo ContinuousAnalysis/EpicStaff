@@ -238,16 +238,6 @@ class McpToolSerializer(serializers.ModelSerializer):
 
 class RealtimeAgentSerializer(serializers.ModelSerializer):
 
-    similarity_threshold = serializers.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        min_value=Decimal("0.00"),
-        max_value=Decimal("1.00"),
-        required=False,
-    )
-
-    search_limit = serializers.IntegerField(min_value=1, max_value=1000, required=False)
-
     class Meta:
         model = RealtimeAgent
         exclude = ["agent"]
@@ -256,6 +246,7 @@ class RealtimeAgentSerializer(serializers.ModelSerializer):
 class AgentReadSerializer(serializers.ModelSerializer):
     tools = serializers.SerializerMethodField()
     realtime_agent = RealtimeAgentSerializer(read_only=True)
+    search_config = serializers.SerializerMethodField()
 
     class Meta:
         model = Agent
@@ -279,6 +270,7 @@ class AgentReadSerializer(serializers.ModelSerializer):
             "fcm_llm_config",
             "knowledge_collection",
             "realtime_agent",
+            "search_config",
         ]
 
     def get_tools(self, agent: Agent) -> list[dict]:
@@ -309,6 +301,14 @@ class AgentReadSerializer(serializers.ModelSerializer):
             tools.append(BaseToolSerializer(tool).data)
 
         return tools
+
+    def get_search_config(self, agent: Agent) -> dict | None:
+        """
+        Get all RAG search configurations in nested format.
+        Returns: {"naive": {"search_limit": 3, "similarity_threshold": 0.2}, "graph": {...}}
+        Returns None if no configs exist.
+        """
+        return agent.get_search_configs()
 
 
 class AgentWriteSerializer(serializers.ModelSerializer):
