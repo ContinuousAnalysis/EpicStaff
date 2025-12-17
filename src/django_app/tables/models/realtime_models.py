@@ -30,18 +30,6 @@ class RealtimeAgent(AbstractDefaultFillableModel):
         primary_key=True,
         related_name="realtime_agent",
     )
-
-    search_limit = models.PositiveIntegerField(
-        default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
-    )
-
-    similarity_threshold = models.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        default=0.2,
-        blank=True,
-        help_text="Float between 0.00 and 1.00 for knowledge",
-    )
     wake_word = models.CharField(max_length=255, null=True, blank=True)
     stop_prompt = models.CharField(
         default="stop", max_length=255, null=True, blank=True
@@ -89,17 +77,6 @@ class RealtimeAgentChat(models.Model):
         on_delete=models.SET_NULL,
         null=True,
     )
-    search_limit = models.PositiveIntegerField(
-        default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
-    )
-
-    similarity_threshold = models.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        default=0.2,
-        blank=True,
-        help_text="Float between 0.00 and 1.00 for knowledge",
-    )
     connection_key = models.TextField()
     wake_word = models.CharField(max_length=255, null=True, blank=True)
     stop_prompt = models.CharField(
@@ -141,16 +118,6 @@ class DefaultRealtimeAgentConfig(DefaultBaseModel):
     class Meta:
         db_table = "default_realtime_agent_config"
 
-    search_limit = models.PositiveIntegerField(
-        default=3, blank=True, help_text="Integer between 0 and 1000 for knowledge"
-    )
-    similarity_threshold = models.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        default=0.2,
-        blank=True,
-        help_text="Float between 0.00 and 1.00 for knowledge",
-    )
     wake_word = models.CharField(max_length=255, null=True, blank=True)
     stop_prompt = models.CharField(
         default="stop", max_length=255, null=True, blank=True

@@ -289,12 +289,19 @@ class ConverterService(metaclass=SingletonMeta):
         knowledge_collection_id = None
         if agent.knowledge_collection is not None:
             knowledge_collection_id = agent.knowledge_collection.pk
-
+        
+        # Build RAG search config using factory method
+        rag_type_id = agent.get_rag_type_and_id()
+        all_search_configs = agent.get_search_configs()
+        rag_search_config = self.build_rag_search_config(rag_type_id, all_search_configs)
+        
         rt_agent_chat_data = RealtimeAgentChatData(
             role=agent.role,
             goal=agent.goal,
             backstory=agent.backstory,
             knowledge_collection_id=knowledge_collection_id,
+            rag_type_id=rag_type_id,
+            rag_search_config=rag_search_config,
             llm=self.convert_llm_config_to_pydantic(agent.llm_config),
             memory=agent.memory,
             tools=self._get_agent_base_tools(agent=agent),
@@ -303,8 +310,6 @@ class ConverterService(metaclass=SingletonMeta):
             transcript_model_name=rt_transcription_config.realtime_transcription_model.name,
             transcript_api_key=rt_transcription_config.api_key,
             temperature=agent.default_temperature,
-            search_limit=rt_agent_chat.search_limit,
-            similarity_threshold=rt_agent_chat.similarity_threshold,
             connection_key=rt_agent_chat.connection_key,
             wake_word=rt_agent_chat.wake_word,
             stop_prompt=rt_agent_chat.stop_prompt,

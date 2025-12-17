@@ -53,6 +53,7 @@ class ConfiguredToolData(BaseModel):
     name_alias: str
     tool_config: ToolConfigData
 
+
 class McpToolData(BaseModel):
     """
     Configuration for a FastMCP client connecting to remote MCP tools via SSE.
@@ -131,18 +132,22 @@ RagSearchConfig = Annotated[
 
 
 class BaseKnowledgeSearchMessage(BaseModel):
-      """
-      Base message for searching in a RAG implementation.
+    """
+    Base message for searching in a RAG implementation.
 
-      Uses discriminated union for rag_search_config to automatically
-      handle different RAG types (naive, graph, etc.) during serialization.
-      """
-      collection_id: int
-      rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
-      rag_type: str  # Type of RAG ("naive", "graph", etc.)
-      uuid: str
-      query: str
-      rag_search_config: RagSearchConfig  # Discriminated union automatically handles subtypes
+    Uses discriminated union for rag_search_config to automatically
+    handle different RAG types (naive, graph, etc.) during serialization.
+    """
+
+    collection_id: int
+    rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
+    rag_type: str  # Type of RAG ("naive", "graph", etc.)
+    uuid: str
+    query: str
+    rag_search_config: (
+        RagSearchConfig  # Discriminated union automatically handles subtypes
+    )
+
 
 class AgentData(BaseModel):
     id: int
@@ -171,14 +176,14 @@ class RealtimeAgentChatData(BaseModel):
     goal: str
     backstory: str
     knowledge_collection_id: int | None
+    rag_type_id: str | None = None
+    rag_search_config: RagSearchConfig | None = None
     llm: LLMData | None = None
     rt_model_name: str
     rt_api_key: str
     transcript_model_name: str
     transcript_api_key: str
     temperature: float | None
-    search_limit: int = 3
-    similarity_threshold: Decimal = 0.2
     memory: bool
     tools: list[BaseToolData] = []
     connection_key: str
@@ -349,7 +354,8 @@ class GraphSessionMessageData(BaseModel):
     timestamp: str
     message_data: dict
     uuid: str
-    
+
+
 class KnowledgeSearchMessage(BaseModel):
     collection_id: int
     uuid: str
@@ -357,13 +363,16 @@ class KnowledgeSearchMessage(BaseModel):
     search_limit: int | None
     similarity_threshold: float | None
 
+
 class ChunkDocumentMessage(BaseModel):
     naive_rag_document_id: int
+
 
 class ChunkDocumentMessageResponse(BaseModel):
     naive_rag_document_id: int
     success: bool
     message: str | None
+
 
 class StopSessionMessage(BaseModel):
     session_id: int
