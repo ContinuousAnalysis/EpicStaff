@@ -267,12 +267,6 @@ urlpatterns = [
         NaiveRagViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
         name="naive-rag-detail",
     ),
-    # NaiveRag document config endpoints
-    path(
-        "naive-rag/<str:naive_rag_id>/document-configs/init/",
-        NaiveRagDocumentConfigViewSet.as_view({"post": "init_configs"}),
-        name="document-config-init",
-    ),
     path(
         "naive-rag/<str:naive_rag_id>/document-configs/",
         NaiveRagDocumentConfigViewSet.as_view({"get": "list_configs"}),

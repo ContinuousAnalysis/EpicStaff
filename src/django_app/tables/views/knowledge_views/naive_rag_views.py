@@ -152,10 +152,20 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
         """
         Get detailed NaiveRag info including all document configs.
 
+        Business Logic:
+        - Auto-initializes document configs for documents without configs
+        - Ensures all documents in the collection have default configs
+        - Idempotent: safe to call multiple times
+
         URL: GET /naive-rag/{id}/
         """
         try:
             naive_rag = NaiveRagService.get_naive_rag(int(pk))
+
+            # Auto-initialize configs for documents without configs
+            # This ensures all documents have configs before returning the response
+            NaiveRagService.init_document_configs(naive_rag_id=int(pk))
+
             serializer = NaiveRagDetailSerializer(naive_rag)
             return Response(serializer.data)
 
@@ -203,7 +213,6 @@ class NaiveRagDocumentConfigViewSet(
     Configs are validated to belong to the specified naive_rag_id.
 
     Endpoints:
-    - POST /api/naive-rag/{naive_rag_id}/document-configs/init/ - Initialize default configs for new docs
     - GET /api/naive-rag/{naive_rag_id}/document-configs/ - List all configs
     - GET /api/naive-rag/{naive_rag_id}/document-configs/{pk}/ - Get single config
     - PUT /api/naive-rag/{naive_rag_id}/document-configs/{pk}/ - Update single config
@@ -255,45 +264,6 @@ class NaiveRagDocumentConfigViewSet(
                     }
                 )
 
-    @action(detail=False, methods=["post"], url_path="init")
-    def init_configs(self, request, naive_rag_id=None):
-        """
-        Initialize document configs with defaults for documents without configs.
-
-        Business Logic:
-        - Creates configs with DEFAULT values only for NEW documents (without configs)
-        - Existing configs remain UNCHANGED
-        - Safe to call multiple times (idempotent for existing configs)
-
-        URL: POST /api/naive-rag/{naive_rag_id}/document-configs/init/
-
-        Body: (empty - no request body needed)
-        """
-        try:
-            configs = NaiveRagService.init_document_configs(
-                naive_rag_id=int(naive_rag_id)
-            )
-
-            response_serializer = DocumentConfigSerializer(configs, many=True)
-
-            return Response(
-                {
-                    "message": f"Initialized {len(configs)} new document config(s)",
-                    "created_count": len(configs),
-                    "configs": response_serializer.data,
-                },
-                status=status.HTTP_201_CREATED if configs else status.HTTP_200_OK,
-            )
-
-        except NaiveRagNotFoundException as e:
-            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
-        except RagException as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"error": f"An unexpected error occurred: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
 
     @action(detail=False, methods=["put"], url_path="bulk-update")
     def bulk_update(self, request, naive_rag_id=None):
