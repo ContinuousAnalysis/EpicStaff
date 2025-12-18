@@ -40,9 +40,9 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
 
   async ngAfterViewInit(): Promise<void> {
     const shouldStart = await this.checkQuickstartStatus();
-    if (shouldStart) {
+    // if (shouldStart) {
       this.initializeTour();
-    }
+    // }
   }
 
   ngOnDestroy(): void {
@@ -54,7 +54,6 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
       const status = await firstValueFrom(this.quickstartStatusService.getStatus());
       return !status.quickstart_completed;
     } catch (error) {
-      console.error('[Quick Start] Error checking quickstart status:', error);
       // In case of error, start tour (fallback behavior)
       return true;
     }
@@ -97,9 +96,7 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     this.shepherdService.defaultStepOptions = {
       classes: 'epic-staff-tour',
       scrollTo: false,
-      cancelIcon: {
-        enabled: false,
-      },
+      // Don't set cancelIcon here - let individual steps control it
     };
 
     this.shepherdService.modal = true;
@@ -144,8 +141,8 @@ export class QuickStartComponent implements AfterViewInit, OnDestroy {
     // Mark tour as completed when user clicks Skip
     tour.once('cancel', () => {
       this.quickstartStatusService.updateStatus(true).subscribe({
-        error: (error) => {
-          console.error('[Quick Start] Error marking tour as skipped:', error);
+        error: () => {
+          // Silently handle status update errors
         },
       });
     });

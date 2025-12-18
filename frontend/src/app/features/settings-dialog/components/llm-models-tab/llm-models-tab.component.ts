@@ -70,7 +70,6 @@ export class LlmModelsTabComponent implements OnInit {
             next: (configs) => {
                 const sortedConfigs = configs.sort((a, b) => b.id - a.id);
                 this.llmConfigs.set(sortedConfigs);
-                console.log('configs', sortedConfigs);
                 this.status.set(LoadingState.LOADED);
             },
             error: (err) => {
@@ -84,11 +83,9 @@ export class LlmModelsTabComponent implements OnInit {
     }
 
     public onFavoriteToggled(event: { id: string | number; value: boolean }) {
-        console.log('Favorite toggled:', event);
     }
 
     public onEnabledToggled(event: { id: string | number; value: boolean }) {
-        console.log('Enabled toggled:', event);
         const config: FullLLMConfig | undefined = this.llmConfigs().find(
             (c) => c.id === event.id
         );
@@ -120,7 +117,6 @@ export class LlmModelsTabComponent implements OnInit {
     }
 
     public onConfigureClicked(id: string | number) {
-        console.log('Configure clicked:', id);
         const config = this.llmConfigs().find((c) => c.id === id);
         if (!config) return;
         const dialogRef = this.dialog.open(EditLlmConfigDialogComponent, {
@@ -136,7 +132,6 @@ export class LlmModelsTabComponent implements OnInit {
     }
 
     public onDeleteClicked(id: string | number) {
-        console.log('Delete clicked:', id);
         this.llmConfigService.deleteConfig(Number(id)).subscribe({
             next: () => {
                 this.llmConfigs.set(

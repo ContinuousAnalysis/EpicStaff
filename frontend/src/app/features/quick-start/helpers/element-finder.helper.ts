@@ -74,22 +74,33 @@ export function waitForElement(
 ): Promise<HTMLElement> {
   return new Promise((resolve, reject) => {
     let attempts = 0;
+    let timeoutId: number | null = null;
 
     const checkElement = () => {
       attempts++;
       const element = finder();
 
       if (element && isVisible(element)) {
+        // Clear timeout before resolving
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
         resolve(element);
         return;
       }
 
       if (attempts >= maxAttempts) {
+        // Clear timeout before rejecting
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
         reject(new Error(`Element not found after ${maxAttempts} attempts`));
         return;
       }
 
-      setTimeout(checkElement, interval);
+      timeoutId = window.setTimeout(checkElement, interval);
     };
 
     checkElement();

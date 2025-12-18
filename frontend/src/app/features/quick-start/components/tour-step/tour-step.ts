@@ -11,7 +11,7 @@ import { TOUR_SELECTORS, TOUR_DELAYS } from '../../constants/tour-constants';
 function getIntroStepContent(): string {
   return `
     <div class="shepherd-intro-image">
-      <img src="/assets/imgs/dots-tree.svg" alt="EpicStaff Logo" class="intro-logo" />
+      <img src="/assets/imgs/dots-tree.svg" alt="EpicStaff intro" class="intro-logo" draggable="false"/>
     </div>
     <p>Hi! We noticed that you haven't set up your environment for the project yet.</p>
     <p>Follow a few simple steps to set up your workspace and start exploring.</p>
@@ -23,11 +23,23 @@ export const steps = [
     id: 'intro',
     // First step without element attachment - displayed at bottom left
     beforeShowPromise: function () {
+      let timeoutId: number | null = null;
+      const stepRef = this;
       return new Promise<void>(function (resolve) {
-        setTimeout(function () {
+        timeoutId = window.setTimeout(function () {
+          timeoutId = null;
           window.scrollTo(0, 0);
           resolve();
         }, TOUR_DELAYS.TOUR_START);
+        
+        // Store cleanup function on step object for potential cancellation
+        (stepRef as any)._introTimeoutId = timeoutId;
+        (stepRef as any)._clearIntroTimeout = () => {
+          if (timeoutId !== null) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+        };
       });
     },
     buttons: [
@@ -72,7 +84,6 @@ export const steps = [
           // Element found and visible
         })
         .catch((error) => {
-          console.error('[Settings Step] Max attempts reached, element not found:', error);
           throw error;
         });
     },
@@ -91,8 +102,9 @@ export const steps = [
       },
 
     ],
+    
     cancelIcon: {
-      enabled: false
+      enabled: true
     },
     classes: 'epic-staff-tour tour-step-settings',
     highlightClass: 'highlight', // Use highlight to create mask
@@ -123,7 +135,6 @@ export const steps = [
           // Element found and visible
         })
         .catch((error) => {
-          console.error('[Quickstart Tab Step] Element not found:', error);
           throw error;
         });
     },
@@ -141,7 +152,7 @@ export const steps = [
       }
     ],
     cancelIcon: {
-      enabled: false
+      enabled: true
     },
     classes: 'epic-staff-tour',
     highlightClass: 'highlight', // Use highlight to create mask
@@ -172,7 +183,6 @@ export const steps = [
           // Element found and visible
         })
         .catch((error) => {
-          console.error('[API Key Input Step] Element not found:', error);
           throw error;
         });
     },
@@ -205,7 +215,7 @@ export const steps = [
       }
     ],
     cancelIcon: {
-      enabled: false
+      enabled: true
     },
     classes: 'epic-staff-tour tour-step-api-key',
     highlightClass: 'highlight', // Use highlight to create mask
@@ -236,7 +246,6 @@ export const steps = [
           // Element found and visible
         })
         .catch((error) => {
-          console.error('[Start Building Button Step] Element not found:', error);
           throw error;
         });
     },
@@ -255,7 +264,7 @@ export const steps = [
       }
     ],
     cancelIcon: {
-      enabled: false
+      enabled: true
     },
     classes: 'epic-staff-tour tour-step-start-building',
     highlightClass: 'highlight', // Use highlight to create mask

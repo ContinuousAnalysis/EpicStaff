@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Dialog, DialogRef } from '@angular/cdk/dialog';
-import { SettingsDialogComponent } from './settings-dialog.component';
+import { SettingsDialogComponent, TabId } from './settings-dialog.component';
+import { ShepherdService } from 'angular-shepherd';
 
 @Injectable({
   providedIn: 'root',
@@ -10,7 +11,10 @@ export class SettingsDialogService {
   private dialogRef: DialogRef<void> | null = null;
   private onDialogOpenCallback: (() => void) | null = null;
 
-  public constructor(private readonly dialog: Dialog) {}
+  public constructor(
+    private readonly dialog: Dialog,
+    private readonly shepherdService: ShepherdService
+  ) {}
 
   public setOnDialogOpenCallback(callback: () => void): void {
     this.onDialogOpenCallback = callback;
@@ -21,24 +25,14 @@ export class SettingsDialogService {
   }
 
   public closeSettingsDialog(): void {
-    console.log('[SettingsDialogService] closeSettingsDialog called');
-    console.log('[SettingsDialogService] dialogRef:', this.dialogRef);
-    
     if (this.dialogRef) {
-      console.log('[SettingsDialogService] Closing dialog via dialogRef');
       this.dialogRef.close();
       this.dialogRef = null;
-      console.log('[SettingsDialogService] Dialog closed, dialogRef set to null');
     } else {
-      console.log('[SettingsDialogService] dialogRef is null, trying fallback by ID');
       // Fallback: try to close by ID
       const existingDialog = this.dialog.getDialogById(this.DIALOG_ID);
-      console.log('[SettingsDialogService] Existing dialog by ID:', existingDialog);
       if (existingDialog) {
-        console.log('[SettingsDialogService] Closing dialog via ID fallback');
         existingDialog.close();
-      } else {
-        console.warn('[SettingsDialogService] No dialog found to close (neither dialogRef nor by ID)');
       }
     }
   }
@@ -66,9 +60,6 @@ export class SettingsDialogService {
       // hasBackdrop: !isShepherdTourActive,
     });
 
-    console.log('[SettingsDialogService] Dialog opened, dialogRef:', this.dialogRef);
-    console.log('[SettingsDialogService] Dialog ID:', this.DIALOG_ID);
-
     // Call callback when dialog opens (for handling tour step)
     if (this.onDialogOpenCallback) {
       // Use small delay to allow dialog to open
@@ -79,10 +70,62 @@ export class SettingsDialogService {
 
     // Clear reference when dialog closes
     this.dialogRef.closed.subscribe(() => {
-      console.log('[SettingsDialogService] Dialog closed event received, clearing dialogRef');
       this.dialogRef = null;
     });
 
     return this.dialogRef;
+  }
+
+  public selectTab(tabId: TabId): void {
+    // Try to use saved dialogRef first
+    if (this.dialogRef) {
+      const componentInstance = (this.dialogRef as any).componentRef?.instance as SettingsDialogComponent;
+      if (componentInstance && typeof componentInstance.selectTab === 'function') {
+        componentInstance.selectTab(tabId);
+        return;
+      }
+    }
+
+    // Try to get dialog by ID
+    const existingDialog = this.dialog.getDialogById(this.DIALOG_ID);
+    if (existingDialog) {
+      const componentInstance = (existingDialog as any).componentRef?.instance as SettingsDialogComponent;
+      if (componentInstance && typeof componentInstance.selectTab === 'function') {
+        componentInstance.selectTab(tabId);
+        return;
+      }
+    }
+
+    // Fallback: try to find and click the tab button in DOM
+    const dialogContainer = document.querySelector('.cdk-dialog-container');
+    if (dialogContainer) {
+      const tabButtons = dialogContainer.querySelectorAll('.tab-button');
+      for (let i = 0; i < tabButtons.length; i++) {
+        const button = tabButtons[i] as HTMLElement;
+        const label = button.textContent?.trim();
+        if (tabId === TabId.LLM && label === 'LLM Models') {
+          button.click();
+          return;
+        }
+      }
+    }
+  }
+
+  public returnTourToSecondStep(): void {
+    try {
+      // Check if tour is active
+      const isShepherdTourActive = !!document.querySelector('.shepherd-modal-overlay-container.shepherd-modal-is-visible');
+      if (!isShepherdTourActive) {
+        return;
+      }
+
+      const tour = (this.shepherdService as any)?.tourObject;
+      if (tour && typeof tour.show === 'function') {
+        // Second step has index 1 (0-based indexing: intro=0, settings=1)
+        tour.show(1);
+      }
+    } catch (error) {
+      // Silently handle tour navigation errors
+    }
   }
 }

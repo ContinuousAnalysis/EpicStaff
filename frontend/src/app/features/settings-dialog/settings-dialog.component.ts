@@ -8,6 +8,7 @@ import { VoiceModelsTabComponent } from './components/voice-models-tab/voice-mod
 import { PreferencesTabComponent } from './components/preferences-tab/preferences-tab.component';
 import { AppIconComponent } from '../../shared/components/app-icon/app-icon.component';
 import { QuickstartTabComponent } from './components/quickstart-tab/quickstart-tab.component';
+import { SettingsDialogService } from './settings-dialog.service';
 
 export enum TabId {
   LLM = 'llm',
@@ -178,7 +179,10 @@ export class SettingsDialogComponent {
 
   public activeTabId = signal<TabId>(TabId.LLM);
 
-  public constructor(private readonly dialogRef: DialogRef<void>) {
+  public constructor(
+    private readonly dialogRef: DialogRef<void>,
+    private readonly settingsDialogService: SettingsDialogService
+  ) {
     this.activeTabId.set(TabId.LLM);
   }
 
@@ -187,6 +191,8 @@ export class SettingsDialogComponent {
   }
 
   public close(): void {
+    // Return tour to second step when dialog is closed
+    this.settingsDialogService.returnTourToSecondStep();
     this.dialogRef.close();
   }
 }

@@ -5,13 +5,14 @@ import {
     ElementRef,
     ViewChild,
     AfterViewInit,
+    OnDestroy,
 } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { NgIf, NgFor } from '@angular/common';
 import { DialogRef } from '@angular/cdk/dialog';
 
 // RxJS imports
-import { forkJoin, Observable, of, switchMap } from 'rxjs';
+import { forkJoin, Observable, of, switchMap, debounceTime, distinctUntilChanged, tap, catchError, Subject, takeUntil, map, filter } from 'rxjs';
 import { EmbeddingConfigsService } from '../../../settings-dialog/services/embeddings/embedding_configs.service';
 import { EmbeddingModelsService } from '../../../settings-dialog/services/embeddings/embeddings.service';
 import { LLM_Config_Service } from '../../../settings-dialog/services/llms/LLM_config.service';
@@ -33,6 +34,10 @@ import { RealtimeModel } from '../../../settings-dialog/models/realtime-voice/re
 import { CreateRealtimeModelConfigRequest } from '../../../settings-dialog/models/realtime-voice/realtime-llm-config.model';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
+import { OpenAiApiKeyValidatorService } from '../../../../features/quick-start/services/openai-api-key-validator.service';
+import { ShepherdService } from 'angular-shepherd';
+import { QuickstartStatusService } from '../../../../features/quick-start/services/quickstart-status.service';
+import { TOUR_SELECTORS } from '../../../../features/quick-start/constants/tour-constants';
 
 @Component({
     selector: 'app-quickstart-tab',
@@ -70,6 +75,9 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
                             formControlName="apiKey"
                             placeholder="Enter OpenAI API key"
                             class="text-input"
+                            [class.validating]="apiKeyValidationStatus === 'validating'"
+                            [class.valid]="apiKeyValidationStatus === 'valid'"
+                            [class.invalid]="apiKeyValidationStatus === 'invalid'"
                             autocomplete="off"
                             autocorrect="off"
                             autocapitalize="off"
@@ -77,6 +85,57 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
                             data-lpignore="true"
                             data-form-type="other"
                         />
+                        <div class="validation-indicator" *ngIf="apiKeyValidationStatus !== 'none'">
+                            <svg
+                                *ngIf="apiKeyValidationStatus === 'validating'"
+                                class="spinner-small"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <circle
+                                    class="path-small"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    fill="none"
+                                />
+                            </svg>
+                            <svg
+                                *ngIf="apiKeyValidationStatus === 'valid'"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M20 6L9 17L4 12"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                            <svg
+                                *ngIf="apiKeyValidationStatus === 'invalid'"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M18 6L6 18M6 6L18 18"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                        </div>
                         <button
                             type="button"
                             class="eye-button"
@@ -137,6 +196,12 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
                             </svg>
                         </button>
                     </div>
+                    <div class="validation-message" *ngIf="apiKeyValidationStatus === 'invalid' && quickStartForm.get('apiKey')?.value">
+                        <span class="error-text">Invalid API key. Please check your key and try again.</span>
+                    </div>
+                    <div class="validation-message" *ngIf="apiKeyValidationStatus === 'valid'">
+                        <span class="success-text">API key is valid</span>
+                    </div>
                     <div class="api-key-description">
                         <p>This API key will be used to quickly auto create:</p>
                         <ul class="description-list">
@@ -173,7 +238,7 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
                 </app-button>
                 <app-button
                     type="primary"
-                    [disabled]="!quickStartForm.get('apiKey')?.value"
+                    [disabled]="!quickStartForm.get('apiKey')?.value || apiKeyValidationStatus === 'invalid' || apiKeyValidationStatus === 'validating'"
                     (click)="onQuickStart()"
                 >
                     <div *ngIf="isSaving" class="loader-container">
@@ -247,7 +312,7 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
 
             .text-input {
                 width: 100%;
-                padding: 12px 40px 12px 12px;
+                padding: 12px 65px 12px 12px;
                 border: 1px solid var(--color-input-border);
                 border-radius: 8px;
                 background-color: var(--color-input-background);
@@ -267,6 +332,60 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
                 box-shadow: 0 0 0 2px rgba(104, 95, 255, 0.15);
             }
 
+            .text-input.validating {
+                border-color: var(--accent-color);
+            }
+
+            .text-input.valid {
+                border-color: #10b981;
+            }
+
+            .text-input.invalid {
+                border-color: #ef4444;
+            }
+
+            .validation-indicator {
+                position: absolute;
+                right: 40px;
+                top: 50%;
+                transform: translateY(-50%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 16px;
+                height: 16px;
+            }
+
+            .validation-indicator svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .validation-indicator svg[class*="spinner-small"] {
+                color: var(--accent-color);
+            }
+
+            .validation-indicator svg:not([class*="spinner-small"]) {
+                width: 16px;
+                height: 16px;
+            }
+
+            .validation-indicator svg path {
+                stroke: currentColor;
+            }
+
+            .text-input.validating ~ .validation-indicator {
+                color: var(--accent-color);
+            }
+
+            .text-input.valid ~ .validation-indicator {
+                color: #10b981;
+            }
+
+            .text-input.invalid ~ .validation-indicator {
+                color: #ef4444;
+            }
+
             .eye-button {
                 position: absolute;
                 right: 12px;
@@ -284,6 +403,50 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
 
             .eye-button:hover {
                 color: var(--color-text-secondary);
+            }
+
+            .validation-message {
+                display: flex;
+                margin-top: 8px;
+                font-size: 12px;
+                line-height: 1.4;
+            }
+
+            .validation-message .error-text {
+                color: #ef4444;
+            }
+
+            .validation-message .success-text {
+                color: #10b981;
+            }
+
+            .spinner-small {
+                width: 16px;
+                height: 16px;
+                animation: rotate 1s linear infinite;
+            }
+
+            .path-small {
+                stroke: currentColor;
+                stroke-linecap: round;
+                stroke-dasharray: 1, 150;
+                stroke-dashoffset: 0;
+                animation: dash-small 1.5s ease-in-out infinite;
+            }
+
+            @keyframes dash-small {
+                0% {
+                    stroke-dasharray: 1, 150;
+                    stroke-dashoffset: 0;
+                }
+                50% {
+                    stroke-dasharray: 90, 150;
+                    stroke-dashoffset: -35;
+                }
+                100% {
+                    stroke-dasharray: 90, 150;
+                    stroke-dashoffset: -124;
+                }
             }
 
             .api-key-description {
@@ -360,12 +523,16 @@ import { ButtonComponent } from '../../../../shared/components/buttons/button/bu
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class QuickstartTabComponent implements AfterViewInit {
+export class QuickstartTabComponent implements AfterViewInit, OnDestroy {
     @ViewChild('apiKeyInput') apiKeyInput!: ElementRef<HTMLInputElement>;
 
     public quickStartForm: FormGroup;
     public showApiKey = false;
     public isSaving = false;
+    public apiKeyValidationStatus: 'none' | 'validating' | 'valid' | 'invalid' = 'none';
+
+    private destroy$ = new Subject<void>();
+    private readonly DEBOUNCE_TIME = 800; // 800ms delay after input stops
 
     private openAIProviderId = 1;
 
@@ -385,11 +552,16 @@ export class QuickstartTabComponent implements AfterViewInit {
         private realtimeModelsService: RealtimeModelsService,
         private toastService: ToastService,
         private transcriptionConfigsService: TranscriptionConfigsService,
-        private fb: FormBuilder
+        private fb: FormBuilder,
+        private openAiApiKeyValidatorService: OpenAiApiKeyValidatorService,
+        private shepherdService: ShepherdService,
+        private quickstartStatusService: QuickstartStatusService
     ) {
         this.quickStartForm = this.fb.group({
             apiKey: [''],
         });
+
+        this.setupApiKeyValidation();
     }
 
     ngAfterViewInit(): void {
@@ -401,6 +573,50 @@ export class QuickstartTabComponent implements AfterViewInit {
         });
     }
 
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
+    private setupApiKeyValidation(): void {
+        this.quickStartForm
+            .get('apiKey')
+            ?.valueChanges.pipe(
+                debounceTime(this.DEBOUNCE_TIME),
+                distinctUntilChanged(),
+                tap((apiKey: string) => {
+                    if (!apiKey || apiKey.trim().length === 0) {
+                        this.apiKeyValidationStatus = 'none';
+                        this.cdr.markForCheck();
+                    }
+                }),
+                filter((apiKey: string) => {
+                    // Only skip non-empty values for validation
+                    return !!(apiKey && apiKey.trim().length > 0);
+                }),
+                tap(() => {
+                    // Set validation status only for non-empty values
+                    this.apiKeyValidationStatus = 'validating';
+                    this.cdr.markForCheck();
+                }),
+                switchMap((apiKey: string) => {
+                    return this.openAiApiKeyValidatorService
+                        .validateApiKey(apiKey)
+                        .pipe(
+                            map((isValid) => ({ isValid, shouldValidate: true })),
+                            catchError(() => of({ isValid: false, shouldValidate: true }))
+                        );
+                }),
+                takeUntil(this.destroy$)
+            )
+            .subscribe((result) => {
+                this.apiKeyValidationStatus = result.isValid
+                    ? 'valid'
+                    : 'invalid';
+                this.cdr.markForCheck();
+            });
+    }
+
     public toggleApiKeyVisibility(): void {
         this.showApiKey = !this.showApiKey;
         this.cdr.markForCheck();
@@ -409,7 +625,33 @@ export class QuickstartTabComponent implements AfterViewInit {
     public onQuickStart(): void {
         const apiKey = this.quickStartForm.get('apiKey')?.value;
         if (apiKey) {
+            // Check if tour is active, and if so - close it and update status
+            this.closeTourIfActive();
             this.createQuickStartConfigs(apiKey);
+        }
+    }
+
+    private closeTourIfActive(): void {
+        // Check if Shepherd tour is active
+        const isTourActive = !!document.querySelector(TOUR_SELECTORS.SHEPHERD_MODAL_OVERLAY);
+        
+        if (isTourActive) {
+            // Close tour
+            try {
+                const tour = (this.shepherdService as any)?.tourObject;
+                if (tour && tour.isActive()) {
+                    this.shepherdService.cancel();
+                }
+            } catch (error) {
+                // Silently handle tour closing errors
+            }
+
+            // Send request to update status (as when skipping tour)
+            this.quickstartStatusService.updateStatus(true).subscribe({
+                error: () => {
+                    // Silently handle status update errors
+                },
+            });
         }
     }
 
@@ -467,21 +709,6 @@ export class QuickstartTabComponent implements AfterViewInit {
                         modelResults.realtimeTranscriptionModels.find(
                             (model) => model.provider === this.openAIProviderId
                         );
-
-                    console.log('Found models for OpenAI:', {
-                        llmModel: llmModel
-                            ? `${llmModel.name} (ID: ${llmModel.id})`
-                            : 'None',
-                        embeddingModel: embeddingModel
-                            ? `${embeddingModel.name} (ID: ${embeddingModel.id})`
-                            : 'None',
-                        realtimeModel: realtimeModel
-                            ? `${realtimeModel.name} (ID: ${realtimeModel.id})`
-                            : 'None',
-                        transcriptionModel: transcriptionModel
-                            ? `${transcriptionModel.name} (ID: ${transcriptionModel.id})`
-                            : 'None',
-                    });
 
                     // Now fetch existing configurations to find unique names
                     return forkJoin({
@@ -650,11 +877,6 @@ export class QuickstartTabComponent implements AfterViewInit {
                             this.isSaving = false;
                             this.cdr.markForCheck();
 
-                            console.log(
-                                'QuickStart configurations created:',
-                                createdResults
-                            );
-
                             if (missingModels.length > 0) {
                                 this.toastService.info(
                                     `Some models not available for OpenAI: ${missingModels.join(
@@ -675,10 +897,6 @@ export class QuickstartTabComponent implements AfterViewInit {
                             this.isSaving = false;
                             this.cdr.markForCheck();
 
-                            console.error(
-                                'Error creating QuickStart configurations:',
-                                error
-                            );
                             this.toastService.error(
                                 'Failed to create QuickStart configurations'
                             );
@@ -689,10 +907,6 @@ export class QuickstartTabComponent implements AfterViewInit {
                     this.isSaving = false;
                     this.cdr.markForCheck();
 
-                    console.error(
-                        'Error fetching models or checking existing configurations:',
-                        error
-                    );
                     this.toastService.error(
                         'Failed to set up QuickStart configurations'
                     );

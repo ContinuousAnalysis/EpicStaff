@@ -170,8 +170,16 @@ html body .shepherd-header {
     align-content: flex-start;
     position: relative;
     z-index: 0;
-    // Clip header to dialog boundaries
+    // Clip header to dialog boundaries, but allow cancel icon to overflow for steps 2-5
     overflow: hidden;
+    
+    // For steps 2-5, allow cancel icon to be positioned outside header boundaries
+    body .shepherd-element.tour-step-settings &,
+    html body .shepherd-element.tour-step-settings &,
+    body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) &,
+    html body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) & {
+        overflow: visible;
+    }
     
 
     // For first step change structure - image above title
@@ -227,6 +235,8 @@ html body .shepherd-header {
     }
     
     .shepherd-cancel-icon {
+        position: absolute;
+        right: 0;
         background: transparent;
         border: none;
         color: var(--color-text-secondary);
@@ -243,10 +253,6 @@ html body .shepherd-header {
             opacity: 1;
         }
         
-        &::before {
-            content: '✕';
-            font-size: 18px;
-        }
     }
 }
 
@@ -280,6 +286,14 @@ html body .shepherd-content {
     z-index: 0;
     // Clip header to dialog boundaries
     overflow: hidden;
+    
+    // For steps 2-5, allow cancel icon to overflow to be positioned in top-left corner
+    body .shepherd-element.tour-step-settings &,
+    html body .shepherd-element.tour-step-settings &,
+    body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) &,
+    html body .shepherd-element:not(.tour-step-intro):not(.shepherd-centered) & {
+        overflow: visible;
+    }
     
     // For first step keep padding
     body .shepherd-element.tour-step-intro &,

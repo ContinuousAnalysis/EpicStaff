@@ -88,11 +88,9 @@ export class EmbeddingModelsTabComponent implements OnInit {
   }
 
   public onFavoriteToggled(event: { id: string | number; value: boolean }) {
-    console.log('Favorite toggled:', event);
   }
 
   public onEnabledToggled(event: { id: string | number; value: boolean }) {
-    console.log('Enabled toggled:', event);
     const config: FullEmbeddingConfig | undefined =
       this.embeddingConfigs().find((c) => c.id === event.id);
     if (!config) return;
@@ -123,8 +121,6 @@ export class EmbeddingModelsTabComponent implements OnInit {
   }
 
   public onConfigureClicked(id: string | number) {
-    console.log('Configure clicked:', id);
-
     const config = this.embeddingConfigs().find((c) => c.id === id);
     if (!config) return;
     const dialogRef = this.dialog.open(EditEmbeddingConfigDialogComponent, {
@@ -140,7 +136,6 @@ export class EmbeddingModelsTabComponent implements OnInit {
   }
 
   public onDeleteClicked(id: string | number) {
-    console.log('Delete clicked:', id);
     this.embeddingConfigService.deleteEmbeddingConfig(Number(id)).subscribe({
       next: () => {
         this.embeddingConfigs.set(

@@ -42,7 +42,6 @@ export class FullLLMConfigService {
         });
 
         const visibleConfigs = configs.filter((config) => config);
-        console.log('models', modelMap);
         return visibleConfigs.map((config) => {
           const modelDetails = modelMap[config.model] || null;
           const providerDetails = modelDetails?.llm_provider
