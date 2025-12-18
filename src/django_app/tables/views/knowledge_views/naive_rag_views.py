@@ -264,7 +264,6 @@ class NaiveRagDocumentConfigViewSet(
                     }
                 )
 
-
     @action(detail=False, methods=["put"], url_path="bulk-update")
     def bulk_update(self, request, naive_rag_id=None):
         """
@@ -364,9 +363,16 @@ class NaiveRagDocumentConfigViewSet(
         """
         List all document configs for a NaiveRag.
 
+        Business Logic:
+        - Auto-initializes document configs for documents without configs
+        - Ensures all documents in the collection have default configs
+        - Idempotent: safe to call multiple times
+
         URL: GET /api/naive-rag/{naive_rag_id}/document-configs/
         """
         try:
+            NaiveRagService.init_document_configs(naive_rag_id=int(naive_rag_id))
+
             configs = NaiveRagService.get_document_configs_for_naive_rag(
                 int(naive_rag_id)
             )
