@@ -71,7 +71,7 @@ class ProcessRagIndexingMessage(BaseModel):
     Fields:
     - rag_id: ID of the specific RAG implementation (naive_rag_id for NaiveRag, etc.)
     - rag_type: Type of RAG ("naive", "graph", etc.)
-    - collection_id: Source collection ID (for getting documents)
+    - collection_id: Source collection ID (for logging)
     """
     rag_id: int
     rag_type: str  # "naive" or "graph"

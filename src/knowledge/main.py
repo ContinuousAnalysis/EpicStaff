@@ -46,11 +46,9 @@ def run_chunk_document(naive_rag_document_config_id: int):
     )
 
 
-def run_rag_indexing(rag_id: int, rag_type: str, collection_id: int):
+def run_rag_indexing(rag_id: int, rag_type: str):
     """Runs the RAG indexing process (chunking + embedding) in a separate process."""
-    collection_processor_service.process_rag_indexing(
-        rag_id=rag_id, rag_type=rag_type, collection_id=collection_id
-    )
+    collection_processor_service.process_rag_indexing(rag_id=rag_id, rag_type=rag_type)
 
 
 async def indexing(redis_service: RedisService, executor: ThreadPoolExecutor):
@@ -79,7 +77,6 @@ async def indexing(redis_service: RedisService, executor: ThreadPoolExecutor):
                     run_rag_indexing,
                     indexing_message.rag_id,
                     indexing_message.rag_type,
-                    indexing_message.collection_id,
                 )
 
                 logger.info(
@@ -141,7 +138,7 @@ async def searching(redis_service: RedisService):
     """
     Handles search queries from the Redis queue asynchronously.
 
-    Uses rag_id and rag_type instead of collection_id.
+    Uses rag_id and rag_type
     """
     logger.info(
         f"Subscribed to channel '{knowledge_search_get_channel}' for search queries."
@@ -155,7 +152,7 @@ async def searching(redis_service: RedisService):
                 data = BaseKnowledgeSearchMessage(**parsed_data)
 
                 logger.info(
-                    f"Processing search for {data.rag_type}_rag_id: {data.rag_id}"
+                    f"Processing search for {data.rag_type}_rag_id: {data.rag_id}, collection_id={data.collection_id}"
                 )
 
                 # Search using rag_id and rag_type

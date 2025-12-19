@@ -14,9 +14,9 @@ class CollectionProcessorService(metaclass=SingletonMeta):
     def _get_strategy(self, rag_type: str) -> BaseRAGStrategy:
         return RAGStrategyFactory.get_strategy(rag_type)
 
-    def process_rag_indexing(self, rag_id: int, rag_type: str, collection_id: int):
+    def process_rag_indexing(self, rag_id: int, rag_type: str):
         strategy = self._get_strategy(rag_type)
-        strategy.process_rag_indexing(collection_id=collection_id, rag_id=rag_id)
+        strategy.process_rag_indexing(rag_id=rag_id)
 
     def search(
         self,
