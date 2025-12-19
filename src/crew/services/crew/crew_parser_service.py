@@ -76,6 +76,7 @@ class CrewParserService(metaclass=SingletonMeta):
             function_calling_llm = parse_llm(
                 agent_data.function_calling_llm, stop_event=stop_event
             )
+        rag_search_config=None
         if agent_data.rag_search_config:
             rag_search_config = agent_data.rag_search_config.model_dump()
         agent_config = {
@@ -220,6 +221,7 @@ class CrewParserService(metaclass=SingletonMeta):
                 tool_map[unique_name]
                 for unique_name in agent_data.tool_unique_name_list
             ]
+            rag_search_config = None
             if agent_data.rag_search_config:
                 rag_search_config = agent_data.rag_search_config.model_dump()
             id_agent_map[agent_data.id] = self.parse_agent(

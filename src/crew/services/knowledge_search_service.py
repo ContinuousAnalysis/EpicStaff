@@ -24,7 +24,7 @@ knowledge_search_response_channel = os.getenv(
 )
 
 
-class RagConfigBuilder:
+class RagSearchConfigFactory:
     """
     Factory class to build RAG search configs from dict based on rag_type.
     """
@@ -89,10 +89,10 @@ class KnowledgeSearchService(metaclass=SingletonMeta):
         Returns:
             List of knowledge results (strings)
         """
-        
+
         rag_type, rag_id = self._parse_rag_type_id(rag_type_id)
 
-        search_config = RagConfigBuilder.build(rag_type, rag_search_config)
+        search_config = RagSearchConfigFactory.build(rag_type, rag_search_config)
 
         execution_uuid = f"{sender}-{str(uuid4())}"
 
