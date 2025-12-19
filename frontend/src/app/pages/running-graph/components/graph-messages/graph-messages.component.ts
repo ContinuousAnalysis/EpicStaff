@@ -290,12 +290,13 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       );
       const sessionStatus = this.sseService.status();
 
+      // Check for graph_end message - marks the session as finished
       if (
         sameTimeMessages.some(
           (msg) => msg.message_data.message_type === MessageType.GRAPH_END
         )
       ) {
-        this.sessionStatusChanged.emit(GraphSessionStatus.ENDED);
+        this.sseService.setStatus(GraphSessionStatus.ENDED);
         this.sseService.stopStream();
         return;
       }
