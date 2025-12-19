@@ -89,7 +89,7 @@ class SourceCollection(models.Model):
         if not self.documents.exists():
             self.status = self.SourceCollectionStatus.EMPTY
         else:
-            # implement status aggregation logic
+            # TODO: implement status aggregation logic
             pass
         self.save(update_fields=["status", "updated_at"])
 

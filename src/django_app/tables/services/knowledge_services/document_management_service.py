@@ -57,7 +57,7 @@ class DocumentManagementService:
         file_type = file_name.split(".")[-1].lower() if "." in file_name else ""
 
         if file_type not in ALLOWED_FILE_TYPES:
-            raise InvalidFileTypeException(file_name, file_type, ALLOWED_FILE_TYPES)
+            raise InvalidFileTypeException(file_name, file_type)
 
         return {"file_name": file_name, "file_size": file_size, "file_type": file_type}
 

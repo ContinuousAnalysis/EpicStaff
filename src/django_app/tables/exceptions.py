@@ -1,5 +1,8 @@
 from rest_framework.exceptions import APIException
-
+from tables.constants.knowledge_constants import (
+    MAX_FILE_SIZE,
+    ALLOWED_FILE_TYPES,
+)
 
 class CustomAPIExeption(APIException):
     """
@@ -95,13 +98,12 @@ class FileSizeExceededException(DocumentUploadException):
 class InvalidFileTypeException(DocumentUploadException):
     """Raised when file type is not allowed."""
     
-    def __init__(self, file_name, file_extension, allowed_types):
+    def __init__(self, file_name, file_extension):
         self.file_name = file_name
         self.file_extension = file_extension
-        self.allowed_types = allowed_types
         super().__init__(
             f"File '{file_name}' has invalid type '.{file_extension}'. "
-            f"Allowed types: {', '.join(allowed_types)}"
+            f"Allowed types: {', '.join(ALLOWED_FILE_TYPES)}"
         )
 
 
