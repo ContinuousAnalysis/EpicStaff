@@ -36,6 +36,8 @@ from tables.models.graph_models import (
     OrganizationUser,
     GraphOrganization,
     GraphOrganizationUser,
+    TelegramTriggerNode,
+    TelegramTriggerNodeField,
     WebhookTriggerNode,
 )
 from tables.models.realtime_models import (
@@ -94,7 +96,10 @@ from tables.serializers.copy_serializers import (
     GraphCopySerializer,
     GraphCopyDeserializer,
 )
-
+from tables.serializers.telegram_trigger_serializers import (
+    TelegramTriggerNodeSerializer,
+    TelegramTriggerNodeFieldSerializer,
+)
 
 from tables.models import (
     Agent,
@@ -590,6 +595,10 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
+                Prefetch(
+                    "telegram_trigger_node_list",
+                    queryset=TelegramTriggerNode.objects.all(),
+                ),
             )
             .all()
         )
@@ -1056,3 +1065,13 @@ class WebhookTriggerViewSet(viewsets.ModelViewSet):
     queryset = WebhookTrigger.objects.all()
     serializer_class = WebhookTriggerSerializer
     filter_backends = [DjangoFilterBackend]
+
+
+class TelegramTriggerNodeViewSet(ModelViewSet):
+    queryset = TelegramTriggerNode.objects.prefetch_related("fields")
+    serializer_class = TelegramTriggerNodeSerializer
+
+
+class TelegramTriggerNodeFieldViewSet(ModelViewSet):
+    queryset = TelegramTriggerNodeField.objects.select_related("telegram_trigger_node")
+    serializer_class = TelegramTriggerNodeFieldSerializer

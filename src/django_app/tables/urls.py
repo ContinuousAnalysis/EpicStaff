@@ -21,6 +21,8 @@ from tables.views.model_view_sets import (
     RealtimeSessionItemViewSet,
     RealtimeTranscriptionConfigModelViewSet,
     RealtimeTranscriptionModelViewSet,
+    TelegramTriggerNodeFieldViewSet,
+    TelegramTriggerNodeViewSet,
     TemplateAgentReadWriteViewSet,
     LLMConfigReadWriteViewSet,
     ProviderReadWriteViewSet,
@@ -60,6 +62,7 @@ from tables.views.views import (
     ProcessDocumentChunkingView,
     ProcessCollectionEmbeddingView,
     RunPythonCodeAPIView,
+    TelegramTriggerNodeAvailableFieldsView,
     ToolListRetrieveUpdateGenericViewSet,
     SessionViewSet,
     RunSession,
@@ -143,6 +146,8 @@ router.register(r"graph-organization-users", GraphOrganizationUserViewSet)
 router.register(r"document-chunks", ChunkViewSet)
 router.register(r"webhook-trigger-nodes", WebhookTriggerNodeViewSet)
 router.register(r"webhook-triggers", WebhookTriggerViewSet)
+router.register(r"telegram-trigger-nodes", TelegramTriggerNodeViewSet)
+router.register(r"telegram-trigger-node-fields", TelegramTriggerNodeFieldViewSet)
 
 
 urlpatterns = [
@@ -232,5 +237,10 @@ urlpatterns = [
         "process-collection-embedding/",
         ProcessCollectionEmbeddingView.as_view(),
         name="process-collection-embedding",
+    ),
+    path(
+        "telegram-trigger-available-fields/",
+        TelegramTriggerNodeAvailableFieldsView.as_view(),
+        name="telegram-trigger-available-fields",
     ),
 ]

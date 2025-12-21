@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 from collections import defaultdict
 import uuid
 import base64
-
+from tables.serializers.telegram_trigger_serializers import TelegramTriggerNodeDataFieldsSerializer
+from tables.utils.telegram_fields import load_telegram_trigger_fields
 from tables.models import Tool
 from tables.models import Crew
 from tables.models.crew_models import DefaultAgentConfig, DefaultCrewConfig
@@ -878,3 +879,13 @@ class ProcessCollectionEmbeddingView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             redis_service.publish_source_collection(collection_id=collection_id)
             return Response(status=status.HTTP_202_ACCEPTED)
+
+class TelegramTriggerNodeAvailableFieldsView(APIView):
+    """
+    GET endpoint that returns all possible fields that can be created
+    for TelegramTriggerNode.
+    """
+    def get(self, request, format=None):
+        data = load_telegram_trigger_fields()
+        serializer = TelegramTriggerNodeDataFieldsSerializer({"data": data})
+        return Response(serializer.data, status=status.HTTP_200_OK)

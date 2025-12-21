@@ -942,7 +942,7 @@ class GraphMetadataSerializer(serializers.Serializer):
 class GraphImportSerializer(serializers.ModelSerializer):
 
     crews = NestedCrewImportSerializer(
-        many=True, required=False, allow_null=False,
+        many=True, required=False, allow_null=False, default=dict
     )
     agents = NestedAgentImportSerializer(
         many=True, required=False, allow_null=False, default=dict

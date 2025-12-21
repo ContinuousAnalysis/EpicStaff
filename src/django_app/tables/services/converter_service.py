@@ -1,5 +1,9 @@
 from typing import Iterable
-from tables.models.crew_models import AgentConfiguredTools, AgentMcpTools, AgentPythonCodeTools
+from tables.models.crew_models import (
+    AgentConfiguredTools,
+    AgentMcpTools,
+    AgentPythonCodeTools,
+)
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models.llm_models import (
@@ -32,6 +36,7 @@ from tables.models.graph_models import (
     DecisionTableNode,
     EndNode,
     PythonNode,
+    TelegramTriggerNode,
     WebhookTriggerNode,
 )
 from tables.request_models import *
@@ -155,22 +160,25 @@ class ConverterService(metaclass=SingletonMeta):
     def _get_agent_base_tools(self, agent: Agent) -> list[BaseToolData]:
 
         python_tools = PythonCodeTool.objects.filter(
-            id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id)
-            .values_list("pythoncodetool_id", flat=True)
+            id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id).values_list(
+                "pythoncodetool_id", flat=True
+            )
         )
         configured_tools = ToolConfig.objects.filter(
-            id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id)
-            .values_list("toolconfig_id", flat=True)
+            id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id).values_list(
+                "toolconfig_id", flat=True
+            )
         )
         mcp_tools = McpTool.objects.filter(
-            id__in=AgentMcpTools.objects.filter(agent_id=agent.id)
-            .values_list("mcptool_id", flat=True)
+            id__in=AgentMcpTools.objects.filter(agent_id=agent.id).values_list(
+                "mcptool_id", flat=True
+            )
         )
 
         all_tools = list(python_tools) + list(configured_tools) + list(mcp_tools)
 
         return [self.convert_tool_to_base_tool_pydantic(tool) for tool in all_tools]
-    
+
     def _get_task_base_tools(self, task: Task) -> list[BaseToolData]:
         tools = (
             [entry.tool for entry in task.task_configured_tool_list.all()]
@@ -466,11 +474,32 @@ class ConverterService(metaclass=SingletonMeta):
     def convert_end_node_to_pydantic(self, end_node: EndNode):
         return EndNodeData(output_map=end_node.output_map)
 
-    def convert_webhook_trigger_node_to_pydantic(self, webhook_trigger_node: WebhookTriggerNode):
+    def convert_webhook_trigger_node_to_pydantic(
+        self, webhook_trigger_node: WebhookTriggerNode
+    ):
         python_code: PythonCode = webhook_trigger_node.python_code
         python_code_data = self.convert_python_code_to_pydantic(python_code=python_code)
 
         return WebhookTriggerNodeData(
             node_name=webhook_trigger_node.node_name,
             python_code=python_code_data,
+        )
+
+    def convert_telegram_trigger_node_to_pydantic(
+        self, telegram_trigger_node: TelegramTriggerNode
+    ):
+
+        telegram_trigger_node_field_data: list[TelegramTriggerNodeFieldData] = []
+        for field in telegram_trigger_node.fields.all():
+            telegram_trigger_node_field_data.append(
+                TelegramTriggerNodeFieldData(
+                    parent=field.parent,
+                    field_name=field.field_name,
+                    variable_path=field.variable_path,
+                )
+            )
+
+        return TelegramTriggerNodeData(
+            node_name=telegram_trigger_node.node_name,
+            field_list=telegram_trigger_node_field_data,
         )

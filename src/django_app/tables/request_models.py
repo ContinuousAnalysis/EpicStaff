@@ -53,6 +53,7 @@ class ConfiguredToolData(BaseModel):
     name_alias: str
     tool_config: ToolConfigData
 
+
 class McpToolData(BaseModel):
     """
     Configuration for a FastMCP client connecting to remote MCP tools via SSE.
@@ -289,9 +290,22 @@ class ConditionalEdgeData(BaseModel):
     then: str | None
     input_map: dict[str, Any]
 
+
 class WebhookTriggerNodeData(BaseModel):
     node_name: str
     python_code: PythonCodeData
+
+
+class TelegramTriggerNodeFieldData(BaseModel):
+    parent: Literal["message", "callback_query"]
+    field_name: str
+    variable_path: str
+
+
+class TelegramTriggerNodeData(BaseModel):
+    node_name: str
+    field_list: list[TelegramTriggerNodeFieldData] = []
+
 
 class GraphData(BaseModel):
     name: str
@@ -305,6 +319,7 @@ class GraphData(BaseModel):
     decision_table_node_list: list[DecisionTableNodeData] = []
     entrypoint: str
     end_node: EndNodeData | None
+    telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
 
 
 class GraphSessionMessageData(BaseModel):
@@ -314,7 +329,8 @@ class GraphSessionMessageData(BaseModel):
     timestamp: str
     message_data: dict
     uuid: str
-    
+
+
 class KnowledgeSearchMessage(BaseModel):
     collection_id: int
     uuid: str
@@ -322,13 +338,16 @@ class KnowledgeSearchMessage(BaseModel):
     search_limit: int | None
     similarity_threshold: float | None
 
+
 class ChunkDocumentMessage(BaseModel):
     document_id: int
+
 
 class ChunkDocumentMessageResponse(BaseModel):
     document_id: int
     success: bool
     message: str | None
+
 
 class StopSessionMessage(BaseModel):
     session_id: int
