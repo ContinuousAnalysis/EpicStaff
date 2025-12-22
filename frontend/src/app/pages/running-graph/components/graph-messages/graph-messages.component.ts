@@ -152,6 +152,17 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   get isProcessing(): boolean {
+    const status = this.sseService.status();
+    const isTerminalStatus =
+      status === GraphSessionStatus.ERROR ||
+      status === GraphSessionStatus.STOP ||
+      status === GraphSessionStatus.ENDED ||
+      status === GraphSessionStatus.EXPIRED;
+
+    if (isTerminalStatus) {
+      return false;
+    }
+
     return this.isLoading || this.sseService.isStreaming();
   }
 
@@ -330,11 +341,10 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
         this.sseService.stopStream();
       } else if (sessionStatus === GraphSessionStatus.ERROR) {
         this.sseService.stopStream();
-      } else if (sessionStatus === GraphSessionStatus.PENDING) {
-        this.sseService.stopStream();
       } else if (sessionStatus === GraphSessionStatus.ENDED) {
         this.sseService.stopStream();
       }
+      // Note: PENDING is a transitional state - don't stop stream, wait for final status
     }
   }
 
