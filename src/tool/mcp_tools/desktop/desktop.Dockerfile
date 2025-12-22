@@ -44,7 +44,7 @@ RUN wget -O /tmp/firefox.tar.bz2 "https://download.mozilla.org/?product=firefox-
     ln -s /opt/firefox/firefox /usr/local/bin/firefox-esr && \
     rm /tmp/firefox.tar.bz2
 
-COPY docker/desktop/startup.sh /usr/local/bin/startup.sh
+COPY startup.sh /usr/local/bin/startup.sh
 RUN chmod +x /usr/local/bin/startup.sh
 
 EXPOSE 5900 6080

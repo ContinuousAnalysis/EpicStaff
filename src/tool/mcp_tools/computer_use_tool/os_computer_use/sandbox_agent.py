@@ -159,8 +159,6 @@ class SandboxAgent:
         self.screenshot()
 
         # Format the call correctly based on the grounding model type
-        # OSAtlasProvider, ShowUIProvider, and Florence2Provider use: call(prompt, image_data)
-        # OpenAIProvider/other LLM providers use: call(messages, functions=None)
         grounding_model_type = str(type(grounding_model))
         if hasattr(grounding_model, "call") and (
             "OSAtlasProvider" in grounding_model_type
@@ -340,6 +338,34 @@ x range: 0-{screen_width}, y range: 0-{screen_height}.""",
     )
     def right_click(self, query):
         return self.click_element(query, self.sandbox.right_click, "right click")
+
+    @tool(
+        description="Scroll up by a specified amount.",
+        params={
+            "query": "Item or UI element on the screen to scroll up",
+            "amount": "Amount to scroll up (default is 1)",
+        },
+    )
+    def scroll_up(self, query, amount: int = 1):
+        return self.click_element(
+            query,
+            lambda: self.sandbox.scroll_up(amount),
+            "scroll up",
+        )
+
+    @tool(
+        description="Scroll down by a specified amount.",
+        params={
+            "query": "Item or UI element on the screen to scroll down",
+            "amount": "Amount to scroll down (default is 1)",
+        },
+    )
+    def scroll_down(self, query, amount: int = 1):
+        return self.click_element(
+            query,
+            lambda: self.sandbox.scroll_down(amount),
+            "scroll down",
+        )
 
     def append_screenshot(self):
         return vision_model.call(

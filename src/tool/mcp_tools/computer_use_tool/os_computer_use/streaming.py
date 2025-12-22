@@ -79,6 +79,7 @@ class Sandbox:
     def __init__(self):
         # docker-compose.yaml is at the mcp_tools level (two parents up from computer_use_tool) by default
         self.project_root = Path(__file__).resolve().parents[2]
+        print(f"Project root: {self.project_root}")
         default_compose = self.project_root / "docker-compose.yaml"
 
         # Allow overriding the compose file path or skipping compose entirely
@@ -106,6 +107,23 @@ class Sandbox:
         if not self.compose_file.exists():
             raise SandboxError(f"docker-compose file not found at {self.compose_file}")
 
+        # Check if the container is already running
+        try:
+            result = subprocess.run(
+                ["docker", "inspect", "-f", "{{.State.Running}}", self.container_name],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            if result.stdout.strip().lower() == "true":
+                print(f"Container '{self.container_name}' is already running.")
+                return
+        except subprocess.CalledProcessError:
+            print(
+                f"Container '{self.container_name}' is not running. Attempting to start it."
+            )
+
+        # Start the container using docker-compose
         try:
             subprocess.run(
                 self._compose_cmd("up", "-d", "desktop"),
@@ -140,7 +158,7 @@ class Sandbox:
         # -window root captures the entire screen including all windows
         # -quiet suppresses output, -quality 100 ensures high quality
         result = self.commands.run(
-            f"sleep 0.2 && DISPLAY={self.display} import -window root -quality 100 {remote_path} 2>&1"
+            f"sleep 0.5 && DISPLAY={self.display} import -window root -quality 100 {remote_path} 2>&1"
         )
         if result.stderr and "error" in result.stderr.lower():
             print(f"Warning: import stderr: {result.stderr}")
@@ -195,6 +213,14 @@ class Sandbox:
 
     def right_click(self):
         self.run_with_xdotool("click 3")
+
+    def scroll_up(self, amount: int = 1):
+        """Scroll up by a specified amount."""
+        self.run_with_xdotool(f"click --repeat {amount} 4")
+
+    def scroll_down(self, amount: int = 1):
+        """Scroll down by a specified amount."""
+        self.run_with_xdotool(f"click --repeat {amount} 5")
 
     def kill(self):
         subprocess.run(["docker", "rm", "-f", self.container_name], check=False)

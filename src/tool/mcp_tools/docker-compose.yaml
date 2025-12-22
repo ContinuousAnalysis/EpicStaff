@@ -58,6 +58,7 @@ services:
       MCP_SAVEFILES_PATH: "/app/output"
     volumes:
       - ${MCP_SAVEFILES_PATH}:/app/output
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     networks:
       - mcp-network 
