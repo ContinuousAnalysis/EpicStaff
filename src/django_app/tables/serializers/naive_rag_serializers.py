@@ -327,3 +327,25 @@ class NestedSearchConfigSerializer(serializers.Serializer):
                 "At least one RAG type must be provided (e.g., 'naive', 'graph')"
             )
         return attrs
+
+
+class RagInputSerializer(serializers.Serializer):
+    """
+    Input serializer for rag field in Agent create/update.
+
+    Used in request body:
+    {
+        "rag": {
+            "rag_type": "naive",
+            "rag_id": 9
+        }
+    }
+    """
+    rag_type = serializers.ChoiceField(
+        choices=["naive", "graph"],
+        help_text="Type of RAG implementation"
+    )
+    rag_id = serializers.IntegerField(
+        min_value=1,
+        help_text="ID of the RAG instance"
+    )

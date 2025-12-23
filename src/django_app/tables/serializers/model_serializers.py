@@ -77,7 +77,14 @@ from tables.models import (
 from tables.models import (
     ToolConfig,
 )
-from tables.services.rag_assignment_service import RagAssignmentService
+from tables.services.rag_assignment_service import (
+    RagAssignmentService,
+    SearchConfigService,
+)
+from tables.serializers.naive_rag_serializers import (
+    RagInputSerializer,
+    NestedSearchConfigSerializer,
+)
 
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
@@ -246,7 +253,8 @@ class RealtimeAgentSerializer(serializers.ModelSerializer):
 class AgentReadSerializer(serializers.ModelSerializer):
     tools = serializers.SerializerMethodField()
     realtime_agent = RealtimeAgentSerializer(read_only=True)
-    search_config = serializers.SerializerMethodField()
+    rag = serializers.SerializerMethodField()
+    search_configs = serializers.SerializerMethodField()
 
     class Meta:
         model = Agent
@@ -270,7 +278,8 @@ class AgentReadSerializer(serializers.ModelSerializer):
             "fcm_llm_config",
             "knowledge_collection",
             "realtime_agent",
-            "search_config",
+            "rag",
+            "search_configs",
         ]
 
     def get_tools(self, agent: Agent) -> list[dict]:
@@ -302,7 +311,10 @@ class AgentReadSerializer(serializers.ModelSerializer):
 
         return tools
 
-    def get_search_config(self, agent: Agent) -> dict | None:
+    def get_rag(self, agent: Agent) -> dict | None:
+        return RagAssignmentService.get_assigned_rag_info(agent)
+
+    def get_search_configs(self, agent: Agent) -> dict | None:
         """
         Get all RAG search configurations in nested format.
         Returns: {"naive": {"search_limit": 3, "similarity_threshold": 0.2}, "graph": {...}}
@@ -321,6 +333,8 @@ class AgentWriteSerializer(serializers.ModelSerializer):
     llm_config = serializers.PrimaryKeyRelatedField(
         queryset=LLMConfig.objects.all(), required=False, allow_null=True
     )
+    rag = RagInputSerializer(required=False, allow_null=True)
+    search_configs = NestedSearchConfigSerializer(required=False)
 
     class Meta:
         model = Agent
@@ -344,6 +358,8 @@ class AgentWriteSerializer(serializers.ModelSerializer):
             "fcm_llm_config",
             "knowledge_collection",
             "realtime_agent",
+            "rag",
+            "search_configs",
         ]
 
     def _resolve_tool_ids(self, tool_ids: list[str]) -> dict[str, list[int]]:
@@ -373,6 +389,16 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         tools = self._resolve_tool_ids(tool_ids)
 
         realtime_agent_data = validated_data.pop("realtime_agent", None)
+        rag_data = validated_data.pop("rag", None)
+        search_configs_data = validated_data.pop("search_configs", None)
+
+        # Business Rule: If knowledge_collection provided, rag is REQUIRED
+        knowledge_collection = validated_data.get("knowledge_collection")
+        if knowledge_collection and not rag_data:
+            raise serializers.ValidationError(
+                {"rag": "This field is required when knowledge_collection is provided"}
+            )
+
         agent: Agent = super().create(validated_data)
 
         AgentConfiguredTools.objects.filter(agent_id=agent.id).delete()
@@ -405,6 +431,26 @@ class AgentWriteSerializer(serializers.ModelSerializer):
             ]
         )
 
+        # Handle RAG assignment
+        if rag_data:
+            RagAssignmentService.assign_rag_to_agent(
+                agent=agent,
+                rag_type=rag_data["rag_type"],
+                rag_id=rag_data["rag_id"],
+            )
+
+        # Handle search configs
+        if search_configs_data:
+            for rag_type, config in search_configs_data.items():
+                if rag_type == "naive":
+                    SearchConfigService.update_search_config(agent, **config)
+                # Future: elif rag_type == "graph": ...
+        elif rag_data:
+            # RAG assigned but no config provided - create defaults
+            if rag_data["rag_type"] == "naive":
+                SearchConfigService.create_default_search_config(agent)
+
+        # Handle realtime agent
         if realtime_agent_data:
             RealtimeAgent.objects.create(agent=agent, **realtime_agent_data)
         else:
@@ -417,14 +463,24 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         tools = self._resolve_tool_ids(tool_ids)
 
         realtime_agent_data: dict | None = validated_data.pop("realtime_agent", None)
+        rag_data = validated_data.pop("rag", None)
+        search_configs_data = validated_data.pop("search_configs", None)
 
         # rags
+        old_knowledge_collection = instance.knowledge_collection
         if "knowledge_collection" in validated_data:
-            old_knowledge_collection = instance.knowledge_collection
             new_knowledge_collection = validated_data.get("knowledge_collection")
 
             if old_knowledge_collection != new_knowledge_collection:
-                RagAssignmentService.unassign_naive_rag_from_agent(instance)
+                RagAssignmentService.unassign_all_rags_from_agent(instance)
+
+                # If new collection is not None, require rag
+                if new_knowledge_collection and not rag_data:
+                    raise serializers.ValidationError(
+                        {
+                            "rag": "This field is required when changing to a new knowledge_collection"
+                        }
+                    )
 
         instance = super().update(instance, validated_data)
 
@@ -461,6 +517,23 @@ class AgentWriteSerializer(serializers.ModelSerializer):
             ]
         )
 
+        # Handle RAG assignment
+        if rag_data:
+            RagAssignmentService.unassign_all_rags_from_agent(instance)
+            RagAssignmentService.assign_rag_to_agent(
+                agent=instance,
+                rag_type=rag_data["rag_type"],
+                rag_id=rag_data["rag_id"],
+            )
+
+        # Handle search configs (independent from RAG assignment)
+        if search_configs_data:
+            for rag_type, config in search_configs_data.items():
+                if rag_type == "naive":
+                    SearchConfigService.update_search_config(instance, **config)
+                # Future: elif rag_type == "graph": ...
+
+        # Handle realtime agent
         if realtime_agent_data:
             realtime_agent, _ = RealtimeAgent.objects.get_or_create(agent=instance)
             for attr, value in realtime_agent_data.items():

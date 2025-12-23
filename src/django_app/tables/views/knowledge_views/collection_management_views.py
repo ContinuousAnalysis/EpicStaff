@@ -259,3 +259,97 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
                 {"error": f"Failed to copy collection: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    @swagger_auto_schema(
+        method="get",
+        operation_description="Get all RAG configurations available for this collection",
+        manual_parameters=[
+            openapi.Parameter(
+                "status",
+                openapi.IN_QUERY,
+                description="Filter by RAG status (comma-separated). Example: 'completed,warning'",
+                type=openapi.TYPE_STRING,
+                required=False,
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                description="List of available RAG configurations",
+                examples={
+                    "application/json": [
+                        {
+                            "rag_id": 9,
+                            "rag_type": "naive",
+                            "rag_status": "completed",
+                            "collection_id": 29,
+                            "created_at": "2025-12-17T14:17:01.594229Z",
+                            "indexed_at": "2025-12-17T15:30:00Z",
+                        }
+                    ]
+                },
+            ),
+            404: "Collection not found",
+        },
+    )
+    @action(detail=True, methods=["get"], url_path="available-rags")
+    def available_rags(self, request, pk=None):
+        """
+        Get all RAG configurations available for this collection.
+
+        URL: GET /source-collections/{id}/available-rags/
+        Query params:
+            - status: Filter by status (comma-separated). Example: ?status=completed,warning
+                     If not provided, defaults to 'completed,warning'
+
+        Response format:
+        [
+            {
+                "rag_id": 9,
+                "rag_type": "naive",
+                "rag_status": "completed",
+                "collection_id": 29,
+                "created_at": "2025-12-17T14:17:01.594229Z",
+                "indexed_at": "2025-12-17T15:30:00Z"
+            }
+        ]
+        """
+        try:
+            # Get all RAG configurations for this collection
+            rag_configs = CollectionManagementService.get_rag_configurations(int(pk))
+
+            # Get status filter from query params (default to completed,warning)
+            status_filter = request.query_params.get("status", "completed,warning,new")
+            allowed_statuses = [
+                s.strip() for s in status_filter.split(",") if s.strip()
+            ]
+
+            # Filter by status
+            filtered_configs = [
+                config
+                for config in rag_configs
+                if config.get("status") in allowed_statuses
+            ]
+
+            response_data = []
+            for config in filtered_configs:
+                response_data.append(
+                    {
+                        "rag_id": config.get("rag_id"),
+                        "rag_type": config.get("rag_type"),
+                        "rag_status": config.get("status"),
+                        "collection_id": int(pk),
+                        "created_at": config.get("created_at"),
+                        "updated_at": config.get("updated_at"),
+                    }
+                )
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except CollectionNotFoundException as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error fetching available RAGs for collection {pk}: {str(e)}")
+            return Response(
+                {"error": f"Failed to fetch available RAGs: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
