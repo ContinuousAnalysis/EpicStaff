@@ -108,13 +108,12 @@ class NaiveRAGStrategy(BaseRAGStrategy):
             "results": knowledge_snippets,
         }
 
-    def process_rag_indexing(self, rag_id: int, collection_id: int):
+    def process_rag_indexing(self, rag_id: int):
         """
         Process RAG indexing (chunking + embedding) for a NaiveRag.
 
         Args:
             rag_id: ID of the NaiveRag (naive_rag_id)
-            collection_id: ID of the source collection (for getting documents)
 
         Flow:
         1. Get all document configs for this NaiveRag with status NEW/WARNING/CHUNKED
