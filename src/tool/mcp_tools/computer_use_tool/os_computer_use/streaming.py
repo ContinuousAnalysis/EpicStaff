@@ -96,7 +96,22 @@ class Sandbox:
         self.stream = DockerStream(self.stream_host, self.stream_port)
 
     def _compose_cmd(self, *args: str) -> list[str]:
-        return ["docker", "compose", "-f", str(self.compose_file), *args]
+        if not hasattr(self, "_compose_command"):
+            try:
+                # Test if 'docker compose' works
+                subprocess.run(
+                    ["docker", "compose", "version"],
+                    capture_output=True,
+                    check=True,
+                    timeout=5,
+                )
+                self._compose_command = ["docker", "compose"]
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # Fall back to 'docker-compose'
+                self._compose_command = ["docker-compose"]
+
+        cmd = self._compose_command + ["-f", str(self.compose_file)] + list(args)
+        return cmd
 
     def _ensure_container(self):
         """Start the desktop container if it is not already running."""
