@@ -7,11 +7,11 @@ class NgrokTunnel(AbstractTunnelProvider):
     """
     The ngrok-specific implementation of abstract tunnel.
     """
-    def __init__(self, port: int, auth_token: Optional[str] = None):
+    def __init__(self, port: int, auth_token: Optional[str] = None, domain: Optional[str] = None):
         """
         Initialize the ngrok tunnel.
         """
-        super().__init__(port, auth_token)
+        super().__init__(port, auth_token, domain=domain)
         self._tunnel = None
         
         if not self._auth_token:
@@ -21,7 +21,16 @@ class NgrokTunnel(AbstractTunnelProvider):
 
     async def connect(self):
         print(f"Starting ngrok tunnel for localhost:{self._port}...")
-        self._tunnel = await asyncio.to_thread(ngrok.connect, self._port, "http")
+
+        if self._domain:
+            try:
+                self._tunnel = await asyncio.to_thread(
+                    ngrok.connect, self._port, "http", domain=self._domain
+                )
+            except TypeError:
+                self._tunnel = await asyncio.to_thread(ngrok.connect, self._port, "http")
+        else:
+            self._tunnel = await asyncio.to_thread(ngrok.connect, self._port, "http")
         self._public_url = self._tunnel.public_url
 
     async def disconnect(self):
