@@ -19,6 +19,7 @@ import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { WebScraperNodeModel } from '../../../core/models/node.model';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { CustomSelectComponent } from '../../../../shared/components/form-select/form-select.component';
+import { EsDurationPickerComponent } from '../../../../shared/components/epicstaff-components/es-duration-picker/es-duration-picker.component';
 import { InputMapComponent } from '../../input-map/input-map.component';
 import { FullEmbeddingConfig, FullEmbeddingConfigService } from '../../../../services/full-embedding.service';
 
@@ -26,8 +27,6 @@ interface InputMapPair {
     key: string;
     value: string;
 }
-
-const MAX_EXPIRATION_MINUTES = 10080; // 7 days
 
 @Component({
     standalone: true,
@@ -37,6 +36,7 @@ const MAX_EXPIRATION_MINUTES = 10080; // 7 days
         ReactiveFormsModule,
         CustomInputComponent,
         CustomSelectComponent,
+        EsDurationPickerComponent,
         InputMapComponent,
     ],
     template: `
@@ -87,15 +87,13 @@ const MAX_EXPIRATION_MINUTES = 10080; // 7 days
                         [errorMessage]="getEmbedderError()"
                     ></app-custom-select>
 
-                    <app-custom-input
-                        label="Time To Expire (minutes)"
-                        tooltipText="Optional. Leave blank for no expiration. Max 7 days."
+                    <es-duration-picker
+                        label="Time To Expire"
+                        tooltipText="Optional. Leave blank for no expiration."
                         formControlName="time_to_expired_minutes"
-                        placeholder="e.g. 60"
-                        type="number"
                         [activeColor]="activeColor"
                         [errorMessage]="getTimeToExpiredError()"
-                    ></app-custom-input>
+                    ></es-duration-picker>
                 </form>
             </div>
         </div>
@@ -170,7 +168,7 @@ export class WebScraperNodePanelComponent extends BaseSidePanel<WebScraperNodeMo
             ],
             time_to_expired_minutes: new FormControl(
                 this.toMinutesField(this.node().data.time_to_expired),
-                [Validators.min(1), Validators.max(MAX_EXPIRATION_MINUTES)]
+                [Validators.min(1)]
             ),
         });
 
@@ -230,9 +228,6 @@ export class WebScraperNodePanelComponent extends BaseSidePanel<WebScraperNodeMo
         }
         if (control.hasError('min')) {
             return 'Minimum is 1 minute or leave blank for none';
-        }
-        if (control.hasError('max')) {
-            return `Maximum is ${MAX_EXPIRATION_MINUTES} minutes`;
         }
         return '';
     }
