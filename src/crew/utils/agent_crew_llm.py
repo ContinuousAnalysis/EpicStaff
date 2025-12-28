@@ -176,6 +176,8 @@ def get_llm(
     if provider.lower() == "ollama":
         logger.info(f"Trying {provider} model '{model_name}' with num_ctx {num_ctx}.")
         try:
+            if isinstance(model_name, str) and model_name.startswith("ollama/"):
+                model_name = model_name[len("ollama/"):]
             return OllamaLoader.load(
                 model_name=model_name,
                 temperature=temperature,

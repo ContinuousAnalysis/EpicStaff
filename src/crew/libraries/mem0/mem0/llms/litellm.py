@@ -69,6 +69,27 @@ class LiteLLM(LLMBase):
         if not litellm.supports_function_calling(self.config.model):
             raise ValueError(f"Model '{self.config.model}' in litellm does not support function calling.")
 
+        # LiteLLM's Ollama prompt templating can crash with `IndexError: list index out of range`
+        # when tool-calling message payloads are present. As a defensive workaround, strip tool_calls
+        # from messages and avoid passing tools/tool_choice to LiteLLM for ollama/* models.
+        if isinstance(self.config.model, str) and self.config.model.startswith("ollama/"):
+            sanitized_messages = []
+            for msg in messages:
+                if isinstance(msg, dict) and "tool_calls" in msg:
+                    msg = {k: v for k, v in msg.items() if k != "tool_calls"}
+                sanitized_messages.append(msg)
+            messages = sanitized_messages
+            tools = None
+
+            # LiteLLM's Ollama prompt template expects at least one user message.
+            if not any(isinstance(m, dict) and m.get("role") == "user" for m in messages):
+                messages.append({"role": "user", "content": ""})
+
+            # Work around a LiteLLM Ollama prompt-template bug where an assistant-final
+            # message can cause an out-of-range index access.
+            if messages and isinstance(messages[-1], dict) and messages[-1].get("role") == "assistant":
+                messages.append({"role": "user", "content": ""})
+
         params = {
             "model": self.config.model,
             "messages": messages,

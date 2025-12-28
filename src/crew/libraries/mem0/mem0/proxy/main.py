@@ -57,7 +57,7 @@ class Completions:
     def create(
         self,
         model: str,
-        messages: List = [],
+        messages: Optional[List] = None,
         # Mem0 arguments
         user_id: Optional[str] = None,
         agent_id: Optional[str] = None,
@@ -100,6 +100,18 @@ class Completions:
         if not any([user_id, agent_id, run_id]):
             raise ValueError("One of user_id, agent_id, run_id must be provided")
 
+        if messages is None or not isinstance(messages, list) or len(messages) == 0:
+            raise ValueError(
+                "mem0.Chat.Completions.create requires a non-empty 'messages' list. "
+                "Passing empty messages can cause LiteLLM Ollama prompt templating to fail with 'list index out of range'."
+            )
+
+        if not any(isinstance(m, dict) and m.get("role") == "user" for m in messages):
+            raise ValueError(
+                "mem0.Chat.Completions.create requires at least one user message before calling the LLM. "
+                "(system-only messages are not supported in this flow)."
+            )
+
         if not litellm.supports_function_calling(model):
             raise ValueError(
                 f"Model '{model}' does not support function calling. Please use a model that supports function calling."
@@ -111,6 +123,34 @@ class Completions:
             relevant_memories = self._fetch_relevant_memories(messages, user_id, agent_id, run_id, filters, limit)
             logger.debug(f"Retrieved {len(relevant_memories)} relevant memories")
             prepared_messages[-1]["content"] = self._format_query_with_memories(messages, relevant_memories)
+
+        # LiteLLM's Ollama prompt templating can crash with `IndexError: list index out of range`
+        # when tool-calling message payloads are present. As a defensive workaround, strip tool_calls
+        # and avoid passing tools/tool_choice to LiteLLM for ollama/* models.
+        if isinstance(model, str) and model.startswith("ollama/"):
+            sanitized_messages = []
+            for msg in prepared_messages:
+                if isinstance(msg, dict) and "tool_calls" in msg:
+                    msg = {k: v for k, v in msg.items() if k != "tool_calls"}
+                sanitized_messages.append(msg)
+            prepared_messages = sanitized_messages
+            tools = None
+            tool_choice = None
+
+            # LiteLLM's Ollama prompt template expects at least one user message.
+            if not any(
+                isinstance(m, dict) and m.get("role") == "user" for m in prepared_messages
+            ):
+                prepared_messages.append({"role": "user", "content": ""})
+
+            # Work around a LiteLLM Ollama prompt-template bug where an assistant-final
+            # message can cause an out-of-range index access.
+            if (
+                prepared_messages
+                and isinstance(prepared_messages[-1], dict)
+                and prepared_messages[-1].get("role") == "assistant"
+            ):
+                prepared_messages.append({"role": "user", "content": ""})
 
         response = litellm.completion(
             model=model,

@@ -212,6 +212,7 @@ services:
       - REDIS_PORT=${REDIS_PORT}
       - MANAGER_HOST=${MANAGER_HOST}
       - MANAGER_PORT=${MANAGER_PORT}
+      - API_BASE=http://host.docker.internal:11434
       - HAYSTACK_TELEMETRY_ENABLED=${HAYSTACK_TELEMETRY_ENABLED}
       - ANONYMIZED_TELEMETRY=${ANONYMIZED_TELEMETRY}
       - EC_TELEMETRY=${EC_TELEMETRY}
@@ -251,6 +252,7 @@ services:
       - REDIS_PORT=${REDIS_PORT}
       - CODE_RESULT_CHANNEL=code_results
       - CODE_EXEC_TASK_CHANNEL=code_exec_tasks
+      - API_BASE=http://host.docker.internal:11434
       - BASE_VENV_PATH=${BASE_VENV_PATH}
       - OUTPUT_PATH=${OUTPUT_PATH}
     volumes:
@@ -264,6 +266,8 @@ services:
     stdin_open: true
     depends_on:
       - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   knowledge:
     image: knowledge
     build:

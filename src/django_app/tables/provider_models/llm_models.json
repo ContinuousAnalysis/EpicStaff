@@ -227,7 +227,8 @@
   ],
   "huggingface": [
     "huggingface/together/deepseek-ai/DeepSeek-R1",
-    "huggingface/meta-llama/Llama-3.3-70B-Instruct"
+    "huggingface/meta-llama/Llama-3.3-70B-Instruct",
+    "huggingface/ibm-granite/granite-4.0-micro"
   ],
   "hyperbolic": [
     "hyperbolic/deepseek-ai/DeepSeek-V3",
@@ -307,6 +308,8 @@
     "ollama/mistral-7B-Instruct-v0.2",
     "ollama/mistral-8x7B-Instruct-v0.1",
     "ollama/mixtral-8x22B-Instruct-v0.1",
+    "ollama/ibm/granite4:350m",
+    "ollama/ibm/granite4:3b",
     "ollama/llama2",
     "ollama/llama2:13b",
     "ollama/llama2:70b",

@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import os
+import socket
 import sys
 import threading
 import time
@@ -23,6 +24,14 @@ from crewai.utilities.exceptions.context_window_exceeding_exception import (
 )
 
 load_dotenv()
+
+
+def _running_in_docker() -> bool:
+    try:
+        host_ip = socket.gethostbyname("host.docker.internal")
+        return True if host_ip else False
+    except socket.gaierror:
+        return False
 
 
 class FilteredStream(io.TextIOBase):
@@ -331,11 +340,63 @@ class LLM:
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
 
+        if not isinstance(messages, list) or len(messages) == 0:
+            raise ValueError(
+                "LLM.call expected a non-empty list of chat messages; got empty or invalid 'messages'. "
+                "This can cause LiteLLM Ollama prompt templating to fail with 'list index out of range'."
+            )
+
+        # Basic sanity check: each message should be a dict with at least a role
+        for i, msg in enumerate(messages):
+            if not isinstance(msg, dict) or "role" not in msg:
+                raise ValueError(
+                    f"LLM.call expected messages[{i}] to be a dict with a 'role' key; got: {type(msg)}"
+                )
+
         with suppress_warnings():
             if callbacks and len(callbacks) > 0:
                 self.set_callbacks(callbacks)
 
             try:
+                # LiteLLM's Ollama prompt templating can crash with `IndexError: list index out of range`
+                # when tool-calling messages are present. As a defensive workaround, we strip tool-call
+                # fields from messages and avoid passing `tools` to LiteLLM for ollama/* models.
+                if isinstance(self.model, str) and self.model.startswith("ollama/"):
+                    sanitized_messages: List[Dict[str, Any]] = []
+                    for msg in messages:
+                        if isinstance(msg, dict) and "tool_calls" in msg:
+                            msg = {k: v for k, v in msg.items() if k != "tool_calls"}
+                        sanitized_messages.append(msg)
+                    messages = sanitized_messages
+                    tools = None
+
+                    # LiteLLM's Ollama prompt template expects at least one user message.
+                    # Some flows can produce system/assistant-only histories, which can trigger
+                    # `IndexError: list index out of range` inside LiteLLM.
+                    if not any(
+                        isinstance(m, dict) and m.get("role") == "user" for m in messages
+                    ):
+                        messages.append({"role": "user", "content": ""})
+
+                    # Work around a LiteLLM Ollama prompt-template bug where an assistant-final
+                    # message can cause an out-of-range index access.
+                    if messages and isinstance(messages[-1], dict) and messages[-1].get("role") == "assistant":
+                        messages.append({"role": "user", "content": ""})
+
+                if (
+                    isinstance(self.model, str)
+                    and self.model.startswith("ollama/")
+                    and self.api_base is None
+                    and self.base_url is None
+                ):
+                    env_api_base = os.environ.get("API_BASE") or os.environ.get(
+                        "OLLAMA_HOST"
+                    )
+                    if env_api_base:
+                        self.api_base = env_api_base
+                    elif _running_in_docker():
+                        self.api_base = "http://host.docker.internal:11434"
+
                 # --- 1) Prepare the parameters for the completion call
                 params = {
                     "model": self.model,

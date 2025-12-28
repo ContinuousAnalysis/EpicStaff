@@ -1,8 +1,17 @@
 import os
+import socket
 from typing import Any, Dict, List, Optional, Union
 
 from crewai.cli.constants import DEFAULT_LLM_MODEL, ENV_VARS, LITELLM_PARAMS
 from crewai.llm import LLM
+
+
+def _running_in_docker() -> bool:
+    try:
+        host_ip = socket.gethostbyname("host.docker.internal")
+        return True if host_ip else False
+    except socket.gaierror:
+        return False
 
 
 def create_llm(
@@ -168,6 +177,13 @@ def _llm_via_environment_or_fallback() -> Optional[LLM]:
                     print(
                         f"Expected env_var to be a dictionary, but got {type(env_var)}"
                     )
+
+    if (
+        set_provider == "ollama"
+        and _running_in_docker()
+        and llm_params.get("api_base") == "http://localhost:11434"
+    ):
+        llm_params["api_base"] = "http://host.docker.internal:11434"
 
     # Remove None values
     llm_params = {k: v for k, v in llm_params.items() if v is not None}
