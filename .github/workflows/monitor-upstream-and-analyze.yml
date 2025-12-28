@@ -260,9 +260,9 @@ jobs:
             done
 
             if $artifact_exists; then
-              echo "  Artifact already exists: ${artifact} - will skip"
+              echo " ✓ Artifact already exists: ${artifact} - will skip"
             else
-              echo "  Artifact missing: ${artifact} - will dispatch"
+              echo " ✗ Artifact missing: ${artifact} - will dispatch"
               commits_to_process+=("$commit")
               artifacts_to_process+=("$artifact")
             fi
