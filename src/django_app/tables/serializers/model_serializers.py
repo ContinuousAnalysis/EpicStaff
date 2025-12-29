@@ -2,6 +2,12 @@ from typing import Any, Literal
 from decimal import Decimal
 from itertools import chain
 
+from tables.validators.python_code_tool_config_validator import (
+    PythonCodeToolConfigValidator,
+)
+from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
+from tables.models.webhook_models import WebhookTrigger
+from tables.models.graph_models import WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.models.knowledge_models import Chunk, DocumentMetadata
 from tables.serializers.serializers import BaseToolSerializer
@@ -32,15 +38,19 @@ from tables.models import (
     GraphFile,
 )
 from rest_framework import serializers
-from tables.exceptions import BuiltInToolModificationError, ToolConfigSerializerError
+from tables.exceptions import (
+    BuiltInToolModificationError,
+    PythonCodeToolConfigSerializerError,
+    ToolConfigSerializerError,
+)
 from tables.models import PythonCode, PythonCodeResult, PythonCodeTool
 from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
+    AgentPythonCodeToolConfigs,
     AgentPythonCodeTools,
-    DefaultAgentConfig,
-    DefaultCrewConfig,
     TaskMcpTools,
+    TaskPythonCodeToolConfigs,
     TaskPythonCodeTools,
 )
 from tables.models.embedding_models import DefaultEmbeddingConfig
@@ -165,6 +175,7 @@ class PythonCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = PythonCode
         fields = "__all__"
+        read_only_fields = ["id"]
 
     def to_representation(self, instance):
         """Convert 'libraries' string to a list of strings for output."""
@@ -179,14 +190,29 @@ class PythonCodeSerializer(serializers.ModelSerializer):
     def to_internal_value(self, data):
         """Convert 'libraries' list of strings to a space-separated string for storage."""
         internal_value = super().to_internal_value(data)
-        libraries = data.get("libraries", [])
+        libraries = data.get("libraries") or []
         if isinstance(libraries, list):
             internal_value["libraries"] = " ".join(libraries)
         return internal_value
 
 
+class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PythonCodeToolConfigField
+        fields = [
+            "id",
+            "name",
+            "tool",
+            "description",
+            "data_type",
+            "required",
+            "secret",
+        ]
+
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
+    tool_fields = PythonCodeToolConfigFieldSerializer(many=True, read_only=True)
     built_in = serializers.ReadOnlyField()
 
     class Meta:
@@ -199,7 +225,9 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
             "python_code",
             "favorite",
             "built_in",
+            "tool_fields",
         ]
+        read_only_fields = ["id", "built_in", "tool_fields"]
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
@@ -228,8 +256,48 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
 
         return instance
 
-    def partial_update(self, instance, validated_data):
-        return self.update(instance, validated_data)
+
+class PythonCodeToolConfigSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, tool_config_validator=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.tool_config_validator = (
+            tool_config_validator
+            or PythonCodeToolConfigValidator(
+                validate_null_fields=True,
+                validate_missing_required_fields=True,
+            )
+        )
+
+    class Meta:
+        model = PythonCodeToolConfig
+        fields = "__all__"
+
+    def validate(self, data: dict):
+        name = data.get("name")
+        tool = data.get("tool")
+        configuration = data.get("configuration", dict())
+
+        if name is None:
+            raise PythonCodeToolConfigSerializerError(
+                "Name for configuration is not provided."
+            )
+        if tool is None:
+            raise PythonCodeToolConfigSerializerError("Tool is not provided.")
+        if configuration is None:
+            raise PythonCodeToolConfigSerializerError("Configuration is not provided.")
+
+        try:
+            validated_configuration = self.tool_config_validator.validate(
+                name=name,
+                tool=tool,
+                configuration=configuration,
+            )
+            data["configuration"] = validated_configuration
+        except ValidationError as e:
+            raise PythonCodeToolConfigSerializerError(e.message)
+
+        return data
 
 
 class McpToolSerializer(serializers.ModelSerializer):
@@ -295,12 +363,20 @@ class AgentReadSerializer(serializers.ModelSerializer):
     def get_tools(self, agent: Agent) -> list[dict]:
         tools = []
 
-        python_tools = PythonCodeTool.objects.filter(
+        python_code_tools = PythonCodeTool.objects.filter(
             id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id).values_list(
                 "pythoncodetool_id", flat=True
             )
         )
-        for tool in python_tools:
+        for tool in python_code_tools:
+            tools.append(BaseToolSerializer(tool).data)
+
+        python_code_tool_configs = PythonCodeToolConfig.objects.filter(
+            id__in=AgentPythonCodeToolConfigs.objects.filter(
+                agent_id=agent.id
+            ).values_list("pythoncodetoolconfig_id", flat=True)
+        )
+        for tool in python_code_tool_configs:
             tools.append(BaseToolSerializer(tool).data)
 
         configured_tools = ToolConfig.objects.filter(
@@ -371,6 +447,7 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         tools = {
             "configured-tool-list": [],
             "python-code-tool-list": [],
+            "python-code-tool-config-list": [],
             "mcp-tool-list": [],
         }
         for tool_id in tool_ids:
@@ -380,6 +457,8 @@ class AgentWriteSerializer(serializers.ModelSerializer):
                     tools["configured-tool-list"].append(pk)
                 elif prefix == "python-code-tool":
                     tools["python-code-tool-list"].append(pk)
+                elif prefix == "python-code-tool-config":
+                    tools["python-code-tool-config-list"].append(pk)
                 elif prefix == "mcp-tool":
                     tools["mcp-tool-list"].append(pk)
                 else:
@@ -412,6 +491,18 @@ class AgentWriteSerializer(serializers.ModelSerializer):
                 AgentPythonCodeTools(agent_id=agent.id, pythoncodetool_id=tool.id)
                 for tool in PythonCodeTool.objects.filter(
                     id__in=tools.get("python-code-tool-list", [])
+                )
+            ]
+        )
+
+        AgentPythonCodeToolConfigs.objects.filter(agent_id=agent.id).delete()
+        AgentPythonCodeToolConfigs.objects.bulk_create(
+            [
+                AgentPythonCodeToolConfigs(
+                    agent_id=agent.id, pythoncodetoolconfig_id=tool.id
+                )
+                for tool in PythonCodeToolConfig.objects.filter(
+                    id__in=tools.get("python-code-tool-config-list", [])
                 )
             ]
         )
@@ -458,6 +549,19 @@ class AgentWriteSerializer(serializers.ModelSerializer):
                 AgentPythonCodeTools(agent_id=instance.id, pythoncodetool_id=tool.id)
                 for tool in PythonCodeTool.objects.filter(
                     id__in=tools.get("python-code-tool-list", [])
+                )
+            ]
+        )
+
+        # python_code_tool_configs
+        AgentPythonCodeToolConfigs.objects.filter(agent_id=instance.id).delete()
+        AgentPythonCodeToolConfigs.objects.bulk_create(
+            [
+                AgentPythonCodeToolConfigs(
+                    agent_id=instance.id, pythoncodetoolconfig_id=tool.id
+                )
+                for tool in PythonCodeToolConfig.objects.filter(
+                    id__in=tools.get("python-code-tool-config-list", [])
                 )
             ]
         )
@@ -596,6 +700,7 @@ class TaskReadSerializer(serializers.ModelSerializer):
         all_task_tools = chain(
             task.task_configured_tool_list.all(),
             task.task_python_code_tool_list.all(),
+            task.task_python_code_tool_config_list.all(),
             task.task_mcp_tool_list.all(),
         )
         return [BaseToolSerializer(task_tool.tool).data for task_tool in all_task_tools]
@@ -692,10 +797,14 @@ class TaskWriteSerializer(serializers.ModelSerializer):
 
     def _update_task_tools(self, task: Task, tool_ids: list[str]):
         TaskPythonCodeTools.objects.filter(task=task).delete()
+        TaskPythonCodeToolConfigs.objects.filter(task=task).delete()
+
         TaskConfiguredTools.objects.filter(task=task).delete()
         TaskMcpTools.objects.filter(task=task).delete()
 
         python_code_tool_list = []
+        python_code_tool_config_list = []
+
         configured_tool_list = []
         mcp_tool_list = []
         for tool_id in tool_ids:
@@ -706,6 +815,11 @@ class TaskWriteSerializer(serializers.ModelSerializer):
                 instance = TaskPythonCodeTools(task=task, tool=python_code_tool)
                 instance.full_clean()
                 python_code_tool_list.append(instance)
+            elif prefix == "python-code-tool-config":
+                python_code_tool_config = PythonCodeToolConfig.objects.get(pk=id_)
+                instance = TaskPythonCodeToolConfigs(task=task, tool=python_code_tool_config)
+                instance.full_clean()
+                python_code_tool_config_list.append(instance)
             elif prefix == "configured-tool":
                 configured_tool = ToolConfig.objects.get(pk=id_)
                 instance = TaskConfiguredTools(task=task, tool=configured_tool)
@@ -718,6 +832,7 @@ class TaskWriteSerializer(serializers.ModelSerializer):
                 mcp_tool_list.append(instance)
 
         TaskPythonCodeTools.objects.bulk_create(python_code_tool_list)
+        TaskPythonCodeToolConfigs.objects.bulk_create(python_code_tool_config_list)
         TaskConfiguredTools.objects.bulk_create(configured_tool_list)
         TaskMcpTools.objects.bulk_create(mcp_tool_list)
 
@@ -1166,6 +1281,8 @@ class RealtimeAgentChatSerializer(serializers.ModelSerializer):
 
 
 class ConditionSerializer(serializers.ModelSerializer):
+    condition_group = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Condition
         fields = "__all__"
@@ -1173,18 +1290,11 @@ class ConditionSerializer(serializers.ModelSerializer):
 
 class ConditionGroupSerializer(serializers.ModelSerializer):
     conditions = ConditionSerializer(many=True, required=False)
+    decision_table_node = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = ConditionGroup
-        fields = [
-            "decision_table_node",
-            "group_name",
-            "group_type",
-            "expression",
-            "conditions",
-            "manipulation",
-            "next_node",
-        ]
+        fields = "__all__"
 
 
 class DecisionTableNodeSerializer(serializers.ModelSerializer):
@@ -1192,7 +1302,72 @@ class DecisionTableNodeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DecisionTableNode
-        fields = ["graph", "condition_groups", "node_name", "default_next_node"]
+        fields = "__all__"
+
+
+class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
+    python_code = PythonCodeSerializer()
+    webhook_trigger_path = serializers.CharField(required=False, allow_blank=True)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["webhook_trigger_path"] = (
+            instance.webhook_trigger.path if instance.webhook_trigger else None
+        )
+        return data
+
+    class Meta:
+        model = WebhookTriggerNode
+        exclude = ["webhook_trigger"]
+
+    def create(self, validated_data):
+        python_code_data = validated_data.pop("python_code")
+        python_code = PythonCode.objects.create(**python_code_data)
+
+        webhook_trigger_path = validated_data.pop("webhook_trigger_path", "").strip()
+        if not webhook_trigger_path:
+            webhook_trigger_path = "default"
+
+        webhook_trigger, _ = WebhookTrigger.objects.get_or_create(
+            path=webhook_trigger_path
+        )
+
+        webhook_trigger_node = WebhookTriggerNode.objects.create(
+            python_code=python_code,
+            webhook_trigger=webhook_trigger,
+            **validated_data,
+        )
+        return webhook_trigger_node
+
+    def update(self, instance, validated_data):
+        python_code_data = validated_data.pop("python_code", None)
+        if python_code_data:
+            python_code = instance.python_code
+            for attr, value in python_code_data.items():
+                setattr(python_code, attr, value)
+            python_code.save()
+
+        webhook_trigger_path = validated_data.pop("webhook_trigger_path", None)
+        if webhook_trigger_path is not None:
+            webhook_trigger_path = webhook_trigger_path.strip() or "default"
+            webhook_trigger, _ = WebhookTrigger.objects.get_or_create(
+                path=webhook_trigger_path
+            )
+            instance.webhook_trigger = webhook_trigger
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+    def partial_update(self, instance, validated_data):
+        return self.update(instance, validated_data)
+
+
+class WebhookTriggerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WebhookTrigger
+        fields = "__all__"
 
 
 class GraphSerializer(serializers.ModelSerializer):
@@ -1206,6 +1381,7 @@ class GraphSerializer(serializers.ModelSerializer):
     edge_list = EdgeSerializer(many=True, read_only=True)
     conditional_edge_list = ConditionalEdgeSerializer(many=True, read_only=True)
     llm_node_list = LLMNodeSerializer(many=True, read_only=True)
+    webhook_trigger_node_list = WebhookTriggerNodeSerializer(many=True, read_only=True)
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
@@ -1224,6 +1400,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "edge_list",
             "conditional_edge_list",
             "llm_node_list",
+            "webhook_trigger_node_list",
             "decision_table_node_list",
             "start_node_list",
             "end_node_list",
