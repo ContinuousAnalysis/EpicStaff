@@ -204,15 +204,15 @@ def computer_use_tool(input_data: ComputerUseToolInput):
             "steps": steps_output if "steps_output" in locals() else [],
             "context": input_data.context,
         }
-    finally:
-        # Stop the sandbox after execution completes or fails
-        if sandbox:
-            try:
-                logger.info("Stopping sandbox container...")
-                sandbox.kill()
-                logger.info("Sandbox container stopped successfully.")
-            except Exception as e:
-                logger.warning(f"Failed to stop sandbox container: {e}")
+    # finally:
+    #     # Stop the sandbox after execution completes or fails
+    #     if sandbox:
+    #         try:
+    #             logger.info("Stopping sandbox container...")
+    #             sandbox.kill()
+    #             logger.info("Sandbox container stopped successfully.")
+    #         except Exception as e:
+    #             logger.warning(f"Failed to stop sandbox container: {e}")
 
 
 # ===================================================================

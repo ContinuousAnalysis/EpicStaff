@@ -98,7 +98,6 @@ class Sandbox:
     def _compose_cmd(self, *args: str) -> list[str]:
         if not hasattr(self, "_compose_command"):
             try:
-                # Test if 'docker compose' works
                 subprocess.run(
                     ["docker", "compose", "version"],
                     capture_output=True,
@@ -107,7 +106,6 @@ class Sandbox:
                 )
                 self._compose_command = ["docker", "compose"]
             except (subprocess.CalledProcessError, FileNotFoundError):
-                # Fall back to 'docker-compose'
                 self._compose_command = ["docker-compose"]
 
         cmd = self._compose_command + ["-f", str(self.compose_file)] + list(args)
@@ -116,13 +114,11 @@ class Sandbox:
     def _ensure_container(self):
         """Start the desktop container if it is not already running."""
         if self.skip_compose:
-            # Assume desktop is already running; just return
             return
 
         if not self.compose_file.exists():
             raise SandboxError(f"docker-compose file not found at {self.compose_file}")
 
-        # Check if the container is already running
         try:
             result = subprocess.run(
                 ["docker", "inspect", "-f", "{{.State.Running}}", self.container_name],
