@@ -53,6 +53,7 @@ class ConfiguredToolData(BaseModel):
     name_alias: str
     tool_config: ToolConfigData
 
+
 class McpToolData(BaseModel):
     """
     Configuration for a FastMCP client connecting to remote MCP tools via SSE.
@@ -247,6 +248,12 @@ class FileExtractorNodeData(BaseModel):
     output_variable_path: str | None = None
 
 
+class AudioTranscriptionNodeData(BaseModel):
+    node_name: str
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
 class LLMNodeData(BaseModel):
     node_name: str
     llm_data: LLMData
@@ -299,6 +306,7 @@ class GraphData(BaseModel):
     webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
+    audio_transcription_node_list: list[AudioTranscriptionNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
