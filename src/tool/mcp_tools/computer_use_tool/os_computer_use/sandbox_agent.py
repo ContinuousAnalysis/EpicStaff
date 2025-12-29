@@ -320,21 +320,27 @@ x range: 0-{screen_width}, y range: 0-{screen_height}.""",
 
     @tool(
         description="Click on a specified UI element.",
-        params={"query": "Item or UI element on the screen to click"},
+        params={
+            "query": "Item or UI element on the screen to click with proper description"
+        },
     )
     def click(self, query):
         return self.click_element(query, self.sandbox.left_click)
 
     @tool(
         description="Double click on a specified UI element.",
-        params={"query": "Item or UI element on the screen to double click"},
+        params={
+            "query": "Item or UI element on the screen to double click with proper description"
+        },
     )
     def double_click(self, query):
         return self.click_element(query, self.sandbox.double_click, "double click")
 
     @tool(
         description="Right click on a specified UI element.",
-        params={"query": "Item or UI element on the screen to right click"},
+        params={
+            "query": "Item or UI element on the screen to right click with proper description"
+        },
     )
     def right_click(self, query):
         return self.click_element(query, self.sandbox.right_click, "right click")
@@ -342,7 +348,7 @@ x range: 0-{screen_width}, y range: 0-{screen_height}.""",
     @tool(
         description="Scroll up by a specified amount.",
         params={
-            "query": "Item or UI element on the screen to scroll up",
+            "query": "Item or UI element on the screen to scroll up with proper description",
             "amount": "Amount to scroll up (default is 1)",
         },
     )
@@ -356,7 +362,7 @@ x range: 0-{screen_width}, y range: 0-{screen_height}.""",
     @tool(
         description="Scroll down by a specified amount.",
         params={
-            "query": "Item or UI element on the screen to scroll down",
+            "query": "Item or UI element on the screen to scroll down with proper description",
             "amount": "Amount to scroll down (default is 1)",
         },
     )
@@ -366,6 +372,18 @@ x range: 0-{screen_width}, y range: 0-{screen_height}.""",
             lambda: self.sandbox.scroll_down(amount),
             "scroll down",
         )
+
+    @tool(
+        description="Move the mouse to specified (x, y) coordinates.",
+        params={
+            "x": "X coordinate to move the mouse to",
+            "y": "Y coordinate to move the mouse to",
+        },
+    )
+    def move_mouse(self, x: int, y: int):
+        """Move the mouse to specified (x, y) coordinates."""
+        self.sandbox.move_mouse(x, y)
+        return f"The mouse has been moved to ({x}, {y})."
 
     def append_screenshot(self):
         return vision_model.call(

@@ -5,7 +5,6 @@ from os_computer_use.llm_provider import (
     AnthropicBaseProvider,
     MistralBaseProvider,
 )
-from os_computer_use.osatlas_provider import OSAtlasProvider
 from os_computer_use.showui_provider import ShowUIProvider
 
 

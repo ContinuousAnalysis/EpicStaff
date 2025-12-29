@@ -1,11 +1,8 @@
-from openai import OpenAI
-from anthropic import Anthropic
-
-from PIL import Image
-import io
 import json
-import re
 import base64
+import io
+from litellm import completion
+from PIL import Image
 
 
 def Message(content, role="assistant"):
@@ -24,38 +21,38 @@ def parse_json(s):
         return None
 
 
-class LLMProvider:
+class LiteLLMProvider:
     """
-    The LLM provider is used to make calls to an LLM given a provider and model name, with optional tool use support
+    Universal LLM provider using LiteLLM to support multiple model providers
     """
 
-    # Class attributes for base URL and API key
-    base_url = None
-    api_key = None
+    def __init__(self, model, api_key=None, base_url=None):
+        """
+        Initialize with model name. LiteLLM handles provider detection automatically.
 
-    # Mapping of model aliases
-    aliases = {}
+        Examples:
+            - "gpt-4" or "gpt-3.5-turbo" for OpenAI
+            - "claude-3-5-sonnet-20241022" for Anthropic
+            - "mistral/mistral-large-latest" for Mistral
+            - "gemini/gemini-pro" for Google
+        """
+        self.model = model
+        self.api_key = api_key
+        self.base_url = base_url
+        print(f"Using LiteLLM with model: {self.model}")
 
-    # Initialize the API client
-    def __init__(self, model):
-        self.model = self.aliases.get(model, model)
-        print(f"Using {self.__class__.__name__} with {self.model}")
-        self.client = self.create_client()
-
-    # Convert our function schema to the provider's required format
     def create_function_schema(self, definitions):
+        """Convert function definitions to OpenAI-compatible tool schema"""
         functions = []
 
         for name, details in definitions.items():
             properties = {}
             required = []
 
-            # Safely handle params - ensure it's a dict
             params = details.get("params", {})
             if not isinstance(params, dict):
-                # If params is not a dict, log error and skip this tool
                 print(
-                    f"Warning: Tool '{name}' has invalid params format: {type(params)}. Expected dict."
+                    f"Warning: Tool '{name}' has invalid params format. Expected dict."
                 )
                 continue
 
@@ -63,29 +60,54 @@ class LLMProvider:
                 properties[param_name] = {"type": "string", "description": param_desc}
                 required.append(param_name)
 
-            function_def = self.create_function_def(name, details, properties, required)
+            function_def = {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": details["description"],
+                    "parameters": {
+                        "type": "object",
+                        "properties": properties,
+                        "required": required,
+                    },
+                },
+            }
             functions.append(function_def)
 
         return functions
 
-    # Represent a tool call as an object
     def create_tool_call(self, name, parameters):
+        """Represent a tool call as an object"""
         return {
             "type": "function",
             "name": name,
             "parameters": parameters,
         }
 
-    # Wrap a content block in a text or an image object
+    def create_image_block(self, image_data: bytes):
+        """Create an image block compatible with multiple providers"""
+        image_type = "png"
+        try:
+            with Image.open(io.BytesIO(image_data)) as img:
+                image_type = img.format.lower()
+        except Exception as e:
+            print(f"Error detecting image type: {e}")
+
+        encoded = base64.b64encode(image_data).decode("utf-8")
+        return {
+            "type": "image_url",
+            "image_url": {"url": f"data:image/{image_type};base64,{encoded}"},
+        }
+
     def wrap_block(self, block):
+        """Wrap a content block in text or image object"""
         if isinstance(block, bytes):
-            # Pass raw bytes so that imghdr can detect the image type properly.
             return self.create_image_block(block)
         else:
             return Text(block)
 
-    # Wrap all blocks in a given input message
     def transform_message(self, message):
+        """Wrap all blocks in a given input message"""
         content = message["content"]
         if isinstance(content, list):
             wrapped_content = [self.wrap_block(block) for block in content]
@@ -93,166 +115,75 @@ class LLMProvider:
         else:
             return message
 
-    # Create a chat completion using the API client
-    def completion(self, messages, **kwargs):
-        # Skip the tools parameter if it's None
-        filtered_kwargs = {k: v for k, v in kwargs.items() if v is not None}
-        # Wrap content blocks in image or text objects if necessary
-        new_messages = [self.transform_message(message) for message in messages]
-        # Call the inference provider
-        completion = self.client.create(
-            messages=new_messages, model=self.model, **filtered_kwargs
-        )
-        # Check for errors in the response
-        if hasattr(completion, "error"):
-            raise Exception("Error calling model: {}".format(completion.error))
-        return completion
+    def call(self, messages, functions=None, temperature=None, max_tokens=4096):
+        """
+        Make a call to any LLM provider through LiteLLM
 
+        Args:
+            messages: List of message dicts with 'role' and 'content'
+            functions: Optional dict of function definitions
+            temperature: Optional temperature parameter
+            max_tokens: Maximum tokens in response
 
-class OpenAIBaseProvider(LLMProvider):
+        Returns:
+            If functions provided: (response_text, tool_calls)
+            Otherwise: response_text
+        """
+        # Transform messages to wrap content blocks
+        transformed_messages = [self.transform_message(msg) for msg in messages]
 
-    def create_client(self):
-        return OpenAI(base_url=self.base_url, api_key=self.api_key).chat.completions
-
-    def create_function_def(self, name, details, properties, required):
-        return {
-            "type": "function",
-            "function": {
-                "name": name,
-                "description": details["description"],
-                "parameters": {
-                    "type": "object",
-                    "properties": properties,
-                    "required": required,
-                },
-            },
+        # Build kwargs for LiteLLM
+        kwargs = {
+            "model": self.model,
+            "messages": transformed_messages,
+            "max_tokens": max_tokens,
         }
 
-    def create_image_block(self, image_data: bytes):
-        # Use Pillow to detect the image type
-        image_type = "png"  # Default to PNG if detection fails
-        try:
-            with Image.open(io.BytesIO(image_data)) as img:
-                image_type = img.format.lower()
-        except Exception as e:
-            print(f"Error detecting image type: {e}")
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
 
-        # Base64-encode the raw image bytes.
-        encoded = base64.b64encode(image_data).decode("utf-8")
-        return {
-            "type": "image_url",
-            "image_url": {"url": f"data:image/{image_type};base64,{encoded}"},
-        }
+        if self.base_url:
+            kwargs["api_base"] = self.base_url
 
-    def call(self, messages, functions=None, temperature=None):
-        # If functions are provided, only return actions
-        tools = self.create_function_schema(functions) if functions else None
-        kwargs = {}
         if temperature is not None:
             kwargs["temperature"] = temperature
-        completion = self.completion(messages, tools=tools, **kwargs)
-        message = completion.choices[0].message
 
-        # Return response text and tool calls separately
+        # Add tools if provided
         if functions:
-            tool_calls = message.tool_calls or []
-            combined_tool_calls = [
-                self.create_tool_call(
-                    tool_call.function.name, parse_json(tool_call.function.arguments)
-                )
-                for tool_call in tool_calls
-                if parse_json(tool_call.function.arguments) is not None
-            ]
+            kwargs["tools"] = self.create_function_schema(functions)
+            kwargs["tool_choice"] = "auto"
 
-            # Sometimes, function calls are returned unparsed by the inference provider. This code parses them manually.
-            if message.content and not tool_calls:
-                tool_call_matches = re.search(r"\{.*\}", message.content)
-                if tool_call_matches:
-                    tool_call = parse_json(tool_call_matches.group(0))
-                    # Some models use "arguments" as the key instead of "parameters"
-                    parameters = tool_call.get("parameters", tool_call.get("arguments"))
-                    if tool_call.get("name") and parameters:
-                        combined_tool_calls.append(
-                            self.create_tool_call(tool_call.get("name"), parameters)
-                        )
-                        return None, combined_tool_calls
+        # Make the completion call
+        try:
+            response = completion(**kwargs)
+        except Exception as e:
+            raise Exception(f"Error calling model via LiteLLM: {e}")
 
-            return message.content, combined_tool_calls
+        # Extract message from response
+        message = response.choices[0].message
 
-        # Only return response text
-        else:
-            return message.content
-
-
-class AnthropicBaseProvider(LLMProvider):
-
-    def create_client(self):
-        return Anthropic(api_key=self.api_key).messages
-
-    def create_function_def(self, name, details, properties, required):
-        return {
-            "name": name,
-            "description": details["description"],
-            "input_schema": {
-                "type": "object",
-                "properties": properties,
-                "required": required,
-            },
-        }
-
-    def create_image_block(self, base64_image):
-        return {
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": "image/png",
-                "data": base64_image,
-            },
-        }
-
-    def call(self, messages, functions=None):
-        tools = self.create_function_schema(functions) if functions else None
-
-        # Move all messages with the system role to a system parameter
-        system = "\n".join(
-            msg.get("content") for msg in messages if msg.get("role") == "system"
-        )
-        messages = [msg for msg in messages if msg.get("role") != "system"]
-
-        # Call the Anthropic API
-        completion = self.completion(
-            messages, system=system, tools=tools, max_tokens=4096
-        )
-        text = "".join(getattr(block, "text", "") for block in completion.content)
-
-        # Return response text and tool calls separately
+        # Handle function calling mode
         if functions:
-            tool_calls = [
-                self.create_tool_call(block.name, block.input)
-                for block in completion.content
-                if block.type == "tool_use"
-            ]
-            return text, tool_calls
+            tool_calls = []
 
-        # Only return response text
+            # LiteLLM normalizes tool calls across providers
+            if hasattr(message, "tool_calls") and message.tool_calls:
+                for tool_call in message.tool_calls:
+                    if hasattr(tool_call, "function"):
+                        args = tool_call.function.arguments
+                        # Parse if string
+                        if isinstance(args, str):
+                            args = parse_json(args)
+                        if args is not None:
+                            tool_calls.append(
+                                self.create_tool_call(tool_call.function.name, args)
+                            )
+
+            # Get text content
+            text_content = message.content if hasattr(message, "content") else None
+
+            return text_content, tool_calls
+
+        # Handle normal text response
         else:
-            return text
-
-
-class MistralBaseProvider(OpenAIBaseProvider):
-    def create_function_def(self, name, details, properties, required):
-        # If description is wrapped in a dict, extract the inner string
-        if isinstance(details.get("description"), dict):
-            details["description"] = details["description"].get("description", "")
-        return super().create_function_def(name, details, properties, required)
-
-    def call(self, messages, functions=None):
-        if messages and messages[-1].get("role") == "assistant":
-            prefix = messages.pop()["content"]
-            if messages and messages[-1].get("role") == "user":
-                messages[-1]["content"] = (
-                    prefix + "\n" + messages[-1].get("content", "")
-                )
-            else:
-                messages.append({"role": "user", "content": prefix})
-        return super().call(messages, functions)
+            return message.content if hasattr(message, "content") else ""

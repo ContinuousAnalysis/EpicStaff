@@ -1,60 +1,64 @@
-# Define the models to use in the agent (env-driven)
+# Define the models to use in the agent (env-driven with LiteLLM)
 
 import os
-
 from dotenv import load_dotenv
-from os_computer_use import providers
+from os_computer_use.showui_provider import ShowUIProvider
+from os_computer_use.llm_provider import LiteLLMProvider
 
 
 load_dotenv()
 
 
 def _make_grounding_provider(name: str, model: str):
-    """Return a grounding-capable provider based on env settings."""
+    """
+    Return a grounding-capable provider based on env settings.
+    """
     name = (name or "").lower()
     if name in ("showui", "show_ui"):
-        return providers.ShowUIProvider()
-    if name in ("osatlas", "os_atlas", "atlas"):
-        return providers.OSAtlasProvider()
-    # Fallback to OpenAI-style vision provider using the model name
-    return providers.OpenAIProvider(model)
+        return ShowUIProvider()
+    return LiteLLMProvider(model)
 
 
 def _make_llm_provider(provider: str, model: str):
-    """Return an LLM provider (vision/action) based on env settings."""
+    """
+    Return an LLM provider using LiteLLM.
+
+    The provider parameter is optional - LiteLLM auto-detects from model name.
+    You can either:
+    1. Pass model with provider prefix: "anthropic/claude-3-5-sonnet-20241022"
+    2. Pass standard model names: "gpt-4o", "claude-3-5-sonnet-20241022", etc.
+    3. Use provider name to construct the model string
+    """
     name = (provider or "").lower()
-    if name in ("openai", ""):
-        return providers.OpenAIProvider(model)
-    if name == "anthropic":
-        return providers.AnthropicProvider(model)
-    if name == "fireworks":
-        return providers.FireworksProvider(model)
-    if name == "mistral":
-        return providers.MistralProvider(model)
-    if name == "groq":
-        return providers.GroqProvider(model)
-    if name == "moonshot":
-        return providers.MoonshotProvider(model)
-    if name == "deepseek":
-        return providers.DeepSeekProvider(model)
-    if name == "openrouter":
-        return providers.OpenRouterProvider(model)
-    if name == "llama":
-        return providers.LlamaProvider(model)
-    if name == "gemini":
-        return providers.GeminiProvider(model)
-    # Default
-    return providers.OpenAIProvider(model)
+
+    if name and name != "openai":
+        provider_prefix_map = {
+            "anthropic": "anthropic",
+            "fireworks": "fireworks_ai",
+            "mistral": "mistral",
+            "groq": "groq",
+            "deepseek": "deepseek",
+            "openrouter": "openrouter",
+            "gemini": "gemini",
+            "moonshot": "moonshot",
+            "llama": "ollama",
+        }
+
+        if name in provider_prefix_map:
+            prefix = provider_prefix_map[name]
+            if "/" not in model:
+                model = f"{prefix}/{model}"
+
+    return LiteLLMProvider(model)
 
 
-# Environment overrides (with sensible defaults)
 GROUNDING_PROVIDER = os.getenv("OCU_GROUNDING_PROVIDER", "showui")
 GROUNDING_MODEL = os.getenv("OCU_GROUNDING_MODEL", "gpt-4o")
 
-VISION_PROVIDER = os.getenv("OCU_VISION_PROVIDER", "openai")
+VISION_PROVIDER = os.getenv("OCU_VISION_PROVIDER", "")
 VISION_MODEL = os.getenv("OCU_VISION_MODEL", "gpt-4o")
 
-ACTION_PROVIDER = os.getenv("OCU_ACTION_PROVIDER", "openai")
+ACTION_PROVIDER = os.getenv("OCU_ACTION_PROVIDER", "")
 ACTION_MODEL = os.getenv("OCU_ACTION_MODEL", "gpt-4o")
 
 # Instantiate providers

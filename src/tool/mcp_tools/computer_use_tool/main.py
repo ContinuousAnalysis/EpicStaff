@@ -85,8 +85,8 @@ async def start(user_input=None, output_dir=None):
             #     "\nSandbox is still running. You can resume by running the agent again."
             # )
             # print(f"View the desktop at: http://localhost:6080/vnc.html")
-            sandbox.kill()  # Uncomment this line if you want to auto-stop the sandbox
-            print("Sandbox stopped.")
+            # sandbox.kill()  # Uncomment this line if you want to auto-stop the sandbox
+            print("Sandbox is still running.")
 
 
 def initialize_output_directory(directory_format):
