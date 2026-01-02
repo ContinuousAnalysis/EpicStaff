@@ -3,7 +3,7 @@ from tables.models.graph_models import TelegramTriggerNode
 from tables.exceptions import RegisterTelegramTriggerError
 from utils.singleton_meta import SingletonMeta
 import requests
-from django_app.settings import WEBHOOK_HOST_NAME
+from django_app.settings import WEBHOOK_HOST_NAME, WEBHOOK_PORT
 
 
 class TelegramTriggerService(metaclass=SingletonMeta):
@@ -16,7 +16,7 @@ class TelegramTriggerService(metaclass=SingletonMeta):
     def register_telegram_trigger(self, path: str, telegram_bot_api_key: str):
         try:
             webhook_tunnel_url = (
-                requests.get(f"http://{WEBHOOK_HOST_NAME}:8009/api/tunnel-url")
+                requests.get(f"http://{WEBHOOK_HOST_NAME}:{WEBHOOK_PORT}/api/tunnel-url")
                 .json()
                 .get("tunnel_url")
             )
