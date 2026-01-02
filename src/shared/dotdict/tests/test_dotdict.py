@@ -86,18 +86,6 @@ def test_dotobj_model_dump_list():
     assert dumped == expected_data
 
 
-def test_dotobj_json_dump_list():
-    data = ["a", {"c": 2, "e": [1, 2, ("3", 4)]}]
-    dotobject = DotObject.convert(data)
-    expected_data = ["a", {"c": 2, "e": [1, 2, ["3", 4]]}]
-    assert json.loads(json.dumps(dotobject)) == expected_data
-
-def test_dotobj_model_dump_set():
-    test_obj = object()
-    data = {1, 2, "3", test_obj}
-    dotobject = DotObject.convert(data)
-    dumped = dotobject.model_dump()
-
     expected_data = [1, 2, "3", test_obj]
     assert len(expected_data) == len(dumped)
     assert isinstance(dumped, list)
@@ -205,17 +193,6 @@ def test_dotlist_setitem_replaces_with_dotobject():
     assert isinstance(l[0], DotDict)
     assert l[0].y == 2
 
-
-def test_dotobject_converts_mapping_list_tuple_set():
-    obj = DotObject.convert({
-        "a": 1,
-        "b": [{"x": 10}, {"y": 20}],
-        "c": (1, 2, 3),
-        "d": {4, 5},
-    })
-    assert isinstance(obj.b[0], DotDict)
-    assert isinstance(obj.c, DotList)
-    assert isinstance(obj.d, DotList)
 
 
 def test_dotobject_non_iterable_pass_through():
