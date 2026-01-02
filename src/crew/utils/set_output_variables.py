@@ -31,7 +31,6 @@ def set_output_variables(
         value.update(output)
         return
     
-    from pdb import set_trace; set_trace()
     for key in keys[:-1]:
         if key.startswith("[") and key.endswith("]"):  # List index
             index = int(key[1:-1])
