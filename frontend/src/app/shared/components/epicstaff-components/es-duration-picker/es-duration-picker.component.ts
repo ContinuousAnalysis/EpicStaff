@@ -4,6 +4,9 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 
+const MAX_DAYS = 7;
+const MAX_TOTAL_MINUTES = MAX_DAYS * 24 * 60; // 10080 minutes
+
 @Component({
     selector: 'es-duration-picker',
     standalone: true,
@@ -14,8 +17,7 @@ import { MatIconModule } from '@angular/material/icon';
                 <div class="label-container" *ngIf="label">
                     <label>{{ label }}</label>
                     <mat-icon
-                        *ngIf="tooltipText"
-                        [matTooltip]="tooltipText"
+                        [matTooltip]="fullTooltipText"
                         matTooltipPosition="right"
                         matTooltipClass="custom-tooltip"
                         class="help-icon"
@@ -41,7 +43,7 @@ import { MatIconModule } from '@angular/material/icon';
                         (ngModelChange)="onTimeChange()"
                         (blur)="onTouched()"
                         class="duration-input days-input"
-                        [class.error]="errorMessage"
+                        [class.error]="errorMessage || hasValidationError"
                         [disabled]="disabled"
                         placeholder="0"
                         min="0"
@@ -55,7 +57,7 @@ import { MatIconModule } from '@angular/material/icon';
                         (ngModelChange)="onTimeChange()"
                         (blur)="onTouched()"
                         class="duration-select"
-                        [class.error]="errorMessage"
+                        [class.error]="errorMessage || hasValidationError"
                         [disabled]="disabled"
                     >
                         <option [ngValue]="null">--</option>
@@ -70,7 +72,7 @@ import { MatIconModule } from '@angular/material/icon';
                         (ngModelChange)="onTimeChange()"
                         (blur)="onTouched()"
                         class="duration-select"
-                        [class.error]="errorMessage"
+                        [class.error]="errorMessage || hasValidationError"
                         [disabled]="disabled"
                     >
                         <option [ngValue]="null">--</option>
@@ -80,11 +82,19 @@ import { MatIconModule } from '@angular/material/icon';
                 </div>
             </div>
 
-            <div class="total-display" *ngIf="!isEmpty">
+            <div class="total-display" *ngIf="!isEmpty && !hasValidationError">
                 Total: {{ totalMinutes }} minutes
             </div>
 
-            <div class="error-message" *ngIf="errorMessage">
+            <div class="error-message" *ngIf="!isValidInput">
+                Please enter a valid number of days
+            </div>
+
+            <div class="error-message" *ngIf="exceedsMaxDuration">
+                Maximum duration is 7 days (10,080 minutes)
+            </div>
+
+            <div class="error-message" *ngIf="errorMessage && !hasValidationError">
                 {{ errorMessage }}
             </div>
         </div>
@@ -261,24 +271,56 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
     private onChange: (value: number | null) => void = () => {};
     onTouched: () => void = () => {};
 
-    readonly hourOptions: number[] = Array.from({ length: 24 }, (_, i) => i); // 0-23
-    readonly minuteOptions: number[] = Array.from({ length: 60 }, (_, i) => i); // 0-59
+    readonly hourOptions: number[] = Array.from({ length: 24 }, (_, i) => i);
+    readonly minuteOptions: number[] = Array.from({ length: 60 }, (_, i) => i);
 
     get isEmpty(): boolean {
         return this.days === null && this.hours === null && this.minutes === null;
     }
 
     get totalMinutes(): number {
-        return (this.days ?? 0) * 1440 + (this.hours ?? 0) * 60 + (this.minutes ?? 0);
+        if (!this.isValidInput) return 0;
+        const d = this.days ?? 0;
+        const h = this.hours ?? 0;
+        const m = this.minutes ?? 0;
+        return d * 1440 + h * 60 + m;
+    }
+
+    get isValidInput(): boolean {
+        const d = this.days;
+        if (d !== null && (typeof d !== 'number' || isNaN(d) || d < 0 || !Number.isInteger(d))) {
+            return false;
+        }
+        return true;
+    }
+
+    get exceedsMaxDuration(): boolean {
+        if (!this.isValidInput) return false;
+        return this.totalMinutes > MAX_TOTAL_MINUTES;
+    }
+
+    get hasValidationError(): boolean {
+        return !this.isValidInput || this.exceedsMaxDuration;
+    }
+
+    get fullTooltipText(): string {
+        const maxNote = 'Maximum duration: 7 days.';
+        return this.tooltipText ? `${this.tooltipText} ${maxNote}` : maxNote;
     }
 
     onTimeChange(): void {
         if (this.isEmpty) {
             this.onChange(null);
-        } else {
-            const total = this.totalMinutes;
-            this.onChange(total > 0 ? total : null);
+            return;
         }
+
+        if (!this.isValidInput || this.exceedsMaxDuration) {
+            this.onChange(null);
+            return;
+        }
+
+        const total = this.totalMinutes;
+        this.onChange(total > 0 ? total : null);
     }
 
     clearDuration(): void {

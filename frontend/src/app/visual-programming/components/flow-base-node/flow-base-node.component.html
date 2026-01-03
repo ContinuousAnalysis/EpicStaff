@@ -8,13 +8,12 @@
     </div>
 </div>
 
-<!-- Control buttons positioned above the node -->
+
 <div
     class="actions"
     *ngIf="node.type !== NodeType.TABLE"
     (mousedown)="$event.stopPropagation()"
 >
-    <!-- Edit Button for Note -->
     <div
         *ngIf="node.type === NodeType.NOTE"
         class="action-button edit-button"
@@ -23,7 +22,6 @@
     >
         <i class="ti ti-edit"></i>
     </div>
-    <!-- Ungroup Icon -->
     <div
         *ngIf="node.type === NodeType.PROJECT"
         class="action-button ungroup-button"

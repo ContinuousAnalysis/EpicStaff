@@ -15,6 +15,7 @@ import { NodeModel } from '../../../core/models/node.model';
 import { PANEL_COMPONENT_MAP } from '../../../core/enums/node-panel.map';
 import { ShortcutListenerDirective } from '../../../core/directives/shortcut-listener.directive';
 import { SidePanelService } from '../../../services/side-panel.service';
+import { isNodeTypeExpandable } from '../../../core/config/expandable-node-types.config';
 
 @Component({
     standalone: true,
@@ -107,7 +108,7 @@ export class NodePanelShellComponent {
 
     public readonly shouldShowExpandButton = computed(() => {
         const node = this.node();
-        return node && node.type !== 'table';
+        return node && isNodeTypeExpandable(node.type);
     });
 
     protected readonly outlet = viewChild(NgComponentOutlet);
@@ -140,9 +141,10 @@ export class NodePanelShellComponent {
         effect(() => {
             const node = this.node();
             if (node) {
-                // Auto-expand for decision table nodes
                 if (node.type === 'table') {
                     this.isExpanded.set(true);
+                } else if (!isNodeTypeExpandable(node.type)) {
+                    this.isExpanded.set(false);
                 }
 
                 if (
@@ -165,7 +167,6 @@ export class NodePanelShellComponent {
                     }
                 }, 0);
             } else {
-                // Reset when no node is selected
                 this.panelInstance = null;
                 this.previousNodeId = null;
                 this.isUpdatingNode = false;
