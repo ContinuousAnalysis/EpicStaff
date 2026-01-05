@@ -35,7 +35,12 @@ class TelegramTriggerNode(BaseNode):
             # But this node is should map multiple outputs to state variables.
             # So we reuse it here to avoid code duplication.
             # I don't like it too, but whatever.
-            output = input_["telegram_payload"][field.parent].get(field.field_name)
+            output = (
+                input_.get("telegram_payload", {})
+                    .get(field.parent, {})
+                    .get(field.field_name)
+            )
+            
             if output is None:
                 logger.debug(
                     f"Field '{field.field_name}' not found in '{field.parent}'"
