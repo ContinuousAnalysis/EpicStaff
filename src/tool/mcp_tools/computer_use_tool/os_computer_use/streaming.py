@@ -79,7 +79,6 @@ class Sandbox:
     def __init__(self):
         # docker-compose.yaml is at the mcp_tools level (two parents up from computer_use_tool) by default
         self.project_root = Path(__file__).resolve().parents[2]
-        print(f"Project root: {self.project_root}")
         default_compose = self.project_root / "docker-compose.yaml"
 
         # Allow overriding the compose file path or skipping compose entirely

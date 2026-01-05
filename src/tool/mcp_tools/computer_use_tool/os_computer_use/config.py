@@ -9,6 +9,9 @@ from os_computer_use.llm_provider import LiteLLMProvider
 load_dotenv()
 
 
+API_KEY = os.getenv("API_KEY", "")
+
+
 def _make_grounding_provider(name: str, model: str):
     """
     Return a grounding-capable provider based on env settings.
@@ -16,7 +19,7 @@ def _make_grounding_provider(name: str, model: str):
     name = (name or "").lower()
     if name in ("showui", "show_ui"):
         return ShowUIProvider()
-    return LiteLLMProvider(model)
+    return LiteLLMProvider(model, api_key=API_KEY)
 
 
 def _make_llm_provider(provider: str, model: str):
@@ -49,7 +52,7 @@ def _make_llm_provider(provider: str, model: str):
             if "/" not in model:
                 model = f"{prefix}/{model}"
 
-    return LiteLLMProvider(model)
+    return LiteLLMProvider(model, api_key=API_KEY)
 
 
 GROUNDING_PROVIDER = os.getenv("OCU_GROUNDING_PROVIDER", "showui")
