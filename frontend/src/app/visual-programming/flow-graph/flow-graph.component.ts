@@ -163,7 +163,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         private readonly cd: ChangeDetectorRef,
         private readonly dialog: Dialog,
         private readonly toastService: ToastService
-    ) {}
+    ) { }
 
     public ngOnInit(): void {
         this.initializeFlowStateIfEmpty();
@@ -242,7 +242,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         });
     }
 
-    public onSave(): void {}
+    public onSave(): void { }
 
     ngDoCheck() {
         console.log('PERFORMANCE!');
@@ -1869,9 +1869,9 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                         },
                         collapsedPosition: childGroup.collapsedPosition
                             ? {
-                                  x: childGroup.collapsedPosition.x + deltaX,
-                                  y: childGroup.collapsedPosition.y + deltaY,
-                              }
+                                x: childGroup.collapsedPosition.x + deltaX,
+                                y: childGroup.collapsedPosition.y + deltaY,
+                            }
                             : childGroup.collapsedPosition,
                     });
                 }
@@ -2254,7 +2254,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             },
         });
 
-        dialogRef.closed.subscribe(() => {});
+        dialogRef.closed.subscribe(() => { });
     }
 
     public ngOnDestroy(): void {
