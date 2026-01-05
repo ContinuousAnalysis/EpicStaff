@@ -268,6 +268,11 @@ urlpatterns = [
         name="naive-rag-detail",
     ),
     path(
+        "naive-rag/<int:naive_rag_id>/document-configs/initialize/",
+        NaiveRagViewSet.as_view({"post": "initialize_configs"}),
+        name="naive-rag-initialize-configs",
+    ),
+    path(
         "naive-rag/<str:naive_rag_id>/document-configs/",
         NaiveRagDocumentConfigViewSet.as_view({"get": "list_configs"}),
         name="document-config-list",
