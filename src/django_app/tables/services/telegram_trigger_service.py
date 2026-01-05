@@ -23,7 +23,7 @@ class TelegramTriggerService(metaclass=SingletonMeta):
         except Exception as e:
             webhook_tunnel_url = None
         if webhook_tunnel_url is None:
-            raise RegisterTelegramTriggerError("No webhook tunnel available")
+            raise RegisterTelegramTriggerError("No webhook tunnel available", status_code=503)
 
         telegram_webhook_url = f"{webhook_tunnel_url}/webhooks/telegram-trigger/{path}/"
         try:

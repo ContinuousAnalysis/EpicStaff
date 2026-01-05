@@ -61,6 +61,7 @@ from tables.views.views import (
     InitRealtimeAPIView,
     ProcessDocumentChunkingView,
     ProcessCollectionEmbeddingView,
+    RegisterTelegramTriggerApiView,
     RunPythonCodeAPIView,
     TelegramTriggerNodeAvailableFieldsView,
     ToolListRetrieveUpdateGenericViewSet,
@@ -242,5 +243,10 @@ urlpatterns = [
         "telegram-trigger-available-fields/",
         TelegramTriggerNodeAvailableFieldsView.as_view(),
         name="telegram-trigger-available-fields",
+    ),
+    path(
+        "register-telegram-trigger/",
+        RegisterTelegramTriggerApiView.as_view(),
+        name="register-telegram-trigger",
     ),
 ]

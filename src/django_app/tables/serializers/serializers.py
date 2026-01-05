@@ -62,9 +62,15 @@ class BaseToolSerializer(serializers.Serializer):
             )
 
         return repr
-    
+
+
 class ProcessDocumentChunkingSerializer(serializers.Serializer):
     document_id = serializers.IntegerField(required=True)
 
+
 class ProcessCollectionEmbeddingSerializer(serializers.Serializer):
     collection_id = serializers.IntegerField(required=True)
+
+
+class RegisterTelegramTriggerSerializer(serializers.Serializer):
+    telegram_trigger_node_id = serializers.IntegerField(required=True)
