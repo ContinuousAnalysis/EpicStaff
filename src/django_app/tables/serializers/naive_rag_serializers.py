@@ -100,6 +100,59 @@ class DocumentConfigSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class DocumentConfigWithErrorsSerializer(serializers.ModelSerializer):
+    """
+    Serializer for displaying document configuration with validation errors.
+    Used in bulk update responses to show which configs failed and why.
+    """
+
+    document_id = serializers.IntegerField(
+        source="document.document_id", read_only=True
+    )
+    file_name = serializers.CharField(source="document.file_name", read_only=True)
+    errors = serializers.SerializerMethodField()
+
+    class Meta:
+        model = NaiveRagDocumentConfig
+        fields = [
+            "naive_rag_document_id",
+            "document_id",
+            "file_name",
+            "chunk_strategy",
+            "chunk_size",
+            "chunk_overlap",
+            "additional_params",
+            "status",
+            "total_chunks",
+            "total_embeddings",
+            "created_at",
+            "processed_at",
+            "errors",
+        ]
+        read_only_fields = [
+            "naive_rag_document_id",
+            "document_id",
+            "file_name",
+            "chunk_strategy",
+            "chunk_size",
+            "chunk_overlap",
+            "additional_params",
+            "status",
+            "total_chunks",
+            "total_embeddings",
+            "created_at",
+            "processed_at",
+        ]
+
+    def get_errors(self, obj):
+        """
+        Get validation errors for this config from context.
+        Returns empty list if no errors.
+        """
+        config_errors = self.context.get("config_errors", {})
+        return config_errors.get(obj.naive_rag_document_id, [])
+
+
 class DocumentConfigUpdateSerializer(serializers.Serializer):
     """
     Serializer for updating document config.

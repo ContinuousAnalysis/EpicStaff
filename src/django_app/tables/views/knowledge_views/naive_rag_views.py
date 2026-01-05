@@ -20,6 +20,7 @@ from tables.serializers.naive_rag_serializers import (
     NaiveRagCreateUpdateSerializer,
     NaiveRagDetailSerializer,
     DocumentConfigSerializer,
+    DocumentConfigWithErrorsSerializer,
     DocumentConfigUpdateSerializer,
     DocumentConfigBulkUpdateSerializer,
     DocumentConfigBulkDeleteSerializer,
@@ -152,19 +153,10 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
         """
         Get detailed NaiveRag info including all document configs.
 
-        Business Logic:
-        - Auto-initializes document configs for documents without configs
-        - Ensures all documents in the collection have default configs
-        - Idempotent: safe to call multiple times
-
         URL: GET /naive-rag/{id}/
         """
         try:
             naive_rag = NaiveRagService.get_naive_rag(int(pk))
-
-            # Auto-initialize configs for documents without configs
-            # This ensures all documents have configs before returning the response
-            NaiveRagService.init_document_configs(naive_rag_id=int(pk))
 
             serializer = NaiveRagDetailSerializer(naive_rag)
             return Response(serializer.data)
@@ -196,6 +188,75 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
         except Exception as e:
             return Response(
                 {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @swagger_auto_schema(
+        request_body=None,
+        responses={
+            201: "Configs created successfully",
+            200: "All documents already have configs",
+            404: "NaiveRag not found",
+            500: "Internal server error",
+        },
+    )
+    def initialize_configs(self, request, naive_rag_id=None):
+        """
+        Manually initialize document configs for documents without configs.
+
+        Business Logic:
+        - Creates configs for documents that DON'T have configs yet
+        - Useful for:
+          1. Restoring accidentally deleted configs
+          2. Adding configs for new files added to collection after RAG creation
+        - Existing configs are NOT modified
+        - Idempotent: safe to call multiple times
+        """
+        try:
+            naive_rag = NaiveRagService.get_naive_rag(int(naive_rag_id))
+
+            # Initialize configs for documents without configs
+            new_configs = NaiveRagService.init_document_configs(
+                naive_rag_id=int(naive_rag_id)
+            )
+
+            existing_count = (
+                NaiveRagDocumentConfig.objects.filter(naive_rag=naive_rag).count()
+                - len(new_configs)
+            )
+
+            new_configs_data = [
+                {
+                    "config_id": config.naive_rag_document_id,
+                    "document_id": config.document.document_id,
+                    "file_name": config.document.file_name,
+                    "file_type": config.document.file_type,
+                    "chunk_strategy": config.chunk_strategy,
+                }
+                for config in new_configs
+            ]
+
+            message = (
+                f"Initialized {len(new_configs)} new document config(s)"
+                if new_configs
+                else "All documents already have configs"
+            )
+
+            return Response(
+                {
+                    "message": message,
+                    "configs_created": len(new_configs),
+                    "configs_existing": existing_count,
+                    "new_configs": new_configs_data,
+                },
+                status=status.HTTP_201_CREATED if new_configs else status.HTTP_200_OK,
+            )
+
+        except NaiveRagNotFoundException as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to initialize configs: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -267,19 +328,17 @@ class NaiveRagDocumentConfigViewSet(
     @action(detail=False, methods=["put"], url_path="bulk-update")
     def bulk_update(self, request, naive_rag_id=None):
         """
-        Bulk update multiple document configs.
+        Bulk update multiple document configs with partial success support.
         Apply same parameters to selected configs by their config IDs.
+
+        Business Logic:
+        - Validates each config individually
+        - Updates configs that pass validation
+        - Returns errors for configs that fail validation
+        - Configs retain their current DB values when validation fails
 
         URL: PUT /api/naive-rag/{naive_rag_id}/document-configs/bulk-update/
 
-        Body:
-        {
-            "config_ids": [1, 2, 3],  // Required: naive_rag_document_config IDs
-            "chunk_size": 1500,       // Optional
-            "chunk_overlap": 200,     // Optional
-            "chunk_strategy": "character",  // Optional
-            "additional_params": {}   // Optional
-        }
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -287,21 +346,41 @@ class NaiveRagDocumentConfigViewSet(
         config_ids = serializer.validated_data.pop("config_ids")
 
         try:
-            configs = NaiveRagService.bulk_update_document_configs(
+            result = NaiveRagService.bulk_update_document_configs_with_partial_errors(
                 naive_rag_id=int(naive_rag_id),
                 config_ids=config_ids,
                 **serializer.validated_data,
             )
 
-            response_serializer = DocumentConfigSerializer(configs, many=True)
+            # Use the new serializer that includes errors field
+            response_serializer = DocumentConfigWithErrorsSerializer(
+                result["configs"],
+                many=True,
+                context={"config_errors": result["config_errors"]},
+            )
+
+            # Build status message
+            if result["failed_count"] == 0:
+                message = f"Successfully updated {result['updated_count']} config(s)"
+                response_status = status.HTTP_200_OK
+            elif result["updated_count"] == 0:
+                message = f"Failed to update {result['failed_count']} config(s)"
+                response_status = status.HTTP_207_MULTI_STATUS
+            else:
+                message = (
+                    f"Successfully updated {result['updated_count']} config(s), "
+                    f"Failed to update {result['failed_count']} config(s)"
+                )
+                response_status = status.HTTP_207_MULTI_STATUS
 
             return Response(
                 {
-                    "message": f"Successfully updated {len(configs)} config(s)",
-                    "updated_count": len(configs),
+                    "message": message,
+                    "updated_count": result["updated_count"],
+                    "failed_count": result["failed_count"],
                     "configs": response_serializer.data,
                 },
-                status=status.HTTP_200_OK,
+                status=response_status,
             )
 
         except DocumentConfigNotFoundException as e:
@@ -363,16 +442,9 @@ class NaiveRagDocumentConfigViewSet(
         """
         List all document configs for a NaiveRag.
 
-        Business Logic:
-        - Auto-initializes document configs for documents without configs
-        - Ensures all documents in the collection have default configs
-        - Idempotent: safe to call multiple times
-
         URL: GET /api/naive-rag/{naive_rag_id}/document-configs/
         """
         try:
-            NaiveRagService.init_document_configs(naive_rag_id=int(naive_rag_id))
-
             configs = NaiveRagService.get_document_configs_for_naive_rag(
                 int(naive_rag_id)
             )

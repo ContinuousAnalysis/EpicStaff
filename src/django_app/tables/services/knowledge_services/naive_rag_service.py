@@ -211,185 +211,6 @@ class NaiveRagService:
 
         return naive_rag
 
-    @staticmethod
-    @transaction.atomic
-    def create_document_config(
-        naive_rag_id: int,
-        document_id: int,
-        chunk_size: int,
-        chunk_overlap: int,
-        chunk_strategy: str,
-        additional_params: Optional[Dict[str, Any]] = None,
-    ) -> NaiveRagDocumentConfig:
-        """
-        Create configuration for a single document.
-
-        Args:
-            naive_rag_id: ID of NaiveRag
-            document_id: ID of document
-            chunk_size: Size of chunks
-            chunk_overlap: Overlap between chunks
-            chunk_strategy: Chunking strategy
-            additional_params: Additional strategy-specific params
-
-        Returns:
-            Created NaiveRagDocumentConfig
-        """
-        # Validate parameters
-        NaiveRagService.validate_chunk_parameters(
-            chunk_size, chunk_overlap, chunk_strategy
-        )
-
-        # Get NaiveRag
-        naive_rag = NaiveRagService.get_naive_rag(naive_rag_id)
-
-        # Get document and verify it belongs to same collection
-        try:
-            document = DocumentMetadata.objects.get(document_id=document_id)
-        except DocumentMetadata.DoesNotExist:
-            raise DocumentsNotFoundException([document_id])
-
-        if (
-            document.source_collection_id
-            != naive_rag.base_rag_type.source_collection_id
-        ):
-            raise InvalidChunkParametersException(
-                f"Document {document_id} does not belong to the same collection"
-            )
-
-        # Validate strategy for file type
-        NaiveRagService.validate_strategy_for_file_type(
-            chunk_strategy=chunk_strategy,
-            file_type=document.file_type,
-            file_name=document.file_name,
-        )
-
-        # Create or update config
-        config, created = NaiveRagDocumentConfig.objects.update_or_create(
-            naive_rag=naive_rag,
-            document=document,
-            defaults={
-                "chunk_size": chunk_size,
-                "chunk_overlap": chunk_overlap,
-                "chunk_strategy": chunk_strategy,
-                "additional_params": additional_params or {},
-                "status": NaiveRagDocumentConfig.NaiveRagDocumentStatus.NEW,
-            },
-        )
-
-        action = "Created" if created else "Updated"
-        logger.info(
-            f"{action} document config for document {document_id} "
-            f"in NaiveRag {naive_rag_id}"
-        )
-
-        return config
-
-    @staticmethod
-    @transaction.atomic
-    def bulk_create_document_configs(
-        naive_rag_id: int,
-        chunk_size: int,
-        chunk_overlap: int,
-        chunk_strategy: str,
-        additional_params: Optional[Dict[str, Any]] = None,
-        document_ids: Optional[List[int]] = None,
-    ) -> List[NaiveRagDocumentConfig]:
-        """
-        Bulk create/update document configs.
-        Applies same parameters to multiple documents.
-
-        IMPORTANT: Validates that chunk_strategy is compatible with EACH document's file type.
-
-        Args:
-            naive_rag_id: ID of NaiveRag
-            chunk_size: Size of chunks (applied to all)
-            chunk_overlap: Overlap between chunks (applied to all)
-            chunk_strategy: Chunking strategy (applied to all)
-            additional_params: Additional params (applied to all)
-            document_ids: Optional list of specific document IDs.
-                         If None, applies to ALL documents in collection.
-
-        Returns:
-            List of created/updated configs
-
-        Raises:
-            InvalidChunkParametersException: If strategy not compatible with any document's file type
-        """
-        # Validate parameters
-        NaiveRagService.validate_chunk_parameters(
-            chunk_size, chunk_overlap, chunk_strategy
-        )
-
-        # Get NaiveRag
-        naive_rag = NaiveRagService.get_naive_rag(naive_rag_id)
-        collection_id = naive_rag.base_rag_type.source_collection_id
-
-        # Get documents
-        if document_ids:
-            # Specific documents
-            documents = DocumentMetadata.objects.filter(
-                document_id__in=document_ids, source_collection_id=collection_id
-            )
-
-            found_ids = set(doc.document_id for doc in documents)
-            missing_ids = set(document_ids) - found_ids
-
-            if missing_ids:
-                raise DocumentsNotFoundException(list(missing_ids))
-        else:
-            # All documents in collection
-            documents = DocumentMetadata.objects.filter(
-                source_collection_id=collection_id
-            )
-
-        if not documents.exists():
-            logger.warning(
-                f"No documents found for bulk config in collection {collection_id}"
-            )
-            return []
-
-        # Validate strategy is compatible with ALL documents
-        incompatible_docs = []
-        for document in documents:
-            if not NaiveRagService.is_strategy_allowed_for_file_type(
-                chunk_strategy, document.file_type
-            ):
-                allowed = NaiveRagService.get_allowed_strategies_for_file_type(
-                    document.file_type
-                )
-                incompatible_docs.append(
-                    f"'{document.file_name}' ({document.file_type}) - allowed: {', '.join(sorted(allowed))}"
-                )
-
-        if incompatible_docs:
-            raise InvalidChunkParametersException(
-                f"Strategy '{chunk_strategy}' is not compatible with all documents. "
-                f"Incompatible documents:\n"
-                + "\n".join(f"  - {doc}" for doc in incompatible_docs)
-            )
-
-        # Create/update configs for all documents
-        configs = []
-        for document in documents:
-            config, created = NaiveRagDocumentConfig.objects.update_or_create(
-                naive_rag=naive_rag,
-                document=document,
-                defaults={
-                    "chunk_size": chunk_size,
-                    "chunk_overlap": chunk_overlap,
-                    "chunk_strategy": chunk_strategy,
-                    "additional_params": additional_params or {},
-                    "status": NaiveRagDocumentConfig.NaiveRagDocumentStatus.NEW,
-                },
-            )
-            configs.append(config)
-
-        logger.info(
-            f"Bulk configured {len(configs)} documents for NaiveRag {naive_rag_id}"
-        )
-
-        return configs
 
     @staticmethod
     @transaction.atomic
@@ -622,18 +443,106 @@ class NaiveRagService:
         return new_configs
 
     @staticmethod
-    @transaction.atomic
-    def bulk_update_document_configs(
+    def validate_field_value(
+        field_name: str,
+        value: Any,
+        current_config: Optional[NaiveRagDocumentConfig] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Validate a single field value and return specific error messages.
+
+        Args:
+            field_name: Name of the field ('chunk_size', 'chunk_overlap', 'chunk_strategy')
+            value: Value to validate
+            current_config: Current config (needed for file type validation)
+
+        Returns:
+            List of error dicts with 'field', 'value', and 'reason' keys.
+            Empty list if valid.
+        """
+        errors = []
+
+        if field_name == "chunk_size":
+            if value < MIN_CHUNK_SIZE:
+                errors.append(
+                    {
+                        "field": "chunk_size",
+                        "value": value,
+                        "reason": f"chunk_size too small (min {MIN_CHUNK_SIZE})",
+                    }
+                )
+            elif value > MAX_CHUNK_SIZE:
+                errors.append(
+                    {
+                        "field": "chunk_size",
+                        "value": value,
+                        "reason": f"chunk_size too large (max {MAX_CHUNK_SIZE})",
+                    }
+                )
+
+        elif field_name == "chunk_overlap":
+            if value < MIN_CHUNK_OVERLAP:
+                errors.append(
+                    {
+                        "field": "chunk_overlap",
+                        "value": value,
+                        "reason": f"chunk_overlap too small (min {MIN_CHUNK_OVERLAP})",
+                    }
+                )
+            elif value > MAX_CHUNK_OVERLAP:
+                errors.append(
+                    {
+                        "field": "chunk_overlap",
+                        "value": value,
+                        "reason": f"chunk_overlap too large (max {MAX_CHUNK_OVERLAP})",
+                    }
+                )
+
+        elif field_name == "chunk_strategy":
+            # Validate strategy exists
+            valid_strategies = [
+                choice[0] for choice in NaiveRagDocumentConfig.ChunkStrategy.choices
+            ]
+            if value not in valid_strategies:
+                errors.append(
+                    {
+                        "field": "chunk_strategy",
+                        "value": value,
+                        "reason": f"Invalid chunk_strategy. Must be one of: {', '.join(valid_strategies)}",
+                    }
+                )
+            # Validate strategy for file type if config provided
+            elif (
+                current_config
+                and not NaiveRagService.is_strategy_allowed_for_file_type(
+                    value, current_config.document.file_type
+                )
+            ):
+                allowed = NaiveRagService.get_allowed_strategies_for_file_type(
+                    current_config.document.file_type
+                )
+                errors.append(
+                    {
+                        "field": "chunk_strategy",
+                        "value": value,
+                        "reason": f"chunk_strategy '{value}' is not valid for file type '{current_config.document.file_type}'. Allowed: {', '.join(sorted(allowed))}",
+                    }
+                )
+
+        return errors
+
+    @staticmethod
+    def bulk_update_document_configs_with_partial_errors(
         naive_rag_id: int,
         config_ids: List[int],
         chunk_size: Optional[int] = None,
         chunk_overlap: Optional[int] = None,
         chunk_strategy: Optional[str] = None,
         additional_params: Optional[Dict[str, Any]] = None,
-    ) -> List[NaiveRagDocumentConfig]:
+    ) -> Dict[str, Any]:
         """
-        Bulk update multiple document configs by their config IDs.
-        Apply same parameters to all selected configs.
+        Bulk update multiple document configs with partial success support.
+        Updates valid configs and collects errors for invalid ones.
 
         Args:
             naive_rag_id: ID of NaiveRag (for validation)
@@ -644,11 +553,11 @@ class NaiveRagService:
             additional_params: New additional params (optional)
 
         Returns:
-            List of updated configs
-
-        Raises:
-            DocumentConfigNotFoundException: If any config ID not found or doesn't belong to naive_rag
-            InvalidChunkParametersException: If parameters invalid
+            Dict with:
+                - updated_count: Number of successfully updated configs
+                - failed_count: Number of failed configs
+                - configs: List of all configs with their current DB values
+                - config_errors: Dict mapping config_id to list of error dicts
         """
         if not config_ids:
             raise InvalidChunkParametersException("config_ids list cannot be empty")
@@ -687,49 +596,77 @@ class NaiveRagService:
                 "At least one field must be provided for update"
             )
 
-        # Determine final values for validation
-        first_config = configs[0]
-        final_chunk_size = updates.get("chunk_size", first_config.chunk_size)
-        final_chunk_overlap = updates.get("chunk_overlap", first_config.chunk_overlap)
-        final_chunk_strategy = updates.get(
-            "chunk_strategy", first_config.chunk_strategy
-        )
+        # Process each config individually
+        updated_count = 0
+        failed_count = 0
+        config_errors = {}
 
-        # Validate chunk parameters
-        NaiveRagService.validate_chunk_parameters(
-            final_chunk_size, final_chunk_overlap, final_chunk_strategy
-        )
+        for config in configs:
+            errors = []
 
-        # Validate strategy compatibility with all file types
-        if chunk_strategy is not None:
-            incompatible_docs = []
-            for config in configs:
-                if not NaiveRagService.is_strategy_allowed_for_file_type(
-                    chunk_strategy, config.document.file_type
-                ):
-                    allowed = NaiveRagService.get_allowed_strategies_for_file_type(
-                        config.document.file_type
-                    )
-                    incompatible_docs.append(
-                        f"'{config.document.file_name}' ({config.document.file_type}) - allowed: {', '.join(sorted(allowed))}"
-                    )
+            # Determine final values for this config
+            final_chunk_size = updates.get("chunk_size", config.chunk_size)
+            final_chunk_overlap = updates.get("chunk_overlap", config.chunk_overlap)
 
-            if incompatible_docs:
-                raise InvalidChunkParametersException(
-                    f"Strategy '{chunk_strategy}' is not compatible with all selected configs. "
-                    f"Incompatible documents:\n"
-                    + "\n".join(f"  - {doc}" for doc in incompatible_docs)
+            # Validate each field individually
+            if chunk_size is not None:
+                errors.extend(
+                    NaiveRagService.validate_field_value("chunk_size", chunk_size)
                 )
 
-        # Apply updates to all configs
-        for config in configs:
-            for field, value in updates.items():
-                setattr(config, field, value)
-            config.save()
+            if chunk_overlap is not None:
+                errors.extend(
+                    NaiveRagService.validate_field_value("chunk_overlap", chunk_overlap)
+                )
 
-        logger.info(f"Bulk updated {len(configs)} document configs")
+            if chunk_strategy is not None:
+                errors.extend(
+                    NaiveRagService.validate_field_value(
+                        "chunk_strategy", chunk_strategy, config
+                    )
+                )
 
-        return configs
+            # Validate chunk_overlap < chunk_size with final values
+            if final_chunk_overlap >= final_chunk_size:
+                errors.append(
+                    {
+                        "field": "chunk_overlap",
+                        "value": final_chunk_overlap,
+                        "reason": f"chunk_overlap ({final_chunk_overlap}) must be less than chunk_size ({final_chunk_size})",
+                    }
+                )
+
+            # If there are errors don't update config
+            if errors:
+                config_errors[config.naive_rag_document_id] = errors
+                failed_count += 1
+            else:
+                # Update this config
+                try:
+                    for field, value in updates.items():
+                        setattr(config, field, value)
+                    config.save()
+                    updated_count += 1
+                except Exception as e:
+                    config_errors[config.naive_rag_document_id] = [
+                        {
+                            "field": "general",
+                            "value": None,
+                            "reason": f"Failed to save config: {str(e)}",
+                        }
+                    ]
+                    failed_count += 1
+
+        logger.info(
+            f"Bulk update completed: {updated_count} successful, {failed_count} failed"
+        )
+
+        return {
+            "updated_count": updated_count,
+            "failed_count": failed_count,
+            "configs": configs,
+            "config_errors": config_errors,
+        }
 
     @staticmethod
     @transaction.atomic
