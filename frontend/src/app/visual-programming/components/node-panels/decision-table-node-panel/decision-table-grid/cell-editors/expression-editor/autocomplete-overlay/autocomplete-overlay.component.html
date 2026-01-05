@@ -1,12 +1,17 @@
 <div class="breadcrumbs" (click)="$event.stopPropagation()" (mousedown)="$event.preventDefault()">
-    <span class="crumb" (click)="onBreadcrumbClick($event)">state</span>
+    @if (currentPath().length > 0) {
+        <span class="back-btn" (click)="onBackClick($event)" (mousedown)="$event.preventDefault()">
+            <i class="ti ti-arrow-left"></i>
+        </span>
+    }
+    <span class="crumb" (click)="onCrumbClick($event, -1)" (mousedown)="$event.preventDefault()">state</span>
     @for (part of currentPath(); track $index) {
         <span class="separator">/</span>
-        <span class="crumb" (click)="onBreadcrumbClick($event)">{{ part }}</span>
+        <span class="crumb" (click)="onCrumbClick($event, $index)" (mousedown)="$event.preventDefault()">{{ part }}</span>
     }
 </div>
 <ul class="autocomplete-list" (mouseleave)="onMouseLeave()" (click)="$event.stopPropagation()" (mousedown)="$event.preventDefault()">
-    @for (item of filteredItems(); track item.key) {
+    @for (item of filteredItems(); track $index) {
         <li 
             [class.active]="item === activeItem()"
             (mousedown)="selectItem(item); $event.preventDefault(); $event.stopPropagation()"
@@ -19,8 +24,8 @@
             <span class="item-type">{{ typeof(item.value) }}</span>
 
             @if (item.type === 'group') {
-                <span class="item-icon" (mousedown)="onArrowClick($event, item); $event.preventDefault(); $event.stopPropagation()">
-                    <i class="ti ti-arrow-right"></i>
+                <span class="drill-arrow" (mousedown)="onArrowClick($event, item); $event.preventDefault(); $event.stopPropagation()">
+                    <i class="ti ti-chevron-right"></i>
                 </span>
             }
         </li>
@@ -31,8 +36,7 @@
 </ul>
 
 @if (hoveredItem(); as item) {
-    <div class="tooltip-wrapper" [style.top.px]="0">
+    <div class="tooltip-wrapper" [class.position-left]="tooltipPosition() === 'left'" [class.position-right]="tooltipPosition() === 'right'">
         <app-value-preview-tooltip [value]="item.value"></app-value-preview-tooltip>
     </div>
 }
-

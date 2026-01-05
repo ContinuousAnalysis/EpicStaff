@@ -15,6 +15,7 @@ import { DEFAULT_FILE_EXTRACTOR_NODE_PORTS } from '../rules/file-extractor-ports
 import { DEFAULT_END_NODE_PORTS } from '../rules/end-ports/end-ports-default-ports';
 import { NodeModel } from '../models/node.model';
 import { ConditionGroup } from '../models/decision-table.model';
+import { DEFAULT_AUDIO_TO_TEXT_NODE_PORTS } from '../rules/audio-to-text-node-ports/audio-to-text-node-ports';
 import { DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS } from '../rules/webhook-trigger-ports/webhook-trigger-default-ports';
 
 export const isDecisionPortRole = (role: string) =>
@@ -62,6 +63,8 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
             return DEFAULT_TABLE_NODE_PORTS;
         case NodeType.FILE_EXTRACTOR:
             return DEFAULT_FILE_EXTRACTOR_NODE_PORTS;
+        case NodeType.AUDIO_TO_TEXT:
+            return DEFAULT_AUDIO_TO_TEXT_NODE_PORTS;
         case NodeType.WEBHOOK_TRIGGER:
             return DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS;
         case NodeType.END:

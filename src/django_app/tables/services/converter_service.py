@@ -1,8 +1,10 @@
 from typing import Iterable
+from tables.models.python_models import PythonCodeToolConfig
 from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
     AgentPythonCodeTools,
+    AgentPythonCodeToolConfigs,
 )
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
@@ -164,6 +166,11 @@ class ConverterService(metaclass=SingletonMeta):
                 "pythoncodetool_id", flat=True
             )
         )
+        python_tool_configs = PythonCodeToolConfig.objects.filter(
+            id__in=AgentPythonCodeToolConfigs.objects.filter(
+                agent_id=agent.id
+            ).values_list("pythoncodetoolconfig_id", flat=True)
+        )
         configured_tools = ToolConfig.objects.filter(
             id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id).values_list(
                 "toolconfig_id", flat=True
@@ -175,7 +182,12 @@ class ConverterService(metaclass=SingletonMeta):
             )
         )
 
-        all_tools = list(python_tools) + list(configured_tools) + list(mcp_tools)
+        all_tools = (
+            list(python_tools)
+            + list(python_tool_configs)
+            + list(configured_tools)
+            + list(mcp_tools)
+        )
 
         return [self.convert_tool_to_base_tool_pydantic(tool) for tool in all_tools]
 
@@ -183,16 +195,21 @@ class ConverterService(metaclass=SingletonMeta):
         tools = (
             [entry.tool for entry in task.task_configured_tool_list.all()]
             + [entry.tool for entry in task.task_python_code_tool_list.all()]
+            + [entry.tool for entry in task.task_python_code_tool_config_list.all()]
             + [entry.tool for entry in task.task_mcp_tool_list.all()]
         )
         return [self.convert_tool_to_base_tool_pydantic(tool) for tool in tools]
 
     def convert_tool_to_base_tool_pydantic(
-        self, tool: PythonCodeTool | ToolConfig | McpTool
+        self,
+        tool: PythonCodeTool | ToolConfig | McpTool | PythonCodeToolConfig,
     ) -> BaseToolData:
         if isinstance(tool, PythonCodeTool):
             unique_name = f"python-code-tool:{tool.pk}"
             data = self.convert_python_code_tool_to_pydantic(tool)
+        elif isinstance(tool, PythonCodeToolConfig):
+            unique_name = f"python-code-tool-config:{tool.pk}"
+            data = self.convert_python_code_tool_config_to_pydantic(tool)
         elif isinstance(tool, ToolConfig):
             unique_name = f"configured-tool:{tool.pk}"
             data = self.convert_configured_tool_to_pydantic(tool)
@@ -289,11 +306,12 @@ class ConverterService(metaclass=SingletonMeta):
             code=python_code.code,
             entrypoint=python_code.entrypoint,
             libraries=libraries,
+            global_kwargs=python_code.global_kwargs,
         )
 
     def convert_python_code_tool_to_pydantic(
         self, python_code_tool: PythonCodeTool
-    ) -> PythonCodeData:
+    ) -> PythonCodeToolData:
         python_code: PythonCode = python_code_tool.python_code
 
         python_code_data = self.convert_python_code_to_pydantic(python_code)
@@ -305,6 +323,30 @@ class ConverterService(metaclass=SingletonMeta):
             python_code=python_code_data,
         )
 
+        return python_code_tool_data
+
+    def convert_python_code_tool_config_to_pydantic(
+        self, python_code_tool_config: PythonCodeToolConfig
+    ) -> PythonCodeToolData:
+        python_code_tool: PythonCodeTool = python_code_tool_config.tool
+        python_configuration = python_code_tool_config.configuration
+
+        assert isinstance(
+            python_configuration, dict
+        ), "Error reading python tool configuration. How did you even pass validation?"
+
+        python_code: PythonCode = python_code_tool.python_code
+        python_code.global_kwargs = python_configuration
+        python_code_data = self.convert_python_code_to_pydantic(
+            python_code_tool.python_code
+        )
+        python_code_tool_data = PythonCodeToolData(
+            id=python_code_tool.pk,
+            name=python_code_tool.name,
+            description=python_code_tool.description,
+            args_schema=python_code_tool.args_schema,
+            python_code=python_code_data,
+        )
         return python_code_tool_data
 
     def convert_configured_tool_to_pydantic(
