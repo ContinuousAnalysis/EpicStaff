@@ -32,6 +32,12 @@ For Browser Use tool only
 docker compose up browser_oi_tool up --build
 ~~~
 
+
+For GUI Tool Only
+~~~bash
+docker compose up desktop --build
+docker compose up open_computer_use --build
+~~~
 ---
 
 ## Ports
@@ -39,6 +45,7 @@ After startup, this ports are exposed:
 
 - `7001` – CLI tool API
 - `7002` - Browser Use tool API
+- `7003` - GUI Tool API
 - `6080` - VNC server for browser GUI (Browser tool)
 ---
 
@@ -70,6 +77,24 @@ curl -N -X POST http://localhost:7002/mcp   -H "Content-Type: application/json" 
     "method": "tools/call",
     "params": {
       "name": "browser_tool",
+      "arguments": {
+        "input_data": {
+          "context": "Optional context",
+          "instructions": ["List of your instructions"]
+        }
+      }
+    },
+    "id": 1
+  }'
+~~~
+
+**GUI Tool request:**
+~~~bash
+curl -N -X POST http://localhost:7003/mcp   -H "Content-Type: application/json"   -H "Accept: application/json, text/event-stream"   -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "computer_use_tool",
       "arguments": {
         "input_data": {
           "context": "Optional context",
@@ -199,6 +224,52 @@ def main(context: str, instructions: list):
     return result
 ~~~
 
+**GUI Tool:**
+Python code for tool
+~~~python
+import asyncio
+import json
+from fastmcp import Client
+
+def serialize_response(resp) -> str:
+    """
+    Extract only the structured_content from a FastMCP tool response
+    and serialize it as JSON.
+    """
+    try:
+        if hasattr(resp, "structured_content") and resp.structured_content is not None:
+            return json.dumps(resp.structured_content, ensure_ascii=False, indent=2)
+        elif isinstance(resp, dict):
+            return json.dumps(resp, ensure_ascii=False, indent=2)
+        else:
+            return str(resp)
+    except Exception:
+        return str(resp)
+
+async def call_gui_tool(context: str, instructions: list):
+    """Call the GUI tool via FastMCP client."""
+    url = "http://host.docker.internal:7003/mcp"
+    async with Client(transport=url, timeout=300, init_timeout=300) as client:
+        response = await client.call_tool(
+            "computer_use_tool",
+            {
+                "input_data": {
+                    "context": context,
+                    "instructions": instructions
+                }
+            }
+        )
+        return serialize_response(response)
+
+def main(context: str, instructions: list):
+    """Run async call synchronously."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(call_gui_tool(context, instructions))
+    loop.close()
+    return result
+~~~
+
 Input Description
 ~~~json
 {
@@ -233,6 +304,13 @@ Input Description
 - Executes a sequence of instructions
 - GUI available at http://127.0.0.1:6080/vnc.html
 - Browser is persistant within single tool call. New call - fresh browser
+
+**GUI Tool**
+- Automates interactions with Ubuntu system in desktop sandbox
+- Executes a sequence of instructions
+- GUI available at http://127.0.0.1:6080/vnc.html
+- Desktop sandbox should be launched separately and works until stoped by the user
+- Every tool call will use same desktop instance
 
 # Notes
 
