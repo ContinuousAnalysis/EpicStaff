@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-spinner',
+  selector: 'app-spinner2',
   standalone: true,
   imports: [CommonModule],
   template: `
@@ -38,7 +38,8 @@ import { CommonModule } from '@angular/common';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SpinnerComponent {
+//TODO use one spinner across app
+export class Spinner2Component {
   @Input() size = 24; // Default size in pixels
 
   /**
