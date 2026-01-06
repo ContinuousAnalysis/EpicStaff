@@ -38,12 +38,15 @@ const MAX_TOTAL_MINUTES = MAX_DAYS * 24 * 60; // 10080 minutes
             <div class="duration-inputs" [style.--active-color]="activeColor">
                 <div class="duration-field">
                     <input
+                        #daysInput
                         type="number"
                         [(ngModel)]="days"
                         (ngModelChange)="onTimeChange()"
+                        (input)="onDaysInput(daysInput)"
+                        (keydown)="onDaysKeydown($event)"
                         (blur)="onTouched()"
                         class="duration-input days-input"
-                        [class.error]="errorMessage || hasValidationError"
+                        [class.error]="errorMessage || hasValidationError || daysInputInvalid"
                         [disabled]="disabled"
                         placeholder="0"
                         min="0"
@@ -86,7 +89,7 @@ const MAX_TOTAL_MINUTES = MAX_DAYS * 24 * 60; // 10080 minutes
                 Total: {{ totalMinutes }} minutes
             </div>
 
-            <div class="error-message" *ngIf="!isValidInput">
+            <div class="error-message" *ngIf="!isValidInput || daysInputInvalid">
                 Please enter a valid number of days
             </div>
 
@@ -267,6 +270,7 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
     hours: number | null = null;
     minutes: number | null = null;
     disabled = false;
+    daysInputInvalid = false;
 
     private onChange: (value: number | null) => void = () => {};
     onTouched: () => void = () => {};
@@ -300,7 +304,7 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
     }
 
     get hasValidationError(): boolean {
-        return !this.isValidInput || this.exceedsMaxDuration;
+        return !this.isValidInput || this.exceedsMaxDuration || this.daysInputInvalid;
     }
 
     get fullTooltipText(): string {
@@ -308,13 +312,37 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
         return this.tooltipText ? `${this.tooltipText} ${maxNote}` : maxNote;
     }
 
+    onDaysKeydown(event: KeyboardEvent): void {
+        const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+        if (allowedKeys.includes(event.key) || event.ctrlKey || event.metaKey) {
+            return;
+        }
+        if (!/^\d$/.test(event.key)) {
+            event.preventDefault();
+        }
+    }
+
+    onDaysInput(input: HTMLInputElement): void {
+        const hasContent = input.value !== '' || input.validity.badInput;
+        const valueAsNum = input.valueAsNumber;
+        const isInvalid = hasContent && (
+            input.validity.badInput ||
+            !input.validity.valid ||
+            isNaN(valueAsNum) ||
+            valueAsNum < 0 ||
+            !Number.isInteger(valueAsNum)
+        );
+        this.daysInputInvalid = isInvalid;
+        this.cdr.markForCheck();
+    }
+
     onTimeChange(): void {
-        if (this.isEmpty) {
+        if (this.isEmpty && !this.daysInputInvalid) {
             this.onChange(null);
             return;
         }
 
-        if (!this.isValidInput || this.exceedsMaxDuration) {
+        if (!this.isValidInput || this.exceedsMaxDuration || this.daysInputInvalid) {
             this.onChange(null);
             return;
         }
@@ -327,6 +355,7 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
         this.days = null;
         this.hours = null;
         this.minutes = null;
+        this.daysInputInvalid = false;
         this.onChange(null);
     }
 
