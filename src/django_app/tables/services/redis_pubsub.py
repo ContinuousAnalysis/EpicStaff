@@ -30,6 +30,7 @@ GRAPH_MESSAGE_UPDATE_CHANNEL = os.environ.get(
     "GRAPH_MESSAGE_UPDATE_CHANNEL", "graph:message:update"
 )
 WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
+TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
 
 
 class RedisPubSub:
@@ -92,16 +93,16 @@ class RedisPubSub:
         try:
             logger.debug(f"Received webhook event: {message}")
             data = WebhookEventData.model_validate_json(message["data"])
-            if data.path.startswith("telegram-trigger/"):
+            if data.path.startswith(TELEGRAM_TRIGGER_PREFIX):
                 TelegramTriggerService().handle_telegram_trigger(
-                    url_path=data.path[len("telegram-trigger/") :-1], payload=data.payload
+                    url_path=data.path[len(TELEGRAM_TRIGGER_PREFIX) :-1], payload=data.payload
                 )
             else:
                 WebhookTriggerService().handle_webhook_trigger(
                     path=data.path, payload=data.payload
                 )
         except Exception as e:
-            logger.error(f"Error handling code_results message: {e}")
+            logger.error(f"Error handling webhook_events_handler message: {e}")
 
     def _save_organization_variables(self, session: Session, data: dict):
         """
