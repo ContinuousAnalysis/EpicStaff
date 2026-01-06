@@ -23,4 +23,4 @@ def telegram_trigger_post_save_handler(sender, instance: TelegramTriggerNode, **
         )
 
     except Exception as e:
-        logger.error(f"Error registering telegram bot {id_}: {e}", exc_info=True)
+        logger.exception("Error registering telegram bot {id_}", id_=id_)
