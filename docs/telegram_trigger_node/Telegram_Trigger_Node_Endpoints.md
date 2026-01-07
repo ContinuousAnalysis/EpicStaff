@@ -54,7 +54,7 @@ Used for individual management of field mappings if not handled via the parent n
 ```json
 {
   "telegram_trigger_node": 5,
-  "parent": "message.chat",
+  "parent": "message",
   "field_name": "id",
   "variable_path": "chat_id"
 }
