@@ -27,7 +27,8 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}      
+      - DB_NAME=${POSTGRES_DB}
+      - DJANGO_MEDIA_ROOT=${MEDIA_ROOT}  
       
       - WEBHOOK_USE_TUNNEL=${USE_TUNNEL}
       - WEBHOOK_TUNNEL=${WEBHOOK_TUNNEL}
@@ -36,6 +37,7 @@ services:
       - GUNICORN_THREADS=${GUNICORN_THREADS}
     volumes:
       - crew_config:/home/user/root/app/env_config
+      - media_data:/app/media
 
     networks:
       - backend-network
@@ -177,6 +179,9 @@ services:
       timeout: 2s
       retries: 5
       start_period: 5s
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
 
   redis-monitor:
     image: redis-monitor
@@ -223,6 +228,7 @@ services:
       - DB_CREW_PASSWORD=${DB_CREW_PASSWORD}
       - SESSION_STATUS_CHANNEL=sessions:session_status
       - CODE_RESULT_CHANNEL=code_results
+      - MAX_CONCURRENT_SESSIONS=${MAX_CONCURRENT_SESSIONS}
     volumes:
       - ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH}
       - ${DOCKER_BIN_PATH}:${DOCKER_BIN_PATH}
@@ -317,6 +323,7 @@ services:
       - WEBHOOK_TUNNEL=${WEBHOOK_TUNNEL}
       - WEBHOOK_AUTH=${WEBHOOK_AUTH}
       - NGROK_DOMAIN=${NGROK_DOMAIN}
+      - WEBHOOK_EMPTY_JSON_PATHS=${WEBHOOK_EMPTY_JSON_PATHS}
       - WEBHOOK_PORT=${WEBHOOK_PORT}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}  
@@ -337,6 +344,8 @@ volumes:
   crew_config:
     external: true
   
+  media_data:
+    external: true
 
 networks:
   backend-network:
@@ -344,3 +353,7 @@ networks:
 
   frontend-network:
     driver: bridge
+
+  mcp-network:
+    driver: bridge
+    external: true

@@ -13,8 +13,11 @@ from tables.views.model_view_sets import (
     GraphLightViewSet,
     GraphViewSet,
     McpToolViewSet,
+    PythonCodeToolConfigFieldViewSet,
+    PythonCodeToolConfigViewSet,
     PythonNodeViewSet,
     FileExtractorNodeViewSet,
+    AudioTranscriptionNodeViewSet,
     LLMNodeViewSet,
     StartNodeModelViewSet,
     RealtimeConfigModelViewSet,
@@ -45,6 +48,7 @@ from tables.views.model_view_sets import (
     RealtimeModelViewSet,
     RealtimeAgentViewSet,
     RealtimeAgentChatViewSet,
+    GraphFileViewSet,
     OrganizationViewSet,
     OrganizationUserViewSet,
     GraphOrganizationViewSet,
@@ -107,9 +111,11 @@ router.register(
 router.register(r"sources", DocumentMetadataViewSet)
 # Graphs
 router.register(r"graphs", GraphViewSet, basename="graphs")
+router.register(r"graph-files", GraphFileViewSet)
 router.register(r"crewnodes", CrewNodeViewSet)
 router.register(r"pythonnodes", PythonNodeViewSet)
 router.register(r"file-extractor-nodes", FileExtractorNodeViewSet)
+router.register(r"audio-transcription-nodes", AudioTranscriptionNodeViewSet)
 router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
@@ -143,7 +149,8 @@ router.register(r"graph-organization-users", GraphOrganizationUserViewSet)
 router.register(r"document-chunks", ChunkViewSet)
 router.register(r"webhook-trigger-nodes", WebhookTriggerNodeViewSet)
 router.register(r"webhook-triggers", WebhookTriggerViewSet)
-
+router.register(r"python-code-tool-configs", PythonCodeToolConfigViewSet)
+router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
