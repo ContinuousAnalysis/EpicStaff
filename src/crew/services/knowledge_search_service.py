@@ -12,13 +12,11 @@ from services.graph.events import StopEvent
 from utils.singleton_meta import SingletonMeta
 from services.redis_service import RedisService, SyncPubsubSubscriber
 from models.request_models import (
-    KnowledgeSearchMessage,
-    KnowledgeQueryResultDTO,
-    BaseKnowledgeSearchMessage,
     RagSearchConfig,
     NaiveRagSearchConfig,
     GraphRagSearchConfig,
-    KnowledgeQueryResultDTO,
+    BaseKnowledgeSearchMessage,
+    BaseKnowledgeSearchMessageResponse,
 )
 
 
@@ -64,7 +62,6 @@ class RagSearchConfigFactory:
 
 
 class KnowledgeSearchService:
-
     """
     Service for searching knowledge using different RAG implementations.
     """
@@ -199,10 +196,9 @@ class KnowledgeSearchService:
                 f"Expected format: 'rag_type:id' (e.g., 'naive:6')"
             ) from e
 
-
     def _add_knowledges_to_graph_message(
         self,
-        knowledge_results: KnowledgeQueryResultDTO,
+        knowledge_results: BaseKnowledgeSearchMessageResponse,
     ):
         chunks_data_list = [chunk.model_dump() for chunk in knowledge_results.chunks]
         knowledge_results_data = {
@@ -211,9 +207,8 @@ class KnowledgeSearchService:
             "agent_id": self.agent_id,
             "collection_id": knowledge_results.collection_id,
             "retrieved_chunks": knowledge_results.retrieved_chunks,
-            "similarity_threshold": knowledge_results.similarity_threshold,
-            "search_limit": knowledge_results.search_limit,
-            "knowledge_query": knowledge_results.knowledge_query,
+            "knowledge_query": knowledge_results.query,
+            "rag_search_config": knowledge_results.rag_search_config.model_dump(),
             "chunks": chunks_data_list,
         }
         graph_message = GraphMessage(
@@ -247,9 +242,10 @@ class KnowledgeSearchReceiver:
         """
         try:
             data: dict = json.loads(message["data"])
-            if data.get("uuid") == self.execution_uuid:
+            validated_results = BaseKnowledgeSearchMessageResponse.model_validate(data)
+            if validated_results.uuid == self.execution_uuid:
                 logger.info(f"Search results received for UUID: {self.execution_uuid}")
-                self._results = data
-                logger.debug(f"Results: {self._results.get('results', [])}")
+                self._results = validated_results
+                logger.debug(f"Results: {self._results.results}")
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Error parsing search results: {e}")

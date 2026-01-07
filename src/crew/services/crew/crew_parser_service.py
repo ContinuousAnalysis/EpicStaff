@@ -81,9 +81,10 @@ class CrewParserService(metaclass=SingletonMeta):
             function_calling_llm = parse_llm(
                 agent_data.function_calling_llm, stop_event=stop_event
             )
-        rag_search_config=None
+        rag_search_config = None
         if agent_data.rag_search_config:
             rag_search_config = agent_data.rag_search_config.model_dump()
+
         knowledge_search_service = KnowledgeSearchService(
             redis_service=self.redis_service,
             session_id=session_id,
@@ -113,7 +114,7 @@ class CrewParserService(metaclass=SingletonMeta):
             "knowledge_collection_id": agent_data.knowledge_collection_id,
             "rag_type_id": agent_data.rag_type_id,
             "rag_search_config": rag_search_config,
-            "search_knowledges": self.knowledge_search_service.search_knowledges,
+            "search_knowledges": knowledge_search_service.search_knowledges,
             "stop_event": stop_event,
         }
 
