@@ -22,7 +22,8 @@ async def main():
             tunnel_provider = get_provider(
                 provider_name=settings.WEBHOOK_TUNNEL,
                 port=settings.WEBHOOK_PORT,
-                auth_token=settings.WEBHOOK_AUTH
+                auth_token=settings.WEBHOOK_AUTH,
+                domain=settings.NGROK_DOMAIN,
             )
         except ProviderNotFoundException as e:
             logger.error(f"Error: {e}", file=sys.stderr)
