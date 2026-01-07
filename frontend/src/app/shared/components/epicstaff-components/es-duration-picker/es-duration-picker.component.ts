@@ -272,7 +272,7 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
     disabled = false;
     daysInputInvalid = false;
 
-    private onChange: (value: number | null) => void = () => {};
+    private onChange: (value: number) => void = () => {};
     onTouched: () => void = () => {};
 
     readonly hourOptions: number[] = Array.from({ length: 24 }, (_, i) => i);
@@ -284,10 +284,11 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
 
     get totalMinutes(): number {
         if (!this.isValidInput) return 0;
-        const d = this.days ?? 0;
-        const h = this.hours ?? 0;
-        const m = this.minutes ?? 0;
-        return d * 1440 + h * 60 + m;
+        const d = Math.max(0, this.days ?? 0);
+        const h = Math.max(0, this.hours ?? 0);
+        const m = Math.max(0, this.minutes ?? 0);
+        const total = d * 1440 + h * 60 + m;
+        return Math.max(0, total);
     }
 
     get isValidInput(): boolean {
@@ -338,17 +339,17 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
 
     onTimeChange(): void {
         if (this.isEmpty && !this.daysInputInvalid) {
-            this.onChange(null);
+            this.onChange(0);
             return;
         }
 
         if (!this.isValidInput || this.exceedsMaxDuration || this.daysInputInvalid) {
-            this.onChange(null);
+            this.onChange(0);
             return;
         }
 
         const total = this.totalMinutes;
-        this.onChange(total > 0 ? total : null);
+        this.onChange(total);
     }
 
     clearDuration(): void {
@@ -356,24 +357,26 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
         this.hours = null;
         this.minutes = null;
         this.daysInputInvalid = false;
-        this.onChange(null);
+        this.onChange(0);
     }
 
     writeValue(totalMinutes: number | null): void {
-        if (totalMinutes === null || totalMinutes === undefined || totalMinutes <= 0) {
+        if (!totalMinutes || totalMinutes <= 0) {
             this.days = null;
             this.hours = null;
             this.minutes = null;
+            this.daysInputInvalid = false;
         } else {
             this.days = Math.floor(totalMinutes / 1440);
             const remainingAfterDays = totalMinutes % 1440;
             this.hours = Math.floor(remainingAfterDays / 60);
             this.minutes = remainingAfterDays % 60;
+            this.daysInputInvalid = false;
         }
         this.cdr.markForCheck();
     }
 
-    registerOnChange(fn: (value: number | null) => void): void {
+    registerOnChange(fn: (value: number) => void): void {
         this.onChange = fn;
     }
 
