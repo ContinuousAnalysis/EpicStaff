@@ -150,6 +150,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+TELEGRAM_TRIGGER_FIELDS_PATH = (
+    BASE_DIR / "tables" / "utils"/ "data" / "telegram_fields.json"
+)
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -207,3 +210,5 @@ if WEBHOOK_USE_TUNNEL:
     WEBHOOK_TUNNEL = os.getenv("WEBHOOK_TUNNEL", None)
 else:
     WEBHOOK_TUNNEL = None
+WEBHOOK_HOST_NAME = os.getenv("WEBHOOK_HOST_NAME", "localhost")
+WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", 8009))

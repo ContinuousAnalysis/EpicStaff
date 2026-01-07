@@ -7,7 +7,7 @@ from loguru import logger
 router = APIRouter()
 
 @router.post(
-    "/webhooks/{custom_path}",
+    "/webhooks/{custom_path:path}",
     summary="Receives a generic webhook"
 )
 async def handle_webhook(

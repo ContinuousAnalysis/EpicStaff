@@ -179,3 +179,7 @@ class ProcessDocumentChunkingSerializer(serializers.Serializer):
 
 class ProcessCollectionEmbeddingSerializer(serializers.Serializer):
     collection_id = serializers.IntegerField(required=True)
+
+
+class RegisterTelegramTriggerSerializer(serializers.Serializer):
+    telegram_trigger_node_id = serializers.IntegerField(required=True)
