@@ -159,6 +159,7 @@ async def searching(redis_service: RedisService):
                 result = collection_processor_service.search(
                     rag_id=data.rag_id,
                     rag_type=data.rag_type,
+                    collection_id=data.collection_id,
                     uuid=data.uuid,
                     query=data.query,
                     rag_search_config=data.rag_search_config,

@@ -4,7 +4,10 @@ import cachetools
 
 from psycopg2.errors import ForeignKeyViolation
 
-from models.redis_models import NaiveRagSearchConfig
+from models.redis_models import (
+    NaiveRagSearchConfig,
+    BaseKnowledgeSearchMessageResponse,
+)
 from rag.base_rag_strategy import BaseRAGStrategy
 from services.chunk_document_service import ChunkDocumentService
 from settings import UnitOfWork
@@ -25,6 +28,8 @@ class NaiveRAGStrategy(BaseRAGStrategy):
     All operations work with naive_rag_id (NOT collection_id).
     Uses ORMNaiveRagStorage for RAG-specific operations.
     """
+
+    RAG_TYPE = "naive"
 
     def _get_cached_embedder(self, naive_rag_id: int):
         """
@@ -56,6 +61,7 @@ class NaiveRAGStrategy(BaseRAGStrategy):
         rag_id: int,
         uuid: str,
         query: str,
+        collection_id: int,
         rag_search_config: NaiveRagSearchConfig,
     ):
         """
@@ -83,12 +89,17 @@ class NaiveRAGStrategy(BaseRAGStrategy):
         uow = UnitOfWork()
         with uow.start() as uow_ctx:
             # Search using naive_rag_storage
-            knowledge_snippets = uow_ctx.naive_rag_storage.search(
+
+            knowledge_chunk_list = uow_ctx.naive_rag_storage.search(
                 naive_rag_id=naive_rag_id,
                 embedded_query=embedded_query,
                 limit=search_limit,
                 similarity_threshold=similarity_threshold,
             )
+
+            knowledge_snippets = []
+            for chunk_data in knowledge_chunk_list:
+                knowledge_snippets.append(chunk_data.chunk_text)
 
             # Logging results
             if knowledge_snippets:
@@ -102,11 +113,19 @@ class NaiveRAGStrategy(BaseRAGStrategy):
             else:
                 logger.warning(f"NO KNOWLEDGE CHUNKS WERE EXTRACTED!")
 
-        return {
-            "uuid": uuid,
-            "rag_id": naive_rag_id,
-            "results": knowledge_snippets,
-        }
+        knowledge_query_results = BaseKnowledgeSearchMessageResponse(
+            rag_id=naive_rag_id,
+            rag_type=self.RAG_TYPE,
+            collection_id=collection_id,
+            uuid=uuid,
+            retrieved_chunks=len(knowledge_chunk_list),
+            query=query,
+            chunks=knowledge_chunk_list,
+            rag_search_config=rag_search_config,
+            results=knowledge_snippets,
+        )
+
+        return knowledge_query_results.model_dump()
 
     def process_rag_indexing(self, rag_id: int):
         """

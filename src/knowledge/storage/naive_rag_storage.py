@@ -11,6 +11,7 @@ from models.orm import (
     NaiveRagEmbedding,
     DocumentMetadata,
 )
+from models.redis_models import KnowledgeChunkResponse
 
 
 class ORMNaiveRagStorage(BaseORMStorage):
@@ -74,9 +75,7 @@ class ORMNaiveRagStorage(BaseORMStorage):
     # ==================== Document Config Operations ====================
 
     def get_naive_rag_document_configs(
-        self,
-        naive_rag_id: int,
-        status: Optional[str | tuple[str]] = None
+        self, naive_rag_id: int, status: Optional[str | tuple[str]] = None
     ) -> List[NaiveRagDocumentConfig]:
         """
         Get all document configs for a NaiveRag, optionally filtered by status.
@@ -92,8 +91,9 @@ class ORMNaiveRagStorage(BaseORMStorage):
             query = (
                 self.session.query(NaiveRagDocumentConfig)
                 .options(
-                    selectinload(NaiveRagDocumentConfig.document)
-                    .selectinload(DocumentMetadata.document_content)
+                    selectinload(NaiveRagDocumentConfig.document).selectinload(
+                        DocumentMetadata.document_content
+                    )
                 )
                 .filter(NaiveRagDocumentConfig.naive_rag_id == naive_rag_id)
             )
@@ -128,12 +128,14 @@ class ORMNaiveRagStorage(BaseORMStorage):
             return (
                 self.session.query(NaiveRagDocumentConfig)
                 .options(
-                    joinedload(NaiveRagDocumentConfig.document)
-                    .joinedload(DocumentMetadata.document_content),
+                    joinedload(NaiveRagDocumentConfig.document).joinedload(
+                        DocumentMetadata.document_content
+                    ),
                     joinedload(NaiveRagDocumentConfig.naive_rag),
                 )
                 .filter(
-                    NaiveRagDocumentConfig.naive_rag_document_id == naive_rag_document_config_id
+                    NaiveRagDocumentConfig.naive_rag_document_id
+                    == naive_rag_document_config_id
                 )
                 .one_or_none()
             )
@@ -223,7 +225,8 @@ class ORMNaiveRagStorage(BaseORMStorage):
             deleted = (
                 self.session.query(NaiveRagChunk)
                 .filter(
-                    NaiveRagChunk.naive_rag_document_config_id == naive_rag_document_config_id
+                    NaiveRagChunk.naive_rag_document_config_id
+                    == naive_rag_document_config_id
                 )
                 .delete()
             )
@@ -235,7 +238,9 @@ class ORMNaiveRagStorage(BaseORMStorage):
             )
             return False
 
-    def get_chunks_by_config_id(self, naive_rag_document_config_id: int) -> List[NaiveRagChunk]:
+    def get_chunks_by_config_id(
+        self, naive_rag_document_config_id: int
+    ) -> List[NaiveRagChunk]:
         """
         Get all chunks for a document config, attached to the current session.
 
@@ -249,7 +254,8 @@ class ORMNaiveRagStorage(BaseORMStorage):
             chunks = (
                 self.session.query(NaiveRagChunk)
                 .filter(
-                    NaiveRagChunk.naive_rag_document_config_id == naive_rag_document_config_id
+                    NaiveRagChunk.naive_rag_document_config_id
+                    == naive_rag_document_config_id
                 )
                 .order_by(NaiveRagChunk.chunk_index)
                 .all()
@@ -302,7 +308,8 @@ class ORMNaiveRagStorage(BaseORMStorage):
         """
         try:
             stmt = delete(NaiveRagEmbedding).where(
-                NaiveRagEmbedding.naive_rag_document_config_id == naive_rag_document_config_id
+                NaiveRagEmbedding.naive_rag_document_config_id
+                == naive_rag_document_config_id
             )
             self.session.execute(stmt)
 
@@ -320,7 +327,7 @@ class ORMNaiveRagStorage(BaseORMStorage):
         embedded_query: List[float],
         limit: int = 3,
         similarity_threshold: float = 0.2,
-    ) -> List[str]:
+    ) -> List[KnowledgeChunkResponse]:
         """
         Search for similar chunks in a NaiveRag using vector similarity.
 
@@ -341,7 +348,7 @@ class ORMNaiveRagStorage(BaseORMStorage):
 
             # Join through document configs to filter by naive_rag_id
             stmt = (
-                select(NaiveRagChunk.text, similarity_expr)
+                select(NaiveRagChunk.text, similarity_expr, DocumentMetadata.file_name)
                 .join(
                     NaiveRagEmbedding,
                     NaiveRagEmbedding.chunk_id == NaiveRagChunk.chunk_id,
@@ -350,6 +357,10 @@ class ORMNaiveRagStorage(BaseORMStorage):
                     NaiveRagDocumentConfig,
                     NaiveRagDocumentConfig.naive_rag_document_id
                     == NaiveRagChunk.naive_rag_document_config_id,
+                )
+                .join(
+                    DocumentMetadata,
+                    DocumentMetadata.document_id == NaiveRagDocumentConfig.document_id,
                 )
                 .where(NaiveRagDocumentConfig.naive_rag_id == naive_rag_id)
                 .order_by(similarity_expr.desc())
@@ -362,8 +373,16 @@ class ORMNaiveRagStorage(BaseORMStorage):
             for i, r in enumerate(results, start=1):
                 similarity = r.similarity
                 if similarity is not None and similarity >= similarity_threshold:
-                    logger.info(f"Chunk #{i} (similarity: {similarity:.4f}): {r.text[:100]}...")
-                    final_results.append(r.text)
+                    logger.info(
+                        f"Chunk #{i} (similarity: {similarity:.4f}): {r.text[:100]}..."
+                    )
+                    chunk_data = KnowledgeChunkResponse(
+                        chunk_order=i,
+                        chunk_similarity=round(similarity, 4),
+                        chunk_text=r.text,
+                        chunk_source=r.file_name,
+                    )
+                    final_results.append(chunk_data)
 
             logger.info(
                 f"Returning {len(final_results)} chunks for NaiveRag {naive_rag_id} "

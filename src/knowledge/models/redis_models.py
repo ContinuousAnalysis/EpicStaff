@@ -1,7 +1,6 @@
 from pydantic import BaseModel
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal, Union, List
 from pydantic import BaseModel, Field
-
 
 
 # RAG Search Configuration Models
@@ -33,18 +32,41 @@ RagSearchConfig = Annotated[
 
 
 class BaseKnowledgeSearchMessage(BaseModel):
-      """
-      Base message for searching in a RAG implementation.
+    """
+    Base message for searching in a RAG implementation.
 
-      Uses discriminated union for rag_search_config to automatically
-      handle different RAG types (naive, graph, etc.) during serialization.
-      """
-      collection_id: int
-      rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
-      rag_type: str  # Type of RAG ("naive", "graph", etc.)
-      uuid: str
-      query: str
-      rag_search_config: RagSearchConfig  # Discriminated union automatically handles subtypes
+    Uses discriminated union for rag_search_config to automatically
+    handle different RAG types (naive, graph, etc.) during serialization.
+    """
+
+    collection_id: int
+    rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
+    rag_type: str  # Type of RAG ("naive", "graph", etc.)
+    uuid: str
+    query: str
+    rag_search_config: (
+        RagSearchConfig  # Discriminated union automatically handles subtypes
+    )
+
+
+class KnowledgeChunkResponse(BaseModel):
+    chunk_order: int
+    chunk_similarity: float
+    chunk_text: str
+    chunk_source: str = ""
+
+
+class BaseKnowledgeSearchMessageResponse(BaseModel):
+    rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
+    rag_type: str
+    collection_id: int
+    uuid: str
+    retrieved_chunks: int
+    query: str
+    chunks: List[KnowledgeChunkResponse]
+    rag_search_config: RagSearchConfig
+    # Support backwards compatibility
+    results: List[str] = []  # deprecated, use chunks instead
 
 
 class ChunkDocumentMessage(BaseModel):
@@ -54,11 +76,13 @@ class ChunkDocumentMessage(BaseModel):
     Updated: Uses naive_rag_document_config_id instead of document_id.
     Each RAG implementation can chunk the same document differently.
     """
+
     naive_rag_document_config_id: int
 
 
 class ChunkDocumentMessageResponse(BaseModel):
     """Response message for document chunking."""
+
     naive_rag_document_config_id: int
     success: bool
     message: str | None = None
@@ -73,6 +97,7 @@ class ProcessRagIndexingMessage(BaseModel):
     - rag_type: Type of RAG ("naive", "graph", etc.)
     - collection_id: Source collection ID (for logging)
     """
+
     rag_id: int
     rag_type: str  # "naive" or "graph"
     collection_id: int

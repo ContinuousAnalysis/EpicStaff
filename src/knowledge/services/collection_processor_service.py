@@ -22,11 +22,16 @@ class CollectionProcessorService(metaclass=SingletonMeta):
         self,
         rag_id: int,
         rag_type: str,
+        collection_id: int,
         uuid: str,
         query: str,
         rag_search_config: BaseRagSearchConfig,
     ):
         strategy = self._get_strategy(rag_type)
         return strategy.search(
-            rag_id=rag_id, uuid=uuid, query=query, rag_search_config=rag_search_config
+            rag_id=rag_id,
+            collection_id=collection_id,
+            uuid=uuid,
+            query=query,
+            rag_search_config=rag_search_config,
         )
