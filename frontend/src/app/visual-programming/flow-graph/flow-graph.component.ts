@@ -801,12 +801,16 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     public onNodePanelSaved(updatedNode: NodeModel): void {
-        console.log(
-            'Parent received save event. Calling service with:',
-            updatedNode
-        );
+        console.log('[FlowGraph] onNodePanelSaved called');
+        console.log('[FlowGraph] Updated node:', updatedNode);
+        console.log('[FlowGraph] Node type:', updatedNode.type);
+        console.log('[FlowGraph] Node data:', updatedNode.data);
+        
         this.flowService.updateNode(updatedNode);
+        console.log('[FlowGraph] updateNode called on flowService');
+        
         this.sidePanelService.clearSelection();
+        console.log('[FlowGraph] Side panel selection cleared');
     }
 
     public onNodePanelAutosaved(updatedNode: NodeModel): void {

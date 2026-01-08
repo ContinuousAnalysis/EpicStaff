@@ -188,16 +188,26 @@ export class NodePanelShellComponent {
     }
 
     private saveSidePanel(): void {
-        console.log('Saving side panel');
+        console.log('[NodePanelShell] Saving side panel');
+        console.log('[NodePanelShell] Panel instance:', this.panelInstance);
+        console.log('[NodePanelShell] Has onSave method:', this.panelInstance && typeof this.panelInstance.onSave === 'function');
+        
         if (
             this.panelInstance &&
             typeof this.panelInstance.onSave === 'function'
         ) {
-            console.log('Panel instance found');
+            console.log('[NodePanelShell] Calling onSave()');
             const updatedNode = this.panelInstance.onSave();
+            console.log('[NodePanelShell] Updated node:', updatedNode);
+            
             if (updatedNode) {
+                console.log('[NodePanelShell] Emitting save event with node:', updatedNode);
                 this.save.emit(updatedNode);
+            } else {
+                console.warn('[NodePanelShell] onSave returned null/undefined, not emitting');
             }
+        } else {
+            console.warn('[NodePanelShell] No panel instance or onSave method');
         }
     }
 

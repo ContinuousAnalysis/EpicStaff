@@ -420,14 +420,22 @@ export class FlowService {
         updatedNode: NodeModel,
         options?: { skipDecisionTableReset?: boolean }
     ) {
+        console.log('[FlowService] updateNode called');
+        console.log('[FlowService] Updated node:', updatedNode);
+        console.log('[FlowService] Options:', options);
+        
         const { skipDecisionTableReset = false } = options || {};
         const currentFlow = this.flowSignal();
+        console.log('[FlowService] Current flow nodes count:', currentFlow.nodes.length);
+        
         const existingNodeIndex = currentFlow.nodes.findIndex(
             (n) => n.id === updatedNode.id
         );
+        console.log('[FlowService] Existing node index:', existingNodeIndex);
 
         const existingNode =
             existingNodeIndex >= 0 ? currentFlow.nodes[existingNodeIndex] : null;
+        console.log('[FlowService] Existing node:', existingNode);
 
         const shouldResetDecisionTableConnections =
             updatedNode.type === NodeType.TABLE &&
@@ -437,24 +445,31 @@ export class FlowService {
             );
 
         this.flowSignal.update((flow: FlowModel) => {
+            console.log('[FlowService] Inside flowSignal.update');
             // Find the index of the node to update
             const index: number = flow.nodes.findIndex(
                 (n) => n.id === updatedNode.id
             );
+            console.log('[FlowService] Node index in update:', index);
+            
             if (index < 0) {
-                console.warn('Node not found in flow:', updatedNode.id);
+                console.warn('[FlowService] Node not found in flow:', updatedNode.id);
                 return flow; // Return unchanged flow if node isn't found
             }
 
             // Create a new array, replacing just the updated node
             const updatedNodes: NodeModel[] = [...flow.nodes];
             updatedNodes[index] = updatedNode;
+            console.log('[FlowService] Node updated at index:', index);
+            console.log('[FlowService] Updated node data:', updatedNodes[index]);
 
             // Return a new FlowModel object (signals need new references)
-            return {
+            const newFlow = {
                 ...flow,
                 nodes: updatedNodes,
             };
+            console.log('[FlowService] Returning new flow');
+            return newFlow;
         });
 
         if (shouldResetDecisionTableConnections && !skipDecisionTableReset) {

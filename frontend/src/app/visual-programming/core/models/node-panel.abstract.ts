@@ -35,14 +35,24 @@ export abstract class BaseSidePanel<T extends NodeModel> {
     }
 
     public onSave(): T | null {
+        console.log('[BaseSidePanel] onSave called');
+        console.log('[BaseSidePanel] Form exists:', !!this.form);
+        console.log('[BaseSidePanel] Form valid:', this.form?.valid);
+        console.log('[BaseSidePanel] Form value:', this.form?.value);
+        console.log('[BaseSidePanel] Form errors:', this.form?.errors);
+        
         if (this.form && this.form.invalid) {
+            console.warn('[BaseSidePanel] Form is invalid, returning original node');
             const originalNode = this.node();
             if (originalNode) {
                 return originalNode;
             }
             return null;
         }
+        
+        console.log('[BaseSidePanel] Calling createUpdatedNode()');
         const updatedNode = this.createUpdatedNode();
+        console.log('[BaseSidePanel] Created updated node:', updatedNode);
         return updatedNode;
     }
 

@@ -168,7 +168,7 @@ export class WebScraperNodePanelComponent extends BaseSidePanel<WebScraperNodeMo
             ],
             time_to_expired_minutes: new FormControl(
                 this.toMinutesField(this.node().data.time_to_expired),
-                [Validators.min(1)]
+                [Validators.min(0)]
             ),
         });
 
@@ -177,18 +177,16 @@ export class WebScraperNodePanelComponent extends BaseSidePanel<WebScraperNodeMo
     }
 
     protected createUpdatedNode(): WebScraperNodeModel {
+        console.log('[WebScraperNodePanel] createUpdatedNode called');
+        console.log('[WebScraperNodePanel] Form value:', this.form.value);
+        
         const minutesControlValue = this.form.value.time_to_expired_minutes;
-        const time_to_expired =
-            minutesControlValue === null ||
-            minutesControlValue === undefined ||
-            minutesControlValue === ''
-                ? -1
-                : Number(minutesControlValue);
+        const time_to_expired = Number(minutesControlValue) || 0;
 
         const validInputPairs = this.getValidInputPairs();
         const inputMapValue = this.createInputMapFromPairs(validInputPairs);
 
-        return {
+        const updatedNode = {
             ...this.node(),
             node_name: this.form.value.node_name,
             input_map: inputMapValue,
@@ -200,6 +198,9 @@ export class WebScraperNodePanelComponent extends BaseSidePanel<WebScraperNodeMo
                 time_to_expired,
             },
         };
+        
+        console.log('[WebScraperNodePanel] Created node:', updatedNode);
+        return updatedNode;
     }
 
     getCollectionNameError(): string {
@@ -232,12 +233,9 @@ export class WebScraperNodePanelComponent extends BaseSidePanel<WebScraperNodeMo
         return '';
     }
 
-    private toMinutesField(timeToExpired: number | undefined | null): number | null {
-        if (timeToExpired === null || timeToExpired === undefined) {
-            return null;
-        }
-        if (timeToExpired <= 0) {
-            return null;
+    private toMinutesField(timeToExpired: number | undefined | null): number {
+        if (timeToExpired === null || timeToExpired === undefined || timeToExpired <= 0) {
+            return 0;
         }
         return timeToExpired;
     }

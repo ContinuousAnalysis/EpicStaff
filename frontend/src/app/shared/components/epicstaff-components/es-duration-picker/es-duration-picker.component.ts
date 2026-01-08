@@ -366,6 +366,9 @@ export class EsDurationPickerComponent implements ControlValueAccessor {
             this.hours = null;
             this.minutes = null;
             this.daysInputInvalid = false;
+            if (totalMinutes !== null && totalMinutes !== undefined && totalMinutes < 0) {
+                setTimeout(() => this.onChange(0), 0);
+            }
         } else {
             this.days = Math.floor(totalMinutes / 1440);
             const remainingAfterDays = totalMinutes % 1440;
