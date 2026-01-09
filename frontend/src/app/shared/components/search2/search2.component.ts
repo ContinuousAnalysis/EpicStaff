@@ -17,6 +17,7 @@ export type SearchSize = 'default' | 'compact';
   styleUrls: ['./search2.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
+//TODO use one search across app
 export class Search2Component {
   @Input() placeholder: string = 'Search...';
   @Input() value: string = '';
