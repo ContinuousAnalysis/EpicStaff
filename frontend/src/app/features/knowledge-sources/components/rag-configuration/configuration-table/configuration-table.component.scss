@@ -82,6 +82,12 @@
         &--clickable {
             cursor: pointer;
         }
+
+        &--unavailable {
+            justify-content: center;
+            font-size: 0.75rem;
+            color: var(--color-ks-transparent-text-80)
+        }
     }
 
     &__col-file {

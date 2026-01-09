@@ -75,23 +75,35 @@
                 />
             </div>
 
-            <!-- chunk size -->
-            <div class="table__col">
-                <app-input
-                    type="number"
-                    mod="small"
-                    [(value)]="bulkChunkSize"
-                />
-            </div>
+            @if (bulkChunkStrategy() === 'csv' || bulkChunkStrategy() === 'html') {
+                <!-- chunk size -->
+                <div class="table__col table__col--unavailable">
+                    Unavailable
+                </div>
 
-            <!-- overlap -->
-            <div class="table__col">
-                <app-input
-                    type="number"
-                    mod="small"
-                    [(value)]="bulkChunkOverlap"
-                />
-            </div>
+                <!-- overlap -->
+                <div class="table__col table__col--unavailable">
+                    Unavailable
+                </div>
+            } @else {
+                <!-- chunk size -->
+                <div class="table__col">
+                    <app-input
+                        type="number"
+                        mod="small"
+                        [(value)]="bulkChunkSize"
+                    />
+                </div>
+
+                <!-- overlap -->
+                <div class="table__col">
+                    <app-input
+                        type="number"
+                        mod="small"
+                        [(value)]="bulkChunkOverlap"
+                    />
+                </div>
+            }
 
             <!-- apply -->
             <div class="table__col">
@@ -158,27 +170,39 @@
                             />
                         </div>
 
-                        <!-- chunk size -->
-                        <div class="table__col">
-                            <app-input
-                                type="number"
-                                mod="small"
-                                [(value)]="d.chunk_size"
-                                [invalid]="!!d.errors?.chunk_size"
-                                (changed)="docFieldChange(d, 'chunk_size', $event)"
-                            />
-                        </div>
+                        @if (d.chunk_strategy === 'csv' || d.chunk_strategy === 'html') {
+                            <!-- chunk size -->
+                            <div class="table__col table__col--unavailable">
+                                Unavailable
+                            </div>
 
-                        <!-- overlap -->
-                        <div class="table__col">
-                            <app-input
-                                type="number"
-                                mod="small"
-                                [(value)]="d.chunk_overlap"
-                                [invalid]="!!d.errors?.chunk_overlap"
-                                (changed)="docFieldChange(d, 'chunk_overlap', $event)"
-                            />
-                        </div>
+                            <!-- overlap -->
+                            <div class="table__col table__col--unavailable">
+                                Unavailable
+                            </div>
+                        } @else {
+                            <!-- chunk size -->
+                            <div class="table__col">
+                                <app-input
+                                    type="number"
+                                    mod="small"
+                                    [(value)]="d.chunk_size"
+                                    [invalid]="!!d.errors?.chunk_size"
+                                    (changed)="docFieldChange(d, 'chunk_size', $event)"
+                                />
+                            </div>
+
+                            <!-- overlap -->
+                            <div class="table__col">
+                                <app-input
+                                    type="number"
+                                    mod="small"
+                                    [(value)]="d.chunk_overlap"
+                                    [invalid]="!!d.errors?.chunk_overlap"
+                                    (changed)="docFieldChange(d, 'chunk_overlap', $event)"
+                                />
+                            </div>
+                        }
 
                         <!-- action button -->
                         <div class="table__col">
