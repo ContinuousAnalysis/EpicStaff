@@ -2,19 +2,20 @@
   [ngClass]="[
     'btn',
     'btn-' + type,
-    leftIcon ? 'btn--icon-left' : '',
-    rightIcon ? 'btn--icon-right' : ''
+    leftIcon ? 'btn--icon-left-' + mod : '',
+    rightIcon ? 'btn--icon-right-' + mod: '',
+    'btn--mod-' + mod,
   ]"
-  [disabled]="disabled"
+  [disabled]="disabled()"
   [attr.aria-label]="ariaLabel"
   type="button"
 >
   @if (type === 'icon') { @if (leftIcon) {
-  <app-icon [icon]="leftIcon!" size="1.1rem" class="btn-icon left" />
+  <app-icon [icon]="leftIcon!" size="1.1rem" class="btn-icon left" [ngStyle]="leftIconColor ? {'color': leftIconColor } : null" />
   } @if (rightIcon) {
-  <app-icon [icon]="rightIcon!" size="1.1rem" class="btn-icon right" />
+  <app-icon [icon]="rightIcon!" size="1.1rem" class="btn-icon right" [ngStyle]="rightIconColor ? {'color': rightIconColor } : null"/>
   } } @else { @if (leftIcon) {
-  <app-icon [icon]="leftIcon!" size="1.1rem" class="btn-icon left" />
+  <app-icon [icon]="leftIcon!" size="1.1rem" class="btn-icon left" [ngStyle]="leftIconColor ? {'color': leftIconColor } : null"/>
   }
   <div class="btn-content">
     <ng-content></ng-content>

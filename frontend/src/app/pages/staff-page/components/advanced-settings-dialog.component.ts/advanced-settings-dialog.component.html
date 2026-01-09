@@ -70,6 +70,32 @@
             </div>
         </div>
 
+        <!-- Agent Rags Section -->
+        <div class="form-section">
+            <div class="form-group">
+                <div class="label-row">
+                    <label class="settings-label"
+                    >Select Agent Rags</label
+                    >
+                    <mat-icon
+                        class="help-icon"
+                        matTooltip="Choose a agent rag to provide additional context and information for this agent."
+                        matTooltipPosition="above"
+                        matTooltipClass="tooltip"
+                    >
+                        help_outline
+                    </mat-icon>
+                </div>
+                <!-- Agent rag selector component -->
+                <app-select
+                    placeholder="Select Rag"
+                    [selectedValue]="agentData.rag.rag_id"
+                    (changed)="onAgentRagChange($event)"
+                    [items]="agentRagsSelectItems"
+                />
+            </div>
+        </div>
+
         <!-- Execution Settings -->
         <div class="form-section">
             <h3 class="section-title">Execution Settings</h3>
@@ -366,6 +392,6 @@
         <button class="btn-cancel" (click)="dialogRef.close()">Cancel</button>
         <button class="btn-save" (click)="save()">Save Changes</button>
     </div>
-    
+
 </div>
 

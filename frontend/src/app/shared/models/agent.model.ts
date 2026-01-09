@@ -80,14 +80,26 @@ export interface GetAgentRequest {
     default_temperature: number | null;
 
     knowledge_collection: number | null;
+    rag: {
+        rag_id: number | null;
+        rag_type: string | null;
+        rag_status?: string | null
+    }
     realtime_agent: RealtimeAgentConfig;
     tools: {
         unique_name: ToolUniqueName;
         data: GetToolConfigRequest | GetPythonCodeToolRequest | GetMcpToolRequest;
     }[];
 
-    search_limit: number | null;
-    similarity_threshold: string | null;
+    // search_limit: number | null;
+    // similarity_threshold: string | null;
+
+    search_configs: {
+        naive: {
+            search_limit: number | null;
+            similarity_threshold: number | null;
+        }
+    }
 }
 
 // Create Agent Request
@@ -114,12 +126,23 @@ export interface CreateAgentRequest {
     max_retry_limit?: number | null;
     respect_context_window?: boolean | null;
     default_temperature?: number | null;
-    search_limit: number | null;
-    similarity_threshold: string | null; // float between 0.00 and 1.00 for knowledge
+    // search_limit: number | null;
+    // similarity_threshold: string | null; // float between 0.00 and 1.00 for knowledge
 
     knowledge_collection?: number | null;
+    rag?: {
+        rag_id: number | null;
+        rag_type: string | null;
+    }
     realtime_agent?: RealtimeAgentConfig;
     tool_ids: ToolUniqueName[];
+
+    search_configs: {
+        naive: {
+            search_limit: number | null;
+            similarity_threshold: number | null;
+        }
+    }
 }
 
 // partialUpdate Agent Request
@@ -152,10 +175,21 @@ export interface UpdateAgentRequest {
     default_temperature: number | null;
 
     knowledge_collection: number | null;
-    search_limit: number | null;
-    similarity_threshold: string | null;
+    rag?: {
+        rag_id: number | null;
+        rag_type: string | null;
+    }
+    // search_limit: number | null;
+    // similarity_threshold: string | null;
     realtime_agent: RealtimeAgentConfig;
     tool_ids: ToolUniqueName[];
+
+    search_configs: {
+        naive: {
+            search_limit: number | null;
+            similarity_threshold: number | null;
+        }
+    }
 }
 
 export type AgentTableItem = Omit<Agent, 'id'> & {

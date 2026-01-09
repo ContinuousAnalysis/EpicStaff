@@ -1,0 +1,44 @@
+<div class="selector">
+    <button
+        #triggerBtn
+        class="selector__btn"
+        [ngClass]="'selector__btn--mod-' + mod()"
+        [class.selector__btn--invalid]="invalid()"
+        (click)="toggle()"
+    >
+        {{ selectedItem() ? selectedItem()!.name : placeholder() }}
+
+        <svg
+            class="selector__chevron"
+            [class.selector__chevron--open]="open()"
+            [ngClass]="'selector__chevron--mod-' + mod()"
+            width="16" height="16"
+            viewBox="0 0 24 24"
+        >
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+    </button>
+</div>
+
+<ng-template #dropdownTemplate>
+    <div class="selector__dropdown">
+        @for (item of items(); track item.name) {
+            <div
+                class="selector__option selector__option--exists"
+                [ngClass]="'selector__option--mod-' + mod()"
+                (click)="select(item)"
+            >
+                {{ item.name }}
+            </div>
+        }
+
+        @if (!items().length) {
+            <div
+                class="selector__option selector__option--empty"
+                [ngClass]="'selector__option--mod-' + mod()"
+            >
+                No items available
+            </div>
+        }
+    </div>
+</ng-template>

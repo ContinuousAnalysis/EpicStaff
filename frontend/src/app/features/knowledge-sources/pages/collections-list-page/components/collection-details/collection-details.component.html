@@ -1,0 +1,127 @@
+<div class="details">
+    @if (loadingCollection()) {
+        <div class="details__spinner">
+            <app-spinner
+                [text]="'Loading collection data...'"
+                [accentColor]="'#6562f5'"
+                [isOverlay]="false"
+            ></app-spinner>
+        </div>
+    } @else if (!loadingCollection() && !fullCollection()) {
+        <div class="details__empty">
+            <app-icon [icon]="'ui/folder'" class="details__empty-icon" size="3.125rem"/>
+            <p class="details__empty-text">
+                Select a collection to view files
+            </p>
+        </div>
+    }
+    @else {
+        <div class="details__header">
+            <div class="details__header-name">
+                <label
+                    for="collection-name"
+                    class="details__header-label"
+                >
+                    Collection Name
+                </label>
+                <input
+                    [formControl]="collectionName"
+                    type="text"
+                    id="collection-name"
+                    class="details__input"
+                    placeholder="Enter collection name"
+                />
+            </div>
+            <app-icon
+                [icon]="'ui/trash'"
+                class="details__action details__action--large"
+                [size]="'1.5rem'"
+                (click)="onCollectionDelete()"
+            />
+        </div>
+
+        <section class="details__layout">
+            <app-drag-drop-area
+                (filesDropped)="onFilesDropped($event)"
+                [allowedTypes]="FILE_TYPES"
+                class="details__main-wrapper"
+            >
+                <div class="details__main-content">
+                    <!-- RAGS -->
+                    <div class="details__section">
+                        <div class="details__section-header">
+                            <span class="details__section-title">RAG types</span>
+
+                            <div class="details__section-actions">
+                                <app-icon
+                                    style="cursor: not-allowed"
+                                    icon="ui/plus"
+                                    class="details__action details__action--medium"
+                                    size="1rem"
+                                />
+                            </div>
+                        </div>
+
+                        @if (fullCollection()) {
+                            <app-collection-details-rags
+                                [collection]="fullCollection()!"
+                            />
+                        }
+                    </div>
+
+                    <!-- files -->
+                    @if (loadingDocuments()) {
+                        <app-spinner
+                            [text]="'Loading collection documents...'"
+                            [accentColor]="'#6562f5'"
+                            [isOverlay]="false"
+                        ></app-spinner>
+                    } @else {
+                        <div class="details__section details__section-files">
+                            <div class="details__section-header">
+                                <span class="details__section-title">Collection Files</span>
+
+                                <div class="details__section-actions">
+                                    <!--                                <app-select-->
+                                    <!--                                    mod="small"-->
+                                    <!--                                    [items]="[]"-->
+                                    <!--                                />-->
+                                    <app-icon
+                                        style="cursor: not-allowed"
+                                        icon="ui/files-filled"
+                                        class="details__action details__action--medium"
+                                        size="0.75rem"
+                                    />
+
+                                    <label (click)="fileInput.click()">
+                                        <app-icon
+                                            icon="ui/plus"
+                                            class="details__action details__action--medium"
+                                            size="1rem"
+                                        />
+                                    </label>
+                                    <input
+                                        #fileInput
+                                        type="file"
+                                        multiple
+                                        style="display: none"
+                                        (change)="onFileSelect($event)"
+                                    >
+                                </div>
+                            </div>
+                            <app-collection-details-files
+                                [(documents)]="documents"
+                            />
+                        </div>
+                    }
+                </div>
+            </app-drag-drop-area>
+
+            <app-collection-details-info
+                [collection]="fullCollection()!"
+                [documentTypes]="documentTypes()"
+            />
+        </section>
+
+    }
+</div>

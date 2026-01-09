@@ -218,6 +218,107 @@
                         </mat-select>
                     </div>
 
+                    <!-- Rag selection -->
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-label">
+                            Knowledge Source
+                            <mat-icon
+                                class="create-agent__help-icon"
+                                matTooltip="Choose a rag."
+                                matTooltipPosition="above"
+                                matTooltipClass="create-agent__tooltip"
+                            >
+                                help_outline
+                            </mat-icon>
+                        </div>
+                        <mat-select
+                            formControlName="rag_id"
+                            placeholder="Select RAG"
+                        >
+                            <mat-option [value]="null"
+                            >No RAG</mat-option
+                            >
+                            <mat-option
+                                *ngFor="let rag of collectionRags()"
+                                [value]="rag.rag_id"
+                                [matTooltip]="rag.rag_type"
+                                matTooltipPosition="above"
+                                matTooltipClass="create-agent__tooltip"
+                            >
+                                {{ rag.rag_type }}
+                            </mat-option>
+                        </mat-select>
+                    </div>
+
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-header">
+                            <div class="create-agent__setting-label">
+                                Search Limit
+                                <mat-icon
+                                    class="create-agent__help-icon"
+                                    matTooltip="Maximum number of search results to retrieve from the knowledge base. Higher values provide more context but may slow down processing."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-agent__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-agent__setting-value">
+                                {{ agentForm.get("search_limit")?.value || 10 }}
+                            </div>
+                        </div>
+                        <div class="create-agent__slider-container">
+                            <mat-slider
+                                min="1"
+                                max="1000"
+                                step="1"
+                                discrete
+                                [displayWith]="formatSearchLimitLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="search_limit"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+
+                    <div class="create-agent__setting">
+                        <div class="create-agent__setting-header">
+                            <div class="create-agent__setting-label">
+                                Similarity Threshold
+                                <mat-icon
+                                    class="create-agent__help-icon"
+                                    matTooltip="Minimum similarity score (0.1-1.0) for knowledge base search results. Higher values return more relevant but fewer results."
+                                    matTooltipPosition="above"
+                                    matTooltipClass="create-agent__tooltip"
+                                >
+                                    help_outline
+                                </mat-icon>
+                            </div>
+                            <div class="create-agent__setting-value">
+                                {{
+                                    agentForm.get("similarity_threshold")
+                                        ?.value ?? 0.7
+                                }}
+                            </div>
+                        </div>
+                        <div class="create-agent__slider-container">
+                            <mat-slider
+                                min="0.0"
+                                max="1.0"
+                                step="0.01"
+                                discrete
+                                [displayWith]="formatThresholdLabel"
+                            >
+                                <input
+                                    matSliderThumb
+                                    formControlName="similarity_threshold"
+                                />
+                            </mat-slider>
+                        </div>
+                    </div>
+
                     <!-- Tools Selection -->
                     <div class="create-agent__setting">
                         <div class="create-agent__setting-label">
@@ -453,75 +554,6 @@
                                 <input
                                     matSliderThumb
                                     formControlName="max_rpm"
-                                />
-                            </mat-slider>
-                        </div>
-                    </div>
-
-                    <div class="create-agent__setting">
-                        <div class="create-agent__setting-header">
-                            <div class="create-agent__setting-label">
-                                Search Limit
-                                <mat-icon
-                                    class="create-agent__help-icon"
-                                    matTooltip="Maximum number of search results to retrieve from the knowledge base. Higher values provide more context but may slow down processing."
-                                    matTooltipPosition="above"
-                                    matTooltipClass="create-agent__tooltip"
-                                >
-                                    help_outline
-                                </mat-icon>
-                            </div>
-                            <div class="create-agent__setting-value">
-                                {{ agentForm.get("search_limit")?.value || 10 }}
-                            </div>
-                        </div>
-                        <div class="create-agent__slider-container">
-                            <mat-slider
-                                min="1"
-                                max="1000"
-                                step="1"
-                                discrete
-                                [displayWith]="formatSearchLimitLabel"
-                            >
-                                <input
-                                    matSliderThumb
-                                    formControlName="search_limit"
-                                />
-                            </mat-slider>
-                        </div>
-                    </div>
-
-                    <div class="create-agent__setting">
-                        <div class="create-agent__setting-header">
-                            <div class="create-agent__setting-label">
-                                Similarity Threshold
-                                <mat-icon
-                                    class="create-agent__help-icon"
-                                    matTooltip="Minimum similarity score (0.1-1.0) for knowledge base search results. Higher values return more relevant but fewer results."
-                                    matTooltipPosition="above"
-                                    matTooltipClass="create-agent__tooltip"
-                                >
-                                    help_outline
-                                </mat-icon>
-                            </div>
-                            <div class="create-agent__setting-value">
-                                {{
-                                    agentForm.get("similarity_threshold")
-                                        ?.value ?? 0.7
-                                }}
-                            </div>
-                        </div>
-                        <div class="create-agent__slider-container">
-                            <mat-slider
-                                min="0.0"
-                                max="1.0"
-                                step="0.01"
-                                discrete
-                                [displayWith]="formatThresholdLabel"
-                            >
-                                <input
-                                    matSliderThumb
-                                    formControlName="similarity_threshold"
                                 />
                             </mat-slider>
                         </div>

@@ -1,0 +1,50 @@
+<div class="configure">
+    <div class="configure__files-section">
+        <div class="configure__files-searchbar">
+            <app-search
+                class="configure__input"
+                placeholder="Search files..."
+                [(searchTerm)]="searchTerm"
+            />
+
+            <div class="configure__bulk-select">
+                @if (allowBulkEdit() && checkedCount()) {
+                    <app-select
+                        placeholder="Manage"
+                        [items]="bulkActionItems"
+                        (changed)="bulkAction.set($event)"
+                    />
+                }
+            </div>
+        </div>
+
+        <app-configuration-table
+            [bulkEditing]="allowBulkEdit()"
+            [bulkAction]="bulkAction()"
+            [ragId]="naiveRagId()"
+            [documents]="filteredByName()"
+            (checkedCountChange)="checkedCount.set($event)"
+            [(selectedDocumentId)]="selectedDocumentId"
+        />
+    </div>
+
+    <div class="configure__chunk-section">
+        @if (selectedDocumentId()) {
+            <span class="configure__chunk-header">
+                Chunk Preview
+            </span>
+
+<!--            <app-chunk-preview-->
+<!--                [documentId]="selectedDocumentId()!"-->
+<!--            />-->
+        } @else {
+            <div class="configure__chunk-empty">
+                <app-icon
+                    [icon]="'ui/file'"
+                    [size]="'3rem'"
+                />
+                <span>Chunk Preview</span>
+            </div>
+        }
+    </div>
+</div>

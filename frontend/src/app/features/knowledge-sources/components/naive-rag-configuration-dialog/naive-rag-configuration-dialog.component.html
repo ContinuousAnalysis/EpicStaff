@@ -1,0 +1,29 @@
+<div class="dialog">
+    <div class="dialog__header">
+        <span class="dialog__header-title">
+            Naive RAG Configuration
+        </span>
+
+        <div class="dialog__actions">
+            <app-icon
+                [icon]="'ui/close'"
+                class="dialog__action"
+                [size]="'1.5rem'"
+                (click)="onCancel()"
+            />
+            <app-icon
+                [icon]="'ui/check'"
+                class="dialog__action dialog__action--save"
+                [size]="'1.5rem'"
+                (click)="onCancel()"
+            />
+        </div>
+    </div>
+
+    <app-rag-configuration
+        class="dialog__content"
+        [naiveRagId]="data.ragId"
+        [collection]="data.collection"
+        [allowBulkEdit]="true"
+    />
+</div>

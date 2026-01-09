@@ -1,0 +1,44 @@
+<div class="select-rag">
+    <div class="select-rag__header">
+        <h2 class="select-rag__title">Select RAG Type</h2>
+        <p class="select-rag__description">Below are three main types of Retrieval-Augmented Generation (RAG).</p>
+        <p class="select-rag__description">Choose the one that best suits your task.</p>
+    </div>
+    <section class="select-rag__items">
+        @for (type of RAG_TYPES; track type.name) {
+            <app-rag-type
+                [rag]="type"
+                [selected]="selectedRag() === type.value"
+                (click)="!type.disabled && selectedRag.set(type.value)"
+            />
+        }
+    </section>
+    <section class="select-rag__config">
+        <h3 class="select-rag__config-title">
+            AI Model Configuration
+        </h3>
+
+        <div class="select-rag__config-row">
+            <label
+                for="collection-name"
+                class="select-rag__config-label"
+            >
+                Embedder
+            </label>
+
+            <mat-icon
+                class="select-rag__config-tooltip"
+                matTooltip="Tooltip"
+                matTooltipPosition="above"
+                matTooltipClass="dialog__label-tooltip"
+            >
+                help_outline
+            </mat-icon>
+
+            <app-select
+                [items]="embeddingConfigs()"
+                [(selectedValue)]="selectedEmbedder"
+            />
+        </div>
+    </section>
+</div>
