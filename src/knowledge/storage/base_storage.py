@@ -2,7 +2,7 @@ from typing import Dict, Optional, Type
 
 from loguru import logger
 from sqlalchemy.orm import Session, joinedload
-from models.orm import NaiveRag
+from models.orm import NaiveRag, EmbeddingModel
 
 
 class BaseORMStorage:
@@ -41,7 +41,6 @@ class BaseORMStorage:
         """
         Get embedder configuration for any RAG type.
         """
-        from models.orm import EmbeddingModel, Provider
 
         try:
             rag_table = self.get_rag_table(rag_type)

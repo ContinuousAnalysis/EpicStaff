@@ -11,6 +11,7 @@ from chunkers import (
 from .redis_service import RedisService
 from settings import UnitOfWork
 from utils.singleton_meta import SingletonMeta
+from utils.file_text_extractor import extract_text_from_binary
 from loguru import logger
 
 
@@ -50,13 +51,36 @@ class ChunkDocumentService(metaclass=SingletonMeta):
         chunker_class = strategies[chunk_strategy]
         return chunker_class(chunk_size, chunk_overlap, additional_params)
 
-    def _get_text_content(self, binary_content: bytes) -> str:
+    def _get_text_content(self, binary_content: bytes, file_name: str) -> str:
         """
-        Convert binary content to text.
+        Extract text from binary content based on file type.
         """
-        content = bytes(binary_content).decode("utf-8")
-        return content
+        file_type = file_name.split(".")[-1].lower() if "." in file_name else ""
 
+        if not file_type:
+            logger.warning(
+                f"No file extension found in '{file_name}', assuming text file"
+            )
+            file_type = "txt"
+
+        return extract_text_from_binary(binary_content, file_type)
+
+    def process_chunk_document_by_config_id(
+        self, naive_rag_document_config_id: int
+    ) -> None:
+        """
+        Chunk a document based on its NaiveRagDocumentConfig.
+        Creates its own UnitOfWork session.
+
+        Args:
+            naive_rag_document_config_id: ID of the document config
+        """
+        uow = UnitOfWork()
+        with uow.start() as uow_ctx:
+            self.process_chunk_document_in_session(
+                uow_ctx=uow_ctx,
+                naive_rag_document_config_id=naive_rag_document_config_id,
+            )
 
     def process_chunk_document_in_session(
         self, uow_ctx, naive_rag_document_config_id: int
@@ -82,6 +106,7 @@ class ChunkDocumentService(metaclass=SingletonMeta):
         # Perform chunking (CPU-bound)
         chunk_texts = self.perform_chunking(
             binary_content=binary_content,
+            file_name=file_name,
             chunk_strategy=doc_config.chunk_strategy,
             chunk_size=doc_config.chunk_size,
             chunk_overlap=doc_config.chunk_overlap,
@@ -115,28 +140,29 @@ class ChunkDocumentService(metaclass=SingletonMeta):
 
         # Return as Python dicts (no ORM objects)
         chunk_data = [
-            {"chunk_id": chunk.chunk_id, "text": chunk.text}
-            for chunk in chunks
+            {"chunk_id": chunk.chunk_id, "text": chunk.text} for chunk in chunks
         ]
 
         return chunk_data
 
-
-
     def perform_chunking(
         self,
         binary_content: bytes,
+        file_name: str,
         chunk_strategy: str,
         chunk_size: int,
         chunk_overlap: int,
         additional_params: dict,
     ) -> list[str]:
+        # include file_name to additional_params
+        additional_params = {**additional_params, "file_name": file_name}
+
         chunker = self._get_chunk_strategy(
             chunk_strategy=chunk_strategy,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             additional_params=additional_params,
         )
-        text = self._get_text_content(binary_content)
+        text = self._get_text_content(binary_content, file_name)
         chunks = chunker.chunk(text)
         return chunks
