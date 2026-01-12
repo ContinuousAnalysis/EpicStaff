@@ -659,6 +659,11 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
             return GraphImportSerializer
         return super().get_serializer_class()
 
+    def perform_create(self, serializer):
+        created_graph = serializer.save()
+        organization, _ = Organization.objects.get_or_create(name="default")
+        GraphOrganization.objects.create(graph=created_graph, organization=organization)
+
     @action(detail=True, methods=["get"], url_path="files")
     def get_files(self, request, pk=None):
         graph = self.get_object()
