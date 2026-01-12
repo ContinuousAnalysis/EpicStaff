@@ -255,6 +255,7 @@ class RunSession(APIView):
         graph_id = serializer.validated_data["graph_id"]
         username = serializer.validated_data.get("username")
         graph_organization_user = None
+        warning_msg = None
 
         graph = Graph.objects.filter(id=graph_id).first()
         if not graph:
@@ -277,6 +278,10 @@ class RunSession(APIView):
             user = OrganizationUser.objects.filter(
                 name=username, organization=graph_organization.organization
             ).first()
+
+            if not user and graph_organization.user_variables:
+                warning_msg = "Current flow have user-persistent variables, but no user were provided"
+
             if not user and username:
                 return Response(
                     {
@@ -329,7 +334,8 @@ class RunSession(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)})
         else:
             return Response(
-                data={"session_id": session_id}, status=status.HTTP_201_CREATED
+                data={"session_id": session_id, "warning_msg": warning_msg},
+                status=status.HTTP_201_CREATED,
             )
 
     def _get_file_data(self, file, content_type):
