@@ -8,7 +8,7 @@ from django.db import transaction, IntegrityError, models
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.models import GraphSessionMessage
 from tables.models import PythonCodeResult
-from tables.models import GraphOrganization, GraphOrganizationUser
+from tables.models import GraphOrganization
 from tables.request_models import CodeResultData, GraphSessionMessageData
 from tables.request_models import (
     CodeResultData,
@@ -72,15 +72,14 @@ class RedisPubSub:
                         f'Unable change status from {session.status} to {data["status"]}'
                     )
                 else:
-                    session.status = data["status"]
-                    session.status_data = data.get("status_data", {})
-                    session.save()
+                    status_data = data.get("status_data", {})
+                    status_data["total_token_usage"] = (
+                        self._calculate_total_token_usage(data["session_id"])
+                    )
 
-                    if session.status in [
-                        Session.SessionStatus.END,
-                        Session.SessionStatus.ERROR,
-                    ]:
-                        self._save_organization_variables(session=session, data=data)
+                    session.status = data["status"]
+                    session.status_data = status_data
+                    session.save()
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
 
@@ -97,7 +96,9 @@ class RedisPubSub:
         try:
             logger.debug(f"Received webhook event: {message}")
             data = WebhookEventData.model_validate_json(message["data"])
-            WebhookTriggerService().handle_webhook_trigger(path=data.path, payload=data.payload)
+            WebhookTriggerService().handle_webhook_trigger(
+                path=data.path, payload=data.payload
+            )
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
 
@@ -131,15 +132,45 @@ class RedisPubSub:
     def _buffer_save(self, data, model: Type[models.Model]):
         try:
             with transaction.atomic():
-                
-                created_objects = model.objects.bulk_create(
-                    data, ignore_conflicts=True
-                )
+
+                created_objects = model.objects.bulk_create(data, ignore_conflicts=True)
                 logger.debug(
                     f"{model.__name__} updated with {len(created_objects)}/{len(data)} entities"
                 )
         except IntegrityError as e:
             logger.error(f"Failed to save {model.__name__}: {e}")
+
+    def _calculate_total_token_usage(self, session_id):
+        pattern = f"graph:message:{session_id}:*"
+        cached_keys = self.redis_client.keys(pattern)
+
+        total_usage = {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "successful_requests": 0,
+        }
+
+        for key in cached_keys:
+            try:
+                data = json.loads(self.redis_client.get(key))
+                token_usage = (
+                    data.get("message_data", {})
+                    .get("output", {})
+                    .get("token_usage", {})
+                )
+                total_usage["total_tokens"] += token_usage.get("total_tokens", 0)
+                total_usage["prompt_tokens"] += token_usage.get("prompt_tokens", 0)
+                total_usage["completion_tokens"] += token_usage.get(
+                    "completion_tokens", 0
+                )
+                total_usage["successful_requests"] += token_usage.get(
+                    "successful_requests", 0
+                )
+            except Exception as e:
+                logger.error(f"Error parsing cached message: {e}")
+
+        return total_usage
 
     def graph_session_message_handler(self, message: dict):
         try:
@@ -231,22 +262,30 @@ class RedisPubSub:
                 if buffer and time.time() - start_time >= 3:
 
                     try:
-                        graph_session_message_list = [GraphSessionMessage(**data) for data in list(buffer)]
+                        graph_session_message_list = [
+                            GraphSessionMessage(**data) for data in list(buffer)
+                        ]
                     except Exception as e:
-                        logger.critical("Error creating GraphSessionMessage cache_for_redis_messages_worker")
+                        logger.critical(
+                            "Error creating GraphSessionMessage cache_for_redis_messages_worker"
+                        )
 
                     buffer.clear()
                     sessions_data = defaultdict(deque)
-                    
+
                     for graph_session_message in graph_session_message_list:
-                        session_id = graph_session_message.session.pk 
+                        session_id = graph_session_message.session.pk
                         if session_id is not None:
                             sessions_data[session_id].append(graph_session_message)
                         else:
-                            logger.warning(f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {data}")
+                            logger.warning(
+                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {data}"
+                            )
 
                     for session_id, sessions_data_values in sessions_data.items():
-                        self._buffer_save(data=sessions_data_values, model=GraphSessionMessage)
+                        self._buffer_save(
+                            data=sessions_data_values, model=GraphSessionMessage
+                        )
 
                     start_time = time.time()
 
