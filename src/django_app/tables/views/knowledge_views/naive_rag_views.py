@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from django.http import Http404
 from rest_framework.exceptions import ValidationError
 
@@ -204,7 +205,11 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
             )
 
     @swagger_auto_schema(
-        request_body=None,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={},
+            description="No body required - send empty JSON object {}",
+        ),
         responses={
             201: "Configs created successfully",
             200: "All documents already have configs",
