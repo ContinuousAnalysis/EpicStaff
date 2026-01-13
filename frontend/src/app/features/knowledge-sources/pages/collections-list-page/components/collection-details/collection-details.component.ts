@@ -1,7 +1,7 @@
 import {
     ChangeDetectionStrategy,
-    Component, computed,
-    DestroyRef,
+    Component,
+    DestroyRef, effect,
     inject,
     model, OnChanges,
     OnInit,
@@ -11,9 +11,9 @@ import {AppIconComponent} from "../../../../../../shared/components/app-icon/app
 import {FormControl, FormsModule, ReactiveFormsModule, Validators} from "@angular/forms";
 import {CreateCollectionDtoResponse} from "../../../../models/collection.model";
 import {CollectionsStorageService} from "../../../../services/collections-storage.service";
-import {debounceTime, distinctUntilChanged, finalize, map, switchMap} from "rxjs/operators";
+import {catchError, debounceTime, distinctUntilChanged, finalize, map, switchMap} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {filter} from "rxjs";
+import {filter, throwError} from "rxjs";
 import {DragDropAreaComponent} from "../../../../../../shared/components/drag-drop-area/drag-drop-area.component";
 import {FILE_TYPES} from "../../../../constants/constants";
 import {CollectionFilesComponent} from "./collection-files/collection-files.component";
@@ -21,9 +21,13 @@ import {SelectComponent} from "../../../../../../shared/components/select/select
 import {CollectionRagsComponent} from "./collection-rags/collection-rags.component";
 import {CollectionInfoComponent} from "./collection-info/collection-info.component";
 import {DocumentsStorageService} from "../../../../services/documents-storage.service";
-import {CollectionDocument, DisplayedListDocument} from "../../../../models/document.model";
+import {DisplayedListDocument} from "../../../../models/document.model";
 import {FileListService} from "../../../../services/files-list.service";
 import {SpinnerComponent} from "../../../../../../shared/components/spinner/spinner.component";
+import {ToastService} from "../../../../../../services/notifications/toast.service";
+import {
+    ValidationErrorsComponent
+} from "../../../../../../shared/components/app-validation-errors/validation-errors.component";
 
 @Component({
     selector: "app-collection-details",
@@ -39,6 +43,7 @@ import {SpinnerComponent} from "../../../../../../shared/components/spinner/spin
         CollectionRagsComponent,
         CollectionInfoComponent,
         SpinnerComponent,
+        ValidationErrorsComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -49,19 +54,36 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
     loadingDocuments = signal<boolean>(false);
     fullCollection = signal<CreateCollectionDtoResponse | null>(null);
     documents = signal<DisplayedListDocument[]>([]);
-    documentTypes = computed(() => {
-        const types = new Set<string>();
-
-        this.documents().forEach(doc => {
-            doc.file_type && types.add(doc.file_type);
-        })
-        return Array.from(types);
-    });
-    collectionName: FormControl = new FormControl("", Validators.required);
+    collectionName: FormControl = new FormControl("", [Validators.required, Validators.maxLength(255)]);
 
     private collectionsStorageService = inject(CollectionsStorageService);
     private documentsStorageService = inject(DocumentsStorageService);
-    private fileListService = inject(FileListService)
+    private fileListService = inject(FileListService);
+    private toastService = inject(ToastService);
+
+    constructor() {
+        effect(() => {
+            const collection = this.collectionsStorageService.fullCollections()
+                .find((c) => c.collection_id === this.selectedCollectionId());
+
+            if (collection) {
+                this.fullCollection.set(collection);
+                this.collectionName.setValue(this.fullCollection()?.collection_name, {emitEvent: false});
+            }
+        });
+
+        effect(() => {
+            const documents = this.documentsStorageService.documents()
+                .filter(d => d.source_collection === this.selectedCollectionId())
+                .map(d => ({
+                    ...d,
+                    isValidType: true,
+                    isValidSize: true
+                }))
+
+            this.documents.set(documents);
+        });
+    }
 
     ngOnChanges(changes: SimpleChanges) {
         const id = changes['selectedCollectionId'].currentValue;
@@ -75,13 +97,19 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
         this.collectionName.valueChanges.pipe(
             debounceTime(400),
             distinctUntilChanged(),
+            filter(() => this.collectionName.valid),
             filter(() => !!this.fullCollection()),
             switchMap((collection_name: string) => {
                 const id = this.fullCollection()!.collection_id;
                 return this.collectionsStorageService.updateCollectionById(id, { collection_name });
             }),
             takeUntilDestroyed(this.destroyRef)
-        ).subscribe();
+        ).subscribe(
+            {
+                next: () => this.toastService.success('Collection Updated'),
+                error: () => this.toastService.error('Collection Update failed'),
+            }
+        );
     }
 
     private getCollectionData(id: number): void {
@@ -89,12 +117,13 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
         this.collectionsStorageService.getFullCollection(id)
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
-                finalize(() => this.loadingCollection.set(false))
+                catchError((error) => {
+                    this.toastService.error('Failed to get collection data')
+                    return throwError(() => error)
+                }),
+                finalize(() => this.loadingCollection.set(false)),
             )
-            .subscribe(c => {
-                this.fullCollection.set(c);
-                this.collectionName.setValue(this.fullCollection()?.collection_name, {emitEvent: false});
-            });
+            .subscribe();
     }
 
     private getCollectionDocuments(id: number): void {
@@ -103,17 +132,8 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 finalize(() => this.loadingDocuments.set(false)),
-                map((items: CollectionDocument[]): DisplayedListDocument[] => {
-                    return items.map((d) => ({
-                        ...d,
-                        isValidType: true,
-                        isValidSize: true
-                    }))
-                })
             )
-            .subscribe(docs => {
-                this.documents.set(docs);
-            });
+            .subscribe();
     }
 
     onCollectionDelete(): void {
@@ -121,10 +141,12 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
         if (id) {
             this.collectionsStorageService.deleteCollectionById(id)
                 .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe((res) => {
-                    if (!res) return;
-                    this.selectedCollectionId.set(null);
-                    this.fullCollection.set(null);
+                .subscribe({
+                    next: () => {
+                        this.selectedCollectionId.set(null);
+                        this.fullCollection.set(null);
+                    },
+                    error: () => this.toastService.error('Collection Delete failed'),
                 });
         }
     }

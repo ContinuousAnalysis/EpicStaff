@@ -22,7 +22,8 @@
             [bulkEditing]="allowBulkEdit()"
             [bulkAction]="bulkAction()"
             [ragId]="naiveRagId()"
-            [documents]="filteredByName()"
+            [documents]="documents()"
+            [searchTerm]="searchTerm()"
             (checkedCountChange)="checkedCount.set($event)"
             [(selectedDocumentId)]="selectedDocumentId"
         />

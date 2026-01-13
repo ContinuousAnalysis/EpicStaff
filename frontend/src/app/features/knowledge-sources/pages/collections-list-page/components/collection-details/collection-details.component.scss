@@ -24,7 +24,6 @@
 
     &__header-name {
         width: 503px;
-        height: 71px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -35,7 +34,7 @@
         color: var(--color-ks-text)
     }
 
-    &__input {
+    &__name-input {
         height: 2.5rem;
         padding: 0 1rem;
         border-radius: 0.5rem;

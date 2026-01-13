@@ -65,7 +65,7 @@ export class CreateCollectionDialogComponent {
         {
             id: CreateCollectionStep.CONFIGURE,
             label: 'Configure',
-            proceedLabel: 'Create Collection',
+            proceedLabel: 'Finish',
             onProceed: () => this.startIndexing(),
             canProceed: () => true,
         },

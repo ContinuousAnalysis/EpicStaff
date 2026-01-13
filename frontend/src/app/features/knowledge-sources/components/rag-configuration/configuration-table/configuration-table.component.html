@@ -19,7 +19,7 @@
                 label="FILES"
                 searchPlaceholder="Search headers..."
                 [items]="fileTypeSelectItems"
-                (selectionChange)="filesFilter.set($event)"
+                (selectionChange)="fileTypeFilter.set($event)"
             />
         </div>
 
@@ -56,8 +56,17 @@
             />
         </div>
 
-        <!-- 6. Empty -->
-        <div class="table__col"></div>
+        <!-- 6. Initialize files -->
+        <div class="table__col">
+            <app-button
+                class="table__col-btn"
+                type="outline-primary"
+                mod="small"
+                (click)="initFiles()"
+            >
+                Init All
+            </app-button>
+        </div>
     </div>
 
     <!-- BULK EDIT ROW  -->
@@ -88,18 +97,20 @@
             } @else {
                 <!-- chunk size -->
                 <div class="table__col">
-                    <app-input
-                        type="number"
+                    <app-input-number
                         mod="small"
+                        [min]="20"
+                        [max]="8000"
                         [(value)]="bulkChunkSize"
                     />
                 </div>
 
                 <!-- overlap -->
                 <div class="table__col">
-                    <app-input
-                        type="number"
+                    <app-input-number
                         mod="small"
+                        [min]="0"
+                        [max]="1000"
                         [(value)]="bulkChunkOverlap"
                     />
                 </div>
@@ -183,9 +194,10 @@
                         } @else {
                             <!-- chunk size -->
                             <div class="table__col">
-                                <app-input
-                                    type="number"
+                                <app-input-number
                                     mod="small"
+                                    [min]="20"
+                                    [max]="8000"
                                     [(value)]="d.chunk_size"
                                     [invalid]="!!d.errors?.chunk_size"
                                     (changed)="docFieldChange(d, 'chunk_size', $event)"
@@ -194,9 +206,10 @@
 
                             <!-- overlap -->
                             <div class="table__col">
-                                <app-input
-                                    type="number"
+                                <app-input-number
                                     mod="small"
+                                    [min]="0"
+                                    [max]="1000"
                                     [(value)]="d.chunk_overlap"
                                     [invalid]="!!d.errors?.chunk_overlap"
                                     (changed)="docFieldChange(d, 'chunk_overlap', $event)"

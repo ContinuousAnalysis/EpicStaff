@@ -82,10 +82,11 @@ export interface NaiveRagDocumentConfig {
     processed_at: string | null;
 }
 
-export interface InitNaiveRagDocumentResponse {
+export interface InitNaiveRagDocumentsResponse {
     message: string;
-    created_count: number;
-    configs: NaiveRagDocumentConfig[];
+    configs_created: number;
+    configs_existing: number;
+    new_configs: any[];
 }
 
 export interface GetNaiveRagDocumentConfigsResponse {

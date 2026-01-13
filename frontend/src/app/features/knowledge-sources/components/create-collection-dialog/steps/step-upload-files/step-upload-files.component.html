@@ -4,7 +4,7 @@
             <label for="collection-name">Collection Name</label>
             <mat-icon
                 class="dialog__form-label-icon"
-                matTooltip="Tooltip"
+                matTooltip="Enter a unique name for your knowledge collection. This name will be used to identify and access this collection."
                 matTooltipPosition="above"
                 matTooltipClass="dialog__label-tooltip"
             >
@@ -20,6 +20,7 @@
             placeholder="Enter collection name"
             [class.dialog__input--invalid]="collectionName?.invalid && collectionName?.touched"
         />
+        <app-validation-errors [control]="collectionName"/>
     </div>
 
 

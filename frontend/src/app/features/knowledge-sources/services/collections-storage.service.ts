@@ -1,9 +1,8 @@
 import {inject, Injectable, signal} from '@angular/core';
-import {catchError, delay, Observable, of, tap} from "rxjs";
+import {catchError, delay, Observable, of, tap, throwError} from "rxjs";
 import {CollectionsApiService} from "./collections-api.service";
 import {CreateCollectionDtoResponse, DeleteCollectionResponse, GetCollectionRequest} from "../models/collection.model";
 import {shareReplay} from "rxjs/operators";
-import {ToastService} from "../../../services/notifications/toast.service";
 
 @Injectable({
     providedIn: 'root'
@@ -22,7 +21,6 @@ export class CollectionsStorageService {
     // public readonly isFullCollectionsLoaded = this.fullCollectionsLoaded.asReadonly();
 
     private readonly collectionsApiService = inject(CollectionsApiService);
-    private readonly toastService = inject(ToastService);
 
     createCollection(): Observable<CreateCollectionDtoResponse | undefined> {
         return this.collectionsApiService.createCollection().pipe(
@@ -30,10 +28,7 @@ export class CollectionsStorageService {
                 const { rag_configurations, ...rest } = newCollection;
                 this.addCollectionToCache(rest);
             }),
-            catchError(() => {
-                this.toastService.error('Failed to create collection')
-                return of()
-            })
+            catchError((err) => throwError(() => err))
         );
     }
 
@@ -54,10 +49,9 @@ export class CollectionsStorageService {
             }),
             delay(this.collectionsLoaded() ? 0 : 300),
             shareReplay(1),
-            catchError(() => {
-                this.toastService.error('Failed to get collections');
+            catchError((err) => {
                 this.collectionsLoaded.set(false);
-                return of([]);
+                return throwError(() => err);
             })
         );
     }
@@ -80,34 +74,26 @@ export class CollectionsStorageService {
                 this.updateOrCreateCollectionInCache(collection);
             }),
             delay(this.fullCollectionsLoaded() ? 0 : 300),
-            shareReplay(1),
-            catchError(() => of(null))
+            catchError(err => throwError(() => err))
         );
     }
 
-    updateCollectionById(id: number, body: Partial<CreateCollectionDtoResponse>): Observable<CreateCollectionDtoResponse | undefined> {
+    updateCollectionById(id: number, body: Partial<CreateCollectionDtoResponse>): Observable<CreateCollectionDtoResponse> {
         return this.collectionsApiService.updateCollectionById(id, body).pipe(
             tap(updated => {
-                this.toastService.success('Collection updated');
                 this.updateOrCreateCollectionInCache(updated);
             }),
-            catchError(() => {
-                this.toastService.error('Failed to update collection');
-                return of()
-            })
+            catchError(err => throwError(() => err))
         );
     }
 
-    deleteCollectionById(id: number): Observable<DeleteCollectionResponse | undefined> {
+    deleteCollectionById(id: number): Observable<DeleteCollectionResponse> {
         return this.collectionsApiService.deleteCollectionById(id).pipe(
             tap(() => {
-                this.toastService.success('Collection deleted');
+                // this.toastService.success('Collection deleted');
                 this.deleteCollectionFromCache(id)
             }),
-            catchError(() => {
-                this.toastService.error('Collection delete failed')
-                return of()
-            })
+            catchError(err => throwError(() => err))
         );
     }
 

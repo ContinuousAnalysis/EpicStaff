@@ -5,7 +5,7 @@ import {Observable} from "rxjs";
 import {
     BulkDeleteNaiveRagDocumentDtoRequest, BulkDeleteNaiveRagDocumentDtoResponse,
     BulkUpdateNaiveRagDocumentDtoRequest, BulkUpdateNaiveRagDocumentDtoResponse,
-    CreateRagForCollectionResponse, GetNaiveRagDocumentConfigsResponse,
+    CreateRagForCollectionResponse, GetNaiveRagDocumentConfigsResponse, InitNaiveRagDocumentsResponse,
     StartIndexingDtoRequest, StartIndexingDtoResponse,
     UpdateNaiveRagDocumentDtoRequest, UpdateNaiveRagDocumentResponse,
 } from "../models/rag.model";
@@ -74,5 +74,12 @@ export class NaiveRagService {
 
     startIndexing(dto: StartIndexingDtoRequest): Observable<StartIndexingDtoResponse> {
         return this.http.post<StartIndexingDtoResponse>(`${this.configService.apiUrl}process-rag-indexing/`, dto)
+    }
+
+    initializeDocuments(ragId: number): Observable<InitNaiveRagDocumentsResponse> {
+        return this.http.post<InitNaiveRagDocumentsResponse>(
+            `${this.apiUrl}${ragId}/document-configs/initialize/`,
+            {}
+        );
     }
 }

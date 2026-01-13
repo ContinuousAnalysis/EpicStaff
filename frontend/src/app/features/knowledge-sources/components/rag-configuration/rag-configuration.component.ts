@@ -1,7 +1,6 @@
 import {
     ChangeDetectionStrategy,
     Component,
-    computed,
     DestroyRef,
     inject,
     input,
@@ -41,13 +40,6 @@ export class RagConfigurationComponent implements OnInit {
     checkedCount = signal<number>(0);
     allowBulkEdit = input<boolean>(false);
     documents = signal<NaiveRagDocumentConfig[]>([]);
-    filteredByName = computed(() => {
-        const term = this.searchTerm();
-
-        return this.documents().filter(d => {
-            return d.file_name.toLowerCase().includes(term.toLowerCase());
-        });
-    });
 
     private naiveRagService = inject(NaiveRagService);
     private destroyRef = inject(DestroyRef);

@@ -1,6 +1,6 @@
-import {ChangeDetectionStrategy, Component, inject, input, OnInit, model, DestroyRef} from "@angular/core";
+import {ChangeDetectionStrategy, Component, inject, input, OnInit, model, DestroyRef, effect} from "@angular/core";
 import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import {debounceTime, distinctUntilChanged, finalize, switchMap} from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {UpperCasePipe} from "@angular/common";
 import {CreateCollectionDtoResponse} from "../../../../models/collection.model";
@@ -13,6 +13,10 @@ import {DocumentsStorageService} from "../../../../services/documents-storage.se
 import {DisplayedListDocument} from "../../../../models/document.model";
 import {FILE_TYPES} from "../../../../constants/constants";
 import {FileListService} from "../../../../services/files-list.service";
+import {ToastService} from "../../../../../../services/notifications/toast.service";
+import {
+    ValidationErrorsComponent
+} from "../../../../../../shared/components/app-validation-errors/validation-errors.component";
 
 @Component({
     selector: "app-step-upload-files",
@@ -24,7 +28,8 @@ import {FileListService} from "../../../../services/files-list.service";
         FileUploaderComponent,
         FilesListComponent,
         FilePreviewComponent,
-        UpperCasePipe
+        UpperCasePipe,
+        ValidationErrorsComponent
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -33,14 +38,43 @@ export class StepUploadFilesComponent implements OnInit {
     private collectionsStorageService = inject(CollectionsStorageService);
     private documentsStorageService = inject(DocumentsStorageService);
     private fileListService = inject(FileListService);
+    private readonly toastService = inject(ToastService);
 
-    collectionName: FormControl = new FormControl("", Validators.required);
+    collectionName: FormControl = new FormControl("", [Validators.required, Validators.maxLength(255)]);
     collection = input.required<CreateCollectionDtoResponse>();
     documents = model<DisplayedListDocument[]>([]);
+
+    constructor() {
+        effect(() => {
+            const documents = this.documentsStorageService.documents()
+                .filter(d => d.source_collection === this.collection().collection_id)
+                .map(d => ({
+                    ...d,
+                    isValidType: true,
+                    isValidSize: true
+                }))
+
+            this.documents.set(documents);
+        });
+    }
 
     ngOnInit() {
         this.collectionName.setValue(this.collection().collection_name);
 
+        if (this.collection().document_count > 0) {
+            this.getCollectionDocuments(this.collection().collection_id)
+        }
+
+        this.subscribeToCollectionName();
+    }
+
+    private getCollectionDocuments(id: number): void {
+        this.documentsStorageService.getDocumentsByCollectionId(id)
+            .pipe(takeUntilDestroyed(this.destroyRef),)
+            .subscribe();
+    }
+
+    private subscribeToCollectionName() {
         this.collectionName?.valueChanges.pipe(
             debounceTime(400),
             distinctUntilChanged(),
@@ -51,7 +85,12 @@ export class StepUploadFilesComponent implements OnInit {
                 return this.collectionsStorageService.updateCollectionById(id, body)
             }),
             takeUntilDestroyed(this.destroyRef)
-        ).subscribe();
+        ).subscribe(
+            {
+                next: () => this.toastService.success('Collection Updated'),
+                error: () => this.toastService.error('Collection Update failed'),
+            }
+        );
     }
 
     onFilesUpload(files: FileList): void {

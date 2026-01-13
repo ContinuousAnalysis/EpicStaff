@@ -24,7 +24,7 @@ import {
 import {SelectComponent, SelectItem} from "../../../../../shared/components/select/select.component";
 import {AppIconComponent} from "../../../../../shared/components/app-icon/app-icon.component";
 import {ButtonComponent} from "../../../../../shared/components/buttons/button/button.component";
-import {InputComponent} from "../../../../../shared/components/app-input/input.component";
+import {InputNumberComponent} from "../../../../../shared/components/app-input-number/input-number.component";
 import {CheckboxComponent} from "../../../../../shared/components/checkbox/checkbox.component";
 import {
     MultiSelectComponent,
@@ -45,7 +45,7 @@ import {
         SelectComponent,
         AppIconComponent,
         ButtonComponent,
-        InputComponent,
+        InputNumberComponent,
         CheckboxComponent,
         MultiSelectComponent,
         KeyValuePipe,
@@ -64,11 +64,15 @@ export class ConfigurationTableComponent implements OnInit {
     ragId = input.required<number>();
     bulkEditing = input<boolean>(false);
     documents = input<NaiveRagDocumentConfig[]>([]);
+    searchTerm = input<string>('');
     tableDocuments = linkedSignal<TableDocument[]>(() => {
         return this.documents().map(d => ({...d, checked: false}))
     });
 
-    allChecked = computed(() => this.filteredAndSorted().every(r => r.checked));
+    allChecked = computed(() => {
+        const arr = this.filteredAndSorted();
+        return arr.length > 0 && arr.every(r => r.checked);
+    });
     checkedDocumentIds = computed(() => this.filteredAndSorted()
         .filter(d => d.checked)
         .map(d => d.naive_rag_document_id)
@@ -83,7 +87,7 @@ export class ConfigurationTableComponent implements OnInit {
     bulkChunkOverlap = signal<number | null>(null);
     bulkAction = input<'edit' | 'delete' | null>(null);
 
-    filesFilter = signal<any[]>([]);
+    fileTypeFilter = signal<any[]>([]);
     chunkStrategyFilter = signal<any[]>([]);
     sort = signal<SortState>(null);
 
@@ -91,6 +95,7 @@ export class ConfigurationTableComponent implements OnInit {
         let data = this.tableDocuments();
 
         data = this.applyFileNameFilter(data);
+        data = this.applyFileTypeFilter(data);
         data = this.applyChunkStrategyFilter(data);
         data = this.sortDocuments(data);
 
@@ -306,10 +311,21 @@ export class ConfigurationTableComponent implements OnInit {
     }
 
     private applyFileNameFilter(data: TableDocument[]): TableDocument[] {
-        const filesFilter = this.filesFilter();
+        const term = this.searchTerm();
+
+        return data.filter(d => {
+            return d.file_name.toLowerCase().includes(term.toLowerCase());
+        });
+    }
+
+    private applyFileTypeFilter(data: TableDocument[]): TableDocument[] {
+        const filesFilter = this.fileTypeFilter();
         if (!filesFilter.length) return data;
 
-        return data.filter(d => filesFilter.includes(d.file_name));
+        return data.filter(d => {
+            const ext = d.file_name.split('.').pop()?.toLowerCase();
+            return ext && filesFilter.includes(ext);
+        });
     }
 
     private applyChunkStrategyFilter(data: TableDocument[]): TableDocument[] {
@@ -330,4 +346,34 @@ export class ConfigurationTableComponent implements OnInit {
     }
 
     // ================= SORT AND FILTER LOGIC END =================
+
+    // TODO temporary solution
+    initFiles() {
+        this.naiveRagService.initializeDocuments(this.ragId())
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                switchMap((response) => {
+                    if (response && response.configs_created > 0) {
+                        return this.naiveRagService.getDocumentConfigs(this.ragId());
+                    } else {
+                        return EMPTY;
+                    }
+                })
+            )
+            .subscribe({
+                next: ({configs}) => {
+                    this.tableDocuments.update((items) => {
+                        const existingIds = new Set(items.map(item => item.document_id));
+
+                        const newConfigs = configs
+                            .filter(cfg => !existingIds.has(cfg.document_id))
+                            .map(cfg => ({...cfg, checked: false}))
+                        ;
+
+                        return [...items, ...newConfigs];
+                    });
+                },
+                error: (err) => console.error(err)
+            });
+    }
 }

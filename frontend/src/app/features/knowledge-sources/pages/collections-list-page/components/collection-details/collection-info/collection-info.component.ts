@@ -1,8 +1,9 @@
-import {ChangeDetectionStrategy, Component, input} from "@angular/core";
+import {ChangeDetectionStrategy, Component, computed, input} from "@angular/core";
 import {ButtonComponent} from "../../../../../../../shared/components/buttons/button/button.component";
 import {AppIconComponent} from "../../../../../../../shared/components/app-icon/app-icon.component";
 import {CreateCollectionDtoResponse} from "../../../../../models/collection.model";
 import {DatePipe} from "@angular/common";
+import {DisplayedListDocument} from "../../../../../models/document.model";
 
 @Component({
     selector: 'app-collection-details-info',
@@ -17,5 +18,14 @@ import {DatePipe} from "@angular/common";
 })
 export class CollectionInfoComponent {
     collection = input.required<CreateCollectionDtoResponse>();
-    documentTypes = input<string[]>([]);
+    documents = input<DisplayedListDocument[]>([]);
+
+    documentTypes = computed(() => {
+        const types = new Set<string>();
+
+        this.documents().forEach(doc => {
+            doc.file_type && types.add(doc.file_type);
+        })
+        return Array.from(types);
+    });
 }

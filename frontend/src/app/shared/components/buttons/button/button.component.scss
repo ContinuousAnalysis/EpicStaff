@@ -2,23 +2,14 @@
   position: relative;
   display: flex;
   align-items: center;
-  padding: 0.6rem 1rem;
+  justify-content: center;
+  width: 100%;
   border: none;
   border-radius: 7px;
-  font-size: 14px;
-  font-weight: 500;
   color: var(--color-text-primary);
   background: var(--accent-color);
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
-}
-
-.btn--icon-left {
-  padding-left: 2.4rem;
-}
-
-.btn--icon-right {
-  padding-right: 2.4rem;
 }
 
 .btn-primary {

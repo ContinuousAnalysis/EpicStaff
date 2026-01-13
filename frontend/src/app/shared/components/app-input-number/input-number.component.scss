@@ -42,6 +42,11 @@ input[type="number"] {
         font-size: 1.75rem;
         line-height: 100%;
 
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         &:hover {
             background-color: var(--color-ks-button-activated);
         }
@@ -62,6 +67,9 @@ input[type="number"] {
     background-color: var(--color-input-background);
     color: var(--color-text-primary);
     transition: border-color 0.2s ease;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    text-align: center;
 
     &:focus {
         outline: none;
@@ -84,9 +92,4 @@ input[type="number"] {
         font-size: 0.625rem;
     }
 
-    &--number {
-        padding-left: 2rem;
-        padding-right: 2rem;
-        text-align: center;
-    }
 }

@@ -28,9 +28,10 @@
                     [formControl]="collectionName"
                     type="text"
                     id="collection-name"
-                    class="details__input"
+                    class="details__name-input"
                     placeholder="Enter collection name"
                 />
+                <app-validation-errors [control]="collectionName"/>
             </div>
             <app-icon
                 [icon]="'ui/trash'"
@@ -119,7 +120,7 @@
 
             <app-collection-details-info
                 [collection]="fullCollection()!"
-                [documentTypes]="documentTypes()"
+                [documents]="documents()"
             />
         </section>
 
