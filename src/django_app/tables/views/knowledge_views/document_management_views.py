@@ -24,6 +24,7 @@ from tables.exceptions import (
     CollectionNotFoundException,
     NoFilesProvidedException,
     DocumentNotFoundException,
+    InvalidFieldType,
 )
 
 
@@ -62,6 +63,12 @@ class DocumentManagementViewSet(viewsets.GenericViewSet):
         - 400: Validation errors
         - 404: Collection not found
         """
+
+        try:
+            collection_id = int(collection_id)
+        except (ValueError, TypeError):
+            raise InvalidFieldType("collection_id", collection_id)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -70,7 +77,7 @@ class DocumentManagementViewSet(viewsets.GenericViewSet):
         try:
             # Use service to handle all business logic
             created_documents = DocumentManagementService.upload_files_batch(
-                collection_id=int(collection_id), uploaded_files=files
+                collection_id=collection_id, uploaded_files=files
             )
 
             # Serialize response
@@ -266,9 +273,14 @@ class CollectionDocumentsViewSet(viewsets.GenericViewSet):
 
         URL: GET /source-collections/{collection_id}/documents/
         """
+        try:
+            collection_id = int(collection_id)
+        except (ValueError, TypeError):
+            raise InvalidFieldType("collection_id", collection_id)
+
         # Verify collection exists
         try:
-            collection = DocumentManagementService.get_collection(int(collection_id))
+            collection = DocumentManagementService.get_collection(collection_id)
         except CollectionNotFoundException as e:
             return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 

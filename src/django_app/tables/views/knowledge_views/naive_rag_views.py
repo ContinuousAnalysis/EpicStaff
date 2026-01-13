@@ -35,8 +35,8 @@ from tables.exceptions import (
     DocumentConfigNotFoundException,
     EmbedderNotFoundException,
     InvalidChunkParametersException,
-    DocumentsNotFoundException,
     CollectionNotFoundException,
+    InvalidFieldType,
 )
 
 
@@ -86,6 +86,12 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
             "embedder_id": 1
         }
         """
+
+        try:
+            collection_id = int(collection_id)
+        except (ValueError, TypeError):
+            raise InvalidFieldType("collection_id", collection_id)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -93,7 +99,7 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
 
         try:
             naive_rag = NaiveRagService.create_or_update_naive_rag(
-                collection_id=int(collection_id), embedder_id=embedder_id
+                collection_id=collection_id, embedder_id=embedder_id
             )
 
             response_serializer = NaiveRagSerializer(naive_rag)
@@ -129,9 +135,15 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
 
         URL: GET /naive-rag/collections/{collection_id}/naive-rag/
         """
+
+        try:
+            collection_id = int(collection_id)
+        except (ValueError, TypeError):
+            raise InvalidFieldType("collection_id", collection_id)
+
         try:
             naive_rag = NaiveRagService.get_or_none_naive_rag_by_collection(
-                int(collection_id)
+                collection_id
             )
 
             if not naive_rag:
@@ -220,10 +232,9 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
                 naive_rag_id=int(naive_rag_id)
             )
 
-            existing_count = (
-                NaiveRagDocumentConfig.objects.filter(naive_rag=naive_rag).count()
-                - len(new_configs)
-            )
+            existing_count = NaiveRagDocumentConfig.objects.filter(
+                naive_rag=naive_rag
+            ).count() - len(new_configs)
 
             new_configs_data = [
                 {

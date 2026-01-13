@@ -143,6 +143,20 @@ class InvalidCollectionIdException(DocumentUploadException):
         )
 
 
+class InvalidFieldType(CustomAPIExeption):
+    """Raised when a field has invalid type"""
+
+    status_code = 400
+
+    def __init__(self, field_name, field_value, expected_type="integer"):
+        self.field_name = field_name
+        self.field_value = field_value
+        self.expected_type = expected_type
+        super().__init__(
+            f"Invalid {field_name}: '{field_value}'. Must be a valid {expected_type}."
+        )
+
+
 class RagException(CustomAPIExeption):
     """Base exception for RAG operations."""
 

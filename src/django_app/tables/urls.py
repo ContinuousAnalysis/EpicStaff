@@ -245,18 +245,18 @@ urlpatterns = [
         name="process-rag-indexing",
     ),
     path(
-        "documents/source-collection/<int:collection_id>/upload/",
+        "documents/source-collection/<str:collection_id>/upload/",
         DocumentManagementViewSet.as_view({"post": "upload_documents"}),
         name="document-upload",
     ),
     path(
-        "source-collections/<int:collection_id>/documents/",
+        "source-collections/<str:collection_id>/documents/",
         collection_documents_viewset,
         name="collection-documents",
     ),
     # NaiveRag endpoints
     path(
-        "naive-rag/collections/<int:collection_id>/naive-rag/",
+        "naive-rag/collections/<str:collection_id>/naive-rag/",
         NaiveRagViewSet.as_view(
             {"post": "create_or_update", "get": "get_by_collection"}
         ),
