@@ -16,6 +16,7 @@ from tables.exceptions import (
     CollectionNotFoundException,
     NoFilesProvidedException,
     DocumentNotFoundException,
+    InvalidCollectionIdException,
 )
 
 
@@ -394,3 +395,29 @@ class DocumentManagementService:
             "deleted_count": deleted_count,
             "documents": deleted_info,
         }
+
+    @staticmethod
+    def get_documents_list(collection_id: str = None) -> models.QuerySet:
+        """
+        Get list of documents, optionally filtered by collection.
+        """
+        queryset = DocumentMetadata.objects.select_related("source_collection")
+
+        if collection_id:
+            try:
+                collection_id_int = int(collection_id)
+            except (ValueError, TypeError):
+                raise InvalidCollectionIdException(collection_id)
+
+            collection_exists = SourceCollection.objects.filter(
+                collection_id=collection_id_int
+            ).exists()
+
+            if not collection_exists:
+                logger.warning(f"Collection {collection_id_int} not found")
+                raise CollectionNotFoundException(collection_id_int)
+
+            queryset = queryset.filter(source_collection_id=collection_id_int)
+            logger.info(f"Filtering documents by collection {collection_id_int}")
+
+        return queryset

@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from django.shortcuts import get_object_or_404
 
 from tables.models import DocumentMetadata, SourceCollection
@@ -173,6 +174,23 @@ class DocumentViewSet(
             return DocumentDetailSerializer
         return DocumentMetadataSerializer
 
+    @swagger_auto_schema(
+        operation_description="List all documents or filter by collection ID",
+        manual_parameters=[
+            openapi.Parameter(
+                "collection_id",
+                openapi.IN_QUERY,
+                description="Filter documents by collection ID",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            )
+        ],
+        responses={
+            200: DocumentListSerializer(many=True),
+            400: "Invalid collection_id parameter",
+            404: "Collection not found",
+        },
+    )
     def list(self, request, *args, **kwargs):
         """
         List all documents or filter by collection.
@@ -180,12 +198,10 @@ class DocumentViewSet(
         Query parameters:
         - collection_id: Filter by collection ID
         """
-        queryset = self.get_queryset()
-
-        # Filter by collection if provided
         collection_id = request.query_params.get("collection_id")
-        if collection_id:
-            queryset = queryset.filter(source_collection_id=collection_id)
+        queryset = DocumentManagementService.get_documents_list(
+            collection_id=collection_id
+        )
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
