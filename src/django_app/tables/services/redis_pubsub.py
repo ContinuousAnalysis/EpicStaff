@@ -72,13 +72,11 @@ class RedisPubSub:
                         f'Unable change status from {session.status} to {data["status"]}'
                     )
                 else:
-                    status_data = data.get("status_data", {})
-                    status_data["total_token_usage"] = (
-                        self._calculate_total_token_usage(data["session_id"])
-                    )
-
                     session.status = data["status"]
-                    session.status_data = status_data
+                    session.status_data = data.get("status_data", {})
+                    session.token_usage = self._calculate_total_token_usage(
+                        data["session_id"]
+                    )
                     session.save()
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
@@ -279,7 +277,7 @@ class RedisPubSub:
                             sessions_data[session_id].append(graph_session_message)
                         else:
                             logger.warning(
-                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {data}"
+                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {graph_session_message}"
                             )
 
                     for session_id, sessions_data_values in sessions_data.items():
