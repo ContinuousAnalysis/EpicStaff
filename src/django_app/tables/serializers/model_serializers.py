@@ -2,6 +2,7 @@ from typing import Any, Literal
 from decimal import Decimal
 from itertools import chain
 
+from django.db import transaction
 from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
@@ -89,6 +90,12 @@ from tables.models import (
 )
 from tables.models import (
     ToolConfig,
+)
+from tables.constants import (
+    DOMAIN_VARIABLES_KEY,
+    DOMAIN_ORGANIZATION_KEY,
+    DOMAIN_USER_KEY,
+    DOMAIN_PERSISTENT_KEY,
 )
 
 from django.core.exceptions import ValidationError
@@ -209,6 +216,7 @@ class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
             "required",
             "secret",
         ]
+
 
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
@@ -817,7 +825,9 @@ class TaskWriteSerializer(serializers.ModelSerializer):
                 python_code_tool_list.append(instance)
             elif prefix == "python-code-tool-config":
                 python_code_tool_config = PythonCodeToolConfig.objects.get(pk=id_)
-                instance = TaskPythonCodeToolConfigs(task=task, tool=python_code_tool_config)
+                instance = TaskPythonCodeToolConfigs(
+                    task=task, tool=python_code_tool_config
+                )
                 instance.full_clean()
                 python_code_tool_config_list.append(instance)
             elif prefix == "configured-tool":
@@ -1155,6 +1165,88 @@ class StartNodeSerializer(serializers.ModelSerializer):
 
     def get_node_name(self, obj):
         return "__start__"
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            old_variables = instance.variables.copy()
+
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+
+            graph_organization = GraphOrganization.objects.filter(
+                graph=instance.graph
+            ).first()
+
+            if not graph_organization:
+                return instance
+
+            if self._tracked_paths_changed(
+                old_variables, instance.variables, DOMAIN_ORGANIZATION_KEY
+            ):
+                graph_organization.persistent_variables = (
+                    self._get_persistent_variables(
+                        instance.variables, DOMAIN_ORGANIZATION_KEY
+                    )
+                )
+            if self._tracked_paths_changed(
+                old_variables, instance.variables, DOMAIN_USER_KEY
+            ):
+                graph_organization.user_variables = self._get_persistent_variables(
+                    instance.variables, DOMAIN_USER_KEY
+                )
+
+            graph_organization.save()
+            return instance
+
+    def _tracked_paths_changed(
+        self, old_vars: dict, new_vars: dict, object_key: str
+    ) -> bool:
+        """Check if the list of tracked paths changed (not the values)."""
+        old_paths = set(old_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
+        new_paths = set(new_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
+
+        return old_paths != new_paths
+
+    def _get_persistent_variables(self, variables: dict, object_key: str) -> dict:
+        """
+        Extract multiple dot-paths from `variables` and merge them
+        into a single nested dict.
+        """
+        persistent_variables = variables.get(DOMAIN_PERSISTENT_KEY, {}).get(
+            object_key, []
+        )
+        if not persistent_variables:
+            return {}
+
+        result = {}
+        for path in persistent_variables:
+            actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
+            value = self._get_by_path(actual_variables, path)
+            if value is None:
+                continue
+            self._set_by_path(result, path, value)
+
+        return result
+
+    def _get_by_path(self, source: dict, path: str) -> dict | None:
+        """Get value from nested dict by dot-path. Returns None if path not found."""
+        current = source
+        try:
+            for key in path.split("."):
+                current = current[key]
+            return current
+        except (KeyError, TypeError):
+            return None
+
+    def _set_by_path(self, target: dict, path: str, value) -> None:
+        current = target
+        keys = path.split(".")
+
+        for key in keys[:-1]:
+            current = current.setdefault(key, {})
+
+        current[keys[-1]] = value
 
 
 class EndNodeSerializer(serializers.ModelSerializer):
