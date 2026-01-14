@@ -73,77 +73,86 @@ EOF
 }
 
 create_knowledge_user(){
-    echo "=== Creating/Checking Knowledge User ==="
-    knowledge_user="${DB_KNOWLEDGE_USER}"
-    knowledge_password="${DB_KNOWLEDGE_PASSWORD}"
-    # Check if required environment variables are set
-    if [[ -z "$knowledge_user" || -z "$knowledge_password" ]]; then
-        echo "WARNING: DB_KNOWLEDGE_USER or DB_KNOWLEDGE_PASSWORD not set, skipping manager user creation"
-        return 0
-    fi
+      echo "=== Creating/Checking Knowledge User ==="
+      knowledge_user="${DB_KNOWLEDGE_USER}"
+      knowledge_password="${DB_KNOWLEDGE_PASSWORD}"
 
-    echo "Creating knowledge_user (${knowledge_user})..."
-    psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" <<EOF
-    DO \$\$
-    BEGIN
-        IF NOT EXISTS (
-            SELECT FROM pg_catalog.pg_roles WHERE rolname = '${knowledge_user}'
-        ) THEN
-            EXECUTE format('CREATE USER %I WITH PASSWORD %L', '${knowledge_user}', '${knowledge_password}');
-            RAISE NOTICE 'Created knowledge_user with CRUD access to knowledge tables';
-        ELSE
-            RAISE NOTICE 'knowledge_user already exists, skipping creation';
-        END IF;
-    END
-    \$\$;
+      # Check if required environment variables are set
+      if [[ -z "$knowledge_user" || -z "$knowledge_password" ]]; then
+          echo "WARNING: DB_KNOWLEDGE_USER or DB_KNOWLEDGE_PASSWORD not set, skipping knowledge user creation"
+          return 0
+      fi
 
-    -- Revoke any existing privileges (for safety)
-    REVOKE ALL ON ALL TABLES IN SCHEMA public FROM "${knowledge_user}";
+      echo "Creating knowledge_user (${knowledge_user})..."
+      psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" <<EOF
+      DO \$\$
+      BEGIN
+          IF NOT EXISTS (
+              SELECT FROM pg_catalog.pg_roles WHERE rolname = '${knowledge_user}'
+          ) THEN
+              EXECUTE format('CREATE USER %I WITH PASSWORD %L', '${knowledge_user}', '${knowledge_password}');
+              RAISE NOTICE 'Created knowledge_user with appropriate permissions';
+          ELSE
+              RAISE NOTICE 'knowledge_user already exists, skipping creation';
+          END IF;
+      END
+      \$\$;
 
-    -- Grant USAGE on the schema
-    GRANT USAGE ON SCHEMA public TO "${knowledge_user}";
+      -- Revoke any existing privileges (for safety)
+      REVOKE ALL ON ALL TABLES IN SCHEMA public FROM "${knowledge_user}";
 
-    -- Grant permission to create extensions (needed for uuid-ossp)
-    ALTER USER "${knowledge_user}" CREATEDB;
-    GRANT CREATE ON SCHEMA public TO "${knowledge_user}";
-    
-    -- Grant CREATE privilege on the current database
-    GRANT CREATE ON DATABASE "$target_db" TO "${knowledge_user}";
+      -- Grant USAGE on the schema
+      GRANT USAGE ON SCHEMA public TO "${knowledge_user}";
 
-    -- Grant SELECT permissions on read-only tables
-    GRANT SELECT ON TABLE tables_documentmetadata TO "${knowledge_user}";
-    GRANT SELECT ON TABLE tables_documentcontent TO "${knowledge_user}";
-    GRANT SELECT ON TABLE tables_sourcecollection TO "${knowledge_user}";
-    GRANT SELECT ON TABLE tables_embeddingconfig TO "${knowledge_user}";
-    GRANT SELECT ON TABLE tables_embeddingmodel TO "${knowledge_user}";
-    GRANT SELECT ON TABLE tables_provider TO "${knowledge_user}";
+      -- Grant permission to create extensions (needed for uuid-ossp and pgvector)
+      ALTER USER "${knowledge_user}" CREATEDB;
+      GRANT CREATE ON SCHEMA public TO "${knowledge_user}";
 
-    -- Grant UPDATE permissions on tables that need status updates
-    GRANT UPDATE ON TABLE tables_documentmetadata TO "${knowledge_user}";
-    GRANT UPDATE ON TABLE tables_sourcecollection TO "${knowledge_user}";
+      -- Grant CREATE privilege on the current database
+      GRANT CREATE ON DATABASE "$target_db" TO "${knowledge_user}";
 
-    -- Grant full CRUD permissions on tables_documentembedding (main working table)
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tables_documentembedding TO "${knowledge_user}";
+      -- === READ-ONLY TABLES ===
 
-    -- Grant CRUD permissions on working tables
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tables_chunk TO "${knowledge_user}";
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tables_documentembedding TO "${knowledge_user}";
+      -- Core configuration tables
+      GRANT SELECT ON TABLE tables_provider TO "${knowledge_user}";
+      GRANT SELECT ON TABLE tables_embeddingmodel TO "${knowledge_user}";
+      GRANT SELECT ON TABLE tables_embeddingconfig TO "${knowledge_user}";
 
-    -- Optional: also allow insert/delete on metadata and content if needed
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tables_documentmetadata TO "${knowledge_user}";
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tables_documentcontent TO "${knowledge_user}";
+      -- Collection and document tables
+      GRANT SELECT ON TABLE tables_sourcecollection TO "${knowledge_user}";
+      GRANT SELECT ON TABLE tables_documentmetadata TO "${knowledge_user}";
+      GRANT SELECT ON TABLE tables_documentcontent TO "${knowledge_user}";
 
-    -- Grant access to sequences (needed for autoincrement IDs)
-    GRANT USAGE, SELECT, UPDATE ON SEQUENCE tables_chunk_id_seq TO "${knowledge_user}";
-    GRANT USAGE, SELECT, UPDATE ON SEQUENCE tables_documentmetadata_document_id_seq TO "${knowledge_user}";
-    GRANT USAGE, SELECT, UPDATE ON SEQUENCE tables_documentcontent_id_seq TO "${knowledge_user}";
+      -- BaseRagType table
+      GRANT SELECT ON TABLE tables_baseragtype TO "${knowledge_user}";
 
-    -- Prevent automatic access to future tables (security measure)
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public 
-    REVOKE ALL ON TABLES FROM "${knowledge_user}";
+      -- === STATUS UPDATE TABLES ===
+
+      GRANT SELECT, UPDATE ON TABLE tables_naiverag TO "${knowledge_user}";
+
+      GRANT SELECT, UPDATE ON TABLE tables_naiveragdocumentconfig TO "${knowledge_user}";
+
+      -- === FULL CRUD TABLES ===
+
+      -- NaiveRagChunk table
+      GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tables_naiveragchunk TO "${knowledge_user}";
+
+      -- NaiveRagEmbedding table
+      GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tables_naiveragembedding TO "${knowledge_user}";
+
+      -- === SEQUENCES ===
+
+      -- Sequence for NaiveRagChunk (chunk_id autoincrement)
+      GRANT USAGE, SELECT, UPDATE ON SEQUENCE tables_naiveragchunk_chunk_id_seq TO "${knowledge_user}";
+
+      -- tables_naiveragembedding uses UUID primary key so no sequence needed
+
+      -- Prevent automatic access to future tables (security measure)
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public
+      REVOKE ALL ON TABLES FROM "${knowledge_user}";
 
 EOF
-    echo "Knowledge user created or already exists with appropriate permissions: ${knowledge_user}"  
+      echo "Knowledge user created or already exists with appropriate permissions: ${knowledge_user}"
 }
 
 create_realtime_user() {

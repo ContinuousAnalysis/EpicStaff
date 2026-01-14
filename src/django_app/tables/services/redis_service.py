@@ -8,9 +8,14 @@ from redis.backoff import ExponentialBackoff
 from redis.retry import Retry
 from threading import Lock
 
-from django_app.settings import KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL, STOP_SESSION_CHANNEL
+from django_app.settings import (
+    KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL,
+    KNOWLEDGE_INDEXING_CHANNEL,
+    STOP_SESSION_CHANNEL,
+)
 from tables.request_models import (
     ChunkDocumentMessage,
+    ProcessRagIndexingMessage,
     RealtimeAgentChatData,
     SessionData,
     StopSessionMessage,
@@ -99,6 +104,31 @@ class RedisService(metaclass=SingletonMeta):
         self.redis_client.publish(channel=channel, message=json.dumps(message))
         logger.info(f"Sent collection_id: {collection_id} to {channel}.")
 
+    def publish_rag_indexing(
+        self, rag_id: int, rag_type: str, collection_id: int
+    ) -> None:
+        """
+        Publish RAG indexing message to knowledge service.
+
+        Args:
+            rag_id: ID of the specific RAG implementation (e.g., NaiveRag.naive_rag_id)
+            rag_type: Type of RAG ("naive" or "graph")
+            collection_id: Source collection ID
+        """
+        message = ProcessRagIndexingMessage(
+            rag_id=rag_id,
+            rag_type=rag_type,
+            collection_id=collection_id
+        )
+        self.redis_client.publish(
+            channel=KNOWLEDGE_INDEXING_CHANNEL,
+            message=message.model_dump_json()
+        )
+        logger.info(
+            f"Sent RAG indexing request to {KNOWLEDGE_INDEXING_CHANNEL}: "
+            f"rag_type={rag_type}, rag_id={rag_id}, collection_id={collection_id}"
+        )
+
     def publish_realtime_agent_chat(
         self, rt_agent_chat_data: RealtimeAgentChatData
     ) -> None:
@@ -156,8 +186,8 @@ class RedisService(metaclass=SingletonMeta):
                 await pubsub.unsubscribe(*channels)
                 await pubsub.close()
 
-    def publish_process_document_chunking(self, document_id):
-        message = ChunkDocumentMessage(document_id=document_id)
+    def publish_process_document_chunking(self, naive_rag_document_id):
+        message = ChunkDocumentMessage(naive_rag_document_id=naive_rag_document_id)
         self.redis_client.publish(
             KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL, json.dumps(message.model_dump())
         )
