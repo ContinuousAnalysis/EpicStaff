@@ -1168,7 +1168,7 @@ class StartNodeSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        old_variables = instance.variables.copy()
+        old_variables = instance.variables.copy() if instance.variables else {}
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -1181,14 +1181,21 @@ class StartNodeSerializer(serializers.ModelSerializer):
         if not graph_organization:
             return instance
 
-        if self._tracked_paths_changed(
-            old_variables, instance.variables, DOMAIN_ORGANIZATION_KEY
+        if self._should_update_persistent(
+            old_variables,
+            instance.variables,
+            graph_organization.persistent_variables or {},
+            DOMAIN_ORGANIZATION_KEY,
         ):
             graph_organization.persistent_variables = self._get_persistent_variables(
                 instance.variables, DOMAIN_ORGANIZATION_KEY
             )
-        if self._tracked_paths_changed(
-            old_variables, instance.variables, DOMAIN_USER_KEY
+
+        if self._should_update_persistent(
+            old_variables,
+            instance.variables,
+            graph_organization.user_variables or {},
+            DOMAIN_USER_KEY,
         ):
             graph_organization.user_variables = self._get_persistent_variables(
                 instance.variables, DOMAIN_USER_KEY
@@ -1214,14 +1221,23 @@ class StartNodeSerializer(serializers.ModelSerializer):
 
         return super().validate(attrs)
 
-    def _tracked_paths_changed(
-        self, old_vars: dict, new_vars: dict, object_key: str
+    def _should_update_persistent(
+        self, old_vars: dict, new_vars: dict, existing_persistent: dict, object_key: str
     ) -> bool:
-        """Check if the list of tracked paths changed (not the values)."""
+        """
+        Check if we should update persistent storage:
+        1. If tracked paths changed
+        2. If persistent storage is empty but we have paths to track
+        """
         old_paths = set(old_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
         new_paths = set(new_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
 
-        return old_paths != new_paths
+        if old_paths != new_paths:
+            return True
+        if new_paths and not existing_persistent:
+            return True
+
+        return False
 
     def _get_persistent_variables(self, variables: dict, object_key: str) -> dict:
         """
