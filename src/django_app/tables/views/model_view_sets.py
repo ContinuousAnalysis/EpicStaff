@@ -331,6 +331,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
 
         return queryset
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         """Create agent and return response with AgentReadSerializer."""
         write_serializer = self.get_serializer(data=request.data)
@@ -343,6 +344,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         )
         return Response(read_serializer.data, status=status.HTTP_201_CREATED)
 
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         if "tools" in request.data:
@@ -359,6 +361,7 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
+    @transaction.atomic
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         if "tools" in request.data:
