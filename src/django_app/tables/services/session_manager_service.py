@@ -43,6 +43,7 @@ from tables.models import (
     OrganizationUser,
     GraphOrganizationUser,
 )
+from tables.constants import DOMAIN_VARIABLES_KEY
 
 
 class SessionManagerService(metaclass=SingletonMeta):
@@ -84,6 +85,10 @@ class SessionManagerService(metaclass=SingletonMeta):
             variables = {**start_node.variables, **variables}
         elif start_node.variables:
             variables = start_node.variables
+
+        actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
+        if actual_variables:
+            variables = actual_variables
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
         graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
