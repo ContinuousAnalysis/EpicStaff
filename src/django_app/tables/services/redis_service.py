@@ -72,8 +72,8 @@ class RedisService(metaclass=SingletonMeta):
             self._initialize_async()
         return self._async_redis_client
 
-    def publish_session_data(self, session_data: SessionData) -> None:
-        self.redis_client.publish(f"sessions:schema", session_data.model_dump_json())
+    def publish_session_data(self, session_data: SessionData) -> int:
+        return self.redis_client.publish(f"sessions:schema", session_data.model_dump_json())
 
     def send_user_input(
         self,
@@ -192,8 +192,8 @@ class RedisService(metaclass=SingletonMeta):
             KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL, json.dumps(message.model_dump())
         )
 
-    def publish_stop_session(self, session_id):
+    def publish_stop_session(self, session_id) -> int:
         message = StopSessionMessage(session_id=session_id)
-        self.redis_client.publish(
+        return self.redis_client.publish(
             STOP_SESSION_CHANNEL, json.dumps(message.model_dump())
         )

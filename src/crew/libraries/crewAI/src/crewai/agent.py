@@ -11,6 +11,7 @@ from crewai.agents.crew_agent_executor import (
     KNOWLEDGE_KEYWORD,
     END_OF_KNOWLEDGE_KEYWORD,
     EMPTY_KNOWLEDGE_KEYWORD,
+    EMPTY_KNOWLEDGE_KEYWORD,
 )
 from crewai.llm import LLM
 from crewai.memory.contextual.contextual_memory import ContextualMemory

@@ -5,6 +5,8 @@ import shutil
 import pytest
 from django.core.management import call_command
 from django.core.cache import cache
+from tables.validators.python_code_tool_config_validator import PythonCodeToolConfigValidator
+from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.realtime_models import RealtimeAgent
 from tables.models.llm_models import (
     RealtimeConfig,
@@ -51,7 +53,7 @@ from tables.serializers.export_serializers import (
 from django.utils.crypto import get_random_string
 from tests.helpers import data_to_json_file
 
-
+from rest_framework.test import APIClient
 import fakeredis
 
 
@@ -725,3 +727,104 @@ def crew_data():
             "default_temperature": 0.0,
         }
     ]
+
+
+@pytest.fixture
+def python_code() -> PythonCode:
+    return PythonCode.objects.create(
+        code="def main(): return 42",
+        entrypoint="main",
+        libraries="requests json",
+        global_kwargs={}
+    )
+
+
+@pytest.fixture
+def python_code_tool(python_code) -> PythonCodeTool:
+    return PythonCodeTool.objects.create(
+        name="MyTool",
+        description="Test PythonCodeTool",
+        args_schema={"type": "object"},
+        python_code=python_code,
+        favorite=False,
+        built_in=False,
+    )
+
+
+@pytest.fixture
+def python_code_tool_fields(python_code_tool) -> list[PythonCodeToolConfigField]:
+    fields = [
+        PythonCodeToolConfigField.objects.create(
+            tool=python_code_tool,
+            name="arg1",
+            description="Argument 1",
+            data_type=PythonCodeToolConfigField.FieldType.STRING,
+            required=True,
+        ),
+        PythonCodeToolConfigField.objects.create(
+            tool=python_code_tool,
+            name="arg2",
+            description="Argument 2",
+            data_type=PythonCodeToolConfigField.FieldType.INTEGER,
+            required=False,
+        ),
+    ]
+    return fields
+
+
+@pytest.fixture
+def python_code_tool_config(python_code_tool) -> PythonCodeToolConfig:
+    return PythonCodeToolConfig.objects.create(
+        name="config1",
+        tool=python_code_tool,
+        configuration={"arg1": "value1", "arg2": 10},
+    )
+
+@pytest.fixture
+def validator():
+    return PythonCodeToolConfigValidator()
+
+@pytest.fixture
+def mock_tool(mocker):
+    """Creates a mock PythonCodeTool."""
+    tool = MagicMock(spec=PythonCodeTool)
+    return tool
+
+def create_mock_field(name, data_type, required=True):
+    """Helper to create a mock configuration field."""
+    field = MagicMock(spec=PythonCodeToolConfigField)
+    field.name = name
+    field.data_type = data_type
+    field.required = required
+    return field
+
+
+@pytest.fixture
+def tool_config_field_int(db, python_code_tool):
+    """Creates an Integer configuration field (required) for the tool."""
+    return PythonCodeToolConfigField.objects.create(
+        tool=python_code_tool,
+        name="batch_size",
+        description="Size of the batch",
+        data_type=PythonCodeToolConfigField.FieldType.INTEGER,
+        required=True,
+    )
+
+@pytest.fixture
+def tool_config_field_str(db, python_code_tool):
+    """Creates a String configuration field (optional) for the tool."""
+    return PythonCodeToolConfigField.objects.create(
+        tool=python_code_tool,
+        name="api_key",
+        data_type=PythonCodeToolConfigField.FieldType.STRING,
+        required=False,
+    )
+
+@pytest.fixture
+def existing_config(db, python_code_tool):
+    """Creates an existing configuration entry."""
+    return PythonCodeToolConfig.objects.create(
+        name="production_config",
+        tool=python_code_tool,
+        configuration={"batch_size": 50}
+    )

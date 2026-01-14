@@ -1,5 +1,6 @@
 import json
 import threading
+from types import CoroutineType
 import uuid
 from typing import Any
 from services.graph.events import StopEvent
@@ -15,22 +16,14 @@ from models.request_models import SessionData, StopSessionMessage
 from models.graph_models import GraphMessage
 from loguru import logger
 import asyncio
-from pathlib import Path
-from utils.helpers import load_env
 from services.graph.graph_builder import SessionGraphBuilder
 from services.knowledge_search_service import KnowledgeSearchService
 from dataclasses import asdict, dataclass
-import sys
-import gc
-
-session_data_tasks: dict[int, int] = {}
-import ctypes
 
 
 @dataclass
-class SessionTaskItem:
-
-    task: asyncio.Task
+class SessionCoroItem:
+    coro: CoroutineType
     stop_event: StopEvent
 
 
@@ -66,8 +59,7 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
         self.crewai_output_channel = crewai_output_channel
         self.stop_session_channel = stop_session_channel
         self.knowledge_search_service = knowledge_search_service
-        self.max_concurrent_sessions = (max_concurrent_sessions,)
-        self.session_graph_pool: dict[int, SessionTaskItem] = {}
+        self.session_graph_pool: dict[int, SessionCoroItem] = {}
         self.session_queue = asyncio.Queue()
         self._worker_task: asyncio.Task | None = None
         self._semaphore = asyncio.Semaphore(max_concurrent_sessions)
@@ -193,7 +185,13 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
         try:
             logger.info(f"Received message from channel {self.session_schema_channel}")
             session_data = SessionData.model_validate_json(data)
-            await self.session_queue.put(session_data)
+
+            stop_event = StopEvent()
+            coro = self.session_runner(session_data, stop_event)
+            coro_item = SessionCoroItem(coro, stop_event)
+            self.session_graph_pool[session_data.id] = coro_item
+            await self.session_queue.put(session_data.id)
+        
         except Exception as e:
             logger.exception(f"Error handling session start: {e}")
 
@@ -243,12 +241,18 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
 
         stop_session_message = StopSessionMessage.model_validate(json.loads(data))
         session_id = stop_session_message.session_id
+        await self.redis_service.aupdate_session_status(
+            session_id=session_id, status="stop"
+        )
+
         if session_id not in self.session_graph_pool:
             logger.warning(
                 f"Can not fetch task from session_graph_pool for session ID: {session_id}."
             )
             return
         self.session_graph_pool[session_id].stop_event.set()
+        self.session_graph_pool.pop(session_id, None)
+        
 
     async def session_runner(self, data: SessionData, stop_event: StopEvent):
         async with self._semaphore:
@@ -271,14 +275,15 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
     async def _session_worker(self):
         logger.info("Session worker started")
         while True:
-            session_data = await self.session_queue.get()
-            session_id = session_data.id
+            session_id: int = await self.session_queue.get()
+            session_coro_item: SessionCoroItem = self.session_graph_pool.get(session_id)
+            if session_coro_item is None:
+                logger.warning(f"Session {session_id} was removed before it started")
+                continue
+            
             logger.info(f"Dequeued session {session_id}")
 
-            stop_event = StopEvent()
-            task = asyncio.create_task(self.session_runner(session_data, stop_event))
-            self.session_graph_pool[session_id] = SessionTaskItem(task, stop_event)
-            session_data_tasks[session_id] = id(session_data)
+            task = asyncio.create_task(session_coro_item.coro)
 
             task.add_done_callback(self.create_callback(session_id))
             self.session_queue.task_done()

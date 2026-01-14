@@ -188,6 +188,10 @@ CACHES = {
     }
 }
 
+MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
+MEDIA_URL = "/media/"
+
+MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL = os.getenv(
     "KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL", "knowledge:chunk"
@@ -199,3 +203,10 @@ KNOWLEDGE_INDEXING_CHANNEL = os.getenv(
     "KNOWLEDGE_INDEXING_CHANNEL", "knowledge:indexing"
 )
 STOP_SESSION_CHANNEL = os.getenv("STOP_SESSION_CHANNEL", "sessions:stop")
+
+WEBHOOK_USE_TUNNEL = os.getenv("WEBHOOK_USE_TUNNEL", "False") in ["True", "true", 1]
+
+if WEBHOOK_USE_TUNNEL:
+    WEBHOOK_TUNNEL = os.getenv("WEBHOOK_TUNNEL", None)
+else:
+    WEBHOOK_TUNNEL = None

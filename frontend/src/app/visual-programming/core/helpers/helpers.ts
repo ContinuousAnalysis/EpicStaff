@@ -1,7 +1,6 @@
 import { BasePort, CustomPortId, ViewPort } from '../models/port.model';
 import { NodeType } from '../enums/node-type';
 import { DEFAULT_TOOL_NODE_PORTS } from '../rules/tool-ports/tool-node-default-ports';
-import { DEFAULT_AGENT_NODE_PORTS } from '../rules/agent-ports/agent-node-default-ports';
 import { PORTS_DICTIONARY } from '../rules/all_ports';
 import { DEFAULT_LLM_NODE_PORTS } from '../rules/llm-ports/llm-node-default-ports';
 import { DEFAULT_PROJECT_NODE_PORTS } from '../rules/project-ports/project-node-default-ports';
@@ -16,6 +15,13 @@ import { DEFAULT_FILE_EXTRACTOR_NODE_PORTS } from '../rules/file-extractor-ports
 import { DEFAULT_END_NODE_PORTS } from '../rules/end-ports/end-ports-default-ports';
 import { NodeModel } from '../models/node.model';
 import { ConditionGroup } from '../models/decision-table.model';
+import { DEFAULT_AUDIO_TO_TEXT_NODE_PORTS } from '../rules/audio-to-text-node-ports/audio-to-text-node-ports';
+import { DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS } from '../rules/webhook-trigger-ports/webhook-trigger-default-ports';
+
+export const isDecisionPortRole = (role: string) =>
+    role.startsWith('decision-out-') ||
+    role === 'decision-default' ||
+    role === 'decision-error';
 
 export function parsePortId(
     portId: string
@@ -36,8 +42,7 @@ export function parsePortId(
 
 export function getPortsForType(nodeType: NodeType): BasePort[] {
     switch (nodeType) {
-        case NodeType.AGENT:
-            return DEFAULT_AGENT_NODE_PORTS;
+   
         case NodeType.TASK:
             return DEFAULT_TASK_NODE_PORTS;
         case NodeType.LLM:
@@ -58,6 +63,10 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
             return DEFAULT_TABLE_NODE_PORTS;
         case NodeType.FILE_EXTRACTOR:
             return DEFAULT_FILE_EXTRACTOR_NODE_PORTS;
+        case NodeType.AUDIO_TO_TEXT:
+            return DEFAULT_AUDIO_TO_TEXT_NODE_PORTS;
+        case NodeType.WEBHOOK_TRIGGER:
+            return DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS;
         case NodeType.END:
             return DEFAULT_END_NODE_PORTS;
         default:
@@ -68,7 +77,7 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
 
 export function getPortByRole(portRole: string): BasePort | undefined {
     const port = PORTS_DICTIONARY[portRole];
-    if (!port) {
+    if (!port && !isDecisionPortRole(portRole)) {
         console.warn(`No port definition found for role: "${portRole}"`);
     }
     return port;
@@ -94,18 +103,13 @@ export function isConnectionValid(
     let targetPort = getPortByRole(targetInfo.portRole);
 
     // Handle dynamic decision table output ports
-    const isDecisionPort = (role: string) => 
-        role.startsWith('decision-out-') || 
-        role === 'decision-default' || 
-        role === 'decision-error';
-    
-    if (!sourcePort && isDecisionPort(sourceInfo.portRole)) {
+    if (!sourcePort && isDecisionPortRole(sourceInfo.portRole)) {
         sourcePort = {
             ...DEFAULT_TABLE_NODE_PORTS.find((p) => p.port_type === 'output')!,
             role: sourceInfo.portRole,
         };
     }
-    if (!targetPort && isDecisionPort(targetInfo.portRole)) {
+    if (!targetPort && isDecisionPortRole(targetInfo.portRole)) {
         targetPort = {
             ...DEFAULT_TABLE_NODE_PORTS.find((p) => p.port_type === 'output')!,
             role: targetInfo.portRole,
@@ -143,20 +147,15 @@ export function isConnectionValid(
     }
 
     // 5️⃣ Validate allowedConnections
-    const isDecisionTableOutput = (role: string) => 
-        role.startsWith('decision-out-') || 
-        role === 'decision-default' || 
-        role === 'decision-error';
-    
     const sourceAllowsTarget = sourcePort.allowedConnections.some(allowed => {
         if (allowed === targetPort.role) return true;
-        if (allowed === 'table-out' && isDecisionTableOutput(targetInfo.portRole)) return true;
+        if (allowed === 'table-out' && isDecisionPortRole(targetInfo.portRole)) return true;
         return false;
     });
     
     const targetAllowsSource = targetPort.allowedConnections.some(allowed => {
         if (allowed === sourcePort.role) return true;
-        if (allowed === 'table-out' && isDecisionTableOutput(sourceInfo.portRole)) return true;
+        if (allowed === 'table-out' && isDecisionPortRole(sourceInfo.portRole)) return true;
         return false;
     });
 
@@ -190,18 +189,13 @@ export function defineSourceTargetPair(
     let portB: BasePort | undefined = getPortByRole(parsedB.portRole);
 
     // Handle dynamic decision table output ports
-    const isDecisionPort = (role: string) => 
-        role.startsWith('decision-out-') || 
-        role === 'decision-default' || 
-        role === 'decision-error';
-    
-    if (!portA && isDecisionPort(parsedA.portRole)) {
+    if (!portA && isDecisionPortRole(parsedA.portRole)) {
         portA = {
             ...DEFAULT_TABLE_NODE_PORTS.find((p) => p.port_type === 'output')!,
             role: parsedA.portRole,
         };
     }
-    if (!portB && isDecisionPort(parsedB.portRole)) {
+    if (!portB && isDecisionPortRole(parsedB.portRole)) {
         portB = {
             ...DEFAULT_TABLE_NODE_PORTS.find((p) => p.port_type === 'output')!,
             role: parsedB.portRole,
@@ -262,8 +256,8 @@ export function generatePortsForNode(
 export function generatePortsForDecisionTableNode(
     nodeId: string,
     conditionGroups: ConditionGroup[],
-    hasDefaultNode?: boolean,
-    hasErrorNode?: boolean
+    _hasDefaultNode?: boolean,
+    _hasErrorNode?: boolean
 ): ViewPort[] {
     // Use the default input port from DEFAULT_TABLE_NODE_PORTS
     const inputPortConfig = DEFAULT_TABLE_NODE_PORTS.find(
@@ -273,7 +267,7 @@ export function generatePortsForDecisionTableNode(
         ...(inputPortConfig ?? {
             port_type: 'input',
             role: 'table-in',
-            multiple: false,
+            multiple: true,
             label: 'In',
             allowedConnections: [
                 'project-out',
@@ -282,6 +276,7 @@ export function generatePortsForDecisionTableNode(
                 'table-out',
                 'start-start',
                 'llm-out-right',
+                'file-extractor-out',
             ],
             position: 'left',
             color: '#00aaff',
@@ -289,7 +284,13 @@ export function generatePortsForDecisionTableNode(
         id: `${nodeId}_table-in` as `${string}_${string}`,
     };
 
-    const validGroups = conditionGroups.filter(group => group.valid === true);
+    const validGroups = conditionGroups
+        .filter((group) => group.valid !== false)
+        .sort(
+            (a, b) =>
+                (a.order ?? Number.MAX_SAFE_INTEGER) -
+                (b.order ?? Number.MAX_SAFE_INTEGER)
+        );
 
     const defaultOutputConfig = DEFAULT_TABLE_NODE_PORTS.find(
         (p) => p.port_type === 'output'
@@ -324,19 +325,17 @@ export function generatePortsForDecisionTableNode(
     });
 
     const specialPorts: ViewPort[] = [];
-    
-    if (hasDefaultNode) {
+
+    if (defaultOutputConfig) {
         specialPorts.push({
-            ...defaultOutputConfig!,
+            ...defaultOutputConfig,
             role: 'decision-default',
             label: 'Default',
             id: `${nodeId}_decision-default` as `${string}_${string}`,
         });
-    }
-    
-    if (hasErrorNode) {
+
         specialPorts.push({
-            ...defaultOutputConfig!,
+            ...defaultOutputConfig,
             role: 'decision-error',
             label: 'Error',
             id: `${nodeId}_decision-error` as `${string}_${string}`,

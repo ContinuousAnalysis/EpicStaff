@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Any, List, Literal, Optional, Union
 from pydantic import AnyUrl, BaseModel, Field, HttpUrl, model_validator
@@ -109,7 +110,7 @@ class BaseToolData(BaseModel):
             raise ValueError(
                 "Invalid unique_name. Unique name should be splited by `:`. \nFor example: python-code-tool:1"
             )
-        if prefix == "python-code-tool":
+        if prefix == "python-code-tool" or "python-code-tool-config":
             values["data"] = PythonCodeToolData(**data)
         elif prefix == "configured-tool":
             values["data"] = ConfiguredToolData(**data)
@@ -325,6 +326,12 @@ class FileExtractorNodeData(BaseModel):
     output_variable_path: str | None = None
 
 
+class AudioTranscriptionNodeData(BaseModel):
+    node_name: str
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
 class LLMNodeData(BaseModel):
     node_name: str
     llm_data: LLMData
@@ -376,13 +383,15 @@ class WebhookTriggerNodeData(BaseModel):
 class GraphData(BaseModel):
     name: str
     crew_node_list: list[CrewNodeData] = []
+    webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
+    audio_transcription_node_list: list[AudioTranscriptionNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
-    entry_point: str
+    entrypoint: str
     end_node: EndNodeData | None
 
 

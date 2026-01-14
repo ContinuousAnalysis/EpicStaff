@@ -1,6 +1,6 @@
 tool-data:
-  name: "mysql-search-tool"
-  description: "Write your DB URI in the domain variables in the format {\"DB_URI\" = \"YOUR_DB_URI\"}\n\nA tool that executes only SELECT SQL queries on the provided MySQL database. "
+  name: "MySQL Search Tool"
+  description: "A tool that executes SQL queries on the provided MySQL database. Write your DB URI in the domain variables in the format {\"DB_URI\" = \"YOUR_DB_URI\"}"
   args-schema: "args_schema.json"
   code-file: "main.py"
   entrypoint: "main"

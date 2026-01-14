@@ -1,5 +1,5 @@
 tool-data:
-  name: "file-count-lines"
+  name: "File Count Lines Tool"
   description: "A tool that can be used to count the number of lines in a file from a given filepath."
   args-schema: "args_schema.json"
   code-file: "main.py"

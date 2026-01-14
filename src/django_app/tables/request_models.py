@@ -291,6 +291,12 @@ class FileExtractorNodeData(BaseModel):
     output_variable_path: str | None = None
 
 
+class AudioTranscriptionNodeData(BaseModel):
+    node_name: str
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
 class LLMNodeData(BaseModel):
     node_name: str
     llm_data: LLMData
@@ -333,17 +339,22 @@ class ConditionalEdgeData(BaseModel):
     then: str | None
     input_map: dict[str, Any]
 
+class WebhookTriggerNodeData(BaseModel):
+    node_name: str
+    python_code: PythonCodeData
 
 class GraphData(BaseModel):
     name: str
     crew_node_list: list[CrewNodeData] = []
+    webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
+    audio_transcription_node_list: list[AudioTranscriptionNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
-    entry_point: str
+    entrypoint: str
     end_node: EndNodeData | None
 
 
@@ -376,6 +387,11 @@ class ChunkDocumentMessageResponse(BaseModel):
 
 class StopSessionMessage(BaseModel):
     session_id: int
+
+
+class WebhookEventData(BaseModel):
+    path: str
+    payload: dict
 
 
 class ProcessRagIndexingMessage(BaseModel):

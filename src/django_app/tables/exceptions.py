@@ -61,7 +61,7 @@ class EndNodeValidationError(CustomAPIExeption):
     default_detail = "ValidationError occured in session_manager_service"
 
 
-class FileExtractorValidationError(CustomAPIExeption):
+class FileNodeValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = "FileExtractorNode requires input arguments"
 
@@ -79,6 +79,20 @@ class BuiltInToolModificationError(CustomAPIExeption):
 
     def __init__(self, detail="Unable to remove built-in tools", code=None):
         super().__init__(detail=detail, code=code, status_code=400)
+
+
+class PythonCodeToolConfigSerializerError(CustomAPIExeption):
+    """
+    Exception raised when someone tries to modify a built-in PythonCodeToolConfig.
+    """
+
+    def __init__(
+        self,
+        detail="ValidationError occured in PythonCodeToolConfigSerializer",
+        code=None,
+    ):
+        super().__init__(detail=detail, code=code, status_code=400)
+
 
 
 class DocumentUploadException(CustomAPIExeption):

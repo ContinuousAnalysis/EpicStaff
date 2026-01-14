@@ -206,6 +206,21 @@ class AgentPythonCodeTools(models.Model):
         unique_together = ("agent_id", "pythoncodetool_id")
 
 
+class AgentPythonCodeToolConfigs(models.Model):
+    agent = models.ForeignKey(
+        "Agent", on_delete=models.CASCADE, related_name="python_code_tool_configs"
+    )
+    pythoncodetoolconfig = models.ForeignKey(
+        "PythonCodeToolConfig", on_delete=models.CASCADE
+    )
+
+    class Meta:
+        unique_together = (
+            "agent_id",
+            "pythoncodetoolconfig_id",
+        )
+
+
 class AgentMcpTools(models.Model):
     agent = models.ForeignKey(
         "Agent", on_delete=models.CASCADE, related_name="mcp_tools"
@@ -451,6 +466,18 @@ class TaskPythonCodeTools(models.Model):
         "Task", on_delete=models.CASCADE, related_name="task_python_code_tool_list"
     )
     tool = models.ForeignKey("PythonCodeTool", on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("task", "tool")
+
+
+class TaskPythonCodeToolConfigs(models.Model):
+    task = models.ForeignKey(
+        "Task",
+        on_delete=models.CASCADE,
+        related_name="task_python_code_tool_config_list",
+    )
+    tool = models.ForeignKey("PythonCodeToolConfig", on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ("task", "tool")

@@ -20,7 +20,9 @@ import {
 import { StartNode } from '../../../pages/flows-page/components/flow-visual-programming/models/start-node.model';
 import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
+import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
 import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
+import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 
 export interface GraphDto {
     id: number;
@@ -32,11 +34,13 @@ export interface GraphDto {
     conditional_edge_list: ConditionalEdge[];
     llm_node_list: GetLLMNodeRequest[];
     file_extractor_node_list: GetFileExtractorNodeRequest[];
+    webhook_trigger_node_list: GetWebhookTriggerNodeRequest[];
     end_node_list: EndNode[];
     decision_table_node_list: GetDecisionTableNodeRequest[];
     description: string;
     metadata: FlowModel;
     tags?: [];
+    audio_transcription_node_list: GetAudioToTextNodeRequest[];
 }
 
 export interface GetGraphLightRequest {
@@ -59,6 +63,7 @@ export interface CreateGraphDtoRequest {
     conditional_edge_list?: ConditionalEdge[];
     llm_node_list?: GetLLMNodeRequest[];
     file_extractor_node_list?: GetFileExtractorNodeRequest[];
+    webhook_trigger_node_list?: GetWebhookTriggerNodeRequest[];
     end_node_list?: EndNode[];
     decision_table_node_list?: GetDecisionTableNodeRequest[];
 }

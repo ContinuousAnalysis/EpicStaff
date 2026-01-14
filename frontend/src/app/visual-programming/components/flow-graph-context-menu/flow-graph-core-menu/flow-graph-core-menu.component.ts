@@ -110,6 +110,12 @@ export class FlowGraphCoreMenuComponent {
             color: NODE_COLORS[NodeType.FILE_EXTRACTOR],
         },
         {
+            label: 'Audio to text',
+            type: NodeType.AUDIO_TO_TEXT,
+            icon: NODE_ICONS[NodeType.AUDIO_TO_TEXT],
+            color: NODE_COLORS[NodeType.AUDIO_TO_TEXT],
+        },
+        {
             label: 'End',
             type: NodeType.END,
             icon: NODE_ICONS[NodeType.END],
@@ -139,6 +145,18 @@ export class FlowGraphCoreMenuComponent {
             icon: NODE_ICONS[NodeType.TABLE],
             color: NODE_COLORS[NodeType.TABLE],
         },
+        {
+            label: 'Webhook Trigger',
+            type: NodeType.WEBHOOK_TRIGGER,
+            icon: NODE_ICONS[NodeType.WEBHOOK_TRIGGER],
+            color: NODE_COLORS[NodeType.WEBHOOK_TRIGGER],
+        },
+        // {
+        //   label: 'Decision Table',
+        //   type: NodeType.TABLE,
+        //   icon: NODE_ICONS[NodeType.TABLE],
+        //   color: NODE_COLORS[NodeType.TABLE],
+        // },
     ];
 
     public get filteredBlocks(): FlowGraphBlock[] {
@@ -182,10 +200,13 @@ export class FlowGraphCoreMenuComponent {
                             conditions: [],
                             manipulation: null,
                             next_node: null,
+                            order: 1,
+                            valid: false,
                         }
                     ],
                     node_name: '',
                     default_next_node: null,
+                    next_error_node: null,
                 },
             };
         } else if (type === NodeType.NOTE) {
@@ -195,6 +216,20 @@ export class FlowGraphCoreMenuComponent {
             };
         } else if (type === NodeType.FILE_EXTRACTOR) {
             data = null; // File extractor data is unknown as specified
+
+        } else if (type === NodeType.AUDIO_TO_TEXT) {
+            data = null; // audio to text data is unknown as specified
+        }
+        else if (type === NodeType.WEBHOOK_TRIGGER) {
+            data = {
+                webhook_trigger: 0,
+                python_code: {
+                    name: 'Webhook trigger Node',
+                    libraries: [],
+                    code: 'def main(trigger_payload: dict, **kwargs: dict) -> dict:\n    """\n    Main handler for processing webhook-triggered events.\n\n    Parameters\n    ----------\n    trigger_payload : dict\n        The data received from a third-party service via a webhook.\n    **kwargs : dict\n        Additional domain variables passed to the function.\n\n    Returns\n    -------\n    dict\n        A dictionary containing the updated values for domain variables.\n        The returned structure must include all changes that should be\n        applied to the domain.\n    """\n    return {\n        "new_data": trigger_payload,\n    }\n',
+                    entrypoint: 'main',
+                }
+            };
         } else if (type === NodeType.END) {
             data = null; // End node data is unknown as specified
         }
