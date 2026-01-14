@@ -1166,38 +1166,53 @@ class StartNodeSerializer(serializers.ModelSerializer):
     def get_node_name(self, obj):
         return "__start__"
 
+    @transaction.atomic
     def update(self, instance, validated_data):
-        with transaction.atomic():
-            old_variables = instance.variables.copy()
+        old_variables = instance.variables.copy()
 
-            for attr, value in validated_data.items():
-                setattr(instance, attr, value)
-            instance.save()
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
 
-            graph_organization = GraphOrganization.objects.filter(
-                graph=instance.graph
-            ).first()
+        graph_organization = GraphOrganization.objects.filter(
+            graph=instance.graph
+        ).first()
 
-            if not graph_organization:
-                return instance
-
-            if self._tracked_paths_changed(
-                old_variables, instance.variables, DOMAIN_ORGANIZATION_KEY
-            ):
-                graph_organization.persistent_variables = (
-                    self._get_persistent_variables(
-                        instance.variables, DOMAIN_ORGANIZATION_KEY
-                    )
-                )
-            if self._tracked_paths_changed(
-                old_variables, instance.variables, DOMAIN_USER_KEY
-            ):
-                graph_organization.user_variables = self._get_persistent_variables(
-                    instance.variables, DOMAIN_USER_KEY
-                )
-
-            graph_organization.save()
+        if not graph_organization:
             return instance
+
+        if self._tracked_paths_changed(
+            old_variables, instance.variables, DOMAIN_ORGANIZATION_KEY
+        ):
+            graph_organization.persistent_variables = self._get_persistent_variables(
+                instance.variables, DOMAIN_ORGANIZATION_KEY
+            )
+        if self._tracked_paths_changed(
+            old_variables, instance.variables, DOMAIN_USER_KEY
+        ):
+            graph_organization.user_variables = self._get_persistent_variables(
+                instance.variables, DOMAIN_USER_KEY
+            )
+
+        graph_organization.save()
+        return instance
+
+    def validate(self, attrs):
+        variables = attrs.get("variables")
+        actual_variables = variables.get(DOMAIN_VARIABLES_KEY, {})
+
+        persistent_variables = variables.get(DOMAIN_PERSISTENT_KEY, {})
+        organization_variables = persistent_variables.get(DOMAIN_ORGANIZATION_KEY, [])
+        user_variables = persistent_variables.get(DOMAIN_USER_KEY, [])
+
+        for path in organization_variables + user_variables:
+            value = self._get_by_path(actual_variables, path)
+            if not value:
+                raise ValidationError(
+                    f"Path {path} in {DOMAIN_PERSISTENT_KEY} does not exist in {DOMAIN_VARIABLES_KEY}."
+                )
+
+        return super().validate(attrs)
 
     def _tracked_paths_changed(
         self, old_vars: dict, new_vars: dict, object_key: str
