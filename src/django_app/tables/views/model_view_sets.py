@@ -1,6 +1,5 @@
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import WebhookTrigger
-from tables.models.knowledge_models import Chunk
 from django_filters import rest_framework as filters
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -1049,13 +1048,6 @@ class GraphFileViewSet(ModelViewSet):
         serializer.save()
 
         return Response({"detail": "File updated successfully."})
-
-
-class ChunkViewSet(ReadOnlyModelViewSet):
-    queryset = Chunk.objects.all()
-    serializer_class = ChunkSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["document_id"]
 
 
 class OrganizationViewSet(viewsets.ModelViewSet):
