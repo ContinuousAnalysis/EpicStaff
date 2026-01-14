@@ -36,6 +36,7 @@ class EnvironmentConfigSerializer(serializers.Serializer):
 
 class InitRealtimeSerializer(serializers.Serializer):
     agent_id = serializers.IntegerField(required=True)
+    config = serializers.DictField(required=False, default=dict)
 
 
 class BaseToolSerializer(serializers.Serializer):

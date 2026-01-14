@@ -15,12 +15,6 @@ from services.tool_manager_service import ToolManagerService
 from utils.shorten import shorten_dict
 from utils.instructions_concatenator import generate_instruction
 
-if "--debug" in sys.argv:
-    logger.info("RUNNING IN DEBUG MODE")
-    load_dotenv(find_dotenv("debug.env"))
-else:
-    load_dotenv(find_dotenv(".env"))
-
 from ai.agent.openai_realtime_agent_client import (
     OpenaiRealtimeAgentClient,
 )
@@ -129,7 +123,7 @@ connections: Dict[
 
 
 @app.websocket("/")
-async def healthcheck_endpoint(
+async def root(
     websocket: WebSocket,
     model: str | None = None,
     connection_key: str | None = None,
