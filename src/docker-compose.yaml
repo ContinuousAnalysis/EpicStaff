@@ -35,6 +35,8 @@ services:
 
       - GUNICORN_WORKERS=${GUNICORN_WORKERS}
       - GUNICORN_THREADS=${GUNICORN_THREADS}
+
+      - DJANGO_PORT=${DJANGO_PORT}
     volumes:
       - crew_config:/home/user/root/app/env_config
       - media_data:/app/media
