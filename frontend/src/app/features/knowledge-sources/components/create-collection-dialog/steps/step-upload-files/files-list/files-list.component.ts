@@ -52,6 +52,7 @@ export class FilesListComponent {
         const input = event.target as HTMLInputElement;
         if (input.files) {
             this.filesUploaded.emit(input.files);
+            input.value = '';
         }
     }
 

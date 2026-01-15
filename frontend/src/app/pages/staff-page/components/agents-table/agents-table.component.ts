@@ -215,18 +215,12 @@ export class AgentsTableComponent {
             default_temperature: null,
             tags: [],
             knowledge_collection: null,
-            rag: {
-                rag_id: null,
-                rag_type: null,
-                rag_status: null,
-            },
+            rag: null,
             tools: [],
-            // search_limit: 3,
-            // similarity_threshold: '0.65',
             search_configs: {
                 naive: {
                     search_limit: 3,
-                    similarity_threshold: 0.65,
+                    similarity_threshold: '0.2',
                 }
             },
             // Replace realtime_config with realtime_agent object using provided defaults
@@ -830,13 +824,13 @@ export class AgentsTableComponent {
                     agentData.respect_context_window ?? false,
                 default_temperature: null,
                 knowledge_collection: agentData.knowledge_collection ?? null, // Changed parameter name
-                rag: {
-                    rag_type: agentData.rag?.rag_type,
-                    rag_id: agentData.rag?.rag_id,
-                    rag_status: agentData.rag?.rag_status,
+                rag: agentData.rag ?? null,
+                search_configs: {
+                    naive: {
+                        similarity_threshold: agentData.search_configs.naive.similarity_threshold ?? null,
+                        search_limit: agentData.search_configs.naive.search_limit ?? null,
+                    }
                 },
-                similarity_threshold: agentData.search_configs.naive.similarity_threshold ?? null,
-                search_limit: agentData.search_configs.naive.search_limit ?? null,
                 memory: agentData.memory ?? true,
             },
         });

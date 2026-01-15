@@ -248,6 +248,9 @@
                                 {{ rag.rag_type }}
                             </mat-option>
                         </mat-select>
+                        @if (agentForm.get('rag_id'); as rag_id) {
+                            <app-validation-errors [control]="rag_id"/>
+                        }
                     </div>
 
                     <div class="create-agent__setting">

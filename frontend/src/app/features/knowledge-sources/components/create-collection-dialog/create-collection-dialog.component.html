@@ -41,7 +41,7 @@
         @case (CreateCollectionStep.UPLOAD_FILES) {
             <app-step-upload-files
                 class="dialog__content"
-                [collection]="collection"
+                [collection]="collection()"
                 [(documents)]="selectedDocuments"
             />
         }
@@ -55,7 +55,7 @@
             <app-rag-configuration
                 class="dialog__content"
                 [naiveRagId]="naiveRagId()!"
-                [collection]="collection"
+                [collection]="collection()"
             />
         }
     }

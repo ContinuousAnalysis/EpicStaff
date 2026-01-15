@@ -45,6 +45,8 @@ import {
     GetCollectionRagsResponse,
     GetCollectionRequest
 } from "../../../features/knowledge-sources/models/collection.model";
+import {tap} from "rxjs/operators";
+import {ValidationErrorsComponent} from "../app-validation-errors/validation-errors.component";
 
 interface AgentFormData {
     role: string;
@@ -82,6 +84,7 @@ interface AgentFormData {
         ...MATERIAL_FORMS,
         ToolsSelectorComponent,
         AppIconComponent,
+        ValidationErrorsComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [
@@ -173,7 +176,20 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
     }
 
     private trackKnowledgeSourceChange(): void {
+        const ragCtrl = this.agentForm.get('rag_id');
+
         this.agentForm.controls['knowledge_collection'].valueChanges.pipe(
+            tap((value) => {
+                if (value !== null) {
+                    ragCtrl?.setValidators(Validators.required);
+                } else {
+                    ragCtrl?.clearValidators();
+                    ragCtrl?.setValue(null);
+                }
+
+                ragCtrl?.markAsTouched();
+                ragCtrl?.updateValueAndValidity();
+            }),
             takeUntil(this.destroy$),
             filter(Boolean),
             switchMap(id => this.collectionsService.getRagsByCollectionId(id))
@@ -234,11 +250,11 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     agent.mcp_tools || []
                 ),
                 search_limit: new FormControl<number>(
-                    agent.search_configs.naive.search_limit || 10,
+                    agent.search_configs.naive.search_limit || 3,
                     [Validators.min(1), Validators.max(1000)]
                 ),
                 similarity_threshold: new FormControl<number>(
-                    Number(agent.search_configs.naive.similarity_threshold ?? 0.7),
+                    Number(agent.search_configs.naive.similarity_threshold ?? 0.2),
                     [Validators.min(0), Validators.max(1.0)]
                 ),
                 cache: new FormControl<boolean>(agent.cache ?? true),
@@ -302,11 +318,11 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 configured_tools: new FormControl<number[]>([]),
                 python_code_tools: new FormControl<number[]>([]),
                 mcp_tools: new FormControl<number[]>([]),
-                search_limit: new FormControl<number>(10, [
+                search_limit: new FormControl<number>(3, [
                     Validators.min(1),
                     Validators.max(1000),
                 ]),
-                similarity_threshold: new FormControl<number>(0.7, [
+                similarity_threshold: new FormControl<number>(0.2, [
                     Validators.min(0),
                     Validators.max(1.0),
                 ]),
@@ -493,10 +509,10 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 llm_config: formData.llm_config,
                 fcm_llm_config: formData.fcm_llm_config,
                 knowledge_collection: formData.knowledge_collection,
-                rag: {
+                rag: formData.rag_id ? {
                     rag_type: 'naive',
                     rag_id: formData.rag_id,
-                },
+                } : null,
                 configured_tools: configuredToolIds,
                 python_code_tools: pythonToolIds,
                 mcp_tools: mcpToolIds,
@@ -508,7 +524,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 search_configs: {
                     naive: {
                         search_limit: formData.search_limit,
-                        similarity_threshold: formData.similarity_threshold,
+                        similarity_threshold: formData.similarity_threshold.toString(),
                     }
                 }
             };
@@ -548,10 +564,10 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 llm_config: formData.llm_config,
                 fcm_llm_config: formData.fcm_llm_config,
                 knowledge_collection: formData.knowledge_collection,
-                rag: {
+                rag: formData.rag_id ? {
                     rag_type: 'naive',
                     rag_id: formData.rag_id,
-                },
+                } : null,
                 configured_tools: configuredToolIds,
                 python_code_tools: pythonToolIds,
                 mcp_tools: mcpToolIds,
@@ -563,7 +579,7 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 search_configs: {
                     naive: {
                         search_limit: formData.search_limit,
-                        similarity_threshold: formData.similarity_threshold,
+                        similarity_threshold: formData.similarity_threshold.toString(),
                     }
                 }
             };

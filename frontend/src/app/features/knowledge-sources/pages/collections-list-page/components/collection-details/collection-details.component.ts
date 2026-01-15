@@ -13,7 +13,7 @@ import {CreateCollectionDtoResponse} from "../../../../models/collection.model";
 import {CollectionsStorageService} from "../../../../services/collections-storage.service";
 import {catchError, debounceTime, distinctUntilChanged, finalize, map, switchMap} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {filter, throwError} from "rxjs";
+import {EMPTY, filter, throwError} from "rxjs";
 import {DragDropAreaComponent} from "../../../../../../shared/components/drag-drop-area/drag-drop-area.component";
 import {FILE_TYPES} from "../../../../constants/constants";
 import {CollectionFilesComponent} from "./collection-files/collection-files.component";
@@ -95,21 +95,21 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
 
     ngOnInit() {
         this.collectionName.valueChanges.pipe(
+            takeUntilDestroyed(this.destroyRef),
             debounceTime(400),
             distinctUntilChanged(),
             filter(() => this.collectionName.valid),
             filter(() => !!this.fullCollection()),
             switchMap((collection_name: string) => {
                 const id = this.fullCollection()!.collection_id;
-                return this.collectionsStorageService.updateCollectionById(id, { collection_name });
+                return this.collectionsStorageService.updateCollectionById(id, { collection_name }).pipe(
+                    catchError(() => {
+                        this.toastService.error('Collection Update failed');
+                        return EMPTY;
+                    })
+                );
             }),
-            takeUntilDestroyed(this.destroyRef)
-        ).subscribe(
-            {
-                next: () => this.toastService.success('Collection Updated'),
-                error: () => this.toastService.error('Collection Update failed'),
-            }
-        );
+        ).subscribe(() => this.toastService.success('Collection Updated'));
     }
 
     private getCollectionData(id: number): void {
@@ -177,6 +177,7 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
         const input = event.target as HTMLInputElement;
         if (input.files) {
             this.onFilesDropped(input.files);
+            input.value = '';
         }
     }
 

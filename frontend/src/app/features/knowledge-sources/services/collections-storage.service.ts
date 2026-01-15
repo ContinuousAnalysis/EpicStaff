@@ -22,21 +22,13 @@ export class CollectionsStorageService {
 
     private readonly collectionsApiService = inject(CollectionsApiService);
 
-    createCollection(): Observable<CreateCollectionDtoResponse | undefined> {
+    createCollection(): Observable<CreateCollectionDtoResponse> {
         return this.collectionsApiService.createCollection().pipe(
             tap((newCollection: CreateCollectionDtoResponse) => {
-                const { rag_configurations, ...rest } = newCollection;
-                this.addCollectionToCache(rest);
+                this.updateOrCreateCollectionInCache(newCollection);
             }),
             catchError((err) => throwError(() => err))
         );
-    }
-
-    public addCollectionToCache(newCollection: GetCollectionRequest) {
-        const currentCollections = this.collectionsSignal();
-        if (!currentCollections.some((c) => c.collection_id === newCollection.collection_id)) {
-            this.collectionsSignal.set([newCollection, ...currentCollections]);
-        }
     }
 
     getCollections(forceRefresh = false): Observable<GetCollectionRequest[]> {

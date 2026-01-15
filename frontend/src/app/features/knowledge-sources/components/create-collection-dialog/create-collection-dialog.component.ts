@@ -1,8 +1,8 @@
-import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal} from "@angular/core";
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, signal} from "@angular/core";
 import {ButtonComponent} from "../../../../shared/components/buttons/button/button.component";
 import {DIALOG_DATA, DialogRef} from "@angular/cdk/dialog";
 import {AppIconComponent} from "../../../../shared/components/app-icon/app-icon.component";
-import {CreateCollectionDtoResponse, CreateCollectionStep} from "../../models/collection.model";
+import {CreateCollectionStep} from "../../models/collection.model";
 import {StepUploadFilesComponent} from "./steps/step-upload-files/step-upload-files.component";
 import {StepSelectRagComponent} from "./steps/step-select-rag/step-select-rag.component";
 import {StepperComponent} from "./stepper/stepper.component";
@@ -14,6 +14,7 @@ import {Observable, of} from "rxjs";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {RagType} from "../../models/rag.model";
 import {ToastService} from "../../../../services/notifications/toast.service";
+import {CollectionsStorageService} from "../../services/collections-storage.service";
 
 export interface StepConfig {
     id: CreateCollectionStep;
@@ -34,16 +35,23 @@ export interface StepConfig {
         StepSelectRagComponent,
         StepperComponent,
         RagConfigurationComponent,
-        AppIconComponent
+        AppIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreateCollectionDialogComponent {
-    collection: CreateCollectionDtoResponse = inject(DIALOG_DATA);
+    collectionId: number = inject(DIALOG_DATA);
     private destroyRef = inject(DestroyRef);
     private dialogRef = inject(DialogRef);
+    private collectionsStorageService = inject(CollectionsStorageService);
     private naiveRagService = inject(NaiveRagService);
     private toastService = inject(ToastService);
+
+    collection = computed(() => {
+        return this.collectionsStorageService.fullCollections().find(
+            ({collection_id}) => collection_id === this.collectionId
+        )!;
+    })
 
     private steps = signal<StepConfig[]>([
         {
@@ -118,7 +126,7 @@ export class CreateCollectionDialogComponent {
     }
 
     createRag(): Observable<boolean> {
-        const id = this.collection.collection_id;
+        const id = this.collectionId;
         const embedderId = this.selectedEmbedder();
         if (!embedderId) return of(false);
 

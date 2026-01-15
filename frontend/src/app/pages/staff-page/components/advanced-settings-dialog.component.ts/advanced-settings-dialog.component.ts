@@ -16,7 +16,7 @@ import {
 import { MATERIAL_FORMS } from '../../../../shared/material-forms';
 
 
-import { forkJoin, Subject, takeUntil } from 'rxjs';
+import {forkJoin, of, Subject, takeUntil} from 'rxjs';
 import { LLM_Config_Service } from '../../../../features/settings-dialog/services/llms/LLM_config.service';
 import { LLM_Models_Service } from '../../../../features/settings-dialog/services/llms/LLM_models.service';
 import { KnowledgeSelectorComponent } from '../../../../shared/components/knowledge-selector/knowledge-selector.component';
@@ -42,13 +42,17 @@ export interface AdvancedSettingsData {
     default_temperature: number | null;
     knowledge_collection?: number | null;
     rag: {
-        rag_id: number | null;
-        rag_type: string | null;
-        rag_status?: string | null;
+        rag_id: number;
+        rag_type: string;
+        rag_status?: string;
+    } | null
+    search_configs: {
+        naive: {
+            similarity_threshold: string | null;
+            search_limit: number | null;
+        }
     }
     selected_knowledge_source?: GetCollectionRequest | null; // For display purposes only
-    similarity_threshold: string | null;
-    search_limit: number | null;
     memory: boolean;
     cache: boolean;
     respect_context_window: boolean;
@@ -105,11 +109,11 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         Validators.min(0),
         Validators.max(10),
     ]);
-    public searchLimitControl = new FormControl(10, [
+    public searchLimitControl = new FormControl(3, [
         Validators.min(1),
         Validators.max(1000),
     ]);
-    public similarityThresholdControl = new FormControl(0.7, [
+    public similarityThresholdControl = new FormControl(0.2, [
         Validators.min(0.0),
         Validators.max(1.0),
     ]);
@@ -134,21 +138,21 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         this.maxRpmControl.setValue(data.max_rpm || 10);
         this.maxExecutionTimeControl.setValue(data.max_execution_time || 60);
         this.maxRetryLimitControl.setValue(data.max_retry_limit ?? 3);
-        this.searchLimitControl.setValue(data.search_limit || 10);
+        this.searchLimitControl.setValue(data.search_configs?.naive?.search_limit || 3);
 
-        if (data.similarity_threshold !== null) {
-            this.floatedThreshold = parseFloat(data.similarity_threshold);
+        if (data.search_configs.naive.similarity_threshold !== null) {
+            this.floatedThreshold = parseFloat(data.search_configs.naive.similarity_threshold);
             this.similarityThresholdControl.setValue(
-                parseFloat(data.similarity_threshold)
+                parseFloat(data.search_configs?.naive?.similarity_threshold)
             );
         } else {
-            this.floatedThreshold = 0.7;
-            this.similarityThresholdControl.setValue(0.7);
+            this.floatedThreshold = 0.2;
+            this.similarityThresholdControl.setValue(0.2);
         }
         this.search_limit =
-            this.agentData.search_limit !== null
-                ? this.agentData.search_limit
-                : 10;
+            this.agentData.search_configs.naive.search_limit !== null
+                ? this.agentData.search_configs.naive.search_limit
+                : 3;
 
         // Set default_temperature to null as requested
         this.agentData.default_temperature = null;
@@ -195,13 +199,11 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
             }));
         })
 
-        if (!collectionId) return;
-
         forkJoin({
             llmConfigs: this.fullLLMConfigService.getFullLLMConfigs(),
             knowledgeSources:
                 this.collectionsService.getCollections(),
-            rags: this.collectionsService.getRagsByCollectionId(collectionId),
+            rags: collectionId ? this.collectionsService.getRagsByCollectionId(collectionId) : of([]),
         })
             .pipe(takeUntil(this._destroyed$))
             .subscribe({
@@ -334,6 +336,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
 
         if (collectionId === null) {
             this.agentData.selected_knowledge_source = null;
+            this.agentData.rag = null;
         } else {
             const selectedCollection = this.allKnowledgeSources.find(
                 (source) => source.collection_id === collectionId
@@ -348,12 +351,12 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
 
     public onThresholdChange(event: any): void {
         const value = event.value;
-        this.agentData.similarity_threshold = JSON.stringify(value);
+        this.agentData.search_configs.naive.similarity_threshold = JSON.stringify(value);
     }
 
     public onSearchLimitChange(event: any): void {
         const value = event.value;
-        this.agentData.search_limit = value ?? null;
+        this.agentData.search_configs.naive.search_limit = value ?? null;
     }
 
     // Formatting methods for sliders
@@ -389,9 +392,13 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         this.agentData.max_execution_time =
             this.maxExecutionTimeControl.value || 60;
         this.agentData.max_retry_limit = this.maxRetryLimitControl.value ?? 3;
-        this.agentData.search_limit = this.searchLimitControl.value || 10;
-        this.agentData.similarity_threshold =
-            this.similarityThresholdControl.value?.toString() || '0.7';
+        this.agentData.search_configs = {
+            naive: {
+                search_limit: this.searchLimitControl.value || 3,
+                similarity_threshold: this.similarityThresholdControl.value?.toString() || '0.2',
+            }
+        };
+
         this.agentData.memory = this.memoryControl.value ?? false;
         this.agentData.cache = this.cacheControl.value ?? true;
         this.agentData.respect_context_window =

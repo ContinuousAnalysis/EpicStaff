@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, Component, inject, input, OnInit, model, DestroyRef, effect} from "@angular/core";
 import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
-import {debounceTime, distinctUntilChanged, finalize, switchMap} from 'rxjs/operators';
+import {catchError, debounceTime, distinctUntilChanged, finalize, switchMap} from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {UpperCasePipe} from "@angular/common";
 import {CreateCollectionDtoResponse} from "../../../../models/collection.model";
@@ -17,6 +17,7 @@ import {ToastService} from "../../../../../../services/notifications/toast.servi
 import {
     ValidationErrorsComponent
 } from "../../../../../../shared/components/app-validation-errors/validation-errors.component";
+import {EMPTY, filter} from "rxjs";
 
 @Component({
     selector: "app-step-upload-files",
@@ -76,21 +77,22 @@ export class StepUploadFilesComponent implements OnInit {
 
     private subscribeToCollectionName() {
         this.collectionName?.valueChanges.pipe(
+            takeUntilDestroyed(this.destroyRef),
             debounceTime(400),
             distinctUntilChanged(),
+            filter(() => this.collectionName.valid),
             switchMap((collection_name: string) => {
                 const id = this.collection().collection_id;
                 const body = { collection_name }
 
-                return this.collectionsStorageService.updateCollectionById(id, body)
+                return this.collectionsStorageService.updateCollectionById(id, body).pipe(
+                    catchError(() => {
+                        this.toastService.error('Collection Update failed');
+                        return EMPTY;
+                    })
+                );
             }),
-            takeUntilDestroyed(this.destroyRef)
-        ).subscribe(
-            {
-                next: () => this.toastService.success('Collection Updated'),
-                error: () => this.toastService.error('Collection Update failed'),
-            }
-        );
+        ).subscribe(() => this.toastService.success('Collection Updated'));
     }
 
     onFilesUpload(files: FileList): void {

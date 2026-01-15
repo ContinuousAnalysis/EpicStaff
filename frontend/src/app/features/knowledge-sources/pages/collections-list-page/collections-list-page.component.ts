@@ -11,7 +11,6 @@ import {
     CreateCollectionDialogComponent
 } from "../../components/create-collection-dialog/create-collection-dialog.component";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {CreateCollectionDtoResponse} from "../../models/collection.model";
 import {CollectionsStorageService} from "../../services/collections-storage.service";
 import {finalize, switchMap} from "rxjs/operators";
 import {ToastService} from "../../../../services/notifications/toast.service";
@@ -58,19 +57,19 @@ export class CollectionsListPageComponent implements OnInit {
         this.collectionsStorageService.createCollection()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (collection) => {
-                        if (!collection) return;
-                        this.openCreateModal(collection)
+                next: ({collection_id}) => {
+                        if (!collection_id) return;
+                        this.openCreateModal(collection_id)
                 },
                 error: () => this.toastService.error('Failed to create collection')
             });
     }
 
-    private openCreateModal(collection: CreateCollectionDtoResponse): void {
+    private openCreateModal(collection_id: number): void {
         const dialog = this.dialog.open(CreateCollectionDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
-            data: collection,
+            data: collection_id,
             disableClose: true
         });
 
@@ -79,12 +78,12 @@ export class CollectionsListPageComponent implements OnInit {
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 switchMap(() => {
-                    return this.collectionsStorageService.getFullCollection(collection.collection_id, true)
+                    return this.collectionsStorageService.getFullCollection(collection_id, true)
                 })
             )
             .subscribe({
                 next: () => {
-                    this.selectedCollectionId.set(collection.collection_id);
+                    this.selectedCollectionId.set(collection_id);
                 },
                 error: () => {
                     this.toastService.error('Failed to get collection data');

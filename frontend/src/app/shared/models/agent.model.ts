@@ -81,23 +81,20 @@ export interface GetAgentRequest {
 
     knowledge_collection: number | null;
     rag: {
-        rag_id: number | null;
-        rag_type: string | null;
-        rag_status?: string | null
-    }
+        rag_id: number;
+        rag_type: string;
+        rag_status?: string
+    } | null;
     realtime_agent: RealtimeAgentConfig;
     tools: {
         unique_name: ToolUniqueName;
         data: GetToolConfigRequest | GetPythonCodeToolRequest | GetMcpToolRequest;
     }[];
 
-    // search_limit: number | null;
-    // similarity_threshold: string | null;
-
     search_configs: {
         naive: {
             search_limit: number | null;
-            similarity_threshold: number | null;
+            similarity_threshold: string | null;
         }
     }
 }
@@ -130,17 +127,17 @@ export interface CreateAgentRequest {
     // similarity_threshold: string | null; // float between 0.00 and 1.00 for knowledge
 
     knowledge_collection?: number | null;
-    rag?: {
-        rag_id: number | null;
-        rag_type: string | null;
-    }
+    rag: {
+        rag_id: number;
+        rag_type: string;
+    } | null;
     realtime_agent?: RealtimeAgentConfig;
     tool_ids: ToolUniqueName[];
 
     search_configs: {
         naive: {
             search_limit: number | null;
-            similarity_threshold: number | null;
+            similarity_threshold: string | null;
         }
     }
 }
@@ -175,10 +172,10 @@ export interface UpdateAgentRequest {
     default_temperature: number | null;
 
     knowledge_collection: number | null;
-    rag?: {
-        rag_id: number | null;
-        rag_type: string | null;
-    }
+    rag: {
+        rag_id: number;
+        rag_type: string;
+    } | null;
     // search_limit: number | null;
     // similarity_threshold: string | null;
     realtime_agent: RealtimeAgentConfig;
@@ -187,7 +184,7 @@ export interface UpdateAgentRequest {
     search_configs: {
         naive: {
             search_limit: number | null;
-            similarity_threshold: number | null;
+            similarity_threshold: string | null;
         }
     }
 }

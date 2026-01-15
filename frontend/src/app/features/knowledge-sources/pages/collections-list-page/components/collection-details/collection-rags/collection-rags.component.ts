@@ -56,7 +56,7 @@ export class CollectionRagsComponent {
         const dialog = this.dialog.open(CreateCollectionDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
-            data: this.collection(),
+            data: this.collection().collection_id,
             disableClose: true
         });
 
