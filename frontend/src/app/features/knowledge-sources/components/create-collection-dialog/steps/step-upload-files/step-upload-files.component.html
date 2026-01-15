@@ -1,0 +1,54 @@
+<div class="dialog__form">
+    <div class="dialog__form-field">
+        <div class="dialog__form-label">
+            <label for="collection-name">Collection Name</label>
+            <mat-icon
+                class="dialog__form-label-icon"
+                matTooltip="Enter a unique name for your knowledge collection. This name will be used to identify and access this collection."
+                matTooltipPosition="above"
+                matTooltipClass="dialog__label-tooltip"
+            >
+                help_outline
+            </mat-icon>
+        </div>
+
+        <input
+            type="text"
+            id="collection-name"
+            class="dialog__form-input"
+            [formControl]="collectionName"
+            placeholder="Enter collection name"
+            [class.dialog__input--invalid]="collectionName?.invalid && collectionName?.touched"
+        />
+        <app-validation-errors [control]="collectionName"/>
+    </div>
+
+
+    <div class="dialog__content">
+        @if (!documents().length) {
+            <h6 class="dialog__content-title">
+                Selected Files: <span class="dialog__content-title--count">(0)</span>
+            </h6>
+            <app-file-uploader
+                (filesUploaded)="onFilesUpload($event)"
+            />
+        } @else {
+            <div class="dialog__files">
+                <app-files-list
+                    [(documents)]="documents"
+                    (filesUploaded)="onFilesUpload($event)"
+                    class="dialog__files-list"
+                />
+                <app-file-preview
+                    class="dialog__file-preview"
+                />
+            </div>
+        }
+    </div>
+    <h5 class="dialog__footer">
+        Allowed file types:
+        <span class="dialog__footer--types">
+            {{ FILE_TYPES.join(', ') | uppercase }}
+        </span>
+    </h5>
+</div>
