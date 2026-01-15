@@ -86,10 +86,6 @@ class SessionManagerService(metaclass=SingletonMeta):
         elif start_node.variables:
             variables = start_node.variables
 
-        actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
-        if actual_variables:
-            variables = actual_variables
-
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
         graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
         session = Session.objects.create(
@@ -243,6 +239,10 @@ class SessionManagerService(metaclass=SingletonMeta):
         username: str | None = None,
         entrypoint: str | None = None,
     ) -> int:
+        if variables:
+            actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
+            if actual_variables:
+                variables = actual_variables
 
         logger.info(f"'run_session' got variables: {variables}")
 

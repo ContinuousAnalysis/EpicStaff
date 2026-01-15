@@ -97,13 +97,16 @@ class RedisPubSub:
         try:
             logger.debug(f"Received webhook event: {message}")
             data = WebhookEventData.model_validate_json(message["data"])
-            WebhookTriggerService().handle_webhook_trigger(path=data.path, payload=data.payload)
+            WebhookTriggerService().handle_webhook_trigger(
+                path=data.path, payload=data.payload
+            )
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
 
     def _save_organization_variables(self, session: Session, data: dict):
         """
-        Save organization and organization_user variables to database
+        Save organization and organization_user variables to database.
+        Only updates values that exist in the persistent_variables structure.
         """
         try:
             variables = data["status_data"]["variables"]
@@ -113,28 +116,59 @@ class RedisPubSub:
             graph_organization = GraphOrganization.objects.filter(
                 graph=session.graph
             ).first()
-            if graph_organization:
-                for key, value in variables.items():
-                    if key in graph_organization.persistent_variables:
-                        graph_organization.persistent_variables[key] = value
-                graph_organization.save(update_fields=["persistent_variables"])
+            if graph_organization and graph_organization.persistent_variables:
+                if self._update_persistent_values(
+                    graph_organization.persistent_variables, variables
+                ):
+                    graph_organization.save(update_fields=["persistent_variables"])
 
-            if session.graph_user:
-                for key, value in variables.items():
-                    if key in session.graph_user.persistent_variables:
-                        session.graph_user.persistent_variables[key] = value
-                session.graph_user.save(update_fields=["persistent_variables"])
+            if (
+                session.graph_user
+                and graph_organization.user_variables
+                and not session.graph_user.persistent_variables
+            ):
+                session.graph_user.persistent_variables = (
+                    graph_organization.user_variables
+                )
+                session.graph_user.save()
+
+            if session.graph_user and session.graph_user.persistent_variables:
+                if self._update_persistent_values(
+                    session.graph_user.persistent_variables, variables
+                ):
+                    session.graph_user.save(update_fields=["persistent_variables"])
 
         except Exception as e:
             logger.error(f"Error handling organization variables message: {e}")
 
+    def _update_persistent_values(self, persistent: dict, incoming: dict) -> bool:
+        """
+        Recursively update values in persistent dict from incoming dict.
+        Only updates keys that already exist in persistent.
+        Returns True if any values were updated.
+        """
+        updated = False
+
+        for key, persistent_value in persistent.items():
+            if key not in incoming:
+                continue
+
+            incoming_value = incoming[key]
+
+            if isinstance(persistent_value, dict) and isinstance(incoming_value, dict):
+                if self._update_persistent_values(persistent_value, incoming_value):
+                    updated = True
+            elif persistent_value != incoming_value:
+                persistent[key] = incoming_value
+                updated = True
+
+        return updated
+
     def _buffer_save(self, data, model: Type[models.Model]):
         try:
             with transaction.atomic():
-                
-                created_objects = model.objects.bulk_create(
-                    data, ignore_conflicts=True
-                )
+
+                created_objects = model.objects.bulk_create(data, ignore_conflicts=True)
                 logger.debug(
                     f"{model.__name__} updated with {len(created_objects)}/{len(data)} entities"
                 )
@@ -231,22 +265,30 @@ class RedisPubSub:
                 if buffer and time.time() - start_time >= 3:
 
                     try:
-                        graph_session_message_list = [GraphSessionMessage(**data) for data in list(buffer)]
+                        graph_session_message_list = [
+                            GraphSessionMessage(**data) for data in list(buffer)
+                        ]
                     except Exception as e:
-                        logger.critical("Error creating GraphSessionMessage cache_for_redis_messages_worker")
+                        logger.critical(
+                            "Error creating GraphSessionMessage cache_for_redis_messages_worker"
+                        )
 
                     buffer.clear()
                     sessions_data = defaultdict(deque)
-                    
+
                     for graph_session_message in graph_session_message_list:
-                        session_id = graph_session_message.session.pk 
+                        session_id = graph_session_message.session.pk
                         if session_id is not None:
                             sessions_data[session_id].append(graph_session_message)
                         else:
-                            logger.warning(f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {data}")
+                            logger.warning(
+                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {data}"
+                            )
 
                     for session_id, sessions_data_values in sessions_data.items():
-                        self._buffer_save(data=sessions_data_values, model=GraphSessionMessage)
+                        self._buffer_save(
+                            data=sessions_data_values, model=GraphSessionMessage
+                        )
 
                     start_time = time.time()
 
