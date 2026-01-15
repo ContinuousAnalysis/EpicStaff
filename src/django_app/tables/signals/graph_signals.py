@@ -21,7 +21,7 @@ def sync_variables(
     - Add key/value from current_variables if missing in the instance
     - Keep existing values for keys that exist in both (recursively for nested dicts)
     """
-    if not current_variables:
+    if current_variables is None:
         return
 
     original_vars = getattr(instance, field_name, {}) or {}
