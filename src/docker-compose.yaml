@@ -7,12 +7,12 @@ services:
     command: ./entrypoint.sh
     container_name: django_app
     ports:
-      - "8000:8000"
+      - "${DJANGO_PORT}:${DJANGO_PORT}"
     environment:
       - CODE_RESULT_CHANNEL=code_results
       - CODE_EXEC_TASK_CHANNEL=code_exec_tasks
-      - GRAPH_MESSAGE_UPDATE_CHANNEL=graph:message:update
-      - GRAPH_MESSAGES_CHANNEL=graph:messages
+      - SESSION_EVENT_UPDATE_CHANNEL=session:event:update
+      - SESSION_EVENT_CHANNEL=session:event
       - SESSION_STATUS_CHANNEL=sessions:session_status
       - MEMORY_UPDATE_CHANNEL=memory:update
 
@@ -35,7 +35,6 @@ services:
 
       - GUNICORN_WORKERS=${GUNICORN_WORKERS}
       - GUNICORN_THREADS=${GUNICORN_THREADS}
-
       - DJANGO_PORT=${DJANGO_PORT}
     volumes:
       - crew_config:/home/user/root/app/env_config
@@ -50,7 +49,8 @@ services:
         condition: service_healthy
   
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/ht/"]
+      test: >
+        sh -c 'curl -f http://localhost:${DJANGO_PORT}/ht/ || exit 1'
       interval: 30s
       timeout: 10s
       retries: 12
@@ -62,12 +62,12 @@ services:
       context: ./realtime
       dockerfile: Dockerfile.realtime
     ports:
-    - "8050:8050"
+      - "${REALTIME_PORT}:${REALTIME_PORT}"
     environment:
       - KNOWLEDGE_SEARCH_GET_CHANNEL=knowledge:search:get
       - KNOWLEDGE_SEARCH_RESPONSE_CHANNEL=knowledge:search:response
       - REALTIME_AGENTS_SCHEMA_CHANNEL=realtime_agents:schema
-
+      - REALTIME_PORT=${REALTIME_PORT}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - MANAGER_HOST=${MANAGER_HOST}
@@ -101,11 +101,10 @@ services:
       - .env
     container_name: manager_container
     ports:
-      - "8001:8000"
+      - "${MANAGER_PORT}:${MANAGER_PORT}"
     environment:
       - PULL_TOOL=${PULL_TOOL}
       - MANAGER_PORT=${MANAGER_PORT}
-      
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - DB_NAME=${POSTGRES_DB}
@@ -133,6 +132,7 @@ services:
       context: ./crewdb
       dockerfile: Dockerfile.crewdb
     container_name: crewdb
+    command: ["postgres", "-c", "port=${DB_PORT}"]
     ports:
       - "${DB_PORT}:${DB_PORT}"
     environment:
@@ -150,15 +150,17 @@ services:
 
       - DB_CREW_USER=${DB_CREW_USER}
       - DB_CREW_PASSWORD=${DB_CREW_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - DJANGO_PORT=${DJANGO_PORT}
     volumes:
       - crew_pgdata:${PGDATA}
     networks:
       - backend-network
     healthcheck:
-      test: |
+      test: >
         bash -c '
-          # First check if postgres is ready
-          pg_isready -U postgres || exit 1
+          # Check if postgres is ready on custom port
+          pg_isready -U postgres -p ${DB_PORT} || exit 1
           
           # Then check if users have been created
           /usr/local/bin/custom-docker-entrypoint.sh healthcheck-users
@@ -175,15 +177,17 @@ services:
       - backend-network
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: >
+      sh -c "redis-server /usr/local/etc/redis/redis.conf --port ${REDIS_PORT}"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: >
+        sh -c "redis-cli -p ${REDIS_PORT} ping || exit 1"
       interval: 5s
       timeout: 2s
       retries: 5
       start_period: 5s
-    volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
 
   redis-monitor:
     image: redis-monitor
@@ -212,8 +216,6 @@ services:
       context: .
       dockerfile: ./crew/Dockerfile.crew
     container_name: crew
-    ports:
-      - "8002:8000"
     environment:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
@@ -306,7 +308,7 @@ services:
       dockerfile: Dockerfile.fe
     container_name: frontend
     ports:
-     - "4200:80"
+     - "${FRONTEND_PORT}:80"
     networks:
      - frontend-network
     volumes:
@@ -319,7 +321,7 @@ services:
       context: .
       dockerfile: ./webhook/Dockerfile
     ports:
-      - "8009:8000"
+      - "${WEBHOOK_PORT}:${WEBHOOK_PORT}"
     environment:
       - USE_TUNNEL=${USE_TUNNEL}
       - WEBHOOK_TUNNEL=${WEBHOOK_TUNNEL}

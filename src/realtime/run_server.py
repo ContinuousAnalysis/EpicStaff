@@ -1,4 +1,5 @@
 from math import log
+import os
 import uvicorn
 import sys
 from dotenv import load_dotenv, find_dotenv
@@ -10,14 +11,14 @@ if "--debug" in sys.argv:
 else:
     load_dotenv(find_dotenv(".env"))
 
-
+PORT = os.environ.get("REALTIME_PORT", 8050)
 
 def main():
     """Run the FastAPI server with uvicorn."""
     uvicorn.run(
         "api.main:app",
         host="0.0.0.0",
-        port=8050,
+        port=PORT,
         reload=False,
         reload_dirs=["src"],
         workers=1,
