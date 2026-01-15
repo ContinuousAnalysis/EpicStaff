@@ -182,9 +182,9 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     ragCtrl?.setValidators(Validators.required);
                 } else {
                     ragCtrl?.clearValidators();
-                    ragCtrl?.setValue(null);
                 }
 
+                ragCtrl?.setValue(null);
                 ragCtrl?.markAsTouched();
                 ragCtrl?.updateValueAndValidity();
             }),

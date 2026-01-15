@@ -320,7 +320,6 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
 
         if (collectionId === null) {
             this.agentData.selected_knowledge_source = null;
-            this.agentData.rag = null;
             this.agentRagsSelectItems = [];
         } else {
             const selectedCollection = this.allKnowledgeSources.find(
@@ -330,6 +329,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
 
             this.getRagsByCollectionId(collectionId);
         }
+        this.agentData.rag = null;
         this.cdr.markForCheck();
     }
 
