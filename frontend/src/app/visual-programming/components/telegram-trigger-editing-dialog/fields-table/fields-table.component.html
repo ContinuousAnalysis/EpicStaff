@@ -1,0 +1,95 @@
+<div class="table__wrapper">
+    <!-- HEADER ROW -->
+    <div class="table__row table__header">
+        <!-- 1. Checkbox -->
+        <div class="table__col" (click)="toggleAll()">
+            <app-checkbox
+                [checked]="allChecked()"
+                [indeterminate]="indeterminate()"
+            />
+        </div>
+
+        <!-- 2. Default Name -->
+        <div class="table__col">
+            DEFAULT NAME
+        </div>
+
+        <!-- 3. Type Select -->
+        <div class="table__col">
+            TYPE
+        </div>
+
+        <!-- 4. Assigned Name -->
+        <div class="table__col">
+            ASSIGNED NAME
+        </div>
+
+        <!-- 5. Description -->
+        <div class="table__col">
+            DESCRIPTION
+        </div>
+    </div>
+
+    <!-- DATA ROWS -->
+    <div class="table__fields-wrapper">
+        <ol class="table__rows">
+            @for (item of tableItems(); track item.id; let odd = $odd; let i = $index) {
+                <div
+                    class="table__row-wrapper"
+                    [class.table__row-wrapper--dark]="odd"
+                >
+                    <li
+                        class="table__row"
+                    >
+                        <!-- checkbox -->
+                        <div class="table__col table__col--small">
+                            <app-checkbox
+                                [checked]="item.checked"
+                                (changed)="toggleItem(item)"
+                            />
+                        </div>
+
+                        <!-- default name -->
+                        <div class="table__col table__col--small table__col-name">
+                            <span class="table__name-text">
+                                {{ item.default_name }}
+                            </span>
+<!--                            <app-icon-->
+<!--                                class="table__name-icon"-->
+<!--                                icon="ui/document"-->
+<!--                                size="0.75rem"-->
+<!--                            />-->
+                        </div>
+
+                        <!-- type select -->
+                        <div class="table__col table__col--small">
+                            <app-select
+                                mod="small"
+                                [items]="fileTypeSelectItems"
+                                [(selectedValue)]="item.type"
+                                (changed)="itemFieldChange(item, 'type', $event)"
+                            />
+                        </div>
+
+                        <div class="table__col table__col--small">
+                            <app-custom-input
+                                placeholder="Enter name..."
+                            />
+                            {{item.assigned_name}}
+                        </div>
+
+                        <!-- description -->
+                        <div class="table__col table__col-description">
+                            {{item.description}}
+                        </div>
+                    </li>
+<!--                    @for (error of item.errors | keyvalue; track error.key) {-->
+<!--                        <label class="table__row-error">-->
+<!--                            Update failed: {{ error.value?.reason }}-->
+<!--                        </label>-->
+<!--                    }-->
+                </div>
+            }
+        </ol>
+    </div>
+</div>

@@ -169,6 +169,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         this.initializeFlowStateIfEmpty();
         this.addStartNodeIfNeeded();
         this.generatePortsForNodesIfNeeded();
+        console.log(this.flowState, 'asdasdqweqweqwe')
         this.flowService.setFlow(this.flowState);
     }
 

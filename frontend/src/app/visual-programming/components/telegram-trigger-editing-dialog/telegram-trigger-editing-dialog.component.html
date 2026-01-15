@@ -1,0 +1,49 @@
+<div class="dialog">
+    <div class="dialog__header">
+        <span class="dialog__header-title">
+            Naive RAG Configuration
+        </span>
+
+        <div class="dialog__actions">
+            <app-icon
+                [icon]="'ui/close'"
+                class="dialog__action"
+                [size]="'1.5rem'"
+                (click)="onCancel()"
+            />
+            <app-icon
+                [icon]="'ui/check'"
+                class="dialog__action dialog__action--save"
+                [size]="'1.5rem'"
+                (click)="onCancel()"
+            />
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="main__fields-section">
+            <div class="main__fields-searchbar">
+                <app-search
+                    class="main__input"
+                    placeholder="Search fields..."
+                />
+            </div>
+
+            <app-telegram-fields-table/>
+        </div>
+
+        <div class="main__mock-data-section">
+            <label class="main__mock-data-header">
+                Mock Data
+                <span class="main__active-fields-count">Activated fields: {{4}} of {{24}} </span>
+            </label>
+            <div class="main__json-wrapper">
+                <app-json-editor
+                    [showHeader]="false"
+                    [fullHeight]="true"
+                    [editorOptions]="editorOptions"
+                />
+            </div>
+        </div>
+    </div>
+</div>

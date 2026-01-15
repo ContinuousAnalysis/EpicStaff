@@ -1,0 +1,170 @@
+<div class="panel-container">
+    <div class="panel-content">
+        <form [formGroup]="form" class="form-container">
+            <div class="form-layout" [class.expanded]="isExpanded()" [class.collapsed]="!isExpanded()">
+                <div class="form-fields">
+                    <app-custom-input
+                        label="Trigger Name"
+                        tooltipText="Trigger name"
+                        formControlName="node_name"
+                        placeholder="Enter node name"
+                        [required]="true"
+                        [activeColor]="activeColor"
+                        [errorMessage]="getNodeNameErrorMessage()"
+                    ></app-custom-input>
+
+                    <app-custom-input
+                        label="Telegram bot key"
+                        tooltipText="Bot key."
+                        formControlName="telegram_bot_api_key"
+                        placeholder="Enter webhook name"
+                        [required]="true"
+                        [activeColor]="activeColor"
+                        [errorMessage]="getTelegramKeyErrorMessage()"
+                    ></app-custom-input>
+                </div>
+
+                <!--display only for existing node-->
+                @if (true) {
+                    <div class="webhook-section">
+                        <div class="webhook-section__label-container">
+                            <label>Webhook</label>
+                            <mat-icon
+                                [matTooltip]="'tooltip'"
+                                matTooltipPosition="right"
+                                matTooltipClass="custom-tooltip"
+                                class="help-icon"
+                            >
+                                help
+                            </mat-icon>
+                        </div>
+
+                        <div class="webhook-section__register-btn">
+                            <app-button
+                                type="primary"
+                                (click)="onWebhookRegister()"
+                            >Register webhook
+                            </app-button>
+                        </div>
+
+
+                        <div class="webhook-status__container">
+                            @switch (webhookStatus()) {
+                                @case ('pending') {
+                                    <div class="webhook-status__main">
+                                        <app-icon
+                                            icon="ui/status-idle"
+                                            size="0.75rem"
+                                        />
+                                        <span>Pending launch</span>
+                                    </div>
+                                }
+                                @case ('registering') {
+                                    <div class="webhook-status__main">
+                                        <app-icon
+                                            class="webhook-status__icon--registering"
+                                            icon="ui/status-pending"
+                                            size="0.75rem"
+                                        />
+                                        <span>Registering</span>
+                                    </div>
+                                }
+                                @case (WebhookStatus.FAIL) {
+                                    <div class="webhook-status__main">
+                                        <app-icon
+                                            class="webhook-status__icon--failed"
+                                            icon="ui/x"
+                                            size="1rem"
+                                        />
+                                        <span>Registration failed</span>
+                                    </div>
+                                    <span class="webhook-status__error-message">
+                                        Message about the type of issue
+                                    </span>
+                                }
+                                @case (WebhookStatus.SUCCESS) {
+                                    <div class="webhook-status__main">
+                                        <app-icon
+                                            class="webhook-status__icon--success"
+                                            icon="ui/check"
+                                            size="1rem"
+                                        />
+                                        <span>Webhook registered</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div class="output-fields-section">
+                    <label class="output-fields__label">
+                        Fields for output in results
+
+                        <span class="output-fields__count">
+                            {{ selectedItems.length }} selected
+                        </span>
+                    </label>
+                    <div class="output-fields__container">
+                        <div class="output-fields__items">
+                            @for (item of selectedItems; track $index) {
+                                <div class="output-fields__item">
+                                    <div class="output-fields__item-data">
+                                        <span>
+                                            {{ item.name }}
+                                        </span>
+                                        <span class="output-fields__item-tip">
+                                            {{ item.tip }}
+                                        </span>
+                                    </div>
+                                    <mat-icon class="output-fields__item-action">
+                                        close
+                                    </mat-icon>
+                                </div>
+                            }
+                            <app-multi-select
+                                [items]="selectItems"
+                            ></app-multi-select>
+                        </div>
+                        <div class="output-fields__buttons">
+                            <div class="output-fields__btn">
+                                <mat-icon class="output-fields__btn-icon">
+                                    push_pin
+                                </mat-icon>
+                                Main
+                            </div>
+                            <div class="output-fields__btn">
+                                <mat-icon class="output-fields__btn-icon">
+                                    check
+                                </mat-icon>
+                                All
+                            </div>
+                            <div class="output-fields__btn">
+                                <mat-icon class="output-fields__btn-icon">
+                                    close
+                                </mat-icon>
+                                Clear
+                            </div>
+                            <app-button
+                                type="primary"
+                                (click)="onEditing()"
+                            >
+                                Editing
+                            </app-button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-editor-section">
+                    <label>Mock Data</label>
+<!--                    <app-code-editor-->
+<!--                        class="code-editor-section__editor"-->
+<!--                        [pythonCode]="pythonCode"-->
+<!--                        (pythonCodeChange)="onPythonCodeChange($event)"-->
+<!--                        (errorChange)="onCodeErrorChange($event)"-->
+<!--                    ></app-code-editor>-->
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
