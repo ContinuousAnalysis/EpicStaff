@@ -4,7 +4,7 @@ import {catchError, debounceTime, distinctUntilChanged, finalize, switchMap} fro
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {UpperCasePipe} from "@angular/common";
 import {CreateCollectionDtoResponse} from "../../../../models/collection.model";
-import {MATERIAL_FORMS} from "../../../../../../shared/material-forms";
+import {MATERIAL_FORMS} from "@shared/material-forms";
 import {FileUploaderComponent} from "../../file-uploader/file-uploader.component";
 import {FilesListComponent} from "./files-list/files-list.component";
 import {FilePreviewComponent} from "./file-preview/file-preview.component";
@@ -13,10 +13,8 @@ import {DocumentsStorageService} from "../../../../services/documents-storage.se
 import {DisplayedListDocument} from "../../../../models/document.model";
 import {FILE_TYPES} from "../../../../constants/constants";
 import {FileListService} from "../../../../services/files-list.service";
-import {ToastService} from "../../../../../../services/notifications/toast.service";
-import {
-    ValidationErrorsComponent
-} from "../../../../../../shared/components/app-validation-errors/validation-errors.component";
+import {ToastService} from "../../../../../../services/notifications";
+import {ValidationErrorsComponent} from "@shared/components";
 import {EMPTY, filter} from "rxjs";
 
 @Component({
@@ -98,7 +96,7 @@ export class StepUploadFilesComponent implements OnInit {
     onFilesUpload(files: FileList): void {
         const collectionId = this.collection().collection_id;
         // 1: filter duplicates by file name
-        const filteredByName = this.fileListService.filterDuplicatesByName(files);
+        const filteredByName = this.fileListService.filterDuplicatesByName(files, this.documents());
         // 2: transform File[] to DisplayedListDocument[]
         const transformed = this.fileListService.transformFilesToDisplayedDocuments(filteredByName, collectionId);
         // 3: display both valid and invalid files
@@ -109,11 +107,7 @@ export class StepUploadFilesComponent implements OnInit {
         // 5: upload filtered and valid files to backend
         this.documentsStorageService.uploadDocuments(collectionId, toUpload)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((res) => {
-                if (!res) return;
-                // 6: update displayed documents
-                this.fileListService.updateDocumentsAfterUpload(this.documents, res.documents);
-            });
+            .subscribe();
     }
 
     protected readonly FILE_TYPES = FILE_TYPES;

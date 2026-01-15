@@ -46,7 +46,7 @@ export interface CollectionNaiveRag {
     is_ready_for_indexing: boolean;
     message: string | null;
     rag_id: number;
-    rag_type: string;
+    rag_type: RagType;
     status: string;
     created_at: string;
     updated_at: string;

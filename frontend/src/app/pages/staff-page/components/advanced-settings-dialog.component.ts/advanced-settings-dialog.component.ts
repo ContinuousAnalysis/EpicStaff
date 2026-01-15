@@ -26,7 +26,6 @@ import {
     FullLLMConfigService,
 } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
 import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
-import {filter, switchMap} from "rxjs/operators";
 import {CollectionsApiService} from "../../../../features/knowledge-sources/services/collections-api.service";
 import {GetCollectionRequest} from "../../../../features/knowledge-sources/models/collection.model";
 import {SelectComponent, SelectItem} from "../../../../shared/components/select/select.component";
@@ -85,8 +84,6 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
     public agentRagsSelectItems: SelectItem[] = [];
     public isLoadingKnowledgeSources = false;
     public knowledgeSourcesError: string | null = null;
-
-    private knowledgeSourceChange$ = new Subject<number | null>();
 
     private readonly _destroyed$ = new Subject<void>();
     public floatedThreshold: any;
@@ -185,19 +182,6 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         const collectionId = this.agentData.knowledge_collection;
         this.isLoadingKnowledgeSources = true;
         this.isLoadingLLMs = true;
-
-        this.knowledgeSourceChange$.pipe(
-            takeUntil(this._destroyed$),
-            filter(Boolean),
-            switchMap(collectionId =>
-                this.collectionsService.getRagsByCollectionId(collectionId)
-            ),
-        ).subscribe(rags => {
-            this.agentRagsSelectItems = rags.map(rag => ({
-                name: rag.rag_type,
-                value: rag.rag_id
-            }));
-        })
 
         forkJoin({
             llmConfigs: this.fullLLMConfigService.getFullLLMConfigs(),
@@ -337,16 +321,27 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         if (collectionId === null) {
             this.agentData.selected_knowledge_source = null;
             this.agentData.rag = null;
+            this.agentRagsSelectItems = [];
         } else {
             const selectedCollection = this.allKnowledgeSources.find(
                 (source) => source.collection_id === collectionId
             );
-            this.agentData.selected_knowledge_source =
-                selectedCollection || null;
+            this.agentData.selected_knowledge_source = selectedCollection || null;
 
-            this.knowledgeSourceChange$.next(collectionId);
+            this.getRagsByCollectionId(collectionId);
         }
         this.cdr.markForCheck();
+    }
+
+    private getRagsByCollectionId(id: number): void {
+        this.collectionsService.getRagsByCollectionId(id)
+            .pipe(takeUntil(this._destroyed$))
+            .subscribe(rags => {
+                this.agentRagsSelectItems = rags.map(rag => ({
+                    name: rag.rag_type,
+                    value: rag.rag_id
+                }));
+            })
     }
 
     public onThresholdChange(event: any): void {

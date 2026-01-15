@@ -1,15 +1,6 @@
 import {RagName, RagTypeLevel, Rag} from "../models/rag.model";
 
-export const FILE_TYPES = ['pdf', 'csv', 'docx', 'txt', 'json', 'html'] as const;
-
-export const MIME_TYPES: Record<string, (typeof FILE_TYPES)[number]> = {
-    'application/pdf': 'pdf',
-    'text/csv': 'csv',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-    'text/plain': 'txt',
-    'application/json': 'json',
-    'text/html': 'html'
-};
+export const FILE_TYPES = ['pdf', 'csv', 'md', 'docx', 'txt', 'json', 'html'];
 
 export const CHUNK_STRATEGIES = ['character', 'csv', 'markdown', 'HTML', 'token', 'JSON'];
 

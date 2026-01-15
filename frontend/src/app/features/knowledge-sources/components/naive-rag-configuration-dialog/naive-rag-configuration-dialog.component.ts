@@ -22,4 +22,8 @@ export class NaiveRagConfigurationDialog {
     onCancel(): void {
         this.dialogRef.close();
     }
+
+    onSave(): void {
+        this.dialogRef.close(true);
+    }
 }

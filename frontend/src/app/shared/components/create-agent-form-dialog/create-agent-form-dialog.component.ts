@@ -16,15 +16,13 @@ import {
     ReactiveFormsModule,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Subscription, switchMap, takeUntil, filter} from 'rxjs';
+import {Subscription, switchMap, takeUntil, of} from 'rxjs';
 import { Subject } from 'rxjs';
 import { MATERIAL_FORMS } from '../../material-forms';
 
 import { RealtimeAgentService } from '../../../services/realtime-agent.service';
 import { AgentsService } from '../../../services/staff.service';
 import { ToastService } from '../../../services/notifications/toast.service';
-import { CollectionsService } from '../../../pages/knowledge-sources/services/source-collections.service';
-import { GetSourceCollectionRequest } from '../../../pages/knowledge-sources/models/source-collection.model';
 import { ToolsSelectorComponent } from '../../components/tools-selector/tools-selector.component';
 import {
     FullLLMConfigService,
@@ -191,8 +189,9 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 ragCtrl?.updateValueAndValidity();
             }),
             takeUntil(this.destroy$),
-            filter(Boolean),
-            switchMap(id => this.collectionsService.getRagsByCollectionId(id))
+            switchMap(id =>
+                id ? this.collectionsService.getRagsByCollectionId(id) : of([])
+            )
         ).subscribe(rags => {
             this.collectionRags.set(rags);
         });

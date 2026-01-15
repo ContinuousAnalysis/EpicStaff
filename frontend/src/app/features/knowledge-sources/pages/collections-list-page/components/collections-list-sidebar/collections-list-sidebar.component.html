@@ -12,7 +12,6 @@
     </div>
 
     <div class="collections-sidebar__actions">
-
         <app-search
             placeholder="Search collections..."
             [(searchTerm)]="searchTerm"
@@ -33,7 +32,7 @@
                 + Create Collection
             </app-button>
         } @else {
-            @for (collection of collections(); track collection.collection_id) {
+            @for (collection of filteredCollections(); track collection.collection_id) {
                 <app-collection
                     class="collections-sidebar__item"
                     [collection]="collection"

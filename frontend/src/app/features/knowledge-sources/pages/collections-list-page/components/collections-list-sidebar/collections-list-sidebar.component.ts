@@ -1,10 +1,8 @@
-import {ChangeDetectionStrategy, Component, input, model, output, Signal, signal} from "@angular/core";
-import {ButtonComponent} from "../../../../../../shared/components/buttons/button/button.component";
+import {ChangeDetectionStrategy, Component, computed, input, model, output, Signal, signal} from "@angular/core";
+import {ButtonComponent, SearchComponent, SelectComponent} from "@shared/components";
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {GetCollectionRequest} from "../../../../models/collection.model";
 import {CollectionComponent} from "./collection/collection.component";
-import {SearchComponent} from "../../../../../../shared/components/search/search.component";
-import {SelectComponent} from "../../../../../../shared/components/select/select.component";
 
 @Component({
     selector: 'app-collections-list-sidebar',
@@ -23,6 +21,14 @@ import {SelectComponent} from "../../../../../../shared/components/select/select
 export class CollectionsListItemSidebarComponent {
     searchTerm = signal<string>('');
     collections = input<GetCollectionRequest[]>([]);
+
+    filteredCollections = computed(() => {
+        return this.collections().filter((collection) => {
+            const search = this.searchTerm().toLowerCase();
+            const collectionName = collection.collection_name.toLowerCase();
+            return collectionName.includes(search);
+        });
+    });
 
     selectedCollectionId = model<number | null>();
 

@@ -7,27 +7,21 @@ import {
     OnInit,
     signal, SimpleChanges
 } from "@angular/core";
-import {AppIconComponent} from "../../../../../../shared/components/app-icon/app-icon.component";
+import {AppIconComponent, SpinnerComponent, ValidationErrorsComponent, SelectComponent, DragDropAreaComponent} from "@shared/components";
 import {FormControl, FormsModule, ReactiveFormsModule, Validators} from "@angular/forms";
 import {CreateCollectionDtoResponse} from "../../../../models/collection.model";
 import {CollectionsStorageService} from "../../../../services/collections-storage.service";
-import {catchError, debounceTime, distinctUntilChanged, finalize, map, switchMap} from "rxjs/operators";
+import {catchError, debounceTime, distinctUntilChanged, finalize, switchMap} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {EMPTY, filter, throwError} from "rxjs";
-import {DragDropAreaComponent} from "../../../../../../shared/components/drag-drop-area/drag-drop-area.component";
 import {FILE_TYPES} from "../../../../constants/constants";
 import {CollectionFilesComponent} from "./collection-files/collection-files.component";
-import {SelectComponent} from "../../../../../../shared/components/select/select.component";
 import {CollectionRagsComponent} from "./collection-rags/collection-rags.component";
 import {CollectionInfoComponent} from "./collection-info/collection-info.component";
 import {DocumentsStorageService} from "../../../../services/documents-storage.service";
 import {DisplayedListDocument} from "../../../../models/document.model";
 import {FileListService} from "../../../../services/files-list.service";
-import {SpinnerComponent} from "../../../../../../shared/components/spinner/spinner.component";
-import {ToastService} from "../../../../../../services/notifications/toast.service";
-import {
-    ValidationErrorsComponent
-} from "../../../../../../shared/components/app-validation-errors/validation-errors.component";
+import {ToastService} from "../../../../../../services/notifications";
 
 @Component({
     selector: "app-collection-details",
@@ -155,7 +149,7 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
         const collectionId = this.fullCollection()?.collection_id;
         if (!collectionId) return;
         // 1: filter duplicates by file name
-        const filteredByName = this.fileListService.filterDuplicatesByName(files);
+        const filteredByName = this.fileListService.filterDuplicatesByName(files, this.documents());
         // 2: transform File[] to DisplayedListDocument[]
         const transformed = this.fileListService.transformFilesToDisplayedDocuments(filteredByName, collectionId);
         // 3: display both valid and invalid files
@@ -166,11 +160,7 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
         // 5: upload filtered and valid files to backend
         this.documentsStorageService.uploadDocuments(collectionId, toUpload)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((res) => {
-                if (!res) return;
-                // 6: update displayed documents
-                this.fileListService.updateDocumentsAfterUpload(this.documents, res.documents);
-            });
+            .subscribe();
     }
 
     onFileSelect(event: Event): void {

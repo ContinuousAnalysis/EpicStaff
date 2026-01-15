@@ -43,8 +43,6 @@ export interface Agent {
 }
 
 export interface RealtimeAgentConfig {
-    similarity_threshold: string;
-    search_limit: number;
     wake_word: string | null;
     stop_prompt: string | null;
     language: string | null;
