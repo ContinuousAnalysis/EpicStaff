@@ -51,7 +51,7 @@ This guide will help you launch EpicStaff on your system. You need to additional
 
 ### 1. Clone the Project
 ```bash
-git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git && cd EpicStaff
+git clone -b main https://github.com/EpicStaff/EpicStaff.git && cd EpicStaff
 ```
 ### 2. Set your preferred savefiles location
 ```bash
@@ -77,7 +77,7 @@ docker-compose up
 
 ### 1. Clone the Project
 ```powershell
-git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git; cd EpicStaff
+git clone -b main https://github.com/EpicStaff/EpicStaff.git; cd EpicStaff
 ```
 ### 2. Set your preferred savefiles location
 ```powershell
