@@ -1,28 +1,20 @@
-from math import log
-import os
 import uvicorn
-import sys
-from dotenv import load_dotenv, find_dotenv
 from loguru import logger
-if "--debug" in sys.argv:
-    logger.info("RUNNING IN DEBUG MODE")
+from .core.config import settings
 
-    load_dotenv(find_dotenv("debug.env"))
-else:
-    load_dotenv(find_dotenv(".env"))
-
-PORT = os.environ.get("REALTIME_PORT", 8050)
 
 def main():
-    """Run the FastAPI server with uvicorn."""
+    if settings.DEBUG_MODE:
+        logger.info("RUNNING IN DEBUG MODE")
+
     uvicorn.run(
         "api.main:app",
         host="0.0.0.0",
-        port=PORT,
-        reload=False,
-        reload_dirs=["src"],
-        workers=1,
-        log_level="debug",
+        port=settings.PORT,
+        reload=settings.RELOAD,
+        reload_dirs=["src"] if settings.RELOAD else None,
+        workers=settings.WORKERS,
+        log_level="debug" if settings.DEBUG_MODE else "info",
     )
 
 
