@@ -72,11 +72,13 @@ class RedisPubSub:
                         f'Unable change status from {session.status} to {data["status"]}'
                     )
                 else:
-                    session.status = data["status"]
-                    session.status_data = data.get("status_data", {})
-                    session.token_usage = self._calculate_total_token_usage(
-                        data["session_id"]
+                    status_data = data.get("status_data", {})
+                    status_data["total_token_usage"] = (
+                        self._calculate_total_token_usage(data["session_id"])
                     )
+                    session.status = data["status"]
+                    session.status_data = status_data
+                    session.token_usage = status_data["total_token_usage"]
                     session.save()
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
