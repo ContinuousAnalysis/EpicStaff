@@ -265,6 +265,9 @@ services:
       - sandbox_executions:${OUTPUT_PATH}
       - ${CREW_SAVEFILES_PATH}:${CONTAINER_SAVEFILES_PATH}
 
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     networks:
       - backend-network
     tty: true
