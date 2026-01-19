@@ -36,9 +36,12 @@ class RedisPubSub:
     def __init__(self):
         redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
         redis_port = int(os.getenv("REDIS_PORT", 6379))
-
+        redis_password = os.getenv("REDIS_PASSWORD")
         self.redis_client = redis.Redis(
-            host=redis_host, port=redis_port, decode_responses=True
+            host=redis_host,
+            port=redis_port,
+            password=redis_password,
+            decode_responses=True,
         )
         self.pubsub = self.redis_client.pubsub()
 
@@ -97,7 +100,9 @@ class RedisPubSub:
         try:
             logger.debug(f"Received webhook event: {message}")
             data = WebhookEventData.model_validate_json(message["data"])
-            WebhookTriggerService().handle_webhook_trigger(path=data.path, payload=data.payload)
+            WebhookTriggerService().handle_webhook_trigger(
+                path=data.path, payload=data.payload
+            )
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
 
@@ -131,10 +136,8 @@ class RedisPubSub:
     def _buffer_save(self, data, model: Type[models.Model]):
         try:
             with transaction.atomic():
-                
-                created_objects = model.objects.bulk_create(
-                    data, ignore_conflicts=True
-                )
+
+                created_objects = model.objects.bulk_create(data, ignore_conflicts=True)
                 logger.debug(
                     f"{model.__name__} updated with {len(created_objects)}/{len(data)} entities"
                 )
@@ -231,22 +234,30 @@ class RedisPubSub:
                 if buffer and time.time() - start_time >= 3:
 
                     try:
-                        graph_session_message_list = [GraphSessionMessage(**data) for data in list(buffer)]
+                        graph_session_message_list = [
+                            GraphSessionMessage(**data) for data in list(buffer)
+                        ]
                     except Exception as e:
-                        logger.critical("Error creating GraphSessionMessage cache_for_redis_messages_worker")
+                        logger.critical(
+                            "Error creating GraphSessionMessage cache_for_redis_messages_worker"
+                        )
 
                     buffer.clear()
                     sessions_data = defaultdict(deque)
-                    
+
                     for graph_session_message in graph_session_message_list:
-                        session_id = graph_session_message.session.pk 
+                        session_id = graph_session_message.session.pk
                         if session_id is not None:
                             sessions_data[session_id].append(graph_session_message)
                         else:
-                            logger.warning(f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {data}")
+                            logger.warning(
+                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {data}"
+                            )
 
                     for session_id, sessions_data_values in sessions_data.items():
-                        self._buffer_save(data=sessions_data_values, model=GraphSessionMessage)
+                        self._buffer_save(
+                            data=sessions_data_values, model=GraphSessionMessage
+                        )
 
                     start_time = time.time()
 
