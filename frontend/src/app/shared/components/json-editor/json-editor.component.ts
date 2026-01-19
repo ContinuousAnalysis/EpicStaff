@@ -29,6 +29,7 @@ export class JsonEditorComponent {
   @Input() public jsonData: string = '{}';
   @Input() public editorHeight: number = 200;
   @Input() public fullHeight: boolean = false;
+  @Input() public showHeader: boolean = true;
 
   public editorLoaded = false;
   @Output() public jsonChange = new EventEmitter<string>();

@@ -1,0 +1,150 @@
+<div class="panel-container">
+    <div class="panel-content">
+        <form [formGroup]="form" class="form-container">
+            <div class="form-layout" [class.expanded]="isExpanded()" [class.collapsed]="!isExpanded()">
+                <div class="form-data">
+                    <div class="form-fields">
+                        <app-custom-input
+                            label="Trigger Name"
+                            tooltipText="Trigger name"
+                            formControlName="node_name"
+                            placeholder="Enter node name"
+                            [required]="true"
+                            [activeColor]="activeColor"
+                            [errorMessage]="getNodeNameErrorMessage()"
+                        ></app-custom-input>
+
+                        <app-custom-input
+                            label="Telegram bot key"
+                            tooltipText="Bot key."
+                            formControlName="telegram_bot_api_key"
+                            placeholder="Enter webhook name"
+                            [required]="true"
+                            [activeColor]="activeColor"
+                            [errorMessage]="getTelegramKeyErrorMessage()"
+                        ></app-custom-input>
+                    </div>
+
+                    <div class="webhook-section">
+                        <div class="webhook-section__label-container">
+                            <label>Webhook</label>
+                            <mat-icon
+                                [matTooltip]="'tooltip'"
+                                matTooltipPosition="right"
+                                matTooltipClass="custom-tooltip"
+                                class="help-icon"
+                            >
+                                help
+                            </mat-icon>
+                        </div>
+
+                        <div class="webhook-status__container">
+                            @switch (webhookStatus()) {
+                                @case ('pending') {
+                                    <div class="webhook-status__main">
+                                        <app-icon
+                                            icon="ui/status-idle"
+                                            size="0.75rem"
+                                        />
+                                        <span>Pending launch</span>
+                                    </div>
+                                }
+                                @case ('registering') {
+                                    <div class="webhook-status__main">
+                                        <app-icon
+                                            class="webhook-status__icon--registering"
+                                            icon="ui/status-pending"
+                                            size="0.75rem"
+                                        />
+                                        <span>Registering</span>
+                                    </div>
+                                }
+                                @case (WebhookStatus.FAIL) {
+                                    <div class="webhook-status__main">
+                                        <app-icon
+                                            class="webhook-status__icon--failed"
+                                            icon="ui/x"
+                                            size="1rem"
+                                        />
+                                        <span>Registration failed</span>
+                                    </div>
+                                    <span class="webhook-status__error-message">
+                                    Webhook service is not running
+                                </span>
+                                }
+                                @case (WebhookStatus.SUCCESS) {
+                                    <div class="webhook-status__main">
+                                        <app-icon
+                                            class="webhook-status__icon--success"
+                                            icon="ui/check"
+                                            size="1rem"
+                                        />
+                                        <span>Webhook registered</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="output-fields-section">
+                        <label class="output-fields__label">
+                            Fields for output in results
+
+                            <span class="output-fields__count">
+                            {{ selectedFields().length }} selected
+                        </span>
+                        </label>
+                        <div class="output-fields__container">
+                            <div class="output-fields__items">
+                                @for (item of selectedFields(); track $index) {
+                                    <div class="output-fields__item">
+                                    <span>
+                                        {{ item.field_name }}
+                                    </span>
+                                        <span class="output-fields__item-tip">
+                                        {{ item.field_type }}
+                                    </span>
+                                    </div>
+                                } @empty {
+                                   <span>No fields selected</span>
+                                }
+                            </div>
+                            <app-button
+                                type="primary"
+                                (click)="onEditing()"
+                            >
+                                Editing
+                            </app-button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-editor-section">
+                    <label>
+                        Mock Data
+                    </label>
+                    <div class="code-editor-section__info">
+                        <mat-icon class="code-editor-section__info-icon">
+                            help
+                        </mat-icon>
+                        <a
+                            class="code-editor-section__info-link"
+                            href="https://core.telegram.org/bots/api#available-types"
+                            target="_blank"
+                        >Click here</a>
+                        to get more information about field models
+                    </div>
+                    <div class="json-wrapper">
+                        <app-json-editor
+                            [jsonData]="jsonValues()"
+                            [showHeader]="false"
+                            [fullHeight]="isExpanded()"
+                            [editorHeight]="200"
+                            [editorOptions]="editorOptions"
+                        />
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
