@@ -4,11 +4,16 @@ export interface TelegramTriggerField {
     description: string;
 }
 
-export interface GetTelegramTriggerFieldsResponse {
-    data: {
-        message: TelegramTriggerField[],
-        callback_query: TelegramTriggerField[]
-    }
+export interface TelegramTriggerFieldWithModel extends TelegramTriggerField {
+    model: any;
+}
+
+export type TelegramFieldParent = 'message' | 'callback_query';
+
+export interface DisplayedTelegramField extends TelegramTriggerFieldWithModel {
+    id?: string;
+    parent: string;
+    variable_path: string;
 }
 
 export interface CreateTelegramTriggerNodeField {
@@ -26,7 +31,7 @@ export interface CreateTelegramTriggerNodeRequest {
 
 export interface TelegramTriggerNodeField {
     id: number;
-    parent: string;
+    parent: TelegramFieldParent;
     field_name: string;
     variable_path: string;
 }
@@ -36,5 +41,5 @@ export interface GetTelegramTriggerNodeRequest {
     node_name: string;
     graph: number;
     telegram_bot_api_key: string;
-    fields: TelegramTriggerNodeField[]
+    fields: TelegramTriggerNodeField[];
 }

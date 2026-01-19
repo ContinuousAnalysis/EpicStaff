@@ -33,7 +33,10 @@
     <!-- DATA ROWS -->
     <div class="table__fields-wrapper">
         <ol class="table__rows">
-            @for (item of tableItems(); track item.id; let odd = $odd; let i = $index) {
+            <label class="table__list-title">
+                Message items
+            </label>
+            @for (item of messageTableItems(); track $index; let odd = $odd) {
                 <div
                     class="table__row-wrapper"
                     [class.table__row-wrapper--dark]="odd"
@@ -50,44 +53,81 @@
                         </div>
 
                         <!-- default name -->
-                        <div class="table__col table__col--small table__col-name">
-                            <span class="table__name-text">
-                                {{ item.default_name }}
+                        <div class="table__col table__col--small">
+                            <span class="table__item-text">
+                                {{ item.field_name }}
                             </span>
-<!--                            <app-icon-->
-<!--                                class="table__name-icon"-->
-<!--                                icon="ui/document"-->
-<!--                                size="0.75rem"-->
-<!--                            />-->
                         </div>
 
-                        <!-- type select -->
+                        <!-- type -->
                         <div class="table__col table__col--small">
-                            <app-select
-                                mod="small"
-                                [items]="fileTypeSelectItems"
-                                [(selectedValue)]="item.type"
-                                (changed)="itemFieldChange(item, 'type', $event)"
-                            />
+                            <span class="table__item-text">
+                                {{ item.field_type }}
+                            </span>
                         </div>
 
                         <div class="table__col table__col--small">
-                            <app-custom-input
-                                placeholder="Enter name..."
+                            <app-variables-input
+                                [required]="item.checked"
+                                [value]="item.variable_path"
+                                (updatedValue)="updatePath(item, $event)"
                             />
-                            {{item.assigned_name}}
                         </div>
 
                         <!-- description -->
                         <div class="table__col table__col-description">
-                            {{item.description}}
+                            {{ item.description }}
                         </div>
                     </li>
-<!--                    @for (error of item.errors | keyvalue; track error.key) {-->
-<!--                        <label class="table__row-error">-->
-<!--                            Update failed: {{ error.value?.reason }}-->
-<!--                        </label>-->
-<!--                    }-->
+                </div>
+            }
+
+            <label class="table__list-title">
+                Callback query items
+            </label>
+            @for (item of callbackQueryTableItems(); track $index; let even = $even) {
+                <div
+                    class="table__row-wrapper"
+                    [class.table__row-wrapper--dark]="even"
+                >
+                    <li
+                        class="table__row"
+                    >
+                        <!-- checkbox -->
+                        <div class="table__col table__col--small">
+                            <app-checkbox
+                                [checked]="item.checked"
+                                (changed)="toggleItem(item)"
+                            />
+                        </div>
+
+                        <!-- default name -->
+                        <div class="table__col table__col--small">
+                            <span class="table__item-text">
+                                {{ item.field_name }}
+                            </span>
+                        </div>
+
+                        <!-- type -->
+                        <div class="table__col table__col--small">
+                            <span class="table__item-text">
+                                {{ item.field_type }}
+                            </span>
+                        </div>
+
+                        <div class="table__col table__col--small">
+                            <app-variables-input
+                                [required]="item.checked"
+                                [value]="item.variable_path"
+                                (updatedValue)="updatePath(item, $event)"
+                            />
+                        </div>
+
+                        <!-- description -->
+                        <div class="table__col table__col-description">
+                            {{ item.description }}
+                        </div>
+                    </li>
                 </div>
             }
         </ol>

@@ -1,8 +1,11 @@
 import {HttpClient, HttpHeaders} from "@angular/common/http";
 import {ConfigService} from "../../../../../services/config/config.service";
 import {ApiGetRequest} from "../../../../../shared/models/api-request.model";
-import {Observable} from "rxjs";
-import {CreateTelegramTriggerNodeRequest, GetTelegramTriggerFieldsResponse} from "../models/telegram-trigger.model";
+import {map, Observable} from "rxjs";
+import {
+    CreateTelegramTriggerNodeRequest,
+    GetTelegramTriggerNodeRequest
+} from "../models/telegram-trigger.model";
 import {Injectable} from "@angular/core";
 
 @Injectable({
@@ -27,8 +30,13 @@ export class TelegramTriggerNodeService {
         return this.configService.apiUrl + 'telegram-trigger-nodes/';
     }
 
-    getTelegramTriggerAvailableFields(): Observable<GetTelegramTriggerFieldsResponse> {
-        return this.http.get<GetTelegramTriggerFieldsResponse>(this.apiUrlTriggerFields);
+    getTelegramTriggerNodes(): Observable<GetTelegramTriggerNodeRequest[]> {
+        return this.http.get<ApiGetRequest<GetTelegramTriggerNodeRequest>>(this.apiUrlNode)
+            .pipe(
+                map((response) => {
+                    return response.results.sort((a, b) => b.id - a.id);
+                })
+            );
     }
 
     createTelegramTriggerNode(request: CreateTelegramTriggerNodeRequest): Observable<any> {
