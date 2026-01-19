@@ -15,7 +15,7 @@ services:
       - SESSION_EVENT_CHANNEL=session:event
       - SESSION_STATUS_CHANNEL=sessions:session_status
       - MEMORY_UPDATE_CHANNEL=memory:update
-
+  
       - DEBUG=${DEBUG:-True}
       - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
@@ -35,6 +35,7 @@ services:
 
       - GUNICORN_WORKERS=${GUNICORN_WORKERS}
       - GUNICORN_THREADS=${GUNICORN_THREADS}
+      - DJANGO_HOST=${DJANGO_HOST}
       - DJANGO_PORT=${DJANGO_PORT}
     volumes:
       - crew_config:/home/user/root/app/env_config
@@ -50,7 +51,7 @@ services:
   
     healthcheck:
       test: >
-        sh -c 'curl -f http://localhost:${DJANGO_PORT}/ht/ || exit 1'
+        sh -c 'curl -f http://${DJANGO_HOST}:${DJANGO_PORT}/ht/ || exit 1'
       interval: 30s
       timeout: 10s
       retries: 12
