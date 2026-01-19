@@ -19,6 +19,7 @@ collection_processor_service = CollectionProcessorService()
 # Redis Configuration
 redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
 redis_port = int(os.getenv("REDIS_PORT", "6379"))
+redis_password = os.getenv("REDIS_PASSWORD")
 
 knowledge_sources_channel = os.getenv("KNOWLEDGE_SOURCES_CHANNEL", "knowledge_sources")
 knowledge_search_get_channel = os.getenv(
@@ -91,7 +92,7 @@ async def chunking(redis_service: RedisService, executor: ThreadPoolExecutor):
                 )
                 await redis_service.async_publish(
                     channel=knowledge_document_chunk_response,
-                    message=response.model_dump()
+                    message=response.model_dump(),
                 )
             except Exception as e:
                 error_message = f"Error processing embedding: {e}"
@@ -103,7 +104,7 @@ async def chunking(redis_service: RedisService, executor: ThreadPoolExecutor):
                 )
                 await redis_service.async_publish(
                     channel=knowledge_document_chunk_response,
-                    message=response.model_dump()
+                    message=response.model_dump(),
                 )
 
 
@@ -122,7 +123,7 @@ async def searching(redis_service: RedisService):
                 collection_id = data.collection_id
 
                 logger.info(f"Processing search for collection_id: {collection_id}")
-                
+
                 result = collection_processor_service.search(
                     collection_id=collection_id,
                     uuid=data.uuid,
@@ -142,7 +143,9 @@ async def searching(redis_service: RedisService):
 
 async def main():
     """Runs both tasks concurrently"""
-    redis_service = RedisService(host=redis_host, port=redis_port)
+    redis_service = RedisService(
+        host=redis_host, port=redis_port, password=redis_password
+    )
     await redis_service.connect()
 
     # Use a ProcessPoolExecutor for CPU-bound tasks

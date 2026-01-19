@@ -28,13 +28,17 @@ class RedisService(metaclass=SingletonMeta):
         self._async_redis_client = None
         self._redis_host = os.getenv("REDIS_HOST", "localhost")
         self._redis_port = int(os.getenv("REDIS_PORT", 6379))
+        self._redis_password = os.getenv("REDIS_PASSWORD")
         self._retry = Retry(backoff=ExponentialBackoff(cap=3), retries=10)
 
     def _initialize_redis(self):
         with self._lock:
             if self._redis_client is None:
                 self._redis_client = redis.Redis(
-                    host=self._redis_host, port=self._redis_port, retry=self._retry
+                    host=self._redis_host,
+                    port=self._redis_port,
+                    password=self._redis_password,
+                    retry=self._retry,
                 )
                 self._pubsub = self._redis_client.pubsub()
 
@@ -43,6 +47,7 @@ class RedisService(metaclass=SingletonMeta):
             self._async_redis_client = async_redis.Redis(
                 host=self._redis_host,
                 port=self._redis_port,
+                password=self._redis_password,
                 decode_responses=True,
                 retry=self._retry,
             )
@@ -68,7 +73,9 @@ class RedisService(metaclass=SingletonMeta):
         return self._async_redis_client
 
     def publish_session_data(self, session_data: SessionData) -> int:
-        return self.redis_client.publish(f"sessions:schema", session_data.model_dump_json())
+        return self.redis_client.publish(
+            f"sessions:schema", session_data.model_dump_json()
+        )
 
     def send_user_input(
         self,

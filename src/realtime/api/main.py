@@ -35,7 +35,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 app = FastAPI()
-redis_service = RedisService(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+redis_service = RedisService(
+    host=settings.REDIS_HOST, port=settings.REDIS_PORT, password=settings.REDIS_PASSWORD
+)
 python_code_executor_service = PythonCodeExecutorService(redis_service=redis_service)
 tool_manager_service = ToolManagerService(
     redis_service=redis_service,
@@ -63,7 +65,11 @@ connection_repository = ConnectionRepository()
 async def redis_listener():
     """Listen to Redis channel and store connection data."""
 
-    redis_service = RedisService(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+    redis_service = RedisService(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+    )
     await redis_service.connect()
 
     pubsub = await redis_service.async_subscribe(

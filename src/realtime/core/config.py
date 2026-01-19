@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # --- Redis ---
     REDIS_HOST: str
     REDIS_PORT: int
+    REDIS_PASSWORD: str
 
     # --- Redis Channels (Pub/Sub) ---
     KNOWLEDGE_SEARCH_GET_CHANNEL: str = "knowledge:search:get"

@@ -22,7 +22,7 @@ services:
     
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
-
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - DB_HOST_NAME=${DB_HOST_NAME}
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
@@ -70,6 +70,7 @@ services:
       - REALTIME_PORT=${REALTIME_PORT}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - MANAGER_HOST=${MANAGER_HOST}
       - MANAGER_PORT=${MANAGER_PORT}
       - DB_NAME=${POSTGRES_DB}
@@ -107,6 +108,7 @@ services:
       - MANAGER_PORT=${MANAGER_PORT}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - DB_NAME=${POSTGRES_DB}
       - DB_HOST_NAME=${DB_HOST_NAME}
       - DB_PORT=${DB_PORT}
@@ -180,7 +182,7 @@ services:
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     command: >
-      sh -c "redis-server /usr/local/etc/redis/redis.conf --port ${REDIS_PORT}"
+      sh -c "redis-server --port ${REDIS_PORT} --requirepass ${REDIS_PASSWORD}"
     healthcheck:
       test: >
         sh -c "redis-cli -p ${REDIS_PORT} ping || exit 1"
@@ -198,6 +200,7 @@ services:
     environment:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - CHECK_INTERVAL=${REDIS_CHECK_INTERVAL:-5}
       - MAX_FAILURES=${REDIS_MAX_FAILURES:-1}
     volumes:
@@ -219,6 +222,7 @@ services:
     environment:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - MANAGER_HOST=${MANAGER_HOST}
       - MANAGER_PORT=${MANAGER_PORT}
       - HAYSTACK_TELEMETRY_ENABLED=${HAYSTACK_TELEMETRY_ENABLED}
@@ -258,6 +262,7 @@ services:
     environment:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - CODE_RESULT_CHANNEL=code_results
       - CODE_EXEC_TASK_CHANNEL=code_exec_tasks
       - BASE_VENV_PATH=${BASE_VENV_PATH}
@@ -286,6 +291,8 @@ services:
 
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
       - DB_NAME=${POSTGRES_DB}
       - DB_HOST_NAME=${DB_HOST_NAME}
       - DB_PORT=${DB_PORT}
@@ -331,6 +338,8 @@ services:
       - WEBHOOK_PORT=${WEBHOOK_PORT}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}  
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
     depends_on:
       - redis
     networks:
