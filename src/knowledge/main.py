@@ -20,6 +20,7 @@ collection_processor_service = CollectionProcessorService()
 # Redis Configuration
 redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
 redis_port = int(os.getenv("REDIS_PORT", "6379"))
+redis_password = os.getenv("REDIS_PASSWORD")
 
 knowledge_sources_channel = os.getenv("KNOWLEDGE_SOURCES_CHANNEL", "knowledge_sources")
 knowledge_search_get_channel = os.getenv(
@@ -211,7 +212,9 @@ async def searching(redis_service: RedisService, semaphore: asyncio.Semaphore, b
 
 async def main():
     """Runs both tasks concurrently"""
-    redis_service = RedisService(host=redis_host, port=redis_port)
+    redis_service = RedisService(
+        host=redis_host, port=redis_port, password=redis_password
+    )
     await redis_service.connect()
 
     # Use a ThreadPoolExecutor for CPU-bound tasks

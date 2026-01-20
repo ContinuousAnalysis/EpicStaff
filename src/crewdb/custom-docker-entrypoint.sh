@@ -6,7 +6,8 @@ USERS_CREATED_FLAG="/tmp/users_created"
 
 # Function to check Django health
 check_django_health() {
-    if curl -f -H "Host: localhost" http://django_app:8000/ht/ > /dev/null 2>&1; then
+    
+    if curl -f -H "Host: localhost" "http://django_app:${DJANGO_PORT}/ht/" > /dev/null 2>&1; then
         echo "Django is healthy"
         return 0
     else
@@ -29,7 +30,7 @@ create_manager_user() {
     fi
     
     echo "Creating manager_user (${manager_user})..."
-    psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" <<EOF
+    psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" -p ${DB_PORT} <<EOF
 DO \$\$
 BEGIN
    IF NOT EXISTS (
@@ -84,7 +85,7 @@ create_knowledge_user(){
       fi
 
       echo "Creating knowledge_user (${knowledge_user})..."
-      psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" <<EOF
+      psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" -p ${DB_PORT} <<EOF
       DO \$\$
       BEGIN
           IF NOT EXISTS (
@@ -165,7 +166,7 @@ create_realtime_user() {
         return 0
     fi
     echo "Creating realtime_user (${realtime_user})..."
-    psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" <<EOF
+    psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" -p ${DB_PORT} <<EOF
     DO \$\$
     BEGIN
     IF NOT EXISTS (
@@ -219,7 +220,7 @@ create_crew_user() {
         return 0
     fi
     echo "Creating crew_user (${crew_user})..."
-    psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" <<EOF
+    psql -U "${POSTGRES_USER:-postgres}" -d "$target_db" -p ${DB_PORT} <<EOF
     DO \$\$
     BEGIN
     IF NOT EXISTS (
@@ -263,8 +264,8 @@ wait_for_django_and_create_users() {
         echo "Django is healthy, proceeding with user creation"
 
         # Wait for PostgreSQL to be ready
-        until pg_isready -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" -h localhost; do
-            echo "Waiting for PostgreSQL to be ready..."
+        until pg_isready -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" -h localhost -p "${DB_PORT}"; do
+            echo "Waiting for PostgreSQL to be ready on port ${DB_PORT}..."
             sleep 2
         done
         target_db="${POSTGRES_DB:-postgres}"
