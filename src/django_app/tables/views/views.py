@@ -40,6 +40,7 @@ from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
 from tables.services.run_python_code_service import RunPythonCodeService
 from tables.services.quickstart_service import QuickstartService
+from tables.services.knowledge_services.indexing_service import IndexingService
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -47,7 +48,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from tables.models import (
     Session,
     SourceCollection,
-    DocumentMetadata,
+    # DocumentMetadata,
     GraphOrganization,
     GraphOrganizationUser,
     OrganizationUser,
@@ -64,13 +65,13 @@ from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
-    ProcessDocumentChunkingSerializer,
-    ProcessCollectionEmbeddingSerializer,
+    ProcessRagIndexingSerializer,
     RunSessionSerializer,
 )
-from tables.serializers.knowledge_serializers import CollectionStatusSerializer
+
+# from tables.serializers.knowledge_serializers import CollectionStatusSerializer
 from tables.serializers.quickstart_serializers import QuickstartSerializer
-from tables.filters import CollectionFilter, SessionFilter
+from tables.filters import SessionFilter  # CollectionFilter,
 
 from .default_config import *
 
@@ -768,52 +769,6 @@ class InitRealtimeAPIView(APIView):
             )
 
 
-class CollectionStatusAPIView(ListAPIView):
-    serializer_class = CollectionStatusSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = CollectionFilter
-
-    def get_queryset(self):
-        return (
-            SourceCollection.objects.only("collection_id", "collection_name", "status")
-            .annotate(
-                total_documents=Count("document_metadata"),
-                new_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.NEW
-                    ),
-                ),
-                completed_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.COMPLETED
-                    ),
-                ),
-                processing_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.PROCESSING
-                    ),
-                ),
-                failed_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.FAILED
-                    ),
-                ),
-            )
-            .prefetch_related(
-                Prefetch(
-                    "document_metadata",
-                    queryset=DocumentMetadata.objects.only(
-                        "document_id", "file_name", "status", "source_collection_id"
-                    ),
-                )
-            )
-        )
-
-
 class QuickstartView(APIView):
     """
     API endpoint for managing quickstart configurations
@@ -878,29 +833,49 @@ class QuickstartView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ProcessDocumentChunkingView(APIView):
-    @swagger_auto_schema(request_body=ProcessDocumentChunkingSerializer)
+class ProcessRagIndexingView(APIView):
+    """
+    View for triggering RAG indexing (chunking + embedding).
+    All business logic is handled by IndexingService.
+    """
+
+    @swagger_auto_schema(
+        request_body=ProcessRagIndexingSerializer,
+        responses={
+            202: "Indexing process accepted and queued",
+            400: "Invalid request or RAG not ready for indexing",
+            404: "RAG configuration not found",
+        },
+    )
     def post(self, request):
-        serializer = ProcessDocumentChunkingSerializer(data=request.data)
-        if serializer.is_valid():
-            document_id = serializer["document_id"].value
+        serializer = ProcessRagIndexingSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            if not DocumentMetadata.objects.filter(document_id=document_id).exists():
-                return Response(status=status.HTTP_404_NOT_FOUND)
+        rag_id = serializer.validated_data["rag_id"]
+        rag_type = serializer.validated_data["rag_type"]
 
-            redis_service.publish_process_document_chunking(document_id=document_id)
-            return Response(status=status.HTTP_202_ACCEPTED)
+        try:
+            indexing_data = IndexingService.validate_and_prepare_indexing(
+                rag_id=rag_id, rag_type=rag_type
+            )
 
+            redis_service.publish_rag_indexing(
+                rag_id=indexing_data["rag_id"],
+                rag_type=indexing_data["rag_type"],
+                collection_id=indexing_data["collection_id"],
+            )
 
-class ProcessCollectionEmbeddingView(APIView):
-    @swagger_auto_schema(request_body=ProcessCollectionEmbeddingSerializer)
-    def post(self, request):
-        serializer = ProcessCollectionEmbeddingSerializer(data=request.data)
-        if serializer.is_valid():
-            collection_id = serializer["collection_id"].value
-            if not SourceCollection.objects.filter(
-                collection_id=collection_id
-            ).exists():
-                return Response(status=status.HTTP_404_NOT_FOUND)
-            redis_service.publish_source_collection(collection_id=collection_id)
-            return Response(status=status.HTTP_202_ACCEPTED)
+            return Response(
+                data={
+                    "detail": "Indexing process accepted",
+                    "rag_id": indexing_data["rag_id"],
+                    "rag_type": indexing_data["rag_type"],
+                    "collection_id": indexing_data["collection_id"],
+                },
+                status=status.HTTP_202_ACCEPTED,
+            )
+
+        except Exception as e:
+            # DRF handle
+            raise
