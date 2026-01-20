@@ -46,10 +46,29 @@ def extract_text(binary_content: bytes) -> str:
         return binary_content.decode("latin-1")
 
 
+def _is_valid_pdf(binary_content: bytes) -> bool:
+    """
+    Check if binary content is a valid PDF by looking for the PDF magic bytes.
+    PDF files should start with '%PDF-' (possibly with leading whitespace).
+    """
+    # Strip leading whitespace and check for PDF signature
+    content = binary_content.lstrip()
+    return content.startswith(b"%PDF-")
+
+
 def extract_text_from_pdf(binary_content: bytes) -> str:
     """
     Extract text from PDF files.
+    Falls back to plain text extraction if the content is not a valid PDF.
     """
+
+    # Check if content is actually a valid PDF
+    if not _is_valid_pdf(binary_content):
+        logger.warning(
+            "Content has .pdf extension but is not a valid PDF file. "
+            "Attempting plain text extraction."
+        )
+        return extract_text(binary_content)
 
     text_parts = []
     try:
