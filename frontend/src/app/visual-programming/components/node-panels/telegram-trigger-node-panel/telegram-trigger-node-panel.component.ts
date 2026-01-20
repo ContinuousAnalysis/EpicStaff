@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, signal} from "@angular/core";
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, signal} from "@angular/core";
 import {BaseSidePanel} from "../../../core/models/node-panel.abstract";
 import {TelegramTriggerNodeModel} from "../../../core/models/node.model";
 import {FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
@@ -35,7 +35,7 @@ import {TELEGRAM_TRIGGER_FIELDS} from "../../../core/constants/telegram-trigger-
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTriggerNodeModel> implements OnInit {
+export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTriggerNodeModel> {
     public readonly isExpanded = input<boolean>(false);
 
     private dialog = inject(Dialog);
@@ -71,11 +71,7 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
 
     constructor() {
         super();
-    }
-
-    ngOnInit(): void {
         this.getTunnelStatus();
-        this.setSelectedFields();
     }
 
     private getTunnelStatus(): void {
@@ -87,9 +83,7 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
             });
     }
 
-    private setSelectedFields(): void {
-        const nodeFields = this.node().data.fields;
-
+    private setSelectedFields(nodeFields: TelegramTriggerNodeField[]): void {
         const selectedFields = nodeFields.map((nodeField: TelegramTriggerNodeField) => {
             const parentFields = TELEGRAM_TRIGGER_FIELDS[nodeField.parent];
             const fieldWithModel = parentFields.find(f => f.field_name === nodeField.field_name)!;
@@ -105,6 +99,7 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
     }
 
     initializeForm(): FormGroup {
+        this.setSelectedFields(this.node().data.fields);
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
             telegram_bot_api_key: [this.node().data.telegram_bot_api_key || '', Validators.required],
@@ -156,23 +151,17 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
                 tap((selectedFields) => {
                     if (!selectedFields) return;
 
-                    const fields = selectedFields as DisplayedTelegramField[];
-                    this.selectedFields.set(fields);
+                    const fields = selectedFields as TelegramTriggerNodeField[];
+                    this.setSelectedFields(fields);
                     this.updateFieldsControl(fields);
                 }),
                 takeUntilDestroyed(this.destroyRef),
             ).subscribe()
     }
 
-    private updateFieldsControl(items: DisplayedTelegramField[]) {
+    private updateFieldsControl(items: TelegramTriggerNodeField[]) {
         const control = this.form.get('fields');
-        const controlValues = items.map(item => ({
-            parent: item.parent,
-            field_name: item.field_name,
-            variable_path: item.variable_path,
-        }))
-
-        control?.setValue(controlValues);
+        control?.setValue(items);
     }
 
     get activeColor(): string {

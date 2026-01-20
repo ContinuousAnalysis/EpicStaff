@@ -121,7 +121,11 @@ export class TelegramTriggerEditingDialogComponent implements OnInit {
             return;
         }
 
-        const result = this.checkedItems();
+        const result = this.checkedItems().map(item => ({
+            parent: item.parent,
+            field_name: item.field_name,
+            variable_path: item.variable_path,
+        }));
         this.dialogRef.close(result);
     }
 }

@@ -1,7 +1,11 @@
 <div class="panel-container">
     <div class="panel-content">
-        <form [formGroup]="form" class="form-container">
-            <div class="form-layout" [class.expanded]="isExpanded()" [class.collapsed]="!isExpanded()">
+        <form
+            [formGroup]="form"
+            class="form-container"
+            [class.form-container--expanded]="isExpanded()"
+        >
+            <div class="form-layout">
                 <div class="form-data">
                     <div class="form-fields">
                         <app-custom-input
