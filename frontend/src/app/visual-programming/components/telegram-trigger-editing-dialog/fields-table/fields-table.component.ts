@@ -1,7 +1,7 @@
 import {
     ChangeDetectionStrategy,
     Component,
-    computed,
+    computed, input,
     model,
 } from "@angular/core";
 import {CheckboxComponent} from "../../../../shared/components/checkbox/checkbox.component";
@@ -20,12 +20,19 @@ import {VariablesInputComponent} from "./variables-input/variables-input.compone
 })
 export class TelegramTriggerFieldsTableComponent {
     tableItems = model<TableItem[]>([]);
+    searchTerm = input<string>('');
 
     messageTableItems = computed(() => {
-        return this.tableItems().filter(item => item.parent === 'message');
+        return this.tableItems().filter(item => {
+            const term = this.searchTerm().toLowerCase();
+            return item.parent === 'message' && item.field_name.toLowerCase().includes(term);
+        });
     });
     callbackQueryTableItems = computed(() => {
-        return this.tableItems().filter(item => item.parent === 'callback_query');
+        return this.tableItems().filter(item => {
+            const term = this.searchTerm().toLowerCase();
+            return item.parent === 'callback_query' && item.field_name.toLowerCase().includes(term);
+        });
     });
 
     allChecked = computed(() => {

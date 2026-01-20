@@ -128,12 +128,12 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
     }
 
     getTelegramKeyErrorMessage(): string {
-        const control = this.form?.get('telegram_bot_key');
+        const control = this.form?.get('telegram_bot_api_key');
         if (!control || control.valid || !control.errors) {
             return '';
         }
-        if (control.errors['pattern']) {
-            return 'Use only letters, numbers, "-", "_", ".", "~", or "/"';
+        if (control.errors['required']) {
+            return 'This field is required';
         }
         return '';
     }

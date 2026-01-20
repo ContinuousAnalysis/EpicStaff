@@ -16,7 +16,7 @@ export const DEFAULT_FILE_EXTRACTOR_NODE_PORTS: BasePort[] = [
             'file-extractor-out',
             'audio-to-text-out',
             'webhook-trigger-out',
-            
+            'telegram-trigger-out',
         ],
         position: 'left',
         color: '#2196F3',
@@ -35,6 +35,7 @@ export const DEFAULT_FILE_EXTRACTOR_NODE_PORTS: BasePort[] = [
             'llm-out-left',
             'file-extractor-in',
             'webhook-trigger-in',
+            'telegram-trigger-in',
             'end-in',
             'audio-to-text-in',
         ],

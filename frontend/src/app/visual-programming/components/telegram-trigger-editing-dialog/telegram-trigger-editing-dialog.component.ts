@@ -42,8 +42,7 @@ export class TelegramTriggerEditingDialogComponent implements OnInit {
     private toastService = inject(ToastService);
     selectedFields: DisplayedTelegramField[] = inject(DIALOG_DATA);
 
-    messageTableItems = signal<TableItem[]>([]);
-    callbackQueryTableItems = signal<TableItem[]>([]);
+    searchTerm = signal<string>('');
     tableItems = signal<TableItem[]>([]);
 
     checkedItems = computed<DisplayedTelegramField[]>(() => {
@@ -78,7 +77,7 @@ export class TelegramTriggerEditingDialogComponent implements OnInit {
         wordWrapBreakAfterCharacters: ',',
         wordWrapBreakBeforeCharacters: '}]',
         tabSize: 2,
-        readOnly: false,
+        readOnly: true,
     };
 
     ngOnInit() {
@@ -110,8 +109,6 @@ export class TelegramTriggerEditingDialogComponent implements OnInit {
             }
         });
         this.tableItems.set([...messageFieldsTableItems, ...callbackQueryFieldsTableItems]);
-        this.messageTableItems.set(messageFieldsTableItems);
-        this.callbackQueryTableItems.set(callbackQueryFieldsTableItems);
     }
 
     onCancel(): void {

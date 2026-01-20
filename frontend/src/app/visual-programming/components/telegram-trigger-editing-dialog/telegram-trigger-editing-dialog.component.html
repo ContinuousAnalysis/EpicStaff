@@ -1,7 +1,7 @@
 <div class="dialog">
     <div class="dialog__header">
         <span class="dialog__header-title">
-            Naive RAG Configuration
+            Editing Fields
         </span>
 
         <div class="dialog__actions">
@@ -26,9 +26,12 @@
                 <app-search
                     class="main__input"
                     placeholder="Search fields..."
+                    (valueChange)="searchTerm.set($event)"
                 />
+                <label>Activate checkbox near variable to save its value</label>
             </div>
             <app-telegram-fields-table
+                [searchTerm]="searchTerm()"
                 [(tableItems)]="tableItems"
             />
         </div>

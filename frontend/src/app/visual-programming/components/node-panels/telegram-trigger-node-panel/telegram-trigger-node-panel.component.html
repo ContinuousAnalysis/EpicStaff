@@ -16,7 +16,7 @@
 
                         <app-custom-input
                             label="Telegram bot key"
-                            tooltipText="Bot key."
+                            tooltipText="Bot key"
                             formControlName="telegram_bot_api_key"
                             placeholder="Enter webhook name"
                             [required]="true"
@@ -29,7 +29,7 @@
                         <div class="webhook-section__label-container">
                             <label>Webhook</label>
                             <mat-icon
-                                [matTooltip]="'tooltip'"
+                                [matTooltip]="'Ngrok tunnel'"
                                 matTooltipPosition="right"
                                 matTooltipClass="custom-tooltip"
                                 class="help-icon"
@@ -138,8 +138,7 @@
                         <app-json-editor
                             [jsonData]="jsonValues()"
                             [showHeader]="false"
-                            [fullHeight]="isExpanded()"
-                            [editorHeight]="200"
+                            [fullHeight]="true"
                             [editorOptions]="editorOptions"
                         />
                     </div>
