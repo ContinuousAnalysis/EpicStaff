@@ -82,9 +82,12 @@ class SessionManagerService(metaclass=SingletonMeta):
             variables = dict()
 
         if variables and start_node.variables:
-            variables = {**start_node.variables, **variables}
+            start_node_variables = self._get_actual_variables(start_node.variables)
+            variables = self._deep_merge_dicts(start_node_variables, variables)
         elif start_node.variables:
             variables = start_node.variables
+
+        variables = self._get_actual_variables(variables)
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
         graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
@@ -239,12 +242,8 @@ class SessionManagerService(metaclass=SingletonMeta):
         username: str | None = None,
         entrypoint: str | None = None,
     ) -> int:
-        if variables:
-            actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
-            if actual_variables:
-                variables = actual_variables
-
-        logger.info(f"'run_session' got variables: {variables}")
+        variables = self._get_actual_variables(variables)
+        logger.info(f"'run_session' got variables: {variables=}")
 
         # Choose to use variables from previous flow or left 'variables' param None
         variables = self.choose_variables(graph_id, variables)
@@ -353,3 +352,24 @@ class SessionManagerService(metaclass=SingletonMeta):
                 return variables
 
         return variables
+
+    def _get_actual_variables(self, variables: dict) -> dict:
+        actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
+        output = actual_variables if actual_variables else variables
+        return output
+
+    def _deep_merge_dicts(self, base: dict, updates: dict) -> dict:
+        """Merge updates into base, recursively merging nested dicts."""
+        result = base.copy()
+
+        for key, value in updates.items():
+            if (
+                key in result
+                and isinstance(result[key], dict)
+                and isinstance(value, dict)
+            ):
+                result[key] = self._deep_merge_dicts(result[key], value)
+            else:
+                result[key] = value
+
+        return result

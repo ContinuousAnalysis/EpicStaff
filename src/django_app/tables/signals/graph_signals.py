@@ -26,7 +26,7 @@ def sync_variables(
 
     original_vars = getattr(instance, field_name, {}) or {}
 
-    updated_vars = _sync_nested_dict(original_vars, current_variables)
+    updated_vars, _, _ = _sync_nested_dict(original_vars, current_variables)
 
     if updated_vars != original_vars:
         setattr(instance, field_name, updated_vars)
@@ -68,7 +68,7 @@ def _sync_nested_dict(original, current, path=""):
             removed_path = f"{path}.{key}" if path else key
             removed_paths.append(removed_path)
 
-    return updated
+    return updated, removed_paths, added_paths
 
 
 @receiver(post_save, sender=GraphOrganization)

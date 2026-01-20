@@ -1214,7 +1214,7 @@ class StartNodeSerializer(serializers.ModelSerializer):
 
         for path in organization_variables + user_variables:
             value = self._get_by_path(actual_variables, path)
-            if not value:
+            if value is None:
                 raise ValidationError(
                     f"Path {path} in {DOMAIN_PERSISTENT_KEY} does not exist in {DOMAIN_VARIABLES_KEY}."
                 )
