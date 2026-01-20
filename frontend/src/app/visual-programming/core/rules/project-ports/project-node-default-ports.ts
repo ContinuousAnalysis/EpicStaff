@@ -16,7 +16,7 @@ export const DEFAULT_PROJECT_NODE_PORTS: BasePort[] = [
             'llm-out-right',
             'audio-to-text-out',
             'webhook-trigger-out',
-            'telegram-trigger-in',
+            'telegram-trigger-out',
         ],
         position: 'left',
         color: '#5672cd',
