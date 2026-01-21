@@ -93,6 +93,12 @@ class OpenaiRealtimeAgentClient:
                 "tools": self.tools,
                 "tool_choice": "auto",
                 "temperature": self.temperature,
+                "turn_detection": {
+                    "type": self.turn_detection_mode.value,
+                    "threshold": 0.5,
+                    "prefix_padding_ms": 300,
+                    "silence_duration_ms": 600,
+                },
                 "input_audio_format": self.input_audio_format,
                 "output_audio_format": self.output_audio_format,
             }
@@ -106,12 +112,12 @@ class OpenaiRealtimeAgentClient:
         voice = config.get("voice", self.voice)
         turn_detection = config.get(
             "turn_detection",
-            {
-                "type": "server_vad",
-                "threshold": 0.5,
-                "prefix_padding_ms": 500,
-                "silence_duration_ms": 200,
-            },
+            # {
+            #     "type": "server_vad",
+            #     "threshold": 0.5,
+            #     "prefix_padding_ms": 500,
+            #     "silence_duration_ms": 200,
+            # },
         )
         tool_choice = config.get("tool_choice", "auto")
         input_audio_transcription = config.get(

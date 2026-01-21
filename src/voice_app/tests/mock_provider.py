@@ -9,9 +9,9 @@ import websockets
 from loguru import logger
 
 # Настройки
-INPUT_AUDIO_WAV = Path(__file__).parent / "test_audio.wav"
+INPUT_AUDIO_WAV = Path(__file__).parent / "../buffer_in_data19-01-19-09-03.wav"
 OUTPUT_AUDIO_WAV = Path(__file__).parent / "ai_response_recorded.wav"
-WS_URL = "ws://localhost:8051/voice/stream" # Укажите ваш URL
+WS_URL = "wss://punctiliously-interfraternal-millicent.ngrok-free.dev/voice/stream" # Укажите ваш URL
 
 async def receive_and_save_audio(ws):
     """
@@ -30,9 +30,6 @@ async def receive_and_save_audio(ws):
                 payload = data["media"]["payload"]
                 mu_law_chunk = base64.b64decode(payload)
                 
-                # Конвертируем mu-law (8 бит) -> PCM16 (16 бит)
-                # Это нужно, чтобы обычные плееры понимали файл
-                # pcm_chunk = audioop.ulaw2lin(mu_law_chunk, 2)
                 audio_buffer.extend(mu_law_chunk)
                 
             elif data.get("event") == "stop":
@@ -55,56 +52,39 @@ async def receive_and_save_audio(ws):
 
 async def send_twilio_simulated_audio(ws, file_path: Path):
     """
-    Эмулирует Twilio: читает WAV, ресемплит в 8кГц, 
-    конвертирует в mu-law и шлет чанками по 20мс.
+    Файл: raw μ-law, 8kHz, mono
     """
-    # 1. Читаем файл
-    data, samplerate = sf.read(str(file_path), dtype='int16')
-    if data.ndim > 1: data = data[:, 0] # mono
+    # 1. Читаем raw μ-law
+    with open(file_path, "rb") as f:
+        mulaw_data = f.read()
 
-    # 2. Ресемплинг в 8000 Гц (обязательно для Twilio mu-law)
-    if samplerate != 8000:
-        # Простой ресемплинг через audioop
-        data_bytes, _ = audioop.ratecv(data.tobytes(), 2, 1, samplerate, 8000, None)
-    else:
-        data_bytes = data.tobytes()
-
-    # 3. Отправляем событие 'start' (как это делает Twilio)
+    # 2. start
     await ws.send(json.dumps({
         "event": "start",
         "streamSid": "test_sid_123",
         "start": {"accountSid": "AC_test", "callSid": "CA_test"}
     }))
 
-    # 4. Нарезаем на чанки по 160 байт mu-law (это 20мс аудио при 8кГц)
-    # 160 сэмплов PCM16 = 320 байт. После конверсии в mu-law (8 бит) будет 160 байт.
-    chunk_samples = 160 
-    bytes_per_sample = 2
-    step = chunk_samples * bytes_per_sample
+    # 3. Шлем по 20мс (160 байт)
+    chunk_size = 160
 
     logger.info("Starting audio transmission...")
-    for i in range(0, len(data_bytes), step):
-        pcm_chunk = data_bytes[i:i + step]
-        if not pcm_chunk: break
 
-        # PCM16 -> mu-law
-        mulaw_chunk = audioop.lin2ulaw(pcm_chunk, bytes_per_sample)
-        payload = base64.b64encode(mulaw_chunk).decode("utf-8")
+    for i in range(0, len(mulaw_data), chunk_size):
+        chunk = mulaw_data[i:i + chunk_size]
+        if not chunk:
+            break
 
-        media_event = {
+        payload = base64.b64encode(chunk).decode()
+
+        await ws.send(json.dumps({
             "event": "media",
-            "media": {
-                "payload": payload
-            }
-        }
-        await ws.send(json.dumps(media_event))
-        
-        # Twilio шлет аудио в реальном времени (каждые 20мс)
+            "media": {"payload": payload}
+        }))
+
         await asyncio.sleep(0.02)
 
-    # 5. Отправляем 'stop'
     await ws.send(json.dumps({"event": "stop"}))
-    logger.info("Sent stop event")
 
 async def main():
     if not INPUT_AUDIO_WAV.exists():
