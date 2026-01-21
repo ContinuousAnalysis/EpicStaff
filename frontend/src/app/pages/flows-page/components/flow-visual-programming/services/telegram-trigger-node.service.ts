@@ -39,14 +39,14 @@ export class TelegramTriggerNodeService {
             );
     }
 
-    createTelegramTriggerNode(request: CreateTelegramTriggerNodeRequest): Observable<any> {
-        return this.http.post<any>(this.apiUrlNode, request, {
+    createTelegramTriggerNode(request: CreateTelegramTriggerNodeRequest): Observable<GetTelegramTriggerNodeRequest> {
+        return this.http.post<GetTelegramTriggerNodeRequest>(this.apiUrlNode, request, {
             headers: this.headers,
         });
     }
 
-    deleteTelegramTriggerNode(id: number): Observable<any> {
-        return this.http.delete(`${this.apiUrlNode}${id}/`, {
+    deleteTelegramTriggerNode(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrlNode}${id}/`, {
             headers: this.headers,
         });
     }

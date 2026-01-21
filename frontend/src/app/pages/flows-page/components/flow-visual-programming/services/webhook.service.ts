@@ -31,10 +31,6 @@ export class WebhookService {
         return this.tunnel$;
     }
 
-    registerTelegramTrigger(body: RegisterTelegramTriggerRequest): Observable<any> {
-        return this.http.post<any>(this.apiUrlRegisterTelegramTrigger, body);
-    }
-
     private getTunnelFromApi(): Observable<GetTunnelResponse> {
         return this.http.get<GetTunnelResponse>('http://localhost:8009/api/tunnel-url');
     }
