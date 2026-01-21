@@ -97,7 +97,7 @@ class OpenaiRealtimeAgentClient:
                     "type": self.turn_detection_mode.value,
                     "threshold": 0.5,
                     "prefix_padding_ms": 300,
-                    "silence_duration_ms": 600,
+                    "silence_duration_ms": 500,
                 },
                 "input_audio_format": self.input_audio_format,
                 "output_audio_format": self.output_audio_format,

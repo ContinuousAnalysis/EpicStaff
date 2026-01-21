@@ -6,6 +6,8 @@ import websockets
 from fastapi import APIRouter, WebSocket, Response
 from loguru import logger
 
+from app.client.realtime_client import RealtimeClient, TurnDetectionMode
+
 router = APIRouter(prefix="/voice", tags=["voice"])
 
 INIT_API_URL = "http://127.0.0.1:8000/api/init-realtime/"
@@ -32,16 +34,23 @@ async def incoming_call():
 @router.websocket("/stream")
 async def websocket_bridge(twilio_ws: WebSocket):
     await twilio_ws.accept()
-    logger.info("WebSocket accepted")
+    logger.info("Twilio WebSocket accepted")
 
     stream_sid = None
-    buffer_in = []
-    buffer_out = []
+    ai_task = None
+    
+    # BUFFER SETTINGS
+    # G.711 u-law is 8000 bytes/second.
+    # 160 bytes = 20ms (Twilio default)
+    # 960 bytes = 120ms (Target size to reduce overhead)
+    # 1920 bytes = 240 ms
+    MIN_CHUNK_SIZE = 960 
+    audio_accumulator = bytearray()
 
-    # 1) Получаем connection_key
-    async with httpx.AsyncClient() as client:
+    # 1. Initialize Connection to Relay/AI Service
+    async with httpx.AsyncClient() as http_client:
         try:
-            resp = await client.post(
+            resp = await http_client.post(
                 INIT_API_URL,
                 json={
                     "agent_id": AGENT_ID,
@@ -51,149 +60,92 @@ async def websocket_bridge(twilio_ws: WebSocket):
                     },
                 },
             )
+            if resp.status_code >= 400:
+                logger.error(f"Init failed: {resp.status_code} {resp.text}")
+                await twilio_ws.close()
+                return
+
             conn_key = resp.json().get("connection_key")
-            logger.success(f"Connection key: {conn_key}")
         except Exception as e:
-            logger.error(f"Init failed: {e}")
+            logger.error(f"Init connection error: {e}")
             await twilio_ws.close()
             return
 
-    ai_uri = f"{AI_WS_URL}?connection_key={conn_key}"
-
-    try:
-        async with websockets.connect(ai_uri, subprotocols=[SUBPROTOCOL]) as ai_ws:
-            logger.success("Connected to AI Service")
-
-            # 2) Setup AI session
-            session_update = {
-                "type": "session.update",
-                "session": {
-                    "instructions": "Ты полезный ассистент.",
-                    "voice": "alloy",
-                    "input_audio_format": "g711_ulaw",
-                    "output_audio_format": "g711_ulaw",
-                    "modalities": ["audio", "text"],
-                    "turn_detection": {"type": "server_vad"},
-                },
+    # 2. Define Callbacks
+    async def handle_ai_audio(audio_bytes: bytes):
+        if stream_sid:
+            payload = {
+                "event": "media",
+                "streamSid": stream_sid,
+                "media": {"payload": base64.b64encode(audio_bytes).decode("utf-8")}
             }
-            await ai_ws.send(json.dumps(session_update))
+            await twilio_ws.send_text(json.dumps(payload))
 
-            async def phone_to_ai():
-                """Twilio -> AI с правильной буферизацией байтов"""
-                nonlocal stream_sid
-                audio_buffer = []
-                # 10 чанков по 20мс = 200мс. Можно уменьшить до 5 (100мс) для скорости.
-                chunk_size_threshold = 10 
+    async def handle_ai_interrupt():
 
-                async for message in twilio_ws.iter_text():
-                    data = json.loads(message)
+        if stream_sid:
+            # Clear Twilio's audio buffer
+            await twilio_ws.send_text(json.dumps({
+                "event": "clear",
+                "streamSid": stream_sid
+            }))
 
-                    if data.get("event") == "start":
-                        stream_sid = data["start"]["streamSid"]
-                        logger.success(f"Stream SID: {stream_sid}")
-                        continue
+    # 3. Instantiate Client
+    ai_client = RealtimeClient(
+        api_key="relay-override", 
+        base_url=f"{AI_WS_URL}?connection_key={conn_key}",
+        voice="alloy",
+        turn_detection_mode=TurnDetectionMode.SERVER_VAD,
+        audio_format="g711_ulaw",
+        on_audio_delta=handle_ai_audio,
+        on_interrupt=handle_ai_interrupt
+    )
 
-                    if data.get("event") == "media":
-                        # 1. Сразу декодируем Base64 в байты
-                        chunk_payload = base64.b64decode(data["media"]["payload"])
-                        audio_buffer.append(chunk_payload)
+    # 4. Start Interaction
+    try:
+        await ai_client.connect()
+        logger.success("Connected to AI Realtime API")
 
-                        # 2. Проверяем порог накопления
-                        if len(audio_buffer) >= chunk_size_threshold:
-                            # 3. Склеиваем байты (теперь тут только байты, ошибки не будет)
-                            raw_audio = b"".join(audio_buffer)
-                            
-                            # 4. Кодируем обратно в base64 для OpenAI
-                            encoded_audio = base64.b64encode(raw_audio).decode("utf-8")
-                            
-                            audio_event = {
-                                "type": "input_audio_buffer.append",
-                                "audio": encoded_audio,
-                            }
-                            
-                            await ai_ws.send(json.dumps(audio_event))
-                            
-                            # Опционально сохраняем для отладки
-                            buffer_in.append({"type": "input_audio_buffer.append", "audio": "..."})
-                            
-                            # 5. Очищаем буфер
-                            audio_buffer = []
+        ai_task = asyncio.create_task(ai_client.handle_messages())
 
-                    elif data.get("event") == "stop":
-                        logger.warning("Twilio stream stopped")
-                        break
+        # 5. Handle Incoming Twilio Messages with Buffering
+        async for message in twilio_ws.iter_text():
+            data = json.loads(message)
+            
+            if data.get("event") == "media":
+                # A) Decode and Append
+                chunk = base64.b64decode(data["media"]["payload"])
+                audio_accumulator.extend(chunk)
 
-            async def ai_to_phone():
-                """AI -> Twilio stream logic with interruption handling"""
-                nonlocal stream_sid
-                last_assistant_item_id = None
-                total_bytes_sent = 0
+                # B) Check Threshold (Buffer Logic)
+                if len(audio_accumulator) >= MIN_CHUNK_SIZE:
+                    await ai_client.stream_audio(bytes(audio_accumulator))
+                    audio_accumulator.clear()
 
-                while True:
-                    try:
-                        ai_message = await ai_ws.recv()
-                        data = json.loads(ai_message)
+            elif data.get("event") == "start":
+                stream_sid = data["start"]["streamSid"]
+                logger.info(f"Stream Started: {stream_sid}")
 
-                        # 1. Capture the item_id when the model starts a response
-                        if data.get("type") == "response.audio.start":
-                            last_assistant_item_id = data.get("item_id")
-                            total_bytes_sent = 0
-                            logger.info(f"AI started response: {last_assistant_item_id}")
-
-                        # 2. Forward audio to Twilio and track playback offset
-                        elif data.get("type") == "response.audio.delta":
-                            if stream_sid and data.get("delta"):
-                                # Calculate duration: G.711 u-law is 8000 bytes per second.
-                                # 1 byte = 1 sample = 0.125ms.
-                                audio_bytes = base64.b64decode(data["delta"])
-                                total_bytes_sent += len(audio_bytes)
-
-                                payload = {
-                                    "event": "media",
-                                    "streamSid": stream_sid,
-                                    "media": {"payload": data["delta"]},
-                                }
-                                await twilio_ws.send_text(json.dumps(payload))
-
-                        # 3. Handle Interruption (User starts speaking)
-                        elif data.get("type") == "input_audio_buffer.speech_started":
-                            logger.warning("User interrupted. Clearing buffers.")
-                            
-                            # A) Tell Twilio to stop playing buffered audio immediately
-                            if stream_sid:
-                                await twilio_ws.send_text(json.dumps({
-                                    "event": "clear",
-                                    "streamSid": stream_sid
-                                }))
-
-                            # B) Tell AI to truncate its memory of the last response
-                            if last_assistant_item_id:
-                                # Convert bytes to milliseconds for the AI
-                                # (total_bytes / 8000 samples/sec) * 1000 ms/sec = total_bytes / 8
-                                playback_offset_ms = 1500 # int(total_bytes_sent / 8)
-                                
-                                truncate_event = {
-                                    "type": "conversation.item.truncate",
-                                    "item_id": last_assistant_item_id,
-                                    "content_index": 0,
-                                    "audio_end_ms": playback_offset_ms
-                                }
-                                await ai_ws.send(json.dumps(truncate_event))
-                                logger.info(f"Truncated {last_assistant_item_id} at {playback_offset_ms}ms")
-
-                        # 4. Handle cancellation cleanup
-                        elif data.get("type") == "response.cancelled":
-                            logger.info("AI response successfully cancelled.")
-
-                    except Exception as e:
-                        logger.error(f"Error in ai_to_phone: {e}")
-                        break
-
-            await asyncio.gather(phone_to_ai(), ai_to_phone())
+            elif data.get("event") == "stop":
+                logger.info("Stream Stopped")
+                # Flush remaining bytes if any
+                if len(audio_accumulator) > 0:
+                    await ai_client.stream_audio(bytes(audio_accumulator))
+                break
 
     except Exception as e:
-        logger.error(f"Bridge error: {e}")
-
+        logger.error(f"Bridge Error: {e}")
     finally:
-
-        await twilio_ws.close()
+        await ai_client.close()
+        
+        if ai_task and not ai_task.done():
+            ai_task.cancel()
+            try:
+                await ai_task
+            except asyncio.CancelledError:
+                pass
+        
+        try:
+            await twilio_ws.close()
+        except:
+            pass

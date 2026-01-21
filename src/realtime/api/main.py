@@ -78,7 +78,7 @@ connection_repository = ConnectionRepository()
 
 async def redis_listener():
     """Listen to Redis channel and store connection data."""
-
+    # TODO: Make this server stateless
     redis_service = RedisService(host=redis_host, port=redis_port)
     await redis_service.connect()
     pubsub = await redis_service.async_subscribe(realtime_agents_schema_channel)
