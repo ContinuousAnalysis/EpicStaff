@@ -2,6 +2,7 @@ import os
 import json
 import time
 from uuid import uuid4
+from typing import Dict, Any, Optional
 from loguru import logger
 from typing import Optional
 from langgraph.types import StreamWriter
@@ -11,8 +12,11 @@ from services.graph.events import StopEvent
 from utils.singleton_meta import SingletonMeta
 from services.redis_service import RedisService, SyncPubsubSubscriber
 from models.request_models import (
-    KnowledgeSearchMessage,
-    KnowledgeQueryResultDTO,
+    RagSearchConfig,
+    NaiveRagSearchConfig,
+    GraphRagSearchConfig,
+    BaseKnowledgeSearchMessage,
+    BaseKnowledgeSearchMessageResponse,
 )
 
 
@@ -24,9 +28,42 @@ knowledge_search_response_channel = os.getenv(
 )
 
 
+class RagSearchConfigFactory:
+    """
+    Factory class to build RAG search configs from dict based on rag_type.
+    """
+
+    _config_builders = {
+        "naive": lambda config: NaiveRagSearchConfig(**config),
+        "graph": lambda config: GraphRagSearchConfig(**config),
+        # Future RAG types
+    }
+
+    @classmethod
+    def build(cls, rag_type: str, config_dict: Dict[str, Any]) -> RagSearchConfig:
+        """
+        Build appropriate RagSearchConfig based on rag_type.
+
+        Args:
+            rag_type: Type of RAG ("naive", "graph", etc.)
+            config_dict: Dict with RAG-specific parameters
+
+        Returns:
+            Appropriate RagSearchConfig subclass instance
+        """
+        builder = cls._config_builders.get(rag_type)
+        if not builder:
+            raise ValueError(
+                f"Unsupported RAG type: {rag_type}. "
+                f"Supported types: {list(cls._config_builders.keys())}"
+            )
+
+        return builder(config_dict)
+
+
 class KnowledgeSearchService:
     """
-    KnowledgeSearchService used by CrewCallbackFactory(for human_input) and by Crew(by Agent for searching)
+    Service for searching knowledge using different RAG implementations.
     """
 
     def __init__(
@@ -51,14 +88,34 @@ class KnowledgeSearchService:
         self,
         sender: str,
         knowledge_collection_id: int,
+        rag_type_id: str,
         query: str,
-        search_limit: int,
-        similarity_threshold: float,
-        stop_event: StopEvent | None = None,
+        rag_search_config: Dict[str, Any],
+        stop_event: Optional[StopEvent] = None,
+        timeout: int = 15,
     ) -> list[str]:
+        """
+        Search knowledge using specified RAG implementation.
+
+        Args:
+            sender: Identifier of the sender
+            rag_type_id: RAG type and ID in format "rag_type:id" (e.g., "naive:6")
+            query: Search query text
+            rag_search_config: RAG-specific search parameters dict
+            stop_event: Optional event to stop execution
+            timeout: Timeout in seconds for waiting response
+
+        Returns:
+            List of knowledge results (strings)
+        """
+
+        rag_type, rag_id = self._parse_rag_type_id(rag_type_id)
+
+        search_config = RagSearchConfigFactory.build(rag_type, rag_search_config)
 
         execution_uuid = f"{sender}-{str(uuid4())}"
 
+        # Setup response receiver
         knowledge_callback_receiver = KnowledgeSearchReceiver(
             execution_uuid=execution_uuid
         )
@@ -68,26 +125,29 @@ class KnowledgeSearchService:
             subscriber=subscriber,
         )
 
-        execution_message = KnowledgeSearchMessage(
+        # Create and send message
+        execution_message = BaseKnowledgeSearchMessage(
             collection_id=knowledge_collection_id,
+            rag_id=rag_id,
+            rag_type=rag_type,
             uuid=execution_uuid,
             query=query,
-            search_limit=search_limit,
-            similarity_threshold=similarity_threshold,
+            rag_search_config=search_config,
         )
 
         self.redis_service.publish(
-            channel=knowledge_search_get_channel, message=execution_message.model_dump()
+            channel=knowledge_search_get_channel,
+            message=execution_message.model_dump(),
         )
 
-        timeout = 15  # seconds
+        # Wait for response
         start_time = time.monotonic()
-
         while time.monotonic() - start_time < timeout:
-
             if knowledge_callback_receiver.results is not None:
+                elapsed = round((time.monotonic() - start_time), 2)
                 logger.info(
-                    f"Knowledge searching for collection id: {knowledge_callback_receiver.results.collection_id} completed in {round((time.monotonic() - start_time), 2)} sec. Sender: {sender}"
+                    f"Knowledge search completed for {rag_type_id} in {elapsed}s. "
+                    f"Sender: {sender}"
                 )
                 self.redis_service.unsubscribe(
                     channel=knowledge_search_response_channel,
@@ -105,12 +165,40 @@ class KnowledgeSearchService:
 
             time.sleep(0.1)
 
-        logger.error(f"Search failed: No response received within {timeout} seconds")
-        return []
+        # Cleanup
+        self.redis_service.unsubscribe(
+            channel=knowledge_search_response_channel,
+            subscriber=subscriber,
+        )
+        logger.error(f"Search failed: No response received within {timeout}s")
+        raise TimeoutError(
+            f"Knowledge search timeout for {rag_type_id} after {timeout}s"
+        )
+
+    @staticmethod
+    def _parse_rag_type_id(rag_type_id: str) -> tuple[str, int]:
+        """
+        Parse rag_type_id string into type and ID.
+
+        Args:
+            rag_type_id: String in format "rag_type:id" (e.g., "naive:6")
+
+        Returns:
+            Tuple of (rag_type, rag_id)
+        """
+        try:
+            rag_type, rag_id_str = rag_type_id.split(":", 1)
+            rag_id = int(rag_id_str)
+            return rag_type, rag_id
+        except (ValueError, AttributeError) as e:
+            raise ValueError(
+                f"Invalid rag_type_id format: '{rag_type_id}'. "
+                f"Expected format: 'rag_type:id' (e.g., 'naive:6')"
+            ) from e
 
     def _add_knowledges_to_graph_message(
         self,
-        knowledge_results: KnowledgeQueryResultDTO,
+        knowledge_results: BaseKnowledgeSearchMessageResponse,
     ):
         chunks_data_list = [chunk.model_dump() for chunk in knowledge_results.chunks]
         knowledge_results_data = {
@@ -119,9 +207,8 @@ class KnowledgeSearchService:
             "agent_id": self.agent_id,
             "collection_id": knowledge_results.collection_id,
             "retrieved_chunks": knowledge_results.retrieved_chunks,
-            "similarity_threshold": knowledge_results.similarity_threshold,
-            "search_limit": knowledge_results.search_limit,
-            "knowledge_query": knowledge_results.knowledge_query,
+            "knowledge_query": knowledge_results.query,
+            "rag_search_config": knowledge_results.rag_search_config.model_dump(),
             "chunks": chunks_data_list,
         }
         graph_message = GraphMessage(
@@ -134,6 +221,9 @@ class KnowledgeSearchService:
 
 
 class KnowledgeSearchReceiver:
+    """
+    Callback receiver for knowledge search results from Redis.
+    """
 
     def __init__(self, execution_uuid: str):
         self.execution_uuid = execution_uuid
@@ -145,18 +235,17 @@ class KnowledgeSearchReceiver:
 
     def callback(self, message: dict):
         """
-        Asynchronous callback to handle search results.
-        This function can be used to process the search results as needed.
-        """
-        data: dict = json.loads(message["data"])
-        validated_results = KnowledgeQueryResultDTO.model_validate(data)
-        if validated_results.uuid == self.execution_uuid:
-            logger.info(f"Search results received: {data}")
-            self._results = validated_results
+        Callback to handle search results from Redis pub/sub.
 
-            # TODO: remove logging
-            logger.success(f"KnowledgeSearchReceiver, {self._results=}")
-            logger.success(
-                f"KnowledgeSearchReceiver, collection_id: {self._results.collection_id}"
-            )
-            logger.success(f"KnowledgeSearchReceiver, results: {self._results.results}")
+        Args:
+            message: Redis message dict containing search results
+        """
+        try:
+            data: dict = json.loads(message["data"])
+            validated_results = BaseKnowledgeSearchMessageResponse.model_validate(data)
+            if validated_results.uuid == self.execution_uuid:
+                logger.info(f"Search results received for UUID: {self.execution_uuid}")
+                self._results = validated_results
+                logger.debug(f"Results: {self._results.results}")
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"Error parsing search results: {e}")

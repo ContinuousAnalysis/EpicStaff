@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     WEBHOOK_PORT: int = 8009
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str
     
     model_config = SettingsConfigDict(**config_dict)
 

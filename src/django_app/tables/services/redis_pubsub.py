@@ -36,9 +36,12 @@ class RedisPubSub:
     def __init__(self):
         redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
         redis_port = int(os.getenv("REDIS_PORT", 6379))
-
+        redis_password = os.getenv("REDIS_PASSWORD")
         self.redis_client = redis.Redis(
-            host=redis_host, port=redis_port, decode_responses=True
+            host=redis_host,
+            port=redis_port,
+            password=redis_password,
+            decode_responses=True,
         )
         self.pubsub = self.redis_client.pubsub()
 
