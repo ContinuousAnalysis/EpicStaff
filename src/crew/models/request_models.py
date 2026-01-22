@@ -380,6 +380,17 @@ class WebhookTriggerNodeData(BaseModel):
     python_code: PythonCodeData
 
 
+class TelegramTriggerNodeFieldData(BaseModel):
+    parent: Literal["message", "callback_query"]
+    field_name: str
+    variable_path: str
+
+
+class TelegramTriggerNodeData(BaseModel):
+    node_name: str
+    field_list: list[TelegramTriggerNodeFieldData] = []
+
+
 class GraphData(BaseModel):
     name: str
     crew_node_list: list[CrewNodeData] = []
@@ -393,6 +404,7 @@ class GraphData(BaseModel):
     decision_table_node_list: list[DecisionTableNodeData] = []
     entrypoint: str
     end_node: EndNodeData | None
+    telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
 
 
 class GraphSessionMessageData(BaseModel):

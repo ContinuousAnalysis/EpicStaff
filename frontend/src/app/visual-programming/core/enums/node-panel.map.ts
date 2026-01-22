@@ -9,6 +9,7 @@ import { AudioToTextNodePanelComponent } from '../../components/node-panels/audi
 import { NodeType } from './node-type';
 import { DecisionTableNodePanelComponent } from '../../components/node-panels/decision-table-node-panel/decision-table-node-panel.component';
 import { WebhookTriggerNodePanelComponent } from '../../components/node-panels/webhook-trigger-node-panel/webhook-trigger-node-panel';
+import { TelegramTriggerNodePanelComponent } from "../../components/node-panels/telegram-trigger-node-panel/telegram-trigger-node-panel.component";
 
 
 export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
@@ -17,6 +18,7 @@ export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
     edge: ConditionalEdgeNodePanelComponent,
     'file-extractor': FileExtractorNodePanelComponent,
     'webhook-trigger': WebhookTriggerNodePanelComponent,
+    'telegram-trigger': TelegramTriggerNodePanelComponent,
     end: EndNodePanelComponent,
     table: DecisionTableNodePanelComponent,
     [NodeType.AUDIO_TO_TEXT]: AudioToTextNodePanelComponent,
