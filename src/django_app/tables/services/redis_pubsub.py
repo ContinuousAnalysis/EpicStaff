@@ -157,21 +157,27 @@ class RedisPubSub:
         for key in cached_keys:
             try:
                 data = json.loads(self.redis_client.get(key))
-                token_usage = (
-                    data.get("message_data", {})
-                    .get("output", {})
-                    .get("token_usage", {})
-                )
-                total_usage["total_tokens"] += token_usage.get("total_tokens", 0)
-                total_usage["prompt_tokens"] += token_usage.get("prompt_tokens", 0)
-                total_usage["completion_tokens"] += token_usage.get(
-                    "completion_tokens", 0
-                )
-                total_usage["successful_requests"] += token_usage.get(
-                    "successful_requests", 0
-                )
+                message_data = data.get("message_data", {})
+
+                token_usage = None
+
+                if "output" in message_data and "token_usage" in message_data["output"]:
+                    token_usage = message_data["output"]["token_usage"]
+                elif "token_usage" in message_data:
+                    token_usage = message_data["token_usage"]
+
+                if token_usage:
+                    total_usage["total_tokens"] += token_usage.get("total_tokens", 0)
+                    total_usage["prompt_tokens"] += token_usage.get("prompt_tokens", 0)
+                    total_usage["completion_tokens"] += token_usage.get(
+                        "completion_tokens", 0
+                    )
+                    total_usage["successful_requests"] += token_usage.get(
+                        "successful_requests", 0
+                    )
+
             except Exception as e:
-                logger.error(f"Error parsing cached message: {e}")
+                logger.error(f"Error parsing cached message for key {key}: {e}")
 
         return total_usage
 
