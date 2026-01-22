@@ -36,9 +36,12 @@ class RedisPubSub:
     def __init__(self):
         redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
         redis_port = int(os.getenv("REDIS_PORT", 6379))
-
+        redis_password = os.getenv("REDIS_PASSWORD")
         self.redis_client = redis.Redis(
-            host=redis_host, port=redis_port, decode_responses=True
+            host=redis_host,
+            port=redis_port,
+            password=redis_password,
+            decode_responses=True,
         )
         self.pubsub = self.redis_client.pubsub()
 
@@ -72,11 +75,13 @@ class RedisPubSub:
                         f'Unable change status from {session.status} to {data["status"]}'
                     )
                 else:
-                    session.status = data["status"]
-                    session.status_data = data.get("status_data", {})
-                    session.token_usage = self._calculate_total_token_usage(
-                        data["session_id"]
+                    status_data = data.get("status_data", {})
+                    status_data["total_token_usage"] = (
+                        self._calculate_total_token_usage(data["session_id"])
                     )
+                    session.status = data["status"]
+                    session.status_data = status_data
+                    session.token_usage = status_data["total_token_usage"]
                     session.save()
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
@@ -152,21 +157,27 @@ class RedisPubSub:
         for key in cached_keys:
             try:
                 data = json.loads(self.redis_client.get(key))
-                token_usage = (
-                    data.get("message_data", {})
-                    .get("output", {})
-                    .get("token_usage", {})
-                )
-                total_usage["total_tokens"] += token_usage.get("total_tokens", 0)
-                total_usage["prompt_tokens"] += token_usage.get("prompt_tokens", 0)
-                total_usage["completion_tokens"] += token_usage.get(
-                    "completion_tokens", 0
-                )
-                total_usage["successful_requests"] += token_usage.get(
-                    "successful_requests", 0
-                )
+                message_data = data.get("message_data", {})
+
+                token_usage = None
+
+                if "output" in message_data and "token_usage" in message_data["output"]:
+                    token_usage = message_data["output"]["token_usage"]
+                elif "token_usage" in message_data:
+                    token_usage = message_data["token_usage"]
+
+                if token_usage:
+                    total_usage["total_tokens"] += token_usage.get("total_tokens", 0)
+                    total_usage["prompt_tokens"] += token_usage.get("prompt_tokens", 0)
+                    total_usage["completion_tokens"] += token_usage.get(
+                        "completion_tokens", 0
+                    )
+                    total_usage["successful_requests"] += token_usage.get(
+                        "successful_requests", 0
+                    )
+
             except Exception as e:
-                logger.error(f"Error parsing cached message: {e}")
+                logger.error(f"Error parsing cached message for key {key}: {e}")
 
         return total_usage
 
