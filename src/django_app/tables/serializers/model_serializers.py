@@ -411,7 +411,7 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         queryset=LLMConfig.objects.all(), required=False, allow_null=True
     )
     rag = RagInputSerializer(required=False, allow_null=True)
-    search_configs = NestedSearchConfigSerializer(required=False)
+    search_configs = NestedSearchConfigSerializer(required=False, allow_null=True)
 
     class Meta:
         model = Agent
