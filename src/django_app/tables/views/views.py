@@ -70,6 +70,7 @@ from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
+    ProcessCollectionEmbeddingSerializer,
     ProcessRagIndexingSerializer,
     RunSessionSerializer,
     RegisterTelegramTriggerSerializer,
