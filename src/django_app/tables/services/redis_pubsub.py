@@ -258,7 +258,7 @@ class RedisPubSub:
                             sessions_data[session_id].append(graph_session_message)
                         else:
                             logger.warning(
-                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {data}"
+                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {session_id}"
                             )
 
                     for session_id, sessions_data_values in sessions_data.items():
