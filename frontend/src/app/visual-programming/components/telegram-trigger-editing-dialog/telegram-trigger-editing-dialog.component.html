@@ -26,7 +26,7 @@
                 <app-search
                     class="main__input"
                     placeholder="Search fields..."
-                    (valueChange)="searchTerm.set($event)"
+                    [(searchTerm)]="searchTerm"
                 />
                 <label>Activate checkbox near variable to save its value</label>
             </div>
