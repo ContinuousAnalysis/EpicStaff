@@ -5,6 +5,7 @@ from typing import Type
 import redis
 from collections import defaultdict, deque
 from django.db import transaction, IntegrityError, models
+from tables.services.telegram_trigger_service import TelegramTriggerService
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.models import GraphSessionMessage
 from tables.models import PythonCodeResult
@@ -29,6 +30,7 @@ GRAPH_MESSAGE_UPDATE_CHANNEL = os.environ.get(
     "GRAPH_MESSAGE_UPDATE_CHANNEL", "graph:message:update"
 )
 WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
+TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
 
 
 class RedisPubSub:
@@ -99,11 +101,17 @@ class RedisPubSub:
         try:
             logger.debug(f"Received webhook event: {message}")
             data = WebhookEventData.model_validate_json(message["data"])
-            WebhookTriggerService().handle_webhook_trigger(
-                path=data.path, payload=data.payload
-            )
+            if data.path.startswith(TELEGRAM_TRIGGER_PREFIX):
+                TelegramTriggerService().handle_telegram_trigger(
+                    url_path=data.path[len(TELEGRAM_TRIGGER_PREFIX) : -1],
+                    payload=data.payload,
+                )
+            else:
+                WebhookTriggerService().handle_webhook_trigger(
+                    path=data.path, payload=data.payload
+                )
         except Exception as e:
-            logger.error(f"Error handling code_results message: {e}")
+            logger.error(f"Error handling webhook_events_handler message: {e}")
 
     def _save_organization_variables(self, session: Session, data: dict):
         """
@@ -288,7 +296,7 @@ class RedisPubSub:
                             sessions_data[session_id].append(graph_session_message)
                         else:
                             logger.warning(
-                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {graph_session_message}"
+                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {session_id}"
                             )
 
                     for session_id, sessions_data_values in sessions_data.items():

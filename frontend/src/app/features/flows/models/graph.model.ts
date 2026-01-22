@@ -23,6 +23,9 @@ import { EndNode } from '../../../pages/flows-page/components/flow-visual-progra
 import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
 import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
 import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
+import {
+    GetTelegramTriggerNodeRequest
+} from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
 
 export interface GraphDto {
     id: number;
@@ -35,6 +38,7 @@ export interface GraphDto {
     llm_node_list: GetLLMNodeRequest[];
     file_extractor_node_list: GetFileExtractorNodeRequest[];
     webhook_trigger_node_list: GetWebhookTriggerNodeRequest[];
+    telegram_trigger_node_list: GetTelegramTriggerNodeRequest[];
     end_node_list: EndNode[];
     decision_table_node_list: GetDecisionTableNodeRequest[];
     description: string;
@@ -64,6 +68,7 @@ export interface CreateGraphDtoRequest {
     llm_node_list?: GetLLMNodeRequest[];
     file_extractor_node_list?: GetFileExtractorNodeRequest[];
     webhook_trigger_node_list?: GetWebhookTriggerNodeRequest[];
+    telegram_trigger_node_list?: GetTelegramTriggerNodeRequest[];
     end_node_list?: EndNode[];
     decision_table_node_list?: GetDecisionTableNodeRequest[];
 }

@@ -2,7 +2,12 @@ from datetime import datetime, timezone
 from collections import defaultdict
 import uuid
 import base64
-
+from tables.models.graph_models import TelegramTriggerNode
+from tables.services.telegram_trigger_service import TelegramTriggerService
+from tables.serializers.telegram_trigger_serializers import (
+    TelegramTriggerNodeDataFieldsSerializer,
+)
+from tables.utils.telegram_fields import load_telegram_trigger_fields
 from tables.models import Tool
 from tables.models import Crew
 from tables.models import GraphFile
@@ -65,8 +70,10 @@ from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
+    ProcessCollectionEmbeddingSerializer,
     ProcessRagIndexingSerializer,
     RunSessionSerializer,
+    RegisterTelegramTriggerSerializer,
 )
 
 # from tables.serializers.knowledge_serializers import CollectionStatusSerializer
@@ -879,3 +886,63 @@ class ProcessRagIndexingView(APIView):
         except Exception as e:
             # DRF handle
             raise
+
+
+class ProcessCollectionEmbeddingView(APIView):
+    @swagger_auto_schema(request_body=ProcessCollectionEmbeddingSerializer)
+    def post(self, request):
+        serializer = ProcessCollectionEmbeddingSerializer(data=request.data)
+        if serializer.is_valid():
+            collection_id = serializer["collection_id"].value
+            if not SourceCollection.objects.filter(
+                collection_id=collection_id
+            ).exists():
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            redis_service.publish_source_collection(collection_id=collection_id)
+            return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class TelegramTriggerNodeAvailableFieldsView(APIView):
+    """
+    GET endpoint that returns all possible fields that can be created
+    for TelegramTriggerNode.
+    """
+
+    def get(self, request, format=None):
+        data = load_telegram_trigger_fields()
+        serializer = TelegramTriggerNodeDataFieldsSerializer({"data": data})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RegisterTelegramTriggerApiView(APIView):
+    @swagger_auto_schema(
+        request_body=RegisterTelegramTriggerSerializer,
+        responses={
+            200: "OK",
+            404: "TelegramTriggerNode not found",
+            503: "No webhook tunnel available",
+        },
+    )
+    def post(self, request):
+        serializer = RegisterTelegramTriggerSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            telegram_trigger_node_id = serializer.validated_data[
+                "telegram_trigger_node_id"
+            ]
+            telegram_trigger_node = TelegramTriggerNode.objects.filter(
+                pk=telegram_trigger_node_id
+            ).first()
+            if not telegram_trigger_node:
+                return Response(
+                    {"error": "TelegramTriggerNode not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            telegram_trigger_service = TelegramTriggerService()
+
+            telegram_trigger_service.register_telegram_trigger(
+                path=telegram_trigger_node.url_path,
+                telegram_bot_api_key=telegram_trigger_node.telegram_bot_api_key,
+            )
+
+            return Response(status=status.HTTP_200_OK)

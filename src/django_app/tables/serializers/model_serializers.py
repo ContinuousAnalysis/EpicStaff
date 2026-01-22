@@ -2,6 +2,7 @@ from typing import Any, Literal
 from decimal import Decimal
 from itertools import chain
 
+from tables.serializers.telegram_trigger_serializers import TelegramTriggerNodeSerializer
 from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
@@ -411,7 +412,7 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         queryset=LLMConfig.objects.all(), required=False, allow_null=True
     )
     rag = RagInputSerializer(required=False, allow_null=True)
-    search_configs = NestedSearchConfigSerializer(required=False)
+    search_configs = NestedSearchConfigSerializer(required=False, allow_null=True)
 
     class Meta:
         model = Agent
@@ -1439,6 +1440,9 @@ class GraphSerializer(serializers.ModelSerializer):
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
+    telegram_trigger_node_list = TelegramTriggerNodeSerializer(
+        many=True, read_only=True
+    )
 
     class Meta:
         model = Graph
@@ -1460,6 +1464,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "end_node_list",
             "time_to_live",
             "persistent_variables",
+            "telegram_trigger_node_list",
         ]
 
 
