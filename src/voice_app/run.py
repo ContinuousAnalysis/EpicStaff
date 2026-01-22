@@ -10,7 +10,7 @@ dotenv.load_dotenv()
 
 def start_tunnel():
     try:
-        ngrok.set_auth_token(os.getenv("WEBHOOK_TOKEN"))
+        ngrok.set_auth_token(settings.WEBHOOK_TOKEN)
         public_url = ngrok.connect(settings.PORT).public_url
         logger.info(f"Ngrok tunnel established: {public_url}")
 

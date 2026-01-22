@@ -7,13 +7,15 @@ from fastapi import APIRouter, WebSocket, Response
 from loguru import logger
 
 from app.client.realtime_client import RealtimeClient, TurnDetectionMode
+from app.core.config import settings
 
 router = APIRouter(prefix="/voice", tags=["voice"])
 
-INIT_API_URL = "http://127.0.0.1:8000/api/init-realtime/"
-AI_WS_URL = "ws://127.0.0.1:8050/"
+INIT_API_URL = settings.INIT_API_URL
+AI_WS_URL = settings.AI_WS_URL
+AGENT_ID = settings.VOICE_AGENT_ID
+
 SUBPROTOCOL = "openai-beta.realtime-v1"
-AGENT_ID = 2
 
 
 @router.post("")
@@ -38,22 +40,22 @@ async def websocket_bridge(twilio_ws: WebSocket):
 
     stream_sid = None
     ai_task = None
-    
+
     # BUFFER SETTINGS
     # G.711 u-law is 8000 bytes/second.
     # 160 bytes = 20ms (Twilio default)
     # 960 bytes = 120ms (Target size to reduce overhead)
     # 1920 bytes = 240 ms
-    MIN_CHUNK_SIZE = 960 
+    MIN_CHUNK_SIZE = 960
     audio_accumulator = bytearray()
 
     # 1. Initialize Connection to Relay/AI Service
     async with httpx.AsyncClient() as http_client:
         try:
             resp = await http_client.post(
-                INIT_API_URL,
+                settings.INIT_API_URL,
                 json={
-                    "agent_id": AGENT_ID,
+                    "agent_id": settings.VOICE_AGENT_ID,
                     "config": {
                         "input_audio_format": "g711_ulaw",
                         "output_audio_format": "g711_ulaw",
@@ -77,7 +79,7 @@ async def websocket_bridge(twilio_ws: WebSocket):
             payload = {
                 "event": "media",
                 "streamSid": stream_sid,
-                "media": {"payload": base64.b64encode(audio_bytes).decode("utf-8")}
+                "media": {"payload": base64.b64encode(audio_bytes).decode("utf-8")},
             }
             await twilio_ws.send_text(json.dumps(payload))
 
@@ -85,20 +87,19 @@ async def websocket_bridge(twilio_ws: WebSocket):
 
         if stream_sid:
             # Clear Twilio's audio buffer
-            await twilio_ws.send_text(json.dumps({
-                "event": "clear",
-                "streamSid": stream_sid
-            }))
+            await twilio_ws.send_text(
+                json.dumps({"event": "clear", "streamSid": stream_sid})
+            )
 
     # 3. Instantiate Client
     ai_client = RealtimeClient(
-        api_key="relay-override", 
-        base_url=f"{AI_WS_URL}?connection_key={conn_key}",
+        api_key="relay-override",
+        base_url=f"{settings.AI_WS_URL}?connection_key={conn_key}",
         voice="alloy",
         turn_detection_mode=TurnDetectionMode.SERVER_VAD,
         audio_format="g711_ulaw",
         on_audio_delta=handle_ai_audio,
-        on_interrupt=handle_ai_interrupt
+        on_interrupt=handle_ai_interrupt,
     )
 
     # 4. Start Interaction
@@ -111,7 +112,7 @@ async def websocket_bridge(twilio_ws: WebSocket):
         # 5. Handle Incoming Twilio Messages with Buffering
         async for message in twilio_ws.iter_text():
             data = json.loads(message)
-            
+
             if data.get("event") == "media":
                 # A) Decode and Append
                 chunk = base64.b64decode(data["media"]["payload"])
@@ -137,14 +138,14 @@ async def websocket_bridge(twilio_ws: WebSocket):
         logger.error(f"Bridge Error: {e}")
     finally:
         await ai_client.close()
-        
+
         if ai_task and not ai_task.done():
             ai_task.cancel()
             try:
                 await ai_task
             except asyncio.CancelledError:
                 pass
-        
+
         try:
             await twilio_ws.close()
         except:
