@@ -180,6 +180,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -187,10 +188,10 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+            "PASSWORD": REDIS_PASSWORD,
         },
     }
 }
-
 MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
 MEDIA_URL = "/media/"
 
@@ -201,6 +202,9 @@ KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL = os.getenv(
 )
 KNOWLEDGE_DOCUMENT_CHUNK_RESPONSE = os.getenv(
     "KNOWLEDGE_DOCUMENT_CHUNK_RESPONSE", "knowledge:chunk:response"
+)
+KNOWLEDGE_INDEXING_CHANNEL = os.getenv(
+    "KNOWLEDGE_INDEXING_CHANNEL", "knowledge:indexing"
 )
 STOP_SESSION_CHANNEL = os.getenv("STOP_SESSION_CHANNEL", "sessions:stop")
 

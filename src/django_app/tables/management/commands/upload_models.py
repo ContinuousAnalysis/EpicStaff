@@ -164,8 +164,6 @@ def upload_realtime_agents():
         RealtimeAgent.objects.get_or_create(
             agent=agent,
             defaults={
-                "similarity_threshold": 0.2,
-                "search_limit": 3,
                 "wake_word": None,
                 "stop_prompt": None,
                 "language": None,
