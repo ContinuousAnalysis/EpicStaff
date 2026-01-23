@@ -32,7 +32,7 @@
             (click)="onSave()"
         >
             @if(isSaving) {
-            <app-spinner [size]="16"></app-spinner>
+            <app-spinner2 [size]="16"></app-spinner2>
             } @else {
             <i class="ti ti-device-floppy"></i>
             } Save
@@ -43,7 +43,7 @@
             (click)="onRun()"
         >
             @if(isRunning) {
-            <app-spinner [size]="16"></app-spinner>
+            <app-spinner2 [size]="16"></app-spinner2>
             } @else {
             <i class="ti ti-player-play-filled"></i>
             } Run

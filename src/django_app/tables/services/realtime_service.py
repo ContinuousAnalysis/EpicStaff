@@ -45,11 +45,8 @@ class RealtimeService(metaclass=SingletonMeta):
 
     def create_rt_agent_chat(self, rt_agent: RealtimeAgent) -> RealtimeAgentChat:
         connection_key = self.generate_connection_key()
-
         return RealtimeAgentChat.objects.create(
             rt_agent=rt_agent,
-            search_limit=rt_agent.search_limit,
-            similarity_threshold=rt_agent.similarity_threshold,
             wake_word=rt_agent.wake_word,
             stop_prompt=rt_agent.stop_prompt,
             language=rt_agent.language,

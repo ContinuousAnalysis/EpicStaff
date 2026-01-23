@@ -2,6 +2,8 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from loguru import logger
+import json
+from pathlib import Path
 
 
 class Graph(models.Model):
@@ -82,6 +84,20 @@ class FileExtractorNode(BaseNode):
         ]
 
 
+class AudioTranscriptionNode(BaseNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="audio_transcription_node_list"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_audio_transcriotion_node",
+            )
+        ]
+
+
 class LLMNode(BaseNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="llm_node_list"
@@ -108,7 +124,7 @@ class EndNode(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["graph"], name="unique_graph_end_node")
         ]
-    
+
     def clean(self):
         super().clean()
         if not self.output_map:
@@ -252,6 +268,35 @@ class Condition(models.Model):
         ordering = ["order"]
 
 
+class GraphFile(models.Model):
+
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="uploaded_files"
+    )
+    domain_key = models.CharField(
+        max_length=100, help_text="Key to access file from domain"
+    )
+    name = models.CharField(max_length=255, help_text="Original filename")
+    content_type = models.CharField(max_length=100, help_text="MIME type")
+    size = models.PositiveIntegerField(help_text="File size in bytes")
+    file = models.FileField(upload_to="uploads/")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "domain_key"], name="unique_file_key_per_graph"
+            )
+        ]
+
+    def delete(self, *args, **kwargs):
+        if self.file:
+            self.file.delete(save=False)
+
+        super().delete(*args, **kwargs)
+
+
 class Organization(models.Model):
 
     name = models.CharField(max_length=256, blank=False, unique=True)
@@ -319,7 +364,9 @@ class GraphOrganizationUser(BasePersistentEntity):
 
 class WebhookTriggerNode(models.Model):
     node_name = models.CharField(max_length=255, blank=False)
-    graph = models.ForeignKey("Graph", on_delete=models.CASCADE, related_name="webhook_trigger_node_list")
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="webhook_trigger_node_list"
+    )
     webhook_trigger = models.ForeignKey(
         "WebhookTrigger",
         on_delete=models.SET_NULL,
@@ -327,10 +374,48 @@ class WebhookTriggerNode(models.Model):
         related_name="webhook_trigger_nodes",
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["graph", "node_name"],
                 name="unique_graph_node_name_for_webhook_nodes",
+            )
+        ]
+
+
+class TelegramTriggerNode(models.Model):
+
+    node_name = models.CharField(max_length=255, blank=False)
+    telegram_bot_api_key = models.CharField(
+        max_length=255, blank=True, null=True, default=None
+    )
+    url_path = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="telegram_trigger_node_list"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_telegram_trigger_nodes",
+            )
+        ]
+
+
+class TelegramTriggerNodeField(models.Model):
+    telegram_trigger_node = models.ForeignKey(
+        TelegramTriggerNode, on_delete=models.CASCADE, related_name="fields"
+    )
+    parent = models.CharField(max_length=50, blank=False)  # message, callback_query
+    field_name = models.CharField(max_length=255, blank=False)
+    variable_path = models.CharField(max_length=255, blank=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["telegram_trigger_node", "field_name", "parent"],
+                name="unique_telegram_trigger_node_field_name_parent",
             )
         ]

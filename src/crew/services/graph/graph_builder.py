@@ -2,6 +2,8 @@ import json
 import threading
 
 from services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
+from services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
+
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.checkpoint.memory import MemorySaver
@@ -268,6 +270,17 @@ class SessionGraphBuilder:
             )
             self.add_node(file_extractor_node)
 
+        for audio_transcription_node_data in schema.audio_transcription_node_list:
+            audio_transcription_node = AudioTranscriptionNode(
+                session_id=self.session_id,
+                node_name=audio_transcription_node_data.node_name,
+                python_code_executor_service=self.python_code_executor_service,
+                input_map=audio_transcription_node_data.input_map,
+                output_variable_path=audio_transcription_node_data.output_variable_path,
+                stop_event=self.stop_event,
+            )
+            self.add_node(audio_transcription_node)
+
         for llm_node_data in schema.llm_node_list:
             llm_node = LLMNode(
                 session_id=self.session_id,
@@ -312,6 +325,16 @@ class SessionGraphBuilder:
                     python_code_data=webhook_trigger_node_data.python_code,
                 )
             )
+        for telegram_trigger_node_data in schema.telegram_trigger_node_data_list:
+            self.add_node(
+                node=TelegramTriggerNode(
+                    session_id=self.session_id,
+                    node_name=telegram_trigger_node_data.node_name,
+                    stop_event=self.stop_event,
+                    field_list=telegram_trigger_node_data.field_list,
+                )
+            )
+            
         if schema.entrypoint is not None:
             self.set_entrypoint(schema.entrypoint)
         # name always __end_node__

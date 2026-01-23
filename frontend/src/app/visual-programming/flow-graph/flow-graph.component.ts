@@ -164,7 +164,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         private readonly cd: ChangeDetectorRef,
         private readonly dialog: Dialog,
         private readonly toastService: ToastService
-    ) {}
+    ) { }
 
     public ngOnInit(): void {
         this.initializeFlowStateIfEmpty();
@@ -243,7 +243,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         });
     }
 
-    public onSave(): void {}
+    public onSave(): void { }
 
     ngDoCheck() {
         console.log('PERFORMANCE!');
@@ -418,6 +418,10 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     public onCopy(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         // Assume fFlowComponent.getSelection() returns a FSelectionChangeEvent
 
         const selections: FSelectionChangeEvent =
@@ -427,6 +431,10 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
     // Triggered on paste
     public onPaste(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         let pastePosition: IRect;
 
         if (this.mouseCursorPosition) {
@@ -463,14 +471,26 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     public onUndo(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         console.log('component triggered undo');
         this.undoRedoService.onUndo();
     }
 
     public onRedo(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         this.undoRedoService.onRedo();
     }
     public onDelete(): void {
+        if (this.isDialogOpen()) {
+            return;
+        }
+
         const selections: ICurrentSelection =
             this.fFlowComponent.getSelection();
 
@@ -1870,9 +1890,9 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                         },
                         collapsedPosition: childGroup.collapsedPosition
                             ? {
-                                  x: childGroup.collapsedPosition.x + deltaX,
-                                  y: childGroup.collapsedPosition.y + deltaY,
-                              }
+                                x: childGroup.collapsedPosition.x + deltaX,
+                                y: childGroup.collapsedPosition.y + deltaY,
+                            }
                             : childGroup.collapsedPosition,
                     });
                 }
@@ -2255,7 +2275,11 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             },
         });
 
-        dialogRef.closed.subscribe(() => {});
+        dialogRef.closed.subscribe(() => { });
+    }
+
+    private isDialogOpen(): boolean {
+        return this.dialog.openDialogs.length > 0;
     }
 
     public ngOnDestroy(): void {

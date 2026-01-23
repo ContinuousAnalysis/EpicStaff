@@ -16,7 +16,9 @@ import { DEFAULT_END_NODE_PORTS } from '../rules/end-ports/end-ports-default-por
 import { NodeModel } from '../models/node.model';
 import { ConditionGroup } from '../models/decision-table.model';
 import { DEFAULT_SUBGRAPH_NODE_PORTS } from '../rules/subgraph-ports/subgraph-node-default-ports';
+import { DEFAULT_AUDIO_TO_TEXT_NODE_PORTS } from '../rules/audio-to-text-node-ports/audio-to-text-node-ports';
 import { DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS } from '../rules/webhook-trigger-ports/webhook-trigger-default-ports';
+import {DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS} from "../rules/telegram-trigger-ports/telegram-trigger-default-ports";
 
 export const isDecisionPortRole = (role: string) =>
     role.startsWith('decision-out-') ||
@@ -42,7 +44,7 @@ export function parsePortId(
 
 export function getPortsForType(nodeType: NodeType): BasePort[] {
     switch (nodeType) {
-   
+
         case NodeType.TASK:
             return DEFAULT_TASK_NODE_PORTS;
         case NodeType.LLM:
@@ -63,8 +65,12 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
             return DEFAULT_TABLE_NODE_PORTS;
         case NodeType.FILE_EXTRACTOR:
             return DEFAULT_FILE_EXTRACTOR_NODE_PORTS;
+        case NodeType.AUDIO_TO_TEXT:
+            return DEFAULT_AUDIO_TO_TEXT_NODE_PORTS;
         case NodeType.WEBHOOK_TRIGGER:
             return DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS;
+        case NodeType.TELEGRAM_TRIGGER:
+            return DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS;
         case NodeType.END:
             return DEFAULT_END_NODE_PORTS;
         case NodeType.SUBGRAPH:
@@ -152,7 +158,7 @@ export function isConnectionValid(
         if (allowed === 'table-out' && isDecisionPortRole(targetInfo.portRole)) return true;
         return false;
     });
-    
+
     const targetAllowsSource = targetPort.allowedConnections.some(allowed => {
         if (allowed === sourcePort.role) return true;
         if (allowed === 'table-out' && isDecisionPortRole(sourceInfo.portRole)) return true;
@@ -161,7 +167,7 @@ export function isConnectionValid(
 
     if (!sourceAllowsTarget || !targetAllowsSource) {
         console.warn(
-            `Invalid connection roles: "${sourcePort.role}" -> "${targetPort.role}". 
+            `Invalid connection roles: "${sourcePort.role}" -> "${targetPort.role}".
          sourceAllowsTarget=${sourceAllowsTarget}, targetAllowsSource=${targetAllowsSource}`
         );
         return false;
@@ -299,7 +305,7 @@ export function generatePortsForDecisionTableNode(
         const normalizedGroupName = group.group_name
             .toLowerCase()
             .replace(/\s+/g, '-');
-        
+
         return {
             ...(defaultOutputConfig ?? {
                 port_type: 'output',
@@ -312,7 +318,7 @@ export function generatePortsForDecisionTableNode(
                     'end-in',
                     'decision-out-in',
                     'file-extractor-in',
-                    
+
                 ],
                 position: 'right',
                 color: '#00aaff',

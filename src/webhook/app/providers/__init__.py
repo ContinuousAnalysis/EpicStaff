@@ -18,7 +18,8 @@ class ProviderNotFoundException(ValueError):
 def get_provider(
     provider_name: Optional[str], 
     port: int, 
-    auth_token: Optional[str]
+    auth_token: Optional[str],
+    domain: Optional[str] = None,
 ) -> AbstractTunnelProvider:
     """
     Factory function to get an instance of a tunnel provider.
@@ -38,4 +39,4 @@ def get_provider(
     ProviderClass = PROVIDERS[cleared_provider]
     
     # Return an *instance* of the class
-    return ProviderClass(port=port, auth_token=auth_token)
+    return ProviderClass(port=port, auth_token=auth_token, domain=domain)
