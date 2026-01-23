@@ -1,4 +1,10 @@
-import { Component, Input, ViewEncapsulation } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  ViewEncapsulation,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../models/graph-session-message.model';
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
@@ -27,8 +33,40 @@ import { expandCollapseAnimation } from '../../../../../../shared/animations/ani
           <i class="ti ti-hierarchy-2"></i>
         </div>
         <h3>
-          <span class="node-name">{{ message.name }}</span> subgraph started
+          <span class="node-name">{{ message.name  }}</span> subgraph started {{subgraphName}}
         </h3>
+
+        <button
+        class="view-nested-button"
+        type="button"
+        *ngIf="showViewNestedMessages"
+        (click)="onViewNestedMessages($event)"
+        [class.show-nested-btn--open]="isNestedMessagesOpen"
+      >
+        <div class="play-nested-arrow" [class.play-nested-arrow--open]="isNestedMessagesOpen">
+          <i
+            class="ti ti-caret-right-filled nested-toggle-arrow"
+          >
+        </i>
+        </div>
+        <svg
+          class="view-nested-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 2341 1024"
+          [class.view-nested-icon--open]="isNestedMessagesOpen"
+
+        >
+          <path
+            d="M87.771 0h2165.029c48.475 0 87.771 39.297 87.771 87.771v117.029c0 48.475-39.297 87.771-87.771 87.771h-2165.029c-48.475 0-87.771-39.297-87.771-87.771v-117.029c0-48.475 39.297-87.771 87.771-87.771z"
+          ></path>
+          <path
+            d="M438.857 438.857h1828.571c40.396 0 73.143 32.747 73.143 73.143v73.143c0 40.396-32.747 73.143-73.143 73.143h-1828.571c-40.396 0-73.143-32.747-73.143-73.143v-73.143c0-40.396 32.747-73.143 73.143-73.143z"
+          ></path>
+          <path
+            d="M438.857 804.571h1828.571c40.396 0 73.143 32.747 73.143 73.143v73.143c0 40.396-32.747 73.143-73.143 73.143h-1828.571c-40.396 0-73.143-32.747-73.143-73.143v-73.143c0-40.396 32.747-73.143 73.143-73.143z"
+          ></path>
+        </svg>
+      </button>
       </div>
 
       <!-- Collapsible Content -->
@@ -90,7 +128,7 @@ import { expandCollapseAnimation } from '../../../../../../shared/animations/ani
           </div>
 
           <!-- State History Section -->
-          <div class="state-history-container" *ngIf="hasStateHistory()">
+          <!-- <div class="state-history-container" *ngIf="hasStateHistory()">
             <div class="section-heading" (click)="toggleStateHistory($event)">
               <i
                 class="ti"
@@ -157,9 +195,10 @@ import { expandCollapseAnimation } from '../../../../../../shared/animations/ani
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
+
     </div>
   `,
   styles: [
@@ -347,19 +386,81 @@ import { expandCollapseAnimation } from '../../../../../../shared/animations/ani
         overflow: auto;
         max-height: 300px;
       }
+
+      .view-nested-button{
+      margin-left: auto;
+        background-color: rgb(0, 191, 165);
+        color: rgb(255, 255, 255);
+        border: 2px solid rgba(0, 191, 165, 0.4);
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+      }
+
+      .view-nested-button:hover {
+        background-color: transparent;
+        color: rgb(0, 191, 165);
+        border-color: rgb(0, 191, 165);;
+      }
+
+      .show-nested-btn--open{
+        background-color: transparent;
+      }
+
+      .play-nested-arrow {
+        margin-top: 2px;
+        display: inline-block;
+        transform: rotate(0deg);
+        transition: transform 0.2s ease;
+        color: white;
+        font-size: 1.1rem;
+
+      }
+
+      .play-nested-arrow--open {
+        transition: transform 0.2s ease, color 0.2s ease;
+        transform: rotate(90deg);
+        color: rgb(0, 191, 165);
+      }
+
+
+      .view-nested-icon {
+        transition: transform 0.2s ease, fill 0.2s ease;
+        height: 1.1rem;
+        display: block;
+        fill: white;
+      }
+
+      .view-nested-icon--open{
+        fill: rgb(0, 191, 165);
+      }
     `,
   ],
 })
 export class SubgraphStartMessageComponent {
   @Input() message!: GraphMessage;
+  @Input() subgraphName: string | null = null;
+  @Input() showViewNestedMessages = true;
+  @Input() isNestedMessagesOpen = false;
+  @Output() viewNestedMessages = new EventEmitter<void>();
   isMessageExpanded = false;
   isInputsExpanded = true;
   isVariablesExpanded = true;
-  isStateHistoryExpanded = true;
 
   toggleMessage(): void {
     if (!this.hasContent()) return;
     this.isMessageExpanded = !this.isMessageExpanded;
+  }
+
+  onViewNestedMessages(event: Event): void {
+    event.stopPropagation();
+    this.viewNestedMessages.emit();
   }
 
   toggleInputs(event: Event): void {
@@ -372,13 +473,8 @@ export class SubgraphStartMessageComponent {
     this.isVariablesExpanded = !this.isVariablesExpanded;
   }
 
-  toggleStateHistory(event: Event): void {
-    event.stopPropagation();
-    this.isStateHistoryExpanded = !this.isStateHistoryExpanded;
-  }
-
   hasContent(): boolean {
-    return this.hasInput() || this.hasVariables() || this.hasStateHistory();
+    return this.hasInput() || this.hasVariables();
   }
 
   hasInput(): boolean {
@@ -389,11 +485,6 @@ export class SubgraphStartMessageComponent {
   hasVariables(): boolean {
     const variables = this.getVariables();
     return variables && Object.keys(variables).length > 0;
-  }
-
-  hasStateHistory(): boolean {
-    const stateHistory = this.getStateHistory();
-    return stateHistory && stateHistory.length > 0;
   }
 
   getInput(): Record<string, any> {
@@ -435,24 +526,5 @@ export class SubgraphStartMessageComponent {
     return [];
   }
 
-  getStateHistoryLength(): number {
-    return this.getStateHistory().length;
-  }
-
-  hasItemInput(item: any): boolean {
-    return item.input && Object.keys(item.input).length > 0;
-  }
-
-  hasItemOutput(item: any): boolean {
-    return item.output && Object.keys(item.output).length > 0;
-  }
-
-  hasItemVariables(item: any): boolean {
-    return item.variables && Object.keys(item.variables).length > 0;
-  }
-
-  hasItemAdditionalData(item: any): boolean {
-    return item.additional_data && Object.keys(item.additional_data).length > 0;
-  }
 }
 
