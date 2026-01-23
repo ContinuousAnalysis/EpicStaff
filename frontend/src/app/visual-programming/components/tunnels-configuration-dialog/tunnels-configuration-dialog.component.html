@@ -1,0 +1,77 @@
+<div class="dialog">
+    <div class="dialog__header">
+        <span class="dialog__header-title">
+            Configuration Parameters
+        </span>
+
+        <div class="dialog__actions">
+            <app-icon
+                [icon]="'ui/close'"
+                class="dialog__action"
+                [size]="'1.5rem'"
+                (click)="onCancel()"
+            />
+            <app-icon
+                [icon]="'ui/check'"
+                class="dialog__action dialog__action--save"
+                [size]="'1.5rem'"
+                (click)="onSave()"
+            />
+        </div>
+    </div>
+
+    <div class="dialog__content">
+        <form
+            class="dialog__form"
+            [formGroup]="form"
+        >
+            <div class="dialog__common-params">
+                <app-custom-input
+                    formControlName="name"
+                    [required]="true"
+                    label="Name"
+                    placeholder="Enter configuration name"
+                    tooltipText="Configuration name"
+                />
+                <app-select
+                    label="Type"
+                    formControlName="type"
+                    [items]="tunnelConfigTypes"
+                    [required]="true"
+                    placeholder="Select type"
+                    tooltipText="Configuration name"
+                />
+            </div>
+
+            <div class="dialog__additional-params">
+                @switch (form.get('type')?.value) {
+                    @case ('localhost') {
+                        <app-localhost-config
+                            [parentForm]="form"
+                            [config]="localhostConfig"
+                        />
+                    }
+                    @case ('ngrok') {
+                        <app-ngrok-config
+                            [parentForm]="form"
+                            [config]="ngrokConfig"
+                        />
+                    }
+                    @default {
+                        <h3 class="dialog__empty-config">
+                            No configuration type is selected. Enter a name and choose a configuration type to set up the parameters.
+                        </h3>
+                    }
+                }
+            </div>
+
+            <app-button
+                class="dialog__test-connection"
+                type="primary"
+            >
+                Test connection
+            </app-button>
+        </form>
+    </div>
+
+</div>

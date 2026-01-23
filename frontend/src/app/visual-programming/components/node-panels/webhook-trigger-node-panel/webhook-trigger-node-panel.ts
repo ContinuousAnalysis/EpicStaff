@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, injec
 import {FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {WebhookTriggerNodeModel} from '../../../core/models/node.model';
 import {BaseSidePanel} from '../../../core/models/node-panel.abstract';
-import {CustomInputComponent} from '../../../../shared/components/form-input/form-input.component';
+import {CustomInputComponent} from '@shared/components';
 import {
     CodeEditorComponent
 } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
@@ -12,6 +12,11 @@ import {Clipboard, ClipboardModule} from '@angular/cdk/clipboard';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {startWith} from 'rxjs';
 import {WebhookStatus} from "../../../../pages/flows-page/components/flow-visual-programming/models/webhook.model";
+import {ButtonComponent} from "@shared/components";
+import {Dialog} from "@angular/cdk/dialog";
+import {
+    TunnelsConfigurationDialogComponent
+} from "../../tunnels-configuration-dialog/tunnels-configuration-dialog.component";
 
 const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
 
@@ -24,6 +29,7 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
         CodeEditorComponent,
         CommonModule,
         ClipboardModule,
+        ButtonComponent,
     ],
     template: `
         <div class="panel-container">
@@ -48,6 +54,9 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
                                 [activeColor]="activeColor"
                                 [errorMessage]="getWebhookNameErrorMessage()"
                             ></app-custom-input>
+                            <app-button type="primary" (click)="openTunnelsConfig()">
+                                open tunnel modal
+                            </app-button>
                             <div class="webhook-url-display">
                                 @if (webhookUrlDisplay; as url) {
                                     <span class="webhook-url-text" [style.color]="activeColor">
@@ -259,6 +268,7 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
 })
 export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTriggerNodeModel> {
     public readonly isExpanded = input<boolean>(false);
+    private dialog = inject(Dialog);
 
     pythonCode: string = '';
     initialPythonCode: string = '';
@@ -297,6 +307,14 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
                 this.cdr.markForCheck();
             },
         });
+    }
+
+    openTunnelsConfig() {
+        this.dialog.open(TunnelsConfigurationDialogComponent, {
+            data: {},
+            width: 'calc(100vw - 2rem)',
+            height: 'calc(100vh - 2rem)',
+        })
     }
 
     get activeColor(): string {
