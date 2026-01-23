@@ -422,19 +422,6 @@ class SubGraphData(BaseModel):
     initial_state: dict[str, Any] = {}
 
 
-class SubGraphNodeData(BaseModel):
-    node_name: str
-    subgraph_id: int
-    input_map: dict[str, Any]
-    output_variable_path: str | None = None
-
-
-class SubGraphData(BaseModel):
-    id: int
-    data: GraphData
-    initial_state: dict[str, Any] = {}
-
-
 class GraphSessionMessageData(BaseModel):
     session_id: int
     name: str
