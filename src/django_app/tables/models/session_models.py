@@ -63,6 +63,7 @@ class Session(models.Model):
 
         result = super().delete(using, False)
         return result
+
     class Meta:
         get_latest_by = ["id"]
 
@@ -114,3 +115,11 @@ class TaskSessionMessage(CrewSessionMessage):
     expected_output = models.TextField(blank=True, default="")
     raw = models.TextField(blank=True, default="")
     agent = models.TextField(blank=True, default="")
+
+
+class SessionWarningMessage(models.Model):
+    session = models.ForeignKey(
+        Session, on_delete=models.CASCADE, related_name="warnings"
+    )
+    messages = models.JSONField(default=dict)
+    created_at = models.DateTimeField(default=timezone.now)

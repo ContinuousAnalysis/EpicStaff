@@ -76,6 +76,8 @@ from tables.serializers.serializers import (
     RegisterTelegramTriggerSerializer,
 )
 
+from tables.models.session_models import SessionWarningMessage
+
 # from tables.serializers.knowledge_serializers import CollectionStatusSerializer
 from tables.serializers.quickstart_serializers import QuickstartSerializer
 from tables.filters import SessionFilter  # CollectionFilter,
@@ -216,6 +218,29 @@ class SessionViewSet(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
 
+    @swagger_auto_schema(
+        method="get",
+        responses={
+            200: openapi.Response(
+                description="Session warnings retrieved successfully"
+            ),
+            400: openapi.Response(description="Session is required"),
+            404: openapi.Response(description="Session not found"),
+        },
+    )
+    @action(detail=True, methods=["get"], url_path="warnings")
+    def get_session_warnings(self, request, pk=None):
+        session = self.get_object()
+
+        warning = (
+            SessionWarningMessage.objects.filter(session=session)
+            .order_by("-created_at")
+            .values("messages")
+            .first()
+        )
+
+        return Response(warning, status=status.HTTP_200_OK)
+
 
 class RunSession(APIView):
 
@@ -255,7 +280,7 @@ class RunSession(APIView):
         graph_id = serializer.validated_data["graph_id"]
         username = serializer.validated_data.get("username")
         graph_organization_user = None
-        warning_msg = None
+        warning_messages = []
 
         graph = Graph.objects.filter(id=graph_id).first()
         if not graph:
@@ -268,6 +293,12 @@ class RunSession(APIView):
             graph__id=graph_id
         ).first()
 
+        if graph_organization:
+            if not username and graph_organization.user_variables:
+                warning_messages.append(
+                    "Current flow have user-persistent variables, but no user provided"
+                )
+
         if username and not graph_organization:
             return Response(
                 {"message": "No GraphOrganization exists for this flow."},
@@ -278,9 +309,6 @@ class RunSession(APIView):
             user = OrganizationUser.objects.filter(
                 name=username, organization=graph_organization.organization
             ).first()
-
-            if not user and graph_organization.user_variables:
-                warning_msg = "Current flow have user-persistent variables, but no user were provided"
 
             if not user and username:
                 return Response(
@@ -333,8 +361,16 @@ class RunSession(APIView):
             )
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)})
         else:
+            if warning_messages:
+                warnings_exist = True
+                SessionWarningMessage.objects.create(
+                    session_id=session_id, messages=warning_messages
+                )
+            else:
+                warnings_exist = False
+
             return Response(
-                data={"session_id": session_id, "warning_msg": warning_msg},
+                data={"session_id": session_id, "warnings_exist": warnings_exist},
                 status=status.HTTP_201_CREATED,
             )
 
