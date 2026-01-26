@@ -51,15 +51,20 @@ This guide will help you launch EpicStaff on your system. You need to additional
 
 ### 1. Clone the Project
 ```bash
-git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git && cd EpicStaff
+git clone -b main https://github.com/EpicStaff/EpicStaff.git && cd EpicStaff
 ```
 ### 2. Set your preferred savefiles location
 ```bash
 savefiles="$HOME/savefiles"
 ```
 ### 3. Update .env accordingly
+MacOS:
 ```bash
 sed -i '' "s|CREW_SAVEFILES_PATH=/c/savefiles|CREW_SAVEFILES_PATH=$savefiles|" src/.env
+```
+Linux:
+```bash
+sed -i "s|CREW_SAVEFILES_PATH=/c/savefiles|CREW_SAVEFILES_PATH=$savefiles|" src/.env
 ```
 ### 4. Run the Project
 Assuming [Docker](https://www.docker.com/products/docker-desktop/) is already installed and running use next command
@@ -77,7 +82,7 @@ docker-compose up
 
 ### 1. Clone the Project
 ```powershell
-git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git; cd EpicStaff
+git clone -b main https://github.com/EpicStaff/EpicStaff.git; cd EpicStaff
 ```
 ### 2. Set your preferred savefiles location
 ```powershell

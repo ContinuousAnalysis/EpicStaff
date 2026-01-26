@@ -29,7 +29,11 @@ import asyncio
 
 @pytest.fixture
 def mock_services():
-    redis_service = RedisService(host="127.0.0.1", port="6379")
+    redis_service = RedisService(
+        host="127.0.0.1",
+        port="6379",
+        password="redis_password",
+    )
     return {
         "redis_service": redis_service,
         "crew_parser_service": Mock(spec=CrewParserService),
@@ -194,9 +198,7 @@ def test_run_decision_table_node_with_error(mock_services, mock_session_data):
 
     state = {
         "state_history": [],
-        "variables": DotDict(
-            {"test1": 4, "test2": [999, {"test3": "secret_value"}]}
-        ),
+        "variables": DotDict({"test1": 4, "test2": [999, {"test3": "secret_value"}]}),
         "system_variables": {},
     }
     compiled_graph = builder.compile_from_schema(mock_session_data)

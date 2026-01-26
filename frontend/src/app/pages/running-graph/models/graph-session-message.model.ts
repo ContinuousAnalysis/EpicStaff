@@ -33,8 +33,8 @@ export enum MessageType {
 export interface FinishMessageData {
   output: any;
   state: Record<string, any>;
-  message_type: MessageType.FINISH; 
-  additional_data?: Record<string, any>; 
+  message_type: MessageType.FINISH;
+  additional_data?: Record<string, any>;
 }
 
 export interface StartMessageData {
@@ -117,17 +117,22 @@ export interface ExtractedChunk {
   chunk_similarity: number;
 }
 
+export interface RagSearchConfig {
+    rag_type: string;
+    search_limit: number;
+    similarity_threshold: number;
+}
+
 export interface ExtractedChunksMessageData {
   crew_id: number;
   agent_id: number;
   collection_id: number;
   retrieved_chunks: number;
-  similarity_threshold: number;
-  search_limit: number;
   knowledge_query: string;
   chunks: ExtractedChunk[];
   message_type: MessageType.EXTRACTED_CHUNKS;
   associatedProject?: GetProjectRequest;
+  rag_search_config: RagSearchConfig;
 }
 
 export interface GraphEndMessageData {
