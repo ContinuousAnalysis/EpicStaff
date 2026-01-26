@@ -25,6 +25,7 @@ async def main():
     manager_port = int(os.environ.get("MANAGER_PORT", "8001"))
     redis_host = os.environ.get("REDIS_HOST", "127.0.0.1")
     redis_port = int(os.environ.get("REDIS_PORT", 6379))
+    redis_password = os.environ.get("REDIS_PASSWORD")
     session_schema_channel = os.environ.get("SESSION_SCHEMA_CHANNEL", "sessions:schema")
     session_timeout_channel = os.environ.get(
         "SESSION_TIMEOUT_CHANNEL", "sessions:timeout"
@@ -35,7 +36,7 @@ async def main():
     stop_session_channel = os.getenv("STOP_SESSION_CHANNEL", "sessions:stop")
     MAX_CONCURRENT_SESSIONS = int(os.getenv("MAX_CONCURRENT_SESSIONS", "20"))
     # Initialize services
-    redis_service = RedisService(host=redis_host, port=redis_port)
+    redis_service = RedisService(host=redis_host, port=redis_port, password=redis_password)
     python_code_executor_service = RunPythonCodeService(redis_service=redis_service)
     knowledge_search_service = KnowledgeSearchService(redis_service=redis_service)
     mcp_tool_factory = CrewaiMcpToolFactory()
