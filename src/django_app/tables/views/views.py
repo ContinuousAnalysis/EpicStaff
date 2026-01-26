@@ -49,6 +49,7 @@ from tables.services.knowledge_services.indexing_service import IndexingService
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from tables.enums import SessionWarningType
 
 from tables.models import (
     Session,
@@ -295,9 +296,7 @@ class RunSession(APIView):
 
         if graph_organization:
             if not username and graph_organization.user_variables:
-                warning_messages.append(
-                    "Current flow have user-persistent variables, but no user provided"
-                )
+                warning_messages.append(SessionWarningType.USER_VARS_WITH_NO_USER)
 
         if username and not graph_organization:
             return Response(
@@ -362,15 +361,12 @@ class RunSession(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)})
         else:
             if warning_messages:
-                warnings_exist = True
                 SessionWarningMessage.objects.create(
                     session_id=session_id, messages=warning_messages
                 )
-            else:
-                warnings_exist = False
 
             return Response(
-                data={"session_id": session_id, "warnings_exist": warnings_exist},
+                data={"session_id": session_id},
                 status=status.HTTP_201_CREATED,
             )
 
