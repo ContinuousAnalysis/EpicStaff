@@ -118,7 +118,7 @@ class TaskSessionMessage(CrewSessionMessage):
 
 
 class SessionWarningMessage(models.Model):
-    session = models.ForeignKey(
+    session = models.OneToOneField(
         Session, on_delete=models.CASCADE, related_name="warnings"
     )
     messages = models.JSONField(default=dict)

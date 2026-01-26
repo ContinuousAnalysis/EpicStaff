@@ -234,10 +234,9 @@ class SessionViewSet(
         session = self.get_object()
 
         warning = (
-            SessionWarningMessage.objects.filter(session=session)
-            .order_by("-created_at")
-            .values("messages")
-            .first()
+            {"messages": session.warnings.messages}
+            if hasattr(session, "warning")
+            else None
         )
 
         return Response(warning, status=status.HTTP_200_OK)
