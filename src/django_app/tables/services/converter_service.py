@@ -334,6 +334,8 @@ class ConverterService(metaclass=SingletonMeta):
             language=rt_agent_chat.language,
             voice_recognition_prompt=rt_agent_chat.voice_recognition_prompt,
             voice=rt_agent_chat.voice,
+            input_audio_format=rt_agent_chat.input_audio_format.value,
+            output_audio_format=rt_agent_chat.output_audio_format.value,
         )
 
         return rt_agent_chat_data
