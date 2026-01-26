@@ -1,0 +1,75 @@
+<div class="config">
+    <div class="config__grid config__strategy-select">
+        <div class="config__grid-item">
+            <label>Chunk Strategy</label>
+            <mat-icon
+                class="config__tooltip"
+                matTooltip="Choose how to split your document into chunks. Different strategies work better for different document types."
+                matTooltipPosition="above"
+                matTooltipClass="dialog__label-tooltip"
+            >
+                help_outline
+            </mat-icon>
+        </div>
+        <div class="config__grid-item config__grid-item--short">
+            <app-select
+                [selectedValue]="selectedStrategy()"
+                [items]="chunkStrategySelectItems"
+                (changed)="selectedStrategy.set($event)"
+            />
+        </div>
+    </div>
+
+    @switch (selectedStrategy()) {
+        @case ('markdown') {
+            <app-markdown-form
+                [params]="params"
+                [parentForm]="form"
+            />
+        }
+        @case ('character') {
+            <app-character-form
+                [params]="params"
+                [parentForm]="form"
+            />
+        }
+        @case ('csv') {
+            <app-csv-form
+                [params]="params"
+                [parentForm]="form"
+            />
+        }
+        @case ('html') {
+            <app-html-form
+                [params]="params"
+                [parentForm]="form"
+            />
+        }
+        @case ('token') {
+            <app-token-form
+                [params]="params"
+                [parentForm]="form"
+            />
+        }
+        @case ('json') {
+            <app-json-form
+                [params]="params"
+                [parentForm]="form"
+            />
+        }
+    }
+
+    <div class="config__json-preview-container">
+        <app-json-editor
+            class="config__json-preview"
+            [jsonData]="jsonConfig()"
+            [title]="'JSON'"
+            [allowCopy]="true"
+            [collapsible]="true"
+            (jsonChange)="jsonConfig.set($event)"
+            (validationChange)="onJsonValidChange($event)"
+            [fullHeight]="true"
+        ></app-json-editor>
+    </div>
+
+</div>

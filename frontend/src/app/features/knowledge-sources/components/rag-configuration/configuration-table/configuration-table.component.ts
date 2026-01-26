@@ -13,7 +13,7 @@ import {KeyValuePipe} from "@angular/common";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {EMPTY, groupBy, mergeMap, of, Subject} from "rxjs";
 import {catchError, debounceTime, switchMap, tap} from "rxjs/operators";
-import {ToastService} from "../../../../../services/notifications/toast.service";
+import {ToastService} from "../../../../../services/notifications";
 import {NaiveRagService} from "../../../services/naive-rag.service";
 import {
     DocFieldChange,
@@ -21,14 +21,7 @@ import {
     SortState,
     NormalizedDocumentErrors
 } from "./configuration-table.interface";
-import {SelectComponent, SelectItem} from "../../../../../shared/components/select/select.component";
-import {AppIconComponent} from "../../../../../shared/components/app-icon/app-icon.component";
-import {ButtonComponent} from "../../../../../shared/components/buttons/button/button.component";
-import {InputNumberComponent} from "../../../../../shared/components/app-input-number/input-number.component";
-import {CheckboxComponent} from "../../../../../shared/components/checkbox/checkbox.component";
-import {
-    MultiSelectComponent,
-} from "../../../../../shared/components/multi-select/multi-select.component";
+import {SelectComponent, SelectItem, MultiSelectComponent, AppIconComponent, ButtonComponent, InputNumberComponent, CheckboxComponent} from "@shared/components";
 import {CHUNK_STRATEGIES, FILE_TYPES} from "../../../constants/constants";
 import {
     BulkDeleteNaiveRagDocumentDtoResponse,
@@ -36,6 +29,10 @@ import {
     NaiveRagDocumentConfig, UpdateNaiveRagDocumentConfigError,
     UpdateNaiveRagDocumentResponse
 } from "../../../models/rag.model";
+import {Dialog} from "@angular/cdk/dialog";
+import {
+    EditFileParametersDialogComponent
+} from "../../edit-file-parameters-dialog/edit-file-parameters-dialog.component";
 
 @Component({
     selector: 'app-configuration-table',
@@ -56,6 +53,7 @@ export class ConfigurationTableComponent implements OnInit {
     fileTypeSelectItems: SelectItem[] = FILE_TYPES.map(t => ({name: t, value: t}));
     chunkStrategySelectItems: SelectItem[] = CHUNK_STRATEGIES.map(t => ({name: t, value: t.toLowerCase()}));
 
+    private dialog = inject(Dialog);
     private naiveRagService = inject(NaiveRagService);
     private destroyRef = inject(DestroyRef);
     private toastService = inject(ToastService);
@@ -141,7 +139,12 @@ export class ConfigurationTableComponent implements OnInit {
     }
 
     tuneChunk(row: any) {
-        console.log('open modal', row);
+        this.dialog.open(EditFileParametersDialogComponent, {
+            width: 'calc(100vw - 2rem)',
+            height: 'calc(100vh - 2rem)',
+            data: {},
+            disableClose: true
+        });
     }
 
     // ================= FILED CHANGE LOGIC START =================

@@ -1,0 +1,45 @@
+<div class="chunk__items" (scroll)="onScroll($event)">
+    <div class="chunk__id-container">
+        <!--space area for chunk IDs-->
+    </div>
+    <p
+        class="chunk__text-container"
+    >
+        @for (chunk of chunks(); track chunk.id; let i = $index; let odd = $odd) {
+            <span
+                class="chunk__id-item"
+                [ngClass]="odd ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
+            >
+                ID {{ i + 1 }}
+            </span>
+            <span
+                class="chunk__item"
+                [ngClass]="odd ? 'chunk__item--odd' : 'chunk__item--even'"
+                [highlightOverlap]="chunk"
+            ></span>
+        }
+
+        <!--  chunk loader-->
+        @if (hasMore()) {
+            <span
+                class="chunk__id-item"
+                [ngClass]="chunks().length % 2 !== 0 ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
+            >
+                <app-spinner
+                    class="chunk__id-spinner"
+                    [size]="18"
+                    [borderWidth]="2"
+                    [borderColor]="'transparent'"
+                    [backgroundColor]="'transparent'"
+                />
+
+            </span>
+            <span
+                class="chunk__item chunk__item--blurred"
+                [ngClass]="chunks().length % 2 !== 0 ? 'chunk__item--odd' : 'chunk__item--even'"
+                [highlightOverlap]="blurredChunk"
+            ></span>
+        }
+
+    </p>
+</div>

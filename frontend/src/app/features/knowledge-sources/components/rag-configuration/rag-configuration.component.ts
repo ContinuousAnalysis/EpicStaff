@@ -8,15 +8,14 @@ import {
     signal,
 } from "@angular/core";
 import {FormsModule} from "@angular/forms";
-import {SearchComponent} from "../../../../shared/components/search/search.component";
-import {SelectComponent, SelectItem} from "../../../../shared/components/select/select.component";
+import {SearchComponent, AppIconComponent, SelectComponent, SelectItem} from "@shared/components";
 import {ConfigurationTableComponent} from "./configuration-table/configuration-table.component";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {CreateCollectionDtoResponse} from "../../models/collection.model";
 import {NaiveRagService} from "../../services/naive-rag.service";
 import {NaiveRagDocumentConfig} from "../../models/rag.model";
-import {ToastService} from "../../../../services/notifications/toast.service";
-import {AppIconComponent} from "../../../../shared/components/app-icon/app-icon.component";
+import {ToastService} from "../../../../services/notifications";
+import {ChunkPreviewComponent} from "../chunk-preview/chunk-preview.component";
 
 @Component({
     selector: 'app-rag-configuration',
@@ -28,6 +27,7 @@ import {AppIconComponent} from "../../../../shared/components/app-icon/app-icon.
         SelectComponent,
         ConfigurationTableComponent,
         AppIconComponent,
+        ChunkPreviewComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
