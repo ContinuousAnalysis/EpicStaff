@@ -8,15 +8,23 @@ import {
     output,
     signal
 } from "@angular/core";
-import {KeyValuePipe} from "@angular/common";
+import { KeyValuePipe } from "@angular/common";
 import {
     DocFieldChange,
     TableDocument,
 } from "./configuration-table.interface";
-import {SelectComponent, SelectItem, MultiSelectComponent, AppIconComponent, ButtonComponent, InputNumberComponent, CheckboxComponent} from "@shared/components";
-import {CHUNK_STRATEGIES, FILE_TYPES} from "../../../constants/constants";
-import {UpdateNaiveRagDocumentDtoRequest} from "../../../models/rag.model";
-import {Dialog} from "@angular/cdk/dialog";
+import {
+    SelectComponent,
+    SelectItem,
+    MultiSelectComponent,
+    AppIconComponent,
+    ButtonComponent,
+    InputNumberComponent,
+    CheckboxComponent
+} from "@shared/components";
+import { CHUNK_STRATEGIES, FILE_TYPES } from "../../../constants/constants";
+import { UpdateNaiveRagDocumentDtoRequest } from "../../../models/rag.model";
+import { Dialog } from "@angular/cdk/dialog";
 import {
     EditFileParametersDialogComponent
 } from "../../edit-file-parameters-dialog/edit-file-parameters-dialog.component";
@@ -24,7 +32,7 @@ import {
 @Component({
     selector: 'app-configuration-table',
     templateUrl: './configuration-table.component.html',
-    styleUrls: ['./configuration-table.component.scss'],
+    styleUrls: [ './configuration-table.component.scss' ],
     imports: [
         SelectComponent,
         AppIconComponent,
@@ -37,8 +45,8 @@ import {
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ConfigurationTableComponent {
-    fileTypeSelectItems: SelectItem[] = FILE_TYPES.map(t => ({name: t, value: t}));
-    chunkStrategySelectItems: SelectItem[] = CHUNK_STRATEGIES.map(t => ({name: t, value: t.toLowerCase()}));
+    fileTypeSelectItems: SelectItem[] = FILE_TYPES.map(t => ({ name: t, value: t }));
+    chunkStrategySelectItems: SelectItem[] = CHUNK_STRATEGIES.map(t => ({ name: t, value: t.toLowerCase() }));
 
     private dialog = inject(Dialog);
 
@@ -103,7 +111,7 @@ export class ConfigurationTableComponent {
         }));
     }
 
-    parseFullFileName(fullName: string): {name: string, type: string} {
+    parseFullFileName(fullName: string): { name: string, type: string } {
         const parts = fullName.split('.');
         const type = parts.pop()!;
 

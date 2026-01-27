@@ -8,7 +8,7 @@ import {
     signal,
 } from "@angular/core";
 import {FormsModule} from "@angular/forms";
-import {SearchComponent, AppIconComponent, ButtonComponent} from "@shared/components";
+import {SearchComponent, AppIconComponent, ButtonComponent, ConfirmationDialogService} from "@shared/components";
 import {ConfigurationTableComponent} from "./configuration-table/configuration-table.component";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {CreateCollectionDtoResponse} from "../../models/collection.model";
@@ -56,6 +56,7 @@ export class RagConfigurationComponent implements OnInit {
 
     showBulkRow = computed(() => this.bulkBtnActive() && !!this.filteredAndCheckedDocIds().length);
 
+    private confirmationDialogService = inject(ConfirmationDialogService);
     private naiveRagService = inject(NaiveRagService);
     private destroyRef = inject(DestroyRef);
     private toastService = inject(ToastService);
@@ -209,17 +210,28 @@ export class RagConfigurationComponent implements OnInit {
         const config_ids = this.filteredAndCheckedDocIds();
         if (!config_ids.length) return;
         const id = this.naiveRagId();
-
-        this.naiveRagService
-            .bulkDeleteDocumentConfigs(id, { config_ids })
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-                catchError(() => {
-                    this.toastService.error('Documents delete failed');
-                    return of();
-                })
-            )
-            .subscribe(res => this.handleSuccessBulkDelete(res));
+        this.confirmationDialogService.confirm({
+            title: 'Confirm Deletion',
+            message: `Are you sure you want to delete selected file(s)? <br> You can return them by clicking the 'Re-include Files' button.`,
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            type: 'info',
+        })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((result) => {
+                if (result === true) {
+                    this.naiveRagService
+                        .bulkDeleteDocumentConfigs(id, { config_ids })
+                        .pipe(
+                            takeUntilDestroyed(this.destroyRef),
+                            catchError(() => {
+                                this.toastService.error('Documents delete failed');
+                                return of();
+                            })
+                        )
+                        .subscribe(res => this.handleSuccessBulkDelete(res));
+                }
+            });
     }
 
     private handleSuccessBulkDelete(res: BulkDeleteNaiveRagDocumentDtoResponse) {
