@@ -796,10 +796,12 @@ class InitRealtimeAPIView(APIView):
             )
 
         agent_id = serializer.validated_data["agent_id"]
-
+        config = serializer.validated_data.get("config", {})
+        
         try:
             connection_key = realtime_service.init_realtime(
                 agent_id=agent_id,
+                config=config,
             )
 
         except Exception as e:

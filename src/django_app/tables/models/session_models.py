@@ -33,6 +33,7 @@ class Session(models.Model):
         GraphOrganizationUser, on_delete=models.SET_NULL, default=None, null=True
     )
     entrypoint = models.CharField(null=True, default=None)
+    token_usage = models.JSONField(default=dict)
 
     def save(self, *args, **kwargs):
         now = timezone.now()
