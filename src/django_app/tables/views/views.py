@@ -59,6 +59,7 @@ from tables.models import (
     GraphOrganizationUser,
     OrganizationUser,
     Graph,
+    SessionWarningMessage,
 )
 from tables.serializers.model_serializers import (
     SessionSerializer,
@@ -76,8 +77,6 @@ from tables.serializers.serializers import (
     RunSessionSerializer,
     RegisterTelegramTriggerSerializer,
 )
-
-from tables.models.session_models import SessionWarningMessage
 
 # from tables.serializers.knowledge_serializers import CollectionStatusSerializer
 from tables.serializers.quickstart_serializers import QuickstartSerializer
@@ -797,7 +796,7 @@ class InitRealtimeAPIView(APIView):
 
         agent_id = serializer.validated_data["agent_id"]
         config = serializer.validated_data.get("config", {})
-        
+
         try:
             connection_key = realtime_service.init_realtime(
                 agent_id=agent_id,
