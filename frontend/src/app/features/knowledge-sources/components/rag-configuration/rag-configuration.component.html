@@ -13,10 +13,10 @@
             >
                 Re-include Files
             </app-button>
-            @if (checkedCount()) {
+            @if (filteredAndCheckedDocIds().length) {
                 <app-button
-                    [type]="showBulkRow() ? 'primary' : 'outline-primary'"
-                    (click)="showBulkRow.set(!showBulkRow())"
+                    [type]="bulkBtnActive() ? 'primary' : 'outline-primary'"
+                    (click)="bulkBtnActive.set(!bulkBtnActive())"
                 >
                     Bulk configuration
                 </app-button>
@@ -24,18 +24,19 @@
                     class="configure__bulk-delete"
                     [icon]="'ui/trash'"
                     [size]="'1.5rem'"
-                    (click)="deleteDocuments()"
+                    (click)="applyBulkDelete()"
                 />
             }
         </div>
 
         <app-configuration-table
-            [showBulkRow]="showBulkRow()"
-            [ragId]="naiveRagId()"
-            [documents]="documents()"
             [searchTerm]="searchTerm()"
-            (checkedCountChange)="checkedCount.set($event)"
+            [showBulkRow]="showBulkRow()"
+            [(documents)]="documents"
             [(selectedDocumentId)]="selectedDocumentId"
+            (docsCheckChange)="filteredAndCheckedDocIds.set($event)"
+            (docFieldChange)="onDocFieldChange($event)"
+            (applyBulkUpdate)="applyBulkEdit($event)"
         />
     </div>
 

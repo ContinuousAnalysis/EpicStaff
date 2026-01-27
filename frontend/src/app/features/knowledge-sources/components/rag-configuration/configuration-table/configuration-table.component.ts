@@ -1,33 +1,21 @@
 import {
     ChangeDetectionStrategy,
     Component,
-    computed, DestroyRef, effect,
+    computed, effect,
     inject,
     input,
-    linkedSignal, model,
-    OnInit, output,
+    model,
+    output,
     signal
 } from "@angular/core";
-import {HttpErrorResponse} from "@angular/common/http";
 import {KeyValuePipe} from "@angular/common";
-import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {EMPTY, groupBy, mergeMap, of, Subject} from "rxjs";
-import {catchError, debounceTime, switchMap, tap} from "rxjs/operators";
-import {ToastService} from "../../../../../services/notifications";
-import {NaiveRagService} from "../../../services/naive-rag.service";
 import {
     DocFieldChange,
     TableDocument,
-    NormalizedDocumentErrors
 } from "./configuration-table.interface";
 import {SelectComponent, SelectItem, MultiSelectComponent, AppIconComponent, ButtonComponent, InputNumberComponent, CheckboxComponent} from "@shared/components";
 import {CHUNK_STRATEGIES, FILE_TYPES} from "../../../constants/constants";
-import {
-    BulkDeleteNaiveRagDocumentDtoResponse,
-    BulkUpdateNaiveRagDocumentDtoRequest, BulkUpdateNaiveRagDocumentDtoResponse,
-    NaiveRagDocumentConfig, UpdateNaiveRagDocumentConfigError,
-    UpdateNaiveRagDocumentResponse
-} from "../../../models/rag.model";
+import {UpdateNaiveRagDocumentDtoRequest} from "../../../models/rag.model";
 import {Dialog} from "@angular/cdk/dialog";
 import {
     EditFileParametersDialogComponent
@@ -48,22 +36,26 @@ import {
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ConfigurationTableComponent implements OnInit {
+export class ConfigurationTableComponent {
     fileTypeSelectItems: SelectItem[] = FILE_TYPES.map(t => ({name: t, value: t}));
     chunkStrategySelectItems: SelectItem[] = CHUNK_STRATEGIES.map(t => ({name: t, value: t.toLowerCase()}));
 
     private dialog = inject(Dialog);
-    private naiveRagService = inject(NaiveRagService);
-    private destroyRef = inject(DestroyRef);
-    private toastService = inject(ToastService);
-    private docFieldChange$ = new Subject<DocFieldChange>();
 
-    ragId = input.required<number>();
-    documents = input<NaiveRagDocumentConfig[]>([]);
     searchTerm = input<string>('');
-    tableDocuments = linkedSignal<TableDocument[]>(() => {
-        return this.documents().map(d => ({...d, checked: false}))
-    });
+    showBulkRow = input<boolean>(false);
+    documents = model<TableDocument[]>([]);
+    selectedDocumentId = model<number | null>(null);
+
+    docsCheckChange = output<number[]>();
+    docFieldChange = output<DocFieldChange>();
+    applyBulkUpdate = output<UpdateNaiveRagDocumentDtoRequest>();
+
+    bulkChunkStrategy = signal<string | null>(null);
+    bulkChunkSize = signal<number | null>(null);
+    bulkChunkOverlap = signal<number | null>(null);
+    fileTypeFilter = signal<any[]>([]);
+    chunkStrategyFilter = signal<any[]>([]);
 
     allChecked = computed(() => {
         const arr = this.filteredDocuments();
@@ -74,20 +66,9 @@ export class ConfigurationTableComponent implements OnInit {
         .map(d => d.naive_rag_document_id)
     );
     indeterminate = computed(() => !!this.checkedDocumentIds().length && !this.allChecked());
-    checkedCountChange = output<number>();
-
-    selectedDocumentId = model<number | null>(null);
-
-    bulkChunkStrategy = signal<string | null>(null);
-    bulkChunkSize = signal<number | null>(null);
-    bulkChunkOverlap = signal<number | null>(null);
-    showBulkRow = input<boolean>(false);
-
-    fileTypeFilter = signal<any[]>([]);
-    chunkStrategyFilter = signal<any[]>([]);
 
     filteredDocuments = computed<TableDocument[]>(() => {
-        let data = this.tableDocuments();
+        let data = this.documents();
 
         data = this.applyFileNameFilter(data);
         data = this.applyFileTypeFilter(data);
@@ -98,28 +79,26 @@ export class ConfigurationTableComponent implements OnInit {
 
     constructor() {
         effect(() => {
-            this.checkedCountChange.emit(this.checkedDocumentIds().length);
+            this.docsCheckChange.emit(this.checkedDocumentIds());
         });
     }
 
-    ngOnInit() {
-        this.docFieldChange$.pipe(
-            groupBy(change => change.documentId),
-            mergeMap(group$ => group$.pipe(
-                debounceTime(300),
-                switchMap(change => this.updateDocumentField(change))
-            )),
-            takeUntilDestroyed(this.destroyRef)
-        ).subscribe();
+    onDocFieldChange(document: TableDocument, field: keyof TableDocument, value: string | number | null) {
+        this.docFieldChange.emit({
+            documentId: document.naive_rag_document_id,
+            documentName: document.file_name,
+            field,
+            value
+        });
     }
 
     toggleAll() {
         const all = this.allChecked();
-        this.tableDocuments.update(items => items.map(i => ({ ...i, checked: !all })));
+        this.documents.update(items => items.map(i => ({ ...i, checked: !all })));
     }
 
     toggleDocument(item: TableDocument) {
-        this.tableDocuments.update(items => items.map(i => {
+        this.documents.update(items => items.map(i => {
             return i === item ? { ...i, checked: !i.checked } : i
         }));
     }
@@ -143,69 +122,8 @@ export class ConfigurationTableComponent implements OnInit {
         });
     }
 
-    // ================= FILED CHANGE LOGIC START =================
-
-    docFieldChange(document: TableDocument, field: keyof TableDocument, value: string | number | null) {
-        this.docFieldChange$.next({
-            documentId: document.naive_rag_document_id,
-            documentName: document.file_name,
-            field,
-            value
-        });
-    }
-
-    private updateDocumentField(change: DocFieldChange) {
-        const { documentId, field, value } = change;
-        if (value === null) return EMPTY;
-
-        return this.naiveRagService.updateDocumentConfigById(
-            this.ragId(),
-            documentId,
-            { [field]: value }
-        ).pipe(
-            tap(response => this.handleUpdateSuccess(response)),
-            catchError(error => this.handleUpdateError(error, field, documentId))
-        );
-    }
-
-    private handleUpdateSuccess(response: UpdateNaiveRagDocumentResponse) {
-        const { config } = response;
-
-        this.tableDocuments.update(items =>
-            items.map(i =>
-                i.document_id === config.document_id ? { ...i, ...config, errors: {} } : i
-            )
-        );
-        this.toastService.success('Document updated');
-    }
-
-    private handleUpdateError(
-        error: HttpErrorResponse,
-        field: keyof TableDocument,
-        documentId: number
-    ) {
-        const errorMessage = error.error.error;
-
-        this.tableDocuments.update(items =>
-            items.map(item => {
-                return item.naive_rag_document_id === documentId ? { ...item, errors: {[field]: {reason: errorMessage}} } : item;
-            })
-        );
-        this.toastService.error(`Update failed: ${errorMessage}`);
-
-        return EMPTY;
-    }
-
-    // ================= FILED CHANGE LOGIC END =================
-
-    // ================= BULK LOGIC START =================
-
-    applyBulkEdit() {
-        const config_ids = this.checkedDocumentIds();
-        if (!config_ids.length) return;
-
+    onApplyBulkEdit() {
         const dto = {
-            config_ids,
             ...(this.bulkChunkStrategy() && {
                 chunk_strategy: this.bulkChunkStrategy()
             }),
@@ -217,72 +135,10 @@ export class ConfigurationTableComponent implements OnInit {
             ...(this.bulkChunkOverlap() !== null && {
                 chunk_overlap: this.bulkChunkOverlap()
             }),
-        } as BulkUpdateNaiveRagDocumentDtoRequest;
+        } as UpdateNaiveRagDocumentDtoRequest;
 
-        this.naiveRagService
-            .bulkUpdateDocumentConfigs(this.ragId(), dto)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(res => this.hangleBulkEdit(res));
+        this.applyBulkUpdate.emit(dto)
     }
-
-    private hangleBulkEdit(res: BulkUpdateNaiveRagDocumentDtoResponse) {
-        this.toastService.success(res.message);
-
-        const configMap = new Map(
-            res.configs.map(c => [c.document_id, c])
-        );
-
-        this.tableDocuments.update(items =>
-            items.map(item => {
-                const updated = configMap.get(item.document_id);
-
-                if (!updated) return item;
-
-                return {
-                    ...item,
-                    ...updated,
-
-                    errors: this.normalizeErrors(updated.errors)
-                };
-            })
-        );
-    }
-
-    private normalizeErrors(
-        errors?: UpdateNaiveRagDocumentConfigError[]
-    ): NormalizedDocumentErrors {
-        if (!errors?.length) return {};
-
-        return errors.reduce((acc, e) => {
-            acc[e.field] = { reason: e.reason, value: e.value };
-            return acc;
-        }, {} as NormalizedDocumentErrors);
-    }
-
-    public applyBulkDelete() {
-        const config_ids = this.checkedDocumentIds();
-        if (!config_ids.length) return;
-
-        this.naiveRagService
-            .bulkDeleteDocumentConfigs(this.ragId(), { config_ids })
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-                catchError(() => {
-                    this.toastService.error('Documents delete failed');
-                    return of();
-                })
-            )
-            .subscribe(res => this.handleSuccessBulkDelete(res));
-    }
-
-    private handleSuccessBulkDelete(res: BulkDeleteNaiveRagDocumentDtoResponse) {
-        this.tableDocuments.update(items => items.filter(i => {
-            return !res.deleted_config_ids.includes(i.naive_rag_document_id);
-        }))
-        this.toastService.success(res.message);
-    }
-
-    // ================= BULK LOGIC END =================
 
     // ================= FILTER LOGIC START =================
 
