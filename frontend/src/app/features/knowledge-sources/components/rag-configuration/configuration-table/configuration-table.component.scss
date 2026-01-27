@@ -79,8 +79,8 @@
         display: flex;
         align-items: center;
 
-        &--clickable {
-            cursor: pointer;
+        &--center {
+            justify-content: center;
         }
 
         &--unavailable {
@@ -98,14 +98,6 @@
         font-size: 0.625rem;
         color: var(--color-ks-transparent-text-80);
         cursor: pointer;
-    }
-
-    &__sort-icon {
-        transition: transform 0.2s ease;
-
-        &--active {
-            transform: rotate(180deg);
-        }
     }
 
     &__file-icon {

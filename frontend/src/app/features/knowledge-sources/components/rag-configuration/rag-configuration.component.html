@@ -7,20 +7,30 @@
                 [(searchTerm)]="searchTerm"
             />
 
-            <div class="configure__bulk-select">
-                @if (allowBulkEdit() && checkedCount()) {
-                    <app-select
-                        placeholder="Manage"
-                        [items]="bulkActionItems"
-                        (changed)="bulkAction.set($event)"
-                    />
-                }
-            </div>
+            <app-button
+                type="outline-primary"
+                (click)="initFiles()"
+            >
+                Re-include Files
+            </app-button>
+            @if (checkedCount()) {
+                <app-button
+                    [type]="showBulkRow() ? 'primary' : 'outline-primary'"
+                    (click)="showBulkRow.set(!showBulkRow())"
+                >
+                    Bulk configuration
+                </app-button>
+                <app-icon
+                    class="configure__bulk-delete"
+                    [icon]="'ui/trash'"
+                    [size]="'1.5rem'"
+                    (click)="deleteDocuments()"
+                />
+            }
         </div>
 
         <app-configuration-table
-            [bulkEditing]="allowBulkEdit()"
-            [bulkAction]="bulkAction()"
+            [showBulkRow]="showBulkRow()"
             [ragId]="naiveRagId()"
             [documents]="documents()"
             [searchTerm]="searchTerm()"

@@ -16,8 +16,3 @@ export type DocFieldChange = {
     field: keyof TableDocument;
     value: any;
 };
-
-export type SortState = {
-    column: 'chunk_size' | 'chunk_overlap';
-    dir: 'asc' | 'desc';
-} | null;

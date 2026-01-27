@@ -5,10 +5,10 @@ import {
     inject,
     input,
     OnInit,
-    signal,
+    signal, ViewChild,
 } from "@angular/core";
 import {FormsModule} from "@angular/forms";
-import {SearchComponent, AppIconComponent, SelectComponent, SelectItem} from "@shared/components";
+import {SearchComponent, AppIconComponent, SelectComponent, ButtonComponent} from "@shared/components";
 import {ConfigurationTableComponent} from "./configuration-table/configuration-table.component";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {CreateCollectionDtoResponse} from "../../models/collection.model";
@@ -16,6 +16,8 @@ import {NaiveRagService} from "../../services/naive-rag.service";
 import {NaiveRagDocumentConfig} from "../../models/rag.model";
 import {ToastService} from "../../../../services/notifications";
 import {ChunkPreviewComponent} from "../chunk-preview/chunk-preview.component";
+import {switchMap} from "rxjs/operators";
+import {EMPTY} from "rxjs";
 
 @Component({
     selector: 'app-rag-configuration',
@@ -24,10 +26,10 @@ import {ChunkPreviewComponent} from "../chunk-preview/chunk-preview.component";
     imports: [
         FormsModule,
         SearchComponent,
-        SelectComponent,
         ConfigurationTableComponent,
         AppIconComponent,
         ChunkPreviewComponent,
+        ButtonComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -38,25 +40,15 @@ export class RagConfigurationComponent implements OnInit {
     selectedDocumentId = signal<number | null>(null);
 
     checkedCount = signal<number>(0);
-    allowBulkEdit = input<boolean>(false);
     documents = signal<NaiveRagDocumentConfig[]>([]);
 
     private naiveRagService = inject(NaiveRagService);
     private destroyRef = inject(DestroyRef);
     private toastService = inject(ToastService);
 
-    bulkActionItems: SelectItem[] = [
-        {
-            name: 'Bulk configuration',
-            value: 'edit'
-        },
-        {
-            name: 'Remove file from RAG',
-            value: 'delete'
-        },
-    ];
+    @ViewChild(ConfigurationTableComponent) configTableComponent!: ConfigurationTableComponent;
 
-    bulkAction = signal<'edit' | 'delete' | null>(null);
+    showBulkRow = signal<boolean>(false);
 
     ngOnInit() {
         const id = this.naiveRagId();
@@ -72,5 +64,29 @@ export class RagConfigurationComponent implements OnInit {
                 console.log(e)
             }
         });
+    }
+
+    initFiles() {
+        const id = this.naiveRagId();
+
+        this.naiveRagService.initializeDocuments(id)
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                switchMap((response) => {
+                    if (response && response.configs_created > 0) {
+                        return this.naiveRagService.getDocumentConfigs(id);
+                    } else {
+                        return EMPTY;
+                    }
+                })
+            )
+            .subscribe({
+                next: ({configs}) => this.documents.set(configs),
+                error: (err) => console.error(err)
+            });
+    }
+
+    deleteDocuments() {
+        this.configTableComponent.applyBulkDelete();
     }
 }

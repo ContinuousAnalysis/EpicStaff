@@ -18,7 +18,6 @@ import {NaiveRagService} from "../../../services/naive-rag.service";
 import {
     DocFieldChange,
     TableDocument,
-    SortState,
     NormalizedDocumentErrors
 } from "./configuration-table.interface";
 import {SelectComponent, SelectItem, MultiSelectComponent, AppIconComponent, ButtonComponent, InputNumberComponent, CheckboxComponent} from "@shared/components";
@@ -60,7 +59,6 @@ export class ConfigurationTableComponent implements OnInit {
     private docFieldChange$ = new Subject<DocFieldChange>();
 
     ragId = input.required<number>();
-    bulkEditing = input<boolean>(false);
     documents = input<NaiveRagDocumentConfig[]>([]);
     searchTerm = input<string>('');
     tableDocuments = linkedSignal<TableDocument[]>(() => {
@@ -68,10 +66,10 @@ export class ConfigurationTableComponent implements OnInit {
     });
 
     allChecked = computed(() => {
-        const arr = this.filteredAndSorted();
+        const arr = this.filteredDocuments();
         return arr.length > 0 && arr.every(r => r.checked);
     });
-    checkedDocumentIds = computed(() => this.filteredAndSorted()
+    checkedDocumentIds = computed(() => this.filteredDocuments()
         .filter(d => d.checked)
         .map(d => d.naive_rag_document_id)
     );
@@ -83,19 +81,17 @@ export class ConfigurationTableComponent implements OnInit {
     bulkChunkStrategy = signal<string | null>(null);
     bulkChunkSize = signal<number | null>(null);
     bulkChunkOverlap = signal<number | null>(null);
-    bulkAction = input<'edit' | 'delete' | null>(null);
+    showBulkRow = input<boolean>(false);
 
     fileTypeFilter = signal<any[]>([]);
     chunkStrategyFilter = signal<any[]>([]);
-    sort = signal<SortState>(null);
 
-    filteredAndSorted = computed<TableDocument[]>(() => {
+    filteredDocuments = computed<TableDocument[]>(() => {
         let data = this.tableDocuments();
 
         data = this.applyFileNameFilter(data);
         data = this.applyFileTypeFilter(data);
         data = this.applyChunkStrategyFilter(data);
-        data = this.sortDocuments(data);
 
         return data;
     });
@@ -204,22 +200,10 @@ export class ConfigurationTableComponent implements OnInit {
 
     // ================= BULK LOGIC START =================
 
-    bulkApply() {
+    applyBulkEdit() {
         const config_ids = this.checkedDocumentIds();
         if (!config_ids.length) return;
 
-        switch (this.bulkAction()) {
-            case 'edit':
-                this.applyBulkEdit(config_ids);
-                break;
-
-            case 'delete':
-                this.applyBulkDelete(config_ids);
-                break;
-        }
-    }
-
-    private applyBulkEdit(config_ids: number[]) {
         const dto = {
             config_ids,
             ...(this.bulkChunkStrategy() && {
@@ -275,7 +259,10 @@ export class ConfigurationTableComponent implements OnInit {
         }, {} as NormalizedDocumentErrors);
     }
 
-    private applyBulkDelete(config_ids: number[]) {
+    public applyBulkDelete() {
+        const config_ids = this.checkedDocumentIds();
+        if (!config_ids.length) return;
+
         this.naiveRagService
             .bulkDeleteDocumentConfigs(this.ragId(), { config_ids })
             .pipe(
@@ -297,21 +284,7 @@ export class ConfigurationTableComponent implements OnInit {
 
     // ================= BULK LOGIC END =================
 
-    // ================= SORT AND FILTER LOGIC START =================
-
-    sortBy(column: 'chunk_size' | 'chunk_overlap') {
-        const current = this.sort();
-
-        if (!current || current.column !== column) {
-            this.sort.set({ column, dir: 'desc' });
-            return;
-        }
-
-        this.sort.set({
-            column,
-            dir: current.dir === 'desc' ? 'asc' : 'desc'
-        });
-    }
+    // ================= FILTER LOGIC START =================
 
     private applyFileNameFilter(data: TableDocument[]): TableDocument[] {
         const term = this.searchTerm();
@@ -338,45 +311,5 @@ export class ConfigurationTableComponent implements OnInit {
         return data.filter(d => strategyFilter.includes(d.chunk_strategy));
     }
 
-    private sortDocuments(data: TableDocument[]): TableDocument[] {
-        const sort = this.sort();
-        if (!sort) return data;
-
-        const dir = sort.dir === 'asc' ? 1 : -1;
-        const col = sort.column;
-
-        return [...data].sort((a, b) => (a[col] - b[col]) * dir);
-    }
-
-    // ================= SORT AND FILTER LOGIC END =================
-
-    // TODO temporary solution
-    initFiles() {
-        this.naiveRagService.initializeDocuments(this.ragId())
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-                switchMap((response) => {
-                    if (response && response.configs_created > 0) {
-                        return this.naiveRagService.getDocumentConfigs(this.ragId());
-                    } else {
-                        return EMPTY;
-                    }
-                })
-            )
-            .subscribe({
-                next: ({configs}) => {
-                    this.tableDocuments.update((items) => {
-                        const existingIds = new Set(items.map(item => item.document_id));
-
-                        const newConfigs = configs
-                            .filter(cfg => !existingIds.has(cfg.document_id))
-                            .map(cfg => ({...cfg, checked: false}))
-                        ;
-
-                        return [...items, ...newConfigs];
-                    });
-                },
-                error: (err) => console.error(err)
-            });
-    }
+    // ================= FILTER LOGIC END =================
 }

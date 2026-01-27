@@ -2,7 +2,7 @@
     <!-- HEADER ROW -->
     <div
         class="table__row table__header"
-        [style]="{'margin-bottom': bulkEditing() ? '0.25rem' : '0.5rem'}"
+        [style]="{'margin-bottom': checkedDocumentIds().length ? '0.25rem' : '0.5rem'}"
     >
         <!-- 1. Checkbox -->
         <div class="table__col" (click)="toggleAll()">
@@ -34,43 +34,23 @@
             />
         </div>
 
-        <!-- 4. Chunk Size (sortable) -->
-        <div class="table__col table__col--clickable" (click)="sortBy('chunk_size')">
+        <!-- 4. Chunk Size -->
+        <div class="table__col table__col--center">
             CHUNK SIZE
-            <app-icon
-                class="table__sort-icon"
-                [class.table__sort-icon--active]="sort()?.column === 'chunk_size' && sort()?.dir === 'desc'"
-                size="1rem"
-                [icon]="'ui/arrow-up'"
-            />
         </div>
 
-        <!-- 5. Overlap (sortable) -->
-        <div class="table__col table__col--clickable" (click)="sortBy('chunk_overlap')">
+        <!-- 5. Overlap -->
+        <div class="table__col table__col--center">
             OVERLAP
-            <app-icon
-                class="table__sort-icon"
-                [class.table__sort-icon--active]="sort()?.column === 'chunk_overlap' && sort()?.dir === 'desc'"
-                size="1rem"
-                [icon]="'ui/arrow-up'"
-            />
         </div>
 
-        <!-- 6. Initialize files -->
+        <!-- 6. Empty space -->
         <div class="table__col">
-            <app-button
-                class="table__col-btn"
-                type="outline-primary"
-                mod="small"
-                (click)="initFiles()"
-            >
-                Init All
-            </app-button>
         </div>
     </div>
 
     <!-- BULK EDIT ROW  -->
-    @if (bulkEditing() && checkedDocumentIds().length) {
+    @if (showBulkRow()) {
         <div class="table__row table__bulk-row">
             <div class="table__col"></div>
             <div class="table__col">For selected:</div>
@@ -122,8 +102,8 @@
                     class="table__col-btn"
                     type="outline-primary"
                     mod="small"
-                    [disabled]="!bulkAction()"
-                    (click)="bulkApply()"
+                    [disabled]="!checkedDocumentIds().length"
+                    (click)="applyBulkEdit()"
                 >
                     Apply
                 </app-button>
@@ -134,7 +114,7 @@
     <!-- DATA ROWS -->
     <div class="table__files-wrapper">
         <ol class="table__rows">
-            @for (d of filteredAndSorted(); track d.naive_rag_document_id; let odd = $odd; let i = $index) {
+            @for (d of filteredDocuments(); track d.naive_rag_document_id; let odd = $odd; let i = $index) {
                 <div
                     class="table__row-wrapper"
                     [class.table__row-wrapper--dark]="odd"

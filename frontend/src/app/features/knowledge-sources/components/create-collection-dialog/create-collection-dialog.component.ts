@@ -53,7 +53,7 @@ export class CreateCollectionDialogComponent {
         )!;
     })
 
-    private steps = signal<StepConfig[]>([
+    steps = signal<StepConfig[]>([
         {
             id: CreateCollectionStep.UPLOAD_FILES,
             label: 'Upload files',
@@ -73,7 +73,7 @@ export class CreateCollectionDialogComponent {
         {
             id: CreateCollectionStep.CONFIGURE,
             label: 'Configure',
-            proceedLabel: 'Finish',
+            proceedLabel: 'Finish Creation',
             onProceed: () => this.startIndexing(),
             canProceed: () => true,
         },

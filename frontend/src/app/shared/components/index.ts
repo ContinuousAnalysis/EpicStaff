@@ -17,7 +17,6 @@ export * from './loading-spinner/loading-spinner.component';
 export * from './pagination-controls/pagination-controls.component';
 export * from './range-slider/range-slider.component';
 export * from './search/search.component';
-export * from './search2/search2.component';
 export * from './spinner/spinner.component';
 export * from './spinner-type2/spinner.component';
 export * from './status-badge/status-badge.component';
