@@ -12,8 +12,7 @@ import { AppIconComponent } from '../../../../shared/components/app-icon/app-ico
 import { LoadingState } from '../../../../core/enums/loading-state.enum';
 import { LlmConfigItemComponent } from './llm-config-item/llm-config-item.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
-import { AddLlmConfigDialogComponent } from './add-llm-config-dialog/add-llm-config-dialog.component';
-import { EditLlmConfigDialogComponent } from './add-llm-config-dialog/edit-llm-config-dialog.component';
+import { AddLlmConfigDialogComponent, AddLlmConfigDialogData } from './add-llm-config-dialog/add-llm-config-dialog.component';
 import {
     FullLLMConfigService,
     FullLLMConfig,
@@ -57,7 +56,6 @@ export class LlmModelsTabComponent implements OnInit {
 
         dialogRef.closed.subscribe((result) => {
             if (result === true) {
-                // Refresh the list if a new config was added
                 this.refreshData();
             }
         });
@@ -96,7 +94,6 @@ export class LlmModelsTabComponent implements OnInit {
         const updateReq: UpdateLLMConfigRequest = {
             id: config.id,
             temperature: config.temperature,
-            num_ctx: config.num_ctx,
             api_key: config.api_key,
             is_visible: event.value,
             model: config.model,
@@ -123,10 +120,37 @@ export class LlmModelsTabComponent implements OnInit {
         console.log('Configure clicked:', id);
         const config = this.llmConfigs().find((c) => c.id === id);
         if (!config) return;
-        const dialogRef = this.dialog.open(EditLlmConfigDialogComponent, {
+
+        const dialogData: AddLlmConfigDialogData = {
+            editConfig: {
+                id: config.id,
+                custom_name: config.custom_name,
+                model: config.model,
+                api_key: config.api_key,
+                temperature: config.temperature,
+                top_p: config.top_p ?? null,
+                n: config.n ?? null,
+                stop: config.stop ?? null,
+                max_completion_tokens: config.max_completion_tokens ?? null,
+                max_tokens: config.max_tokens ?? null,
+                presence_penalty: config.presence_penalty ?? null,
+                frequency_penalty: config.frequency_penalty ?? null,
+                logit_bias: config.logit_bias ?? null,
+                response_format: config.response_format ?? null,
+                seed: config.seed ?? null,
+                logprobs: config.logprobs ?? null,
+                top_logprobs: config.top_logprobs ?? null,
+                base_url: config.base_url ?? null,
+                api_version: config.api_version ?? null,
+                timeout: config.timeout ?? null,
+                is_visible: config.is_visible,
+            },
+        };
+
+        const dialogRef = this.dialog.open(AddLlmConfigDialogComponent, {
             width: '500px',
             disableClose: true,
-            data: { ...config },
+            data: dialogData,
         });
         dialogRef.closed.subscribe((result) => {
             if (result === true) {
