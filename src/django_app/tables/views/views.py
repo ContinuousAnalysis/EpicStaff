@@ -719,6 +719,10 @@ class RunPythonCodeAPIView(APIView):
     def post(self, request):
         python_code_id = request.data.get("python_code_id")
         variables = request.data.get("variables", {})
+        is_test = request.data.get("is_test")
+
+        if not is_test:
+            is_test = False
 
         if not python_code_id:
             return Response(
@@ -726,8 +730,14 @@ class RunPythonCodeAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        execution_id = run_python_code_service.run_code(python_code_id, variables)
-        return Response({"execution_id": execution_id}, status=status.HTTP_200_OK)
+        if is_test == True:
+            output = run_python_code_service.run_code(
+                python_code_id, variables, wait_for_result=True
+            )
+            return Response({"output": output}, status=status.HTTP_200_OK)
+        else:
+            execution_id = run_python_code_service.run_code(python_code_id, variables)
+            return Response({"execution_id": execution_id}, status=status.HTTP_200_OK)
 
 
 class InitRealtimeAPIView(APIView):
@@ -760,7 +770,7 @@ class InitRealtimeAPIView(APIView):
 
         agent_id = serializer.validated_data["agent_id"]
         config = serializer.validated_data.get("config", {})
-        
+
         try:
             connection_key = realtime_service.init_realtime(
                 agent_id=agent_id,
