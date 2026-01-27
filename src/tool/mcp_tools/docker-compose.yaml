@@ -30,9 +30,7 @@ services:
     environment:
       PORT: ${MCP_BROWSER_OPEN_INTERPRETER_PORT}
     ports:
-      - "${MCP_BROWSER_OPEN_INTERPRETER_PORT}:${MCP_BROWSER_OPEN_INTERPRETER_PORT}" 
-      - "5900:5900"   
-      - "6080:6080"   
+      - "${MCP_BROWSER_OPEN_INTERPRETER_PORT}:${MCP_BROWSER_OPEN_INTERPRETER_PORT}"
     volumes:
       - ${MCP_SAVEFILES_PATH}:/app/data
     restart: unless-stopped

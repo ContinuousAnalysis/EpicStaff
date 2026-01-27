@@ -1,11 +1,19 @@
-# Base Python image
 FROM python:3.12.10-slim
 
 # --- System dependencies ---
 RUN apt-get update && apt-get install -y \
-    curl git wget unzip procps \
-    docker.io docker-compose \
+    ca-certificates \
+    curl \
+    git \
+    wget \
+    unzip \
+    procps \
+    gnupg \
+    lsb-release \
     && rm -rf /var/lib/apt/lists/*
+
+# --- Install modern Docker CLI ---
+RUN curl -fsSL https://get.docker.com | sh
 
 # --- Poetry ---
 RUN pip install poetry
