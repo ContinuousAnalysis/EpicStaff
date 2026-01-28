@@ -38,6 +38,7 @@ from tables.models.graph_models import (
     DecisionTableNode,
     EndNode,
     PythonNode,
+    TelegramTriggerNode,
     WebhookTriggerNode,
 )
 from tables.request_models import *
@@ -63,6 +64,45 @@ class ConverterService(metaclass=SingletonMeta):
     def __init__(self):
         self.memory_validator = CrewMemoryValidator()
         self.task_validator = TaskValidator()
+
+    def build_rag_search_config(
+        self, rag_type_id: str | None, all_search_configs: dict | None
+    ) -> RagSearchConfig | None:
+        """
+        Factory method to build appropriate RAG search config based on rag_type.
+
+        Returns:
+            NaiveRagSearchConfig | GraphRagSearchConfig | None
+        """
+        
+        if not rag_type_id or not all_search_configs:
+            return None
+
+        try:
+            rag_type, _ = rag_type_id.split(":", 1)
+        except ValueError:
+            return None
+
+        rag_specific_config = all_search_configs.get(rag_type)
+        if not rag_specific_config:
+            return None
+
+        rag_config_map = {
+            "naive": lambda config: NaiveRagSearchConfig(
+                rag_type="naive",
+                **config
+            ),
+            "graph": lambda config: GraphRagSearchConfig(
+                rag_type="graph",
+                **config
+            ),
+        }
+
+        builder = rag_config_map.get(rag_type)
+        if not builder:
+            return None
+
+        return builder(rag_specific_config)
 
     def convert_crew_to_pydantic(self, crew_id: int) -> CrewData:
         crew = Crew.objects.get(pk=crew_id).fill_with_defaults()
@@ -128,10 +168,6 @@ class ConverterService(metaclass=SingletonMeta):
             agent_base_tools = self._get_agent_base_tools(agent=agent)
             crew_base_tools.extend(agent_base_tools)
 
-        knowledge_collection_id = None
-        if crew.knowledge_collection is not None:
-            knowledge_collection_id = crew.knowledge_collection.pk
-
         crew_data = CrewData(
             id=crew.pk,
             name=crew.name,
@@ -151,9 +187,6 @@ class ConverterService(metaclass=SingletonMeta):
             tools=list(
                 {tool.unique_name: tool for tool in crew_base_tools}.values()
             ),  # TODO: Unique only
-            knowledge_collection_id=knowledge_collection_id,
-            search_limit=crew.search_limit,
-            similarity_threshold=crew.similarity_threshold,
         )
 
         return crew_data
@@ -228,9 +261,15 @@ class ConverterService(metaclass=SingletonMeta):
 
         llm = self.convert_llm_config_to_pydantic(agent.llm_config)
         function_calling_llm = self.convert_llm_config_to_pydantic(agent.fcm_llm_config)
+
         knowledge_collection_id = None
         if agent.knowledge_collection is not None:
             knowledge_collection_id = agent.knowledge_collection.pk
+
+        # Build RAG search config using factory method
+        rag_type_id = agent.get_rag_type_and_id()
+        all_search_configs = agent.get_search_configs()
+        rag_search_config = self.build_rag_search_config(rag_type_id, all_search_configs)
 
         return AgentData(
             id=agent.pk,
@@ -250,8 +289,8 @@ class ConverterService(metaclass=SingletonMeta):
             llm=llm,
             function_calling_llm=function_calling_llm,
             knowledge_collection_id=knowledge_collection_id,
-            search_limit=agent.search_limit,
-            similarity_threshold=agent.similarity_threshold,
+            rag_type_id=rag_type_id,
+            rag_search_config=rag_search_config,
         )
 
     def convert_rt_agent_chat_to_pydantic(
@@ -268,12 +307,19 @@ class ConverterService(metaclass=SingletonMeta):
         knowledge_collection_id = None
         if agent.knowledge_collection is not None:
             knowledge_collection_id = agent.knowledge_collection.pk
-
+        
+        # Build RAG search config using factory method
+        rag_type_id = agent.get_rag_type_and_id()
+        all_search_configs = agent.get_search_configs()
+        rag_search_config = self.build_rag_search_config(rag_type_id, all_search_configs)
+        
         rt_agent_chat_data = RealtimeAgentChatData(
             role=agent.role,
             goal=agent.goal,
             backstory=agent.backstory,
             knowledge_collection_id=knowledge_collection_id,
+            rag_type_id=rag_type_id,
+            rag_search_config=rag_search_config,
             llm=self.convert_llm_config_to_pydantic(agent.llm_config),
             memory=agent.memory,
             tools=self._get_agent_base_tools(agent=agent),
@@ -282,14 +328,14 @@ class ConverterService(metaclass=SingletonMeta):
             transcript_model_name=rt_transcription_config.realtime_transcription_model.name,
             transcript_api_key=rt_transcription_config.api_key,
             temperature=agent.default_temperature,
-            search_limit=rt_agent_chat.search_limit,
-            similarity_threshold=rt_agent_chat.similarity_threshold,
             connection_key=rt_agent_chat.connection_key,
             wake_word=rt_agent_chat.wake_word,
             stop_prompt=rt_agent_chat.stop_prompt,
             language=rt_agent_chat.language,
             voice_recognition_prompt=rt_agent_chat.voice_recognition_prompt,
             voice=rt_agent_chat.voice,
+            input_audio_format=rt_agent_chat.input_audio_format.value,
+            output_audio_format=rt_agent_chat.output_audio_format.value,
         )
 
         return rt_agent_chat_data
@@ -524,4 +570,23 @@ class ConverterService(metaclass=SingletonMeta):
         return WebhookTriggerNodeData(
             node_name=webhook_trigger_node.node_name,
             python_code=python_code_data,
+        )
+
+    def convert_telegram_trigger_node_to_pydantic(
+        self, telegram_trigger_node: TelegramTriggerNode
+    ):
+
+        telegram_trigger_node_field_data: list[TelegramTriggerNodeFieldData] = []
+        for field in telegram_trigger_node.fields.all():
+            telegram_trigger_node_field_data.append(
+                TelegramTriggerNodeFieldData(
+                    parent=field.parent,
+                    field_name=field.field_name,
+                    variable_path=field.variable_path,
+                )
+            )
+
+        return TelegramTriggerNodeData(
+            node_name=telegram_trigger_node.node_name,
+            field_list=telegram_trigger_node_field_data,
         )

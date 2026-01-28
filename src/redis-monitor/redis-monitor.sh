@@ -6,6 +6,7 @@
 # Configuration
 REDIS_HOST="${REDIS_HOST:-redis}"
 REDIS_PORT="${REDIS_PORT:-6379}"
+REDIS_PASSWORD="${REDIS_PASSWORD}"
 CHECK_INTERVAL="${CHECK_INTERVAL:-5}"
 MAX_FAILURES="${MAX_FAILURES:-1}"
 PROJECT_NAME=$(docker inspect "$HOSTNAME" --format '{{ index .Config.Labels "com.docker.compose.project" }}')
@@ -48,7 +49,7 @@ restart_services() {
 
 echo "$(date): Starting monitoring loop..."
 while true; do
-    if redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" ping > /dev/null 2>&1; then
+    if redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -a "$REDIS_PASSWORD" ping > /dev/null 2>&1; then
         failure_count=0
     else
         echo "Redis is unhealthy"

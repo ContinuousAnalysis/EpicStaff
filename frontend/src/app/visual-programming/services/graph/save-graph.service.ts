@@ -1,81 +1,89 @@
-import { Injectable } from '@angular/core';
-import { Observable, forkJoin, of, EMPTY, throwError, from } from 'rxjs';
-import { switchMap, catchError, map } from 'rxjs/operators';
+import {Injectable} from '@angular/core';
+import {EMPTY, forkJoin, Observable, of, throwError} from 'rxjs';
+import {catchError, map, switchMap} from 'rxjs/operators';
 
-import { FlowsApiService } from '../../../features/flows/services/flows-api.service';
-import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { NodeType } from '../../core/enums/node-type';
-import { ConnectionModel } from '../../core/models/connection.model';
-import { FlowModel } from '../../core/models/flow.model';
-import {
-    ProjectNodeModel,
-    PythonNodeModel,
-    EdgeNodeModel,
-    StartNodeModel,
-    LLMNodeModel,
-    NodeModel,
-    SubGraphNodeModel,
-} from '../../core/models/node.model';
+import {FlowsApiService} from '../../../features/flows/services/flows-api.service';
+import {GetProjectRequest} from '../../../features/projects/models/project.model';
+import {NodeType} from '../../core/enums/node-type';
+import {ConnectionModel} from '../../core/models/connection.model';
+import {FlowModel} from '../../core/models/flow.model';
+import {EdgeNodeModel, LLMNodeModel, ProjectNodeModel, PythonNodeModel, SubGraphNodeModel,} from '../../core/models/node.model';
 
-import { ToastService } from '../../../services/notifications/toast.service';
+import {ToastService} from '../../../services/notifications/toast.service';
 import {
-    GetConditionalEdgeRequest,
-    CreateConditionalEdgeRequest,
     ConditionalEdge,
+    CreateConditionalEdgeRequest,
+    GetConditionalEdgeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import {
     CreateFileExtractorNodeRequest,
     GetFileExtractorNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import {
-    GetAudioToTextNodeRequest,
     CreateAudioToTextNodeRequest,
+    GetAudioToTextNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
 import {
-    CrewNode,
     CreateCrewNodeRequest,
+    CrewNode,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
+import {CreateEdgeRequest, Edge,} from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import {
-    Edge,
-    CreateEdgeRequest,
-} from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
-import {
-    GetLLMNodeRequest,
     CreateLLMNodeRequest,
+    GetLLMNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
 import {
-    PythonNode,
     CreatePythonNodeRequest,
+    PythonNode,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
-import { ConditionalEdgeService } from '../../../pages/flows-page/components/flow-visual-programming/services/conditional-edge.service';
-import { CrewNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/crew-node.service';
-import { EdgeService } from '../../../pages/flows-page/components/flow-visual-programming/services/edge.service';
-import { LLMNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/llm-node.service';
-import { PythonNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/python-node.service';
-import { FileExtractorService } from '../../../pages/flows-page/components/flow-visual-programming/services/file-extractor.service';
 import {
-    GraphDto,
-    UpdateGraphDtoRequest,
-} from '../../../features/flows/models/graph.model';
+    ConditionalEdgeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/conditional-edge.service';
+import {CrewNodeService} from '../../../pages/flows-page/components/flow-visual-programming/services/crew-node.service';
+import {EdgeService} from '../../../pages/flows-page/components/flow-visual-programming/services/edge.service';
+import {LLMNodeService} from '../../../pages/flows-page/components/flow-visual-programming/services/llm-node.service';
 import {
-    EndNode,
+    PythonNodeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/python-node.service';
+import {
+    FileExtractorService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/file-extractor.service';
+import {GraphDto, UpdateGraphDtoRequest,} from '../../../features/flows/models/graph.model';
+import {
     CreateEndNodeRequest,
+    EndNode,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
-import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import {EndNodeService} from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import {
+    AudioToTextService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
+import {
+    WebhookTriggerNodeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
+import {
+    CreateWebhookTriggerNodeRequest,
+    GetWebhookTriggerNodeRequest
+} from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import {
     SubGraphNode,
     CreateSubGraphNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
-import { AudioToTextService } from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
-import { WebhookTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
-import { CreateWebhookTriggerNodeRequest, GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import {
-    GetDecisionTableNodeRequest,
-    CreateDecisionTableNodeRequest,
     CreateConditionGroupRequest,
+    CreateDecisionTableNodeRequest,
+    GetDecisionTableNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
-import { DecisionTableNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/decision-table-node.service';
+import {
+    DecisionTableNodeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/decision-table-node.service';
+import {
+    CreateTelegramTriggerNodeRequest,
+    GetTelegramTriggerNodeRequest
+} from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
+import {
+    TelegramTriggerNodeService
+} from "../../../pages/flows-page/components/flow-visual-programming/services/telegram-trigger-node.service";
 
 @Injectable({
     providedIn: 'root',
@@ -91,6 +99,7 @@ export class GraphUpdateService {
         private fileExtractorService: FileExtractorService,
         private audioToTextService: AudioToTextService,
         private webhookTriggerService: WebhookTriggerNodeService,
+        private telegramTriggerService: TelegramTriggerNodeService,
         private endNodeService: EndNodeService,
         private subGraphNodeService: SubGraphNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
@@ -424,6 +433,37 @@ export class GraphUpdateService {
             })
         );
 
+        // ---- Handle Telegram Trigger Nodes ----
+        let deleteTelegramTiggerNodes$: Observable<any> = of(null);
+        if (graph.telegram_trigger_node_list && graph.telegram_trigger_node_list.length > 0) {
+            const deleteTelegramTriggerReqs = graph.telegram_trigger_node_list.map(
+                (telegramTriggerNode: GetTelegramTriggerNodeRequest) =>
+                    this.telegramTriggerService
+                        .deleteTelegramTriggerNode(telegramTriggerNode.id)
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteTelegramTiggerNodes$ = forkJoin(deleteTelegramTriggerReqs);
+        }
+
+        const telegramTriggerNodes$ = deleteTelegramTiggerNodes$.pipe(
+            switchMap(() => {
+                const telegramTriggerNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.TELEGRAM_TRIGGER
+                );
+
+                const requests = telegramTriggerNodes.map((node) => {
+                    const request: CreateTelegramTriggerNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        telegram_bot_api_key: node.data.telegram_bot_api_key,
+                        fields: node.data.fields
+                    };
+                    return this.telegramTriggerService.createTelegramTriggerNode(request);
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
         let deleteDecisionTableNodes$: Observable<any> = of(null);
         if (
             graph.decision_table_node_list &&
@@ -639,6 +679,7 @@ export class GraphUpdateService {
             llmNodes: llmNodes$,
             fileExtractorNodes: fileExtractorNodes$,
             webhookTriggerNodes: webhookTriggerNodes$,
+            telegramTriggerNodes: telegramTriggerNodes$,
             conditionalEdges: conditionalEdges$,
             endNodes: endNodes$,
             subGraphNodes: subGraphNodes$,
@@ -653,6 +694,7 @@ export class GraphUpdateService {
                     llmNodes: any[];
                     fileExtractorNodes: GetFileExtractorNodeRequest[];
                     webhookTriggerNodes: GetWebhookTriggerNodeRequest[];
+                    telegramTriggerNodes: GetTelegramTriggerNodeRequest[],
                     conditionalEdges: ConditionalEdge[];
                     edges: Edge[];
                     endNodes: EndNode[];
@@ -692,6 +734,7 @@ export class GraphUpdateService {
                                         conditionalEdges:
                                             results.conditionalEdges,
                                         webhookTriggerNodes: results.webhookTriggerNodes,
+                                        telegramTriggerNodes: results.telegramTriggerNodes,
                                         edges: results.edges,
                                         endNodes: results.endNodes,
                                         subGraphNodes: results.subGraphNodes,

@@ -7,35 +7,42 @@ services:
     command: ./entrypoint.sh
     container_name: django_app
     ports:
-      - "8000:8000"
+      - "${DJANGO_PORT:-8000}:${DJANGO_PORT:-8000}"
     environment:
       - CODE_RESULT_CHANNEL=code_results
       - CODE_EXEC_TASK_CHANNEL=code_exec_tasks
-      - GRAPH_MESSAGE_UPDATE_CHANNEL=graph:message:update
-      - GRAPH_MESSAGES_CHANNEL=graph:messages
+      - SESSION_EVENT_UPDATE_CHANNEL=session:event:update
+      - SESSION_EVENT_CHANNEL=session:event
       - SESSION_STATUS_CHANNEL=sessions:session_status
       - MEMORY_UPDATE_CHANNEL=memory:update
-
+  
       - DEBUG=${DEBUG:-True}
-      - SECRET_KEY=${SECRET_KEY}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - SECRET_KEY=${SECRET_KEY:-unsafe-dev-key}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
     
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
 
-      - DB_HOST_NAME=${DB_HOST_NAME}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}      
+      - DB_HOST_NAME=${DB_HOST_NAME:-crewdb}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_NAME=${POSTGRES_DB:-crew}
+      - DJANGO_MEDIA_ROOT=${MEDIA_ROOT}  
       
       - WEBHOOK_USE_TUNNEL=${USE_TUNNEL}
       - WEBHOOK_TUNNEL=${WEBHOOK_TUNNEL}
+      - WEBHOOK_PORT=${WEBHOOK_PORT}
+      - WEBHOOK_HOST_NAME=${WEBHOOK_HOST_NAME}
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-1}
+      - GUNICORN_THREADS=${GUNICORN_THREADS:-4}
 
-      - GUNICORN_WORKERS=${GUNICORN_WORKERS}
-      - GUNICORN_THREADS=${GUNICORN_THREADS}
+      - DJANGO_HOST=${DJANGO_HOST:-localhost}
+      - DJANGO_PORT=${DJANGO_PORT:-8000}
     volumes:
       - crew_config:/home/user/root/app/env_config
+      - media_data:/app/media
 
     networks:
       - backend-network
@@ -46,7 +53,8 @@ services:
         condition: service_healthy
   
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/ht/"]
+      test: >
+        sh -c 'curl -f http://${DJANGO_HOST:-localhost}:${DJANGO_PORT:-8000}/ht/ || exit 1'
       interval: 30s
       timeout: 10s
       retries: 12
@@ -58,14 +66,15 @@ services:
       context: ./realtime
       dockerfile: Dockerfile.realtime
     ports:
-    - "8050:8050"
+      - "${REALTIME_PORT:-8050}:${REALTIME_PORT:-8050}"
     environment:
       - KNOWLEDGE_SEARCH_GET_CHANNEL=knowledge:search:get
       - KNOWLEDGE_SEARCH_RESPONSE_CHANNEL=knowledge:search:response
       - REALTIME_AGENTS_SCHEMA_CHANNEL=realtime_agents:schema
-
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
+      - REALTIME_PORT=${REALTIME_PORT:-8050}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - MANAGER_HOST=${MANAGER_HOST}
       - MANAGER_PORT=${MANAGER_PORT}
       - DB_NAME=${POSTGRES_DB}
@@ -97,16 +106,16 @@ services:
       - .env
     container_name: manager_container
     ports:
-      - "8001:8000"
+      - "${MANAGER_PORT:-8001}:${MANAGER_PORT:-8001}"
     environment:
       - PULL_TOOL=${PULL_TOOL}
-      - MANAGER_PORT=${MANAGER_PORT}
-      
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - DB_NAME=${POSTGRES_DB}
-      - DB_HOST_NAME=${DB_HOST_NAME}
-      - DB_PORT=${DB_PORT}
+      - MANAGER_PORT=${MANAGER_PORT:-8001}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - DB_HOST_NAME=${DB_HOST_NAME:-crewdb}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${POSTGRES_DB:-crew}
       - DB_MANAGER_USER=${DB_MANAGER_USER}
       - DB_MANAGER_PASSWORD=${DB_MANAGER_PASSWORD}
       - CREW_SAVEFILES_PATH=${CREW_SAVEFILES_PATH}
@@ -129,12 +138,14 @@ services:
       context: ./crewdb
       dockerfile: Dockerfile.crewdb
     container_name: crewdb
+    command: ["postgres", "-c", "port=${DB_PORT:-5432}"]
     ports:
-      - "${DB_PORT}:${DB_PORT}"
+      - "${DB_PORT:-5432}:${DB_PORT:-5432}"
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - PGDATA=${PGDATA}
+      - POSTGRES_DB=${POSTGRES_DB:-crew}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - PGDATA=${PGDATA:-/var/lib/postgresql/data/pgdata}
+
       - DB_MANAGER_USER=${DB_MANAGER_USER}
       - DB_MANAGER_PASSWORD=${DB_MANAGER_PASSWORD}
 
@@ -146,15 +157,18 @@ services:
 
       - DB_CREW_USER=${DB_CREW_USER}
       - DB_CREW_PASSWORD=${DB_CREW_PASSWORD}
+      - DB_PORT=${DB_PORT:-5432}
+      - DJANGO_HOST=${DJANGO_HOST}
+      - DJANGO_PORT=${DJANGO_PORT:-8000}
     volumes:
       - crew_pgdata:${PGDATA}
     networks:
       - backend-network
     healthcheck:
-      test: |
+      test: >
         bash -c '
-          # First check if postgres is ready
-          pg_isready -U postgres || exit 1
+          # Check if postgres is ready on custom port
+          pg_isready -U postgres -p ${DB_PORT:-5432} || exit 1
           
           # Then check if users have been created
           /usr/local/bin/custom-docker-entrypoint.sh healthcheck-users
@@ -170,9 +184,15 @@ services:
     networks:
       - backend-network
     ports:
-      - "${REDIS_PORT}:${REDIS_PORT}"
+      - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: >
+      sh -c "redis-server --port ${REDIS_PORT:-6379}
+      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: >
+        sh -c "redis-cli -p ${REDIS_PORT:-6378} ping || exit 1"
       interval: 5s
       timeout: 2s
       retries: 5
@@ -187,6 +207,7 @@ services:
     environment:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - CHECK_INTERVAL=${REDIS_CHECK_INTERVAL:-5}
       - MAX_FAILURES=${REDIS_MAX_FAILURES:-1}
     volumes:
@@ -205,20 +226,19 @@ services:
       context: .
       dockerfile: ./crew/Dockerfile.crew
     container_name: crew
-    ports:
-      - "8002:8000"
     environment:
       - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PORT=${REDIS_PORT:-6378}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - MANAGER_HOST=${MANAGER_HOST}
-      - MANAGER_PORT=${MANAGER_PORT}
+      - MANAGER_PORT=${MANAGER_PORT:-8001}
       - HAYSTACK_TELEMETRY_ENABLED=${HAYSTACK_TELEMETRY_ENABLED}
       - ANONYMIZED_TELEMETRY=${ANONYMIZED_TELEMETRY}
       - EC_TELEMETRY=${EC_TELEMETRY}
       - MONITORING_MODE=${MONITORING_MODE}
       - DB_NAME=${POSTGRES_DB}
       - DB_HOST_NAME=${DB_HOST_NAME}
-      - DB_PORT=${DB_PORT}
+      - DB_PORT=${DB_PORT:-5432}
       - DB_CREW_USER=${DB_CREW_USER}
       - DB_CREW_PASSWORD=${DB_CREW_PASSWORD}
       - SESSION_STATUS_CHANNEL=sessions:session_status
@@ -248,7 +268,8 @@ services:
     container_name: sandbox
     environment:
       - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - CODE_RESULT_CHANNEL=code_results
       - CODE_EXEC_TASK_CHANNEL=code_exec_tasks
       - BASE_VENV_PATH=${BASE_VENV_PATH}
@@ -257,6 +278,9 @@ services:
       - sandbox_venvs:${BASE_VENV_PATH}
       - sandbox_executions:${OUTPUT_PATH}
       - ${CREW_SAVEFILES_PATH}:${CONTAINER_SAVEFILES_PATH}
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
     networks:
       - backend-network
@@ -276,7 +300,9 @@ services:
       - KNOWLEDGE_SEARCH_RESPONSE_CHANNEL=knowledge:search:response
 
       - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
       - DB_NAME=${POSTGRES_DB}
       - DB_HOST_NAME=${DB_HOST_NAME}
       - DB_PORT=${DB_PORT}
@@ -297,9 +323,9 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile.fe
-    container_name: frontend
+    container_name: epicstaff-frontend
     ports:
-     - "4200:80"
+      - "${FRONTEND_PORT:-4200}:80"
     networks:
      - frontend-network
     volumes:
@@ -312,14 +338,18 @@ services:
       context: .
       dockerfile: ./webhook/Dockerfile
     ports:
-      - "8009:8000"
+      - "${WEBHOOK_PORT:-8051}:${WEBHOOK_PORT:-8051}"
     environment:
       - USE_TUNNEL=${USE_TUNNEL}
       - WEBHOOK_TUNNEL=${WEBHOOK_TUNNEL}
       - WEBHOOK_AUTH=${WEBHOOK_AUTH}
-      - WEBHOOK_PORT=${WEBHOOK_PORT}
+      - NGROK_DOMAIN=${NGROK_DOMAIN}
+      - WEBHOOK_EMPTY_JSON_PATHS=${WEBHOOK_EMPTY_JSON_PATHS}
+      - WEBHOOK_PORT=${WEBHOOK_PORT:-8051}
       - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}  
+      - REDIS_PORT=${REDIS_PORT:-6379}  
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
     depends_on:
       - redis
     networks:
@@ -337,6 +367,8 @@ volumes:
   crew_config:
     external: true
   
+  media_data:
+    external: true
 
 networks:
   backend-network:
@@ -344,3 +376,7 @@ networks:
 
   frontend-network:
     driver: bridge
+
+  mcp-network:
+    driver: bridge
+    external: true

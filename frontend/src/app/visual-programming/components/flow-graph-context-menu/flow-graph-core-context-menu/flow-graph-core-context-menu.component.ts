@@ -1,15 +1,8 @@
-import {
-    Component,
-    Input,
-    ChangeDetectionStrategy,
-    Output,
-    EventEmitter,
-} from '@angular/core';
-import { NgFor } from '@angular/common';
-import { NodeType } from '../../../core/enums/node-type';
-import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
-import { inject } from '@angular/core';
-import { FlowService } from '../../../services/flow.service';
+import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output,} from '@angular/core';
+import {NgFor} from '@angular/common';
+import {NodeType} from '../../../core/enums/node-type';
+import {NODE_COLORS, NODE_ICONS} from '../../../core/enums/node-config';
+import {FlowService} from '../../../services/flow.service';
 
 interface FlowGraphBlock {
     label: string;
@@ -151,6 +144,12 @@ export class FlowGraphCoreContextMenuComponent {
             icon: NODE_ICONS[NodeType.WEBHOOK_TRIGGER],
             color: NODE_COLORS[NodeType.WEBHOOK_TRIGGER],
         },
+        {
+            label: 'Telegram Trigger',
+            type: NodeType.TELEGRAM_TRIGGER,
+            icon: NODE_ICONS[NodeType.TELEGRAM_TRIGGER],
+            color: NODE_COLORS[NodeType.TELEGRAM_TRIGGER],
+        },
         // {
         //   label: 'Decision Table',
         //   type: NodeType.TABLE,
@@ -216,9 +215,11 @@ export class FlowGraphCoreContextMenuComponent {
             };
         } else if (type === NodeType.FILE_EXTRACTOR) {
             data = null; // File extractor data is unknown as specified
+
         } else if (type === NodeType.AUDIO_TO_TEXT) {
             data = null; // audio to text data is unknown as specified
-        } else if (type === NodeType.WEBHOOK_TRIGGER) {
+        }
+        else if (type === NodeType.WEBHOOK_TRIGGER) {
             data = {
                 webhook_trigger: 0,
                 python_code: {
@@ -228,7 +229,14 @@ export class FlowGraphCoreContextMenuComponent {
                     entrypoint: 'main',
                 }
             };
-        } else if (type === NodeType.END) {
+        }
+        else if (type === NodeType.TELEGRAM_TRIGGER) {
+            data = {
+                telegram_bot_api_key: '',
+                fields: [],
+            }
+        }
+        else if (type === NodeType.END) {
             data = null; // End node data is unknown as specified
         }
 

@@ -2,13 +2,15 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from loguru import logger
 from models import CodeTaskData
 from services.redis_service import RedisService
 from dynamic_venv_executor_chain import DynamicVenvExecutorChain
+from utils.logger import logger
+
 
 redis_host = os.environ.get("REDIS_HOST", "127.0.0.1")
 redis_port = int(os.environ.get("REDIS_PORT", "6379"))
+redis_password = os.getenv("REDIS_PASSWORD")
 code_result_channel = os.environ.get("CODE_RESULT_CHANNEL", "code_results")
 task_channel = os.environ.get("CODE_EXEC_TASK_CHANNEL", "code_exec_tasks")
 output_path = Path(os.environ.get("OUTPUT_PATH", "executions"))
@@ -19,7 +21,10 @@ executor_chain = DynamicVenvExecutorChain(
 )
 os.chdir("savefiles")
 
-redis_service = RedisService(host=redis_host, port=redis_port)
+redis_service = RedisService(
+    host=redis_host, port=redis_port, password=redis_password
+)
+
 
 async def init():
     await redis_service.connect()

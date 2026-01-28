@@ -2,7 +2,6 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from tables.views.model_view_sets import (
-    ChunkViewSet,
     ConditionGroupModelViewSet,
     ConditionModelViewSet,
     ConditionalEdgeViewSet,
@@ -17,12 +16,15 @@ from tables.views.model_view_sets import (
     PythonCodeToolConfigViewSet,
     PythonNodeViewSet,
     FileExtractorNodeViewSet,
+    AudioTranscriptionNodeViewSet,
     LLMNodeViewSet,
     StartNodeModelViewSet,
     RealtimeConfigModelViewSet,
     RealtimeSessionItemViewSet,
     RealtimeTranscriptionConfigModelViewSet,
     RealtimeTranscriptionModelViewSet,
+    TelegramTriggerNodeFieldViewSet,
+    TelegramTriggerNodeViewSet,
     TemplateAgentReadWriteViewSet,
     LLMConfigReadWriteViewSet,
     ProviderReadWriteViewSet,
@@ -37,9 +39,6 @@ from tables.views.model_view_sets import (
     PythonCodeViewSet,
     PythonCodeResultReadViewSet,
     GraphSessionMessageReadOnlyViewSet,
-    SourceCollectionViewSet,
-    CopySourceCollectionViewSet,
-    DocumentMetadataViewSet,
     MemoryViewSet,
     CrewTagViewSet,
     AgentTagViewSet,
@@ -47,6 +46,7 @@ from tables.views.model_view_sets import (
     RealtimeModelViewSet,
     RealtimeAgentViewSet,
     RealtimeAgentChatViewSet,
+    GraphFileViewSet,
     OrganizationViewSet,
     OrganizationUserViewSet,
     GraphOrganizationViewSet,
@@ -59,9 +59,10 @@ from tables.views.views import (
     AnswerToLLM,
     EnvironmentConfig,
     InitRealtimeAPIView,
-    ProcessDocumentChunkingView,
-    ProcessCollectionEmbeddingView,
+    RegisterTelegramTriggerApiView,
+    ProcessRagIndexingView,
     RunPythonCodeAPIView,
+    TelegramTriggerNodeAvailableFieldsView,
     ToolListRetrieveUpdateGenericViewSet,
     SessionViewSet,
     RunSession,
@@ -72,7 +73,7 @@ from tables.views.views import (
     DefaultEmbeddingConfigAPIView,
     DefaultAgentConfigAPIView,
     DefaultCrewConfigAPIView,
-    CollectionStatusAPIView,
+    # CollectionStatusAPIView,
     QuickstartView,
     delete_environment_config,
 )
@@ -82,6 +83,22 @@ from tables.views.default_config import (
     DefaultRealtimeAgentConfigAPIView,
     DefaultToolConfigAPIView,
 )
+
+from tables.views.knowledge_views.collection_management_views import (
+    SourceCollectionViewSet,
+)
+from tables.views.knowledge_views.document_management_views import (
+    DocumentManagementViewSet,
+    DocumentViewSet,
+    CollectionDocumentsViewSet,
+)
+from tables.views.knowledge_views.naive_rag_views import (
+    NaiveRagViewSet,
+    NaiveRagDocumentConfigViewSet,
+    ProcessNaiveRagDocumentChunkingView,
+    NaiveRagChunkViewSet,
+)
+
 
 from tables.views.sse_views import RunSessionSSEView, RunSessionSSEViewSwagger
 
@@ -100,18 +117,20 @@ router.register(r"tool-configs", ToolConfigViewSet)
 router.register(r"python-code", PythonCodeViewSet)
 router.register(r"python-code-tool", PythonCodeToolViewSet)
 router.register(r"python-code-result", PythonCodeResultReadViewSet)
-router.register(r"source-collections", SourceCollectionViewSet)
 router.register(
-    r"source-collection-copy",
-    CopySourceCollectionViewSet,
-    basename="source_collection_copy",
+    r"source-collections", SourceCollectionViewSet, basename="sourcecollection"
 )
-router.register(r"sources", DocumentMetadataViewSet)
+
+router.register(r"documents", DocumentViewSet, basename="document")
+collection_documents_viewset = CollectionDocumentsViewSet.as_view({"get": "list"})
+
 # Graphs
 router.register(r"graphs", GraphViewSet, basename="graphs")
+router.register(r"graph-files", GraphFileViewSet)
 router.register(r"crewnodes", CrewNodeViewSet)
 router.register(r"pythonnodes", PythonNodeViewSet)
 router.register(r"file-extractor-nodes", FileExtractorNodeViewSet)
+router.register(r"audio-transcription-nodes", AudioTranscriptionNodeViewSet)
 router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
@@ -142,13 +161,20 @@ router.register(r"organizations", OrganizationViewSet)
 router.register(r"organization-users", OrganizationUserViewSet)
 router.register(r"graph-organizations", GraphOrganizationViewSet)
 router.register(r"graph-organization-users", GraphOrganizationUserViewSet)
-router.register(r"document-chunks", ChunkViewSet)
+router.register(r"naive-rag-document-chunks", NaiveRagChunkViewSet)
 router.register(r"webhook-trigger-nodes", WebhookTriggerNodeViewSet)
 router.register(r"webhook-triggers", WebhookTriggerViewSet)
+router.register(r"telegram-trigger-nodes", TelegramTriggerNodeViewSet)
+router.register(r"telegram-trigger-node-fields", TelegramTriggerNodeFieldViewSet)
 router.register(r"python-code-tool-configs", PythonCodeToolConfigViewSet)
 router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldViewSet)
 
 urlpatterns = [
+    path(
+        "documents/bulk-delete/",
+        DocumentManagementViewSet.as_view({"post": "bulk_delete"}),
+        name="document-bulk-delete",
+    ),
     path("", include(router.urls)),
     path("run-session/", RunSession.as_view(), name="run-session"),
     path("answer-to-llm/", AnswerToLLM.as_view(), name="answer-to-llm"),
@@ -179,11 +205,11 @@ urlpatterns = [
         InitRealtimeAPIView.as_view(),
         name="init-realtime",
     ),
-    path(
-        "collection_statuses/",
-        CollectionStatusAPIView.as_view(),
-        name="collection_statuses/",
-    ),
+    # path(
+    #     "collection_statuses/",
+    #     CollectionStatusAPIView.as_view(),
+    #     name="collection_statuses/",
+    # ),
     path("default-config/", DefaultConfigAPIView.as_view(), name="default_config"),
     path(
         "default-llm-config/",
@@ -228,12 +254,72 @@ urlpatterns = [
     ),
     path(
         "process-document-chunking/",
-        ProcessDocumentChunkingView.as_view(),
+        ProcessNaiveRagDocumentChunkingView.as_view(),
         name="process-document-chunking",
     ),
     path(
-        "process-collection-embedding/",
-        ProcessCollectionEmbeddingView.as_view(),
-        name="process-collection-embedding",
+        "process-rag-indexing/",
+        ProcessRagIndexingView.as_view(),
+        name="process-rag-indexing",
+    ),
+    path(
+        "documents/source-collection/<str:collection_id>/upload/",
+        DocumentManagementViewSet.as_view({"post": "upload_documents"}),
+        name="document-upload",
+    ),
+    path(
+        "source-collections/<str:collection_id>/documents/",
+        collection_documents_viewset,
+        name="collection-documents",
+    ),
+    # NaiveRag endpoints
+    path(
+        "naive-rag/collections/<str:collection_id>/naive-rag/",
+        NaiveRagViewSet.as_view(
+            {"post": "create_or_update", "get": "get_by_collection"}
+        ),
+        name="naive-rag-collection",
+    ),
+    path(
+        "naive-rag/<int:pk>/",
+        NaiveRagViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
+        name="naive-rag-detail",
+    ),
+    path(
+        "naive-rag/<int:naive_rag_id>/document-configs/initialize/",
+        NaiveRagViewSet.as_view({"post": "initialize_configs"}),
+        name="naive-rag-initialize-configs",
+    ),
+    path(
+        "naive-rag/<str:naive_rag_id>/document-configs/",
+        NaiveRagDocumentConfigViewSet.as_view({"get": "list_configs"}),
+        name="document-config-list",
+    ),
+    path(
+        "naive-rag/<str:naive_rag_id>/document-configs/<int:pk>/",
+        NaiveRagDocumentConfigViewSet.as_view(
+            {"get": "retrieve", "put": "update", "delete": "destroy"}
+        ),
+        name="document-config-detail",
+    ),
+    path(
+        "naive-rag/<str:naive_rag_id>/document-configs/bulk-update/",
+        NaiveRagDocumentConfigViewSet.as_view({"put": "bulk_update"}),
+        name="document-config-bulk-update",
+    ),
+    path(
+        "naive-rag/<str:naive_rag_id>/document-configs/bulk-delete/",
+        NaiveRagDocumentConfigViewSet.as_view({"post": "bulk_delete"}),
+        name="document-config-bulk-delete",
+    ),
+    path(
+        "telegram-trigger-available-fields/",
+        TelegramTriggerNodeAvailableFieldsView.as_view(),
+        name="telegram-trigger-available-fields",
+    ),
+    path(
+        "register-telegram-trigger/",
+        RegisterTelegramTriggerApiView.as_view(),
+        name="register-telegram-trigger",
     ),
 ]

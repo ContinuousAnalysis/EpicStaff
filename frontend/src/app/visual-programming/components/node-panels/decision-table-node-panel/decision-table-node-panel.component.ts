@@ -47,12 +47,13 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
         const currentNodeId = this.node().id;
-        
+
         return nodes
-            .filter((node) => 
-                node.type !== NodeType.NOTE && 
+            .filter((node) =>
+                node.type !== NodeType.NOTE &&
                 node.type !== NodeType.START &&
                 node.type !== NodeType.WEBHOOK_TRIGGER &&
+                node.type !== NodeType.TELEGRAM_TRIGGER &&
                 node.id !== currentNodeId
             )
             .map((node) => ({
@@ -89,7 +90,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
             // For error: decision-error
             const portSuffix = role === 'default' ? 'decision-default' : 'decision-error';
             const portId = `${node.id}_${portSuffix}`;
-            
+
             const connection = connections.find(
                 c => c.sourceNodeId === node.id && c.sourcePortId === portId
             );

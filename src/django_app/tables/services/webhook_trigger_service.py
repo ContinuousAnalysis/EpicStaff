@@ -1,5 +1,5 @@
 from tables.services.session_manager_service import SessionManagerService
-from tables.models.graph_models import WebhookTriggerNode
+from tables.models.graph_models import WebhookTriggerNode, GraphOrganization
 from utils.singleton_meta import SingletonMeta
 
 
@@ -13,8 +13,14 @@ class WebhookTriggerService(metaclass=SingletonMeta):
         )
 
         for webhook_trigger_node in webhook_trigger_node_list:
+            graph_organization = GraphOrganization.objects.filter(
+                graph=webhook_trigger_node.graph
+            ).first()
+            variables: dict = {"trigger_payload": payload}
+            if graph_organization:
+                variables.update(graph_organization.persistent_variables)
             self.session_manager_service.run_session(
                 graph_id=webhook_trigger_node.graph.pk,
-                variables={"trigger_payload": payload},
+                variables=variables,
                 entrypoint=webhook_trigger_node.node_name,
             )

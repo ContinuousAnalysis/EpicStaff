@@ -7,6 +7,7 @@ from tables.models.graph_models import (
     GraphSessionMessage,
     LLMNode,
     StartNode,
+    TelegramTriggerNode,
     WebhookTriggerNode,
 )
 
@@ -14,7 +15,7 @@ from utils.singleton_meta import SingletonMeta
 from utils.logger import logger
 from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
-from tables.validators.file_extractor_node_validator import FileExtractorNodeValidator
+from tables.validators.file_node_validator import FileNodeValidator
 
 from tables.request_models import (
     ConditionalEdgeData,
@@ -26,7 +27,9 @@ from tables.request_models import (
     LLMNodeData,
     PythonNodeData,
     FileExtractorNodeData,
+    AudioTranscriptionNodeData,
     SessionData,
+    TelegramTriggerNodeData,
 )
 
 from tables.models import (
@@ -37,6 +40,9 @@ from tables.models import (
     PythonNode,
     EndNode,
     FileExtractorNode,
+    AudioTranscriptionNode,
+    Organization,
+    OrganizationUser,
     GraphOrganizationUser,
 )
 
@@ -50,7 +56,7 @@ class SessionManagerService(metaclass=SingletonMeta):
     ) -> None:
         self.redis_service = redis_service
         self.converter_service = converter_service
-        self.file_extractor_node_validator = FileExtractorNodeValidator()
+        self.file_node_validator: FileNodeValidator = FileNodeValidator()
         self.end_node_validator: EndNodeValidator = EndNodeValidator()
 
     def get_session(self, session_id: int) -> Session:
@@ -70,16 +76,17 @@ class SessionManagerService(metaclass=SingletonMeta):
         username: str | None = None,
         entrypoint: str | None = None,
     ) -> Session:
-
-        start_node = StartNode.objects.filter(graph_id=graph_id).first()
-
+        
         if variables is None:
             variables = dict()
-
-        if variables and start_node.variables:
-            variables = {**start_node.variables, **variables}
-        elif start_node.variables:
-            variables = start_node.variables
+        # it might not exist if graph has no start node
+        start_node = StartNode.objects.filter(graph_id=graph_id).first()
+        
+        if start_node is not None:
+            if variables and start_node.variables:
+                variables = {**start_node.variables, **variables}
+            elif start_node.variables:
+                variables = start_node.variables
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
         graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
@@ -102,17 +109,21 @@ class SessionManagerService(metaclass=SingletonMeta):
         crew_node_list = CrewNode.objects.filter(graph=graph.pk)
         python_node_list = PythonNode.objects.filter(graph=graph.pk)
         file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
+        audio_transcription_node_list = AudioTranscriptionNode.objects.filter(
+            graph=graph.pk
+        )
         edge_list = Edge.objects.filter(graph=graph.pk)
         conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         webhook_trigger_node_list = WebhookTriggerNode.objects.filter(graph=graph.pk)
-
+        telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
+        
         crew_node_data_list: list[CrewNodeData] = []
         if file_extractor_node_list:
-            self.file_extractor_node_validator.validate_file_extractor_nodes(
-                file_extractor_node_list
-            )
+            self.file_node_validator.validate_file_nodes(file_extractor_node_list)
+        if audio_transcription_node_list:
+            self.file_node_validator.validate_file_nodes(audio_transcription_node_list)
 
         for item in crew_node_list:
 
@@ -132,11 +143,28 @@ class SessionManagerService(metaclass=SingletonMeta):
                     webhook_trigger_node=item
                 )
             )
-
+        telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
+        for item in telegram_trigger_node_list:
+            telegram_trigger_node_data_list.append(
+                self.converter_service.convert_telegram_trigger_node_to_pydantic(
+                    telegram_trigger_node=item
+                )
+            )
+                
         file_extractor_node_data_list: list[FileExtractorNodeData] = []
         for item in file_extractor_node_list:
             file_extractor_node_data_list.append(
                 FileExtractorNodeData(
+                    node_name=item.node_name,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                )
+            )
+
+        audio_transcription_node_data_list: list[AudioTranscriptionNode] = []
+        for item in audio_transcription_node_list:
+            audio_transcription_node_data_list.append(
+                AudioTranscriptionNodeData(
                     node_name=item.node_name,
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
@@ -198,12 +226,14 @@ class SessionManagerService(metaclass=SingletonMeta):
             webhook_trigger_node_data_list=webhook_trigger_node_data_list,
             python_node_list=python_node_data_list,
             file_extractor_node_list=file_extractor_node_data_list,
+            audio_transcription_node_list=audio_transcription_node_data_list,
             llm_node_list=llm_node_data_list,
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,
             decision_table_node_list=decision_table_node_data_list,
             entrypoint=entrypoint,
             end_node=end_node_data,
+            telegram_trigger_node_data_list=telegram_trigger_node_data_list,
         )
         session_data = SessionData(
             id=session.pk, graph=graph_data, initial_state=session.variables

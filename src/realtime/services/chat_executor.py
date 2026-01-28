@@ -46,8 +46,7 @@ class ChatExecutor:
         self.tool_manager_service = tool_manager_service
         self.connections = connections
         self.wake_word = realtime_agent_chat_data.wake_word
-        self.current_chat_mode = ChatMode.LISTEN
-
+        self.current_chat_mode = ChatMode.CONVERSATION
         self.tool_manager_service.register_tools_from_rt_agent_chat_data(
             realtime_agent_chat_data=realtime_agent_chat_data, chat_executor=self
         )
@@ -95,6 +94,8 @@ class ChatExecutor:
             voice=self.realtime_agent_chat_data.voice,
             instructions=self.instructions,
             temperature=self.realtime_agent_chat_data.temperature,
+            input_audio_format=self.realtime_agent_chat_data.input_audio_format,
+            output_audio_format=self.realtime_agent_chat_data.output_audio_format,
             turn_detection_mode=TurnDetectionMode.SERVER_VAD,
         )
 
