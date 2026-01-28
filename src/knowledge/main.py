@@ -1,12 +1,13 @@
 import os
 import asyncio
 import json
+import time
 from concurrent.futures import ThreadPoolExecutor
 from loguru import logger
 
 from services.collection_processor_service import CollectionProcessorService
-from services.chunk_document_service import ChunkDocumentService
 from services.redis_service import RedisService
+from services.chunking_job_registry import chunking_job_registry
 from models.redis_models import (
     ChunkDocumentMessage,
     ChunkDocumentMessageResponse,
@@ -15,7 +16,6 @@ from models.redis_models import (
 )
 
 
-chunk_document_service = ChunkDocumentService()
 collection_processor_service = CollectionProcessorService()
 # Redis Configuration
 redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
@@ -38,13 +38,6 @@ knowledge_document_chunk_response = os.getenv(
 knowledge_indexing_channel = os.getenv(
     "KNOWLEDGE_INDEXING_CHANNEL", "knowledge:indexing"
 )
-
-
-def run_chunk_document(naive_rag_document_config_id: int):
-    """Chunk a document based on its NaiveRagDocumentConfig."""
-    chunk_document_service.process_chunk_document_by_config_id(
-        naive_rag_document_config_id=naive_rag_document_config_id
-    )
 
 
 def run_rag_indexing(rag_id: int, rag_type: str):
@@ -72,19 +65,22 @@ async def indexing(redis_service: RedisService, executor: ThreadPoolExecutor, se
                 )
 
                 # Create task to run blocking function in executor (non-blocking)
-                async def run_indexing_task():
+                async def run_indexing_task(
+                    rag_id=indexing_message.rag_id,
+                    rag_type=indexing_message.rag_type,
+                ):
                     async with semaphore:
                         try:
                             loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 executor,
                                 run_rag_indexing,
-                                indexing_message.rag_id,
-                                indexing_message.rag_type,
+                                rag_id,
+                                rag_type,
                             )
                             logger.info(
-                                f"RAG indexing completed: rag_type={indexing_message.rag_type}, "
-                                f"rag_id={indexing_message.rag_id}"
+                                f"RAG indexing completed: rag_type={rag_type}, "
+                                f"rag_id={rag_id}"
                             )
                         except Exception as e:
                             logger.error(f"Error processing embedding: {e}")
@@ -100,12 +96,16 @@ async def indexing(redis_service: RedisService, executor: ThreadPoolExecutor, se
 
 async def chunking(redis_service: RedisService, executor: ThreadPoolExecutor, semaphore: asyncio.Semaphore, background_tasks: set):
     """
-    Handles document chunking from the Redis queue asynchronously.
+    Handles document preview chunking from the Redis queue asynchronously.
 
-    Uses naive_rag_document_config_id instead of document_id.
+    Features:
+    - Uses chunking_job_registry to track running jobs
+    - Implements "last request wins" - cancels existing job when new arrives
+    - Delegates to CollectionProcessorService -> RAGStrategy for actual chunking
+    - Sends response with chunking_job_id and rag_type for correlation
     """
     logger.info(
-        f"Subscribed to channel '{knowledge_document_chunk_channel}' for chunking."
+        f"Subscribed to channel '{knowledge_document_chunk_channel}' for preview chunking."
     )
 
     pubsub = await redis_service.async_subscribe(knowledge_document_chunk_channel)
@@ -113,41 +113,124 @@ async def chunking(redis_service: RedisService, executor: ThreadPoolExecutor, se
         if message["type"] == "message":
             try:
                 data = json.loads(message["data"])
-                chunk_document_message = ChunkDocumentMessage.model_validate(data)
+                chunk_message = ChunkDocumentMessage.model_validate(data)
 
-                # Create task to run blocking function in executor (non-blocking)
-                async def run_chunking_task():
+                config_id = chunk_message.document_config_id
+                chunking_job_id = chunk_message.chunking_job_id
+                rag_type = chunk_message.rag_type
+
+                logger.info(
+                    f"Received chunking request: job_id={chunking_job_id}, "
+                    f"rag_type={rag_type}, config_id={config_id}"
+                )
+
+                # Create chunking task with job registry integration
+                async def run_preview_chunking_task(
+                    config_id=config_id,
+                    chunking_job_id=chunking_job_id,
+                    rag_type=rag_type,
+                ):
                     async with semaphore:
+                        start_time = time.perf_counter()
+                        elapsed_time = None
                         try:
-                            loop = asyncio.get_running_loop()
-                            await loop.run_in_executor(
-                                executor,
-                                run_chunk_document,
-                                chunk_document_message.naive_rag_document_config_id,
+                            # Register job (this will cancel any existing job for same config)
+                            current_task = asyncio.current_task()
+                            await chunking_job_registry.register_job(
+                                document_config_id=config_id,
+                                chunking_job_id=chunking_job_id,
+                                task=current_task,
                             )
+
+                            # Callback to check if job was cancelled (capture job_id by value)
+                            job_id_for_check = chunking_job_id
+                            def is_cancelled():
+                                return chunking_job_registry.is_cancelled(job_id_for_check)
+
+                            # Run preview chunking via CollectionProcessorService -> Strategy
+                            loop = asyncio.get_running_loop()
+                            chunk_count = await loop.run_in_executor(
+                                executor,
+                                collection_processor_service.process_preview_chunking,
+                                rag_type,
+                                config_id,
+                                is_cancelled,
+                            )
+
+                            elapsed_time = round(time.perf_counter() - start_time, 3)
+
+                            # Send success response
                             response = ChunkDocumentMessageResponse(
-                                success=True,
-                                naive_rag_document_config_id=chunk_document_message.naive_rag_document_config_id,
+                                chunking_job_id=chunking_job_id,
+                                rag_type=rag_type,
+                                document_config_id=config_id,
+                                status="completed",
+                                chunk_count=chunk_count,
+                                elapsed_time=elapsed_time,
                             )
                             await redis_service.async_publish(
                                 channel=knowledge_document_chunk_response,
                                 message=response.model_dump(),
                             )
-                        except Exception as e:
-                            error_message = f"Error processing chunking: {e}"
-                            logger.error(error_message)
+                            logger.info(
+                                f"Chunking completed: job_id={chunking_job_id}, "
+                                f"rag_type={rag_type}, config_id={config_id}, chunks={chunk_count}, "
+                                f"elapsed_time={elapsed_time}s"
+                            )
+
+                        except asyncio.CancelledError:
+                            elapsed_time = round(time.perf_counter() - start_time, 3)
+                            # Job was cancelled by a newer request
+                            logger.info(
+                                f"Chunking job cancelled: job_id={chunking_job_id}, "
+                                f"rag_type={rag_type}, config_id={config_id}, "
+                                f"elapsed_time={elapsed_time}s"
+                            )
+
+                            # Send cancelled response
                             response = ChunkDocumentMessageResponse(
-                                success=False,
-                                naive_rag_document_config_id=chunk_document_message.naive_rag_document_config_id,
-                                message=error_message,
+                                chunking_job_id=chunking_job_id,
+                                rag_type=rag_type,
+                                document_config_id=config_id,
+                                status="cancelled",
+                                message="Job cancelled by newer request",
+                                elapsed_time=elapsed_time,
                             )
                             await redis_service.async_publish(
                                 channel=knowledge_document_chunk_response,
                                 message=response.model_dump(),
                             )
 
-                # Create task and add to background_tasks set to prevent garbage collection
-                task = asyncio.create_task(run_chunking_task())
+                        except Exception as e:
+                            elapsed_time = round(time.perf_counter() - start_time, 3)
+                            error_message = f"Error processing chunking: {e}"
+                            logger.error(
+                                f"Chunking failed: job_id={chunking_job_id}, "
+                                f"rag_type={rag_type}, config_id={config_id}, error={e}, "
+                                f"elapsed_time={elapsed_time}s"
+                            )
+
+                            # Send error response
+                            response = ChunkDocumentMessageResponse(
+                                chunking_job_id=chunking_job_id,
+                                rag_type=rag_type,
+                                document_config_id=config_id,
+                                status="failed",
+                                message=error_message,
+                                elapsed_time=elapsed_time,
+                            )
+                            await redis_service.async_publish(
+                                channel=knowledge_document_chunk_response,
+                                message=response.model_dump(),
+                            )
+
+                        finally:
+                            # Unregister only if this job is still the current one
+                            # (prevents cancelled job from unregistering newer job)
+                            await chunking_job_registry.unregister_job(config_id, chunking_job_id)
+
+                # Create task and add to background_tasks set
+                task = asyncio.create_task(run_preview_chunking_task())
                 background_tasks.add(task)
                 task.add_done_callback(background_tasks.discard)
 
@@ -177,18 +260,19 @@ async def searching(redis_service: RedisService, semaphore: asyncio.Semaphore, b
                 )
 
                 # Create task to run blocking search in thread (non-blocking)
-                async def run_search_task():
+                # IMPORTANT: Use default args to capture values, not references (closure fix)
+                async def run_search_task(search_data=data):
                     async with semaphore:
                         try:
                             # Run synchronous search in thread pool to avoid blocking event loop
                             result = await asyncio.to_thread(
                                 collection_processor_service.search,
-                                rag_id=data.rag_id,
-                                rag_type=data.rag_type,
-                                collection_id=data.collection_id,
-                                uuid=data.uuid,
-                                query=data.query,
-                                rag_search_config=data.rag_search_config,
+                                rag_id=search_data.rag_id,
+                                rag_type=search_data.rag_type,
+                                collection_id=search_data.collection_id,
+                                uuid=search_data.uuid,
+                                query=search_data.query,
+                                rag_search_config=search_data.rag_search_config,
                             )
 
                             await redis_service.async_publish(
@@ -196,7 +280,7 @@ async def searching(redis_service: RedisService, semaphore: asyncio.Semaphore, b
                             )
 
                             logger.info(
-                                f"Search completed for {data.rag_type}_rag_id: {data.rag_id}"
+                                f"Search completed for {search_data.rag_type}_rag_id: {search_data.rag_id}"
                             )
                         except Exception as e:
                             logger.error(f"Error processing search: {e}")
