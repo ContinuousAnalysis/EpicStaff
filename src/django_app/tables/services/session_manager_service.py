@@ -7,6 +7,7 @@ from tables.models.graph_models import (
     GraphSessionMessage,
     LLMNode,
     StartNode,
+    TelegramTriggerNode,
     WebhookTriggerNode,
 )
 
@@ -28,6 +29,7 @@ from tables.request_models import (
     FileExtractorNodeData,
     AudioTranscriptionNodeData,
     SessionData,
+    TelegramTriggerNodeData,
 )
 
 from tables.models import (
@@ -74,16 +76,17 @@ class SessionManagerService(metaclass=SingletonMeta):
         username: str | None = None,
         entrypoint: str | None = None,
     ) -> Session:
-
-        start_node = StartNode.objects.filter(graph_id=graph_id).first()
-
+        
         if variables is None:
             variables = dict()
-
-        if variables and start_node.variables:
-            variables = {**start_node.variables, **variables}
-        elif start_node.variables:
-            variables = start_node.variables
+        # it might not exist if graph has no start node
+        start_node = StartNode.objects.filter(graph_id=graph_id).first()
+        
+        if start_node is not None:
+            if variables and start_node.variables:
+                variables = {**start_node.variables, **variables}
+            elif start_node.variables:
+                variables = start_node.variables
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
         graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
@@ -114,7 +117,8 @@ class SessionManagerService(metaclass=SingletonMeta):
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         webhook_trigger_node_list = WebhookTriggerNode.objects.filter(graph=graph.pk)
-
+        telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
+        
         crew_node_data_list: list[CrewNodeData] = []
         if file_extractor_node_list:
             self.file_node_validator.validate_file_nodes(file_extractor_node_list)
@@ -139,7 +143,14 @@ class SessionManagerService(metaclass=SingletonMeta):
                     webhook_trigger_node=item
                 )
             )
-
+        telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
+        for item in telegram_trigger_node_list:
+            telegram_trigger_node_data_list.append(
+                self.converter_service.convert_telegram_trigger_node_to_pydantic(
+                    telegram_trigger_node=item
+                )
+            )
+                
         file_extractor_node_data_list: list[FileExtractorNodeData] = []
         for item in file_extractor_node_list:
             file_extractor_node_data_list.append(
@@ -222,6 +233,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             decision_table_node_list=decision_table_node_data_list,
             entrypoint=entrypoint,
             end_node=end_node_data,
+            telegram_trigger_node_data_list=telegram_trigger_node_data_list,
         )
         session_data = SessionData(
             id=session.pk, graph=graph_data, initial_state=session.variables

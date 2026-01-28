@@ -367,6 +367,9 @@ class LLM:
                 # Remove None values from params
                 params = {k: v for k, v in params.items() if v is not None}
 
+                if not self.supports_stop_words():
+                    del params["stop"]
+
                 # --- 2) Make the completion call
                 text_response = ""
                 tool_calls = []
@@ -452,12 +455,14 @@ class LLM:
             return False
 
     def supports_stop_words(self) -> bool:
-        try:
-            params = get_supported_openai_params(model=self.model)
-            return "stop" in params
-        except Exception as e:
-            logging.error(f"Failed to get supported params: {str(e)}")
-            return False
+        # workaround
+        return False
+        # try:
+        #     params = get_supported_openai_params(model=self.model)
+        #     return "stop" in params
+        # except Exception as e:
+        #     logging.error(f"Failed to get supported params: {str(e)}")
+        #     return False
 
     def get_context_window_size(self) -> int:
         """

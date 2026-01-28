@@ -14,16 +14,7 @@ from services.redis_service import RedisService
 from services.tool_manager_service import ToolManagerService
 from utils.shorten import shorten_dict
 from utils.instructions_concatenator import generate_instruction
-
-if "--debug" in sys.argv:
-    logger.info("RUNNING IN DEBUG MODE")
-    load_dotenv(find_dotenv("debug.env"))
-else:
-    load_dotenv(find_dotenv(".env"))
-
-from ai.agent.openai_realtime_agent_client import (
-    OpenaiRealtimeAgentClient,
-)
+from ai.agent.openai_realtime_agent_client import OpenaiRealtimeAgentClient
 
 from services.redis_service import RedisService
 from api.connection_repository import ConnectionRepository
@@ -34,6 +25,7 @@ from ai.agent.openai_realtime_agent_client import (
 from ai.transcription.realtime_transcription import (
     OpenaiRealtimeTranscriptionClient,
 )
+from core.config import settings
 
 
 from db.database import get_db, engine
@@ -41,31 +33,19 @@ from models.db_models import Base
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-knowledge_search_get_channel = os.getenv(
-    "KNOWLEDGE_SEARCH_GET_CHANNEL", "knowledge:search:get"
-)
-knowledge_search_response_channel = os.getenv(
-    "KNOWLEDGE_SEARCH_RESPONSE_CHANNEL", "knowledge:search:response"
-)
-realtime_agents_schema_channel = os.getenv(
-    "REALTIME_AGENTS_SCHEMA_CHANNEL", "realtime_agents:schema"
-)
-
-redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
-redis_port = int(os.getenv("REDIS_PORT", 6379))
-manager_host = os.getenv("MANAGER_HOST", "127.0.0.1")
-manager_port = int(os.getenv("MANAGER_PORT", 8001))
 
 app = FastAPI()
-redis_service = RedisService(host=redis_host, port=redis_port)
+redis_service = RedisService(
+    host=settings.REDIS_HOST, port=settings.REDIS_PORT, password=settings.REDIS_PASSWORD
+)
 python_code_executor_service = PythonCodeExecutorService(redis_service=redis_service)
 tool_manager_service = ToolManagerService(
     redis_service=redis_service,
     python_code_executor_service=python_code_executor_service,
-    knowledge_search_get_channel=knowledge_search_get_channel,
-    knowledge_search_response_channel=knowledge_search_response_channel,
-    manager_host=manager_host,
-    manager_port=manager_port,
+    knowledge_search_get_channel=settings.KNOWLEDGE_SEARCH_GET_CHANNEL,
+    knowledge_search_response_channel=settings.KNOWLEDGE_SEARCH_RESPONSE_CHANNEL,
+    manager_host=settings.MANAGER_HOST,
+    manager_port=settings.MANAGER_PORT,
 )
 
 
@@ -85,10 +65,17 @@ connection_repository = ConnectionRepository()
 async def redis_listener():
     """Listen to Redis channel and store connection data."""
 
-    redis_service = RedisService(host=redis_host, port=redis_port)
+    redis_service = RedisService(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+    )
     await redis_service.connect()
-    pubsub = await redis_service.async_subscribe(realtime_agents_schema_channel)
-    logger.info(f"Subscribed to channel '{realtime_agents_schema_channel}'")
+
+    pubsub = await redis_service.async_subscribe(
+        settings.REALTIME_AGENTS_SCHEMA_CHANNEL
+    )
+    logger.info(f"Subscribed to channel '{settings.REALTIME_AGENTS_SCHEMA_CHANNEL}'")
 
     async for message in pubsub.listen():
         if message["type"] == "message":
@@ -129,7 +116,7 @@ connections: Dict[
 
 
 @app.websocket("/")
-async def healthcheck_endpoint(
+async def root(
     websocket: WebSocket,
     model: str | None = None,
     connection_key: str | None = None,
