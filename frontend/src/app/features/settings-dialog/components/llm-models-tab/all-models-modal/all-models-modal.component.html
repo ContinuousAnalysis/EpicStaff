@@ -1,0 +1,62 @@
+<div class="all-models">
+    <!-- Header -->
+    <div class="all-models__header">
+        <div class="all-models__header-info">
+            <app-icon
+                [icon]="getProviderIcon(provider().name)"
+                size="1.25rem"
+            />
+            <h3 class="all-models__title">{{ provider().name }} Models</h3>
+        </div>
+        <button
+            type="button"
+            class="all-models__close-btn"
+            (click)="onClose()"
+        >
+            <app-icon icon="ui/x" size="0.875rem" />
+        </button>
+    </div>
+
+    <!-- Search -->
+    <div class="all-models__search">
+        <input
+            type="text"
+            class="all-models__search-input"
+            placeholder="Search models..."
+            [value]="searchQuery()"
+            (input)="onSearchChange($event)"
+        />
+    </div>
+
+    <!-- Models List -->
+    <div class="all-models__content">
+        @if (filteredModels().length === 0) {
+            <div class="all-models__empty">
+                <app-icon icon="ui/search" size="2rem" />
+                <p>No models found</p>
+            </div>
+        } @else {
+            @for (model of filteredModels(); track model.id) {
+                <button
+                    type="button"
+                    class="all-models__model"
+                    [class.all-models__model--favorite]="isModelFavorite(model.id)"
+                    (click)="toggleFavorite(model)"
+                >
+                    <span class="all-models__model-name">{{ model.name }}</span>
+                    <div class="all-models__star" [class.all-models__star--active]="isModelFavorite(model.id)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" [attr.fill]="isModelFavorite(model.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                    </div>
+                </button>
+            }
+        }
+    </div>
+
+    <!-- Footer -->
+    <div class="all-models__footer">
+        <p class="all-models__count">{{ favoriteModelIds().size }} model(s) selected as favorites</p>
+    </div>
+</div>
+
