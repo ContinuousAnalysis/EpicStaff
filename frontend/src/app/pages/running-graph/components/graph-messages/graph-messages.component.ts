@@ -25,7 +25,7 @@ import { takeUntil, map, exhaustMap } from 'rxjs/operators';
 
 import {
   GraphSessionStatus,
-  GraphSession,
+  GraphSession, GraphSessionService, SessionUpdates,
 } from '../../../../features/flows/services/flows-sessions.service';
 import {
   GraphMessage,
@@ -120,7 +120,8 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
     private cdr: ChangeDetectorRef,
     private answerToLLMService: AnswerToLLMService,
     private runGraphPageService: RunGraphPageService,
-    private flowService: FlowsApiService
+    private flowService: FlowsApiService,
+    private graphSessionService: GraphSessionService,
   ) {
     effect(() => {
       const messages = this.sseService.messages();
@@ -135,7 +136,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       this.sessionStatusChanged.emit(status);
       this.statusWaitForUser = status === GraphSessionStatus.WAITING_FOR_USER;
       this.showUserInputWithDelay = this.statusWaitForUser;
-      this.checkIfFinish();
+
       this.cdr.markForCheck();
     });
 
@@ -291,6 +292,8 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  // UPD (EST-904 Mark message final in session)
+  // Stop session only after message with type 'graph_end'
   private checkIfFinish() {
     const messages = this.sseService.messages();
     if (messages.length > 0) {
@@ -299,7 +302,6 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       const sameTimeMessages = messages.filter(
         (msg) => msg.created_at === lastTime
       );
-      const sessionStatus = this.sseService.status();
 
       // Check for graph_end message - marks the session as finished
       if (
@@ -307,45 +309,54 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
           (msg) => msg.message_data.message_type === MessageType.GRAPH_END
         )
       ) {
-        this.sseService.setStatus(GraphSessionStatus.ENDED);
         this.sseService.stopStream();
+        this.updateSessionStatus();
         return;
       }
 
-      if (
-        sameTimeMessages.some(
-          (msg) => msg.message_data.message_type === 'finish'
-        ) &&
-        sessionStatus === GraphSessionStatus.ENDED
-      ) {
-        this.sseService.stopStream();
-      } else if (
-        sameTimeMessages.some(
-          (msg) => msg.message_data.message_type === 'error'
-        ) &&
-        sessionStatus === GraphSessionStatus.ERROR
-      ) {
-        this.sseService.stopStream();
-      } else if (
-        sameTimeMessages.some(
-          (msg) =>
-            msg.message_data.message_type === 'update_session_status' &&
-            msg.message_data.status === GraphSessionStatus.WAITING_FOR_USER
-        ) &&
-        sessionStatus === GraphSessionStatus.WAITING_FOR_USER
-      ) {
-        this.sseService.stopStream();
-      } else if (sessionStatus === GraphSessionStatus.EXPIRED) {
-        this.sseService.stopStream();
-      } else if (sessionStatus === GraphSessionStatus.STOP) {
-        this.sseService.stopStream();
-      } else if (sessionStatus === GraphSessionStatus.ERROR) {
-        this.sseService.stopStream();
-      } else if (sessionStatus === GraphSessionStatus.ENDED) {
-        this.sseService.stopStream();
-      }
+      // if (
+      //   sameTimeMessages.some(
+      //     (msg) => msg.message_data.message_type === 'finish'
+      //   ) &&
+      //   sessionStatus === GraphSessionStatus.ENDED
+      // ) {
+      //   this.sseService.stopStream();
+      // } else if (
+      //   sameTimeMessages.some(
+      //     (msg) => msg.message_data.message_type === 'error'
+      //   ) &&
+      //   sessionStatus === GraphSessionStatus.ERROR
+      // ) {
+      //   this.sseService.stopStream();
+      // } else if (
+      //   sameTimeMessages.some(
+      //     (msg) =>
+      //       msg.message_data.message_type === 'update_session_status' &&
+      //       msg.message_data.status === GraphSessionStatus.WAITING_FOR_USER
+      //   ) &&
+      //   sessionStatus === GraphSessionStatus.WAITING_FOR_USER
+      // ) {
+      //   this.sseService.stopStream();
+      // } else if (sessionStatus === GraphSessionStatus.EXPIRED) {
+      //   this.sseService.stopStream();
+      // } else if (sessionStatus === GraphSessionStatus.STOP) {
+      //   this.sseService.stopStream();
+      // } else if (sessionStatus === GraphSessionStatus.ERROR) {
+      //   this.sseService.stopStream();
+      // } else if (sessionStatus === GraphSessionStatus.ENDED) {
+      //   this.sseService.stopStream();
+      // }
       // Note: PENDING is a transitional state - don't stop stream, wait for final status
     }
+  }
+
+  private updateSessionStatus(): void {
+    this.graphSessionService.getSessionUpdates(this.sessionId!)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ status }: SessionUpdates) => this.sseService.setStatus(status),
+        error: (err) => console.log(err),
+      });
   }
 
   public getAgentFromMessage(message: GraphMessage): GetAgentRequest | null {
