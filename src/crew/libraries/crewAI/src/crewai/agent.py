@@ -479,7 +479,11 @@ class Agent(BaseAgent):
         )
 
         with temporary_temperature(self.llm, temp=0.0):
-            knowledge_query = self.llm.call(prompt)
+            knowledge_query = self.llm.call(
+                prompt,
+                callbacks=[TokenCalcHandler(self._token_process)],
+            )
+
         return knowledge_query
 
     def _use_trained_data(self, task_prompt: str) -> str:

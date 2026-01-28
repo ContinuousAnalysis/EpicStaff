@@ -1,4 +1,5 @@
 import os
+from typing import Callable, Optional
 from loguru import logger
 import cachetools
 
@@ -80,11 +81,18 @@ class NaiveRAGStrategy(BaseRAGStrategy):
         naive_rag_id = rag_id
         search_limit = rag_search_config.search_limit
         similarity_threshold = rag_search_config.similarity_threshold
+        token_usage = {}
 
         embedder = self._get_cached_embedder(naive_rag_id=naive_rag_id)
 
         # Embed the query
-        embedded_query = embedder.embed(query)
+        embedded_data = embedder.embed(query)
+
+        if isinstance(embedded_data, dict):
+            embedded_query = embedded_data.get("embedding", [])
+            token_usage = embedded_data.get("token_usage")
+        else:
+            embedded_query = embedded_data
 
         uow = UnitOfWork()
         with uow.start() as uow_ctx:
@@ -123,6 +131,7 @@ class NaiveRAGStrategy(BaseRAGStrategy):
             chunks=knowledge_chunk_list,
             rag_search_config=rag_search_config,
             results=knowledge_snippets,
+            token_usage=token_usage,
         )
 
         return knowledge_query_results.model_dump()
@@ -206,7 +215,13 @@ class NaiveRAGStrategy(BaseRAGStrategy):
 
                         # Embed all chunks (using simple dict data)
                         for chunk_data in chunk_data_list:
-                            vector = embedder.embed(chunk_data["text"])
+                            embedded_data = embedder.embed(chunk_data["text"])
+
+                            if isinstance(embedded_data, dict):
+                                vector = embedded_data.get("embedding", [])
+                            else:
+                                vector = embedded_data
+
                             uow_ctx.naive_rag_storage.save_embedding(
                                 chunk_id=chunk_data["chunk_id"],
                                 embedding=vector,
@@ -337,3 +352,28 @@ class NaiveRAGStrategy(BaseRAGStrategy):
                 f"Failed to set custom embedder. Using default embedder. Error: {e}"
             )
             return self._create_default_embedding_function()
+
+    # ==================== Preview Chunking ====================
+
+    def process_preview_chunking(
+        self,
+        document_config_id: int,
+        check_cancelled: Optional[Callable[[], bool]] = None,
+    ) -> int:
+        """
+        Perform preview chunking for a NaiveRag document config.
+
+        Delegates to ChunkDocumentService for the actual chunking work.
+        Cleanup of old preview chunks is handled inside ChunkDocumentService.
+
+        Args:
+            document_config_id: naive_rag_document_config_id
+            check_cancelled: Optional callback to check if job was cancelled
+
+        Returns:
+            Number of preview chunks created
+        """
+        return ChunkDocumentService().process_preview_chunking(
+            naive_rag_document_config_id=document_config_id,
+            check_cancelled=check_cancelled,
+        )

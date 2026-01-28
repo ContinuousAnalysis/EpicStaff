@@ -192,6 +192,7 @@ class BaseKnowledgeSearchMessageResponse(BaseModel):
     rag_search_config: RagSearchConfig
     # Support backwards compatibility
     results: List[str] = []  # deprecated, use chunks instead
+    token_usage: dict = {}
 
 
 class AgentData(BaseModel):

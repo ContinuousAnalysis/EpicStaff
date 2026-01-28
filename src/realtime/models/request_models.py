@@ -198,6 +198,8 @@ class RealtimeAgentChatData(BaseModel):
     language: str | None
     voice_recognition_prompt: str | None
     voice: str
+    input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
+    output_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
 
 
 

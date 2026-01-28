@@ -192,7 +192,8 @@ class RealtimeAgentChatData(BaseModel):
     language: str | None
     voice_recognition_prompt: str | None
     voice: str
-
+    input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
+    output_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
 
 class CrewData(BaseModel):
     class Process(str, Enum):
@@ -390,14 +391,21 @@ class KnowledgeSearchMessage(BaseModel):
 
 
 class ChunkDocumentMessage(BaseModel):
-    naive_rag_document_id: int
+    chunking_job_id: str  # UUID
+    rag_type: str  # "naive", "graph", etc.
+    document_config_id: int
 
 
 
 class ChunkDocumentMessageResponse(BaseModel):
-    naive_rag_document_id: int
-    success: bool
-    message: str | None
+
+    chunking_job_id: str  # UUID
+    rag_type: str
+    document_config_id: int
+    status: str  # "completed", "failed", "cancelled"
+    chunk_count: int | None = None
+    message: str | None = None
+    elapsed_time: float | None = None
 
 
 class StopSessionMessage(BaseModel):

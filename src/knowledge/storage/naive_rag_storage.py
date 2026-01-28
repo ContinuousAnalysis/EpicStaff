@@ -8,6 +8,7 @@ from models.orm import (
     NaiveRag,
     NaiveRagDocumentConfig,
     NaiveRagChunk,
+    NaiveRagPreviewChunk,
     NaiveRagEmbedding,
     DocumentMetadata,
 )
@@ -199,7 +200,7 @@ class ORMNaiveRagStorage(BaseORMStorage):
                     text=chunk_text,
                     chunk_index=idx,
                 )
-                for idx, chunk_text in enumerate(chunk_list)
+                for idx, chunk_text in enumerate(chunk_list, start=1)
             ]
             self.session.add_all(chunks)
             self.session.flush()
@@ -267,6 +268,74 @@ class ORMNaiveRagStorage(BaseORMStorage):
                 f"Failed to get chunks for document config {naive_rag_document_config_id}: {e}"
             )
             return []
+
+    # ==================== Preview Chunk Operations ====================
+
+    def delete_preview_chunks(self, naive_rag_document_config_id: int) -> int:
+        """
+        Delete all preview chunks for a document config.
+
+        Args:
+            naive_rag_document_config_id: ID of the document config
+
+        Returns:
+            Number of deleted preview chunks
+        """
+        try:
+            deleted = (
+                self.session.query(NaiveRagPreviewChunk)
+                .filter(
+                    NaiveRagPreviewChunk.naive_rag_document_config_id
+                    == naive_rag_document_config_id
+                )
+                .delete()
+            )
+            logger.debug(
+                f"Deleted {deleted} preview chunks for config {naive_rag_document_config_id}"
+            )
+            return deleted
+
+        except Exception as e:
+            logger.error(
+                f"Failed to delete preview chunks for config {naive_rag_document_config_id}: {e}"
+            )
+            raise
+
+    def save_preview_chunks(
+        self, naive_rag_document_config_id: int, chunk_list: List[str]
+    ) -> List[NaiveRagPreviewChunk]:
+        """
+        Bulk save preview chunks for a document config.
+
+        Args:
+            naive_rag_document_config_id: ID of the document config
+            chunk_list: List of chunk texts
+
+        Returns:
+            List of created NaiveRagPreviewChunk instances
+        """
+        try:
+            chunks = [
+                NaiveRagPreviewChunk(
+                    naive_rag_document_config_id=naive_rag_document_config_id,
+                    text=chunk_text,
+                    chunk_index=idx,
+                )
+                for idx, chunk_text in enumerate(chunk_list, start=1)
+            ]
+            self.session.add_all(chunks)
+            self.session.flush()
+
+            logger.debug(
+                f"Saved {len(chunks)} preview chunks for config {naive_rag_document_config_id}"
+            )
+            return chunks
+
+        except Exception as e:
+            logger.error(
+                f"Failed to save preview chunks for config {naive_rag_document_config_id}: {e}"
+            )
+            raise
 
     # ==================== Embedding Operations ====================
 

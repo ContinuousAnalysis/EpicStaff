@@ -67,25 +67,24 @@ class BaseKnowledgeSearchMessageResponse(BaseModel):
     rag_search_config: RagSearchConfig
     # Support backwards compatibility
     results: List[str] = []  # deprecated, use chunks instead
+    token_usage: dict = {}
 
 
 class ChunkDocumentMessage(BaseModel):
-    """
-    Message for chunking a document based on RAG-specific configuration.
-
-    Updated: Uses naive_rag_document_config_id instead of document_id.
-    Each RAG implementation can chunk the same document differently.
-    """
-
-    naive_rag_document_config_id: int
+    chunking_job_id: str  # UUID
+    rag_type: str  # "naive", "graph", etc.
+    document_config_id: int
 
 
 class ChunkDocumentMessageResponse(BaseModel):
-    """Response message for document chunking."""
 
-    naive_rag_document_config_id: int
-    success: bool
+    chunking_job_id: str  # UUID
+    rag_type: str
+    document_config_id: int
+    status: str  # "completed", "failed", "cancelled"
+    chunk_count: int | None = None
     message: str | None = None
+    elapsed_time: float | None = None
 
 
 class ProcessRagIndexingMessage(BaseModel):

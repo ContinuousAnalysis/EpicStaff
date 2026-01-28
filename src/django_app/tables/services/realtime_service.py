@@ -57,13 +57,18 @@ class RealtimeService(metaclass=SingletonMeta):
             connection_key=connection_key,
         )
 
-    def init_realtime(self, agent_id: int) -> str:
+    def init_realtime(self, agent_id: int, config: dict) -> str:
         rt_agent = self.get_rt_agent(agent_id=agent_id)
         rt_agent_chat = self.create_rt_agent_chat(rt_agent)
 
         rt_agent_chat_data = self.converter_service.convert_rt_agent_chat_to_pydantic(
             rt_agent_chat=rt_agent_chat
         )
+        # Override with provided config
+        for key, value in config.items():
+            if hasattr(rt_agent_chat_data, key):
+                setattr(rt_agent_chat_data, key, value)
+
         self.redis_service.publish_realtime_agent_chat(
             rt_agent_chat_data=rt_agent_chat_data
         )
