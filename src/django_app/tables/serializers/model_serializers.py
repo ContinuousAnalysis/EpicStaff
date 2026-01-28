@@ -309,7 +309,7 @@ class PythonCodeToolConfigSerializer(serializers.ModelSerializer):
 
 class McpToolSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PythonCodeToolConfig
+        model = McpTool
         fields = "__all__"
 
 
