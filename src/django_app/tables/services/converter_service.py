@@ -38,6 +38,7 @@ from tables.models.graph_models import (
     DecisionTableNode,
     EndNode,
     PythonNode,
+    TelegramTriggerNode,
     WebhookTriggerNode,
 )
 from tables.request_models import *
@@ -333,6 +334,8 @@ class ConverterService(metaclass=SingletonMeta):
             language=rt_agent_chat.language,
             voice_recognition_prompt=rt_agent_chat.voice_recognition_prompt,
             voice=rt_agent_chat.voice,
+            input_audio_format=rt_agent_chat.input_audio_format.value,
+            output_audio_format=rt_agent_chat.output_audio_format.value,
         )
 
         return rt_agent_chat_data
@@ -567,4 +570,23 @@ class ConverterService(metaclass=SingletonMeta):
         return WebhookTriggerNodeData(
             node_name=webhook_trigger_node.node_name,
             python_code=python_code_data,
+        )
+
+    def convert_telegram_trigger_node_to_pydantic(
+        self, telegram_trigger_node: TelegramTriggerNode
+    ):
+
+        telegram_trigger_node_field_data: list[TelegramTriggerNodeFieldData] = []
+        for field in telegram_trigger_node.fields.all():
+            telegram_trigger_node_field_data.append(
+                TelegramTriggerNodeFieldData(
+                    parent=field.parent,
+                    field_name=field.field_name,
+                    variable_path=field.variable_path,
+                )
+            )
+
+        return TelegramTriggerNodeData(
+            node_name=telegram_trigger_node.node_name,
+            field_list=telegram_trigger_node_field_data,
         )

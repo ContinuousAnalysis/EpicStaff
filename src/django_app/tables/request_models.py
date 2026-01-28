@@ -192,7 +192,8 @@ class RealtimeAgentChatData(BaseModel):
     language: str | None
     voice_recognition_prompt: str | None
     voice: str
-
+    input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
+    output_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
 
 class CrewData(BaseModel):
     class Process(str, Enum):
@@ -339,9 +340,22 @@ class ConditionalEdgeData(BaseModel):
     then: str | None
     input_map: dict[str, Any]
 
+
 class WebhookTriggerNodeData(BaseModel):
     node_name: str
     python_code: PythonCodeData
+
+
+class TelegramTriggerNodeFieldData(BaseModel):
+    parent: Literal["message", "callback_query"]
+    field_name: str
+    variable_path: str
+
+
+class TelegramTriggerNodeData(BaseModel):
+    node_name: str
+    field_list: list[TelegramTriggerNodeFieldData] = []
+
 
 class GraphData(BaseModel):
     name: str
@@ -356,6 +370,7 @@ class GraphData(BaseModel):
     decision_table_node_list: list[DecisionTableNodeData] = []
     entrypoint: str
     end_node: EndNodeData | None
+    telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
 
 
 class GraphSessionMessageData(BaseModel):
@@ -379,6 +394,7 @@ class ChunkDocumentMessage(BaseModel):
     chunking_job_id: str  # UUID
     rag_type: str  # "naive", "graph", etc.
     document_config_id: int
+
 
 
 class ChunkDocumentMessageResponse(BaseModel):

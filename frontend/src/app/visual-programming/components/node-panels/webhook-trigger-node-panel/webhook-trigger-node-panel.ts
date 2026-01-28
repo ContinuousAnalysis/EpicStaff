@@ -1,14 +1,17 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, input } from '@angular/core';
-import { ReactiveFormsModule, FormGroup, Validators } from '@angular/forms';
-import { WebhookTriggerNodeModel } from '../../../core/models/node.model';
-import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
-import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
-import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
-import { CommonModule } from '@angular/common';
-import { WebhookTriggerNodeService } from '../../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
-import { Clipboard, ClipboardModule } from '@angular/cdk/clipboard';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, input} from '@angular/core';
+import {FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {WebhookTriggerNodeModel} from '../../../core/models/node.model';
+import {BaseSidePanel} from '../../../core/models/node-panel.abstract';
+import {CustomInputComponent} from '../../../../shared/components/form-input/form-input.component';
+import {
+    CodeEditorComponent
+} from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
+import {CommonModule} from '@angular/common';
+import {WebhookService} from "../../../../pages/flows-page/components/flow-visual-programming/services/webhook.service";
+import {Clipboard, ClipboardModule} from '@angular/cdk/clipboard';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {startWith} from 'rxjs';
+import {WebhookStatus} from "../../../../pages/flows-page/components/flow-visual-programming/models/webhook.model";
 
 const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
 
@@ -140,7 +143,7 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
             .form-fields {
                 display: flex;
                 flex-direction: column;
-                
+
                 .expanded & {
                     flex: 0 0 400px;
                     max-width: 400px;
@@ -268,14 +271,14 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
     private readonly destroyRef = inject(DestroyRef);
 
     constructor(
-        private webhookTriggerNodeService: WebhookTriggerNodeService,
+        private webhookService: WebhookService,
         private cdr: ChangeDetectorRef,
         private clipboard: Clipboard
     ) {
         super();
-        this.webhookTriggerNodeService.getTunnelUrl().subscribe({
+        this.webhookService.getTunnel().subscribe({
             next: (response) => {
-                if (response?.status === 'success' && response.tunnel_url) {
+                if (response?.status === WebhookStatus.SUCCESS && response.tunnel_url) {
                     this.tunnelUrl = response.tunnel_url;
                     this.webhookUrlBase = this.normalizeWebhookBase(response.tunnel_url);
                     this.tunnelErrorMessage = '';

@@ -58,12 +58,13 @@ export class DecisionTableGridComponent implements OnInit {
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
         const currentId = this.currentNodeId();
-        
+
         return nodes
-            .filter((node) => 
-                node.type !== NodeType.NOTE && 
+            .filter((node) =>
+                node.type !== NodeType.NOTE &&
                 node.type !== NodeType.START &&
                 node.type !== NodeType.WEBHOOK_TRIGGER &&
+                node.type !== NodeType.TELEGRAM_TRIGGER &&
                 node.id !== currentId
             )
             .map((node) => ({
@@ -106,7 +107,7 @@ export class DecisionTableGridComponent implements OnInit {
         const nodes = this.flowService.nodes();
         const connections = this.flowService.connections();
         const currentNodeId = this.currentNodeId();
-        
+
         console.log('[DecisionTableGrid] Initializing with groups:', groups);
 
         const findNodeId = (value: string | null, groupName: string): string | null => {
@@ -122,7 +123,7 @@ export class DecisionTableGridComponent implements OnInit {
             if (groupName) {
                  const normalizedGroupName = groupName.toLowerCase().replace(/\s+/g, '-');
                  const portId = `${currentNodeId}_decision-out-${normalizedGroupName}`;
-                 
+
                  const connection = connections.find(
                     c => c.sourceNodeId === currentNodeId && c.sourcePortId === portId
                  );
@@ -318,23 +319,23 @@ export class DecisionTableGridComponent implements OnInit {
     public onCellValueChanged(event: CellValueChangedEvent): void {
         const colId = event.column.getColId();
         const rowIndex = event.rowIndex!;
-        
+
         if (colId === 'group_name') {
             const newName = event.newValue?.trim();
             const isEmpty = !newName;
-            const isDuplicate = !isEmpty && this.rowData().some((row, idx) => 
+            const isDuplicate = !isEmpty && this.rowData().some((row, idx) =>
                 idx !== rowIndex && row.group_name === newName
             );
-            
+
             (event.data as any).group_nameWarning = isEmpty || isDuplicate;
         } else if (colId === 'expression') {
             (event.data as any).expressionWarning = !event.newValue?.trim();
         } else if (colId === 'manipulation') {
             (event.data as any).manipulationWarning = false;
         }
-        
+
         this.updateGroupValidFlag(event.data, rowIndex);
-        
+
         const updatedData = this.rowData().map((group) => ({ ...group }));
         this.rowData.set(updatedData);
         this.emitChanges();
