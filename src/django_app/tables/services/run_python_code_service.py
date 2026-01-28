@@ -2,7 +2,6 @@ from datetime import datetime
 import os
 from typing import Any
 import uuid
-import json
 from tables.models import PythonCodeResult
 from tables.request_models import CodeTaskData
 from tables.models import PythonCode
@@ -23,8 +22,7 @@ class RunPythonCodeService(metaclass=SingletonMeta):
         python_code_id: int,
         varaibles: dict,
         additional_global_kwargs: dict[str, Any] | None = None,
-        wait_for_result: bool = False,
-    ) -> str | dict | None:
+    ) -> str:
         """
         Sends a Redis request to execute Python code.
 
@@ -34,8 +32,6 @@ class RunPythonCodeService(metaclass=SingletonMeta):
             additional_global_kwargs (dict[str, Any], optional): Additional global keyword arguments to be passed to the Python code. Defaults to None.
         Returns:
             str: The execution ID of the Python code.
-            or
-            dict: Code execution details and result.
         """
         additional_global_kwargs = additional_global_kwargs or {}
 
@@ -52,39 +48,10 @@ class RunPythonCodeService(metaclass=SingletonMeta):
         )
 
         channel = self.code_exec_task_channel
-        payload = code_task_data.model_dump_json()
-
-        pubsub = None
-        if wait_for_result:
-            pubsub = self.redis_service.redis_client.pubsub()
-            pubsub.subscribe("code_results")
-
-        self.redis_service.redis_client.publish(channel, payload)
-
-        if not wait_for_result:
-            return execution_id
-
-        try:
-            for message in pubsub.listen():
-                if message["type"] != "message":
-                    continue
-
-                try:
-                    raw_data = json.loads(message["data"])
-
-                    if raw_data.get("execution_id") != execution_id:
-                        continue
-
-                    return raw_data
-
-                except (json.JSONDecodeError, Exception) as e:
-                    print(f"Error parsing result: {e}")
-                    continue
-
-        finally:
-            if pubsub:
-                pubsub.unsubscribe()
-                pubsub.close()
+        self.redis_service.redis_client.publish(
+            channel, code_task_data.model_dump_json()
+        )
+        return execution_id
 
     def gen_execution_id(self):
         now = datetime.now()

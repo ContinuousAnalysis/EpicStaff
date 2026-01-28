@@ -80,7 +80,6 @@ class PythonCodeToolConfig(models.Model):
         return PythonCodeToolConfigField.objects.filter(
             tool=self.tool, name=name
         ).first()
-
     class Meta:
         unique_together = (
             "tool",
