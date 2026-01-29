@@ -22,10 +22,6 @@ from src.crew.models.request_models import SessionData, StopSessionMessage
 from src.crew.models.graph_models import GraphMessage
 
 
-
-
-
-
 @dataclass
 class SessionCoroItem:
     coro: CoroutineType
@@ -114,23 +110,6 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
 
                 stop_event.check_stop()
 
-            await asyncio.sleep(0.01)
-
-            graph_end_data = GraphMessage(
-                session_id=session_id,
-                name="",
-                execution_order=0,
-                message_data={
-                    "message_type": "graph_end",
-                    "end_node_result": session_graph_builder.end_node_result,
-                },
-            )
-            graph_end_message_data = asdict(graph_end_data)
-            graph_end_message_data["uuid"] = str(uuid.uuid4())
-
-            self.redis_service.publish("graph:messages", graph_end_message_data)
-            await asyncio.sleep(0.05)
-
             await self.redis_service.aupdate_session_status(
                 session_id=session_id,
                 status="end",
@@ -151,6 +130,20 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
             await self.redis_service.aupdate_session_status(
                 session_id=session_id, status="error", error=f"Unhandled error. \n{e}"
             )
+        finally:
+            graph_end_data = GraphMessage(
+                session_id=session_id,
+                name="",
+                execution_order=0,
+                message_data={
+                    "message_type": "graph_end",
+                    "end_node_result": session_graph_builder.end_node_result,
+                },
+            )
+            graph_end_message_data = asdict(graph_end_data)
+            graph_end_message_data["uuid"] = str(uuid.uuid4())
+
+            self.redis_service.publish("graph:messages", graph_end_message_data)
 
     async def _listen_callback(self, message: dict[str, Any]):
         try:
@@ -168,7 +161,6 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
             else:
                 logger.info(f"Unknown channel {channel}")
         except Exception:  # asyncio.CancelledError
-            ...
             logger.exception("Listener task cancelled.")
         finally:
             pass
