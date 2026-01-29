@@ -1,7 +1,9 @@
 import asyncio
-from dataclasses import dataclass, field
-from typing import Dict, Optional, Set
+from dataclasses import dataclass
+from typing import Dict
 from loguru import logger
+
+from services.cancellation_token import CancellationToken
 
 
 @dataclass
@@ -11,7 +13,7 @@ class ChunkingJob:
     chunking_job_id: str
     document_config_id: int
     task: asyncio.Task
-    cancelled: bool = field(default=False)
+    token: CancellationToken
 
 
 class ChunkingJobRegistry:
@@ -27,8 +29,6 @@ class ChunkingJobRegistry:
     def __init__(self):
         # Key: document_config_id, Value: ChunkingJob
         self._jobs: Dict[int, ChunkingJob] = {}
-        # Track cancelled job IDs explicitly (survives unregister)
-        self._cancelled_job_ids: Set[str] = set()
         self._lock = asyncio.Lock()
 
     async def register_job(
@@ -36,34 +36,40 @@ class ChunkingJobRegistry:
         document_config_id: int,
         chunking_job_id: str,
         task: asyncio.Task,
-    ) -> Optional[ChunkingJob]:
+    ) -> CancellationToken:
         """
         Register a new chunking job, cancelling any existing job for the same config.
 
+        Args:
+            document_config_id: ID of the document config being processed
+            chunking_job_id: Unique ID for this job
+            task: The asyncio.Task running the job
+
         Returns:
-            The cancelled job if one existed, None otherwise
+            CancellationToken for the new job (pass this to workers)
         """
         async with self._lock:
-            cancelled_job = None
-
             # Check if there's an existing job for this config
             if document_config_id in self._jobs:
                 existing = self._jobs[document_config_id]
-                existing.cancelled = True
+                # Cancel via token (thread-safe, workers will see this)
+                existing.token.cancel()
+                # Also cancel the asyncio task
                 existing.task.cancel()
-                # Track cancelled job ID explicitly
-                self._cancelled_job_ids.add(existing.chunking_job_id)
-                cancelled_job = existing
                 logger.info(
                     f"Cancelled existing chunking job {existing.chunking_job_id} "
                     f"for config {document_config_id}"
                 )
+
+            # Create token for the new job
+            token = CancellationToken(chunking_job_id)
 
             # Register the new job
             self._jobs[document_config_id] = ChunkingJob(
                 chunking_job_id=chunking_job_id,
                 document_config_id=document_config_id,
                 task=task,
+                token=token,
             )
 
             logger.debug(
@@ -71,7 +77,7 @@ class ChunkingJobRegistry:
                 f"for config {document_config_id}"
             )
 
-            return cancelled_job
+            return token
 
     async def unregister_job(
         self, document_config_id: int, chunking_job_id: str
@@ -92,8 +98,6 @@ class ChunkingJobRegistry:
                 # Only unregister if it's the SAME job (not a newer one)
                 if job.chunking_job_id == chunking_job_id:
                     self._jobs.pop(document_config_id)
-                    # Clean up cancelled set
-                    self._cancelled_job_ids.discard(chunking_job_id)
                     logger.debug(
                         f"Unregistered chunking job {chunking_job_id} "
                         f"for config {document_config_id}"
@@ -103,31 +107,6 @@ class ChunkingJobRegistry:
                         f"Skipped unregister for job {chunking_job_id} "
                         f"(current job is {job.chunking_job_id})"
                     )
-
-    def is_cancelled(self, chunking_job_id: str) -> bool:
-        """
-        Check if a job has been cancelled.
-
-        Used by the chunking service to check if it should abort processing.
-
-        Args:
-            chunking_job_id: UUID of the job to check
-
-        Returns:
-            True if the job was explicitly cancelled, False otherwise
-        """
-        # First check the explicit cancelled set (survives unregister)
-        if chunking_job_id in self._cancelled_job_ids:
-            return True
-
-        # Then check active jobs
-        for job in self._jobs.values():
-            if job.chunking_job_id == chunking_job_id:
-                return job.cancelled
-
-        # Job not found and not in cancelled set = not cancelled
-        # (could be not registered yet, or completed normally)
-        return False
 
 
 

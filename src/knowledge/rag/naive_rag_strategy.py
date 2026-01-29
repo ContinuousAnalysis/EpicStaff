@@ -1,7 +1,9 @@
 import os
-from typing import Callable, Optional
+from typing import Optional
 from loguru import logger
 import cachetools
+
+from services.cancellation_token import CancellationToken
 
 from psycopg2.errors import ForeignKeyViolation
 
@@ -358,7 +360,7 @@ class NaiveRAGStrategy(BaseRAGStrategy):
     def process_preview_chunking(
         self,
         document_config_id: int,
-        check_cancelled: Optional[Callable[[], bool]] = None,
+        cancellation_token: Optional["CancellationToken"] = None,
     ) -> int:
         """
         Perform preview chunking for a NaiveRag document config.
@@ -368,12 +370,12 @@ class NaiveRAGStrategy(BaseRAGStrategy):
 
         Args:
             document_config_id: naive_rag_document_config_id
-            check_cancelled: Optional callback to check if job was cancelled
+            cancellation_token: Optional token to check if job was cancelled
 
         Returns:
             Number of preview chunks created
         """
         return ChunkDocumentService().process_preview_chunking(
             naive_rag_document_config_id=document_config_id,
-            check_cancelled=check_cancelled,
+            cancellation_token=cancellation_token,
         )
