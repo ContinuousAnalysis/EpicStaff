@@ -33,6 +33,7 @@ class Session(models.Model):
         GraphOrganizationUser, on_delete=models.SET_NULL, default=None, null=True
     )
     entrypoint = models.CharField(null=True, default=None)
+    token_usage = models.JSONField(default=dict)
 
     def save(self, *args, **kwargs):
         now = timezone.now()
@@ -63,6 +64,7 @@ class Session(models.Model):
 
         result = super().delete(using, False)
         return result
+
     class Meta:
         get_latest_by = ["id"]
 
@@ -114,3 +116,11 @@ class TaskSessionMessage(CrewSessionMessage):
     expected_output = models.TextField(blank=True, default="")
     raw = models.TextField(blank=True, default="")
     agent = models.TextField(blank=True, default="")
+
+
+class SessionWarningMessage(models.Model):
+    session = models.OneToOneField(
+        Session, on_delete=models.CASCADE, related_name="warnings"
+    )
+    messages = models.JSONField(default=dict)
+    created_at = models.DateTimeField(default=timezone.now)
