@@ -25,7 +25,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # SECURITY WARNING: keep the secret key used in production secret!
-# some comment for check the precommit
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes", "on")
 
 SECRET_KEY = os.getenv("SECRET_KEY") or (
