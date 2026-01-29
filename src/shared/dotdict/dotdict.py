@@ -66,7 +66,7 @@ class DotDict(dict):
             compiled_expr = compile(ast.parse(code, mode="eval"), "<string>", "eval")
 
             def func():
-                #TODO CRITICAL looks like we need to swith to literal eval
+                # TODO CRITICAL looks like we need to swith to literal eval
                 return ast.literal_eval(compiled_expr, {}, self)
 
             self._properties[name] = Expression(code=code, func=func)
@@ -77,7 +77,10 @@ class DotDict(dict):
     def add_setter(self, name, code: str):
         try:
             compiled_expr = compile(ast.parse(code, mode="eval"), "<string>", "eval")
-            func = lambda value: ast.literal_eval(compiled_expr, {}, {**self, "value": value}) # noqa: E731
+
+            func = lambda value: ast.literal_eval(  # noqa: E731
+                compiled_expr, {}, {**self, "value": value}
+            )
             self._setters[name] = Expression(code=code, func=func)
         except Exception as e:
             raise ValueError(f"Invalid expression for setter '{name}': {e}") from e

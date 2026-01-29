@@ -72,7 +72,6 @@ def test_config_viewset_create_success(
 def test_config_viewset_create_validation_missing_required(
     api_client, python_code_tool
 ):
-
     PythonCodeToolConfigField.objects.create(
         tool=python_code_tool,
         name="mandatory_field",

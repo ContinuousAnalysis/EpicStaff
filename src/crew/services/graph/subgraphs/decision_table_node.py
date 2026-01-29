@@ -13,12 +13,9 @@ from src.crew.models.request_models import (
     DecisionTableNodeData,
     PythonCodeData,
 )
-from src.crew.models.state import (
-State
-)
+from src.crew.models.state import State
 
 from src.crew.services.run_python_code_service import RunPythonCodeService
-
 
 
 class DecisionTableNodeDataError(Exception):

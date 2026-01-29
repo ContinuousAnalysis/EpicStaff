@@ -31,7 +31,6 @@ from src.crew.services.crew.proxy_tool_factory import ProxyToolFactory
 from src.crew.services.crew.mcp_tool_factory import CrewaiMcpToolFactory
 
 
-
 class CrewParserService(metaclass=SingletonMeta):
     def __init__(
         self,

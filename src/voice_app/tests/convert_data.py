@@ -11,7 +11,6 @@ buffer_filename_base = [
 
 def convert(buffer_filename_base_list: list[str]):
     for file_name_base in buffer_filename_base_list:
-
         with open(f"{file_name_base}.json", "r") as f:
             data = json.load(f)
 

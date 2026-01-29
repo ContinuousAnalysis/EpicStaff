@@ -32,8 +32,8 @@ class RedisService:
         async for message in self.pubsub.listen():
             if message["type"] == "message":
                 pass
-                #channel = message["channel"].decode("utf-8")
-                #data = message["data"].decode("utf-8")
+                # channel = message["channel"].decode("utf-8")
+                # data = message["data"].decode("utf-8")
 
     async def _publish(self, channel: str, message):
         full_channel = f"sessions:{channel}"

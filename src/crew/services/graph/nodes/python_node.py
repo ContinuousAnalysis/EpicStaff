@@ -12,7 +12,6 @@ from src.crew.services.graph.exceptions import ReturnCodeError
 from src.crew.models.request_models import PythonCodeData
 
 
-
 class PythonNode(BaseNode):
     TYPE = "PYTHON"
 

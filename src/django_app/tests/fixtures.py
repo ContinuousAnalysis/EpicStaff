@@ -95,7 +95,6 @@ def gpt_35_llm(openai_provider: Provider) -> LLMModel:
 
 @pytest.fixture
 def llm_config(gpt_4o_llm) -> LLMConfig:
-
     llm_config = LLMConfig(
         custom_name="MyGPT-4o",
         model=gpt_4o_llm,
@@ -108,7 +107,6 @@ def llm_config(gpt_4o_llm) -> LLMConfig:
 
 @pytest.fixture
 def default_agent_config(llm_config) -> DefaultAgentConfig:
-
     default_agent_config = DefaultAgentConfig(
         allow_delegation=False, memory=False, max_iter=25, llm_config=llm_config
     )
@@ -118,7 +116,6 @@ def default_agent_config(llm_config) -> DefaultAgentConfig:
 
 @pytest.fixture
 def default_crew_config(llm_config) -> DefaultCrewConfig:
-
     default_crew_config = DefaultCrewConfig(
         process="sequential",
         memory=False,
@@ -131,7 +128,6 @@ def default_crew_config(llm_config) -> DefaultCrewConfig:
 
 @pytest.fixture
 def new_llm_config(gpt_4o_llm):
-
     llm_config = LLMConfig(
         model=gpt_4o_llm, temperature=0.9, num_ctx=1024, is_visible=True
     )
@@ -141,7 +137,6 @@ def new_llm_config(gpt_4o_llm):
 
 @pytest.fixture
 def wikipedia_tool() -> Tool:
-
     wikipedia = Tool(
         name="Wikipedia",
         name_alias="wikipedia",
@@ -202,7 +197,6 @@ def embedding_config(embedding_model: EmbeddingModel) -> EmbeddingConfig:
 
 @pytest.fixture
 def test_task(wikipedia_agent) -> Task:
-
     task = Task(
         name="test task",
         agent=wikipedia_agent,
@@ -319,7 +313,6 @@ def session_factory(db):
 
 @pytest.fixture
 def test_tool():
-
     return Tool.objects.create(
         name="Test Tool",
         name_alias="test_tool",
@@ -329,7 +322,6 @@ def test_tool():
 
 @pytest.fixture
 def test_tool_with_fields(test_tool):
-
     field1 = ToolConfigField(
         tool=test_tool,
         name="llm_config",
@@ -363,7 +355,6 @@ def test_tool_with_fields(test_tool):
 
 @pytest.fixture
 def test_tool_github_search():
-
     return Tool.objects.create(
         id=13,
         name="Test GitHub Search Tool",
@@ -374,7 +365,6 @@ def test_tool_github_search():
 
 @pytest.fixture
 def test_tool_github_search_with_fields(test_tool_github_search):
-
     llm_config = ToolConfigField(
         tool=test_tool_github_search,
         name="llm_config",
@@ -434,7 +424,6 @@ def openai_realtime_model(openai_provider):
 
 @pytest.fixture
 def openai_realtime_model_config(openai_realtime_model):
-
     # Create and return the `RealtimeModelConfig` instance
     config = RealtimeConfig.objects.create(
         custom_name="test", api_key="test", realtime_model=openai_realtime_model

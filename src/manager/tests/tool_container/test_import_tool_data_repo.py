@@ -2,7 +2,6 @@ from repositories.import_tool_data_repository import ImportToolDataRepository
 from base_models import Callable, ImportToolData
 
 
-
 class TestToolContainerHandling:
     def test_get_import_class_data(self, tools_config_file, tools_paths_file):
         """

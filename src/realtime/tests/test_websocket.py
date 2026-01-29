@@ -1,4 +1,3 @@
-
 from api.connection_repository import ConnectionRepository
 from tests.fixtures import *
 from fastapi.testclient import TestClient

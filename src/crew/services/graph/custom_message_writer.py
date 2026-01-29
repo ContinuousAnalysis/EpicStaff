@@ -2,8 +2,14 @@ from typing import Any
 
 from langgraph.types import StreamWriter
 
-from src.crew.models.graph_models import StartMessageData, GraphMessage, FinishMessageData, ErrorMessageData, \
-    ConditionGroupMessageData, ConditonGroupManipulationMessageData
+from src.crew.models.graph_models import (
+    StartMessageData,
+    GraphMessage,
+    FinishMessageData,
+    ErrorMessageData,
+    ConditionGroupMessageData,
+    ConditonGroupManipulationMessageData,
+)
 from src.crew.models.state import State
 
 

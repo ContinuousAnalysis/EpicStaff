@@ -5,13 +5,20 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import StreamWriter
 
 from src.crew.models.state import State
-from src.crew.services.graph.nodes import AudioTranscriptionNode, FileContentExtractorNode, PythonNode, CrewNode, \
-    BaseNode
+from src.crew.services.graph.nodes import (
+    AudioTranscriptionNode,
+    FileContentExtractorNode,
+    PythonNode,
+    CrewNode,
+    BaseNode,
+)
 
 from src.crew.services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
 from src.crew.services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
 from src.crew.services.graph.events import StopEvent
-from src.crew.services.graph.subgraphs.decision_table_node import DecisionTableNodeSubgraph
+from src.crew.services.graph.subgraphs.decision_table_node import (
+    DecisionTableNodeSubgraph,
+)
 from src.crew.services.graph.nodes.llm_node import LLMNode
 from src.crew.services.graph.nodes.end_node import EndNode
 

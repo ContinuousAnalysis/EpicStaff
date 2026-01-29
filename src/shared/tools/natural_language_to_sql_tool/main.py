@@ -12,7 +12,7 @@ class NaturalLanguageToSQLTool:
         self.read_only = state["variables"]["READ_ONLY"]
 
     def _create_agent(self):
-        #TODO chould we parametrize that? at least model?
+        # TODO chould we parametrize that? at least model?
         llm = ChatOpenAI(
             model="gpt-4o-mini", temperature=0, api_key=self.openai_api_key
         )

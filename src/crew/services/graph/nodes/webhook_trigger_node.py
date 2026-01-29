@@ -14,7 +14,6 @@ from src.crew.services.graph.nodes.base_node import BaseNode
 from src.crew.services.graph.events import StopEvent
 
 
-
 class WebhookTriggerNode(BaseNode):
     TYPE = "WEBHOOK_TRIGGER"
 

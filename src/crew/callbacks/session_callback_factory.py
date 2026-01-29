@@ -23,7 +23,6 @@ from src.crew.services.redis_service import RedisService, SyncPubsubSubscriber
 from src.crew.services.knowledge_search_service import KnowledgeSearchService
 
 
-
 SESSION_STATUS_CHANNEL = os.environ.get(
     "SESSION_STATUS_CHANNEL", "sessions:session_status"
 )

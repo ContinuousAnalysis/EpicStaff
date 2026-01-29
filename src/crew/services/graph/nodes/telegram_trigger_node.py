@@ -10,7 +10,6 @@ from src.crew.services.graph.nodes import BaseNode
 from src.crew.utils import set_output_variables
 
 
-
 class TelegramTriggerNode(BaseNode):
     TYPE = "TELEGRAM_TRIGGER"
 

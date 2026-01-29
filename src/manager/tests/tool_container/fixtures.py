@@ -43,7 +43,6 @@ def test_network(docker_client: DockerClient) -> Generator[Network, None, None]:
 def manager_container(
     docker_client: DockerClient, test_network: Network
 ) -> Generator[Container, None, None]:
-
     existing_container = docker_client.containers.list(
         all=True, filters={"name": "manager_container"}
     )

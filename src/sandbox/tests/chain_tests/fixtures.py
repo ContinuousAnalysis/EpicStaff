@@ -32,7 +32,6 @@ def executor_chain(
 
 @pytest.fixture
 def get_formatted_time_with_short_uuid() -> str:
-
     now = datetime.now()
     short_uuid = str(uuid.uuid4())[:4]
     formatted_time = now.strftime(f"%d-%m-%Y_%H-%M-%S-{now.microsecond // 1000:03d}")

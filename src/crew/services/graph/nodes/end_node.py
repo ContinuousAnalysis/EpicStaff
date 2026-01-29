@@ -7,8 +7,6 @@ from src.crew.services.graph.nodes import BaseNode
 from src.crew.utils import map_variables_to_input
 
 
-
-
 class EndNode(BaseNode):
     TYPE = "END"
 
