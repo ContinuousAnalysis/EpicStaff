@@ -9,16 +9,12 @@ class PythonCodeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PythonCode
-        fields = "__all__"
+        exclude = ["id"]
 
 
 class PythonCodeToolSerializer(serializers.ModelSerializer):
 
-    python_code = serializers.PrimaryKeyRelatedField(
-        queryset=PythonCode.objects.all(),
-        required=False,
-        allow_null=True,
-    )
+    python_code = PythonCodeSerializer(required=False)
 
     class Meta:
         model = PythonCodeTool

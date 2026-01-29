@@ -8,7 +8,6 @@ class EntityType(str, Enum):
     REALTIME_CONFIG = "RealtimeConfig"
     REALTIME_TRANSCRIPTION_CONFIG = "RealtimeTranscriptionConfig"
 
-    PYTHON_CODE = "PythonCode"
     PYTHON_CODE_TOOL = "PythonCodeTool"
     MCP_TOOL = "MCPTool"
 

@@ -35,8 +35,6 @@ class ImportService:
 
                     id_mapper.map(entity_type, old_id, instance.id)
 
-            self._cleanup_orphaned_python_code(created_entities)
-
         return id_mapper
 
     def _resolve_import_order(self, export_data: dict) -> List[str]:
@@ -48,7 +46,6 @@ class ImportService:
             EntityType.EMBEDDING_CONFIG,
             EntityType.REALTIME_CONFIG,
             EntityType.REALTIME_TRANSCRIPTION_CONFIG,
-            EntityType.PYTHON_CODE,
             EntityType.PYTHON_CODE_TOOL,
             EntityType.MCP_TOOL,
             EntityType.AGENT,
@@ -62,10 +59,3 @@ class ImportService:
         ]
 
         return sorted_keys
-
-    def _cleanup_orphaned_python_code(self, created_entities):
-        """Delete PythonCode that was created but isn't actually needed"""
-        # TODO: Better to move PythonCode inside of instance, cause there will never be 2 instances referencing PythonCode
-        for python_code in created_entities.get(EntityType.PYTHON_CODE, []):
-            if not PythonCodeTool.objects.filter(python_code=python_code).exists():
-                python_code.delete()

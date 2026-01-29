@@ -1,6 +1,8 @@
 import re
 from typing import List
 
+from tables.models import PythonCode
+
 
 def ensure_unique_identifier(base_name: str, existing_names: List[str]) -> str:
     """
@@ -49,13 +51,14 @@ def create_filters(data: dict) -> tuple[dict, dict]:
     return filters, null_filters
 
 
-def python_code_equal(a, b):
-    """Compares 2 instances of PythonCode, returns True if they are equal"""
+def python_code_equal(code_instance: PythonCode, code_data: dict):
+    """Compares instance of PythonCode with incoming python code data. Returns True if both are equal"""
     return all(
         [
-            a.libraries == b.libraries,
-            (a.code.rstrip() + "\n") == (b.code.rstrip() + "\n"),
-            a.entrypoint == b.entrypoint,
-            a.global_kwargs == b.global_kwargs,
+            code_instance.libraries == code_data.get("libraries"),
+            (code_instance.code.rstrip() + "\n")
+            == (code_data.get("code").rstrip() + "\n"),
+            code_instance.entrypoint == code_data.get("entrypoint"),
+            code_instance.global_kwargs == code_data.get("global_kwargs"),
         ]
     )
