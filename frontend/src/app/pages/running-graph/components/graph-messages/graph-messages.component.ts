@@ -302,6 +302,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       const sameTimeMessages = messages.filter(
         (msg) => msg.created_at === lastTime
       );
+      const sessionStatus = this.sseService.status();
 
       // Check for graph_end message - marks the session as finished
       if (
@@ -312,6 +313,18 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
         this.sseService.stopStream();
         this.updateSessionStatus();
         return;
+      }
+
+      if (
+        sameTimeMessages.some(
+          (msg) =>
+            msg.message_data.message_type === 'update_session_status' &&
+            msg.message_data.status === GraphSessionStatus.WAITING_FOR_USER
+        ) &&
+        sessionStatus === GraphSessionStatus.WAITING_FOR_USER
+      ) {
+        this.sseService.stopStream();
+        this.updateSessionStatus();
       }
 
       // if (
@@ -326,15 +339,6 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       //     (msg) => msg.message_data.message_type === 'error'
       //   ) &&
       //   sessionStatus === GraphSessionStatus.ERROR
-      // ) {
-      //   this.sseService.stopStream();
-      // } else if (
-      //   sameTimeMessages.some(
-      //     (msg) =>
-      //       msg.message_data.message_type === 'update_session_status' &&
-      //       msg.message_data.status === GraphSessionStatus.WAITING_FOR_USER
-      //   ) &&
-      //   sessionStatus === GraphSessionStatus.WAITING_FOR_USER
       // ) {
       //   this.sseService.stopStream();
       // } else if (sessionStatus === GraphSessionStatus.EXPIRED) {
