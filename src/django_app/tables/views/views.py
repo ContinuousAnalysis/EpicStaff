@@ -235,7 +235,7 @@ class SessionViewSet(
         warning = (
             {"messages": session.warnings.messages}
             if hasattr(session, "warning")
-            else None
+            else {"messages": None}
         )
 
         return Response(warning, status=status.HTTP_200_OK)
