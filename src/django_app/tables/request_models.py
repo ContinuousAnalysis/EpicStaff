@@ -141,7 +141,7 @@ class BaseKnowledgeSearchMessage(BaseModel):
 
     collection_id: int
     rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
-    rag_type: str  # Type of RAG ("naive", "graph", etc.)
+    rag_type: Literal["naive", "graph"]
     uuid: str
     query: str
     rag_search_config: (
@@ -392,7 +392,7 @@ class KnowledgeSearchMessage(BaseModel):
 
 class ChunkDocumentMessage(BaseModel):
     chunking_job_id: str  # UUID
-    rag_type: str  # "naive", "graph", etc.
+    rag_type: Literal["naive", "graph"]
     document_config_id: int
 
 
@@ -400,7 +400,7 @@ class ChunkDocumentMessage(BaseModel):
 class ChunkDocumentMessageResponse(BaseModel):
 
     chunking_job_id: str  # UUID
-    rag_type: str
+    rag_type: Literal["naive", "graph"]
     document_config_id: int
     status: str  # "completed", "failed", "cancelled"
     chunk_count: int | None = None
@@ -420,5 +420,5 @@ class WebhookEventData(BaseModel):
 class ProcessRagIndexingMessage(BaseModel):
 
     rag_id: int
-    rag_type: str  # "naive" or "graph"
+    rag_type: Literal["naive", "graph"]
     collection_id: int
