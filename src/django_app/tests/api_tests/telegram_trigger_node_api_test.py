@@ -2,12 +2,10 @@ import pytest
 from django.urls import reverse
 from tables.services.telegram_trigger_service import TelegramTriggerService
 from tables.models.graph_models import TelegramTriggerNode
-from tests.fixtures import graph
 
 
 @pytest.mark.django_db
 class TestTelegramTriggerViewSet:
-
     def test_create_telegram_trigger_node(
         self, api_client, graph, mock_telegram_service
     ):

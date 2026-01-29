@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Annotated, Literal, Union, List
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 
 # RAG Search Configuration Models

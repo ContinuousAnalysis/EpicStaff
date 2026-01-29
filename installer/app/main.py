@@ -3,7 +3,6 @@ import threading
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 import io
-import time
 
 # Import your app start function here
 from .flask import start_flask_app

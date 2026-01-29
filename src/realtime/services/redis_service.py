@@ -1,4 +1,3 @@
-import asyncio
 import json
 import redis.asyncio as aioredis
 from loguru import logger

@@ -1,5 +1,6 @@
 from openai import OpenAI
 
+
 class PictureTool:
     def __init__(self):
         self.api_key = state["variables"]["OPENAI_API_KEY"]
@@ -20,7 +21,7 @@ class PictureTool:
         except Exception as e:
             return f"Failed to generate image: {e}"
 
+
 def main(prompt, model="dall-e-3", size="1024x1024", quality="standard", n=1):
     tool = PictureTool()
     return tool.generate_image(prompt, model, size, quality, n)
-

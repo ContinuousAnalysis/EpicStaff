@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Any, List, Literal, Optional, Union
-from pydantic import AnyUrl, BaseModel, Field, HttpUrl, model_validator
+from pydantic import BaseModel, Field, HttpUrl, model_validator
 
 
 class LLMConfigData(BaseModel):
@@ -106,7 +106,7 @@ class BaseToolData(BaseModel):
             prefix, id = unique_name.split(":")
             assert prefix != ""
             assert id != ""
-        except ValueError as e:
+        except ValueError:
             raise ValueError(
                 "Invalid unique_name. Unique name should be splited by `:`. \nFor example: python-code-tool:1"
             )

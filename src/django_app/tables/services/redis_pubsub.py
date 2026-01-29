@@ -12,11 +12,8 @@ from tables.models import PythonCodeResult
 from tables.models import GraphOrganization
 from tables.request_models import CodeResultData, GraphSessionMessageData
 from tables.request_models import (
-    CodeResultData,
-    GraphSessionMessageData,
     WebhookEventData,
 )
-from tables.services.session_manager_service import SessionManagerService
 from tables.models import Session
 from loguru import logger
 
@@ -34,7 +31,6 @@ TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
 
 
 class RedisPubSub:
-
     def __init__(self):
         redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
         redis_port = int(os.getenv("REDIS_PORT", 6379))
@@ -143,7 +139,6 @@ class RedisPubSub:
     def _buffer_save(self, data, model: Type[models.Model]):
         try:
             with transaction.atomic():
-
                 created_objects = model.objects.bulk_create(data, ignore_conflicts=True)
                 logger.debug(
                     f"{model.__name__} updated with {len(created_objects)}/{len(data)} entities"
@@ -277,12 +272,11 @@ class RedisPubSub:
                 # 2. Bulk save the buffer, clear state
                 buffer = self.buffers.get(GRAPH_MESSAGES_CHANNEL)
                 if buffer and time.time() - start_time >= 3:
-
                     try:
                         graph_session_message_list = [
                             GraphSessionMessage(**data) for data in list(buffer)
                         ]
-                    except Exception as e:
+                    except Exception:
                         logger.critical(
                             "Error creating GraphSessionMessage cache_for_redis_messages_worker"
                         )

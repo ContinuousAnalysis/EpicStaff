@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 import pytest
 import fakeredis
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from services.redis_service import RedisService
 
 

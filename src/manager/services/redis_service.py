@@ -9,7 +9,6 @@ from helpers.logger import logger
 
 
 class RedisService:
-
     def __init__(self, session_start_channel="sessions:start"):
         self.aioredis_client = None
         self.session_start_channel = session_start_channel
@@ -32,8 +31,9 @@ class RedisService:
 
         async for message in self.pubsub.listen():
             if message["type"] == "message":
-                channel = message["channel"].decode("utf-8")
-                data = message["data"].decode("utf-8")
+                pass
+                #channel = message["channel"].decode("utf-8")
+                #data = message["data"].decode("utf-8")
 
     async def _publish(self, channel: str, message):
         full_channel = f"sessions:{channel}"

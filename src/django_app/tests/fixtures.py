@@ -5,7 +5,9 @@ import shutil
 import pytest
 from django.core.management import call_command
 from django.core.cache import cache
-from tables.validators.python_code_tool_config_validator import PythonCodeToolConfigValidator
+from tables.validators.python_code_tool_config_validator import (
+    PythonCodeToolConfigValidator,
+)
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.realtime_models import RealtimeAgent
 from tables.models.llm_models import (
@@ -14,7 +16,12 @@ from tables.models.llm_models import (
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
 )
-from tables.models.crew_models import AgentConfiguredTools, AgentPythonCodeTools, DefaultAgentConfig, DefaultCrewConfig
+from tables.models.crew_models import (
+    AgentConfiguredTools,
+    AgentPythonCodeTools,
+    DefaultAgentConfig,
+    DefaultCrewConfig,
+)
 from tables.services.config_service import YamlConfigService
 from tables.services.redis_service import RedisService
 from tables.services.session_manager_service import SessionManagerService
@@ -50,10 +57,8 @@ from tables.serializers.export_serializers import (
     GraphExportSerializer,
 )
 
-from django.utils.crypto import get_random_string
 from tests.helpers import data_to_json_file
 
-from rest_framework.test import APIClient
 import fakeredis
 
 
@@ -170,11 +175,11 @@ def wikipedia_agent(
     agent.save()
 
     AgentConfiguredTools.objects.create(
-        agent_id=agent.id,
-        toolconfig_id=wikipedia_tool_config.id
+        agent_id=agent.id, toolconfig_id=wikipedia_tool_config.id
     )
 
     return agent
+
 
 @pytest.fixture
 def embedding_model(openai_provider: Provider) -> EmbeddingModel:
@@ -735,7 +740,7 @@ def python_code() -> PythonCode:
         code="def main(): return 42",
         entrypoint="main",
         libraries="requests json",
-        global_kwargs={}
+        global_kwargs={},
     )
 
 
@@ -780,15 +785,18 @@ def python_code_tool_config(python_code_tool) -> PythonCodeToolConfig:
         configuration={"arg1": "value1", "arg2": 10},
     )
 
+
 @pytest.fixture
 def validator():
     return PythonCodeToolConfigValidator()
+
 
 @pytest.fixture
 def mock_tool(mocker):
     """Creates a mock PythonCodeTool."""
     tool = MagicMock(spec=PythonCodeTool)
     return tool
+
 
 def create_mock_field(name, data_type, required=True):
     """Helper to create a mock configuration field."""
@@ -810,6 +818,7 @@ def tool_config_field_int(db, python_code_tool):
         required=True,
     )
 
+
 @pytest.fixture
 def tool_config_field_str(db, python_code_tool):
     """Creates a String configuration field (optional) for the tool."""
@@ -820,11 +829,12 @@ def tool_config_field_str(db, python_code_tool):
         required=False,
     )
 
+
 @pytest.fixture
 def existing_config(db, python_code_tool):
     """Creates an existing configuration entry."""
     return PythonCodeToolConfig.objects.create(
         name="production_config",
         tool=python_code_tool,
-        configuration={"batch_size": 50}
+        configuration={"batch_size": 50},
     )

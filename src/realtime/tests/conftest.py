@@ -1,4 +1,3 @@
-import pytest
 
 
 CONNECTION_KEY = "mock_key"

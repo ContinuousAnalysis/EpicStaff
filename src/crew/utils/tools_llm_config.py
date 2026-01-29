@@ -1,7 +1,6 @@
 import os
 import logging
 import pandas as pd
-from utils.helpers import load_env
 
 logger = logging.getLogger(__name__)
 
@@ -106,9 +105,9 @@ def get_config(model=None, embedding_model=None, models_df=None):
             config.pop(component_key)
             continue
         if provider == "openai_compatible":
-            config[component_key]["config"][
-                "api_key"
-            ] = "NA"  # TODO: - get api_key from table
+            config[component_key]["config"]["api_key"] = (
+                "NA"  # TODO: - get api_key from table
+            )
         elif (
             provider == "azure_openai"
             and config[component_key]["config"]["api_key"] == "NA"

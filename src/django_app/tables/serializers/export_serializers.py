@@ -3,7 +3,6 @@ from rest_framework import serializers
 from django.db.models import Prefetch
 
 from tables.models.mcp_models import McpTool
-from tables.models.crew_models import AgentConfiguredTools, AgentPythonCodeTools
 from tables.models import (
     Agent,
     LLMConfig,
@@ -38,14 +37,12 @@ class EntityType(str, Enum):
 
 
 class PythonCodeExportSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = PythonCode
         fields = "__all__"
 
 
 class PythonCodeToolExportSerializer(serializers.ModelSerializer):
-
     python_code = PythonCodeExportSerializer()
 
     class Meta:
@@ -54,7 +51,6 @@ class PythonCodeToolExportSerializer(serializers.ModelSerializer):
 
 
 class ToolConfigExportSerializer(serializers.ModelSerializer):
-
     tool = serializers.SerializerMethodField()
 
     class Meta:
@@ -72,7 +68,6 @@ class McpToolExportSerilizer(serializers.ModelSerializer):
 
 
 class GeneralToolExportSerializer(serializers.Serializer):
-
     data = serializers.DictField(required=True)
 
     def to_representation(self, instance):
@@ -96,7 +91,6 @@ class GeneralToolExportSerializer(serializers.Serializer):
 
 
 class BaseConfigExportSerializer(serializers.ModelSerializer):
-
     model = serializers.SerializerMethodField()
 
     class Meta:
@@ -109,19 +103,16 @@ class BaseConfigExportSerializer(serializers.ModelSerializer):
 
 
 class EmbeddingConfigExportSerializer(BaseConfigExportSerializer):
-
     class Meta(BaseConfigExportSerializer.Meta):
         model = EmbeddingConfig
 
 
 class LLMConfigExportSerializer(BaseConfigExportSerializer):
-
     class Meta(BaseConfigExportSerializer.Meta):
         model = LLMConfig
 
 
 class RealtimeConfigExportSerializer(BaseConfigExportSerializer):
-
     class Meta(BaseConfigExportSerializer.Meta):
         model = RealtimeConfig
         exclude = ["api_key", "realtime_model"]
@@ -131,7 +122,6 @@ class RealtimeConfigExportSerializer(BaseConfigExportSerializer):
 
 
 class RealtimeTranscriptionConfigExportSerializer(BaseConfigExportSerializer):
-
     class Meta(BaseConfigExportSerializer.Meta):
         model = RealtimeTranscriptionConfig
         exclude = ["api_key", "realtime_transcription_model"]
@@ -141,7 +131,6 @@ class RealtimeTranscriptionConfigExportSerializer(BaseConfigExportSerializer):
 
 
 class RealtimeAgentExportSerializer(serializers.ModelSerializer):
-
     realtime_config = RealtimeConfigExportSerializer()
     realtime_transcription_config = RealtimeTranscriptionConfigExportSerializer()
 
@@ -151,7 +140,6 @@ class RealtimeAgentExportSerializer(serializers.ModelSerializer):
 
 
 class NestedRealtimeAgentExportSerializer(RealtimeAgentExportSerializer):
-
     realtime_config = serializers.SerializerMethodField()
     realtime_transcription_config = serializers.SerializerMethodField()
     id = serializers.SerializerMethodField()
@@ -169,7 +157,6 @@ class NestedRealtimeAgentExportSerializer(RealtimeAgentExportSerializer):
 
 
 class RealtimeDataExportSerializer(serializers.Serializer):
-
     realtime_configs = RealtimeConfigExportSerializer(many=True)
     realtime_transcription_configs = RealtimeTranscriptionConfigExportSerializer(
         many=True
@@ -178,7 +165,6 @@ class RealtimeDataExportSerializer(serializers.Serializer):
 
 
 class AgentExportSerializer(serializers.ModelSerializer):
-
     tools = serializers.SerializerMethodField()
     llm_config = LLMConfigExportSerializer()
     fcm_llm_config = LLMConfigExportSerializer()
@@ -216,14 +202,12 @@ class AgentExportSerializer(serializers.ModelSerializer):
 
 
 class NestedAgentExportSerializer(NestedAgentExportMixin, AgentExportSerializer):
-
     llm_config = serializers.SerializerMethodField()
     fcm_llm_config = serializers.SerializerMethodField()
     realtime_agent = serializers.SerializerMethodField()
 
 
 class TaskExportSerializer(serializers.ModelSerializer):
-
     tools = serializers.SerializerMethodField()
     context_tasks = serializers.SerializerMethodField()
 
@@ -249,7 +233,6 @@ class TaskExportSerializer(serializers.ModelSerializer):
 
 
 class CrewExportSerializer(serializers.ModelSerializer):
-
     agents = serializers.SerializerMethodField()
     tasks = serializers.SerializerMethodField()
     tools = serializers.SerializerMethodField()
@@ -396,7 +379,6 @@ class CrewExportSerializer(serializers.ModelSerializer):
 
 
 class NestedCrewExportSerializer(NestedCrewExportMixin, CrewExportSerializer):
-
     tools = None
     llm_configs = None
     realtime_agents = None
@@ -406,7 +388,6 @@ class NestedCrewExportSerializer(NestedCrewExportMixin, CrewExportSerializer):
 
 
 class CrewNodeExportSerializer(CrewNodeSerializer):
-
     crew_id = serializers.IntegerField(read_only=True)
 
     class Meta(CrewNodeSerializer.Meta):
@@ -415,17 +396,14 @@ class CrewNodeExportSerializer(CrewNodeSerializer):
 
 
 class PythonNodeExportSerializer(PythonNodeSerializer):
-
     python_code = PythonCodeExportSerializer()
 
 
 class ConditionalEdgeExportSerializer(ConditionalEdgeSerializer):
-
     python_code = PythonCodeExportSerializer()
 
 
 class GraphExportSerializer(GraphSerializer):
-
     crew_node_list = CrewNodeExportSerializer(many=True)
     python_node_list = PythonNodeExportSerializer(many=True)
     conditional_edge_list = ConditionalEdgeExportSerializer(many=True)

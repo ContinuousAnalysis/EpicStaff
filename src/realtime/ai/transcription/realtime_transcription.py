@@ -88,9 +88,9 @@ class OpenaiRealtimeTranscriptionClient:
             data["session"]["input_audio_transcription"]["language"] = self.language
 
         if self.voice_recognition_prompt is not None:
-            data["session"]["input_audio_transcription"][
-                "prompt"
-            ] = self.voice_recognition_prompt
+            data["session"]["input_audio_transcription"]["prompt"] = (
+                self.voice_recognition_prompt
+            )
 
         await self.send_server(data)
 
@@ -112,13 +112,13 @@ class OpenaiRealtimeTranscriptionClient:
 
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to decode API message {e}")
-                except Exception as e:
-                    logger.exception(f"Error processing API message")
+                except Exception:
+                    logger.exception("Error processing API message")
 
         except websockets.exceptions.ConnectionClosed:
             logger.info(f"WebSocket connection {self.connection_key} closed")
-        except Exception as e:
-            logger.exception(f"Error in message handler")
+        except Exception:
+            logger.exception("Error in message handler")
 
     async def close(self) -> None:
         """Close the WebSocket connection."""

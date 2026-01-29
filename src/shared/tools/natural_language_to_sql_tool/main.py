@@ -4,6 +4,7 @@ from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_openai import ChatOpenAI
 
+
 class NaturalLanguageToSQLTool:
     def __init__(self):
         self.db_uri = state["variables"]["DB_URI"]
@@ -11,7 +12,10 @@ class NaturalLanguageToSQLTool:
         self.read_only = state["variables"]["READ_ONLY"]
 
     def _create_agent(self):
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=self.openai_api_key)
+        #TODO chould we parametrize that? at least model?
+        llm = ChatOpenAI(
+            model="gpt-4o-mini", temperature=0, api_key=self.openai_api_key
+        )
         db = SQLDatabase.from_uri(self.db_uri)
 
         crud_policy = (
@@ -32,7 +36,8 @@ class NaturalLanguageToSQLTool:
         agent = self._create_agent()
         result = agent.invoke({"input": query_text})
         return result["output"]
-    
+
+
 def main(query_text):
     nl2sql = NaturalLanguageToSQLTool()
     return nl2sql.run_query(query_text)

@@ -1,15 +1,13 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 import asyncio
-from asyncio.subprocess import Process
 import hashlib
 import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from models import CodeResultData
-from services.redis_service import RedisService
 from utils.logger import logger
 
 
@@ -54,7 +52,6 @@ class DummyHandler(AbstractHandler):
 
 
 class CreateVenvHandler(AbstractHandler):
-
     def calculate_hash(self, libraries: List[str]) -> str:
         """Calculate a hash of the libraries list."""
         libraries_str = json.dumps(libraries, sort_keys=True)
@@ -73,7 +70,7 @@ class CreateVenvHandler(AbstractHandler):
         base_venv_path = context.get("base_venv_path")
         venv_path: Path = Path(base_venv_path) / Path(lib_hash)
         python_executable = (
-            venv_path / Path(f"bin/python")
+            venv_path / Path("bin/python")
             if os.name != "nt"
             else venv_path / Path("Scripts/python")
         )
@@ -100,7 +97,6 @@ class CreateVenvHandler(AbstractHandler):
 
 
 class InstallLibrariesHandler(AbstractHandler):
-
     def calculate_hash(self, libraries: List[str]) -> str:
         """Calculate a hash of the libraries list."""
         libraries_str = json.dumps(libraries, sort_keys=True)
@@ -221,7 +217,6 @@ class InstallLibrariesHandler(AbstractHandler):
 
 
 class ExecuteCodeHandler(AbstractHandler):
-
     def wrap_code(
         self,
         code: str,
@@ -315,7 +310,6 @@ sys.exit(0)
 
 
 class DynamicVenvExecutorChain:
-
     def __init__(
         self,
         output_path: str | Path,

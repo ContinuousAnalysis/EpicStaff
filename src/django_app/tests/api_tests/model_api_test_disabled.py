@@ -12,7 +12,6 @@ from tables.models import (
     Provider,
     Crew,
 )
-from tables.serializers.nested_model_serializers import NestedSessionSerializer
 from tables.services.converter_service import ConverterService
 from rest_framework import status
 

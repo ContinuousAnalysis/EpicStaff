@@ -9,7 +9,7 @@ class Callable(BaseModel):
     package: str | None = None
     args: list[Union["Callable", typing.Iterable, typing.Dict]] | None = None
     kwargs: dict[str, Union[str, "Callable", typing.Iterable, typing.Dict]] | None = (
-            None
+        None
     )
 
 

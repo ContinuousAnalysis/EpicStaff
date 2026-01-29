@@ -1,5 +1,4 @@
 import os
-import pytest
 from unittest.mock import mock_open, patch
 
 from tests.environment.fixtures import mock_yaml_content
@@ -22,6 +21,6 @@ def test_load_env_from_yaml():
         with patch.dict(os.environ, {}, clear=True):
             result = load_env_from_yaml_config("mocked_config.yaml")
 
-            assert os.environ['OPENAI_API_KEY'] == '123'
-            assert os.environ['ANOTHER_KEY'] == '234'
-            assert os.environ['YET_ANOTHER_KEY'] == '345'
+            assert os.environ["OPENAI_API_KEY"] == "123"
+            assert os.environ["ANOTHER_KEY"] == "234"
+            assert os.environ["YET_ANOTHER_KEY"] == "345"

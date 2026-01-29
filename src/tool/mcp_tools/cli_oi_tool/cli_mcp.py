@@ -120,7 +120,7 @@ def cli_tool(input_data: CLIToolInput):
         stateless_interpreter.system_message = custom_instruction
 
         logger.info(
-            f"Received task: context: {context if context else "None"}; instruction: {instruction}"
+            f"Received task: context: {context if context else 'None'}; instruction: {instruction}"
         )
         start_time = time.time()
 

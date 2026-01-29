@@ -1,9 +1,6 @@
 from django.db import models
 
 
-from django.db import models
-
-
 class McpTool(models.Model):
     """
     Configuration for a FastMCP client connecting to remote MCP tools via SSE.

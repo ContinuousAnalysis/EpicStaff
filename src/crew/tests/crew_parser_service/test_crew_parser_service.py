@@ -1,17 +1,5 @@
 from services.crew.crew_parser_service import CrewParserService
 from crewai import Crew
-import pytest
-from tests.crew_parser_service.fixtures import (
-    fake_crew_data,
-    fake_agent_data,
-    fake_task_data,
-    mock_redis_service,
-    graph_session_callback_factory,
-    mock_redis_service,
-    python_code_executor_service,
-    crew_callback_factory,
-    knowledge_search_service,
-)
 
 
 class TestCrewParserService:
@@ -39,9 +27,7 @@ class TestCrewParserService:
         # TODO: set OPENAI_API_KEY from OPENAI_KEY for gitlab
         import os
 
-        os.environ["OPENAI_API_KEY"] = os.environ.get(
-            "OPENAI_API_KEY"
-        ) or "MOCK_KEY"
+        os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY") or "MOCK_KEY"
 
         inputs = {
             "text": "What is the capital of France?",

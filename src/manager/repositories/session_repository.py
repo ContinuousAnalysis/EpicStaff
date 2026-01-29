@@ -13,7 +13,6 @@ class SessionRepository:
         self.session_factory = session_factory or AsyncSessionLocal
 
     async def _execute_with_session(self, operation):
-
         async with self.session_factory() as session:
             try:
                 result = await operation(session)

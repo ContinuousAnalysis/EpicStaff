@@ -2,7 +2,6 @@ import pytest
 import json
 from unittest.mock import patch, AsyncMock
 from app.services.redis_service import RedisService
-from app.request_models import WebhookEventData
 
 
 @pytest.mark.asyncio

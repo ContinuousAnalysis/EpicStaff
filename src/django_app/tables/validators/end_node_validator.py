@@ -2,6 +2,7 @@ from tables.models import EndNode
 from tables.exceptions import EndNodeValidationError
 from loguru import logger
 
+
 class EndNodeValidator:
     def validate(self, graph_id: int) -> EndNode | None:
         end_node = self._check_exists(graph_id)
@@ -19,7 +20,6 @@ class EndNodeValidator:
             logger.warning(f"end_node is missing for flow id={graph_id}")
             # raise EndNodeValidationError(f"end_node is missing for flow id={graph_id}")
 
-        
     def _validate_output_map(self, end_node: EndNode, graph_id: int) -> None:
         non_string_errors = []
         variables_path_errors = []
@@ -46,9 +46,7 @@ class EndNodeValidator:
 
         if variables_path_errors:
             if len(variables_path_errors) == 1:
-                msg = (
-                    f'Value for "{variables_path_errors[0]}" must start with "variables"'
-                )
+                msg = f'Value for "{variables_path_errors[0]}" must start with "variables"'
             else:
                 msg = (
                     f'Values for "{", ".join(variables_path_errors)}" '

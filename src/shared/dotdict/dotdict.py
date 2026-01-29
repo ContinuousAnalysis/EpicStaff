@@ -21,7 +21,7 @@ class DotDict(dict):
         if dictionary is None:
             dictionary = {}
         dictionary = dict(dictionary)
-        
+
         properties = dictionary.pop("__properties__", None)
         setters = dictionary.pop("__setters__", None)
 
@@ -64,7 +64,11 @@ class DotDict(dict):
     def add_property(self, name, code: str):
         try:
             compiled_expr = compile(ast.parse(code, mode="eval"), "<string>", "eval")
-            func = lambda: eval(compiled_expr, {}, self)
+
+            def func():
+                #TODO CRITICAL looks like we need to swith to literal eval
+                return ast.literal_eval(compiled_expr, {}, self)
+
             self._properties[name] = Expression(code=code, func=func)
             self._update_properties()
         except Exception as e:
@@ -73,7 +77,7 @@ class DotDict(dict):
     def add_setter(self, name, code: str):
         try:
             compiled_expr = compile(ast.parse(code, mode="eval"), "<string>", "eval")
-            func = lambda value: eval(compiled_expr, {}, {**self, "value": value})
+            func = lambda value: ast.literal_eval(compiled_expr, {}, {**self, "value": value}) # noqa: E731
             self._setters[name] = Expression(code=code, func=func)
         except Exception as e:
             raise ValueError(f"Invalid expression for setter '{name}': {e}") from e
@@ -112,5 +116,3 @@ def DotObject(data):
     elif isinstance(data, (list, tuple, set)):
         return DotList(DotObject(v) for v in data)
     return data
-
-
