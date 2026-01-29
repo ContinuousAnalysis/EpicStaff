@@ -3,7 +3,6 @@ from collections import defaultdict
 
 from django.db import transaction
 
-from tables.models import PythonCodeTool
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.registry import EntityRegistry
 from tables.import_export.enums import EntityType
@@ -50,6 +49,7 @@ class ImportService:
             EntityType.MCP_TOOL,
             EntityType.AGENT,
             EntityType.CREW,
+            EntityType.GRAPH,
         ]
 
         sorted_keys = [

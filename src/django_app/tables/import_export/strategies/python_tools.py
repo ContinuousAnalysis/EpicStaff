@@ -20,16 +20,16 @@ class PythonCodeToolStrategy(EntityImportStrategy):
     entity_type = EntityType.PYTHON_CODE_TOOL
     serializer_class = PythonCodeToolSerializer
 
-    def get_instance(self, entity_id: int) -> PythonCode:
+    def get_instance(self, entity_id: int) -> PythonCodeTool:
         return PythonCodeTool.objects.filter(id=entity_id).first()
 
     def extract_dependencies_from_instance(self, instance) -> dict[str, list[int]]:
         return {}
 
-    def export_entity(self, instance: PythonCode) -> dict:
+    def export_entity(self, instance: PythonCodeTool) -> dict:
         return self.serializer_class(instance).data
 
-    def create_entity(self, data: dict, id_mapper: IDMapper) -> PythonCode:
+    def create_entity(self, data: dict, id_mapper: IDMapper) -> PythonCodeTool:
         python_code_data = data.pop("python_code", None)
 
         if "name" in data:
@@ -41,7 +41,9 @@ class PythonCodeToolStrategy(EntityImportStrategy):
 
         python_code = self._create_python_code(python_code_data)
 
-        serializer = self.serializer_class(data={**data, "python_code": python_code})
+        serializer = self.serializer_class(
+            data={**data, "python_code_id": python_code.id}
+        )
         serializer.is_valid(raise_exception=True)
         python_code_tool = serializer.save()
 
