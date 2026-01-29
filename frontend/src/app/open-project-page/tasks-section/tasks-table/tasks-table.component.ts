@@ -156,6 +156,11 @@ export class TasksTableComponent implements OnChanges {
     private globalClickUnlistener: (() => void) | null = null;
     private globalKeydownUnlistener: (() => void) | null = null;
 
+    // Track drag state for header drop detection
+    private isDragOutsideRows = false;
+    private draggedTaskData: TableFullTask | null = null;
+    private dragMouseUpListener: (() => void) | null = null;
+
     constructor(
         private overlay: Overlay,
         private cdr: ChangeDetectorRef,
@@ -513,9 +518,28 @@ export class TasksTableComponent implements OnChanges {
         onCellKeyDown: (event: CellKeyDownEvent) => this.onCellKeyDown(event),
         onCellValueChanged: (event) => this.onCellValueChanged(event),
         onRowDragEnd: (event) => this.onRowDragEnd(event),
+        onRowDragEnter: (event) => {
+            // Clear the outside flag when re-entering the row area
+            this.isDragOutsideRows = false;
+            this.draggedTaskData = null;
+            this.removeDragMouseUpListener();
+        },
+        onRowDragLeave: (event) => {
+            // When drag leaves the grid area (e.g., into header), set flag and wait for mouseup
+            this.isDragOutsideRows = true;
+            this.draggedTaskData = event.node?.data as TableFullTask;
+            
+            // Add mouseup listener to detect when user releases the mouse outside rows
+            this.addDragMouseUpListener();
+        },
     };
     // Event handler for rowDragEnd
     onRowDragEnd(event: RowDragEndEvent) {
+        // Clear drag outside state
+        this.isDragOutsideRows = false;
+        this.draggedTaskData = null;
+        this.removeDragMouseUpListener();
+        
         // Get the moved data
         const movedData = event.node.data as TableFullTask;
 
@@ -524,6 +548,15 @@ export class TasksTableComponent implements OnChanges {
         const toIndex = event.overIndex;
 
         if (fromIndex === -1 || toIndex === null || toIndex === undefined) {
+            return;
+        }
+
+        // Check if dropped outside the valid rows area (e.g., into header or above rows)
+        if (toIndex < 0 || toIndex >= this.rowData.length) {
+            this.toastService.error('Cannot move task outside the tasks area.');
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
             return;
         }
 
@@ -664,6 +697,147 @@ export class TasksTableComponent implements OnChanges {
         this.cdr.markForCheck();
 
         // Update task orders on the backend
+        this.updateTaskOrders();
+    }
+
+    // Add mouseup listener to detect drop outside rows
+    private addDragMouseUpListener(): void {
+        if (this.dragMouseUpListener) return; // Already listening
+        
+        this.dragMouseUpListener = this.renderer.listen('document', 'mouseup', () => {
+            if (this.isDragOutsideRows && this.draggedTaskData) {
+                // User released mouse while outside row area - handle as drop to first position
+                this.handleDragToFirstPosition();
+            }
+            // Clean up
+            this.isDragOutsideRows = false;
+            this.draggedTaskData = null;
+            this.removeDragMouseUpListener();
+        });
+    }
+
+    // Remove mouseup listener
+    private removeDragMouseUpListener(): void {
+        if (this.dragMouseUpListener) {
+            this.dragMouseUpListener();
+            this.dragMouseUpListener = null;
+        }
+    }
+
+    // Handle drag to header area - attempt to move task to first position with context validation
+    private handleDragToFirstPosition(): void {
+        const movedData = this.draggedTaskData;
+        if (!movedData) {
+            // No data, just revert
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
+            return;
+        }
+
+        const fromIndex = this.rowData.findIndex((row) => row === movedData);
+        const toIndex = 0; // Target is first position
+
+        if (fromIndex === -1 || fromIndex === 0) {
+            // Already at first position or not found, just revert visual
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
+            return;
+        }
+
+        // Check if dragged task has dependencies - they must all be above position 0, which is impossible
+        const conflictingDeps = (movedData.task_context_list || []).filter(
+            (depId: any) => {
+                const depIndex = this.rowData.findIndex((row) => {
+                    if (row.id === null || row.id === undefined) return false;
+                    const rowIdNum = typeof row.id === 'string' ? (row.id.startsWith('temp_') ? NaN : +row.id) : row.id;
+                    return +depId === rowIdNum;
+                });
+                // For position 0, any dependency is a conflict (nothing can be above position 0)
+                return depIndex !== -1; // If dependency exists in the list, it's a conflict
+            }
+        );
+
+        if (conflictingDeps.length > 0) {
+            const conflictNames = conflictingDeps.map((depId: any) => {
+                const row = this.rowData.find((r) => {
+                    if (r.id === null || r.id === undefined) return false;
+                    const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                    return +depId === rowIdNum;
+                });
+                return row ? `${row.name || 'Without name'} (id:${row.id})` : `id:${depId}`;
+            });
+
+            const shortList = conflictNames.slice(0, 3).join(', ');
+            const more = conflictNames.length > 3 ? `, …and ${conflictNames.length - 3} more` : '';
+
+            this.toastService.error(
+                `Context conflict: ${shortList}${more}. First, arrange/edit the dependencies.`
+            );
+
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
+            return;
+        }
+
+        // Check if moving to position 0 would break dependencies of tasks that shift down
+        const shiftedConflicts: string[] = [];
+
+        // Moving up to position 0: rows in (0 .. fromIndex-1) will shift down by 1
+        for (let i = 0; i <= fromIndex - 1; i++) {
+            const row = this.rowData[i];
+            if (!row) continue;
+            const newIndex = i + 1;
+            const deps = row.task_context_list || [];
+            deps.forEach((depId: any) => {
+                const depIndex = this.rowData.findIndex((r) => {
+                    if (r.id === null || r.id === undefined) return false;
+                    const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                    return +depId === rowIdNum;
+                });
+                if (depIndex === -1 || depIndex >= newIndex) {
+                    const depRow = this.rowData.find((r) => {
+                        if (r.id === null || r.id === undefined) return false;
+                        const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                        return +depId === rowIdNum;
+                    });
+                    const depLabel = depRow ? `${depRow.name || 'Without name'} (id:${depRow.id})` : `id:${depId}`;
+                    shiftedConflicts.push(`${row.name || 'Without name'} (id:${row.id}) → dependency ${depLabel}`);
+                }
+            });
+        }
+
+        if (shiftedConflicts.length > 0) {
+            const shortList = shiftedConflicts.slice(0, 4).join('; ');
+            const more = shiftedConflicts.length > 4 ? `; …and ${shiftedConflicts.length - 4} more` : '';
+            this.toastService.error(`Cannot move the task: shifting it would break the context for: ${shortList}${more}.`);
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
+            return;
+        }
+
+        // All checks passed - perform the actual reorder to position 0
+        this.rowData.splice(fromIndex, 1);
+        this.rowData.splice(toIndex, 0, movedData);
+
+        // Update order values in all rows
+        this.rowData.forEach((row, i) => {
+            row.order = i;
+        });
+
+        // Update the grid with new data
+        if (this.gridApi) {
+            this.gridApi.setGridOption('rowData', [...this.rowData]);
+            this.gridApi.refreshCells({
+                force: true,
+                columns: ['index'],
+            });
+        }
+
+        this.cdr.markForCheck();
         this.updateTaskOrders();
     }
 
@@ -873,6 +1047,7 @@ export class TasksTableComponent implements OnChanges {
 
     ngOnDestroy(): void {
         this.closePopup();
+        this.removeDragMouseUpListener();
     }
 
     openSettingsDialog(taskData: TableFullTask) {
