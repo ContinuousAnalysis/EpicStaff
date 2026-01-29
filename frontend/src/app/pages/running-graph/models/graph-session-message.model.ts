@@ -29,7 +29,6 @@ export enum MessageType {
   GRAPH_END = 'graph_end',
 }
 
-// Message data interfaces - these match the camelCase structure used in your code
 export interface FinishMessageData {
   output: any;
   state: Record<string, any>;
