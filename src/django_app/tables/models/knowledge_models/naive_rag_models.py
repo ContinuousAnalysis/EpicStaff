@@ -199,6 +199,7 @@ class NaiveRagChunk(models.Model):
     )
 
     token_count = models.PositiveIntegerField(null=True, blank=True)
+    overlap_start_index = models.PositiveIntegerField(null=True, blank=True)
     overlap_end_index = models.PositiveIntegerField(null=True, blank=True)
     metadata = models.JSONField(
         default=dict, help_text="Chunk-specific metadata (page numbers, sections, etc.)"
@@ -347,6 +348,7 @@ class NaiveRagPreviewChunk(models.Model):
     )
 
     token_count = models.PositiveIntegerField(null=True, blank=True)
+    overlap_start_index = models.PositiveIntegerField(null=True, blank=True)
     overlap_end_index = models.PositiveIntegerField(null=True, blank=True)
     metadata = models.JSONField(
         default=dict,
