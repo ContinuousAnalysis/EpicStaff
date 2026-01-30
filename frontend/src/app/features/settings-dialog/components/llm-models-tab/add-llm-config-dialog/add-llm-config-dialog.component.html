@@ -1,123 +1,403 @@
-<div class="dialog-container">
-    <div class="dialog-header">
-        <h2>Add LLM Configuration</h2>
+<div class="llm-dialog">
+    <!-- Header -->
+    <div class="llm-dialog__header">
+        <h2 class="llm-dialog__title">{{ dialogTitle() }}</h2>
+        <button
+            type="button"
+            class="llm-dialog__close-btn"
+            (click)="onCancel()"
+            [disabled]="isSubmitting()"
+        >
+            <app-icon icon="ui/x" size="1rem" />
+        </button>
     </div>
 
-    <div class="dialog-content">
-        <form [formGroup]="form" (ngSubmit)="onSubmit()">
-            <!-- Loading state -->
-            <!-- <div *ngIf="isLoading()" class="loading-state">
-        <p>Loading...</p>
-      </div> -->
+    <!-- Content -->
+    <div class="llm-dialog__content">
+        @if (errorMessage()) {
+            <div class="llm-dialog__error">
+                <p>{{ errorMessage() }}</p>
+            </div>
+        }
 
-            <!-- Error message -->
-            @if (errorMessage()) {
-                <div class="error-message">
-                    <p>{{ errorMessage() }}</p>
+        <!-- Model Information Section -->
+        <section class="llm-dialog__section">
+            <h3 class="llm-dialog__section-title">Model Information</h3>
+
+            <!-- Provider & Model Selector -->
+            <div class="llm-dialog__field">
+                <app-form-field-label
+                    label="Provider & Model"
+                    [required]="true"
+                    tooltipText="Select the LLM provider and model"
+                />
+                <button
+                    type="button"
+                    class="llm-dialog__model-selector"
+                    (click)="openModelSelector()"
+                >
+                    @if (selectedProvider()) {
+                        <app-icon
+                            [icon]="getProviderIcon(selectedProvider()!.name)"
+                            size="1.25rem"
+                        />
+                    }
+                    <span class="llm-dialog__model-selector-text" [class.llm-dialog__model-selector-text--placeholder]="!selectedModel()">
+                        {{ selectedModelDisplay() }}
+                    </span>
+                    <app-icon icon="ui/chevron-down" size="1rem" />
+                </button>
+            </div>
+
+            <!-- API Key -->
+            <div class="llm-dialog__field">
+                <app-form-field-label
+                    label="API Key"
+                    [required]="true"
+                    tooltipText="Your API key for the selected provider"
+                />
+                <div class="llm-dialog__input-wrapper">
+                    <input
+                        [type]="showApiKey() ? 'text' : 'password'"
+                        class="llm-dialog__input"
+                        placeholder="Enter provider's API key"
+                        [ngModel]="apiKey()"
+                        (ngModelChange)="apiKey.set($event)"
+                    />
+                    <button
+                        type="button"
+                        class="llm-dialog__input-action"
+                        (click)="toggleApiKeyVisibility()"
+                    >
+                        <app-icon
+                            [icon]="showApiKey() ? 'ui/eye-off' : 'ui/eye'"
+                            size="1.25rem"
+                        />
+                    </button>
                 </div>
-            }
-
-            <!-- Form fields -->
-            <div class="form-field">
-                <label for="providerId">Provider</label>
-                <select id="providerId" formControlName="providerId">
-                    @for (provider of providers(); track provider.id) {
-                        <option [ngValue]="provider.id">
-                            {{ provider.name }}
-                        </option>
-                    }
-                </select>
-                @if (form.get('providerId')?.invalid && form.get('providerId')?.touched) {
-                    <div class="error-hint">
-                        Please select a provider
-                    </div>
-                }
             </div>
 
-            <div class="form-field">
-                <label for="modelId">Model</label>
-                <select id="modelId" formControlName="modelId">
-                    @if (models().length === 0) {
-                        <option [ngValue]="null">
-                            Select a model
-                        </option>
-                    }
-                    @for (model of models(); track model.id) {
-                        <option [ngValue]="model.id">
-                            {{ model.name }}
-                        </option>
-                    }
-                </select>
-                @if (form.get('modelId')?.invalid && form.get('modelId')?.touched) {
-                    <div class="error-hint">
-                        Please select a model
-                    </div>
-                }
-            </div>
-
-            <div class="form-field">
-                <label for="customName"
-                    >Custom Name <span class="required">*</span></label
-                >
-                <app-custom-input
-                    id="customName"
+            <!-- Configuration Name -->
+            <div class="llm-dialog__field">
+                <app-form-field-label
+                    label="Configuration Name"
+                    [required]="true"
+                    tooltipText="A unique name to identify this configuration"
+                />
+                <input
                     type="text"
+                    class="llm-dialog__input"
                     placeholder="Enter a custom name"
-                    formControlName="customName"
-                ></app-custom-input>
-                @if (form.get('customName')?.invalid && form.get('customName')?.touched) {
-                    <div class="error-hint">
-                        Custom name is required
+                    [ngModel]="customName()"
+                    (ngModelChange)="customName.set($event)"
+                />
+            </div>
+
+            <!-- Capabilities -->
+            <div class="llm-dialog__field">
+                <app-form-field-label
+                    label="Capabilities"
+                    tooltipText="Select the capabilities supported by this model"
+                />
+                <app-select
+                    [items]="capabilityItems()"
+                    [(selectedValue)]="selectedCapabilities"
+                    placeholder="Select capabilities"
+                />
+            </div>
+        </section>
+
+        <!-- API Configuration Section -->
+        <section class="llm-dialog__section">
+            <div class="llm-dialog__section-divider"></div>
+            <h3 class="llm-dialog__section-title">API Configuration</h3>
+
+            <!-- Base URL -->
+            <div class="llm-dialog__field">
+                <app-form-field-label
+                    label="Base URL"
+                    tooltipText="Override the default API base URL (optional)"
+                />
+                <input
+                    type="text"
+                    class="llm-dialog__input"
+                    placeholder="e.g. https://api.openai.com/v1"
+                    [ngModel]="baseUrl()"
+                    (ngModelChange)="baseUrl.set($event)"
+                />
+            </div>
+
+            <!-- API Version & Deployment -->
+            <div class="llm-dialog__field-row">
+                <div class="llm-dialog__field llm-dialog__field--half">
+                    <app-form-field-label
+                        label="API Version"
+                        tooltipText="API version for Azure OpenAI or other versioned APIs"
+                    />
+                    <input
+                        type="text"
+                        class="llm-dialog__input"
+                        placeholder="01-01-2024"
+                        [ngModel]="apiVersion()"
+                        (ngModelChange)="apiVersion.set($event)"
+                    />
+                </div>
+                <div class="llm-dialog__field llm-dialog__field--half">
+                    <app-form-field-label
+                        label="Deployment"
+                        tooltipText="Deployment name for Azure OpenAI"
+                    />
+                    <input
+                        type="text"
+                        class="llm-dialog__input"
+                        placeholder="Enter deployment name"
+                        [ngModel]="deployment()"
+                        (ngModelChange)="deployment.set($event)"
+                    />
+                </div>
+            </div>
+
+            <!-- Header Configuration -->
+            <div class="llm-dialog__field">
+                <app-form-field-label
+                    label="Header Configuration"
+                    tooltipText="Add custom HTTP headers for API requests"
+                />
+                <div class="llm-dialog__headers-container">
+                    @for (entry of headerEntries(); track $index) {
+                        <div class="llm-dialog__header-row">
+                            <input
+                                type="text"
+                                class="llm-dialog__input llm-dialog__input--header"
+                                placeholder="Header name"
+                                [ngModel]="entry.key"
+                                (ngModelChange)="updateHeaderEntry($index, 'key', $event)"
+                            />
+                            <input
+                                type="text"
+                                class="llm-dialog__input llm-dialog__input--header"
+                                placeholder="Header value"
+                                [ngModel]="entry.value"
+                                (ngModelChange)="updateHeaderEntry($index, 'value', $event)"
+                            />
+                            <button
+                                type="button"
+                                class="llm-dialog__header-action llm-dialog__header-action--add"
+                                (click)="addHeaderEntry()"
+                            >
+                                <app-icon icon="ui/plus" size="1rem" />
+                            </button>
+                        </div>
+                    }
+
+                    <!-- Headers JSON Preview -->
+                    <div class="llm-dialog__json-preview">
+                        <app-json-editor
+                            [jsonData]="headersJson()"
+                            [editorHeight]="120"
+                            [showHeader]="false"
+                        />
                     </div>
-                }
+                </div>
+            </div>
+        </section>
+
+        <!-- Generation Parameters Section -->
+        <section class="llm-dialog__section">
+            <div class="llm-dialog__section-divider"></div>
+            <h3 class="llm-dialog__section-title">Generation Parameters</h3>
+
+            <app-slider-with-stepper
+                label="Temperature"
+                tooltipText="Controls randomness. Lower values make output more focused and deterministic."
+                [min]="0"
+                [max]="2"
+                [step]="0.1"
+                [decimals]="1"
+                [(value)]="temperature"
+            />
+
+            <app-slider-with-stepper
+                label="Top P"
+                tooltipText="Nucleus sampling. Consider tokens with top_p probability mass."
+                [min]="0"
+                [max]="1"
+                [step]="0.1"
+                [decimals]="1"
+                [(value)]="topP"
+            />
+
+            <app-slider-with-stepper
+                label="Presence Penalty"
+                tooltipText="Penalize new tokens based on whether they appear in the text so far."
+                [min]="-2"
+                [max]="2"
+                [step]="0.1"
+                [decimals]="1"
+                [(value)]="presencePenalty"
+            />
+
+            <app-slider-with-stepper
+                label="Frequency Penalty"
+                tooltipText="Penalize new tokens based on their frequency in the text so far."
+                [min]="-2"
+                [max]="2"
+                [step]="0.1"
+                [decimals]="1"
+                [(value)]="frequencyPenalty"
+            />
+        </section>
+
+        <!-- Token Limits & Completion Section -->
+        <section class="llm-dialog__section">
+            <div class="llm-dialog__section-divider"></div>
+            <h3 class="llm-dialog__section-title">Token Limits & Completion</h3>
+
+            <div class="llm-dialog__field-row">
+                <div class="llm-dialog__field llm-dialog__field--half">
+                    <app-number-stepper
+                        label="Max Tokens"
+                        tooltipText="Maximum number of tokens in the response"
+                        [min]="1"
+                        [max]="128000"
+                        [step]="256"
+                        [(value)]="maxTokens"
+                        placeholder="4096"
+                        size="lg"
+                    />
+                </div>
+                <div class="llm-dialog__field llm-dialog__field--half">
+                    <app-number-stepper
+                        label="Max Completion Tokens"
+                        tooltipText="Maximum tokens for completion (may differ from max tokens)"
+                        [min]="1"
+                        [max]="128000"
+                        [step]="256"
+                        [(value)]="maxCompletionTokens"
+                        placeholder="2048"
+                        size="lg"
+                    />
+                </div>
             </div>
 
-            <div class="form-field">
-                <label for="apiKey"
-                    >API Key <span class="required">*</span></label
-                >
-                <app-custom-input
-                    id="apiKey"
-                    type="password"
-                    placeholder="Enter your API key"
-                    formControlName="apiKey"
-                ></app-custom-input>
-                @if (form.get('apiKey')?.invalid && form.get('apiKey')?.touched) {
-                    <div class="error-hint">
-                        API key is required
-                    </div>
-                }
+            <div class="llm-dialog__field-row">
+                <div class="llm-dialog__field llm-dialog__field--half">
+                    <app-number-stepper
+                        label="N (Completions)"
+                        tooltipText="Number of completions to generate"
+                        [min]="1"
+                        [max]="10"
+                        [step]="1"
+                        [(value)]="nCompletions"
+                        placeholder="1"
+                        size="lg"
+                    />
+                </div>
+                <div class="llm-dialog__field llm-dialog__field--half">
+                    <app-number-stepper
+                        label="Timeout (seconds)"
+                        tooltipText="Request timeout in seconds"
+                        [min]="1"
+                        [max]="600"
+                        [step]="5"
+                        [(value)]="timeout"
+                        placeholder="30"
+                        size="lg"
+                    />
+                </div>
+            </div>
+        </section>
+
+        <!-- Advanced Parameters Section -->
+        <section class="llm-dialog__section">
+            <div class="llm-dialog__section-divider"></div>
+            <h3 class="llm-dialog__section-title">Advanced Parameters</h3>
+
+            <div class="llm-dialog__field-row">
+                <div class="llm-dialog__field llm-dialog__field--half">
+                    <app-number-stepper
+                        label="Seed"
+                        tooltipText="Random seed for reproducible outputs"
+                        [min]="0"
+                        [step]="1"
+                        [(value)]="seed"
+                        placeholder="Random"
+                        size="lg"
+                    />
+                </div>
+                <div class="llm-dialog__field llm-dialog__field--half">
+                    <app-number-stepper
+                        label="Top Logprobs"
+                        tooltipText="Number of most likely tokens to return at each position"
+                        [min]="0"
+                        [max]="20"
+                        [step]="1"
+                        [(value)]="topLogprobs"
+                        placeholder="5"
+                        size="lg"
+                    />
+                </div>
             </div>
 
-            <div class="form-field">
-                <label for="temperature"
-                    >Temperature: {{ temperatureControl.value }}°</label
-                >
-                <mat-slider
-                    id="temperature"
-                    [min]="0"
-                    [max]="100"
-                    [step]="1"
-                    [discrete]="true"
-                    [showTickMarks]="true"
-                    (change)="onTemperatureChange($event)"
-                >
-                    <input matSliderThumb [value]="temperatureControl.value" />
-                </mat-slider>
+            <!-- Stop Sequences -->
+            <div class="llm-dialog__field">
+                <app-form-field-label
+                    label="Stop Sequences (JSON)"
+                    tooltipText="Sequences that will stop generation when encountered"
+                />
+                <app-json-editor
+                    [jsonData]="stopSequencesJson()"
+                    (jsonChange)="onStopSequencesChange($event)"
+                    [editorHeight]="120"
+                    [showHeader]="false"
+                />
             </div>
 
-            <div class="dialog-actions">
-                <app-button type="ghost" (click)="onCancel()"
-                    >Cancel</app-button
-                >
-                <app-button
-                    type="primary"
-                    (click)="onSubmit()"
-                    [disabled]="form.invalid || isSubmitting()"
-                >
-                    {{ isSubmitting() ? "Adding..." : "Add" }}
-                </app-button>
+            <!-- Logit Bias -->
+            <div class="llm-dialog__field">
+                <app-form-field-label
+                    label="Logit Bias (JSON)"
+                    tooltipText="Modify likelihood of specific tokens appearing"
+                />
+                <app-json-editor
+                    [jsonData]="logitBiasJson()"
+                    (jsonChange)="onLogitBiasChange($event)"
+                    [editorHeight]="120"
+                    [showHeader]="false"
+                />
             </div>
-        </form>
+
+            <!-- Response Format -->
+            <div class="llm-dialog__field">
+                <app-form-field-label
+                    label="Response Format (JSON)"
+                    tooltipText="Specify the format of the response (e.g., JSON mode)"
+                />
+                <app-json-editor
+                    [jsonData]="responseFormatJson()"
+                    (jsonChange)="onResponseFormatChange($event)"
+                    [editorHeight]="120"
+                    [showHeader]="false"
+                />
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="llm-dialog__footer">
+        <app-button
+            type="outline-primary"
+            (click)="onCancel()"
+            [disabled]="isSubmitting()"
+        >
+            Cancel
+        </app-button>
+        <app-button
+            type="primary"
+            (click)="onSubmit()"
+            [disabled]="!isFormValid() || isSubmitting()"
+        >
+            {{ submitButtonText() }}
+        </app-button>
     </div>
 </div>

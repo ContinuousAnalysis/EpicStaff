@@ -22,10 +22,14 @@ from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
 from tables.management.commands.helpers import load_json_from_file
 from tables.management.commands.upload_tools import upload_tools
+from tables.models.tag_models import LLMModelTag, EmbeddingModelTag
+
+
 class Command(BaseCommand):
     help = "Upload predefined models to database"
 
     def handle(self, *args, **kwargs):
+        upload_tags()
         upload_providers()
         upload_llm_models()
         upload_realtime_agent_models()
@@ -41,6 +45,7 @@ class Command(BaseCommand):
         upload_legacy_tools()
         upload_realtime_agents()
 
+
 LLM_MODELS_JSON = "llm_models.json"
 EMBEDDING_MODELS_JSON = "embedding_models.json"
 REALTIME_MODELS_JSON = "realtime_models.json"
@@ -52,9 +57,35 @@ MODEL_JSON_FILES = [
     REALTIME_MODELS_JSON,
     TRANSCRIPTION_MODELS_JSON,
 ]
+PREDEFINED_TAGS = {
+    "llm_model": ["recommended"],
+    "embedding_model": ["recommended"],
+}
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 PROVIDER_MODELS_DIR = BASE_DIR / "provider_models"
+
+
+def upload_tags():
+
+    llm_tag_names = PREDEFINED_TAGS["llm_model"]
+
+    for tag in llm_tag_names:
+        LLMModelTag.objects.update_or_create(name=tag, defaults={"predefined": True})
+
+    LLMModelTag.objects.filter(predefined=True).exclude(name__in=llm_tag_names).delete()
+
+    embed_tag_names = PREDEFINED_TAGS["embedding_model"]
+
+    for tag in embed_tag_names:
+        EmbeddingModelTag.objects.update_or_create(
+            name=tag, defaults={"predefined": True}
+        )
+
+    EmbeddingModelTag.objects.filter(predefined=True).exclude(
+        name__in=embed_tag_names
+    ).delete()
+
 
 def get_all_providers_from_files():
     all_providers = set()
@@ -63,6 +94,7 @@ def get_all_providers_from_files():
         data = load_json_from_file(js_path)
         all_providers.update(data.keys())
     return all_providers
+
 
 def upload_providers():
     current_provider_names = get_all_providers_from_files()
@@ -74,87 +106,113 @@ def upload_providers():
 
 def upload_llm_models():
     path = PROVIDER_MODELS_DIR / LLM_MODELS_JSON
-
     models_by_provider = load_json_from_file(path)
-    current_model_tuples = set()
 
+    recommended_tag, _ = LLMModelTag.objects.get_or_create(
+        name="recommended", defaults={"predefined": True}
+    )
 
-    for provider_name, model_names in models_by_provider.items():
+    active_ids = []
+
+    for provider_name, model_list in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
-        for model_name in model_names:
-            current_model_tuples.add((provider.pk, model_name))
-            LLMModel.objects.get_or_create(
-                predefined=True,
-                name=model_name,
+
+        for model_data in model_list:
+            model_name = model_data["name"]
+            is_recommended = model_data["recommended"]
+
+            llm_model, created = LLMModel.objects.update_or_create(
                 llm_provider=provider,
+                name=model_name,
+                defaults={
+                    "predefined": True,
+                },
             )
 
+            if is_recommended:
+                llm_model.tags.add(recommended_tag)
+            else:
+                llm_model.tags.remove(recommended_tag)
+
+            active_ids.append(llm_model.pk)
+
     LLMModel.objects.filter(predefined=True, is_custom=False).exclude(
-        llm_provider_id__in=[pid for pid, _ in current_model_tuples],
-        name__in=[name for _, name in current_model_tuples],
+        pk__in=active_ids
     ).delete()
 
 
 def upload_realtime_agent_models():
     path = PROVIDER_MODELS_DIR / REALTIME_MODELS_JSON
     models_by_provider = load_json_from_file(path)
-    current_model_tuples = set()    
+    current_model_tuples = set()
 
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
         for model_name in model_names:
             current_model_tuples.add((provider.pk, model_name))
-            RealtimeModel.objects.get_or_create(
-                name=model_name,
-                provider=provider
-            )
+            RealtimeModel.objects.get_or_create(name=model_name, provider=provider)
 
     RealtimeModel.objects.filter(is_custom=False).exclude(
         provider_id__in=[pid for pid, _ in current_model_tuples],
         name__in=[name for _, name in current_model_tuples],
     ).delete()
 
+
 def upload_realtime_transcription_models():
     path = PROVIDER_MODELS_DIR / TRANSCRIPTION_MODELS_JSON
     models_by_provider = load_json_from_file(path)
-    current_model_tuples = set()    
-
+    current_model_tuples = set()
 
     for provider_name, model_names in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
         for model_name in model_names:
             current_model_tuples.add((provider.pk, model_name))
             RealtimeTranscriptionModel.objects.get_or_create(
-                name=model_name,
-                provider=provider
+                name=model_name, provider=provider
             )
-            
+
     RealtimeTranscriptionModel.objects.filter(is_custom=False).exclude(
         provider_id__in=[pid for pid, _ in current_model_tuples],
         name__in=[name for _, name in current_model_tuples],
     ).delete()
 
+
 def upload_embedding_models():
     path = PROVIDER_MODELS_DIR / EMBEDDING_MODELS_JSON
     models_by_provider = load_json_from_file(path)
-    current_model_tuples = set()    
-    
 
-    for provider_name, model_names in models_by_provider.items():
+    recommended_tag, _ = EmbeddingModelTag.objects.get_or_create(
+        name="recommended", defaults={"predefined": True}
+    )
+
+    active_ids = []
+
+    for provider_name, model_list in models_by_provider.items():
         provider, _ = Provider.objects.get_or_create(name=provider_name)
-        for model_name in model_names:
-            current_model_tuples.add((provider.pk, model_name))
-            EmbeddingModel.objects.get_or_create(
-                predefined=True,
-                name=model_name,
+
+        for model_data in model_list:
+            model_name = model_data["name"]
+            is_recommended = model_data["recommended"]
+
+            embedding_model, created = EmbeddingModel.objects.update_or_create(
                 embedding_provider=provider,
-                # base_url, deployment 
+                name=model_name,
+                defaults={
+                    "predefined": True,
+                },
             )
 
+            if is_recommended:
+                embedding_model.tags.add(recommended_tag)
+            else:
+                embedding_model.tags.remove(recommended_tag)
+
+            active_ids.append(embedding_model.pk)
+
     EmbeddingModel.objects.filter(predefined=True, is_custom=False).exclude(
-        embedding_provider_id__in=[pid for pid, _ in current_model_tuples],
-        name__in=[name for _, name in current_model_tuples],
+        pk__in=active_ids
     ).delete()
+
 
 def upload_realtime_agents():
     from tables.models.realtime_models import RealtimeAgent
@@ -1048,4 +1106,3 @@ def upload_legacy_tools():
                     "required": field["required"],
                 },
             )
-
