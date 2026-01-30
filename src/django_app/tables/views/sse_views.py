@@ -166,22 +166,15 @@ class RunSessionSSEView(SSEMixin):
     async def get_initial_data(self):
         # Graph Session Messages
         session_id = self.kwargs["session_id"]
-        async for message in self._generate_initial_graph_session_messages(session_id):
-            self.__log(event="messages", state="initial", data=message["uuid"])
-            message["message_data"] = self._trim_base64_file_data(
-                message["message_data"]
-            )
-            yield {"event": "messages", "data": message}
-
-        # Session Statuses
         queryset = (
             Session.objects.only("id", "status", "status_data")
             .filter(id=session_id)
             .values()
         )
+        session_event = None
         async for session in self.async_orm_generator(queryset):
             self.__log(event="status", state="initial", data=session["status"])
-            yield {
+            session_event = {
                 "event": "status",
                 "data": {
                     "session_id": session["id"],
@@ -189,6 +182,19 @@ class RunSessionSSEView(SSEMixin):
                     "status_data": session.get("status_data", {}),
                 },
             }
+        if session_event["data"]["status"] in {"run", "pending"}:
+            yield session_event
+
+        async for message in self._generate_initial_graph_session_messages(session_id):
+            self.__log(event="messages", state="initial", data=message["uuid"])
+            message["message_data"] = self._trim_base64_file_data(
+                message["message_data"]
+            )
+            yield {"event": "messages", "data": message}
+
+        if session_event["data"]["status"] != "run":
+            yield session_event
+
 
         # Memories
         queryset = MemoryDatabase.objects.filter(payload__run_id=session_id).values(
