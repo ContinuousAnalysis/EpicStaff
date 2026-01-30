@@ -11,6 +11,7 @@ from chunkers import (
     JSONChunker,
     CSVChunker,
     BaseChunker,
+    BaseChunkData,
 )
 
 from .redis_service import RedisService
@@ -147,7 +148,7 @@ class ChunkDocumentService(metaclass=SingletonMeta):
         chunk_size: int,
         chunk_overlap: int,
         additional_params: dict,
-    ) -> list[str]:
+    ) -> list[BaseChunkData]:
         # include file_name to additional_params
         additional_params = {**additional_params, "file_name": file_name}
 
