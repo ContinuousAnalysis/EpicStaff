@@ -23,6 +23,15 @@ class TablesConfig(AppConfig):
         from tables.services.realtime_service import RealtimeService
         from tables.services.webhook_trigger_service import WebhookTriggerService
         from tables.services.telegram_trigger_service import TelegramTriggerService
+        from tables.import_export.registry import entity_registry
+        from tables.import_export.strategies import (
+            configs,
+            python_tools,
+            mcp_tools,
+            agent,
+            crew,
+            graph,
+        )
 
         if "runserver" in sys.argv:
             logger.info(f"{settings.DEBUG=}")
@@ -40,3 +49,14 @@ class TablesConfig(AppConfig):
         )
         WebhookTriggerService(session_manager_service=session_manager_service)
         TelegramTriggerService(session_manager_service=session_manager_service)
+
+        # Register strategies for import/export composite entities
+        entity_registry.register(configs.LLMConfigStrategy())
+        entity_registry.register(configs.EmbeddingConfigStrategy())
+        entity_registry.register(configs.RealtimeConfigStrategy())
+        entity_registry.register(configs.RealtimeTranscriptionConfigStrategy())
+        entity_registry.register(python_tools.PythonCodeToolStrategy())
+        entity_registry.register(mcp_tools.McpToolStrategy())
+        entity_registry.register(agent.AgentStrategy())
+        entity_registry.register(crew.CrewStrategy())
+        entity_registry.register(graph.GraphStrategy())
