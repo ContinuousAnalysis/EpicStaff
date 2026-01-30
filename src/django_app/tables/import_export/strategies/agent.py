@@ -9,8 +9,10 @@ from tables.models import (
     AgentPythonCodeTools,
     AgentMcpTools,
 )
+from tables.models.knowledge_models.naive_rag_models import NaiveRagSearchConfig
 from tables.import_export.strategies.base import EntityImportStrategy
 from tables.import_export.serializers.agent import AgentSerializer
+from tables.import_export.serializers.rag_configs import NaiveRagSearchConfigSerializer
 from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.utils import create_filters
@@ -58,10 +60,12 @@ class AgentStrategy(EntityImportStrategy):
         llm_config, fcm_llm_config = self._get_llm_configs(data, id_mapper)
         python_tools, mcp_tools = self._get_tools(data, id_mapper)
         realtime_data = data.pop("realtime_agent", None)
+        naive_search_config_data = data.pop("naive_search_config", None)
 
         agent = self._create_agent(data)
         self._assign_tools(agent, python_tools, mcp_tools)
         self._create_realtime_agent(agent, realtime_data, id_mapper)
+        self._create_naive_search_config(agent, naive_search_config_data)
 
         agent.llm_config = llm_config
         agent.fcm_llm_config = fcm_llm_config
@@ -78,6 +82,7 @@ class AgentStrategy(EntityImportStrategy):
         fcm_llm_config_id = data_copy.pop("fcm_llm_config", None)
         tools = data_copy.pop("tools", {})
         realtime_agent = data_copy.pop("realtime_agent", None)
+        naive_search_config = data_copy.pop("naive_search_config", None)
 
         filters, null_filters = create_filters(data_copy)
         existing = Agent.objects.filter(**filters, **null_filters).first()
@@ -129,7 +134,7 @@ class AgentStrategy(EntityImportStrategy):
 
     def _create_realtime_agent(self, agent, data, id_mapper: IDMapper):
         if not data:
-            return None
+            return
 
         old_realtime_config_id = data.pop("realtime_config", None)
         old_realtime_transcription_config_id = data.pop(
@@ -154,3 +159,12 @@ class AgentStrategy(EntityImportStrategy):
             **data
         )
         return realtime_agent
+
+    def _create_naive_search_config(self, agent, data) -> NaiveRagSearchConfig:
+        if not data:
+            return
+
+        data["agent"] = agent.id
+        serializer = NaiveRagSearchConfigSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.save()

@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from tables.models import Agent, RealtimeAgent
 from tables.import_export.enums import EntityType
+from tables.import_export.serializers.rag_configs import NaiveRagSearchConfigSerializer
 
 
 class RealtimeAgentSerializer(serializers.ModelSerializer):
@@ -15,6 +16,7 @@ class AgentSerializer(serializers.ModelSerializer):
 
     tools = serializers.JSONField(required=False)
     realtime_agent = RealtimeAgentSerializer(required=False)
+    naive_search_config = NaiveRagSearchConfigSerializer(required=False)
 
     class Meta:
         model = Agent
