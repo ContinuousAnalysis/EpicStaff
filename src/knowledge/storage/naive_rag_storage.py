@@ -201,6 +201,7 @@ class ORMNaiveRagStorage(BaseORMStorage):
                     text=chunk_data.text,
                     chunk_index=idx,
                     token_count=chunk_data.token_count,
+                    overlap_start_index=chunk_data.overlap_start_index,
                     overlap_end_index=chunk_data.overlap_end_index,
                 )
                 for idx, chunk_data in enumerate(chunk_list, start=1)
@@ -324,6 +325,7 @@ class ORMNaiveRagStorage(BaseORMStorage):
                     text=chunk_data.text,
                     chunk_index=idx,
                     token_count=chunk_data.token_count,
+                    overlap_start_index=chunk_data.overlap_start_index,
                     overlap_end_index=chunk_data.overlap_end_index,
                 )
                 for idx, chunk_data in enumerate(chunk_list, start=1)

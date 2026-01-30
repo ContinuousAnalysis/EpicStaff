@@ -11,16 +11,20 @@ class TokenChunker(BaseChunker):
 
     def chunk(self, text: str) -> list[BaseChunkData]:
         chunks = self.text_splitter.chunk(text)
+
+        overlaps = []
+        for i in range(len(chunks) - 1):
+            overlap = chunks[i].end_index - chunks[i + 1].start_index
+            overlaps.append(overlap)
+
         token_chunks = []
         for i, chunk in enumerate(chunks):
-            overlap_end_index = None
-            if i > 0:
-                overlap_end_index = chunks[i - 1].end_index - chunk.start_index
             token_chunks.append(
                 BaseChunkData(
                     text=chunk.text,
                     token_count=chunk.token_count,
-                    overlap_end_index=overlap_end_index,
+                    overlap_start_index=overlaps[i - 1] if i > 0 else None,
+                    overlap_end_index=overlaps[i] if i < len(overlaps) else None,
                 )
             )
         return token_chunks

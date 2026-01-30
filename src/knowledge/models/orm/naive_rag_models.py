@@ -194,7 +194,8 @@ class NaiveRagChunk(Base):
         Integer, nullable=False, comment="Order of this chunk in the document"
     )
     token_count = Column(Integer, nullable=True)
-    overlap_end_index= Column(Integer, nullable=True)
+    overlap_start_index = Column(Integer, nullable=True)
+    overlap_end_index = Column(Integer, nullable=True)
     chunk_metadata = Column(
         "metadata",
         JSON,
@@ -303,7 +304,8 @@ class NaiveRagPreviewChunk(Base):
         Integer, nullable=False, comment="Order of this chunk in the document"
     )
     token_count = Column(Integer, nullable=True)
-    overlap_end_index= Column(Integer, nullable=True)
+    overlap_start_index = Column(Integer, nullable=True)
+    overlap_end_index = Column(Integer, nullable=True)
     chunk_metadata = Column(
         "metadata",
         JSON,
