@@ -5,7 +5,6 @@ from tables.serializers.model_serializers import CrewSerializer
 from tables.import_export.strategies.base import EntityImportStrategy
 from tables.import_export.serializers.graph import (
     GraphSerializer,
-    EndNodeSerializer,
     EdgeSerializer,
 )
 from tables.import_export.enums import EntityType, NodeType
