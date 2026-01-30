@@ -1,4 +1,7 @@
-from tables.models import Graph
+from copy import deepcopy
+
+from tables.models import Graph, Crew
+from tables.serializers.model_serializers import CrewSerializer
 from tables.import_export.strategies.base import EntityImportStrategy
 from tables.import_export.serializers.graph import (
     GraphSerializer,
@@ -35,6 +38,17 @@ class GraphStrategy(EntityImportStrategy):
 
     def create_entity(self, data: dict, id_mapper: IDMapper) -> Graph:
         import_data = data.copy()
+        import_data["metadata"] = self._update_metadata(
+            import_data["metadata"], id_mapper
+        )
+
+        if "name" in import_data:
+            existing_names = Graph.objects.values_list("name", flat=True)
+            import_data["name"] = ensure_unique_identifier(
+                base_name=data["name"],
+                existing_names=existing_names,
+            )
+
         nodes_data = import_data.pop("nodes", [])
         edges_data = import_data.pop("edge_list", [])
 
@@ -60,11 +74,6 @@ class GraphStrategy(EntityImportStrategy):
                 node_data = serializer_class(node).data
                 node_data["node_type"] = node_type
                 nodes.append(node_data)
-
-        if instance.end_node.exists():
-            node_data = EndNodeSerializer(instance.end_node.get()).data
-            node_data["node_type"] = NodeType.END_NODE
-            nodes.append(node_data)
 
         return nodes
 
@@ -114,3 +123,18 @@ class GraphStrategy(EntityImportStrategy):
         serializer = serializer_class(data=node_data)
         serializer.is_valid(raise_exception=True)
         return serializer.save()
+
+    def _update_metadata(self, metadata: dict, id_mapper: IDMapper) -> dict:
+        # TODO: Remove metadat when save functionality reworked
+        metadata_copy = deepcopy(metadata)
+
+        nodes = metadata_copy.get("nodes", [])
+        for node in nodes:
+            if node["type"] == "project":
+                old_id = node["data"]["id"]
+                new_id = id_mapper.get_or_none(EntityType.CREW, old_id)
+                crew = Crew.objects.get(id=new_id)
+
+                node["data"] = CrewSerializer(instance=crew).data
+
+        return metadata_copy
