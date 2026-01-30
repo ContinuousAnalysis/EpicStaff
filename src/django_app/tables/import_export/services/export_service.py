@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from tables.import_export.registry import EntityRegistry
 from tables.import_export.enums import EntityType
+from tables.import_export.constants import MAIN_ENTITY_KEY
 
 
 class ExportService:
@@ -17,7 +18,9 @@ class ExportService:
         for entity_id in entity_ids:
             collector.collect(entity_type, entity_id)
 
-        return collector.to_dict()
+        data = collector.to_dict()
+        data[MAIN_ENTITY_KEY] = entity_type
+        return data
 
 
 class DependencyCollector:

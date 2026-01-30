@@ -55,8 +55,8 @@ class GraphStrategy(EntityImportStrategy):
         serializer.is_valid(raise_exception=True)
         graph = serializer.save()
 
-        node_map = self._create_nodes(nodes_data, graph, id_mapper)
-        self._create_edges(edges_data, graph, node_map)
+        self._create_nodes(nodes_data, graph, id_mapper)
+        self._create_edges(edges_data, graph)
 
         return graph
 
@@ -79,35 +79,18 @@ class GraphStrategy(EntityImportStrategy):
     def _create_nodes(
         self, nodes_data: list, graph: Graph, id_mapper: IDMapper
     ) -> dict:
-        node_map = {}
-
         for node_data in nodes_data:
             node_type = node_data.pop("node_type")
-            node_name = node_data.get("node_name")
-
-            if node_type == NodeType.START_NODE:
-                node_name = "__start__"
-            elif node_type == NodeType.END_NODE:
-                node_name = "__end_node__"
 
             config = NODE_HANDLERS[node_type]
 
             if "import_hook" in config:
-                node = config["import_hook"](graph, node_data, id_mapper)
+                config["import_hook"](graph, node_data, id_mapper)
             else:
-                node = self._default_import_node(graph, node_data, config)
+                self._default_import_node(graph, node_data, config)
 
-            node_map[node_name] = node
-
-        return node_map
-
-    def _create_edges(self, edges_data: list, graph: Graph, node_map: dict):
+    def _create_edges(self, edges_data: list, graph: Graph):
         for edge_data in edges_data:
-            start_key = edge_data.pop("start_key")
-            end_key = edge_data.pop("end_key")
-
-            edge_data["start_key"] = node_map[start_key].id
-            edge_data["end_key"] = node_map[end_key].id
             edge_data["graph"] = graph.id
 
             serializer = EdgeSerializer(data=edge_data)
@@ -124,7 +107,7 @@ class GraphStrategy(EntityImportStrategy):
         return serializer.save()
 
     def _update_metadata(self, metadata: dict, id_mapper: IDMapper) -> dict:
-        # TODO: Remove metadat when save functionality reworked
+        # TODO: Remove metadata when save functionality reworked
         metadata_copy = deepcopy(metadata)
 
         nodes = metadata_copy.get("nodes", [])

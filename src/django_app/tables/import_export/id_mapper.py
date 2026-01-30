@@ -15,3 +15,6 @@ class IDMapper:
 
     def get_or_none(self, entity_type: str, old_id: int) -> Optional[int]:
         return self._mappings[entity_type].get(old_id)
+
+    def get_new_ids(self, entity_type: str) -> list[int]:
+        return list(self._mappings[entity_type].values())

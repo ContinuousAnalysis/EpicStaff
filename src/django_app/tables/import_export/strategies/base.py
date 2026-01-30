@@ -31,16 +31,18 @@ class EntityImportStrategy(ABC):
     def create_entity(self, data: dict, id_mapper: IDMapper) -> Any:
         pass
 
-    def import_entity(self, data: dict, id_mapper: "IDMapper") -> tuple[Any, bool]:
+    def import_entity(
+        self, data: dict, id_mapper: "IDMapper", is_main: bool = False
+    ) -> Any:
         """
         Standard import flow - checks for existing first.
         Return True as second parameter if entity was newly created, returns False otherwise
         """
         existing = self.find_existing(data, id_mapper)
-        if existing:
-            return existing, False
+        if existing and not is_main:
+            return existing
 
-        return self.create_entity(data, id_mapper), True
+        return self.create_entity(data, id_mapper)
 
     def find_existing(self, data: dict, id_mapper: IDMapper) -> Optional[Any]:
         """

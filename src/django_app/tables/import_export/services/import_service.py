@@ -12,9 +12,8 @@ class ImportService:
     def __init__(self, registry: EntityRegistry):
         self.registry = registry
 
-    def import_data(self, export_data: dict):
+    def import_data(self, export_data: dict, main_entity: str):
         id_mapper = IDMapper()
-        created_entities = defaultdict(list)
 
         ordered_types = self._resolve_import_order(export_data)
 
@@ -25,12 +24,9 @@ class ImportService:
 
                 for entity_data in entities:
                     old_id = entity_data["id"]
-                    instance, was_created = strategy.import_entity(
-                        entity_data, id_mapper
+                    instance = strategy.import_entity(
+                        entity_data, id_mapper, entity_type == main_entity
                     )
-
-                    if was_created:
-                        created_entities[entity_type].append(instance)
 
                     id_mapper.map(entity_type, old_id, instance.id)
 

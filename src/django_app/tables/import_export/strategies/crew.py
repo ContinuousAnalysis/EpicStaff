@@ -6,11 +6,14 @@ from tables.models import (
     TaskMcpTools,
     LLMConfig,
     EmbeddingConfig,
+    PythonCodeTool,
+    McpTool,
 )
 from tables.import_export.strategies.base import EntityImportStrategy
 from tables.import_export.serializers.crew import CrewSerializer, TaskSerializer
 from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
+from tables.import_export.utils import ensure_unique_identifier
 
 
 class CrewStrategy(EntityImportStrategy):
@@ -56,6 +59,13 @@ class CrewStrategy(EntityImportStrategy):
         return self.serializer_class(instance).data
 
     def create_entity(self, data: dict, id_mapper: IDMapper) -> Crew:
+        if "name" in data:
+            existing_names = Crew.objects.values_list("name", flat=True)
+            data["name"] = ensure_unique_identifier(
+                base_name=data["name"],
+                existing_names=existing_names,
+            )
+
         tasks = data.pop("tasks", [])
         agents = data.pop("agents", [])
 
@@ -142,13 +152,22 @@ class CrewStrategy(EntityImportStrategy):
 
         for tool_id in python_tool_ids:
             new_id = id_mapper.get_or_none(EntityType.PYTHON_CODE_TOOL, tool_id)
-            python_tools.append(new_id)
+            python_tool = PythonCodeTool.objects.get(id=new_id)
+            python_tools.append(python_tool)
         for tool_id in mcp_tool_ids:
             new_id = id_mapper.get_or_none(EntityType.MCP_TOOL, tool_id)
-            mcp_tools.append(new_id)
+            mcp_tool = McpTool.objects.get(id=new_id)
+            mcp_tools.append(mcp_tool)
 
-        task.task_python_code_tool_list.set(python_tools)
-        task.task_mcp_tool_list.set(mcp_tools)
+        python_tool_relations = [
+            TaskPythonCodeTools(task=task, tool=tool) for tool in python_tools
+        ]
+        mcp_tool_relations = [TaskMcpTools(task=task, tool=tool) for tool in mcp_tools]
+
+        TaskPythonCodeTools.objects.bulk_create(
+            python_tool_relations, ignore_conflicts=True
+        )
+        TaskMcpTools.objects.bulk_create(mcp_tool_relations, ignore_conflicts=True)
 
     def _set_context_for_tasks(self, created_tasks, task_contexts):
         task_context_links = []
