@@ -311,6 +311,7 @@ class NaiveRagChunkSerializer(serializers.ModelSerializer):
             "text",
             "chunk_index",
             "token_count",
+            "overlap_end_index",
             "metadata",
             "created_at",
         ]
@@ -327,6 +328,7 @@ class NaiveRagPreviewChunkSerializer(serializers.ModelSerializer):
             "text",
             "chunk_index",
             "token_count",
+            "overlap_end_index",
             "metadata",
             "created_at",
         ]
