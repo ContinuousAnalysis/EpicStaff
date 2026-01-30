@@ -14,14 +14,10 @@ export interface GetLlmConfigRequest {
     logit_bias: Record<string, number> | null;
     response_format: Record<string, unknown> | null;
     seed: number | null;
-    logprobs: boolean | null;
-    top_logprobs: number | null;
-    base_url: string | null;
-    api_version: string | null;
     timeout: number | null;
     is_visible: boolean;
-    capabilities?: string[];
     headers?: Record<string, string>;
+    extra_headers?: Record<string, string>;
 }
 
 export interface CreateLLMConfigRequest {
@@ -39,14 +35,10 @@ export interface CreateLLMConfigRequest {
     logit_bias?: Record<string, number> | null;
     response_format?: Record<string, unknown> | null;
     seed?: number | null;
-    logprobs?: boolean | null;
-    top_logprobs?: number | null;
-    base_url?: string | null;
-    api_version?: string | null;
     timeout?: number | null;
     is_visible?: boolean;
-    capabilities?: string[];
     headers?: Record<string, string>;
+    extra_headers?: Record<string, string>;
 }
 
 export interface UpdateLLMConfigRequest {
@@ -65,14 +57,10 @@ export interface UpdateLLMConfigRequest {
     logit_bias?: Record<string, number> | null;
     response_format?: Record<string, unknown> | null;
     seed?: number | null;
-    logprobs?: boolean | null;
-    top_logprobs?: number | null;
-    base_url?: string | null;
-    api_version?: string | null;
     timeout?: number | null;
     is_visible?: boolean;
-    capabilities?: string[];
     headers?: Record<string, string>;
+    extra_headers?: Record<string, string>;
 }
 
 export interface LLMConfigFormValue {
@@ -80,10 +68,6 @@ export interface LLMConfigFormValue {
     modelId: number | null;
     customName: string;
     apiKey: string;
-    capabilities: string[];
-    baseUrl: string;
-    apiVersion: string;
-    deployment: string;
     headers: Record<string, string>;
     temperature: number | null;
     topP: number | null;
@@ -94,7 +78,6 @@ export interface LLMConfigFormValue {
     n: number | null;
     timeout: number | null;
     seed: number | null;
-    topLogprobs: number | null;
     stop: string[] | null;
     logitBias: Record<string, number> | null;
     responseFormat: Record<string, unknown> | null;

@@ -193,7 +193,6 @@
         text-align: left;
         font-family: 'Inter', sans-serif;
         font-size: 0.875rem;
-        color: var(--color-text-primary, #d9d9de);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -201,6 +200,18 @@
         &--placeholder {
             color: rgba(217, 217, 222, 0.6);
         }
+    }
+
+    &__model-selector-provider {
+        color: #acacac;
+    }
+
+    &__model-selector-separator {
+        color: #acacac;
+    }
+
+    &__model-selector-model {
+        color: var(--color-text-primary, #d9d9de);
     }
 
     // Headers Configuration
@@ -238,11 +249,18 @@
         }
 
         &--remove {
-            background: var(--color-ks-status-failed, #dc5b60);
+            background: var(--accent-color, #685fff);
 
             &:hover {
-                background: #b94d51;
+                background: var(--color-ks-status-failed, #dc5b60);
             }
+        }
+
+        &--spacer {
+            width: 2.5rem;
+            height: 2.5rem;
+            flex-shrink: 0;
+            visibility: hidden;
         }
     }
 

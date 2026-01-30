@@ -42,9 +42,17 @@
                             size="1.25rem"
                         />
                     }
-                    <span class="llm-dialog__model-selector-text" [class.llm-dialog__model-selector-text--placeholder]="!selectedModel()">
-                        {{ selectedModelDisplay() }}
-                    </span>
+                    @if (selectedModel() && selectedProvider()) {
+                        <span class="llm-dialog__model-selector-text">
+                            <span class="llm-dialog__model-selector-provider">{{ selectedProvider()!.name }}</span>
+                            <span class="llm-dialog__model-selector-separator"> / </span>
+                            <span class="llm-dialog__model-selector-model">{{ selectedModel()!.name }}</span>
+                        </span>
+                    } @else {
+                        <span class="llm-dialog__model-selector-text llm-dialog__model-selector-text--placeholder">
+                            Select a model...
+                        </span>
+                    }
                     <app-icon icon="ui/chevron-down" size="1rem" />
                 </button>
             </div>
@@ -92,70 +100,12 @@
                     (ngModelChange)="customName.set($event)"
                 />
             </div>
-
-            <!-- Capabilities -->
-            <div class="llm-dialog__field">
-                <app-form-field-label
-                    label="Capabilities"
-                    tooltipText="Select the capabilities supported by this model"
-                />
-                <app-select
-                    [items]="capabilityItems()"
-                    [(selectedValue)]="selectedCapabilities"
-                    placeholder="Select capabilities"
-                />
-            </div>
         </section>
 
         <!-- API Configuration Section -->
         <section class="llm-dialog__section">
             <div class="llm-dialog__section-divider"></div>
             <h3 class="llm-dialog__section-title">API Configuration</h3>
-
-            <!-- Base URL -->
-            <div class="llm-dialog__field">
-                <app-form-field-label
-                    label="Base URL"
-                    tooltipText="Override the default API base URL (optional)"
-                />
-                <input
-                    type="text"
-                    class="llm-dialog__input"
-                    placeholder="e.g. https://api.openai.com/v1"
-                    [ngModel]="baseUrl()"
-                    (ngModelChange)="baseUrl.set($event)"
-                />
-            </div>
-
-            <!-- API Version & Deployment -->
-            <div class="llm-dialog__field-row">
-                <div class="llm-dialog__field llm-dialog__field--half">
-                    <app-form-field-label
-                        label="API Version"
-                        tooltipText="API version for Azure OpenAI or other versioned APIs"
-                    />
-                    <input
-                        type="text"
-                        class="llm-dialog__input"
-                        placeholder="01-01-2024"
-                        [ngModel]="apiVersion()"
-                        (ngModelChange)="apiVersion.set($event)"
-                    />
-                </div>
-                <div class="llm-dialog__field llm-dialog__field--half">
-                    <app-form-field-label
-                        label="Deployment"
-                        tooltipText="Deployment name for Azure OpenAI"
-                    />
-                    <input
-                        type="text"
-                        class="llm-dialog__input"
-                        placeholder="Enter deployment name"
-                        [ngModel]="deployment()"
-                        (ngModelChange)="deployment.set($event)"
-                    />
-                </div>
-            </div>
 
             <!-- Header Configuration -->
             <div class="llm-dialog__field">
@@ -182,18 +132,32 @@
                             />
                             <button
                                 type="button"
+                                class="llm-dialog__header-action llm-dialog__header-action--remove"
+                                (click)="removeHeaderEntry($index)"
+                                [title]="'Remove header'"
+                            >
+                                <app-icon icon="ui/x" size="1rem" />
+                            </button>
+                            <button
+                                *ngIf="$index === headerEntries().length - 1; else spacer"
+                                type="button"
                                 class="llm-dialog__header-action llm-dialog__header-action--add"
                                 (click)="addHeaderEntry()"
+                                [title]="'Add header'"
                             >
                                 <app-icon icon="ui/plus" size="1rem" />
                             </button>
+                            <ng-template #spacer>
+                                <div class="llm-dialog__header-action llm-dialog__header-action--spacer"></div>
+                            </ng-template>
                         </div>
                     }
 
-                    <!-- Headers JSON Preview -->
+                    <!-- Headers JSON Editor (Source of Truth) -->
                     <div class="llm-dialog__json-preview">
                         <app-json-editor
                             [jsonData]="headersJson()"
+                            (jsonChange)="onHeadersChange($event)"
                             [editorHeight]="120"
                             [showHeader]="false"
                         />
@@ -313,30 +277,16 @@
             <div class="llm-dialog__section-divider"></div>
             <h3 class="llm-dialog__section-title">Advanced Parameters</h3>
 
-            <div class="llm-dialog__field-row">
-                <div class="llm-dialog__field llm-dialog__field--half">
-                    <app-number-stepper
-                        label="Seed"
-                        tooltipText="Random seed for reproducible outputs"
-                        [min]="0"
-                        [step]="1"
-                        [(value)]="seed"
-                        placeholder="Random"
-                        size="lg"
-                    />
-                </div>
-                <div class="llm-dialog__field llm-dialog__field--half">
-                    <app-number-stepper
-                        label="Top Logprobs"
-                        tooltipText="Number of most likely tokens to return at each position"
-                        [min]="0"
-                        [max]="20"
-                        [step]="1"
-                        [(value)]="topLogprobs"
-                        placeholder="5"
-                        size="lg"
-                    />
-                </div>
+            <div class="llm-dialog__field">
+                <app-number-stepper
+                    label="Seed"
+                    tooltipText="Random seed for reproducible outputs"
+                    [min]="0"
+                    [step]="1"
+                    [(value)]="seed"
+                    placeholder="Random"
+                    size="lg"
+                />
             </div>
 
             <!-- Stop Sequences -->

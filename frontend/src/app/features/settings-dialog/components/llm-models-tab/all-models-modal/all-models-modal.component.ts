@@ -13,16 +13,16 @@ import { DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
 import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
 import { LLM_Provider } from '../../../models/LLM_provider.model';
 import { LLM_Model } from '../../../models/llms/LLM.model';
+import { LLM_Models_Service } from '../../../services/llms/LLM_models.service';
 import { getProviderIconPath } from '../../../utils/get-provider-icon';
 
 export interface AllModelsDialogData {
     provider: LLM_Provider;
     models: LLM_Model[];
-    favoriteModelIds: Set<number>;
 }
 
 export interface AllModelsResult {
-    favoriteModelIds: Set<number>;
+    changed: boolean;
 }
 
 @Component({
@@ -36,27 +36,31 @@ export interface AllModelsResult {
 export class AllModelsModalComponent implements OnInit {
     private dialogRef = inject(DialogRef);
     private dialogData = inject<AllModelsDialogData>(DIALOG_DATA);
+    private modelsService = inject(LLM_Models_Service);
 
     searchQuery = signal('');
-    favoriteModelIds = signal<Set<number>>(new Set());
+    models = signal<LLM_Model[]>([]);
+    hasChanges = signal(false);
 
     provider = computed(() => this.dialogData.provider);
-    allModels = computed(() => this.dialogData.models);
 
     filteredModels = computed(() => {
         const query = this.searchQuery().toLowerCase().trim();
-        const models = this.allModels();
+        const allModels = this.models();
 
         if (!query) {
-            return models;
+            return allModels;
         }
 
-        return models.filter(m => m.name.toLowerCase().includes(query));
+        return allModels.filter(m => m.name.toLowerCase().includes(query));
+    });
+
+    visibleCount = computed(() => {
+        return this.models().filter(m => m.is_visible).length;
     });
 
     ngOnInit(): void {
-        // Initialize with existing favorites
-        this.favoriteModelIds.set(new Set(this.dialogData.favoriteModelIds));
+        this.models.set([...this.dialogData.models]);
     }
 
     getProviderIcon(providerName: string): string {
@@ -68,35 +72,26 @@ export class AllModelsModalComponent implements OnInit {
         this.searchQuery.set(target.value);
     }
 
-    isModelFavorite(modelId: number): boolean {
-        return this.favoriteModelIds().has(modelId);
+    isModelVisible(model: LLM_Model): boolean {
+        return model.is_visible;
     }
 
-    toggleFavorite(model: LLM_Model): void {
-        this.favoriteModelIds.update(ids => {
-            const newIds = new Set(ids);
-            if (newIds.has(model.id)) {
-                newIds.delete(model.id);
-            } else {
-                newIds.add(model.id);
-            }
-            return newIds;
+    toggleVisibility(model: LLM_Model): void {
+        const newVisibility = !model.is_visible;
+        
+        this.modelsService.patchModel(model.id, { is_visible: newVisibility }).subscribe({
+            next: (updatedModel) => {
+                this.models.update(models => 
+                    models.map(m => m.id === model.id ? updatedModel : m)
+                );
+                this.hasChanges.set(true);
+            },
+            error: (err) => console.error('Error updating model visibility:', err)
         });
     }
 
-    onConfirm(): void {
-        const result: AllModelsResult = {
-            favoriteModelIds: this.favoriteModelIds(),
-        };
-        this.dialogRef.close(result);
-    }
-
     onClose(): void {
-        // Also apply changes on close
-        const result: AllModelsResult = {
-            favoriteModelIds: this.favoriteModelIds(),
-        };
+        const result: AllModelsResult = { changed: this.hasChanges() };
         this.dialogRef.close(result);
     }
 }
-
