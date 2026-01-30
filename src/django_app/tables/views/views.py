@@ -233,9 +233,9 @@ class SessionViewSet(
         session = self.get_object()
 
         warning = (
-            {"messages": session.warnings.messages}
-            if hasattr(session, "warning")
-            else {"messages": None}
+            SessionWarningMessage.objects.filter(session=session)
+            .values("messages")
+            .first()
         )
 
         return Response(warning, status=status.HTTP_200_OK)
@@ -294,7 +294,7 @@ class RunSession(APIView):
 
         if graph_organization:
             if not username and graph_organization.user_variables:
-                warning_messages.append(SessionWarningType.USER_VARS_WITH_NO_USER)
+                warning_messages.append(SessionWarningType.USER_VARS_WITH_NO_USER.value)
 
         if username and not graph_organization:
             return Response(
