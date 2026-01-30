@@ -31,6 +31,7 @@ class DecisionTableNodeSubgraph:
         decision_table_node_data: DecisionTableNodeData,
         graph_builder: StateGraph,
         stop_event: StopEvent,
+        run_code_execution_service: RunPythonCodeService,
         custom_session_message_writer: CustomSessionMessageWriter | None = None,
     ):
         self.decision_table_node_data = decision_table_node_data
@@ -43,6 +44,7 @@ class DecisionTableNodeSubgraph:
         self.custom_session_message_writer = (
             custom_session_message_writer or CustomSessionMessageWriter()
         )
+        self.run_code_execution_service = run_code_execution_service
 
     async def _execute_condition_group(
         self,
@@ -92,10 +94,12 @@ def main(**kwargs) -> bool:
             entrypoint="main",
             libraries=[],
         )
-        python_code_execution_data: dict = await RunPythonCodeService().run_code(
-            python_code_data=python_code_data,
-            inputs={"variables": state["variables"].model_dump()},
-            stop_event=self.stop_event,
+        python_code_execution_data: dict = (
+            await self.run_code_execution_service.run_code(
+                python_code_data=python_code_data,
+                inputs={"variables": state["variables"].model_dump()},
+                stop_event=self.stop_event,
+            )
         )
 
         logger.info(f"Python code execution data: {python_code_execution_data}")
@@ -118,6 +122,7 @@ def main(variables: dict) -> bool:
     assert isinstance(result, bool), "Expression must return a boolean value"
     return result
 """
+
         python_code_data = PythonCodeData(
             venv_name="default",
             code=code,
@@ -125,12 +130,13 @@ def main(variables: dict) -> bool:
             libraries=[],
         )
 
-        python_code_execution_data: dict = await RunPythonCodeService().run_code(
-            python_code_data=python_code_data,
-            inputs={"variables": state["variables"].model_dump()},
-            stop_event=self.stop_event,
+        python_code_execution_data: dict = (
+            await self.run_code_execution_service.run_code(
+                python_code_data=python_code_data,
+                inputs={"variables": state["variables"].model_dump()},
+                stop_event=self.stop_event,
+            )
         )
-        logger.info(f"Python code execution data: {python_code_execution_data}")
         if python_code_execution_data["returncode"] != 0:
             raise DecisionTableNodeDataError(
                 f"Expression execution failed with error: {python_code_execution_data['stderr']}"

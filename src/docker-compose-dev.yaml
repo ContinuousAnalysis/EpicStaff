@@ -240,7 +240,7 @@ services:
       poetry run watchfiles
       --filter python
       'poetry run python3 /home/user/root/app/src/crew/main.py'
-      /home/user/root/app/src/crew/models"
+      /home/user/root/app/src/crew/"
     build:
       context: .
       dockerfile: ./crew/Dockerfile.crew

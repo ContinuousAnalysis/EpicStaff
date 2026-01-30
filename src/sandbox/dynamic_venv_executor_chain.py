@@ -232,8 +232,9 @@ class ExecuteCodeHandler(AbstractHandler):
         wrapped_code = f"""
 import sys
 import json
-from dotdict import DotDict, DotObject, DotList
+
 try:
+    from dotdict import DotDict, DotObject, DotList
     for k, v in {global_kwargs}.items():
         globals()[k] = v
     
