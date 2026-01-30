@@ -40,6 +40,7 @@ class ImportService:
         """
         Topological sort based on dependencies.
         """
+        # Entities will be imported from top to bottom based on this list
         dependency_order = [
             EntityType.LLM_CONFIG,
             EntityType.EMBEDDING_CONFIG,
