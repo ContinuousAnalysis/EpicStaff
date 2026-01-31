@@ -52,8 +52,9 @@ export class ConfigurationTableComponent {
 
     searchTerm = input<string>('');
     showBulkRow = input<boolean>(false);
+    ragId = input.required<number>();
     documents = model<TableDocument[]>([]);
-    selectedDocumentId = model<number | null>(null);
+    selectedRagDocId = model<number | null>(null);
 
     docsCheckChange = output<number[]>();
     docFieldChange = output<DocFieldChange>();
@@ -121,11 +122,14 @@ export class ConfigurationTableComponent {
         };
     }
 
-    tuneChunk(row: any) {
+    tuneChunk(docRagId: number) {
         this.dialog.open(EditFileParametersDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
-            data: {},
+            data: {
+                ragId: this.ragId(),
+                docRagId
+            },
             disableClose: true
         });
     }

@@ -27,42 +27,74 @@ export class DocumentChunksStorageService {
                 case 'new':
                     status = 'new';
                     break;
+                // document-config status 'chunked' does not represent is chunks are up-to-date
                 case 'chunked':
-                    status = 'chunked';
+                    status = 'new';
                     break;
                 default:
                     status = 'chunking_failed';
             }
 
-            docStateMap.set(doc.document_id, { id: doc.document_id, status: status, chunks: [] });
+            docStateMap.set(doc.naive_rag_document_id, { id: doc.naive_rag_document_id, status: status, chunks: [] });
         });
         this.documentStatesSignal.set(docStateMap);
     }
 
-    public updateDocState(
-        documentId: number,
+    public updateDocsState(
+        ragDocIds: number[],
         updater: (state: DocumentChunkingState) => DocumentChunkingState
     ): void {
-        this.documentStatesSignal.update(map => {
-            const state = map.get(documentId)!;
-            map.set(documentId, updater(state));
-            return new Map(map);
+        if (!ragDocIds.length) return;
+
+        this.documentStatesSignal.update(prevMap => {
+            const newMap = new Map(prevMap);
+
+            for (const id of ragDocIds) {
+                const prev = newMap.get(id);
+                if (!prev) continue;
+
+                const updated = updater(prev);
+                newMap.set(id, updated);
+            }
+
+            return newMap;
         });
     }
 
+    public removeDocsFromState(ragDocIds: number[]): void {
+        if (!ragDocIds.length) return;
+
+        this.documentStatesSignal.update(prevMap => {
+            const newMap = new Map(prevMap);
+
+            for (const id of ragDocIds) {
+                newMap.delete(id);
+            }
+
+            return newMap;
+        });
+    }
+
+    public markChunksOutdated(ragDocIds: number[]): void {
+        this.updateDocsState(ragDocIds, s => ({
+            ...s,
+            status: s.status !== 'new' ? 'chunks_outdated' : s.status,
+        }));
+    }
+
     public fetchChunks(naiveRagId: number, documentId: number): Observable<GetNaiveRagDocumentChunksResponse> {
-        this.updateDocState(documentId, s => ({ ...s, status: 'fetching_chunks' }));
+        this.updateDocsState([documentId], s => ({ ...s, status: 'fetching_chunks' }));
 
         return this.naiveRagService.getChunkPreview(naiveRagId, documentId).pipe(
             tap(({ chunks }) => {
                 const state = this.documentStates().get(documentId);
                 // document was updated during fetching
                 if (state?.status === 'chunks_outdated') {
-                    this.updateDocState(documentId, s => ({ ...s, chunks }));
+                    this.updateDocsState([documentId], s => ({ ...s, chunks }));
                     return
                 }
 
-                this.updateDocState(documentId, s => ({ ...s, status: 'chunks_ready', chunks }));
+                this.updateDocsState([documentId], s => ({ ...s, status: 'chunks_ready', chunks }));
             })
         );
     }

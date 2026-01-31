@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input, OnChanges, signal, SimpleCha
 import { NgClass } from "@angular/common";
 import { HighlightOverlapDirective } from "@shared/directives";
 import { SpinnerComponent } from "@shared/components";
-import { NaiveRagDocumentChunk } from "../../models/naive-rag-chunk.model";
+import { NaiveRagDocumentChunk } from "../../../models/naive-rag-chunk.model";
 
 @Component({
     selector: 'app-chunk-preview',

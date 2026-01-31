@@ -3,7 +3,7 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
-    DestroyRef, effect,
+    DestroyRef,
     inject,
     input,
     OnInit,
@@ -16,9 +16,8 @@ import {
     ButtonComponent,
     ConfirmationDialogService,
     SearchComponent,
-    SpinnerComponent
 } from "@shared/components";
-import { EMPTY, filter, groupBy, mergeMap, of, Subject } from "rxjs";
+import { EMPTY, groupBy, mergeMap, of, Subject } from "rxjs";
 import { catchError, debounceTime, map, switchMap, tap } from "rxjs/operators";
 
 import { ToastService } from "../../../../services/notifications";
@@ -33,7 +32,7 @@ import {
 } from "../../models/naive-rag-document.model";
 import { DocumentChunksStorageService } from "../../services/document-chunks-storage.service";
 import { NaiveRagService } from "../../services/naive-rag.service";
-import { ChunkPreviewComponent } from "../chunk-preview/chunk-preview.component";
+import { DocumentChunksSectionComponent } from "../document-chunks-section/document-chunks-section.component";
 import { ConfigurationTableComponent } from "./configuration-table/configuration-table.component";
 import {
     DocFieldChange,
@@ -50,9 +49,8 @@ import {
         SearchComponent,
         ConfigurationTableComponent,
         AppIconComponent,
-        ChunkPreviewComponent,
         ButtonComponent,
-        SpinnerComponent,
+        DocumentChunksSectionComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -63,15 +61,10 @@ export class RagConfigurationComponent implements OnInit {
     searchTerm = signal<string>('');
     bulkBtnActive = signal<boolean>(false);
     documents = signal<TableDocument[]>([]);
-    selectedDocumentId = signal<number | null>(null);
+    selectedRagDocId = signal<number | null>(null);
     filteredAndCheckedDocIds = signal<number[]>([]);
 
     showBulkRow = computed(() => this.bulkBtnActive() && !!this.filteredAndCheckedDocIds().length);
-    selectedDocState = computed(() => {
-        const id = this.selectedDocumentId();
-        if (!id) return null;
-        return this.chunksStorageService.documentStates().get(id);
-    });
 
     private confirmationDialogService = inject(ConfirmationDialogService);
     private naiveRagService = inject(NaiveRagService);
@@ -80,17 +73,6 @@ export class RagConfigurationComponent implements OnInit {
     private chunksStorageService = inject(DocumentChunksStorageService);
 
     private docFieldChange$ = new Subject<DocFieldChange>();
-
-    constructor() {
-        effect(() => {
-            const document = this.selectedDocState();
-            if (!document) return;
-
-            if (document.status === 'chunked') {
-                this.chunksStorageService.fetchChunks(this.naiveRagId(), document.id).subscribe();
-            }
-        });
-    }
 
     ngOnInit() {
         this.fetchDocumentConfigs()
@@ -165,11 +147,7 @@ export class RagConfigurationComponent implements OnInit {
                 i.document_id === config.document_id ? { ...i, ...config, errors: {} } : i
             )
         );
-
-        this.chunksStorageService.updateDocState(config.document_id, (s) => ({
-            ...s,
-            status: s.status !== 'new' ? 'chunks_outdated' : s.status,
-        }));
+        this.chunksStorageService.markChunksOutdated([config.naive_rag_document_id]);
         this.toastService.success('Document updated');
     }
 
@@ -193,40 +171,6 @@ export class RagConfigurationComponent implements OnInit {
         return EMPTY;
     }
 
-    runChunking() {
-        const documentId = this.selectedDocumentId();
-        if (!documentId) return;
-
-        const initialState = this.chunksStorageService.documentStates().get(documentId);
-        if (!initialState) return;
-
-        this.chunksStorageService.updateDocState(documentId, s => ({ ...s, status: 'chunking' }));
-
-        this.naiveRagService.runChunkingProcess(this.naiveRagId(), documentId).pipe(
-            filter(r => r.status === 'completed'),
-
-            tap(() => {
-                const state = this.chunksStorageService.documentStates().get(documentId);
-                if (state?.status === 'chunks_outdated') return;
-
-                this.chunksStorageService.updateDocState(documentId, s => ({ ...s, status: 'chunked' }));
-            }),
-
-            switchMap(() => {
-                const state = this.chunksStorageService.documentStates().get(documentId);
-                if (!state) return EMPTY;
-
-                // prevent chunks fetching if document was updated
-                if (state.status === 'chunks_outdated') return EMPTY;
-
-                // prevent chunks fetching if user select other document
-                if (this.selectedDocumentId() !== documentId) return EMPTY;
-
-                return this.chunksStorageService.fetchChunks(this.naiveRagId(), documentId);
-            })
-        ).subscribe();
-    }
-
     // ================= BULK LOGIC START =================
 
     applyBulkEdit(dto: UpdateNaiveRagDocumentDtoRequest) {
@@ -244,12 +188,12 @@ export class RagConfigurationComponent implements OnInit {
         this.toastService.success(res.message);
 
         const configMap = new Map(
-            res.configs.map(c => [c.document_id, c])
+            res.configs.map(c => [c.naive_rag_document_id, c])
         );
 
         this.documents.update(items =>
             items.map(item => {
-                const updated = configMap.get(item.document_id);
+                const updated = configMap.get(item.naive_rag_document_id);
 
                 if (!updated) return item;
 
@@ -261,6 +205,7 @@ export class RagConfigurationComponent implements OnInit {
                 };
             })
         );
+        this.chunksStorageService.markChunksOutdated(Array.from(configMap.keys()));
     }
 
     private normalizeErrors(
@@ -303,9 +248,11 @@ export class RagConfigurationComponent implements OnInit {
     }
 
     private handleSuccessBulkDelete(res: BulkDeleteNaiveRagDocumentDtoResponse) {
+        const deletedIds = res.deleted_config_ids;
         this.documents.update(items => items.filter(i => {
-            return !res.deleted_config_ids.includes(i.naive_rag_document_id);
-        }))
+            return !deletedIds.includes(i.naive_rag_document_id);
+        }));
+        this.chunksStorageService.removeDocsFromState(deletedIds);
         this.toastService.success(res.message);
     }
 

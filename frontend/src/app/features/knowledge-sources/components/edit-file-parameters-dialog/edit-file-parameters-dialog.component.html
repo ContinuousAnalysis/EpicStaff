@@ -32,19 +32,22 @@
     </div>
 
     <div class="dialog__content">
-        <div class="dialog__chunk-preview">
-            <div class="dialog__chunk-preview-header">
-                <span>Chunk Preview</span>
-                <app-button
-                    class="dialog__chunk-preview-button"
-                    type="outline-primary"
-                    mod="default"
-                >
-                    Show
-                </app-button>
-            </div>
-<!--            <app-chunk-preview/>-->
-        </div>
+        <app-document-chunks-section
+            [naiveRagId]="data.ragId"
+        />
+<!--        <div class="dialog__chunk-preview">-->
+<!--            <div class="dialog__chunk-preview-header">-->
+<!--                <span>Chunk Preview</span>-->
+<!--                <app-button-->
+<!--                    class="dialog__chunk-preview-button"-->
+<!--                    type="outline-primary"-->
+<!--                    mod="default"-->
+<!--                >-->
+<!--                    Show-->
+<!--                </app-button>-->
+<!--            </div>-->
+<!--&lt;!&ndash;            <app-chunk-preview/>&ndash;&gt;-->
+<!--        </div>-->
 
         <app-document-config
             [document]="document()"

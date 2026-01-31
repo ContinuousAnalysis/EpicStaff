@@ -119,7 +119,7 @@
                 <div
                     class="table__row-wrapper"
                     [class.table__row-wrapper--dark]="odd"
-                    [class.table__row-wrapper--selected]="d.document_id === selectedDocumentId()"
+                    [class.table__row-wrapper--selected]="d.naive_rag_document_id === selectedRagDocId()"
                 >
                     <li
                         class="table__row"
@@ -135,7 +135,7 @@
                         <!-- filename -->
                         <div
                             class="table__col table__col-file"
-                            (click)="selectedDocumentId.set(d.document_id)"
+                            (click)="selectedRagDocId.set(d.naive_rag_document_id)"
                         >
                             <span>{{ i + 1 }}</span>
                             <app-icon
