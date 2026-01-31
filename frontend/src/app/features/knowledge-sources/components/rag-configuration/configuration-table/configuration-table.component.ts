@@ -9,6 +9,7 @@ import {
     signal
 } from "@angular/core";
 import { KeyValuePipe } from "@angular/common";
+import { UpdateNaiveRagDocumentDtoRequest } from "../../../models/naive-rag-document.model";
 import {
     DocFieldChange,
     TableDocument,
@@ -23,7 +24,6 @@ import {
     CheckboxComponent
 } from "@shared/components";
 import { CHUNK_STRATEGIES, FILE_TYPES } from "../../../constants/constants";
-import { UpdateNaiveRagDocumentDtoRequest } from "../../../models/rag.model";
 import { Dialog } from "@angular/cdk/dialog";
 import {
     EditFileParametersDialogComponent
@@ -32,7 +32,7 @@ import {
 @Component({
     selector: 'app-configuration-table',
     templateUrl: './configuration-table.component.html',
-    styleUrls: [ './configuration-table.component.scss' ],
+    styleUrls: ['./configuration-table.component.scss'],
     imports: [
         SelectComponent,
         AppIconComponent,

@@ -1,5 +1,4 @@
-import {NaiveRagDocumentConfig, UpdateNaiveRagDocumentConfigError} from "../../../models/rag.model";
-
+import { NaiveRagDocumentConfig, UpdateNaiveRagDocumentConfigError } from "../../../models/naive-rag-document.model";
 
 export interface TableDocument extends NaiveRagDocumentConfig {
     checked: boolean;

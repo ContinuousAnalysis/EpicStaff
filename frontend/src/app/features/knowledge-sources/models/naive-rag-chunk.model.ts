@@ -1,0 +1,57 @@
+export type DocumentChunkingProcessStatus =
+    | 'completed'
+    | 'canceled'
+    | 'failed'
+    | 'timeout';
+
+export type DocumentStatus =
+    | 'new'
+    | 'chunking'
+    | 'chunked'
+    | 'indexing'
+    | 'completed'
+    | 'failed';
+
+export type DocumentWithChunksStatus =
+    | 'new'
+    | 'chunking'
+    | 'chunking_failed'
+    | 'chunked'
+    | 'fetching_chunks'
+    | 'chunks_ready'
+    | 'chunks_outdated';
+
+export interface DocumentChunkingState {
+    id: number;
+    status: DocumentWithChunksStatus;
+    chunks: NaiveRagDocumentChunk[];
+}
+
+export interface NaiveRagChunkingResponse {
+    chunking_job_id: string;
+    naive_rag_id: number;
+    document_config_id: number;
+    status: DocumentChunkingProcessStatus;
+    chunk_count: number;
+    message: string | null;
+    elapsed_time: number;
+}
+
+export interface GetNaiveRagDocumentChunksResponse {
+    naive_rag_id: number;
+    document_config_id: number;
+    status: DocumentStatus;
+    total_chunks: number;
+    limit: number;
+    offset: number;
+    chunks: NaiveRagDocumentChunk[];
+}
+
+export interface NaiveRagDocumentChunk {
+    preview_chunk_id: number;
+    text: string;
+    chunk_index: number;
+    token_count: number | null;
+    metadata: Object;
+    created_at: string;
+}

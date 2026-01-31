@@ -5,6 +5,7 @@
     &__files-section {
         display: flex;
         flex-direction: column;
+        flex-shrink: 0;
         width: 715px;
         border-right: 1px solid var(--color-divider-subtle);
     }
@@ -40,14 +41,50 @@
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        row-gap: 0.5rem;
+        row-gap: 0.75rem;
         margin: 1.5rem 2.5rem 1.875rem 1.875rem;
         overflow: hidden;
     }
 
     &__chunk-header {
-        font-size: 0.875rem;
-        line-height: 130%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.125rem;
+        color: var(--color-ks-text);
+    }
+
+    &__chunk-status {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        height: 28px;
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+
+        &--synchronized {
+            color: var(--color-ks-status-completed);
+            background: var(--color-ks-transparent-purple);
+        }
+
+        &--outdated {
+            color: var(--color-ks-status-warning);
+            background: var(--color-ks-transparent-yellow);
+        }
+    }
+
+    &__chunk-action-btn {
+        width: 120px;
+        margin-left: auto;
+    }
+
+    &__chunk-loader {
+        display: flex;
+        flex-grow: 1;
+        justify-content: center;
+        align-items: center;
     }
 
     &__chunk-empty {

@@ -5,7 +5,7 @@
     <p
         class="chunk__text-container"
     >
-        @for (chunk of chunks(); track chunk.id; let i = $index; let odd = $odd) {
+        @for (chunk of chunks(); track chunk.preview_chunk_id; let i = $index; let odd = $odd) {
             <span
                 class="chunk__id-item"
                 [ngClass]="odd ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
@@ -15,8 +15,10 @@
             <span
                 class="chunk__item"
                 [ngClass]="odd ? 'chunk__item--odd' : 'chunk__item--even'"
-                [highlightOverlap]="chunk"
-            ></span>
+
+            >
+                {{ chunk.text }}
+            </span>
         }
 
         <!--  chunk loader-->
@@ -37,8 +39,8 @@
             <span
                 class="chunk__item chunk__item--blurred"
                 [ngClass]="chunks().length % 2 !== 0 ? 'chunk__item--odd' : 'chunk__item--even'"
-                [highlightOverlap]="blurredChunk"
-            ></span>
+
+            >{{ blurredChunk.text }}</span>
         }
 
     </p>

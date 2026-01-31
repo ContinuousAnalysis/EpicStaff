@@ -1,34 +1,45 @@
+import { HttpErrorResponse } from "@angular/common/http";
 import {
     ChangeDetectionStrategy,
-    Component, computed,
-    DestroyRef,
+    Component,
+    computed,
+    DestroyRef, effect,
     inject,
     input,
     OnInit,
-    signal,
+    signal
 } from "@angular/core";
-import {FormsModule} from "@angular/forms";
-import {SearchComponent, AppIconComponent, ButtonComponent, ConfirmationDialogService} from "@shared/components";
-import {ConfigurationTableComponent} from "./configuration-table/configuration-table.component";
-import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {CreateCollectionDtoResponse} from "../../models/collection.model";
-import {NaiveRagService} from "../../services/naive-rag.service";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { FormsModule } from "@angular/forms";
+import {
+    AppIconComponent,
+    ButtonComponent,
+    ConfirmationDialogService,
+    SearchComponent,
+    SpinnerComponent
+} from "@shared/components";
+import { EMPTY, filter, groupBy, mergeMap, of, Subject } from "rxjs";
+import { catchError, debounceTime, map, switchMap, tap } from "rxjs/operators";
+
+import { ToastService } from "../../../../services/notifications";
+import { transformToTableDocuments } from "../../helpers/transform-to-table-document.util";
+import { CreateCollectionDtoResponse } from "../../models/collection.model";
 import {
     BulkDeleteNaiveRagDocumentDtoResponse,
     BulkUpdateNaiveRagDocumentDtoResponse,
-    NaiveRagDocumentConfig, UpdateNaiveRagDocumentConfigError, UpdateNaiveRagDocumentDtoRequest,
+    UpdateNaiveRagDocumentConfigError,
+    UpdateNaiveRagDocumentDtoRequest,
     UpdateNaiveRagDocumentResponse
-} from "../../models/rag.model";
-import {ToastService} from "../../../../services/notifications";
-import {ChunkPreviewComponent} from "../chunk-preview/chunk-preview.component";
-import {catchError, debounceTime, map, switchMap, tap} from "rxjs/operators";
-import {EMPTY, groupBy, mergeMap, of, Subject} from "rxjs";
+} from "../../models/naive-rag-document.model";
+import { DocumentChunksStorageService } from "../../services/document-chunks-storage.service";
+import { NaiveRagService } from "../../services/naive-rag.service";
+import { ChunkPreviewComponent } from "../chunk-preview/chunk-preview.component";
+import { ConfigurationTableComponent } from "./configuration-table/configuration-table.component";
 import {
     DocFieldChange,
     NormalizedDocumentErrors,
     TableDocument
 } from "./configuration-table/configuration-table.interface";
-import {HttpErrorResponse} from "@angular/common/http";
 
 @Component({
     selector: 'app-rag-configuration',
@@ -41,6 +52,7 @@ import {HttpErrorResponse} from "@angular/common/http";
         AppIconComponent,
         ChunkPreviewComponent,
         ButtonComponent,
+        SpinnerComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -55,13 +67,30 @@ export class RagConfigurationComponent implements OnInit {
     filteredAndCheckedDocIds = signal<number[]>([]);
 
     showBulkRow = computed(() => this.bulkBtnActive() && !!this.filteredAndCheckedDocIds().length);
+    selectedDocState = computed(() => {
+        const id = this.selectedDocumentId();
+        if (!id) return null;
+        return this.chunksStorageService.documentStates().get(id);
+    });
 
     private confirmationDialogService = inject(ConfirmationDialogService);
     private naiveRagService = inject(NaiveRagService);
     private destroyRef = inject(DestroyRef);
     private toastService = inject(ToastService);
+    private chunksStorageService = inject(DocumentChunksStorageService);
 
     private docFieldChange$ = new Subject<DocFieldChange>();
+
+    constructor() {
+        effect(() => {
+            const document = this.selectedDocState();
+            if (!document) return;
+
+            if (document.status === 'chunked') {
+                this.chunksStorageService.fetchChunks(this.naiveRagId(), document.id).subscribe();
+            }
+        });
+    }
 
     ngOnInit() {
         this.fetchDocumentConfigs()
@@ -103,17 +132,14 @@ export class RagConfigurationComponent implements OnInit {
         const id = this.naiveRagId();
 
         return this.naiveRagService.getDocumentConfigs(id).pipe(
-            map(({ configs }) => this.toTableDocuments(configs)),
+            map(({ configs }) => transformToTableDocuments(configs)),
+            tap(documents => this.chunksStorageService.initDocumentStatesMap(documents)),
             catchError(e => {
                 this.toastService.error('Failed to fetch documents');
                 console.log(e);
                 return EMPTY;
             }),
         );
-    }
-
-    private toTableDocuments(documents: NaiveRagDocumentConfig[]): TableDocument[] {
-        return documents.map(d => ({...d, checked: false}));
     }
 
     private updateDocumentField(change: DocFieldChange) {
@@ -139,6 +165,11 @@ export class RagConfigurationComponent implements OnInit {
                 i.document_id === config.document_id ? { ...i, ...config, errors: {} } : i
             )
         );
+
+        this.chunksStorageService.updateDocState(config.document_id, (s) => ({
+            ...s,
+            status: s.status !== 'new' ? 'chunks_outdated' : s.status,
+        }));
         this.toastService.success('Document updated');
     }
 
@@ -151,12 +182,49 @@ export class RagConfigurationComponent implements OnInit {
 
         this.documents.update(items =>
             items.map(item => {
-                return item.naive_rag_document_id === documentId ? { ...item, errors: {[field]: {reason: errorMessage}} } : item;
+                return item.naive_rag_document_id === documentId ? {
+                    ...item,
+                    errors: { [field]: { reason: errorMessage } }
+                } : item;
             })
         );
         this.toastService.error(`Update failed: ${errorMessage}`);
 
         return EMPTY;
+    }
+
+    runChunking() {
+        const documentId = this.selectedDocumentId();
+        if (!documentId) return;
+
+        const initialState = this.chunksStorageService.documentStates().get(documentId);
+        if (!initialState) return;
+
+        this.chunksStorageService.updateDocState(documentId, s => ({ ...s, status: 'chunking' }));
+
+        this.naiveRagService.runChunkingProcess(this.naiveRagId(), documentId).pipe(
+            filter(r => r.status === 'completed'),
+
+            tap(() => {
+                const state = this.chunksStorageService.documentStates().get(documentId);
+                if (state?.status === 'chunks_outdated') return;
+
+                this.chunksStorageService.updateDocState(documentId, s => ({ ...s, status: 'chunked' }));
+            }),
+
+            switchMap(() => {
+                const state = this.chunksStorageService.documentStates().get(documentId);
+                if (!state) return EMPTY;
+
+                // prevent chunks fetching if document was updated
+                if (state.status === 'chunks_outdated') return EMPTY;
+
+                // prevent chunks fetching if user select other document
+                if (this.selectedDocumentId() !== documentId) return EMPTY;
+
+                return this.chunksStorageService.fetchChunks(this.naiveRagId(), documentId);
+            })
+        ).subscribe();
     }
 
     // ================= BULK LOGIC START =================
@@ -167,7 +235,7 @@ export class RagConfigurationComponent implements OnInit {
         const id = this.naiveRagId();
 
         this.naiveRagService
-            .bulkUpdateDocumentConfigs(id, {config_ids, ...dto})
+            .bulkUpdateDocumentConfigs(id, { config_ids, ...dto })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(res => this.hangleBulkEdit(res));
     }
