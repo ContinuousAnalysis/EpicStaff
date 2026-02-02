@@ -264,3 +264,5 @@ knowledge/graph_data/
 
 # Knowledge migration backup
 **/knowledge_migration_backup/
+fullchain.pem
+privkey.pem

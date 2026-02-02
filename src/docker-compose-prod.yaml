@@ -5,8 +5,11 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/templates/default.conf.template:/etc/nginx/templates/default.conf.template
+      - ./nginx/certs:/etc/nginx/certs:ro
       - media_data:/usr/share/nginx/html/media:ro
     networks:
       - backend-network
@@ -16,9 +19,9 @@ services:
         condition: service_healthy
       frontend:
         condition: service_started
-      realtime:
+      realtime: 
         condition: service_started
-      
+
     restart: always
 
   django_app:

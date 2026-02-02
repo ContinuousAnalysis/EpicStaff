@@ -49,3 +49,8 @@ switch:
 start-prod:
 	@echo "--- Starting prod services ---"
 	@cd src && docker compose -f docker-compose-prod.yaml up --build -d
+
+docker-generate-certs:
+	docker run --rm -v "$(CURDIR)/src/nginx/certs:/certs" -w /certs alpine \
+		sh -c "apk add openssl && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout privkey.pem -out fullchain.pem -subj '/CN=localhost'"
+	@echo "SSL certificates generated!"
