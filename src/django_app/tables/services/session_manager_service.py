@@ -33,6 +33,8 @@ from tables.request_models import (
     SubGraphNodeData,
     SubGraphData,
     TelegramTriggerNodeData,
+)
+from tables.models import (
     CrewNode,
     Session,
     Edge,
@@ -77,12 +79,12 @@ class SessionManagerService(metaclass=SingletonMeta):
         username: str | None = None,
         entrypoint: str | None = None,
     ) -> Session:
-        
+
         if variables is None:
             variables = dict()
         # it might not exist if graph has no start node
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
-        
+
         if start_node is not None:
             if variables and start_node.variables:
                 variables = {**start_node.variables, **variables}
@@ -413,4 +415,3 @@ class SessionManagerService(metaclass=SingletonMeta):
             end_node=end_node_data,
             telegram_trigger_node_data_list=telegram_trigger_node_data_list,
         )
-
