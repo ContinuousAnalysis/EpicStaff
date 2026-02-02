@@ -32,7 +32,22 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        # $scheme передаст 'http' или 'https' в зависимости от реального подключения
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location ^~ /api/run-session/subscribe/ {
+        proxy_pass http://backend_server;
+        
+        proxy_buffering off;
+        proxy_cache off;
+
+        proxy_set_header Connection '';
+        proxy_http_version 1.1;
+        proxy_read_timeout 24h;
+        chunked_transfer_encoding on;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
