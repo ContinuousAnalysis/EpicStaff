@@ -12,9 +12,11 @@ services:
       - backend-network
       - frontend-network
     depends_on:
-      - django_app
-      - frontend
-      - realtime
+      django_app:
+        condition: service_healthy
+      frontend:
+      realtime:
+      
     restart: always
 
   django_app:
