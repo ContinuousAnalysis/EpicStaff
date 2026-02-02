@@ -9,7 +9,7 @@
 
             <app-button
                 type="outline-primary"
-                (click)="initFiles()"
+                (click)="initDocuments()"
             >
                 Re-include Files
             </app-button>
@@ -33,7 +33,6 @@
             [searchTerm]="searchTerm()"
             [showBulkRow]="showBulkRow()"
             [ragId]="naiveRagId()"
-            [(documents)]="documents"
             [(selectedRagDocId)]="selectedRagDocId"
             (docsCheckChange)="filteredAndCheckedDocIds.set($event)"
             (docFieldChange)="onDocFieldChange($event)"

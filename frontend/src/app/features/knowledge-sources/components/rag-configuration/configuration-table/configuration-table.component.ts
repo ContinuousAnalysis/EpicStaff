@@ -9,7 +9,8 @@ import {
     signal
 } from "@angular/core";
 import { KeyValuePipe } from "@angular/common";
-import { UpdateNaiveRagDocumentDtoRequest } from "../../../models/naive-rag-document.model";
+import { NaiveRagDocumentConfig, UpdateNaiveRagDocumentDtoRequest } from "../../../models/naive-rag-document.model";
+import { NaiveRagDocumentsStorageService } from "../../../services/naive-rag-documents-storage.service";
 import {
     DocFieldChange,
     TableDocument,
@@ -49,11 +50,12 @@ export class ConfigurationTableComponent {
     chunkStrategySelectItems: SelectItem[] = CHUNK_STRATEGIES.map(t => ({ name: t, value: t.toLowerCase() }));
 
     private dialog = inject(Dialog);
+    private documentsStorageService = inject(NaiveRagDocumentsStorageService);
 
     searchTerm = input<string>('');
     showBulkRow = input<boolean>(false);
     ragId = input.required<number>();
-    documents = model<TableDocument[]>([]);
+    documents = this.documentsStorageService.documents;
     selectedRagDocId = model<number | null>(null);
 
     docsCheckChange = output<number[]>();
@@ -92,7 +94,7 @@ export class ConfigurationTableComponent {
         });
     }
 
-    onDocFieldChange(document: TableDocument, field: keyof TableDocument, value: string | number | null) {
+    onDocFieldChange(document: TableDocument, field: keyof NaiveRagDocumentConfig, value: string | number | null) {
         this.docFieldChange.emit({
             documentId: document.naive_rag_document_id,
             documentName: document.file_name,
@@ -103,13 +105,11 @@ export class ConfigurationTableComponent {
 
     toggleAll() {
         const all = this.allChecked();
-        this.documents.update(items => items.map(i => ({ ...i, checked: !all })));
+        this.documentsStorageService.toggleAll(all);
     }
 
     toggleDocument(item: TableDocument) {
-        this.documents.update(items => items.map(i => {
-            return i === item ? { ...i, checked: !i.checked } : i
-        }));
+        this.documentsStorageService.toggleDocument(item.naive_rag_document_id);
     }
 
     parseFullFileName(fullName: string): { name: string, type: string } {

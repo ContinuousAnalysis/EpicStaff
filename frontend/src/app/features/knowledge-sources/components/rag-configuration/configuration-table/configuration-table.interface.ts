@@ -12,6 +12,6 @@ export type NormalizedDocumentErrors = {
 export type DocFieldChange = {
     documentId: number;
     documentName: string;
-    field: keyof TableDocument;
+    field: keyof NaiveRagDocumentConfig;
     value: any;
 };
