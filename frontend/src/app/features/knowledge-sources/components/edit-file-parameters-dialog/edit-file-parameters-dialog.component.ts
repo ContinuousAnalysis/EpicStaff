@@ -16,7 +16,7 @@ import { DocumentConfigComponent } from "./document-config/document-config.compo
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EditFileParametersDialogComponent implements OnInit {
-    readonly data: { ragId: number } = inject(DIALOG_DATA);
+    readonly data: { ragId: number, docRagId: number } = inject(DIALOG_DATA);
     private destroyRef = inject(DestroyRef);
     private dialogRef = inject(DialogRef);
 

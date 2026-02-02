@@ -8,6 +8,7 @@
 .chunk {
     &__items {
         display: flex;
+        width: 100%;
         padding: 0.375rem 0;
         font-size: 0.875rem;
         line-height: 130%;
@@ -27,8 +28,10 @@
     &__id-item {
         position: absolute;
         left: calc(-2rem - 80px);
-        padding: 0.5rem 1rem;
-        height: 2rem;
+        transform: translateY(3px);
+        padding: 0.25rem 1rem;
+        height: 1.175rem;
+        line-height: 100%;
         min-width: 65px;
         width: fit-content;
         text-align: center;
@@ -37,12 +40,12 @@
 
         &--even {
             color: var(--color-ks-status-blue);
-            background-color: var(--color-ks-transparent-blue);
+            background-color: rgb(32,40,43);
         }
 
         &--odd {
             color: var(--color-ks-status-completed);
-            background-color: var(--color-ks-transparent-purple);
+            background-color: rgb(34,34,43);
         }
     }
 
@@ -53,9 +56,11 @@
     }
 
     &__text-container {
+        flex-grow: 1;
         position: relative;
         margin-left: 2rem;
         padding: 0.5rem 0;
+        line-height: 150%;
     }
 
     &__item {
@@ -65,11 +70,29 @@
             position: absolute;
             display: block;
             top: 0;
-            transform: translate(-1rem, -0.5rem);
-            height: calc(100% + 1rem);
+            transform: translate(-1rem, 0);
+            height: 100%;
             width: 1.5rem;
-            border-radius: 10px;
             border-left: 2px solid;
+        }
+
+        &--first::before {
+            height: calc(100% + 0.5rem);
+            transform: translate(-1rem, -0.5rem);
+            border-top-left-radius: 10px;
+        }
+
+        &--last::before {
+            height: calc(100% + 0.5rem);
+            transform: translate(-1rem, 0.5rem);
+            border-bottom-left-radius: 10px;
+        }
+
+        &--single::before {
+            height: calc(100% + 1rem);
+            transform: translate(-1rem, -0.5rem);
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
         }
 
         &--even {
@@ -78,6 +101,10 @@
 
         &--odd {
             color: var(--color-ks-status-completed);
+        }
+
+        &--overlap {
+            color: #ffcf00;
         }
 
         &--blurred {

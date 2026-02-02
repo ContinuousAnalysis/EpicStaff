@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, OnChanges, signal, SimpleChanges } from "@angular/core";
-import { NgClass } from "@angular/common";
-import { HighlightOverlapDirective } from "@shared/directives";
+import { NgClass, SlicePipe } from "@angular/common";
 import { SpinnerComponent } from "@shared/components";
 import { NaiveRagDocumentChunk } from "../../../models/naive-rag-chunk.model";
 
@@ -10,8 +9,8 @@ import { NaiveRagDocumentChunk } from "../../../models/naive-rag-chunk.model";
     styleUrls: ['./chunk-preview.component.scss'],
     imports: [
         NgClass,
-        HighlightOverlapDirective,
-        SpinnerComponent
+        SpinnerComponent,
+        SlicePipe
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -24,6 +23,8 @@ export class ChunkPreviewComponent implements OnChanges {
         chunk_index: 0,
         token_count: null,
         metadata: {},
+        overlap_start_index: null,
+        overlap_end_index: null,
         created_at: ''
     };
 

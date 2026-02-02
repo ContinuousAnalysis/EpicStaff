@@ -48,9 +48,11 @@ export interface GetNaiveRagDocumentChunksResponse {
 }
 
 export interface NaiveRagDocumentChunk {
+    chunk_index: number;
     preview_chunk_id: number;
     text: string;
-    chunk_index: number;
+    overlap_start_index: number | null;
+    overlap_end_index: number | null;
     token_count: number | null;
     metadata: Object;
     created_at: string;
