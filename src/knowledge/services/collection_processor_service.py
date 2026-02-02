@@ -1,10 +1,11 @@
-from typing import Callable, Optional
+from typing import Optional
 
 from rag.rag_strategy_factory import RAGStrategyFactory
 from rag.base_rag_strategy import BaseRAGStrategy
 from settings import UnitOfWork
 from utils.singleton_meta import SingletonMeta
 from models.redis_models import BaseRagSearchConfig
+from services.cancellation_token import CancellationToken
 
 
 class CollectionProcessorService(metaclass=SingletonMeta):
@@ -24,7 +25,7 @@ class CollectionProcessorService(metaclass=SingletonMeta):
         self,
         rag_type: str,
         document_config_id: int,
-        check_cancelled: Optional[Callable[[], bool]] = None,
+        cancellation_token: Optional[CancellationToken] = None,
     ) -> int:
         """
         Perform preview chunking for a document config.
@@ -34,7 +35,7 @@ class CollectionProcessorService(metaclass=SingletonMeta):
         Args:
             rag_type: Type of RAG strategy ("naive", "graph", etc.)
             document_config_id: Generic ID of the document config
-            check_cancelled: Optional callback to check if job was cancelled
+            cancellation_token: Optional token to check if job was cancelled
 
         Returns:
             Number of preview chunks created
@@ -46,7 +47,7 @@ class CollectionProcessorService(metaclass=SingletonMeta):
         strategy = self._get_strategy(rag_type)
         return strategy.process_preview_chunking(
             document_config_id=document_config_id,
-            check_cancelled=check_cancelled,
+            cancellation_token=cancellation_token,
         )
 
     def search(

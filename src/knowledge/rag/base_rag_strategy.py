@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from typing import Optional
+from services.cancellation_token import CancellationToken
 
 
 class BaseRAGStrategy(ABC):
@@ -46,7 +47,7 @@ class BaseRAGStrategy(ABC):
     def process_preview_chunking(
         self,
         document_config_id: int,
-        check_cancelled: Optional[Callable[[], bool]] = None,
+        cancellation_token: Optional["CancellationToken"] = None,
     ) -> int:
         """
         Perform preview chunking for a document config.
@@ -60,8 +61,7 @@ class BaseRAGStrategy(ABC):
         Args:
             document_config_id: Generic ID of the document config
                 (e.g., naive_rag_document_config_id for NaiveRAG)
-            check_cancelled: Optional callback to check if job was cancelled.
-                Returns True if cancelled.
+            cancellation_token: Optional token to check if job was cancelled.
 
         Returns:
             Number of preview chunks created

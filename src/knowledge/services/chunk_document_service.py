@@ -1,6 +1,7 @@
 import asyncio
 from collections import defaultdict
 from threading import Lock
+from typing import Optional
 
 from chunkers import (
     TokenChunker,
@@ -10,6 +11,7 @@ from chunkers import (
     JSONChunker,
     CSVChunker,
     BaseChunker,
+    BaseChunkData,
 )
 
 from .redis_service import RedisService
@@ -17,6 +19,7 @@ from settings import UnitOfWork
 from utils.singleton_meta import SingletonMeta
 from utils.file_text_extractor import extract_text_from_binary
 from loguru import logger
+from .cancellation_token import CancellationToken
 
 
 class ChunkDocumentService(metaclass=SingletonMeta):
@@ -73,7 +76,6 @@ class ChunkDocumentService(metaclass=SingletonMeta):
             file_type = "txt"
 
         return extract_text_from_binary(binary_content, file_type)
-
 
     def process_chunk_document_in_session(
         self, uow_ctx, naive_rag_document_config_id: int
@@ -146,7 +148,7 @@ class ChunkDocumentService(metaclass=SingletonMeta):
         chunk_size: int,
         chunk_overlap: int,
         additional_params: dict,
-    ) -> list[str]:
+    ) -> list[BaseChunkData]:
         # include file_name to additional_params
         additional_params = {**additional_params, "file_name": file_name}
 
@@ -163,7 +165,7 @@ class ChunkDocumentService(metaclass=SingletonMeta):
     def process_preview_chunking(
         self,
         naive_rag_document_config_id: int,
-        check_cancelled: callable = None,
+        cancellation_token: Optional["CancellationToken"] = None,
     ) -> int:
         """
         Chunk a document and save to PREVIEW table (not final chunks).
@@ -173,8 +175,8 @@ class ChunkDocumentService(metaclass=SingletonMeta):
 
         Args:
             naive_rag_document_config_id: ID of the document config
-            check_cancelled: Optional callback to check if job was cancelled.
-                            Should return True if cancelled.
+            cancellation_token: Optional token to check if job was cancelled.
+                               Use token.is_cancelled for O(1) thread-safe check.
 
         Returns:
             Number of preview chunks created
@@ -183,7 +185,9 @@ class ChunkDocumentService(metaclass=SingletonMeta):
             ValueError: If config not found
             asyncio.CancelledError: If job was cancelled
         """
-        
+
+        def is_cancelled() -> bool:
+            return cancellation_token is not None and cancellation_token.is_cancelled
 
         uow = UnitOfWork()
         with uow.start() as uow_ctx:
@@ -197,7 +201,7 @@ class ChunkDocumentService(metaclass=SingletonMeta):
                     f"NaiveRagDocumentConfig with id {naive_rag_document_config_id} not found"
                 )
 
-            if check_cancelled and check_cancelled():
+            if is_cancelled():
                 logger.info(
                     f"Chunking job for config {naive_rag_document_config_id} cancelled before processing"
                 )
@@ -217,7 +221,7 @@ class ChunkDocumentService(metaclass=SingletonMeta):
                 additional_params=doc_config.additional_params or {},
             )
 
-            if check_cancelled and check_cancelled():
+            if is_cancelled():
                 logger.info(
                     f"Chunking job for config {naive_rag_document_config_id} cancelled after chunking"
                 )
@@ -230,7 +234,7 @@ class ChunkDocumentService(metaclass=SingletonMeta):
 
             with config_lock:
                 # Re-check cancellation after acquiring lock (might have been cancelled while waiting)
-                if check_cancelled and check_cancelled():
+                if is_cancelled():
                     logger.info(
                         f"Chunking job for config {naive_rag_document_config_id} cancelled while waiting for lock"
                     )
@@ -242,7 +246,7 @@ class ChunkDocumentService(metaclass=SingletonMeta):
                 )
 
                 # Final cancellation check before save
-                if check_cancelled and check_cancelled():
+                if is_cancelled():
                     logger.info(
                         f"Chunking job for config {naive_rag_document_config_id} cancelled before saving"
                     )
