@@ -52,7 +52,7 @@ switch:
 
 start-prod:
 	@echo "--- Starting prod services ---"
-	@cd src && docker compose -f docker-compose-prod.yaml up --build -d
+	@cd src && docker compose -f docker-compose.yaml up --build -d
 
 docker-generate-certs:
 	docker run --rm -v "$(CURDIR)/src/nginx/certs:/certs" -w /certs alpine \

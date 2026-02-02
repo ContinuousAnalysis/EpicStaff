@@ -1,29 +1,4 @@
 services:
-  epicstaff-nginx:
-    image: nginx
-    container_name: nginx_gateway
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      - DOMAIN_NAME=${DOMAIN_NAME}
-    volumes:
-      - ./nginx/templates/default.conf.template:/etc/nginx/templates/default.conf.template
-      - ./nginx/certs:/etc/nginx/certs:ro
-      - media_data:/usr/share/nginx/html/media:ro
-    networks:
-      - backend-network
-      - frontend-network
-    depends_on:
-      django_app:
-        condition: service_healthy
-      frontend:
-        condition: service_started
-      realtime: 
-        condition: service_started
-
-    restart: always
-
   django_app:
     image: django_app
     build:
@@ -31,6 +6,8 @@ services:
       dockerfile: ./django_app/Dockerfile.dj
     command: ./entrypoint.sh
     container_name: django_app
+    ports:
+      - "${DJANGO_PORT:-8000}:${DJANGO_PORT:-8000}"
     environment:
       - CODE_RESULT_CHANNEL=code_results
       - CODE_EXEC_TASK_CHANNEL=code_exec_tasks
@@ -88,7 +65,8 @@ services:
     build:
       context: ./realtime
       dockerfile: Dockerfile.realtime
-
+    ports:
+      - "${REALTIME_PORT:-8050}:${REALTIME_PORT:-8050}"
     environment:
       - KNOWLEDGE_SEARCH_GET_CHANNEL=knowledge:search:get
       - KNOWLEDGE_SEARCH_RESPONSE_CHANNEL=knowledge:search:response
@@ -127,7 +105,8 @@ services:
     env_file:
       - .env
     container_name: manager_container
-
+    ports:
+      - "${MANAGER_PORT:-8001}:${MANAGER_PORT:-8001}"
     environment:
       - PULL_TOOL=${PULL_TOOL}
       - MANAGER_PORT=${MANAGER_PORT:-8001}
@@ -160,7 +139,8 @@ services:
       dockerfile: Dockerfile.crewdb
     container_name: crewdb
     command: ["postgres", "-c", "port=${DB_PORT:-5432}"]
-
+    ports:
+      - "${DB_PORT:-5432}:${DB_PORT:-5432}"
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-crew}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
@@ -203,7 +183,8 @@ services:
     container_name: redis
     networks:
       - backend-network
-
+    ports:
+      - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     environment:
@@ -346,7 +327,8 @@ services:
       context: ../frontend
       dockerfile: Dockerfile.fe
     container_name: epicstaff-frontend
-
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
     networks:
      - frontend-network
     volumes:
