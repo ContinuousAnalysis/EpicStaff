@@ -1,6 +1,10 @@
 # Makefile for managing Docker volume backups and image tags
 # Use cmd.exe as the shell for executing .bat files on Windows
-SHELL = cmd.exe
+ifeq ($(OS),Windows_NT)
+    SHELL := cmd.exe
+else
+    SHELL := /bin/sh
+endif
 
 # IMPORTANT: This Makefile must be run from the project's root directory
 # (the same directory this file is in).
