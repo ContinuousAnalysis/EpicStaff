@@ -44,3 +44,8 @@ apply-tags:
 switch:
 	@echo "--- Switching Full Branch Environment ---"
 	@.\\make_scripts\\switch_branch.bat $(b)
+
+
+start-prod:
+	@echo "--- Starting prod services ---"
+	@cd src && docker compose -f docker-compose-prod.yaml up --build -d
