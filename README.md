@@ -40,59 +40,86 @@ Our core philosophy: **We hide the complexity, not the logic.**
 
 ## 🚀 Getting Started
 
-This guide will help you launch EpicStaff using our system installer, which manages the Docker containers for you.
+This guide will help you launch EpicStaff on your system. You need to additionally install Git and Docker dependencies.
 
-### Windows/Linux
-
-### 1. **Install dependencies**  
+**Install dependencies**  
    - [Git](https://git-scm.com/downloads)  
    - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-
-### 2. Download the Installer
-Download the latest release for your operating system from our releases page.
-- **➡ [Download Latest Release](https://github.com/EpicStaff/EpicStaff/releases)**
-
-### 3. Unzip and Run
-Unzip the downloaded file and run the EpicStaff application.
- 
-**For more [details](docs/docs.pdf)**
-
 ---
 
-### MacOS Launch Instructions (Manual)
+### Linux and MacOS Launch Instructions
 
 ### 1. Clone the Project
 ```bash
-git clone -b stable --single-branch https://github.com/EpicStaff/EpicStaff.git && cd EpicStaff
+git clone -b main https://github.com/EpicStaff/EpicStaff.git && cd EpicStaff
 ```
-### 2. Set your prefered savefiles location
+### 2. Set your preferred savefiles location
 ```bash
 savefiles="$HOME/savefiles"
 ```
 ### 3. Update .env accordingly
+MacOS:
 ```bash
 sed -i '' "s|CREW_SAVEFILES_PATH=/c/savefiles|CREW_SAVEFILES_PATH=$savefiles|" src/.env
+```
+Linux:
+```bash
+sed -i "s|CREW_SAVEFILES_PATH=/c/savefiles|CREW_SAVEFILES_PATH=$savefiles|" src/.env
 ```
 ### 4. Run the Project
 Assuming [Docker](https://www.docker.com/products/docker-desktop/) is already installed and running use next command
 ```bash
-cd src && docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config && docker-compose up --build
+docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config &&  docker volume create media_data && docker network create mcp-network &&
+cd src && docker-compose up --build
 ```
-
+If build was already completed, project can be started by running following command
+```bash
+docker-compose up
+```
 ---
 
-### Windows Launch Instructions (Manual)
+### Windows Launch Instructions
 
 ### 1. Clone the Project
-`git clone https://github.com/EpicStaff/EpicStaff.git`
-### 2. Make sure you have Docker installed and running
-### 3. Inside `src/` use next commands
-```bash
-docker volume create sandbox_venvs; docker volume create sandbox_executions; docker volume create crew_pgdata; docker volume create crew_config
-
-docker compose up --build
+```powershell
+git clone -b main https://github.com/EpicStaff/EpicStaff.git; cd EpicStaff
 ```
+### 2. Set your preferred savefiles location
+```powershell
+$savefiles = "$HOME/savefiles"
+```
+### 3. Update .env accordingly
+```powershell
+$file = "src/.env"
+(Get-Content $file) -replace "CREW_SAVEFILES_PATH=/c/savefiles", "CREW_SAVEFILES_PATH=$savefiles" |
+    Set-Content $file
+```
+### 4. Run the Project
+Assuming [Docker](https://www.docker.com/products/docker-desktop/) is already installed and running use next command
+```powershell
+docker volume create sandbox_venvs; docker volume create sandbox_executions; docker volume create crew_pgdata; docker volume create crew_config;  docker volume create media_data; docker network create mcp-network; 
+cd src; docker-compose up --build
+```
+If build was already completed, project can be started by running following command
+```powershell
+docker-compose up
+```
+---
 
+
+
+### Alternative Setup Options
+
+EpicStaff can be configured and launched using alternative setup methods:
+
+- **[Partly Local Setup](https://github.com/EpicStaff/EpicStaff/blob/main/partly-local-setup.md)** — run specific services locally while other services remain in Docker. Useful for controlled local development and testing.  
+- **[Podman Support](https://github.com/EpicStaff/EpicStaff/blob/main/podman-setup.md)** — provides instructions for deploying EpicStaff using **Podman** instead of Docker.
+
+> These methods are optional and intended for users requiring advanced control over their environment.
+
+
+
+**For more [details](docs/docs.pdf)**
 ---
 
 ## One Platform, Two Workflows: Visual and Code
@@ -185,4 +212,5 @@ Our platform leverages the innovative work of the open-source community. A speci
 * Foblex helps us spread the word by featuring EpicStaff in his articles and educational materials. You can check out his work at **[flow.foblex.com](https://flow.foblex.com/)**.
 
 We believe in the power of collaboration and are grateful for such a great partnership.
+
 

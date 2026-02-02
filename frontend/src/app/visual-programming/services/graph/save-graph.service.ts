@@ -1,62 +1,84 @@
-import { Injectable } from '@angular/core';
-import { Observable, forkJoin, of, EMPTY, throwError, from } from 'rxjs';
-import { switchMap, catchError, map } from 'rxjs/operators';
+import {Injectable} from '@angular/core';
+import {EMPTY, forkJoin, Observable, of, throwError} from 'rxjs';
+import {catchError, map, switchMap} from 'rxjs/operators';
 
-import { FlowsApiService } from '../../../features/flows/services/flows-api.service';
-import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { NodeType } from '../../core/enums/node-type';
-import { ConnectionModel } from '../../core/models/connection.model';
-import { FlowModel } from '../../core/models/flow.model';
-import {
-    ProjectNodeModel,
-    PythonNodeModel,
-    EdgeNodeModel,
-    StartNodeModel,
-    LLMNodeModel,
-    NodeModel,
-} from '../../core/models/node.model';
+import {FlowsApiService} from '../../../features/flows/services/flows-api.service';
+import {GetProjectRequest} from '../../../features/projects/models/project.model';
+import {NodeType} from '../../core/enums/node-type';
+import {ConnectionModel} from '../../core/models/connection.model';
+import {FlowModel} from '../../core/models/flow.model';
+import {EdgeNodeModel, LLMNodeModel, ProjectNodeModel, PythonNodeModel,} from '../../core/models/node.model';
 
-import { ToastService } from '../../../services/notifications/toast.service';
+import {ToastService} from '../../../services/notifications/toast.service';
 import {
-    GetConditionalEdgeRequest,
-    CreateConditionalEdgeRequest,
     ConditionalEdge,
+    CreateConditionalEdgeRequest,
+    GetConditionalEdgeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import {
     CreateFileExtractorNodeRequest,
     GetFileExtractorNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import {
-    CrewNode,
+    CreateAudioToTextNodeRequest,
+    GetAudioToTextNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
+import {
     CreateCrewNodeRequest,
+    CrewNode,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
+import {CreateEdgeRequest, Edge,} from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import {
-    Edge,
-    CreateEdgeRequest,
-} from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
-import {
-    GetLLMNodeRequest,
     CreateLLMNodeRequest,
+    GetLLMNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
 import {
-    PythonNode,
     CreatePythonNodeRequest,
+    PythonNode,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
-import { ConditionalEdgeService } from '../../../pages/flows-page/components/flow-visual-programming/services/conditional-edge.service';
-import { CrewNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/crew-node.service';
-import { EdgeService } from '../../../pages/flows-page/components/flow-visual-programming/services/edge.service';
-import { LLMNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/llm-node.service';
-import { PythonNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/python-node.service';
-import { FileExtractorService } from '../../../pages/flows-page/components/flow-visual-programming/services/file-extractor.service';
 import {
-    GraphDto,
-    UpdateGraphDtoRequest,
-} from '../../../features/flows/models/graph.model';
+    ConditionalEdgeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/conditional-edge.service';
+import {CrewNodeService} from '../../../pages/flows-page/components/flow-visual-programming/services/crew-node.service';
+import {EdgeService} from '../../../pages/flows-page/components/flow-visual-programming/services/edge.service';
+import {LLMNodeService} from '../../../pages/flows-page/components/flow-visual-programming/services/llm-node.service';
 import {
-    EndNode,
+    PythonNodeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/python-node.service';
+import {
+    FileExtractorService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/file-extractor.service';
+import {GraphDto, UpdateGraphDtoRequest,} from '../../../features/flows/models/graph.model';
+import {
     CreateEndNodeRequest,
+    EndNode,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
-import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import {EndNodeService} from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
+import {
+    AudioToTextService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
+import {
+    WebhookTriggerNodeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
+import {
+    CreateWebhookTriggerNodeRequest,
+    GetWebhookTriggerNodeRequest
+} from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
+import {
+    CreateConditionGroupRequest,
+    CreateDecisionTableNodeRequest,
+    GetDecisionTableNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
+import {
+    DecisionTableNodeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/decision-table-node.service';
+import {
+    CreateTelegramTriggerNodeRequest,
+    GetTelegramTriggerNodeRequest
+} from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
+import {
+    TelegramTriggerNodeService
+} from "../../../pages/flows-page/components/flow-visual-programming/services/telegram-trigger-node.service";
 
 @Injectable({
     providedIn: 'root',
@@ -70,9 +92,13 @@ export class GraphUpdateService {
         private graphService: FlowsApiService,
         private llmNodeService: LLMNodeService,
         private fileExtractorService: FileExtractorService,
+        private audioToTextService: AudioToTextService,
+        private webhookTriggerService: WebhookTriggerNodeService,
+        private telegramTriggerService: TelegramTriggerNodeService,
         private endNodeService: EndNodeService,
+        private decisionTableNodeService: DecisionTableNodeService,
         private toastService: ToastService
-    ) {}
+    ) { }
 
     /**
      * Clears all ports on nodes to null before saving
@@ -101,11 +127,14 @@ export class GraphUpdateService {
         updatedNodes: {
             crewNodes: CrewNode[];
             pythonNodes: PythonNode[];
+            audioToTextNodes: any[];
             llmNodes: any[];
             fileExtractorNodes: any[];
             conditionalEdges: any[];
             edges: Edge[];
+
             endNodes: EndNode[];
+            decisionTableNodes: GetDecisionTableNodeRequest[];
         };
     }> {
         //
@@ -226,6 +255,43 @@ export class GraphUpdateService {
             })
         );
 
+        // ---- Handle Audio Transcription (Audio -> Text) Nodes ----
+        let deleteAudioToTextNodes$: Observable<any> = of(null);
+        if (
+            graph.audio_transcription_node_list &&
+            graph.audio_transcription_node_list.length > 0
+        ) {
+            const deleteATReqs = graph.audio_transcription_node_list.map(
+                (atNode: GetAudioToTextNodeRequest) =>
+                    this.audioToTextService
+                        .deleteAudioToTextNode(atNode.id.toString())
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteAudioToTextNodes$ = forkJoin(deleteATReqs);
+        }
+
+        const audioToTextNodes$ = deleteAudioToTextNodes$.pipe(
+            switchMap(() => {
+                const atNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.AUDIO_TO_TEXT
+                );
+
+                const requests = atNodes.map((node) => {
+                    const payload: CreateAudioToTextNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        input_map: node.input_map || {},
+                        output_variable_path:
+                            node.output_variable_path || null,
+                    };
+                    return this.audioToTextService
+                        .createAudioToTextNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
         // ---- Handle LLM Nodes ----
         let deleteLLMNodes$: Observable<any> = of(null);
         if (graph.llm_node_list && graph.llm_node_list.length > 0) {
@@ -292,6 +358,84 @@ export class GraphUpdateService {
                 return requests.length ? forkJoin(requests) : of([]);
             })
         );
+
+        // ---- Handle Webhook Trigger Nodes ----
+        let deleteWebhookTriggerNodes$: Observable<any> = of(null);
+        if (graph.webhook_trigger_node_list && graph.webhook_trigger_node_list.length > 0) {
+            const deleteWebhookTriggerReqs = graph.webhook_trigger_node_list.map(
+                (webhookTriggerNode: GetWebhookTriggerNodeRequest) =>
+                    this.webhookTriggerService
+                        .deleteWebhookTriggerNode(webhookTriggerNode.id.toString())
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteWebhookTriggerNodes$ = forkJoin(deleteWebhookTriggerReqs);
+        }
+
+        const webhookTriggerNodes$ = deleteWebhookTriggerNodes$.pipe(
+            switchMap(() => {
+                const webhookTriggerNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.WEBHOOK_TRIGGER
+                );
+
+                const requests = webhookTriggerNodes.map((node) => {
+                    const request: CreateWebhookTriggerNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        python_code: node.data.python_code,
+                        input_map: node.input_map || {},
+                        output_variable_path: node.output_variable_path,
+                        webhook_trigger_path: node.data.webhook_trigger_path
+                    };
+                    return this.webhookTriggerService.createWebhookTriggerNode(request);
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
+        // ---- Handle Telegram Trigger Nodes ----
+        let deleteTelegramTiggerNodes$: Observable<any> = of(null);
+        if (graph.telegram_trigger_node_list && graph.telegram_trigger_node_list.length > 0) {
+            const deleteTelegramTriggerReqs = graph.telegram_trigger_node_list.map(
+                (telegramTriggerNode: GetTelegramTriggerNodeRequest) =>
+                    this.telegramTriggerService
+                        .deleteTelegramTriggerNode(telegramTriggerNode.id)
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteTelegramTiggerNodes$ = forkJoin(deleteTelegramTriggerReqs);
+        }
+
+        const telegramTriggerNodes$ = deleteTelegramTiggerNodes$.pipe(
+            switchMap(() => {
+                const telegramTriggerNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.TELEGRAM_TRIGGER
+                );
+
+                const requests = telegramTriggerNodes.map((node) => {
+                    const request: CreateTelegramTriggerNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        telegram_bot_api_key: node.data.telegram_bot_api_key,
+                        fields: node.data.fields
+                    };
+                    return this.telegramTriggerService.createTelegramTriggerNode(request);
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
+        let deleteDecisionTableNodes$: Observable<any> = of(null);
+        if (
+            graph.decision_table_node_list &&
+            graph.decision_table_node_list.length > 0
+        ) {
+            const deleteDecisionTableReqs = graph.decision_table_node_list.map(
+                (dtNode: GetDecisionTableNodeRequest) =>
+                    this.decisionTableNodeService
+                        .deleteDecisionTableNode(dtNode.id.toString())
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteDecisionTableNodes$ = forkJoin(deleteDecisionTableReqs);
+        }
 
         // ---- Handle Conditional Edges ----
         let deleteConditionalEdges$: Observable<any> = of(null);
@@ -388,6 +532,9 @@ export class GraphUpdateService {
                             return false;
                         if (targetNode && targetNode.type === NodeType.EDGE)
                             return false;
+                        // Skip if source node is of type TABLE
+                        if (sourceNode && sourceNode.type === NodeType.TABLE)
+                            return false;
                         return true;
                     })
                     .map((conn) => {
@@ -412,25 +559,101 @@ export class GraphUpdateService {
         );
         console.log('before', graph.edge_list);
 
+        const decisionTableNodes$ = deleteDecisionTableNodes$.pipe(
+            switchMap(() => {
+                const decisionTableNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.TABLE
+                );
+
+                const requests = decisionTableNodes.map((node) => {
+                    const tableData = (node as any).data?.table;
+
+                    // Helper to resolve node ID (or name) to current node name
+                    const resolveNodeName = (idOrName: string | null): string | null => {
+                        if (!idOrName) return null;
+                        // Try to find by ID first
+                        const targetNode = flowState.nodes.find((n) => n.id === idOrName);
+                        if (targetNode) return targetNode.node_name;
+                        // Fallback: maybe it's already a name?
+                        return idOrName;
+                    };
+
+                    const conditionGroups: CreateConditionGroupRequest[] = (
+                        tableData?.condition_groups || []
+                    )
+                        .filter((group: any) => group.valid !== false)
+                        .sort(
+                            (a: any, b: any) =>
+                                (a.order ?? Number.MAX_SAFE_INTEGER) -
+                                (b.order ?? Number.MAX_SAFE_INTEGER)
+                        )
+                        .map((group: any, index: number) => {
+                            const conditions =
+                                (group.conditions || []).map(
+                                    (condition: any) => ({
+                                        condition_name: condition.condition_name,
+                                        condition: condition.condition,
+                                    })
+                                ) || [];
+
+                            return {
+                                group_name: group.group_name,
+                                group_type: group.group_type || 'complex',
+                                expression: group.expression,
+                                conditions,
+                                manipulation: group.manipulation,
+                                next_node: resolveNodeName(group.next_node),
+                                order:
+                                    typeof group.order === 'number'
+                                        ? group.order
+                                        : index + 1,
+                            };
+                        });
+
+                    const payload: CreateDecisionTableNodeRequest = {
+                        graph: graph.id,
+                        node_name: node.node_name,
+                        condition_groups: conditionGroups,
+                        default_next_node: resolveNodeName(tableData?.default_next_node),
+                        next_error_node: resolveNodeName(tableData?.next_error_node),
+                    };
+
+                    return this.decisionTableNodeService
+                        .createDecisionTableNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
+                });
+
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
         // ---- Combine and Update Graph ----
         return forkJoin({
             crewNodes: crewNodes$,
             pythonNodes: pythonNodes$,
+            audioToTextNodes: audioToTextNodes$,
             llmNodes: llmNodes$,
             fileExtractorNodes: fileExtractorNodes$,
+            webhookTriggerNodes: webhookTriggerNodes$,
+            telegramTriggerNodes: telegramTriggerNodes$,
             conditionalEdges: conditionalEdges$,
-            edges: createEdges$,
             endNodes: endNodes$,
+            edges: createEdges$,
+            decisionTableNodes: decisionTableNodes$,
         }).pipe(
             switchMap(
                 (results: {
                     crewNodes: CrewNode[];
                     pythonNodes: PythonNode[];
+                    audioToTextNodes: GetAudioToTextNodeRequest[];
                     llmNodes: any[];
                     fileExtractorNodes: GetFileExtractorNodeRequest[];
+                    webhookTriggerNodes: GetWebhookTriggerNodeRequest[];
+                    telegramTriggerNodes: GetTelegramTriggerNodeRequest[],
                     conditionalEdges: ConditionalEdge[];
                     edges: Edge[];
                     endNodes: EndNode[];
+                    decisionTableNodes: GetDecisionTableNodeRequest[];
                 }) => {
                     const updateGraphRequest: UpdateGraphDtoRequest = {
                         id: graph.id,
@@ -457,13 +680,19 @@ export class GraphUpdateService {
                                     updatedNodes: {
                                         crewNodes: results.crewNodes,
                                         pythonNodes: results.pythonNodes,
+                                        audioToTextNodes:
+                                            results.audioToTextNodes,
                                         llmNodes: results.llmNodes,
                                         fileExtractorNodes:
                                             results.fileExtractorNodes,
                                         conditionalEdges:
                                             results.conditionalEdges,
+                                        webhookTriggerNodes: results.webhookTriggerNodes,
+                                        telegramTriggerNodes: results.telegramTriggerNodes,
                                         edges: results.edges,
                                         endNodes: results.endNodes,
+                                        decisionTableNodes:
+                                            results.decisionTableNodes,
                                     },
                                 };
                             })

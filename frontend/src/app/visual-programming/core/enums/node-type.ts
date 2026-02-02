@@ -11,5 +11,8 @@ export enum NodeType {
     TABLE = 'table',
     NOTE = 'note',
     FILE_EXTRACTOR = 'file-extractor',
+    WEBHOOK_TRIGGER = 'webhook-trigger',
+    TELEGRAM_TRIGGER = 'telegram-trigger',
     END = 'end',
+    AUDIO_TO_TEXT = 'audio-to-text-node'
 }

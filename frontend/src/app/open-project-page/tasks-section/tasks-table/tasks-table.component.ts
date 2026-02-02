@@ -81,6 +81,7 @@ import {
 } from './advanced-task-settings-dialog/advanced-task-settings-dialog.component';
 import { AsyncHeaderComponent } from './header-renderers/async-exec-header/async-header.component';
 import { HumanInputHeaderComponent } from './header-renderers/human-input-header/human-input.component';
+import { KnowledgeQueryHeaderComponent } from './header-renderers/knowledge-query-header/knowledge-query-header.component';
 import { forkJoin, Observable } from 'rxjs';
 import { ToastService } from '../../../services/notifications/toast.service';
 
@@ -101,6 +102,8 @@ type PopupEvent = CellClickedEvent<any, any> | CellKeyDownEvent<any, any>;
         ClickOutsideDirective,
         PreventContextMenuDirective,
         AgGridContextMenuComponent,
+        // Knowledge Query header component (tooltip icon)
+        KnowledgeQueryHeaderComponent,
     ],
     templateUrl: './tasks-table.component.html',
     styleUrls: ['./tasks-table.component.scss'],
@@ -162,7 +165,7 @@ export class TasksTableComponent implements OnChanges {
         private tasksService: TasksService,
         private toastService: ToastService,
         private fullTaskService: FullTaskService
-    ) {}
+    ) { }
 
     ngOnInit(): void {
         this.updateRowData();
@@ -181,8 +184,27 @@ export class TasksTableComponent implements OnChanges {
     }
 
     private updateRowData(): void {
+        // Create a map of existing rowData by task ID to preserve mergedTools
+        const existingRowDataMap = new Map<string | number, TableFullTask>();
+        this.rowData.forEach((row) => {
+            if (row.id && !(typeof row.id === 'string' && row.id.startsWith('temp_'))) {
+                const key = typeof row.id === 'string' ? +row.id : row.id;
+                existingRowDataMap.set(key, row);
+            }
+        });
+
+        // Merge tasks from state with existing rowData to preserve mergedTools
+        const mergedTasks = this.tasks.map((task) => {
+            const existingRow = existingRowDataMap.get(task.id);
+            // Preserve mergedTools from existing rowData if available, otherwise use task's mergedTools
+            return {
+                ...task,
+                mergedTools: existingRow?.mergedTools || task.mergedTools || [],
+            };
+        });
+
         this.rowData = [
-            ...this.tasks,
+            ...mergedTasks,
             this.createEmptyFullTask(),
             this.createEmptyFullTask(),
         ];
@@ -202,6 +224,7 @@ export class TasksTableComponent implements OnChanges {
             name: '',
             instructions: '',
             expected_output: '',
+            knowledge_query: null,
             order: this.rowData.length,
             human_input: false,
             async_execution: false,
@@ -343,6 +366,27 @@ export class TasksTableComponent implements OnChanges {
             minWidth: 255,
             editable: true,
         },
+        {
+            // Use a custom header component so we can render the material icon + tooltip
+            headerComponent: KnowledgeQueryHeaderComponent,
+            field: 'knowledge_query',
+            cellEditor: 'agLargeTextCellEditor',
+            cellEditorParams: {
+                maxLength: 1000000,
+            },
+            valueSetter: (params) => {
+                params.data.knowledge_query = params.newValue;
+                return true;
+            },
+            cellStyle: {
+                'white-space': 'normal',
+                'text-align': 'left',
+                'font-size': '14px',
+            },
+            flex: 1,
+            minWidth: 255,
+            editable: true,
+        },
 
         {
             headerName: 'Human Input',
@@ -382,11 +426,13 @@ export class TasksTableComponent implements OnChanges {
                 }
 
                 const toolsHtml = tools
-                    .map((tool: { configName: any; toolName: any }) => {
+                    .map((tool: { configName: any; toolName: any; type: string }) => {
+                        // For MCP tools, display the configName (mcp.name) instead of toolName (mcp.tool_name)
+                        const displayName = tool.type === 'mcp-tool' ? tool.configName : tool.toolName;
                         return `
                 <div class="tool-item">
                   <i class="tool-icon">🔧</i>
-                  <span class="tool-name-text" title="${tool.toolName}">${tool.toolName}</span>
+                  <span class="tool-name-text" title="${displayName}">${displayName}</span>
                 </div>
               `;
                     })
@@ -471,33 +517,156 @@ export class TasksTableComponent implements OnChanges {
     // Event handler for rowDragEnd
     onRowDragEnd(event: RowDragEndEvent) {
         // Get the moved data
-        const movedData = event.node.data;
-        const index = this.rowData.findIndex((row) => row === movedData);
+        const movedData = event.node.data as TableFullTask;
 
-        if (index !== -1) {
-            // Remove the row from its old position
-            this.rowData.splice(index, 1);
-            // Insert it into the new position
-            this.rowData.splice(event.overIndex, 0, movedData);
+        // Find original index in our rowData
+        const fromIndex = this.rowData.findIndex((row) => row === movedData);
+        const toIndex = event.overIndex;
 
-            // Update order values in all rows
-            this.rowData.forEach((row, i) => {
-                row.order = i;
-            });
-
-            // Refresh all rows to update the order display
-            this.gridApi.refreshCells({
-                force: true,
-                columns: ['index'], // Refresh only the order column
-            });
-
-            // Mark for change detection
-            this.cdr.markForCheck();
-
-            // Update task orders on the backend
-            this.updateTaskOrders();
+        if (fromIndex === -1 || toIndex === null || toIndex === undefined) {
+            return;
         }
+
+        // Calculate where the item will end up after removal (accounts for index shift when removing earlier item)
+        const finalTargetIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+
+        // Check if we can move the dragged task to the final target index
+        const conflictingDeps = (movedData.task_context_list || []).filter(
+            (depId: any) => {
+                const depIndex = this.rowData.findIndex((row) => {
+                    if (row.id === null || row.id === undefined) return false;
+                    // Convert both to numbers where possible
+                    const rowIdNum = typeof row.id === 'string' ? (row.id.startsWith('temp_') ? NaN : +row.id) : row.id;
+                    return +depId === rowIdNum;
+                });
+                // If dependency not found or dependency would end up below target position -> conflict
+                return depIndex === -1 || depIndex >= finalTargetIndex;
+            }
+        );
+
+        if (conflictingDeps.length > 0) {
+            // Build a friendly message listing up to 3 conflicting task names/ids
+            const conflictNames = conflictingDeps.map((depId: any) => {
+                const row = this.rowData.find((r) => {
+                    if (r.id === null || r.id === undefined) return false;
+                    const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                    return +depId === rowIdNum;
+                });
+                return row ? `${row.name || 'Without name'} (id:${row.id})` : `id:${depId}`;
+            });
+
+            const shortList = conflictNames.slice(0, 3).join(', ');
+            const more = conflictNames.length > 3 ? `, …и ещё ${conflictNames.length - 3}` : '';
+
+            this.toastService.error(
+                `Context conflict  ${shortList}${more}. First, arrange/edit the dependencies.`
+            );
+
+            // Revert any visual reorder by re-setting the grid data to our authoritative rowData
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
+
+            return;
+        }
+
+        // Additional check: when moving a task, other tasks between source and target
+        // will shift. If any of those shifted tasks have dependencies that must be
+        // above them, the shift may break their dependencies. We must check those
+        // and block the move if conflicts are found.
+        const shiftedConflicts: string[] = [];
+
+        if (fromIndex < toIndex) {
+            // Moving down: rows in (fromIndex+1 .. toIndex) will shift up by 1
+            for (let i = fromIndex + 1; i <= toIndex; i++) {
+                const row = this.rowData[i];
+                if (!row) continue;
+                const newIndex = i - 1;
+                const deps = row.task_context_list || [];
+                deps.forEach((depId: any) => {
+                    const depIndex = this.rowData.findIndex((r) => {
+                        if (r.id === null || r.id === undefined) return false;
+                        const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                        return +depId === rowIdNum;
+                    });
+                    if (depIndex === -1 || depIndex >= newIndex) {
+                        const depRow = this.rowData.find((r) => {
+                            if (r.id === null || r.id === undefined) return false;
+                            const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                            return +depId === rowIdNum;
+                        });
+                        const depLabel = depRow ? `${depRow.name || 'Without name'} (id:${depRow.id})` : `id:${depId}`;
+                        shiftedConflicts.push(`${row.name || 'Without name'} (id:${row.id}) → dependency ${depLabel}`);
+                    }
+                });
+            }
+        } else if (fromIndex > toIndex) {
+            // Moving up: rows in (toIndex .. fromIndex-1) will shift down by 1
+            for (let i = toIndex; i <= fromIndex - 1; i++) {
+                const row = this.rowData[i];
+                if (!row) continue;
+                const newIndex = i + 1;
+                const deps = row.task_context_list || [];
+                deps.forEach((depId: any) => {
+                    const depIndex = this.rowData.findIndex((r) => {
+                        if (r.id === null || r.id === undefined) return false;
+                        const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                        return +depId === rowIdNum;
+                    });
+                    if (depIndex === -1 || depIndex >= newIndex) {
+                        const depRow = this.rowData.find((r) => {
+                            if (r.id === null || r.id === undefined) return false;
+                            const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
+                            return +depId === rowIdNum;
+                        });
+                        const depLabel = depRow ? `${depRow.name || 'Without name'} (id:${depRow.id})` : `id:${depId}`;
+                        shiftedConflicts.push(`${row.name || 'Without name'} (id:${row.id}) → dependency ${depLabel}`);
+                    }
+                });
+            }
+        }
+
+        if (shiftedConflicts.length > 0) {
+            const shortList = shiftedConflicts.slice(0, 4).join('; ');
+            const more = shiftedConflicts.length > 4 ? `; …и ещё ${shiftedConflicts.length - 4}` : '';
+            this.toastService.error(`Cannot move the task: shifting it would break the context for: ${shortList}${more}.`);
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
+            return;
+        }
+
+        // Proceed with the reorder. Be careful with insertion index shift when removing earlier item.
+        // Remove the row from its old position
+        this.rowData.splice(fromIndex, 1);
+
+        // Calculate insertion index after removal
+        let insertIndex = toIndex;
+        if (fromIndex < toIndex) {
+            insertIndex = toIndex - 1;
+        }
+
+        // Insert into the new position
+        this.rowData.splice(insertIndex, 0, movedData);
+
+        // Update order values in all rows
+        this.rowData.forEach((row, i) => {
+            row.order = i;
+        });
+
+        // Refresh all rows to update the order display
+        this.gridApi.refreshCells({
+            force: true,
+            columns: ['index'], // Refresh only the order column
+        });
+
+        // Mark for change detection
+        this.cdr.markForCheck();
+
+        // Update task orders on the backend
+        this.updateTaskOrders();
     }
+
     private parseTaskData(taskData: FullTask) {
         const agentData = taskData.agentData || null;
         const agentId = agentData ? agentData.id : null;
@@ -519,6 +688,8 @@ export class TasksTableComponent implements OnChanges {
             mcp_tools: mergedTools
                 .filter((tool: any) => tool.type === 'mcp-tool')
                 .map((tool: any) => tool.id),
+            // Explicitly preserve mergedTools for state updates
+            mergedTools: mergedTools,
         };
 
         // Delete tools field to ensure it's never included in update requests
@@ -558,13 +729,16 @@ export class TasksTableComponent implements OnChanges {
             // Build tool_ids array for task creation
             const configuredToolIds = parsedData.configured_tools || [];
             const pythonToolIds = parsedData.python_code_tools || [];
-            const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds);
+            const mcpToolIds = parsedData.mcp_tools || [];
+            const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds, mcpToolIds);
 
             // Create the new task
             const createTaskData: CreateTaskRequest = {
+                ...parsedData,
                 name: parsedData.name,
                 instructions: parsedData.instructions,
                 expected_output: parsedData.expected_output,
+                knowledge_query: parsedData.knowledge_query ?? null,
                 order: parsedData.order ?? null,
                 human_input: parsedData.human_input ?? false,
                 async_execution: parsedData.async_execution ?? false,
@@ -575,6 +749,7 @@ export class TasksTableComponent implements OnChanges {
                 task_context_list: parsedData.task_context_list ?? [],
                 configured_tools: configuredToolIds,
                 python_code_tools: pythonToolIds,
+                mcp_tools: mcpToolIds,
                 tool_ids: toolIds,
             };
 
@@ -593,9 +768,11 @@ export class TasksTableComponent implements OnChanges {
                         (agent) => agent.id === newTask.agent
                     );
 
+                    // Preserve mergedTools from event.data if they exist (from tools popup)
                     const fullTask: FullTask = {
                         ...newTask,
                         agentData: agentData || null,
+                        mergedTools: (event.data as any).mergedTools || [],
                     };
 
                     this.projectStateService.addTask(fullTask);
@@ -643,20 +820,24 @@ export class TasksTableComponent implements OnChanges {
         // Build tool_ids array for task update
         const updateConfiguredToolIds = parsedUpdateData.configured_tools || [];
         const updatePythonToolIds = parsedUpdateData.python_code_tools || [];
+        const updateMcpToolIds = parsedUpdateData.mcp_tools || [];
         const updateToolIds = buildToolIdsArray(
             updateConfiguredToolIds,
-            updatePythonToolIds
+            updatePythonToolIds,
+            updateMcpToolIds
         );
 
         if (typeof parsedUpdateData.id === 'string') {
             parsedUpdateData.id = +parsedUpdateData.id;
         }
 
-        // Create update request with all tool arrays
+        // Create update request with all tool arrays, explicitly excluding tools field
         const updateTaskRequest: UpdateTaskRequest = {
             ...parsedUpdateData,
+            knowledge_query: parsedUpdateData.knowledge_query ?? null,
             configured_tools: updateConfiguredToolIds,
             python_code_tools: updatePythonToolIds,
+            mcp_tools: updateMcpToolIds,
             tool_ids: updateToolIds,
         };
 
@@ -664,7 +845,22 @@ export class TasksTableComponent implements OnChanges {
             next: (updatedResponse) => {
                 console.log('Task updated successfully:', updatedResponse);
                 this.toastService.success('Task updated successfully');
-                this.projectStateService.updateTask(parsedUpdateData);
+                
+                // Preserve mergedTools from the original task in state or from event.data
+                // First try to get it from the current tasks array (from state service)
+                const originalTask = this.tasks.find(
+                    (t) => t.id === parsedUpdateData.id
+                );
+                const preservedMergedTools = 
+                    originalTask?.mergedTools || 
+                    (event.data as any).mergedTools || 
+                    [];
+                
+                const taskForState: FullTask = {
+                    ...parsedUpdateData,
+                    mergedTools: preservedMergedTools,
+                };
+                this.projectStateService.updateTask(taskForState);
             },
             error: (error) => {
                 console.error('Error updating task:', error);
@@ -780,17 +976,21 @@ export class TasksTableComponent implements OnChanges {
         // Build tool_ids array for settings update
         const settingsConfiguredToolIds = parsedTaskData.configured_tools || [];
         const settingsPythonToolIds = parsedTaskData.python_code_tools || [];
+        const settingsMcpToolIds = parsedTaskData.mcp_tools || [];
         const settingsToolIds = buildToolIdsArray(
             settingsConfiguredToolIds,
-            settingsPythonToolIds
+            settingsPythonToolIds,
+            settingsMcpToolIds
         );
 
-        // Prepare the payload for the backend update request
-        const updateTaskData = {
+        // Prepare the payload for the backend update request (excluding tools field)
+        const updateTaskData: UpdateTaskRequest = {
+            ...parsedTaskData,
             id: +updatedTask.id,
             name: updatedTask.name,
             instructions: updatedTask.instructions,
             expected_output: updatedTask.expected_output,
+            knowledge_query: updatedTask.knowledge_query ?? null,
             order: updatedTask.order,
             human_input: updatedTask.human_input,
             async_execution: updatedTask.async_execution,
@@ -801,29 +1001,37 @@ export class TasksTableComponent implements OnChanges {
             task_context_list: updatedTask.task_context_list,
             configured_tools: settingsConfiguredToolIds,
             python_code_tools: settingsPythonToolIds,
+            mcp_tools: settingsMcpToolIds,
             tool_ids: settingsToolIds,
         };
 
-        // Call the update service
         this.tasksService.updateTask(updateTaskData).subscribe({
             next: (updatedResponse) => {
                 console.log('Task updated successfully:', updatedResponse);
 
-                // Create a properly typed version of the task for the project state service
+             
+                const originalTask = this.tasks.find(
+                    (t) => t.id === +updatedTask.id
+                );
+                const preservedMergedTools = 
+                    originalTask?.mergedTools || 
+                    (updatedTask as any).mergedTools || 
+                    [];
+
+               
                 const taskForState: FullTask = {
                     ...updatedTask,
-                    id: +updatedTask.id, // Convert to number
+                    id: +updatedTask.id,
+                    mergedTools: preservedMergedTools,
                 };
 
-                // Update the project state
+             
                 this.projectStateService.updateTask(taskForState);
 
-                // Notify user of success
                 this.toastService.success('Task updated successfully');
             },
             error: (error) => {
                 console.error('Error updating task:', error);
-                // Optionally show error toast
                 this.toastService.error('Failed to update task');
             },
             complete: () => {
@@ -993,15 +1201,19 @@ export class TasksTableComponent implements OnChanges {
         // Build tool_ids array for paste operation
         const pasteConfiguredToolIds = parsedTaskData.configured_tools || [];
         const pastePythonToolIds = parsedTaskData.python_code_tools || [];
+        const pasteMcpToolIds = parsedTaskData.mcp_tools || [];
         const pasteToolIds = buildToolIdsArray(
             pasteConfiguredToolIds,
-            pastePythonToolIds
+            pastePythonToolIds,
+            pasteMcpToolIds
         );
 
         const createTaskData: CreateTaskRequest = {
+            ...parsedTaskData,
             name: newTaskData.name,
             instructions: newTaskData.instructions,
             expected_output: newTaskData.expected_output,
+            knowledge_query: newTaskData.knowledge_query ?? null,
             order: newTaskData.order ?? null,
             human_input: newTaskData.human_input ?? false,
             async_execution: newTaskData.async_execution ?? false,
@@ -1012,6 +1224,7 @@ export class TasksTableComponent implements OnChanges {
             task_context_list: newTaskData.task_context_list ?? [],
             configured_tools: pasteConfiguredToolIds,
             python_code_tools: pastePythonToolIds,
+            mcp_tools: pasteMcpToolIds,
             tool_ids: pasteToolIds,
         };
 
@@ -1031,9 +1244,11 @@ export class TasksTableComponent implements OnChanges {
                 );
 
                 // Create a FullTask by merging GetTaskRequest and agent data
+                // Preserve mergedTools from newTaskData (which was copied from the original)
                 const fullTask: FullTask = {
                     ...newTask,
                     agentData: agentData || null,
+                    mergedTools: (newTaskData as any).mergedTools || [],
                 };
 
                 this.projectStateService.addTask(fullTask);
@@ -1103,31 +1318,35 @@ export class TasksTableComponent implements OnChanges {
     }
 
     updateTaskOrders(): void {
-        // Filter out rows with null or temporary IDs to get only existing tasks
-        const tasksWithIds = this.rowData.filter((task: TableFullTask) => {
-            // Filter out null IDs
-            if (task.id === null) return false;
+        // Build the ordered list of tasks based on the grid's displayed order so
+        // PATCH requests match what the user sees in the UI.
+        let displayedRows: TableFullTask[] = [];
+        if (this.gridApi) {
+            const count = this.gridApi.getDisplayedRowCount();
+            for (let i = 0; i < count; i++) {
+                const node = this.gridApi.getDisplayedRowAtIndex(i);
+                if (node && node.data) {
+                    displayedRows.push(node.data as TableFullTask);
+                }
+            }
+        } else {
+            // Fallback to local rowData
+            displayedRows = [...this.rowData];
+        }
 
-            // Filter out temporary IDs
-            if (typeof task.id === 'string' && task.id.startsWith('temp_'))
-                return false;
-
-            // Keep only tasks with valid IDs
+        // Filter displayed rows to only real tasks (exclude null and temp IDs)
+        const tasksWithIds = displayedRows.filter((task: TableFullTask) => {
+            if (task.id === null || task.id === undefined) return false;
+            if (typeof task.id === 'string' && task.id.startsWith('temp_')) return false;
             return true;
         });
 
-        // Create an array of update requests with new order values
-        const updateRequests: Observable<GetTaskRequest>[] = tasksWithIds.map(
-            (task, index) => {
-                console.log('updating task order', task);
-
-                // Ensure ID is a number
-                const taskId = typeof task.id === 'string' ? +task.id : task.id;
-
-                // Use PATCH method to update only the order
-                return this.tasksService.patchTaskOrder(taskId, index + 1);
-            }
-        );
+        // Create an array of update requests with new order values (1-based)
+        const updateRequests: Observable<GetTaskRequest>[] = tasksWithIds.map((task, index) => {
+            console.log('updating task order', task);
+            const taskId = typeof task.id === 'string' ? +task.id : task.id;
+            return this.tasksService.patchTaskOrder(taskId, index + 1);
+        });
 
         // Execute all update requests in parallel using forkJoin
         if (updateRequests.length > 0) {
@@ -1161,7 +1380,7 @@ export class TasksTableComponent implements OnChanges {
 
                     // Notify the state service with proper FullTask objects
                     results.forEach((updatedTask) => {
-                        // Find the corresponding row to get the agentData
+                        // Find the corresponding row to get the agentData and mergedTools
                         const rowWithAgentData = this.rowData.find((row) => {
                             if (typeof row.id === 'string') {
                                 return +row.id === updatedTask.id;
@@ -1170,10 +1389,11 @@ export class TasksTableComponent implements OnChanges {
                         });
 
                         if (rowWithAgentData) {
-                            // Create a FullTask object with the agentData from our original row
+                            // Create a FullTask object preserving agentData and mergedTools from our original row
                             const fullTask: FullTask = {
                                 ...updatedTask,
                                 agentData: rowWithAgentData.agentData,
+                                mergedTools: (rowWithAgentData as any).mergedTools || [],
                             };
                             this.projectStateService.updateTask(fullTask);
                         }
@@ -1438,10 +1658,36 @@ export class TasksTableComponent implements OnChanges {
                         const rowNode =
                             this.gridApi.getDisplayedRowAtIndex(rowIndex);
                         if (rowNode) {
+                            const taskData = rowNode.data as TableFullTask;
+                            // Update the grid row data
                             rowNode.setDataValue(
                                 'mergedTools',
                                 updatedMergedTools
                             );
+                            
+                            // Also update the rowData array to keep it in sync
+                            const rowDataIndex = this.rowData.findIndex(
+                                (row) => row === taskData
+                            );
+                            if (rowDataIndex !== -1) {
+                                this.rowData[rowDataIndex] = {
+                                    ...this.rowData[rowDataIndex],
+                                    mergedTools: updatedMergedTools,
+                                };
+                            }
+                            
+                            // Update the state service if this is a real task (not temp)
+                            if (taskData.id && !(typeof taskData.id === 'string' && taskData.id.startsWith('temp_'))) {
+                                const taskId = typeof taskData.id === 'string' ? +taskData.id : taskData.id;
+                                const originalTask = this.tasks.find((t) => t.id === taskId);
+                                if (originalTask) {
+                                    const updatedTask: FullTask = {
+                                        ...originalTask,
+                                        mergedTools: updatedMergedTools,
+                                    };
+                                    this.projectStateService.updateTask(updatedTask);
+                                }
+                            }
                         }
                     }
                     this.closePopup();
@@ -1535,4 +1781,19 @@ export class TasksTableComponent implements OnChanges {
 
         this.contextMenuVisible.set(true);
     }
+
+    // private canMoveTask(draggedId: number, newOrder: number): boolean {
+    //     const draggedTask = [...this.tasks].find(t => t.id === draggedId);
+    //     if (!draggedTask) return false;
+
+    //     // получаем индекс, куда хотим вставить таск
+    //     const newIndex = [...this.tasks].findIndex(t => t.order === newOrder);
+    //     const newHigherTasks = [...this.tasks].slice(0, newIndex).map(t => t.id);
+
+    //     // все зависимости должны быть выше нового места
+    //     const allDependenciesAbove = draggedTask.task_context_list.every(id => newHigherTasks.includes(id));
+
+    //     return allDependenciesAbove;
+    // }
+
 }

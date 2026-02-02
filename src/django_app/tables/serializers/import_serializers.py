@@ -660,7 +660,7 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Crew
-        exclude = ["id", "tags", "knowledge_collection"]
+        exclude = ["id", "tags"]
 
     def create(self, validated_data):
         memory_llm_config_id = validated_data.pop("memory_llm_config", None)
@@ -767,10 +767,15 @@ class NestedCrewImportSerializer(CrewImportSerializer):
     agents = serializers.ListField(child=serializers.IntegerField(), required=False)
 
     class Meta(CrewImportSerializer.Meta):
-        exclude = ["tags", "knowledge_collection"]
+        exclude = ["tags"]
         extra_kwargs = {
             "id": {"read_only": False, "required": False, "validators": []},
         }
+
+    def to_representation(self, instance):
+        if getattr(self, "swagger_fake_view", False) or isinstance(instance, dict):
+            return instance
+        return super().to_representation(instance)
 
 
 class CrewNodeImportSerializer(serializers.ModelSerializer):

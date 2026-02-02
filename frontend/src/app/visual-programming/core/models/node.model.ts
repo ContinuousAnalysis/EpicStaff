@@ -14,6 +14,9 @@ import { ConnectionModel } from './connection.model';
 import { ViewPort } from './port.model';
 import { GroupNodeModel } from './group.model';
 import { DecisionTableNode } from './decision-table.model';
+import {
+    TelegramTriggerNodeField
+} from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
 
 export interface BaseNodeModel {
     id: string;
@@ -75,7 +78,7 @@ export interface EdgeNodeModel extends BaseNodeModel {
 export interface DecisionTableNodeModel extends BaseNodeModel {
     type: NodeType.TABLE;
     data: {
-        name: string;
+        name: string; // this was used somehere  for saving dec table
         table: DecisionTableNode;
     };
 }
@@ -91,6 +94,27 @@ export interface NoteNodeModel extends BaseNodeModel {
 export interface FileExtractorNodeModel extends BaseNodeModel {
     type: NodeType.FILE_EXTRACTOR;
     data: unknown;
+}
+
+export interface AudioToTextNodeModel extends BaseNodeModel {
+    type: NodeType.AUDIO_TO_TEXT;
+    data: unknown;
+}
+
+export interface WebhookTriggerNodeModel extends BaseNodeModel {
+    type: NodeType.WEBHOOK_TRIGGER;
+    data: {
+        webhook_trigger_path: string;
+        python_code: CustomPythonCode;
+    }
+}
+
+export interface TelegramTriggerNodeModel extends BaseNodeModel {
+    type: NodeType.TELEGRAM_TRIGGER;
+    data: {
+        telegram_bot_api_key: string;
+        fields: TelegramTriggerNodeField[];
+    }
 }
 
 export interface EndNodeData {
@@ -115,4 +139,7 @@ export type NodeModel =
     | DecisionTableNodeModel
     | NoteNodeModel
     | FileExtractorNodeModel
+    | AudioToTextNodeModel
+    | WebhookTriggerNodeModel
+    | TelegramTriggerNodeModel
     | EndNodeModel;

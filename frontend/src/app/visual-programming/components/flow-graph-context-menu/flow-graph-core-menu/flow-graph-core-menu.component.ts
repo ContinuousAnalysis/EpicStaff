@@ -1,15 +1,8 @@
-import {
-    Component,
-    Input,
-    ChangeDetectionStrategy,
-    Output,
-    EventEmitter,
-} from '@angular/core';
-import { NgFor } from '@angular/common';
-import { NodeType } from '../../../core/enums/node-type';
-import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
-import { inject } from '@angular/core';
-import { FlowService } from '../../../services/flow.service';
+import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output,} from '@angular/core';
+import {NgFor} from '@angular/common';
+import {NodeType} from '../../../core/enums/node-type';
+import {NODE_COLORS, NODE_ICONS} from '../../../core/enums/node-config';
+import {FlowService} from '../../../services/flow.service';
 
 interface FlowGraphBlock {
     label: string;
@@ -62,7 +55,7 @@ interface FlowGraphBlock {
                 transition: color 0.2s ease;
             }
             li:hover i {
-                color: inherit; /* Keep the color from [style.color]="block.color" */
+                color: inher;
             }
             .plus-icon {
                 margin-left: auto;
@@ -73,7 +66,7 @@ interface FlowGraphBlock {
             }
             li:hover .plus-icon {
                 opacity: 1;
-                color: inherit; /* Match the block color on hover */
+                color: inherit;
             }
             li.disabled {
                 opacity: 0.5;
@@ -110,6 +103,12 @@ export class FlowGraphCoreMenuComponent {
             color: NODE_COLORS[NodeType.FILE_EXTRACTOR],
         },
         {
+            label: 'Audio to text',
+            type: NodeType.AUDIO_TO_TEXT,
+            icon: NODE_ICONS[NodeType.AUDIO_TO_TEXT],
+            color: NODE_COLORS[NodeType.AUDIO_TO_TEXT],
+        },
+        {
             label: 'End',
             type: NodeType.END,
             icon: NODE_ICONS[NodeType.END],
@@ -132,6 +131,24 @@ export class FlowGraphCoreMenuComponent {
             type: NodeType.NOTE,
             icon: NODE_ICONS[NodeType.NOTE],
             color: NODE_COLORS[NodeType.NOTE],
+        },
+        {
+            label: 'Decision Table',
+            type: NodeType.TABLE,
+            icon: NODE_ICONS[NodeType.TABLE],
+            color: NODE_COLORS[NodeType.TABLE],
+        },
+        {
+            label: 'Webhook Trigger',
+            type: NodeType.WEBHOOK_TRIGGER,
+            icon: NODE_ICONS[NodeType.WEBHOOK_TRIGGER],
+            color: NODE_COLORS[NodeType.WEBHOOK_TRIGGER],
+        },
+        {
+            label: 'Telegram Trigger',
+            type: NodeType.TELEGRAM_TRIGGER,
+            icon: NODE_ICONS[NodeType.TELEGRAM_TRIGGER],
+            color: NODE_COLORS[NodeType.TELEGRAM_TRIGGER],
         },
         // {
         //   label: 'Decision Table',
@@ -170,14 +187,25 @@ export class FlowGraphCoreMenuComponent {
         } else if (type === NodeType.GROUP) {
             data = 'group'; // Assign "group" if NodeType is GROUP
         } else if (type === NodeType.TABLE) {
-            // Provide mock data for a decision table node
             data = {
                 name: 'Decision Table',
                 table: {
                     graph: null,
-                    condition_groups: [],
+                    condition_groups: [
+                        {
+                            group_name: 'Group 1',
+                            group_type: 'complex',
+                            expression: null,
+                            conditions: [],
+                            manipulation: null,
+                            next_node: null,
+                            order: 1,
+                            valid: false,
+                        }
+                    ],
                     node_name: '',
                     default_next_node: null,
+                    next_error_node: null,
                 },
             };
         } else if (type === NodeType.NOTE) {
@@ -187,7 +215,28 @@ export class FlowGraphCoreMenuComponent {
             };
         } else if (type === NodeType.FILE_EXTRACTOR) {
             data = null; // File extractor data is unknown as specified
-        } else if (type === NodeType.END) {
+
+        } else if (type === NodeType.AUDIO_TO_TEXT) {
+            data = null; // audio to text data is unknown as specified
+        }
+        else if (type === NodeType.WEBHOOK_TRIGGER) {
+            data = {
+                webhook_trigger: 0,
+                python_code: {
+                    name: 'Webhook trigger Node',
+                    libraries: [],
+                    code: 'def main(trigger_payload: dict, **kwargs: dict) -> dict:\n    """\n    Main handler for processing webhook-triggered events.\n\n    Parameters\n    ----------\n    trigger_payload : dict\n        The data received from a third-party service via a webhook.\n    **kwargs : dict\n        Additional domain variables passed to the function.\n\n    Returns\n    -------\n    dict\n        A dictionary containing the updated values for domain variables.\n        The returned structure must include all changes that should be\n        applied to the domain.\n    """\n    return {\n        "new_data": trigger_payload,\n    }\n',
+                    entrypoint: 'main',
+                }
+            };
+        }
+        else if (type === NodeType.TELEGRAM_TRIGGER) {
+            data = {
+                telegram_bot_api_key: '',
+                fields: [],
+            }
+        }
+        else if (type === NodeType.END) {
             data = null; // End node data is unknown as specified
         }
 
@@ -197,6 +246,9 @@ export class FlowGraphCoreMenuComponent {
     public isDisabled(type: NodeType): boolean {
         if (type === NodeType.END) {
             return this.flowService.hasEndNode();
+        }
+        if (type === NodeType.GROUP) {
+            return true;
         }
         return false;
     }

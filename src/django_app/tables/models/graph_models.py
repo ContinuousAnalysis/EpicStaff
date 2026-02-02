@@ -2,7 +2,8 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from loguru import logger
-from tables.models.mixins import HashedFieldMixin
+import json
+from pathlib import Path
 
 
 class Graph(models.Model):
@@ -79,6 +80,20 @@ class FileExtractorNode(BaseNode):
             models.UniqueConstraint(
                 fields=["graph", "node_name"],
                 name="unique_graph_node_name_for_file_extractor_node",
+            )
+        ]
+
+
+class AudioTranscriptionNode(BaseNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="audio_transcription_node_list"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_audio_transcriotion_node",
             )
         ]
 
@@ -178,10 +193,11 @@ class StartNode(models.Model):
         ]
 
 
-class DecisionTableNode(BaseNode):
+class DecisionTableNode(models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="decision_table_node_list"
     )
+    node_name = models.CharField(max_length=255, blank=True)
     default_next_node = models.CharField(max_length=255, null=True, default=None)
     next_error_node = models.CharField(max_length=255, null=True, default=None)
 
@@ -234,44 +250,154 @@ class Condition(models.Model):
         ordering = ["order"]
 
 
-class Organization(HashedFieldMixin, models.Model):
+class GraphFile(models.Model):
+
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="uploaded_files"
+    )
+    domain_key = models.CharField(
+        max_length=100, help_text="Key to access file from domain"
+    )
+    name = models.CharField(max_length=255, help_text="Original filename")
+    content_type = models.CharField(max_length=100, help_text="MIME type")
+    size = models.PositiveIntegerField(help_text="File size in bytes")
+    file = models.FileField(upload_to="uploads/")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "domain_key"], name="unique_file_key_per_graph"
+            )
+        ]
+
+    def delete(self, *args, **kwargs):
+        if self.file:
+            self.file.delete(save=False)
+
+        super().delete(*args, **kwargs)
+
+
+class Organization(models.Model):
 
     name = models.CharField(max_length=256, blank=False, unique=True)
-    secret_key = models.CharField(
-        max_length=512,
-        blank=False,
-        unique=True,
-        help_text="A hashed unique key for organization",
-    )
-    variables = models.JSONField(
-        default=dict, help_text="Organization global variables"
-    )
-    persistent_variables = models.BooleanField(
-        default=False,
-        help_text="If 'True' -> variables will be updated after each session.",
-    )
 
 
-class OrganizationUser(HashedFieldMixin, models.Model):
+class OrganizationUser(models.Model):
 
-    username = models.CharField(max_length=256, blank=False, unique=True)
+    name = models.CharField(max_length=256, blank=False)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    secret_key = models.CharField(
-        max_length=512,
-        blank=False,
-        unique=True,
-        help_text="A hashed unique key for user inside an organization",
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "organization"],
+                name="unique_flow_user_for_organization",
+            )
+        ]
+
+
+class BasePersistentEntity(models.Model):
+
+    graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
+    persistent_variables = models.JSONField(
+        default=dict,
+        help_text="Variables that persistent for specific entity for specific flow",
     )
-    variables = models.JSONField(default=dict, help_text="User scope variables")
-    persistent_variables = models.BooleanField(
-        default=False,
-        help_text="If 'True' -> variables will be updated after each session.",
+
+    class Meta:
+        abstract = True
+
+
+class GraphOrganization(BasePersistentEntity):
+
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="graph"
+    )
+    user_variables = models.JSONField(
+        default=dict,
+        help_text="Variables that persistent for all users for specific flow",
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["username", "organization"],
-                name="unique_flow_user_for_organization",
+                fields=["graph", "organization"],
+                name="unique_organization_per_flow",
+            )
+        ]
+
+
+class GraphOrganizationUser(BasePersistentEntity):
+
+    user = models.ForeignKey(
+        OrganizationUser, on_delete=models.CASCADE, related_name="graph"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "user"],
+                name="unique_user_per_flow",
+            )
+        ]
+
+
+class WebhookTriggerNode(models.Model):
+    node_name = models.CharField(max_length=255, blank=False)
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="webhook_trigger_node_list"
+    )
+    webhook_trigger = models.ForeignKey(
+        "WebhookTrigger",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="webhook_trigger_nodes",
+    )
+    python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_webhook_nodes",
+            )
+        ]
+
+
+class TelegramTriggerNode(models.Model):
+
+    node_name = models.CharField(max_length=255, blank=False)
+    telegram_bot_api_key = models.CharField(
+        max_length=255, blank=True, null=True, default=None
+    )
+    url_path = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="telegram_trigger_node_list"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_telegram_trigger_nodes",
+            )
+        ]
+
+
+class TelegramTriggerNodeField(models.Model):
+    telegram_trigger_node = models.ForeignKey(
+        TelegramTriggerNode, on_delete=models.CASCADE, related_name="fields"
+    )
+    parent = models.CharField(max_length=50, blank=False)  # message, callback_query
+    field_name = models.CharField(max_length=255, blank=False)
+    variable_path = models.CharField(max_length=255, blank=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["telegram_trigger_node", "field_name", "parent"],
+                name="unique_telegram_trigger_node_field_name_parent",
             )
         ]

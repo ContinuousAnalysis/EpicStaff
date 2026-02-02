@@ -3,9 +3,7 @@ from django.utils import timezone
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
 
-from tables.models import (
-    CrewSessionMessage,
-)
+from tables.models import CrewSessionMessage, GraphOrganizationUser
 
 
 class Session(models.Model):
@@ -31,12 +29,11 @@ class Session(models.Model):
     variables = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=timezone.now)
     graph_schema = models.JSONField(default=dict, encoder=DjangoJSONEncoder)
-    organization = models.ForeignKey(
-        "Organization", on_delete=models.SET_NULL, null=True
+    graph_user = models.ForeignKey(
+        GraphOrganizationUser, on_delete=models.SET_NULL, default=None, null=True
     )
-    organization_user = models.ForeignKey(
-        "OrganizationUser", on_delete=models.SET_NULL, null=True
-    )
+    entrypoint = models.CharField(null=True, default=None)
+    token_usage = models.JSONField(default=dict)
 
     def save(self, *args, **kwargs):
         now = timezone.now()
@@ -63,12 +60,11 @@ class Session(models.Model):
 
         super().save(*args, **kwargs)
 
-    def delete(self, using=None, keep_parents=False, callback: Any = None):
-        if callback is not None:
-            callback()
-        result = super().delete(using, False)
+    def delete(self, using=None, keep_parents=False):
 
+        result = super().delete(using, False)
         return result
+
     class Meta:
         get_latest_by = ["id"]
 

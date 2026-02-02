@@ -1,0 +1,67 @@
+<div class="dialog">
+    <div class="dialog__header">
+        <span class="dialog__header-title">
+            Editing Fields
+        </span>
+
+        <div class="dialog__actions">
+            <app-icon
+                [icon]="'ui/close'"
+                class="dialog__action"
+                [size]="'1.5rem'"
+                (click)="onCancel()"
+            />
+            <app-icon
+                [icon]="'ui/check'"
+                class="dialog__action dialog__action--save"
+                [size]="'1.5rem'"
+                (click)="onSave()"
+            />
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="main__fields-section">
+            <div class="main__fields-searchbar">
+                <app-search
+                    class="main__input"
+                    placeholder="Search fields..."
+                    [(searchTerm)]="searchTerm"
+                />
+                <label>Activate checkbox near variable to save its value</label>
+            </div>
+            <app-telegram-fields-table
+                [searchTerm]="searchTerm()"
+                [(tableItems)]="tableItems"
+            />
+        </div>
+
+        <div class="main__mock-data-section">
+            <label class="main__mock-data-header">
+                Mock Data
+                <span class="main__active-fields-count">
+                    Activated fields: {{checkedItems().length}} of {{tableItems().length}}
+                </span>
+            </label>
+            <div class="main__mock-data-info">
+                <mat-icon class="main__mock-data-info-icon">
+                    help
+                </mat-icon>
+                <a
+                    class="main__mock-data-link"
+                    href="https://core.telegram.org/bots/api#available-types"
+                    target="_blank"
+                >Click here</a>
+                to get more information about field models
+            </div>
+            <div class="main__json-wrapper">
+                <app-json-editor
+                    [jsonData]="jsonValues()"
+                    [showHeader]="false"
+                    [fullHeight]="true"
+                    [editorOptions]="editorOptions"
+                />
+            </div>
+        </div>
+    </div>
+</div>

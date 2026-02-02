@@ -3,6 +3,7 @@ import { MainLayoutComponent } from './layouts/main-layout/main-layout.component
 
 import { BuiltInToolsComponent } from './features/tools/pages/tools-list-page/components/built-in-tools/built-in-tools.component';
 import { CustomToolsComponent } from './features/tools/pages/tools-list-page/components/custom-tools/custom-tools.component';
+import { McpToolsComponent } from './features/tools/pages/tools-list-page/components/mcp-tools/mcp-tools.component';
 
 import { OpenProjectPageComponent } from './open-project-page/open-project-page.component';
 
@@ -20,6 +21,9 @@ import { FlowTemplatesComponent } from './features/flows/pages/flows-list-page/c
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { ToolsListPageComponent } from './features/tools/pages/tools-list-page/tools-list-page.component';
 import { FlowsListPageComponent } from './features/flows/pages/flows-list-page/flows-list-page.component';
+import {
+    CollectionsListPageComponent
+} from "./features/knowledge-sources/pages/collections-list-page/collections-list-page.component";
 
 export const routes: Routes = [
     {
@@ -55,6 +59,7 @@ export const routes: Routes = [
                     { path: '', redirectTo: 'built-in', pathMatch: 'full' },
                     { path: 'built-in', component: BuiltInToolsComponent },
                     { path: 'custom', component: CustomToolsComponent },
+                    { path: 'mcp', component: McpToolsComponent },
                 ],
             },
             {
@@ -77,7 +82,7 @@ export const routes: Routes = [
             },
             {
                 path: 'knowledge-sources',
-                component: KnowledgeSourcesComponent,
+                component: CollectionsListPageComponent,
             },
             {
                 path: 'chats',

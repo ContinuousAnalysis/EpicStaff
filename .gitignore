@@ -68,6 +68,7 @@ db.sqlite3
 db.sqlite3-journal
 db/*sqlite3
 *_stand/
+media/
 
 # Flask stuff:
 instance/
@@ -196,6 +197,7 @@ token.json
 
 # Additional tool
 additional_tools/
+make_scripts/backups
 
 # Savefiles
 **/savefiles
@@ -255,3 +257,10 @@ Thumbs.db
 executions
 openai-realtime-console
 src/django_app/staticfiles/*
+
+
+#knowledge data
+knowledge/graph_data/
+
+# Knowledge migration backup
+**/knowledge_migration_backup/

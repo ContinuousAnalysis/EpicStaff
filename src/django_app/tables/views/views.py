@@ -2,9 +2,15 @@ from datetime import datetime, timezone
 from collections import defaultdict
 import uuid
 import base64
-
+from tables.models.graph_models import TelegramTriggerNode
+from tables.services.telegram_trigger_service import TelegramTriggerService
+from tables.serializers.telegram_trigger_serializers import (
+    TelegramTriggerNodeDataFieldsSerializer,
+)
+from tables.utils.telegram_fields import load_telegram_trigger_fields
 from tables.models import Tool
 from tables.models import Crew
+from tables.models import GraphFile
 from tables.models.crew_models import DefaultAgentConfig, DefaultCrewConfig
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
@@ -15,6 +21,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from django.db import transaction
 from django.db.models import Count, Q, Prefetch
+from django.conf import settings
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -38,6 +45,7 @@ from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
 from tables.services.run_python_code_service import RunPythonCodeService
 from tables.services.quickstart_service import QuickstartService
+from tables.services.knowledge_services.indexing_service import IndexingService
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -45,9 +53,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from tables.models import (
     Session,
     SourceCollection,
-    DocumentMetadata,
-    Organization,
+    # DocumentMetadata,
+    GraphOrganization,
+    GraphOrganizationUser,
     OrganizationUser,
+    Graph,
 )
 from tables.serializers.model_serializers import (
     SessionSerializer,
@@ -60,13 +70,15 @@ from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
-    ProcessDocumentChunkingSerializer,
     ProcessCollectionEmbeddingSerializer,
+    ProcessRagIndexingSerializer,
     RunSessionSerializer,
+    RegisterTelegramTriggerSerializer,
 )
-from tables.serializers.knowledge_serializers import CollectionStatusSerializer
+
+# from tables.serializers.knowledge_serializers import CollectionStatusSerializer
 from tables.serializers.quickstart_serializers import QuickstartSerializer
-from tables.filters import CollectionFilter, SessionFilter
+from tables.filters import SessionFilter  # CollectionFilter,
 
 from .default_config import *
 
@@ -198,22 +210,11 @@ class SessionViewSet(
             session_list = Session.objects.filter(id__in=ids)
             deleted_count = session_list.count()
             for session in session_list:
-                session.delete(
-                    callback=lambda: session_manager_service.stop_session(
-                        session_id=session.pk
-                    )
-                )
+                session.delete()
 
         return Response(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
-
-    def destroy(self, request, *args, **kwargs):
-        session: Session = self.get_object()
-        session.delete(
-            callback=lambda: session_manager_service.stop_session(session_id=session.pk)
-        )
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RunSession(APIView):
@@ -232,88 +233,93 @@ class RunSession(APIView):
         logger.info("Received POST request to start a new session.")
 
         total_size = sum(f.size for f in request.FILES.values())
-        if total_size > MAX_TOTAL_FILE_SIZE:
+        max_mb = round(settings.MAX_TOTAL_FILE_SIZE / 1024 / 1024, 2)
+        got_mb = round(total_size / 1024 / 1024, 2)
+
+        if got_mb > max_mb:
             return Response(
                 {
                     "files": [
-                        f"Total files size exceeds 15 MB (got {total_size/1024/1024:.2f} MB)"
+                        f"Total files size exceeds {max_mb:.2f} MB (got {got_mb:.2f} MB)"
                     ]
                 },
                 status=400,
             )
-
-        files_dict = {}
-        for key, file in request.FILES.items():
-            file_bytes = file.read()
-            files_dict[key] = {
-                "name": file.name,
-                "data": base64.b64encode(file_bytes).decode("utf-8"),
-                "content_type": file.content_type,
-            }
 
         serializer = RunSessionSerializer(data=request.data)
         if not serializer.is_valid():
             logger.warning(f"Invalid data received in request: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        files_dict = {}
         graph_id = serializer.validated_data["graph_id"]
-        organization_data = serializer.validated_data.get("organization_data", None)
-        organization_user_data = serializer.validated_data.get(
-            "organization_user_data", None
-        )
-        organization = None
-        organization_user = None
+        username = serializer.validated_data.get("username")
+        graph_organization_user = None
+
+        graph = Graph.objects.filter(id=graph_id).first()
+        if not graph:
+            return Response(
+                {"message": f"Provided graph does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        graph_organization = GraphOrganization.objects.filter(
+            graph__id=graph_id
+        ).first()
+
+        if username and not graph_organization:
+            return Response(
+                {"message": "No GraphOrganization exists for this flow."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if username and graph_organization:
+            user = OrganizationUser.objects.filter(
+                name=username, organization=graph_organization.organization
+            ).first()
+            if not user and username:
+                return Response(
+                    {
+                        "message": f"Provided user does not exist or does not belong to organization {graph_organization.organization.name}"
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            graph_organization_user, _ = GraphOrganizationUser.objects.get_or_create(
+                user=user,
+                graph=graph,
+                defaults={"persistent_variables": graph_organization.user_variables},
+            )
 
         variables = serializer.validated_data.get("variables", {})
+        graph_files = GraphFile.objects.filter(graph__id=graph_id)
+
+        for graph_file in graph_files:
+            files_dict[graph_file.domain_key] = self._get_file_data(
+                graph_file.file, graph_file.content_type
+            )
+
+        for key, file in request.FILES.items():
+            files_dict[key] = self._get_file_data(file, file.content_type)
 
         if files_dict is not None:
             variables["files"] = files_dict
             logger.info(f"Added {len(files_dict)} files to variables.")
-
-        if organization_data:
-            vars_dict, organization, error = self.get_entity_variables(
-                Organization,
-                "name",
-                organization_data,
-                variable_keys={"organization": "variables"},
-                error_messages={
-                    "not_found": "Organization not found",
-                    "invalid_key": "Provided secret key is invalid",
-                },
+        if graph_organization:
+            variables.update(graph_organization.persistent_variables)
+            logger.info(
+                f"Organization variables are used for this flow. Variables: {graph_organization.persistent_variables}"
             )
-            if error:
-                return error
-
-            variables.update(vars_dict)
-            logger.info("Organization variables are being used for this flow.")
-
-        if organization_user_data:
-            vars_dict, organization_user, error = self.get_entity_variables(
-                OrganizationUser,
-                "username",
-                organization_user_data,
-                variable_keys={
-                    "user": "variables",
-                    "organization": lambda user: user.organization.variables,
-                },
-                error_messages={
-                    "not_found": "Organization User not found",
-                    "invalid_key": "Provided secret key is invalid",
-                },
+        if graph_organization_user:
+            variables.update(graph_organization_user.persistent_variables)
+            logger.info(
+                f"Organization user variables are used for this flow. Variables: {graph_organization_user.persistent_variables}"
             )
-            if error:
-                return error
-
-            variables.update(vars_dict)
-            logger.info("Organization and User variables are being used for this flow.")
 
         try:
-            # Publish session to: crew, manager
+            # Publish session to: crew, maanger
             session_id = session_manager_service.run_session(
-                graph_id=graph_id,
-                variables=variables,
-                organization=organization,
-                organization_user=organization_user,
+                graph_id=graph_id, variables=variables, username=username
             )
             logger.info(f"Session {session_id} successfully started.")
         except Exception as e:
@@ -326,47 +332,14 @@ class RunSession(APIView):
                 data={"session_id": session_id}, status=status.HTTP_201_CREATED
             )
 
-    def get_entity_variables(
-        self, entity_class, lookup_field, data, variable_keys, error_messages
-    ):
-        """
-        Fetch an entity, validate secret_key, and return its variables.
+    def _get_file_data(self, file, content_type):
+        file_bytes = file.read()
 
-        Args:
-            entity_class: Model class (Organization or OrganizationUser)
-            lookup_field: Field name to filter by ("name" or "username")
-            data: Dict containing the lookup_field and 'secret_key'
-            variable_keys: Dict mapping keys in variables dict to either:
-                - string attribute of entity that contains the dict (e.g. 'variables')
-                - callable to compute value
-            error_messages: dict with 'not_found' and 'invalid_key' messages
-
-        Returns:
-            tuple: (dict of variables, entity object, error Response or None)
-        """
-        entity = entity_class.objects.filter(
-            **{lookup_field: data[lookup_field]}
-        ).first()
-        if not entity:
-            return (
-                None,
-                None,
-                Response({"message": error_messages["not_found"]}, status=404),
-            )
-        if not entity.check_secret_key(data["secret_key"]):
-            return (
-                None,
-                None,
-                Response({"message": error_messages["invalid_key"]}, status=403),
-            )
-
-        vars_dict = {}
-        for key, value in variable_keys.items():
-            if callable(value):
-                vars_dict[key] = value(entity)
-            else:
-                vars_dict[key] = getattr(entity, value)
-        return vars_dict, entity, None
+        return {
+            "name": file.name,
+            "base64_data": base64.b64encode(file_bytes).decode("utf-8"),
+            "content_type": content_type,
+        }
 
 
 class GetUpdates(APIView):
@@ -419,9 +392,19 @@ class StopSession(APIView):
         session_id = kwargs.get("session_id", None)
         if session_id is None:
             return Response("Session id is missing", status=status.HTTP_404_NOT_FOUND)
-
         try:
-            session_manager_service.stop_session(session_id=session_id)
+            required_listeners = 2  # manager and crew
+            received_n = session_manager_service.stop_session(session_id=session_id)
+            if received_n < required_listeners:
+
+                logger.error(f"Stop session ({session_id}) was sent but not received.")
+                session = Session.objects.get(pk=session_id)
+                session.status = Session.SessionStatus.ERROR
+                session.status_data = {
+                    "reason": f"Data was sent and received by ({received_n}) listeners, but ({required_listeners}) required."
+                }
+                session.save()
+
         except Session.DoesNotExist:
             return Response("Session not found", status=status.HTTP_404_NOT_FOUND)
 
@@ -776,10 +759,12 @@ class InitRealtimeAPIView(APIView):
             )
 
         agent_id = serializer.validated_data["agent_id"]
-
+        config = serializer.validated_data.get("config", {})
+        
         try:
             connection_key = realtime_service.init_realtime(
                 agent_id=agent_id,
+                config=config,
             )
 
         except Exception as e:
@@ -791,52 +776,6 @@ class InitRealtimeAPIView(APIView):
             return Response(
                 data={"connection_key": connection_key}, status=status.HTTP_201_CREATED
             )
-
-
-class CollectionStatusAPIView(ListAPIView):
-    serializer_class = CollectionStatusSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = CollectionFilter
-
-    def get_queryset(self):
-        return (
-            SourceCollection.objects.only("collection_id", "collection_name", "status")
-            .annotate(
-                total_documents=Count("document_metadata"),
-                new_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.NEW
-                    ),
-                ),
-                completed_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.COMPLETED
-                    ),
-                ),
-                processing_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.PROCESSING
-                    ),
-                ),
-                failed_documents=Count(
-                    "document_metadata",
-                    filter=Q(
-                        document_metadata__status=DocumentMetadata.DocumentStatus.FAILED
-                    ),
-                ),
-            )
-            .prefetch_related(
-                Prefetch(
-                    "document_metadata",
-                    queryset=DocumentMetadata.objects.only(
-                        "document_id", "file_name", "status", "source_collection_id"
-                    ),
-                )
-            )
-        )
 
 
 class QuickstartView(APIView):
@@ -903,18 +842,52 @@ class QuickstartView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ProcessDocumentChunkingView(APIView):
-    @swagger_auto_schema(request_body=ProcessDocumentChunkingSerializer)
+class ProcessRagIndexingView(APIView):
+    """
+    View for triggering RAG indexing (chunking + embedding).
+    All business logic is handled by IndexingService.
+    """
+
+    @swagger_auto_schema(
+        request_body=ProcessRagIndexingSerializer,
+        responses={
+            202: "Indexing process accepted and queued",
+            400: "Invalid request or RAG not ready for indexing",
+            404: "RAG configuration not found",
+        },
+    )
     def post(self, request):
-        serializer = ProcessDocumentChunkingSerializer(data=request.data)
-        if serializer.is_valid():
-            document_id = serializer["document_id"].value
+        serializer = ProcessRagIndexingSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            if not DocumentMetadata.objects.filter(document_id=document_id).exists():
-                return Response(status=status.HTTP_404_NOT_FOUND)
+        rag_id = serializer.validated_data["rag_id"]
+        rag_type = serializer.validated_data["rag_type"]
 
-            redis_service.publish_process_document_chunking(document_id=document_id)
-            return Response(status=status.HTTP_202_ACCEPTED)
+        try:
+            indexing_data = IndexingService.validate_and_prepare_indexing(
+                rag_id=rag_id, rag_type=rag_type
+            )
+
+            redis_service.publish_rag_indexing(
+                rag_id=indexing_data["rag_id"],
+                rag_type=indexing_data["rag_type"],
+                collection_id=indexing_data["collection_id"],
+            )
+
+            return Response(
+                data={
+                    "detail": "Indexing process accepted",
+                    "rag_id": indexing_data["rag_id"],
+                    "rag_type": indexing_data["rag_type"],
+                    "collection_id": indexing_data["collection_id"],
+                },
+                status=status.HTTP_202_ACCEPTED,
+            )
+
+        except Exception as e:
+            # DRF handle
+            raise
 
 
 class ProcessCollectionEmbeddingView(APIView):
@@ -929,3 +902,49 @@ class ProcessCollectionEmbeddingView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             redis_service.publish_source_collection(collection_id=collection_id)
             return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class TelegramTriggerNodeAvailableFieldsView(APIView):
+    """
+    GET endpoint that returns all possible fields that can be created
+    for TelegramTriggerNode.
+    """
+
+    def get(self, request, format=None):
+        data = load_telegram_trigger_fields()
+        serializer = TelegramTriggerNodeDataFieldsSerializer({"data": data})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RegisterTelegramTriggerApiView(APIView):
+    @swagger_auto_schema(
+        request_body=RegisterTelegramTriggerSerializer,
+        responses={
+            200: "OK",
+            404: "TelegramTriggerNode not found",
+            503: "No webhook tunnel available",
+        },
+    )
+    def post(self, request):
+        serializer = RegisterTelegramTriggerSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            telegram_trigger_node_id = serializer.validated_data[
+                "telegram_trigger_node_id"
+            ]
+            telegram_trigger_node = TelegramTriggerNode.objects.filter(
+                pk=telegram_trigger_node_id
+            ).first()
+            if not telegram_trigger_node:
+                return Response(
+                    {"error": "TelegramTriggerNode not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            telegram_trigger_service = TelegramTriggerService()
+
+            telegram_trigger_service.register_telegram_trigger(
+                path=telegram_trigger_node.url_path,
+                telegram_bot_api_key=telegram_trigger_node.telegram_bot_api_key,
+            )
+
+            return Response(status=status.HTTP_200_OK)

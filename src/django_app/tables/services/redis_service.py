@@ -8,9 +8,14 @@ from redis.backoff import ExponentialBackoff
 from redis.retry import Retry
 from threading import Lock
 
-from django_app.settings import KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL, STOP_SESSION_CHANNEL
+from django_app.settings import (
+    KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL,
+    KNOWLEDGE_INDEXING_CHANNEL,
+    STOP_SESSION_CHANNEL,
+)
 from tables.request_models import (
     ChunkDocumentMessage,
+    ProcessRagIndexingMessage,
     RealtimeAgentChatData,
     SessionData,
     StopSessionMessage,
@@ -28,13 +33,17 @@ class RedisService(metaclass=SingletonMeta):
         self._async_redis_client = None
         self._redis_host = os.getenv("REDIS_HOST", "localhost")
         self._redis_port = int(os.getenv("REDIS_PORT", 6379))
+        self._redis_password = os.getenv("REDIS_PASSWORD")
         self._retry = Retry(backoff=ExponentialBackoff(cap=3), retries=10)
 
     def _initialize_redis(self):
         with self._lock:
             if self._redis_client is None:
                 self._redis_client = redis.Redis(
-                    host=self._redis_host, port=self._redis_port, retry=self._retry
+                    host=self._redis_host,
+                    port=self._redis_port,
+                    password=self._redis_password,
+                    retry=self._retry,
                 )
                 self._pubsub = self._redis_client.pubsub()
 
@@ -43,6 +52,7 @@ class RedisService(metaclass=SingletonMeta):
             self._async_redis_client = async_redis.Redis(
                 host=self._redis_host,
                 port=self._redis_port,
+                password=self._redis_password,
                 decode_responses=True,
                 retry=self._retry,
             )
@@ -67,8 +77,10 @@ class RedisService(metaclass=SingletonMeta):
             self._initialize_async()
         return self._async_redis_client
 
-    def publish_session_data(self, session_data: SessionData) -> None:
-        self.redis_client.publish(f"sessions:schema", session_data.model_dump_json())
+    def publish_session_data(self, session_data: SessionData) -> int:
+        return self.redis_client.publish(
+            f"sessions:schema", session_data.model_dump_json()
+        )
 
     def send_user_input(
         self,
@@ -98,6 +110,31 @@ class RedisService(metaclass=SingletonMeta):
         }
         self.redis_client.publish(channel=channel, message=json.dumps(message))
         logger.info(f"Sent collection_id: {collection_id} to {channel}.")
+
+    def publish_rag_indexing(
+        self, rag_id: int, rag_type: str, collection_id: int
+    ) -> None:
+        """
+        Publish RAG indexing message to knowledge service.
+
+        Args:
+            rag_id: ID of the specific RAG implementation (e.g., NaiveRag.naive_rag_id)
+            rag_type: Type of RAG ("naive" or "graph")
+            collection_id: Source collection ID
+        """
+        message = ProcessRagIndexingMessage(
+            rag_id=rag_id,
+            rag_type=rag_type,
+            collection_id=collection_id
+        )
+        self.redis_client.publish(
+            channel=KNOWLEDGE_INDEXING_CHANNEL,
+            message=message.model_dump_json()
+        )
+        logger.info(
+            f"Sent RAG indexing request to {KNOWLEDGE_INDEXING_CHANNEL}: "
+            f"rag_type={rag_type}, rag_id={rag_id}, collection_id={collection_id}"
+        )
 
     def publish_realtime_agent_chat(
         self, rt_agent_chat_data: RealtimeAgentChatData
@@ -156,14 +193,14 @@ class RedisService(metaclass=SingletonMeta):
                 await pubsub.unsubscribe(*channels)
                 await pubsub.close()
 
-    def publish_process_document_chunking(self, document_id):
-        message = ChunkDocumentMessage(document_id=document_id)
+    def publish_process_document_chunking(self, naive_rag_document_id):
+        message = ChunkDocumentMessage(naive_rag_document_id=naive_rag_document_id)
         self.redis_client.publish(
             KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL, json.dumps(message.model_dump())
         )
 
-    def publish_stop_session(self, session_id):
+    def publish_stop_session(self, session_id) -> int:
         message = StopSessionMessage(session_id=session_id)
-        self.redis_client.publish(
+        return self.redis_client.publish(
             STOP_SESSION_CHANNEL, json.dumps(message.model_dump())
         )
