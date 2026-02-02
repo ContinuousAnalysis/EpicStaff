@@ -1,8 +1,8 @@
 export interface GetLlmConfigRequest {
-    id: number;
+  id: number;
     custom_name: string;
-    model: number;
-    api_key: string;
+  model: number;
+  api_key: string;
     temperature: number | null;
     top_p: number | null;
     n: number | null;
@@ -22,8 +22,8 @@ export interface GetLlmConfigRequest {
 
 export interface CreateLLMConfigRequest {
     custom_name: string;
-    model: number;
-    api_key: string;
+  model: number;
+  api_key: string;
     temperature?: number | null;
     top_p?: number | null;
     n?: number | null;
@@ -42,10 +42,10 @@ export interface CreateLLMConfigRequest {
 }
 
 export interface UpdateLLMConfigRequest {
-    id: number;
+  id: number;
     custom_name: string;
     model: number;
-    api_key: string;
+  api_key: string;
     temperature?: number | null;
     top_p?: number | null;
     n?: number | null;

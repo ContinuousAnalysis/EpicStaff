@@ -35,6 +35,7 @@ export class JsonEditorComponent implements OnChanges {
 
   public editorLoaded = false;
   private lastExternalValue: string = '{}';
+  private isUserTyping: boolean = false;
   @Output() public jsonChange = new EventEmitter<string>();
   @Output() public validationChange = new EventEmitter<boolean>();
 
@@ -64,6 +65,11 @@ export class JsonEditorComponent implements OnChanges {
       const newValue = changes['jsonData'].currentValue;
       const isFirst = changes['jsonData'].firstChange;
       
+      // Skip setValue if the change came from user typing (prevents cursor jump)
+      if (this.isUserTyping) {
+        return;
+      }
+      
       // On first change, if editor exists, set the value directly
       if (isFirst && this.monacoEditor && newValue && newValue !== '{}') {
         this.lastExternalValue = newValue;
@@ -71,7 +77,7 @@ export class JsonEditorComponent implements OnChanges {
         setTimeout(() => this.monacoEditor?.getAction('editor.action.formatDocument')?.run(), 50);
         this.cdr.markForCheck();
       }
-      // On subsequent changes
+      // On subsequent changes from external sources
       else if (!isFirst && this.monacoEditor && newValue !== this.lastExternalValue) {
         this.lastExternalValue = newValue;
         this.monacoEditor.setValue(newValue || '{}');
@@ -84,6 +90,10 @@ export class JsonEditorComponent implements OnChanges {
   }
 
   public onJsonChange(newValue: string): void {
+    // Mark that user is typing to prevent cursor jump
+    this.isUserTyping = true;
+    this.lastExternalValue = newValue;
+    
     try {
       JSON.parse(newValue);
       this.jsonIsValid = true;
@@ -94,6 +104,11 @@ export class JsonEditorComponent implements OnChanges {
     this.validationChange.emit(this.jsonIsValid);
     this.jsonChange.emit(newValue);
     this.cdr.markForCheck();
+    
+    // Reset the flag after a short delay to allow ngOnChanges to skip
+    setTimeout(() => {
+      this.isUserTyping = false;
+    }, 50);
   }
 
   public onEditorInit(editor: any): void {

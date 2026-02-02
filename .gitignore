@@ -202,9 +202,6 @@ make_scripts/backups
 # Savefiles
 **/savefiles
 
-# FRONTEND GIT ignore
-
-
 
 # Compiled output
 frontend/dist

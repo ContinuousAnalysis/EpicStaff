@@ -1,5 +1,4 @@
 <div class="llm-dialog">
-    <!-- Header -->
     <div class="llm-dialog__header">
         <h2 class="llm-dialog__title">{{ dialogTitle() }}</h2>
         <button
@@ -12,7 +11,6 @@
         </button>
     </div>
 
-    <!-- Content -->
     <div class="llm-dialog__content">
         @if (errorMessage()) {
             <div class="llm-dialog__error">
@@ -20,320 +18,334 @@
             </div>
         }
 
-        <!-- Model Information Section -->
-        <section class="llm-dialog__section">
-            <h3 class="llm-dialog__section-title">Model Information</h3>
+        <form [formGroup]="form">
+            <section class="llm-dialog__section">
+                <h3 class="llm-dialog__section-title">Model Information</h3>
 
-            <!-- Provider & Model Selector -->
-            <div class="llm-dialog__field">
-                <app-form-field-label
-                    label="Provider & Model"
-                    [required]="true"
-                    tooltipText="Select the LLM provider and model"
-                />
-                <button
-                    type="button"
-                    class="llm-dialog__model-selector"
-                    (click)="openModelSelector()"
-                >
-                    @if (selectedProvider()) {
-                        <app-icon
-                            [icon]="getProviderIcon(selectedProvider()!.name)"
-                            size="1.25rem"
-                        />
-                    }
-                    @if (selectedModel() && selectedProvider()) {
-                        <span class="llm-dialog__model-selector-text">
-                            <span class="llm-dialog__model-selector-provider">{{ selectedProvider()!.name }}</span>
-                            <span class="llm-dialog__model-selector-separator"> / </span>
-                            <span class="llm-dialog__model-selector-model">{{ selectedModel()!.name }}</span>
-                        </span>
-                    } @else {
-                        <span class="llm-dialog__model-selector-text llm-dialog__model-selector-text--placeholder">
-                            Select a model...
-                        </span>
-                    }
-                    <app-icon icon="ui/chevron-down" size="1rem" />
-                </button>
-            </div>
-
-            <!-- API Key -->
-            <div class="llm-dialog__field">
-                <app-form-field-label
-                    label="API Key"
-                    [required]="true"
-                    tooltipText="Your API key for the selected provider"
-                />
-                <div class="llm-dialog__input-wrapper">
-                    <input
-                        [type]="showApiKey() ? 'text' : 'password'"
-                        class="llm-dialog__input"
-                        placeholder="Enter provider's API key"
-                        [ngModel]="apiKey()"
-                        (ngModelChange)="apiKey.set($event)"
-                    />
+                <div class="llm-dialog__field">
+                    <label class="llm-dialog__label">
+                        Provider & Model
+                        <span class="llm-dialog__label-required">*</span>
+                        <app-help-tooltip text="Select the LLM provider and model" />
+                    </label>
                     <button
                         type="button"
-                        class="llm-dialog__input-action"
-                        (click)="toggleApiKeyVisibility()"
+                        class="llm-dialog__model-selector"
+                        (click)="openModelSelector()"
                     >
-                        <app-icon
-                            [icon]="showApiKey() ? 'ui/eye-off' : 'ui/eye'"
-                            size="1.25rem"
-                        />
+                        @if (selectedProvider()) {
+                            <app-icon
+                                [icon]="getProviderIcon(selectedProvider()!.name)"
+                                size="1.25rem"
+                            />
+                        }
+                        @if (selectedModel() && selectedProvider()) {
+                            <span class="llm-dialog__model-selector-text">
+                                <span class="llm-dialog__model-selector-provider">{{ selectedProvider()!.name }}</span>
+                                <span class="llm-dialog__model-selector-separator"> / </span>
+                                <span class="llm-dialog__model-selector-model">{{ selectedModel()!.name }}</span>
+                            </span>
+                        } @else {
+                            <span class="llm-dialog__model-selector-text llm-dialog__model-selector-text--placeholder">
+                                Select a model...
+                            </span>
+                        }
+                        <app-icon icon="ui/chevron-down" size="1rem" />
                     </button>
                 </div>
-            </div>
 
-            <!-- Configuration Name -->
-            <div class="llm-dialog__field">
-                <app-form-field-label
-                    label="Configuration Name"
-                    [required]="true"
-                    tooltipText="A unique name to identify this configuration"
-                />
-                <input
-                    type="text"
-                    class="llm-dialog__input"
-                    placeholder="Enter a custom name"
-                    [ngModel]="customName()"
-                    (ngModelChange)="customName.set($event)"
-                />
-            </div>
-        </section>
-
-        <!-- API Configuration Section -->
-        <section class="llm-dialog__section">
-            <div class="llm-dialog__section-divider"></div>
-            <h3 class="llm-dialog__section-title">API Configuration</h3>
-
-            <!-- Header Configuration -->
-            <div class="llm-dialog__field">
-                <app-form-field-label
-                    label="Header Configuration"
-                    tooltipText="Add custom HTTP headers for API requests"
-                />
-                <div class="llm-dialog__headers-container">
-                    @for (entry of headerEntries(); track $index) {
-                        <div class="llm-dialog__header-row">
-                            <input
-                                type="text"
-                                class="llm-dialog__input llm-dialog__input--header"
-                                placeholder="Header name"
-                                [ngModel]="entry.key"
-                                (ngModelChange)="updateHeaderEntry($index, 'key', $event)"
+                <div class="llm-dialog__field">
+                    <label class="llm-dialog__label">
+                        API Key
+                        <span class="llm-dialog__label-required">*</span>
+                        <app-help-tooltip text="Your API key for the selected provider" />
+                    </label>
+                    <div class="llm-dialog__input-wrapper">
+                        <input
+                            [type]="showApiKey() ? 'text' : 'password'"
+                            class="llm-dialog__input"
+                            placeholder="Enter provider's API key"
+                            formControlName="apiKey"
+                        />
+                        <button
+                            type="button"
+                            class="llm-dialog__input-action"
+                            (click)="toggleApiKeyVisibility()"
+                        >
+                            <app-icon
+                                [icon]="showApiKey() ? 'ui/eye-off' : 'ui/eye'"
+                                size="1.25rem"
                             />
-                            <input
-                                type="text"
-                                class="llm-dialog__input llm-dialog__input--header"
-                                placeholder="Header value"
-                                [ngModel]="entry.value"
-                                (ngModelChange)="updateHeaderEntry($index, 'value', $event)"
+                        </button>
+                    </div>
+                </div>
+
+                <div class="llm-dialog__field">
+                    <label class="llm-dialog__label">
+                        Configuration Name
+                        <span class="llm-dialog__label-required">*</span>
+                        <app-help-tooltip text="A unique name to identify this configuration" />
+                    </label>
+                    <input
+                        type="text"
+                        class="llm-dialog__input"
+                        placeholder="Enter a custom name"
+                        formControlName="customName"
+                    />
+                </div>
+                
+                <div class="llm-dialog__section-divider"></div>
+            </section>
+
+            <section class="llm-dialog__section">
+                <h3 class="llm-dialog__section-title">API Configuration</h3>
+
+                <div class="llm-dialog__field">
+                    <label class="llm-dialog__label">
+                        Header Configuration
+                        <app-help-tooltip text="Add custom HTTP headers for API requests" />
+                    </label>
+                    <div class="llm-dialog__headers-container" formArrayName="headers">
+                        @for (header of headersArray.controls; track $index) {
+                            <div class="llm-dialog__header-row" [formGroupName]="$index">
+                                <input
+                                    type="text"
+                                    class="llm-dialog__input llm-dialog__input--header"
+                                    placeholder="Header name"
+                                    formControlName="key"
+                                />
+                                <input
+                                    type="text"
+                                    class="llm-dialog__input llm-dialog__input--header"
+                                    placeholder="Header value"
+                                    formControlName="value"
+                                />
+                                <button
+                                    type="button"
+                                    class="llm-dialog__header-action llm-dialog__header-action--remove"
+                                    (click)="removeHeaderEntry($index)"
+                                    [title]="'Remove header'"
+                                >
+                                    <app-icon icon="ui/x" size="1rem" />
+                                </button>
+                                @if ($index === headersArray.length - 1) {
+                                    <button
+                                        type="button"
+                                        class="llm-dialog__header-action llm-dialog__header-action--add"
+                                        (click)="addHeaderEntry()"
+                                        [title]="'Add header'"
+                                    >
+                                        <app-icon icon="ui/plus" size="1rem" />
+                                    </button>
+                                } @else {
+                                    <div class="llm-dialog__header-action llm-dialog__header-action--spacer"></div>
+                                }
+                            </div>
+                        }
+
+                        <div class="llm-dialog__json-preview">
+                            <app-json-editor
+                                [jsonData]="headersJson()"
+                                (jsonChange)="onHeadersChange($event)"
+                                [editorHeight]="120"
+                                [showHeader]="false"
                             />
-                            <button
-                                type="button"
-                                class="llm-dialog__header-action llm-dialog__header-action--remove"
-                                (click)="removeHeaderEntry($index)"
-                                [title]="'Remove header'"
-                            >
-                                <app-icon icon="ui/x" size="1rem" />
-                            </button>
-                            <button
-                                *ngIf="$index === headerEntries().length - 1; else spacer"
-                                type="button"
-                                class="llm-dialog__header-action llm-dialog__header-action--add"
-                                (click)="addHeaderEntry()"
-                                [title]="'Add header'"
-                            >
-                                <app-icon icon="ui/plus" size="1rem" />
-                            </button>
-                            <ng-template #spacer>
-                                <div class="llm-dialog__header-action llm-dialog__header-action--spacer"></div>
-                            </ng-template>
                         </div>
-                    }
+                    </div>
+                </div>
+                
+                <div class="llm-dialog__section-divider"></div>
+            </section>
 
-                    <!-- Headers JSON Editor (Source of Truth) -->
-                    <div class="llm-dialog__json-preview">
-                        <app-json-editor
-                            [jsonData]="headersJson()"
-                            (jsonChange)="onHeadersChange($event)"
-                            [editorHeight]="120"
-                            [showHeader]="false"
+            <section class="llm-dialog__section">
+                <h3 class="llm-dialog__section-title">Generation Parameters</h3>
+
+                <app-slider-with-stepper
+                    label="Temperature"
+                    tooltipText="Controls randomness. Lower values make output more focused and deterministic."
+                    [min]="0"
+                    [max]="2"
+                    [step]="0.1"
+                    [decimals]="1"
+                    formControlName="temperature"
+                />
+
+                <app-slider-with-stepper
+                    label="Top P"
+                    tooltipText="Nucleus sampling. Consider tokens with top_p probability mass."
+                    [min]="0"
+                    [max]="1"
+                    [step]="0.1"
+                    [decimals]="1"
+                    formControlName="topP"
+                />
+
+                <app-slider-with-stepper
+                    label="Presence Penalty"
+                    tooltipText="Penalize new tokens based on whether they appear in the text so far."
+                    [min]="-2"
+                    [max]="2"
+                    [step]="0.1"
+                    [decimals]="1"
+                    formControlName="presencePenalty"
+                />
+
+                <app-slider-with-stepper
+                    label="Frequency Penalty"
+                    tooltipText="Penalize new tokens based on their frequency in the text so far."
+                    [min]="-2"
+                    [max]="2"
+                    [step]="0.1"
+                    [decimals]="1"
+                    formControlName="frequencyPenalty"
+                />
+                
+                <div class="llm-dialog__section-divider"></div>
+            </section>
+
+            <section class="llm-dialog__section">
+                <h3 class="llm-dialog__section-title">Token Limits & Completion</h3>
+
+                <div class="llm-dialog__field-row">
+                    <div class="llm-dialog__field llm-dialog__field--half">
+                        <app-number-stepper
+                            label="Max Tokens"
+                            tooltipText="Maximum number of tokens in the response"
+                            [min]="1"
+                            [max]="128000"
+                            [step]="256"
+                            formControlName="maxTokens"
+                            placeholder="4096"
+                            size="lg"
+                        />
+                    </div>
+                    <div class="llm-dialog__field llm-dialog__field--half">
+                        <app-number-stepper
+                            label="Max Completion Tokens"
+                            tooltipText="Maximum tokens for completion (may differ from max tokens)"
+                            [min]="1"
+                            [max]="128000"
+                            [step]="256"
+                            formControlName="maxCompletionTokens"
+                            placeholder="2048"
+                            size="lg"
                         />
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- Generation Parameters Section -->
-        <section class="llm-dialog__section">
-            <div class="llm-dialog__section-divider"></div>
-            <h3 class="llm-dialog__section-title">Generation Parameters</h3>
-
-            <app-slider-with-stepper
-                label="Temperature"
-                tooltipText="Controls randomness. Lower values make output more focused and deterministic."
-                [min]="0"
-                [max]="2"
-                [step]="0.1"
-                [decimals]="1"
-                [(value)]="temperature"
-            />
-
-            <app-slider-with-stepper
-                label="Top P"
-                tooltipText="Nucleus sampling. Consider tokens with top_p probability mass."
-                [min]="0"
-                [max]="1"
-                [step]="0.1"
-                [decimals]="1"
-                [(value)]="topP"
-            />
-
-            <app-slider-with-stepper
-                label="Presence Penalty"
-                tooltipText="Penalize new tokens based on whether they appear in the text so far."
-                [min]="-2"
-                [max]="2"
-                [step]="0.1"
-                [decimals]="1"
-                [(value)]="presencePenalty"
-            />
-
-            <app-slider-with-stepper
-                label="Frequency Penalty"
-                tooltipText="Penalize new tokens based on their frequency in the text so far."
-                [min]="-2"
-                [max]="2"
-                [step]="0.1"
-                [decimals]="1"
-                [(value)]="frequencyPenalty"
-            />
-        </section>
-
-        <!-- Token Limits & Completion Section -->
-        <section class="llm-dialog__section">
-            <div class="llm-dialog__section-divider"></div>
-            <h3 class="llm-dialog__section-title">Token Limits & Completion</h3>
-
-            <div class="llm-dialog__field-row">
-                <div class="llm-dialog__field llm-dialog__field--half">
-                    <app-number-stepper
-                        label="Max Tokens"
-                        tooltipText="Maximum number of tokens in the response"
-                        [min]="1"
-                        [max]="128000"
-                        [step]="256"
-                        [(value)]="maxTokens"
-                        placeholder="4096"
-                        size="lg"
-                    />
+                <div class="llm-dialog__field-row">
+                    <div class="llm-dialog__field llm-dialog__field--half">
+                        <app-number-stepper
+                            label="N (Completions)"
+                            tooltipText="Number of completions to generate"
+                            [min]="1"
+                            [max]="10"
+                            [step]="1"
+                            formControlName="nCompletions"
+                            placeholder="1"
+                            size="lg"
+                        />
+                    </div>
+                    <div class="llm-dialog__field llm-dialog__field--half">
+                        <app-number-stepper
+                            label="Timeout (seconds)"
+                            tooltipText="Request timeout in seconds"
+                            [min]="1"
+                            [max]="600"
+                            [step]="5"
+                            formControlName="timeout"
+                            placeholder="30"
+                            size="lg"
+                        />
+                    </div>
                 </div>
-                <div class="llm-dialog__field llm-dialog__field--half">
-                    <app-number-stepper
-                        label="Max Completion Tokens"
-                        tooltipText="Maximum tokens for completion (may differ from max tokens)"
-                        [min]="1"
-                        [max]="128000"
-                        [step]="256"
-                        [(value)]="maxCompletionTokens"
-                        placeholder="2048"
-                        size="lg"
-                    />
-                </div>
-            </div>
+                
+                <div class="llm-dialog__section-divider"></div>
+            </section>
 
-            <div class="llm-dialog__field-row">
-                <div class="llm-dialog__field llm-dialog__field--half">
+            <section class="llm-dialog__section">
+                <h3 class="llm-dialog__section-title">Advanced Parameters</h3>
+
+                <div class="llm-dialog__field">
                     <app-number-stepper
-                        label="N (Completions)"
-                        tooltipText="Number of completions to generate"
-                        [min]="1"
-                        [max]="10"
+                        label="Seed"
+                        tooltipText="Random seed for reproducible outputs"
+                        [min]="0"
                         [step]="1"
-                        [(value)]="nCompletions"
-                        placeholder="1"
+                        formControlName="seed"
+                        placeholder="Random"
                         size="lg"
                     />
                 </div>
-                <div class="llm-dialog__field llm-dialog__field--half">
-                    <app-number-stepper
-                        label="Timeout (seconds)"
-                        tooltipText="Request timeout in seconds"
-                        [min]="1"
-                        [max]="600"
-                        [step]="5"
-                        [(value)]="timeout"
-                        placeholder="30"
-                        size="lg"
+
+                <div class="llm-dialog__field">
+                    <label class="llm-dialog__label">
+                        Stop Sequences
+                        <app-help-tooltip text="Sequences that will stop generation when encountered" />
+                    </label>
+                    <div class="llm-dialog__headers-container" formArrayName="stopSequences">
+                        @for (seq of stopSequencesArray.controls; track $index) {
+                            <div class="llm-dialog__header-row">
+                                <input
+                                    type="text"
+                                    class="llm-dialog__input llm-dialog__input--header"
+                                    [formControlName]="$index"
+                                    style="flex: 1;"
+                                />
+                                <button
+                                    type="button"
+                                    class="llm-dialog__header-action llm-dialog__header-action--remove"
+                                    (click)="removeStopSequence($index)"
+                                    [title]="'Remove'"
+                                >
+                                    <app-icon icon="ui/x" size="1rem" />
+                                </button>
+                                @if ($index === stopSequencesArray.length - 1) {
+                                    <button
+                                        type="button"
+                                        class="llm-dialog__header-action llm-dialog__header-action--add"
+                                        (click)="addStopSequence()"
+                                        [title]="'Add'"
+                                    >
+                                        <app-icon icon="ui/plus" size="1rem" />
+                                    </button>
+                                } @else {
+                                    <div class="llm-dialog__header-action llm-dialog__header-action--spacer"></div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="llm-dialog__field">
+                    <label class="llm-dialog__label">
+                        Logit Bias (JSON)
+                        <app-help-tooltip text="Modify likelihood of specific tokens appearing" />
+                    </label>
+                    <app-json-editor
+                        [jsonData]="logitBiasJson()"
+                        (jsonChange)="onLogitBiasChange($event)"
+                        [editorHeight]="120"
+                        [showHeader]="false"
                     />
                 </div>
-            </div>
-        </section>
 
-        <!-- Advanced Parameters Section -->
-        <section class="llm-dialog__section">
-            <div class="llm-dialog__section-divider"></div>
-            <h3 class="llm-dialog__section-title">Advanced Parameters</h3>
-
-            <div class="llm-dialog__field">
-                <app-number-stepper
-                    label="Seed"
-                    tooltipText="Random seed for reproducible outputs"
-                    [min]="0"
-                    [step]="1"
-                    [(value)]="seed"
-                    placeholder="Random"
-                    size="lg"
-                />
-            </div>
-
-            <!-- Stop Sequences -->
-            <div class="llm-dialog__field">
-                <app-form-field-label
-                    label="Stop Sequences (JSON)"
-                    tooltipText="Sequences that will stop generation when encountered"
-                />
-                <app-json-editor
-                    [jsonData]="stopSequencesJson()"
-                    (jsonChange)="onStopSequencesChange($event)"
-                    [editorHeight]="120"
-                    [showHeader]="false"
-                />
-            </div>
-
-            <!-- Logit Bias -->
-            <div class="llm-dialog__field">
-                <app-form-field-label
-                    label="Logit Bias (JSON)"
-                    tooltipText="Modify likelihood of specific tokens appearing"
-                />
-                <app-json-editor
-                    [jsonData]="logitBiasJson()"
-                    (jsonChange)="onLogitBiasChange($event)"
-                    [editorHeight]="120"
-                    [showHeader]="false"
-                />
-            </div>
-
-            <!-- Response Format -->
-            <div class="llm-dialog__field">
-                <app-form-field-label
-                    label="Response Format (JSON)"
-                    tooltipText="Specify the format of the response (e.g., JSON mode)"
-                />
-                <app-json-editor
-                    [jsonData]="responseFormatJson()"
-                    (jsonChange)="onResponseFormatChange($event)"
-                    [editorHeight]="120"
-                    [showHeader]="false"
-                />
-            </div>
-        </section>
+                <div class="llm-dialog__field">
+                    <label class="llm-dialog__label">
+                        Response Format (JSON)
+                        <app-help-tooltip text="Specify the format of the response (e.g., JSON mode)" />
+                    </label>
+                    <app-json-editor
+                        [jsonData]="responseFormatJson()"
+                        (jsonChange)="onResponseFormatChange($event)"
+                        [editorHeight]="120"
+                        [showHeader]="false"
+                    />
+                </div>
+            </section>
+        </form>
     </div>
 
-    <!-- Footer -->
     <div class="llm-dialog__footer">
         <app-button
             type="outline-primary"
