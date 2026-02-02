@@ -49,6 +49,8 @@ import { RunGraphPageService } from '../../run-graph-page.service';
 import { RunSessionSSEService } from '../../../run-graph-page/run-graph-page-body/graph-session-sse.service';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { ExtractedChunksMessageComponent } from './components/extracted-chunks/extracted-chunks-message.component';
+import { WarningMessagesComponent } from '../warning-messages/warning-messages.component';
+import { GraphSessionService } from '../../../../features/flows/services/flows-sessions.service';
 
 @Component({
   selector: 'app-graph-messages',
@@ -69,6 +71,7 @@ import { ExtractedChunksMessageComponent } from './components/extracted-chunks/e
     WaitForUserInputComponent,
     UserMessageComponent,
     ExtractedChunksMessageComponent,
+    WarningMessagesComponent,
   ],
   templateUrl: './graph-messages.component.html',
   styleUrls: ['./graph-messages.component.scss'],
@@ -98,6 +101,9 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
   public updateSessionStatusData: SessionStatusMessageData | null = null;
   public statusWaitForUser: boolean = false;
 
+  // Warning messages
+  public warningMessages: string[] | null = null;
+
   // Connection status
   public connectionStatus:
     | 'connected'
@@ -120,7 +126,8 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
     private cdr: ChangeDetectorRef,
     private answerToLLMService: AnswerToLLMService,
     private runGraphPageService: RunGraphPageService,
-    private flowService: FlowsApiService
+    private flowService: FlowsApiService,
+    private graphSessionService: GraphSessionService
   ) {
     effect(() => {
       const messages = this.sseService.messages();
@@ -175,6 +182,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       this.updateSessionStatusData = null;
       this.statusWaitForUser = false;
       this.showUserInputWithDelay = false;
+      this.warningMessages = null;
       this.cdr.markForCheck();
 
       if (this.sessionId) {
@@ -187,6 +195,21 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
     if (!this.sessionId || !this.graphId) return;
 
     this.sseService.startStream(this.sessionId!);
+
+    // Load warning messages
+    this.graphSessionService
+      .getSessionWarnings(this.sessionId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.warningMessages = response.messages;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Failed to load warnings:', err);
+          this.warningMessages = null;
+        },
+      });
 
     this.flowService
       .getGraphById(this.graphId)

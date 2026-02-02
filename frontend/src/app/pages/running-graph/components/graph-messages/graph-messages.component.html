@@ -25,9 +25,10 @@
       </span>
     </div>
   </div>
-
   <!-- Messages list -->
   <div class="messages-list" *ngIf="this.sseService.messages().length > 0">
+    <!-- Warnings -->
+    <app-warning-messages [messages]="warningMessages"/>
     @for (message of this.sseService.messages(); track message.uuid; let i =
     $index) {
     <div class="message">
