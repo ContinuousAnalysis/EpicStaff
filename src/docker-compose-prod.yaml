@@ -15,7 +15,9 @@ services:
       django_app:
         condition: service_healthy
       frontend:
+        condition: service_started
       realtime:
+        condition: service_started
       
     restart: always
 
