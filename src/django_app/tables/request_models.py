@@ -237,6 +237,7 @@ class TaskData(BaseModel):
 class SessionData(BaseModel):
     id: int
     graph: "GraphData"
+    unique_subgraph_list: list["SubGraphData"] = []
     initial_state: dict[str, Any] = {}
 
 
@@ -363,6 +364,7 @@ class GraphData(BaseModel):
     webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
+    subgraph_node_list: list["SubGraphNodeData"] = []
     audio_transcription_node_list: list[AudioTranscriptionNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
@@ -371,6 +373,19 @@ class GraphData(BaseModel):
     entrypoint: str
     end_node: EndNodeData | None
     telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
+
+
+class SubGraphNodeData(BaseModel):
+    node_name: str
+    subgraph_id: int
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
+class SubGraphData(BaseModel):
+    id: int
+    data: GraphData
+    initial_state: dict[str, Any] = {}
 
 
 class GraphSessionMessageData(BaseModel):

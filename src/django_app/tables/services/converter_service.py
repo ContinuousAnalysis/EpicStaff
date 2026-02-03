@@ -38,6 +38,7 @@ from tables.models.graph_models import (
     DecisionTableNode,
     EndNode,
     PythonNode,
+    SubGraphNode,
     TelegramTriggerNode,
     WebhookTriggerNode,
 )

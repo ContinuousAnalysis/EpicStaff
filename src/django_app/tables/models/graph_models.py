@@ -138,6 +138,24 @@ class EndNode(models.Model):
         super().save(*args, **kwargs)
 
 
+class SubGraphNode(BaseNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="subgraph_node_list"
+    )
+    subgraph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="as_subgraph"
+    )
+    # TODO: maybe SET_NULL on delete?
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_subgraph_node",
+            )
+        ]
+
+
 class Edge(models.Model):
 
     graph = models.ForeignKey(
