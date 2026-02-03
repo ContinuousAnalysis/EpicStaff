@@ -40,7 +40,7 @@
                         btnText: 'Fresh chunks'
                     }"
                 ></ng-container>
-                <app-chunk-preview [chunks]="state.chunks"/>
+                <app-chunk-preview [chunkingState]="state"/>
             }
             @case ('chunks_outdated') {
                 <ng-container
@@ -53,7 +53,7 @@
                         btnText: 'Fresh chunks'
                     }"
                 ></ng-container>
-                <app-chunk-preview [chunks]="state.chunks"/>
+                <app-chunk-preview [chunkingState]="state"/>
             }
         }
     } @else {

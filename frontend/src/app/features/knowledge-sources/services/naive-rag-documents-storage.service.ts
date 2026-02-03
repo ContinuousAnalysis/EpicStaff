@@ -49,12 +49,18 @@ export class NaiveRagDocumentsStorageService {
             tap(({ chunks }) => {
                 const state = this.documentStates().get(documentId);
                 // document was updated during fetching
-                if (state?.status === 'chunks_outdated') {
-                    this.updateDocsState([documentId], s => ({ ...s, chunks }));
-                    return
-                }
+                if (state?.status === 'chunks_outdated') return;
 
-                this.updateDocsState([documentId], s => ({ ...s, status: 'chunks_ready', chunks }));
+                const docData = this.documents().find(d => d.naive_rag_document_id === documentId);
+                if (!docData) return;
+
+                this.updateDocsState([documentId], s => ({
+                    ...s,
+                    status: 'chunks_ready',
+                    chunkStrategy: docData.chunk_strategy,
+                    chunkOverlap: docData.chunk_overlap,
+                    chunks
+                }));
             })
         );
     }
@@ -76,7 +82,13 @@ export class NaiveRagDocumentsStorageService {
                     status = 'chunking_failed';
             }
 
-            docStateMap.set(doc.naive_rag_document_id, { id: doc.naive_rag_document_id, status: status, chunks: [] });
+            docStateMap.set(doc.naive_rag_document_id, {
+                id: doc.naive_rag_document_id,
+                status: status,
+                chunkOverlap: doc.chunk_overlap,
+                chunkStrategy: doc.chunk_strategy,
+                chunks: [],
+            });
         });
         this.documentStatesSignal.set(docStateMap);
     }

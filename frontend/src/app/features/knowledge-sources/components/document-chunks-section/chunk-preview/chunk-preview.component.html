@@ -5,15 +5,21 @@
     <p
         class="chunk__text-container"
     >
-        @for (chunk of chunks(); track chunk.preview_chunk_id) {
+        @for (chunk of chunks(); track chunk.chunkIndex) {
             <span
                 class="chunk__id-item"
                 [style.z-index]="$count - $index"
                 [ngClass]="$odd ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
             >
-                {{ chunk.chunk_index }}
+                {{ chunk.chunkIndex }}
             </span>
-            @if (!chunk.overlap_end_index && !chunk.overlap_start_index) {
+            @if (chunk.overlap) {
+                <span
+                    [style.z-index]="$count - $index"
+                    class="chunk__item chunk__item--overlap"
+                >{{ chunk.overlap }}</span>
+            }
+            @if (chunk.text) {
                 <span
                     class="chunk__item"
                     [style.z-index]="$count - $index"
@@ -25,22 +31,6 @@
                         'chunk__item--single': $count === 1,
                     }"
                 >{{ chunk.text }}</span>
-            } @else {
-                <span
-                    [style.z-index]="$count - $index"
-                    class="chunk__item chunk__item--overlap"
-                >{{ chunk.text | slice:0:(chunk.overlap_start_index || 0) }}</span>
-                <span
-                    class="chunk__item"
-                    [style.z-index]="$count - $index"
-                    [ngClass]="{
-                        'chunk__item--odd': $odd,
-                        'chunk__item--even': !$odd,
-                        'chunk__item--first': $first,
-                        'chunk__item--last': $last,
-                        'chunk__item--single': $count === 1,
-                    }"
-                >{{ chunk.text | slice:(chunk.overlap_start_index || 0):-(chunk.overlap_end_index || 0) }}</span>
             }
         }
 

@@ -1,3 +1,5 @@
+import { NaiveRagChunkStrategy } from "./naive-rag-document.model";
+
 export type DocumentChunkingProcessStatus =
     | 'completed'
     | 'canceled'
@@ -24,6 +26,8 @@ export type DocumentWithChunksStatus =
 export interface DocumentChunkingState {
     id: number;
     status: DocumentWithChunksStatus;
+    chunkOverlap: number;
+    chunkStrategy: NaiveRagChunkStrategy;
     chunks: NaiveRagDocumentChunk[];
 }
 

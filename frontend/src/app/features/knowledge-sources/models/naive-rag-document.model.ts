@@ -9,11 +9,19 @@ export type NaiveRagDocumentStatus =
     | 'warning'
     | 'failed';
 
+export type NaiveRagChunkStrategy =
+    | 'token'
+    | 'character'
+    | 'markdown'
+    | 'json'
+    | 'html'
+    | 'csv'
+
 export interface NaiveRagDocumentConfig {
     naive_rag_document_id: number;
     document_id: number;
     file_name: string;
-    chunk_strategy: string;
+    chunk_strategy: NaiveRagChunkStrategy;
     chunk_size: number;
     chunk_overlap: number;
     additional_params: {};
@@ -40,7 +48,7 @@ export interface GetNaiveRagDocumentConfigsResponse {
 export interface UpdateNaiveRagDocumentDtoRequest {
     chunk_size?: number;
     chunk_overlap?: number;
-    chunk_strategy?: string;
+    chunk_strategy?: NaiveRagChunkStrategy;
     additional_params?: {};
 }
 

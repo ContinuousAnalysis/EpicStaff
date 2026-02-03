@@ -24,7 +24,7 @@ import {
     InputNumberComponent,
     CheckboxComponent
 } from "@shared/components";
-import { CHUNK_STRATEGIES, FILE_TYPES } from "../../../constants/constants";
+import { CHUNK_STRATEGIES_SELECT_ITEMS, FILE_TYPES } from "../../../constants/constants";
 import { Dialog } from "@angular/cdk/dialog";
 import {
     EditFileParametersDialogComponent
@@ -47,7 +47,7 @@ import {
 })
 export class ConfigurationTableComponent {
     fileTypeSelectItems: SelectItem[] = FILE_TYPES.map(t => ({ name: t, value: t }));
-    chunkStrategySelectItems: SelectItem[] = CHUNK_STRATEGIES.map(t => ({ name: t, value: t.toLowerCase() }));
+    chunkStrategySelectItems: SelectItem[] = CHUNK_STRATEGIES_SELECT_ITEMS;
 
     private dialog = inject(Dialog);
     private documentsStorageService = inject(NaiveRagDocumentsStorageService);
