@@ -167,6 +167,9 @@ class RedisPubSub:
                 data = json.loads(self.redis_client.get(key))
                 message_data = data.get("message_data", {})
 
+                if not message_data:
+                    return total_usage
+
                 token_usage = None
 
                 if "output" in message_data and "token_usage" in message_data["output"]:
