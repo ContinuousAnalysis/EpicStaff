@@ -105,7 +105,7 @@ connections: Dict[
 ] = {}
 
 
-@app.websocket("/")
+@app.websocket("/realtime/")
 async def root(
     websocket: WebSocket,
     model: str | None = None,
