@@ -25,9 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # SECURITY WARNING: keep the secret key used in production secret!
-
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes", "on")
-
 
 SECRET_KEY = os.getenv("SECRET_KEY") or (
     "321567143216717121" if DEBUG else get_random_secret_key()
@@ -51,7 +49,7 @@ LOGGING = {
     },
     "root": {
         "handlers": ["loguru"],
-        "level": "INFO",
+        "level": "DEBUG",
     },
 }
 
@@ -151,7 +149,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 TELEGRAM_TRIGGER_FIELDS_PATH = (
-    BASE_DIR / "tables" / "utils"/ "data" / "telegram_fields.json"
+    BASE_DIR / "tables" / "utils" / "data" / "telegram_fields.json"
 )
 
 # Internationalization

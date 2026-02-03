@@ -219,7 +219,7 @@ class SourceCollectionDetailSerializer(serializers.ModelSerializer):
             )
             serializer = RagConfigurationSummarySerializer(rag_configs, many=True)
             return serializer.data
-        except Exception as e:           
+        except Exception as e:
             logger.error(
                 f"Error fetching RAG configurations for collection {obj.collection_id}: {e}"
             )

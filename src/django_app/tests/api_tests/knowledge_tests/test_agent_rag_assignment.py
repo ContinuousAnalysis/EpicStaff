@@ -290,7 +290,6 @@ class TestAgentUpdateRag:
         assert response_data["knowledge_collection"] is None
 
 
-
 # ============================================================================
 # SEARCH CONFIG UPDATE TESTS
 # ============================================================================

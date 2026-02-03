@@ -1,3 +1,4 @@
+
 services:
   epicstaff-nginx:
     image: nginx
@@ -214,7 +215,7 @@ services:
       $${REDIS_PASSWORD:+--requirepass \"$${REDIS_PASSWORD}\"}"
     healthcheck:
       test: >
-        sh -c "redis-cli -p ${REDIS_PORT:-6379} ping || exit 1"
+        sh -c "redis-cli -p ${REDIS_PORT:-6378} ping || exit 1"
       interval: 5s
       timeout: 2s
       retries: 5

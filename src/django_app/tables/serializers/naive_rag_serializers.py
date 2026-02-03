@@ -4,7 +4,6 @@ from tables.models.knowledge_models import (
     NaiveRag,
     NaiveRagDocumentConfig,
     NaiveRagChunk,
-    DocumentMetadata,
 )
 
 from tables.models.knowledge_models.naive_rag_models import (
@@ -348,17 +347,18 @@ class NaiveRagSearchConfigSerializer(serializers.ModelSerializer):
 
 class NaiveSearchConfigInputSerializer(serializers.Serializer):
     """Input serializer for naive RAG search config."""
+
     search_limit = serializers.IntegerField(
         required=False,
         min_value=1,
         max_value=1000,
-        help_text="Number of chunks to retrieve (1-1000)"
+        help_text="Number of chunks to retrieve (1-1000)",
     )
     similarity_threshold = serializers.FloatField(
         required=False,
         min_value=0.0,
         max_value=1.0,
-        help_text="Similarity threshold for search (0.0-1.0)"
+        help_text="Similarity threshold for search (0.0-1.0)",
     )
 
 
@@ -367,9 +367,9 @@ class NestedSearchConfigSerializer(serializers.Serializer):
     Nested search config serializer for PATCH requests.
     Handles multiple RAG types: {"naive": {...}, "graph": {...}}
     """
+
     naive = NaiveSearchConfigInputSerializer(
-        required=False,
-        help_text="Naive RAG search config"
+        required=False, help_text="Naive RAG search config"
     )
     # Future: graph = GraphSearchConfigInputSerializer(required=False)
 
@@ -394,11 +394,8 @@ class RagInputSerializer(serializers.Serializer):
         }
     }
     """
+
     rag_type = serializers.ChoiceField(
-        choices=["naive", "graph"],
-        help_text="Type of RAG implementation"
+        choices=["naive", "graph"], help_text="Type of RAG implementation"
     )
-    rag_id = serializers.IntegerField(
-        min_value=1,
-        help_text="ID of the RAG instance"
-    )
+    rag_id = serializers.IntegerField(min_value=1, help_text="ID of the RAG instance")

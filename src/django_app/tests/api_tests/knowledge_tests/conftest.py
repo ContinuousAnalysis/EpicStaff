@@ -3,7 +3,6 @@ Fixtures for knowledge API tests
 """
 
 import pytest
-from io import BytesIO
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from tables.models.knowledge_models import (

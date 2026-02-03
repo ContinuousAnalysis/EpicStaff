@@ -4,7 +4,6 @@ from tables.models import FileExtractorNode, AudioTranscriptionNode
 
 
 class FileNodeValidator:
-
     DOMAIN_NAME = "variables"
     FILES_IN_DOMAIN = "files"
 

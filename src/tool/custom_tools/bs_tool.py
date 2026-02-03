@@ -11,7 +11,7 @@ from pygments.token import Token
 from typing import Type, Any
 from crewai_tools import BaseTool
 
-#TODO: change import after update: from crewai.tools import BaseTool 
+# TODO: change import after update: from crewai.tools import BaseTool
 class BSharpLexer(RegexLexer):
     """
     Custom lexer for the BSharp language, defining syntax highlighting rules using Pygments.
@@ -52,9 +52,7 @@ class BSharpCodeTool(BaseTool):
     """
 
     name: str = "BSharp Code Output Tool"
-    description: str = (
-        "Tool to display BSharp code with syntax highlighting. Takes in one parameter: 'code' - the BSharp code to be highlighted and displayed."
-    )
+    description: str = "Tool to display BSharp code with syntax highlighting. Takes in one parameter: 'code' - the BSharp code to be highlighted and displayed."
     args_schema: Type[BaseModel] = BSharpCodeToolSchema
 
     def __init__(self, **kwargs):

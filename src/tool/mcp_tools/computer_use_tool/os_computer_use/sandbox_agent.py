@@ -25,7 +25,6 @@ tools = {
 
 
 class SandboxAgent:
-
     def __init__(self, sandbox, output_dir=".", save_logs=True, system_prompt=None):
         super().__init__()
         self.messages = []  # Agent memory
@@ -267,7 +266,7 @@ x range: 0-{screen_width}, y range: 0-{screen_height}.""",
                                         f"Warning: Coordinates {x},{y} out of bounds ({screen_width}x{screen_height})",
                                         "yellow",
                                     )
-                            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                            except (json.JSONDecodeError, ValueError, TypeError):
                                 continue
 
                     # Fallback: try to find two numbers in the response

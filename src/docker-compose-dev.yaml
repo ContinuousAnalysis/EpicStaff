@@ -1,10 +1,19 @@
+# docker compose -f docker-compose-dev.yaml up -d
 services:
   django_app:
     image: django_app
     build:
       context: .
       dockerfile: ./django_app/Dockerfile.dj
-    command: ./entrypoint.sh
+    command: sh -lc "
+      python manage.py check_db_init &&
+      python manage.py migrate &&
+      python manage.py fix_sequences &&
+      python manage.py upload_models &&
+      python manage.py collectstatic --noinput &&
+      python manage.py listen_redis &
+      python manage.py cache_redis &
+      uvicorn django_app.asgi:application --host 0.0.0.0 --port ${DJANGO_PORT:-8000} --reload --reload-dir /home/user/root/app/django_app"
     container_name: django_app
     ports:
       - "${DJANGO_PORT:-8000}:${DJANGO_PORT:-8000}"
@@ -29,18 +38,21 @@ services:
       - DB_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - DB_NAME=${POSTGRES_DB:-crew}
-      - DJANGO_MEDIA_ROOT=${MEDIA_ROOT}  
-      
+      - DJANGO_MEDIA_ROOT=${MEDIA_ROOT}
       - WEBHOOK_USE_TUNNEL=${USE_TUNNEL}
       - WEBHOOK_TUNNEL=${WEBHOOK_TUNNEL}
       - WEBHOOK_PORT=${WEBHOOK_PORT}
       - WEBHOOK_HOST_NAME=${WEBHOOK_HOST_NAME}
       - GUNICORN_WORKERS=${GUNICORN_WORKERS:-1}
       - GUNICORN_THREADS=${GUNICORN_THREADS:-4}
-
       - DJANGO_HOST=${DJANGO_HOST:-localhost}
       - DJANGO_PORT=${DJANGO_PORT:-8000}
+
+      - GUNICORN_RELOAD=1
+      - WATCHFILES_FORCE_POLLING=true
     volumes:
+      - ./django_app:/home/user/root/app/django_app:cached
+      - ./shared:/home/user/root/app/shared:cached
       - crew_config:/home/user/root/app/env_config
       - media_data:/app/media
 
@@ -85,6 +97,7 @@ services:
 
     networks:
       - backend-network
+
     depends_on:
       crewdb:
         condition: service_healthy
@@ -187,15 +200,12 @@ services:
       - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_PORT=${REDIS_PORT:-6379}
     command: >
-      sh -c "redis-server --port $${REDIS_PORT:-6379} 
-      $${REDIS_PASSWORD:+--requirepass \"$${REDIS_PASSWORD}\"}"
+      sh -c "redis-server --port ${REDIS_PORT:-6379}
+      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}"
     healthcheck:
       test: >
-        sh -c "redis-cli -p ${REDIS_PORT:-6379} ping || exit 1"
+        sh -c "redis-cli -p ${REDIS_PORT:-6378} ping || exit 1"
       interval: 5s
       timeout: 2s
       retries: 5
@@ -225,6 +235,12 @@ services:
 
   crew:
     image: crew
+    command: >
+      sh -lc "cd /home/user/root/app &&
+      poetry run watchfiles
+      --filter python
+      'poetry run python3 /home/user/root/app/src/crew/main.py'
+      /home/user/root/app/src/crew/"
     build:
       context: .
       dockerfile: ./crew/Dockerfile.crew
@@ -251,6 +267,13 @@ services:
       - ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH}
       - ${DOCKER_BIN_PATH}:${DOCKER_BIN_PATH}
       - crew_config:/home/user/root/app/env_config/
+      - ./crew/callbacks:/home/user/root/app/src/crew/callbacks:cached
+      - ./crew/config:/home/user/root/app/src/crew/config:cached
+
+      - ./crew/models:/home/user/root/app/src/crew/models:cached
+      - ./crew/config:/home/user/root/app/src/crew/config:cached
+      - ./crew/services:/home/user/root/app/src/crew/services:cached
+      - ./crew/utils:/home/user/root/app/src/crew/utils:cached
     networks:
       - backend-network
     tty: true

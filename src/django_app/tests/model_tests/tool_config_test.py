@@ -7,7 +7,6 @@ from tests.fixtures import *
 def test_tool_config_llm_and_embedding_field_deletion(
     test_tool_with_fields, llm_config, embedding_config
 ):
-
     tool = test_tool_with_fields
     name = "tool_configuration_validation config"
     configuration = {
@@ -48,7 +47,6 @@ def test_tool_config_llm_and_embedding_field_deletion_do_not_affect_fields_with_
     llm_config,
     embedding_config,
 ):
-
     tool = test_tool_with_fields
     name = "tool_configuration_validation config"
     configuration = {

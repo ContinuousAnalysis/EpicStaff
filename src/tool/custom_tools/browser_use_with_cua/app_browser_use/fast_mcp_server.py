@@ -1,4 +1,3 @@
-import os
 from fastmcp import FastMCP
 from browser_runner import run_browser_task
 from config import DEEPSEEK_API_KEY
