@@ -1,6 +1,5 @@
 import os
 import json
-import re
 import time
 from datetime import datetime
 
@@ -18,10 +17,8 @@ from django.views import View
 from django.db import IntegrityError, transaction
 
 from tables.models.knowledge_models.collection_models import DocumentMetadata
-
 from tables.services.redis_service import RedisService
 from functools import partial
-
 
 ALLOWED_FILE_TYPES = {choice[0] for choice in DocumentMetadata.DocumentFileType.choices}
 MAX_FILE_SIZE = 12 * 1024 * 1024  # 12MB
@@ -144,10 +141,10 @@ class SSEMixin(View, ABC):
 
         except (GeneratorExit, KeyboardInterrupt):
             logger.warning("Sending fatal-error event due to manual stop")
-            yield f"\n\nevent: fatal-error\ndata: event stream was stopped manually\n\n"
+            yield "\n\nevent: fatal-error\ndata: event stream was stopped manually\n\n"
         except Exception as e:
             logger.error(f"Sending fatal-error event due to error: {e}")
-            yield f"\n\nevent: fatal-error\ndata: unexpected error\n\n"
+            yield "\n\nevent: fatal-error\ndata: unexpected error\n\n"
 
     async def get(self, request, *args, **kwargs):
         test_mode = bool(request.GET.get("test", ""))

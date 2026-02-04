@@ -4,9 +4,8 @@ from rest_framework import serializers
 from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
 from tables.models.python_models import PythonCodeTool
-from tables.models.realtime_models import VoiceChoices
 from tables.models.graph_models import GraphFile, Graph
-from tables.models.python_models import PythonCodeTool, PythonCodeToolConfig
+from tables.models.python_models import PythonCodeToolConfig
 
 
 class RunSessionSerializer(serializers.Serializer):
@@ -40,7 +39,6 @@ class InitRealtimeSerializer(serializers.Serializer):
 
 
 class BaseToolSerializer(serializers.Serializer):
-
     unique_name = serializers.CharField(required=True)  # type + id
     data = serializers.DictField(required=True)
 
@@ -74,7 +72,6 @@ class BaseToolSerializer(serializers.Serializer):
 
 
 class UploadGraphFileSerializer(serializers.Serializer):
-
     files = serializers.DictField(
         child=serializers.FileField(), allow_empty=False, write_only=True
     )
@@ -137,7 +134,6 @@ class UploadGraphFileSerializer(serializers.Serializer):
 
 
 class GraphFileUpdateSerializer(serializers.Serializer):
-
     domain_key = serializers.CharField()
     file = serializers.FileField()
 

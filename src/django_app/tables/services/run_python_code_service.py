@@ -2,7 +2,6 @@ from datetime import datetime
 import os
 from typing import Any
 import uuid
-from tables.models import PythonCodeResult
 from tables.request_models import CodeTaskData
 from tables.models import PythonCode
 from tables.services.redis_service import RedisService
@@ -10,7 +9,6 @@ from utils.singleton_meta import SingletonMeta
 
 
 class RunPythonCodeService(metaclass=SingletonMeta):
-
     def __init__(self, redis_service: RedisService):
         self.redis_service = redis_service
         self.code_exec_task_channel: str = os.environ.get(

@@ -5,7 +5,8 @@ from .github_client import GitHubClient
 from .gitlab_client import GitLabClient
 
 
-class ClientFactoryException(ValueError): ...
+class ClientFactoryException(ValueError):
+    ...
 
 
 class ClientFactory:
@@ -23,6 +24,10 @@ class ClientFactory:
                 return GitHubClient(token=token, owner=owner, repo_name=repo_name)
             case "gitlab":
                 gitlab_url = url or "https://gitlab.com"
-                return GitLabClient(token=token, owner=owner, repo_name=repo_name, url=gitlab_url)
+                return GitLabClient(
+                    token=token, owner=owner, repo_name=repo_name, url=gitlab_url
+                )
             case _:
-                raise ClientFactoryException(f"Client type {client_type} is not supported")
+                raise ClientFactoryException(
+                    f"Client type {client_type} is not supported"
+                )

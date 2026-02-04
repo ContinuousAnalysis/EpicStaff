@@ -2,7 +2,9 @@ from playwright.sync_api import sync_playwright
 from openai import OpenAI
 import time
 import base64
+
 client = OpenAI()
+
 
 def handle_model_action(page, action):
     """
@@ -26,7 +28,9 @@ def handle_model_action(page, action):
             case "scroll":
                 x, y = action.x, action.y
                 scroll_x, scroll_y = action.scroll_x, action.scroll_y
-                print(f"Action: scroll at ({x}, {y}) with offsets (scroll_x={scroll_x}, scroll_y={scroll_y})")
+                print(
+                    f"Action: scroll at ({x}, {y}) with offsets (scroll_x={scroll_x}, scroll_y={scroll_y})"
+                )
                 page.mouse.move(x, y)
                 page.evaluate(f"window.scrollBy({scroll_x}, {scroll_y})")
 
@@ -48,18 +52,20 @@ def handle_model_action(page, action):
                 page.keyboard.type(text)
 
             case "wait":
-                print(f"Action: wait")
+                print("Action: wait")
                 time.sleep(2)
 
             case "screenshot":
                 # Nothing to do as screenshot is taken at each turn
-                print(f"Action: screenshot")
+                print("Action: screenshot")
 
             case "drag":
                 from_x, from_y = action.from_x, action.from_y
                 to_x, to_y = action.to_x, action.to_y
                 button = action.button if hasattr(action, "button") else "left"
-                print(f"Action: drag from ({from_x}, {from_y}) to ({to_x}, {to_y}) with button '{button}'")
+                print(
+                    f"Action: drag from ({from_x}, {from_y}) to ({to_x}, {to_y}) with button '{button}'"
+                )
 
                 if button not in ["left", "right"]:
                     button = "left"
@@ -76,6 +82,7 @@ def handle_model_action(page, action):
     except Exception as e:
         print(f"Error handling action {action}: {e}")
 
+
 def get_screenshot(page):
     """
     Take a full-page screenshot using Playwright and return the image bytes.
@@ -88,7 +95,9 @@ def computer_use_loop(instance, response):
     Run the loop that executes computer actions until no 'computer_call' is found.
     """
     while True:
-        computer_calls = [item for item in response.output if item.type == "computer_call"]
+        computer_calls = [
+            item for item in response.output if item.type == "computer_call"
+        ]
         if not computer_calls:
             print("No computer call found. Output from model:")
             for item in response.output:
@@ -117,7 +126,7 @@ def computer_use_loop(instance, response):
                     "type": "computer_use_preview",
                     "display_width": 1920,
                     "display_height": 1080,
-                    "environment": "browser"
+                    "environment": "browser",
                 }
             ],
             input=[
@@ -126,11 +135,11 @@ def computer_use_loop(instance, response):
                     "type": "computer_call_output",
                     "output": {
                         "type": "input_image",
-                        "image_url": f"data:image/png;base64,{screenshot_base64}"
-                    }
+                        "image_url": f"data:image/png;base64,{screenshot_base64}",
+                    },
                 }
             ],
-            truncation="auto"
+            truncation="auto",
         )
 
     return response
@@ -140,11 +149,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch(
         headless=False,
         chromium_sandbox=True,
-        args=[
-            "--disable-extensions",
-            "--disable-popup-blocking",
-            "--no-sandbox"
-        ]
+        args=["--disable-extensions", "--disable-popup-blocking", "--no-sandbox"],
     )
     page = browser.new_page()
     page.set_viewport_size({"width": 1920, "height": 1080})
@@ -157,20 +162,21 @@ with sync_playwright() as p:
 
     response = client.responses.create(
         model="computer-use-preview",
-        tools=[{
-            "type": "computer_use_preview",
-            "display_width": 1920,
-            "display_height": 1080,
-            "environment": "browser"
-        }],
+        tools=[
+            {
+                "type": "computer_use_preview",
+                "display_width": 1920,
+                "display_height": 1080,
+                "environment": "browser",
+            }
+        ],
         input=[
             {
                 "role": "user",
                 "content": [
                     {
                         "type": "input_text",
-                        "text":
-                            """You are testing a web application (EpicFlow). 
+                        "text": """You are testing a web application (EpicFlow). 
                             Please follow the test case below step by step and check whether it passes or fails.
                             For each step, act as a human user would: click, scroll, type, etc.
                             After executing the steps, evaluate if the expected result was achieved and respond with PASSED or FAILED and explain why.\n\n
@@ -190,20 +196,17 @@ with sync_playwright() as p:
                               - Expectation: A green notification message is shown, and the group card is closed\n
                             10. Click on the multigroup’s name again\n"
                                - Expectation: The removed group is no longer present in the group card\n\n
-                            At the end, report whether the test passed or failed, and provide a reason if it failed."""
+                            At the end, report whether the test passed or failed, and provide a reason if it failed.""",
                     },
                     {
                         "type": "input_image",
-                        "image_url": f"data:image/png;base64,{screenshot_base64}"
-                    }
-                ]
+                        "image_url": f"data:image/png;base64,{screenshot_base64}",
+                    },
+                ],
             }
         ],
         reasoning={"summary": "concise"},
-        truncation="auto"
+        truncation="auto",
     )
 
     computer_use_loop(page, response)
-
-
-

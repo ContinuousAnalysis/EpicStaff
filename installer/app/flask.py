@@ -1,15 +1,15 @@
 import os
 from pathlib import Path
 import platform
-import shutil
 import socket
 import tempfile
 import threading
 import webbrowser
 
+
 from flask import Flask, jsonify, render_template, Response, request
 from flask_socketio import SocketIO, emit
-import socketio
+
 
 from app.utils import (
     get_git_build_branch,

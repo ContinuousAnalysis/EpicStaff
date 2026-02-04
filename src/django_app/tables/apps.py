@@ -9,6 +9,7 @@ class TablesConfig(AppConfig):
     name = "tables"
 
     def ready(self):
+        # ruff: noqa: F401
         import tables.signals.session_signals
         import tables.signals.crew_signals
         import tables.signals.graph_signals

@@ -16,7 +16,6 @@ class TelegramTriggerNodeFieldSerializer(serializers.ModelSerializer):
 class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
     fields = TelegramTriggerNodeFieldSerializer(many=True)
 
-
     class Meta:
         model = TelegramTriggerNode
         fields = [

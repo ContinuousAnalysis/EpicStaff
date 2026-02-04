@@ -8,7 +8,6 @@ from chunkers import (
     BaseChunker,
 )
 
-from .redis_service import RedisService
 from settings import UnitOfWork
 from utils.singleton_meta import SingletonMeta
 from utils.file_text_extractor import extract_text_from_binary
