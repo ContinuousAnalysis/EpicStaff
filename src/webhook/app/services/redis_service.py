@@ -1,9 +1,9 @@
 import os
 from loguru import logger
 import redis.asyncio as aioredis
-import json
 from app.core.config import settings
 from typing import Dict, Any, Optional
+from redis.client import PubSub
 
 from app.request_models import WebhookEventData
 
@@ -34,6 +34,11 @@ class RedisService:
         """Closes the Redis connection."""
         logger.info("Closing Redis connection...")
         await self.client.close()
+
+    async def async_subscribe(self, channel: str) -> PubSub:
+        pubsub = self.client.pubsub()
+        await pubsub.subscribe(channel)
+        return pubsub
 
 
 _redis_client: Optional[RedisService] = None
