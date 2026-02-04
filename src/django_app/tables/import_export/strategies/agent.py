@@ -10,7 +10,7 @@ from tables.models import (
     AgentMcpTools,
 )
 from tables.models.knowledge_models.naive_rag_models import NaiveRagSearchConfig
-from tables.import_export.strategies.base import EntityImportStrategy
+from tables.import_export.strategies.base import EntityImportExportStrategy
 from tables.import_export.serializers.agent import AgentImportSerializer
 from tables.import_export.serializers.rag_configs import (
     NaiveRagSearchConfigImportSerializer,
@@ -20,7 +20,7 @@ from tables.import_export.id_mapper import IDMapper
 from tables.import_export.utils import create_filters
 
 
-class AgentStrategy(EntityImportStrategy):
+class AgentStrategy(EntityImportExportStrategy):
     entity_type = EntityType.AGENT
     serializer_class = AgentImportSerializer
 
