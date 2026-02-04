@@ -37,8 +37,11 @@ class EntityImportExportStrategy(ABC):
         Standard import flow - checks for existing first.
         Return True as second parameter if entity was newly created, returns False otherwise
         """
+        if is_main:
+            return self.create_entity(data, id_mapper)
+
         existing = self.find_existing(data, id_mapper)
-        if existing and not is_main:
+        if existing:
             return existing
 
         return self.create_entity(data, id_mapper)
