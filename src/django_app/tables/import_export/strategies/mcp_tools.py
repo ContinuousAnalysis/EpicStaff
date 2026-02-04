@@ -1,8 +1,8 @@
 from copy import deepcopy
 
 from tables.models import McpTool
-from tables.import_export.strategies.base import EntityImportStrategy
-from tables.import_export.serializers.mcp_tools import McpToolSerializer
+from tables.import_export.strategies.base import EntityImportExportStrategy
+from tables.import_export.serializers.mcp_tools import McpToolImportSerializer
 from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.utils import (
@@ -11,10 +11,9 @@ from tables.import_export.utils import (
 )
 
 
-class McpToolStrategy(EntityImportStrategy):
-
+class McpToolStrategy(EntityImportExportStrategy):
     entity_type = EntityType.MCP_TOOL
-    serializer_class = McpToolSerializer
+    serializer_class = McpToolImportSerializer
 
     def get_instance(self, entity_id: int):
         return McpTool.objects.filter(id=entity_id).first()

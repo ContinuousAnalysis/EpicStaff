@@ -1,22 +1,21 @@
 from copy import deepcopy
 
 from tables.models import Graph, Crew
-from tables.serializers.model_serializers import CrewSerializer
-from tables.import_export.strategies.base import EntityImportStrategy
+from tables.serializers.model_serializers import CrewImportSerializer
+from tables.import_export.strategies.base import EntityImportExportStrategy
 from tables.import_export.serializers.graph import (
-    GraphSerializer,
-    EdgeSerializer,
+    GraphImportSerializer,
+    EdgeImportSerializer,
 )
-from tables.import_export.enums import EntityType, NodeType
+from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.utils import ensure_unique_identifier
 from tables.import_export.strategies.node_handlers import NODE_HANDLERS
 
 
-class GraphStrategy(EntityImportStrategy):
-
+class GraphStrategy(EntityImportExportStrategy):
     entity_type = EntityType.GRAPH
-    serializer_class = GraphSerializer
+    serializer_class = GraphImportSerializer
 
     def get_instance(self, entity_id: int) -> Graph:
         return Graph.objects.filter(id=entity_id).first()
@@ -93,7 +92,7 @@ class GraphStrategy(EntityImportStrategy):
         for edge_data in edges_data:
             edge_data["graph"] = graph.id
 
-            serializer = EdgeSerializer(data=edge_data)
+            serializer = EdgeImportSerializer(data=edge_data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
@@ -117,6 +116,6 @@ class GraphStrategy(EntityImportStrategy):
                 new_id = id_mapper.get_or_none(EntityType.CREW, old_id)
                 crew = Crew.objects.get(id=new_id)
 
-                node["data"] = CrewSerializer(instance=crew).data
+                node["data"] = CrewImportSerializer(instance=crew).data
 
         return metadata_copy

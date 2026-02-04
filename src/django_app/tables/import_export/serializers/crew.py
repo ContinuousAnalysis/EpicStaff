@@ -4,8 +4,7 @@ from tables.models import Crew, Task
 from tables.import_export.enums import EntityType
 
 
-class TaskSerializer(serializers.ModelSerializer):
-
+class TaskImportSerializer(serializers.ModelSerializer):
     tools = serializers.JSONField(required=False)
     context = serializers.JSONField(required=False)
 
@@ -31,8 +30,7 @@ class TaskSerializer(serializers.ModelSerializer):
         return ret
 
 
-class CrewSerializer(serializers.ModelSerializer):
-
+class CrewImportSerializer(serializers.ModelSerializer):
     tasks = serializers.JSONField(required=False)
 
     class Meta:
@@ -43,6 +41,6 @@ class CrewSerializer(serializers.ModelSerializer):
         ret = super().to_representation(instance)
 
         tasks = instance.task_set.all()
-        ret["tasks"] = TaskSerializer(tasks, many=True).data
+        ret["tasks"] = TaskImportSerializer(tasks, many=True).data
 
         return ret

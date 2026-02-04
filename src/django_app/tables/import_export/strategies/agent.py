@@ -11,17 +11,18 @@ from tables.models import (
 )
 from tables.models.knowledge_models.naive_rag_models import NaiveRagSearchConfig
 from tables.import_export.strategies.base import EntityImportStrategy
-from tables.import_export.serializers.agent import AgentSerializer
-from tables.import_export.serializers.rag_configs import NaiveRagSearchConfigSerializer
+from tables.import_export.serializers.agent import AgentImportSerializer
+from tables.import_export.serializers.rag_configs import (
+    NaiveRagSearchConfigImportSerializer,
+)
 from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.utils import create_filters
 
 
 class AgentStrategy(EntityImportStrategy):
-
     entity_type = EntityType.AGENT
-    serializer_class = AgentSerializer
+    serializer_class = AgentImportSerializer
 
     def get_instance(self, entity_id: int):
         return Agent.objects.filter(id=entity_id).first()
@@ -156,7 +157,7 @@ class AgentStrategy(EntityImportStrategy):
             agent=agent,
             realtime_config=realtime_config,
             realtime_transcription_config=realtime_transcription_config,
-            **data
+            **data,
         )
         return realtime_agent
 
@@ -165,6 +166,6 @@ class AgentStrategy(EntityImportStrategy):
             return
 
         data["agent"] = agent.id
-        serializer = NaiveRagSearchConfigSerializer(data=data)
+        serializer = NaiveRagSearchConfigImportSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         return serializer.save()

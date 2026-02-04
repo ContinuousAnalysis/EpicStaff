@@ -10,20 +10,19 @@ from tables.models import (
     RealtimeModel,
     RealtimeTranscriptionModel,
 )
-from tables.import_export.strategies.base import EntityImportStrategy
+from tables.import_export.strategies.base import EntityImportExportStrategy
 from tables.import_export.serializers.configs import (
-    LLMConfigSerializer,
-    EmbeddingConfigSerializer,
-    RealtimeConfigSerializer,
-    RealtimeTranscriptionConfigSerializer,
+    LLMConfigImportSerializer,
+    EmbeddingConfigImportSerializer,
+    RealtimeConfigImportSerializer,
+    RealtimeTranscriptionConfigImportSerializer,
 )
 from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.utils import ensure_unique_identifier, create_filters
 
 
-class BaseConfigStrategy(EntityImportStrategy):
-
+class BaseConfigStrategy(EntityImportExportStrategy):
     entity_type: EntityType
 
     config_model = None
@@ -77,40 +76,36 @@ class BaseConfigStrategy(EntityImportStrategy):
 
 
 class LLMConfigStrategy(BaseConfigStrategy):
-
     entity_type = EntityType.LLM_CONFIG
     config_model = LLMConfig
     model_class = LLMModel
     provider_field = "llm_provider"
     model_fk_field = "model"
-    serializer_class = LLMConfigSerializer
+    serializer_class = LLMConfigImportSerializer
 
 
 class EmbeddingConfigStrategy(BaseConfigStrategy):
-
     entity_type = EntityType.EMBEDDING_CONFIG
     config_model = EmbeddingConfig
     model_class = EmbeddingModel
     provider_field = "embedding_provider"
     model_fk_field = "model"
-    serializer_class = EmbeddingConfigSerializer
+    serializer_class = EmbeddingConfigImportSerializer
 
 
 class RealtimeConfigStrategy(BaseConfigStrategy):
-
     entity_type = EntityType.REALTIME_CONFIG
     config_model = RealtimeConfig
     model_class = RealtimeModel
     provider_field = "provider"
     model_fk_field = "realtime_model"
-    serializer_class = RealtimeConfigSerializer
+    serializer_class = RealtimeConfigImportSerializer
 
 
 class RealtimeTranscriptionConfigStrategy(BaseConfigStrategy):
-
     entity_type = EntityType.REALTIME_TRANSCRIPTION_CONFIG
     config_model = RealtimeTranscriptionConfig
     model_class = RealtimeTranscriptionModel
     provider_field = "provider"
     model_fk_field = "realtime_transcription_model"
-    serializer_class = RealtimeTranscriptionConfigSerializer
+    serializer_class = RealtimeTranscriptionConfigImportSerializer

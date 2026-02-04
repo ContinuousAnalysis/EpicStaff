@@ -1,10 +1,10 @@
 from copy import deepcopy
 
 from tables.models import PythonCode, PythonCodeTool
-from tables.import_export.strategies.base import EntityImportStrategy
+from tables.import_export.strategies.base import EntityImportExportStrategy
 from tables.import_export.serializers.python_tools import (
-    PythonCodeSerializer,
-    PythonCodeToolSerializer,
+    PythonCodeImportSerializer,
+    PythonCodeToolImportSerializer,
 )
 from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
@@ -15,10 +15,9 @@ from tables.import_export.utils import (
 )
 
 
-class PythonCodeToolStrategy(EntityImportStrategy):
-
+class PythonCodeToolStrategy(EntityImportExportStrategy):
     entity_type = EntityType.PYTHON_CODE_TOOL
-    serializer_class = PythonCodeToolSerializer
+    serializer_class = PythonCodeToolImportSerializer
 
     def get_instance(self, entity_id: int) -> PythonCodeTool:
         return PythonCodeTool.objects.filter(id=entity_id).first()
@@ -70,6 +69,6 @@ class PythonCodeToolStrategy(EntityImportStrategy):
         return None
 
     def _create_python_code(self, python_code_data: dict) -> PythonCode:
-        serializer = PythonCodeSerializer(data=python_code_data)
+        serializer = PythonCodeImportSerializer(data=python_code_data)
         serializer.is_valid(raise_exception=True)
         return serializer.save()

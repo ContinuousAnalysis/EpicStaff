@@ -5,8 +5,7 @@ from tables.import_export.id_mapper import IDMapper
 from tables.import_export.enums import EntityType
 
 
-class EntityImportStrategy(ABC):
-
+class EntityImportExportStrategy(ABC):
     entity_type: EntityType
 
     @abstractmethod
