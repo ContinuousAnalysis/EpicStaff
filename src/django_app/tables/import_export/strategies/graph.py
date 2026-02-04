@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from tables.models import Graph, Crew
-from tables.serializers.model_serializers import CrewImportSerializer
+from tables.serializers.model_serializers import CrewSerializer
 from tables.import_export.strategies.base import EntityImportExportStrategy
 from tables.import_export.serializers.graph import (
     GraphImportSerializer,
@@ -116,6 +116,6 @@ class GraphStrategy(EntityImportExportStrategy):
                 new_id = id_mapper.get_or_none(EntityType.CREW, old_id)
                 crew = Crew.objects.get(id=new_id)
 
-                node["data"] = CrewImportSerializer(instance=crew).data
+                node["data"] = CrewSerializer(instance=crew).data
 
         return metadata_copy
