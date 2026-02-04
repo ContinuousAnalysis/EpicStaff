@@ -3,8 +3,7 @@ import sys
 import tempfile
 from typing import Optional, Type
 import pytest
-from unittest import mock
-from langchain_core.tools import BaseTool, tool
+from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from langchain_core.callbacks import CallbackManagerForToolRun
@@ -14,14 +13,17 @@ from langchain_core.callbacks import CallbackManagerForToolRun
 def test_tool_class_with_args_schema() -> BaseTool:
     class TestToolInput(BaseModel):
         """Input for the Test tool."""
+
         string_test_field: str = Field(description="some string to test")
         integer_test_field: int = Field(description="some integer to test")
 
     class TestTool(BaseTool):
         """Tool for testing"""
+
         name: str = "Test tool"
         description: str = "It is a test tool to check if system works correctly"
         args_schema: Type[BaseModel] = TestToolInput
+
         def _run(
             self,
             string_test_field: str,
@@ -36,7 +38,6 @@ def test_tool_class_with_args_schema() -> BaseTool:
 
 @pytest.fixture
 def test_tool_class_without_args_schema() -> BaseTool:
-
     class TestTool(BaseTool):
         """Tool for testing"""
 

@@ -1,6 +1,5 @@
 from fastapi import WebSocket
 import pytest
-import asyncio
 from unittest.mock import AsyncMock
 from services.tool_manager_service import ToolManagerService
 from services.redis_service import RedisService

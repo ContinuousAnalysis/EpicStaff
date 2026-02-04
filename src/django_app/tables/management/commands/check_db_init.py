@@ -10,7 +10,6 @@ class Command(BaseCommand):
     help = "Wait for Postgres database to be ready before starting the app."
 
     def handle(self, *args, **options):
-
         db_user = os.getenv("DB_USER")
         db_password = os.getenv("POSTGRES_PASSWORD")
         db_host = os.getenv("DB_HOST_NAME")

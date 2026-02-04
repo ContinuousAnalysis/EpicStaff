@@ -1,6 +1,6 @@
-from fixtures import create_temporary_package_structure
 from tools_scanner import ToolsScanner
 import pytest
+
 
 def test_find_tool_class_found(create_temporary_package_structure):
     """
@@ -34,6 +34,7 @@ def test_find_tool_package_not_found(create_temporary_package_structure):
     result = scanner.find_tool("TestClass", "nonexistent_package")
 
     assert result is None
+
 
 @pytest.mark.skip()
 def test_find_custom_tool_class_found():

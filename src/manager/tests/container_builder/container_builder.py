@@ -7,7 +7,6 @@ from pathlib import Path
 
 # TODO IF NEEDED
 class ManagerContainerBuilder:
-
     client = docker.client.from_env()
     image_name = "manager"
     port = 8001

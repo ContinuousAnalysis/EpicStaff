@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Any
-import os
 import asyncio
 
 
@@ -63,7 +62,6 @@ class SessionState:
 
 
 class SessionManager:
-
     def __init__(self):
         self._sessions: Dict[str, SessionState] = {}
 

@@ -1,11 +1,15 @@
 import abc
 from typing import Optional
 
+
 class AbstractTunnelProvider(abc.ABC):
     """
     Defines the "contract" for any tunnel provider.
     """
-    def __init__(self, port: int, auth_token: Optional[str] = None, domain: Optional[str] = None):
+
+    def __init__(
+        self, port: int, auth_token: Optional[str] = None, domain: Optional[str] = None
+    ):
         """
         Initialize the provider with the port and an optional auth token.
         """

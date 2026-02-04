@@ -3,6 +3,7 @@
 from sqlalchemy import create_engine, text
 import sqlparse
 
+
 class MySQLSearchTool:
     def __init__(self):
         self.db_uri = state["variables"]["DB_URI"]
@@ -24,7 +25,10 @@ class MySQLSearchTool:
 
         command = parsed[0].get_type().upper()
         if self.read_only and command != "SELECT":
-            return False, f"Only SELECT queries are allowed in read-only mode (got {command})."
+            return (
+                False,
+                f"Only SELECT queries are allowed in read-only mode (got {command}).",
+            )
 
         return True, ""
 
@@ -32,11 +36,15 @@ class MySQLSearchTool:
         if result.returns_rows:
             rows = [dict(r) for r in result.mappings()]
             if not rows:
-                return f"Query \"{sql_query}\" executed successfully, but returned no rows."
+                return (
+                    f'Query "{sql_query}" executed successfully, but returned no rows.'
+                )
             return rows
         else:
             affected = result.rowcount if result.rowcount != -1 else 0
-            return {"info": f"Query \"{sql_query}\" executed successfully. {affected} row(s) affected."}
+            return {
+                "info": f'Query "{sql_query}" executed successfully. {affected} row(s) affected.'
+            }
 
     def run_query(self, sql_query: str):
         is_safe, error_msg = self._validate_query(sql_query)

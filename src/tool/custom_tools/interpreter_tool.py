@@ -4,13 +4,13 @@ logger = logging.getLogger(__name__)
 logger.debug(f"Entered {__file__}")
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
-#TODO: change import after update: from crewai.tools import BaseTool 
-from typing import Type, Any
-from langchain.tools import tool
-from interpreter import interpreter
-from langchain_openai import ChatOpenAI
 
-from crewai_tools import PDFSearchTool
+# TODO: change import after update: from crewai.tools import BaseTool
+from typing import Type, Any
+from interpreter import interpreter
+
+
+
 class CLIToolSchema(BaseModel):
     """
     Input schema for CLIToolTool, specifying the required parameters for executing code.
@@ -25,9 +25,7 @@ class CLITool(BaseTool):
     """
 
     name: str = "Executor"
-    description: str = (
-        "Tool to create and execute code using Open Interpreter. Takes in one parameter: 'command' - the command to be executed."
-    )
+    description: str = "Tool to create and execute code using Open Interpreter. Takes in one parameter: 'command' - the command to be executed."
     args_schema: Type[BaseModel] = CLIToolSchema
 
     def __init__(self, **kwargs):
@@ -41,11 +39,11 @@ class CLITool(BaseTool):
 
         try:
             model = kwargs["config"]["llm"]["model"]
-        except Exception as e:
+        except Exception:
             model = None
-         
-        interpreter.llm.model = model if model is not None else "openai/gpt-4o" 
-        
+
+        interpreter.llm.model = model if model is not None else "openai/gpt-4o"
+
         super().__init__(**kwargs)
         self._generate_description()  # Call to the inherited method to set the initial description
 

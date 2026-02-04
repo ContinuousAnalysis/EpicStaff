@@ -1,9 +1,6 @@
 import uuid
 from django.db import models
-from django.utils import timezone
 from loguru import logger
-import json
-from pathlib import Path
 
 
 class Graph(models.Model):
@@ -139,7 +136,6 @@ class EndNode(models.Model):
 
 
 class Edge(models.Model):
-
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="edge_list"
     )
@@ -155,7 +151,6 @@ class Edge(models.Model):
 
 
 class ConditionalEdge(models.Model):
-
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="conditional_edge_list"
     )
@@ -251,7 +246,6 @@ class Condition(models.Model):
 
 
 class GraphFile(models.Model):
-
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="uploaded_files"
     )
@@ -280,12 +274,10 @@ class GraphFile(models.Model):
 
 
 class Organization(models.Model):
-
     name = models.CharField(max_length=256, blank=False, unique=True)
 
 
 class OrganizationUser(models.Model):
-
     name = models.CharField(max_length=256, blank=False)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
 
@@ -299,7 +291,6 @@ class OrganizationUser(models.Model):
 
 
 class BasePersistentEntity(models.Model):
-
     graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
     persistent_variables = models.JSONField(
         default=dict,
@@ -311,7 +302,6 @@ class BasePersistentEntity(models.Model):
 
 
 class GraphOrganization(BasePersistentEntity):
-
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="graph"
     )
@@ -330,7 +320,6 @@ class GraphOrganization(BasePersistentEntity):
 
 
 class GraphOrganizationUser(BasePersistentEntity):
-
     user = models.ForeignKey(
         OrganizationUser, on_delete=models.CASCADE, related_name="graph"
     )
@@ -367,7 +356,6 @@ class WebhookTriggerNode(models.Model):
 
 
 class TelegramTriggerNode(models.Model):
-
     node_name = models.CharField(max_length=255, blank=False)
     telegram_bot_api_key = models.CharField(
         max_length=255, blank=True, null=True, default=None
