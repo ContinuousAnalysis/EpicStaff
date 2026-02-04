@@ -30,7 +30,11 @@ class AgentStrategy(EntityImportExportStrategy):
     def extract_dependencies_from_instance(self, instance: Agent):
         deps = {}
 
-        llm_configs = set([instance.llm_config.id, instance.fcm_llm_config.id])
+        llm_configs = set()
+        if instance.llm_config:
+            llm_configs.add(instance.llm_config.id)
+        if instance.fcm_llm_config:
+            llm_configs.add(instance.fcm_llm_config.id)
 
         deps[EntityType.LLM_CONFIG] = llm_configs
         deps[EntityType.PYTHON_CODE_TOOL] = instance.python_code_tools.values_list(
