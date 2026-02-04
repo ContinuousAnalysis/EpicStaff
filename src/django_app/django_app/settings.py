@@ -14,9 +14,12 @@ import os
 import sys
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv, find_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+if "--debug" in sys.argv:
+    load_dotenv(find_dotenv(BASE_DIR.parent / "debug.env"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -151,7 +154,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 TELEGRAM_TRIGGER_FIELDS_PATH = (
-    BASE_DIR / "tables" / "utils"/ "data" / "telegram_fields.json"
+    BASE_DIR / "tables" / "utils" / "data" / "telegram_fields.json"
 )
 
 # Internationalization
