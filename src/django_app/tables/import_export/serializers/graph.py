@@ -109,7 +109,7 @@ class EdgeImportSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class GraphSerializer(serializers.ModelSerializer):
+class GraphImportSerializer(serializers.ModelSerializer):
     edge_list = EdgeImportSerializer(many=True, read_only=True)
     nodes = serializers.JSONField(required=False)
 
