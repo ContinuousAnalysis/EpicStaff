@@ -2,6 +2,33 @@ from django.core.validators import RegexValidator
 from django.db import models
 
 
+class NgrokWebhookConfig(models.Model):
+    class Region(models.TextChoices):
+        US = ("us",)
+        EU = ("eu",)
+        AP = ("ap",)
+
+    name = models.CharField(
+        max_length=50,
+        unique=True,
+    )
+
+    authtoken = models.CharField(
+        max_length=255, help_text="Token from dashboard.ngrok.com"
+    )
+
+    domain = models.CharField(
+        max_length=255, blank=True, null=True, help_text="Your domain"
+    )
+
+    region = models.CharField(max_length=2, choices=Region.choices, default=Region.EU)
+
+    def get_webhook_url(self):
+        if self.domain:
+            return f"https://{self.domain}"
+        return None
+
+
 class WebhookTrigger(models.Model):
     path = models.CharField(
         max_length=255,
@@ -12,6 +39,12 @@ class WebhookTrigger(models.Model):
             )
         ],
         unique=True,
+    )
+    ngrok_webhook_config = models.ForeignKey(
+        NgrokWebhookConfig,
+        on_delete=models.SET_DEFAULT,
+        default=None,
+        null=True,
     )
 
     def __str__(self):
