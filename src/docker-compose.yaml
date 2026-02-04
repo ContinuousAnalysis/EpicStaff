@@ -8,6 +8,7 @@ services:
       - "443:443"
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME}
+      - SSL_ENABLE=${SSL_ENABLE}
     volumes:
       - ./nginx/templates/default.conf.template:/etc/nginx/templates/default.conf.template
       - ./nginx/certs:/etc/nginx/certs:ro
@@ -347,11 +348,12 @@ services:
       context: ../frontend
       dockerfile: Dockerfile.fe
     container_name: epicstaff-frontend
-
+    environment:
+      - API_URL:${API_URL}
+      - REALTIME_API_URL:${REALTIME_API_URL}
     networks:
      - frontend-network
-    volumes:
-     - ../frontend-config/frontend-config.json:/usr/share/nginx/html/config.json:ro
+
   
   webhook:
     image: webhook
