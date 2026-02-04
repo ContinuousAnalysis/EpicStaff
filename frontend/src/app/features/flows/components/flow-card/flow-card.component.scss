@@ -18,6 +18,11 @@
     background: var(--color-nodes--bg);
   }
 
+  &.selected {
+    border-color: var(--color-divider-regular);
+    box-shadow: 0 0 0 1px var(--color-primary-transparent, rgba(99, 102, 241, 0.2));
+  }
+
   .card-header {
     display: flex;
     justify-content: space-between;

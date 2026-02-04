@@ -1,0 +1,75 @@
+from copy import deepcopy
+
+from tables.models import PythonCode, PythonCodeTool
+from tables.import_export.strategies.base import EntityImportStrategy
+from tables.import_export.serializers.python_tools import (
+    PythonCodeSerializer,
+    PythonCodeToolSerializer,
+)
+from tables.import_export.enums import EntityType
+from tables.import_export.id_mapper import IDMapper
+from tables.import_export.utils import (
+    ensure_unique_identifier,
+    create_filters,
+    python_code_equal,
+)
+
+
+class PythonCodeToolStrategy(EntityImportStrategy):
+
+    entity_type = EntityType.PYTHON_CODE_TOOL
+    serializer_class = PythonCodeToolSerializer
+
+    def get_instance(self, entity_id: int) -> PythonCodeTool:
+        return PythonCodeTool.objects.filter(id=entity_id).first()
+
+    def extract_dependencies_from_instance(self, instance) -> dict[str, list[int]]:
+        return {}
+
+    def export_entity(self, instance: PythonCodeTool) -> dict:
+        return self.serializer_class(instance).data
+
+    def create_entity(self, data: dict, id_mapper: IDMapper) -> PythonCodeTool:
+        python_code_data = data.pop("python_code", None)
+
+        if "name" in data:
+            existing_names = PythonCodeTool.objects.values_list("name", flat=True)
+            data["name"] = ensure_unique_identifier(
+                base_name=data["name"],
+                existing_names=existing_names,
+            )
+
+        python_code = self._create_python_code(python_code_data)
+
+        serializer = self.serializer_class(
+            data={**data, "python_code_id": python_code.id}
+        )
+        serializer.is_valid(raise_exception=True)
+        python_code_tool = serializer.save()
+
+        return python_code_tool
+
+    def find_existing(self, data, id_mapper):
+        data_copy = deepcopy(data)
+        data_copy.pop("id", None)
+        python_code_data = data_copy.pop("python_code", None)
+
+        filters, null_filters = create_filters(data_copy)
+        existing_python_tool = PythonCodeTool.objects.filter(
+            **filters, **null_filters
+        ).first()
+
+        if not existing_python_tool:
+            return None
+
+        code_equal = python_code_equal(
+            existing_python_tool.python_code, python_code_data
+        )
+        if code_equal:
+            return existing_python_tool
+        return None
+
+    def _create_python_code(self, python_code_data: dict) -> PythonCode:
+        serializer = PythonCodeSerializer(data=python_code_data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.save()
