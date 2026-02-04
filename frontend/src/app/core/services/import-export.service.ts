@@ -4,10 +4,6 @@ import { Observable } from 'rxjs';
 import { ConfigService } from '../../services/config/config.service';
 import { FlowModel } from '../../visual-programming/core/models/flow.model';
 
-interface GraphIds {
-    "ids": number[]
-}
-
 @Injectable({
     providedIn: 'root',
 })
@@ -15,7 +11,7 @@ export class ImportExportService {
     constructor(
         private http: HttpClient,
         private configService: ConfigService
-    ) {}
+    ) { }
 
     private get apiUrl(): string {
         return this.configService.apiUrl + 'graphs/';
@@ -34,8 +30,8 @@ export class ImportExportService {
         });
     }
 
-    bulkExportFlow(graphIds: GraphIds): Observable<Blob> {
-        return this.http.post(`${this.apiUrl}bulk-export/`, graphIds, {
+    bulkExportFlow(ids: number[]): Observable<Blob> {
+        return this.http.post(`${this.apiUrl}bulk-export/`, { ids }, {
             responseType: 'blob',
         });
     }

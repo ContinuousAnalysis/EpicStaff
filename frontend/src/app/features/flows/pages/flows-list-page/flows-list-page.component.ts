@@ -160,7 +160,7 @@ export class FlowsListPageComponent implements OnDestroy {
             return;
         }
 
-        this.importExportService.bulkExportFlow({ ids }).subscribe({
+        this.importExportService.bulkExportFlow( ids ).subscribe({
             next: (blob) => {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
