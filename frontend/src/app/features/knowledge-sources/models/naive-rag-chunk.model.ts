@@ -27,8 +27,11 @@ export interface DocumentChunkingState {
     id: number;
     status: DocumentWithChunksStatus;
     chunkOverlap: number;
+    chunkSize: number;
     chunkStrategy: NaiveRagChunkStrategy;
     chunks: NaiveRagDocumentChunk[];
+    total: number;
+    removedCount: number;
 }
 
 export interface NaiveRagChunkingResponse {

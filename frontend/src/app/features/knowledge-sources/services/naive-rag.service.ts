@@ -1,5 +1,5 @@
 import { inject, Injectable } from "@angular/core";
-import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import { ConfigService } from "../../../services/config";
 import { Observable } from "rxjs";
 import { GetNaiveRagDocumentChunksResponse, NaiveRagChunkingResponse } from "../models/naive-rag-chunk.model";
@@ -99,9 +99,24 @@ export class NaiveRagService {
         );
     }
 
-    getChunkPreview(ragId: number, documentId: number): Observable<GetNaiveRagDocumentChunksResponse> {
+    getChunkPreview(
+        ragId: number,
+        documentId: number,
+        offset?: number,
+        limit?: number
+    ): Observable<GetNaiveRagDocumentChunksResponse> {
+        let params = new HttpParams();
+
+        if (offset !== undefined) {
+            params = params.set('offset', offset.toString());
+        }
+        if (limit !== undefined) {
+            params = params.set('limit', limit.toString());
+        }
+
         return this.http.get<GetNaiveRagDocumentChunksResponse>(
-            `${this.apiUrl}${ragId}/document-configs/${documentId}/chunks/`
+            `${this.apiUrl}${ragId}/document-configs/${documentId}/chunks/`,
+            { params }
         );
     }
 }

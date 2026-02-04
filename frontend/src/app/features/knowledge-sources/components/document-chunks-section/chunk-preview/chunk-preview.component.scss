@@ -3,20 +3,27 @@
     display: flex;
     flex-grow: 1;
     overflow: hidden;
+    padding: 0.375rem 0;
+    border-radius: 10px;
+    background-color: var(--color-ks-card-background);
+
+    ::ng-deep {
+        .cdk-virtual-scroll-content-wrapper {
+            display: flex;
+            width: 100%;
+            font-size: 0.875rem;
+            line-height: 130%;
+            font-weight: 200;
+            white-space: pre-wrap;
+            overflow: auto;
+        }
+    }
 }
 
 .chunk {
-    &__items {
+    &__viewport {
         display: flex;
         width: 100%;
-        padding: 0.375rem 0;
-        font-size: 0.875rem;
-        line-height: 130%;
-        font-weight: 200;
-        white-space: pre-wrap;
-        overflow: auto;
-        border-radius: 10px;
-        background-color: var(--color-ks-card-background);
     }
 
     &__id-container {
@@ -63,15 +70,19 @@
         line-height: 150%;
     }
 
-    &__item {
+    &__text {
+        display: inline;
+    }
+
+    &__text-item {
         position: relative;
         &::before {
             content: '';
             position: absolute;
             display: block;
             top: 0;
-            transform: translate(-1rem, -12.5%);
-            height: 125%;
+            transform: translate(-1rem, -0.5rem);
+            height: calc(100% + 1rem);
             width: 1.5rem;
             border-left: 2px solid;
         }

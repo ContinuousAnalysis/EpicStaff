@@ -5,6 +5,7 @@ import { catchError, map, tap } from "rxjs/operators";
 import {
     DocFieldChange, TableDocument,
 } from "../components/rag-configuration/configuration-table/configuration-table.interface";
+import { calcLimit } from "../helpers/calculate-chunks-fetch-limit.util";
 import { normalizeBulkUpdateErrors } from "../helpers/normalize-bulk-update-errors.util";
 import { transformToTableDocuments } from "../helpers/transform-to-table-document.util";
 import {
@@ -42,11 +43,17 @@ export class NaiveRagDocumentsStorageService {
             );
     }
 
-    public fetchChunks(naiveRagId: number, documentId: number): Observable<GetNaiveRagDocumentChunksResponse> {
+    public fetchChunks(
+        naiveRagId: number,
+        documentId: number,
+    ): Observable<GetNaiveRagDocumentChunksResponse> {
         this.updateDocsState([documentId], s => ({ ...s, status: 'fetching_chunks' }));
 
-        return this.naiveRagService.getChunkPreview(naiveRagId, documentId).pipe(
-            tap(({ chunks }) => {
+        const docChunkSize = this.documentsSignal().find(d => d.naive_rag_document_id === documentId)?.chunk_size;
+        const limit = docChunkSize ? calcLimit(docChunkSize) : 50;
+
+        return this.naiveRagService.getChunkPreview(naiveRagId, documentId, 0, limit).pipe(
+            tap(({ chunks, total_chunks }) => {
                 const state = this.documentStates().get(documentId);
                 // document was updated during fetching
                 if (state?.status === 'chunks_outdated') return;
@@ -59,10 +66,60 @@ export class NaiveRagDocumentsStorageService {
                     status: 'chunks_ready',
                     chunkStrategy: docData.chunk_strategy,
                     chunkOverlap: docData.chunk_overlap,
+                    total: total_chunks,
                     chunks
                 }));
-            })
+            }),
+            catchError((err) => throwError(() => err))
         );
+    }
+
+    public loadNextChunks(
+        naiveRagId: number,
+        documentId: number,
+        offset: number,
+        limit: number,
+        bufferLimit: number
+    ): Observable<{removedCount: number, fetchedCount: number}> {
+        return this.naiveRagService.getChunkPreview(naiveRagId, documentId, offset, limit).pipe(
+            map(({ chunks }) => {
+                let removedCount: number = 0;
+                this.updateDocsState([documentId], s => {
+                    let updatedChunks = [...s.chunks, ...chunks];
+                    if (updatedChunks.length > bufferLimit) {
+                        removedCount = updatedChunks.length - bufferLimit;
+                        updatedChunks.splice(0, removedCount);
+                    }
+                    return { ...s, removedCount, chunks: updatedChunks };
+                });
+                return { removedCount, fetchedCount: chunks.length };
+            }),
+            catchError((err) => throwError(() => err))
+        );
+    }
+
+    public loadPrevChunks(
+        naiveRagId: number,
+        documentId: number,
+        offset: number,
+        limit: number,
+        bufferLimit: number
+    ): Observable<{removedCount: number, fetchedCount: number}> {
+        return this.naiveRagService.getChunkPreview(naiveRagId, documentId, offset, limit)
+            .pipe(
+                map(({ chunks }) => {
+                    let removedCount: number = 0;
+                    this.updateDocsState([documentId], s => {
+                        let updatedChunks = [...chunks, ...s.chunks];
+                        if (updatedChunks.length > bufferLimit) {
+                            removedCount = updatedChunks.length - bufferLimit;
+                            updatedChunks.splice(updatedChunks.length - removedCount, removedCount);
+                        }
+                        return { ...s, removedCount, chunks: updatedChunks };
+                    });
+                    return { removedCount, fetchedCount: chunks.length };
+                })
+            );
     }
 
     public initDocumentStatesMap(documents: TableDocument[]): void {
@@ -74,8 +131,14 @@ export class NaiveRagDocumentsStorageService {
                 case 'new':
                     status = 'new';
                     break;
+                case 'chunking':
+                    status = 'chunking';
+                    break;
                 // document-config status 'chunked' does not represent is chunks are up-to-date
                 case 'chunked':
+                    status = 'new';
+                    break;
+                case 'completed':
                     status = 'new';
                     break;
                 default:
@@ -86,7 +149,10 @@ export class NaiveRagDocumentsStorageService {
                 id: doc.naive_rag_document_id,
                 status: status,
                 chunkOverlap: doc.chunk_overlap,
+                chunkSize: doc.chunk_size,
                 chunkStrategy: doc.chunk_strategy,
+                total: 0,
+                removedCount: 0,
                 chunks: [],
             });
         });

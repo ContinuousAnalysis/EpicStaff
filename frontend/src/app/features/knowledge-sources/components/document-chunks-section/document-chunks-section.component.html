@@ -40,7 +40,11 @@
                         btnText: 'Fresh chunks'
                     }"
                 ></ng-container>
-                <app-chunk-preview [chunkingState]="state"/>
+                <app-chunk-preview
+                    [chunkingState]="state"
+                    [ragId]="naiveRagId()"
+                    [docId]="selectedDocumentId()!"
+                />
             }
             @case ('chunks_outdated') {
                 <ng-container
@@ -53,7 +57,11 @@
                         btnText: 'Fresh chunks'
                     }"
                 ></ng-container>
-                <app-chunk-preview [chunkingState]="state"/>
+                <app-chunk-preview
+                    [chunkingState]="state"
+                    [ragId]="naiveRagId()"
+                    [docId]="selectedDocumentId()!"
+                />
             }
         }
     } @else {
