@@ -2,21 +2,21 @@ from rest_framework import serializers
 
 from tables.models import Agent, RealtimeAgent
 from tables.import_export.enums import EntityType
-from tables.import_export.serializers.rag_configs import NaiveRagSearchConfigSerializer
+from tables.import_export.serializers.rag_configs import (
+    NaiveRagSearchConfigImportSerializer,
+)
 
 
-class RealtimeAgentSerializer(serializers.ModelSerializer):
-
+class RealtimeAgentImportSerializer(serializers.ModelSerializer):
     class Meta:
         model = RealtimeAgent
         exclude = ["agent"]
 
 
-class AgentSerializer(serializers.ModelSerializer):
-
+class AgentImportSerializer(serializers.ModelSerializer):
     tools = serializers.JSONField(required=False)
-    realtime_agent = RealtimeAgentSerializer(required=False)
-    naive_search_config = NaiveRagSearchConfigSerializer(required=False)
+    realtime_agent = RealtimeAgentImportSerializer(required=False)
+    naive_search_config = NaiveRagSearchConfigImportSerializer(required=False)
 
     class Meta:
         model = Agent
@@ -35,5 +35,7 @@ class AgentSerializer(serializers.ModelSerializer):
                 instance.mcp_tools.values_list("mcptool_id", flat=True)
             ),
         }
-        ret["realtime_agent"] = RealtimeAgentSerializer(instance.realtime_agent).data
+        ret["realtime_agent"] = RealtimeAgentImportSerializer(
+            instance.realtime_agent
+        ).data
         return ret

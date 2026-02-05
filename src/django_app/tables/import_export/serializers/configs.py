@@ -13,8 +13,7 @@ from tables.models import (
 )
 
 
-class BaseConfigSerializer(serializers.ModelSerializer):
-
+class BaseConfigImportSerializer(serializers.ModelSerializer):
     model_name = serializers.CharField(required=False)
     provider_name = serializers.CharField(required=False)
     api_key = serializers.CharField(write_only=True, required=False)
@@ -64,47 +63,43 @@ class BaseConfigSerializer(serializers.ModelSerializer):
         return getattr(instance, self.model_fk_field)
 
 
-class EmbeddingConfigSerializer(BaseConfigSerializer):
-
+class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
     model_class = EmbeddingModel
     provider_field = "embedding_provider"
     model_fk_field = "model"
     config_model = EmbeddingConfig
 
-    class Meta(BaseConfigSerializer.Meta):
+    class Meta(BaseConfigImportSerializer.Meta):
         model = EmbeddingConfig
 
 
-class LLMConfigSerializer(BaseConfigSerializer):
-
+class LLMConfigImportSerializer(BaseConfigImportSerializer):
     model_class = LLMModel
     provider_field = "llm_provider"
     model_fk_field = "model"
     config_model = LLMConfig
 
-    class Meta(BaseConfigSerializer.Meta):
+    class Meta(BaseConfigImportSerializer.Meta):
         model = LLMConfig
 
 
-class RealtimeConfigSerializer(BaseConfigSerializer):
-
+class RealtimeConfigImportSerializer(BaseConfigImportSerializer):
     model_class = RealtimeModel
     provider_field = "provider"
     model_fk_field = "realtime_model"
     config_model = RealtimeConfig
 
-    class Meta(BaseConfigSerializer.Meta):
+    class Meta(BaseConfigImportSerializer.Meta):
         model = RealtimeConfig
         exclude = ["realtime_model"]
 
 
-class RealtimeTranscriptionConfigSerializer(BaseConfigSerializer):
-
+class RealtimeTranscriptionConfigImportSerializer(BaseConfigImportSerializer):
     model_class = RealtimeTranscriptionModel
     provider_field = "provider"
     model_fk_field = "realtime_transcription_model"
     config_model = RealtimeTranscriptionConfig
 
-    class Meta(BaseConfigSerializer.Meta):
+    class Meta(BaseConfigImportSerializer.Meta):
         model = RealtimeTranscriptionConfig
         exclude = ["realtime_transcription_model"]

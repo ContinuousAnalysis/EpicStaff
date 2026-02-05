@@ -9,17 +9,19 @@ from tables.models import (
     PythonCodeTool,
     McpTool,
 )
-from tables.import_export.strategies.base import EntityImportStrategy
-from tables.import_export.serializers.crew import CrewSerializer, TaskSerializer
+from tables.import_export.strategies.base import EntityImportExportStrategy
+from tables.import_export.serializers.crew import (
+    CrewImportSerializer,
+    TaskImportSerializer,
+)
 from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.utils import ensure_unique_identifier
 
 
-class CrewStrategy(EntityImportStrategy):
-
+class CrewStrategy(EntityImportExportStrategy):
     entity_type = EntityType.CREW
-    serializer_class = CrewSerializer
+    serializer_class = CrewImportSerializer
 
     def get_instance(self, entity_id: int):
         return Crew.objects.filter(id=entity_id).first()
@@ -120,7 +122,7 @@ class CrewStrategy(EntityImportStrategy):
             agent = t_data.pop("agent", None)
             old_id = t_data.pop("id", None)
 
-            serializer = TaskSerializer(data=t_data)
+            serializer = TaskImportSerializer(data=t_data)
             serializer.is_valid(raise_exception=True)
             task = serializer.save()
 

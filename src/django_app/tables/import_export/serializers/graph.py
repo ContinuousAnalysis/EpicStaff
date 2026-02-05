@@ -15,11 +15,10 @@ from tables.models import (
     Edge,
     PythonCode,
 )
-from tables.import_export.serializers.python_tools import PythonCodeSerializer
+from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 
 
-class BaseNodeSerializer(serializers.ModelSerializer):
-
+class BaseNodeImportSerializer(serializers.ModelSerializer):
     node_type = serializers.CharField(required=False)
     graph = serializers.PrimaryKeyRelatedField(
         queryset=Graph.objects.all(), write_only=True
@@ -30,100 +29,88 @@ class BaseNodeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class StartNodeSerializer(BaseNodeSerializer):
-
-    class Meta(BaseNodeSerializer.Meta):
+class StartNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = StartNode
         fields = "__all__"
 
 
-class WebhookTriggerNodeSerializer(BaseNodeSerializer):
-
-    python_code = PythonCodeSerializer(required=False)
+class WebhookTriggerNodeImportSerializer(BaseNodeImportSerializer):
+    python_code = PythonCodeImportSerializer(required=False)
     python_code_id = serializers.PrimaryKeyRelatedField(
         queryset=PythonCode.objects.all(),
         source="python_code",
         write_only=True,
     )
 
-    class Meta(BaseNodeSerializer.Meta):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = WebhookTriggerNode
         fields = "__all__"
 
 
-class DecisionTableNodeSerializer(BaseNodeSerializer):
-
-    class Meta(BaseNodeSerializer.Meta):
+class DecisionTableNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = DecisionTableNode
         fields = "__all__"
 
 
-class TelegramTriggerNodeSerializer(BaseNodeSerializer):
-
-    class Meta(BaseNodeSerializer.Meta):
+class TelegramTriggerNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = TelegramTriggerNode
         fields = "__all__"
 
 
-class PythonNodeSerializer(BaseNodeSerializer):
-
-    python_code = PythonCodeSerializer(read_only=True)
+class PythonNodeImportSerializer(BaseNodeImportSerializer):
+    python_code = PythonCodeImportSerializer(read_only=True)
     python_code_id = serializers.PrimaryKeyRelatedField(
         queryset=PythonCode.objects.all(),
         source="python_code",
         write_only=True,
     )
 
-    class Meta(BaseNodeSerializer.Meta):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = PythonNode
         fields = "__all__"
 
 
-class EndNodeSerializer(BaseNodeSerializer):
-
-    class Meta(BaseNodeSerializer.Meta):
+class EndNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = EndNode
         fields = "__all__"
 
 
-class FileExtractorNodeSerializer(BaseNodeSerializer):
-
-    class Meta(BaseNodeSerializer.Meta):
+class FileExtractorNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = FileExtractorNode
         fields = "__all__"
 
 
-class AudioTranscriptionNodeSerializer(BaseNodeSerializer):
-
-    class Meta(BaseNodeSerializer.Meta):
+class AudioTranscriptionNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = AudioTranscriptionNode
         fields = "__all__"
 
 
-class LLMNodeSerializer(BaseNodeSerializer):
-
-    class Meta(BaseNodeSerializer.Meta):
+class LLMNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = LLMNode
         fields = "__all__"
 
 
-class CrewNodeSerializer(BaseNodeSerializer):
-
-    class Meta(BaseNodeSerializer.Meta):
+class CrewNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
         model = CrewNode
         fields = "__all__"
 
 
-class EdgeSerializer(serializers.ModelSerializer):
-
+class EdgeImportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Edge
         fields = "__all__"
 
 
-class GraphSerializer(serializers.ModelSerializer):
-
-    edge_list = EdgeSerializer(many=True, read_only=True)
+class GraphImportSerializer(serializers.ModelSerializer):
+    edge_list = EdgeImportSerializer(many=True, read_only=True)
     nodes = serializers.JSONField(required=False)
 
     class Meta:

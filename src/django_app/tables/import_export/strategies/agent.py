@@ -10,18 +10,19 @@ from tables.models import (
     AgentMcpTools,
 )
 from tables.models.knowledge_models.naive_rag_models import NaiveRagSearchConfig
-from tables.import_export.strategies.base import EntityImportStrategy
-from tables.import_export.serializers.agent import AgentSerializer
-from tables.import_export.serializers.rag_configs import NaiveRagSearchConfigSerializer
+from tables.import_export.strategies.base import EntityImportExportStrategy
+from tables.import_export.serializers.agent import AgentImportSerializer
+from tables.import_export.serializers.rag_configs import (
+    NaiveRagSearchConfigImportSerializer,
+)
 from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.utils import create_filters
 
 
-class AgentStrategy(EntityImportStrategy):
-
+class AgentStrategy(EntityImportExportStrategy):
     entity_type = EntityType.AGENT
-    serializer_class = AgentSerializer
+    serializer_class = AgentImportSerializer
 
     def get_instance(self, entity_id: int):
         return Agent.objects.filter(id=entity_id).first()
@@ -29,7 +30,11 @@ class AgentStrategy(EntityImportStrategy):
     def extract_dependencies_from_instance(self, instance: Agent):
         deps = {}
 
-        llm_configs = set([instance.llm_config.id, instance.fcm_llm_config.id])
+        llm_configs = set()
+        if instance.llm_config:
+            llm_configs.add(instance.llm_config.id)
+        if instance.fcm_llm_config:
+            llm_configs.add(instance.fcm_llm_config.id)
 
         deps[EntityType.LLM_CONFIG] = llm_configs
         deps[EntityType.PYTHON_CODE_TOOL] = instance.python_code_tools.values_list(
@@ -74,18 +79,79 @@ class AgentStrategy(EntityImportStrategy):
         return agent
 
     def find_existing(self, data: dict, id_mapper: IDMapper) -> Agent:
-        # TODO: It's too annoying to check objects deeper, maybe we need to save and compare object hashes for this
+        """Shallow search of existing agent"""
         data_copy = deepcopy(data)
         data_copy.pop("id", None)
 
-        llm_config_id = data_copy.pop("llm_config", None)
-        fcm_llm_config_id = data_copy.pop("fcm_llm_config", None)
-        tools = data_copy.pop("tools", {})
-        realtime_agent = data_copy.pop("realtime_agent", None)
-        naive_search_config = data_copy.pop("naive_search_config", None)
+        llm_config, fcm_llm_config = self._get_llm_configs(data_copy, id_mapper)
+        python_tools, mcp_tools = self._get_tools(data_copy, id_mapper)
+
+        data_copy.pop("realtime_agent", None)
+        data_copy.pop("naive_search_config", None)
 
         filters, null_filters = create_filters(data_copy)
-        existing = Agent.objects.filter(**filters, **null_filters).first()
+
+        potential_candidates = (
+            Agent.objects.filter(**filters, **null_filters)
+            .select_related("llm_config", "fcm_llm_config")
+            .prefetch_related("python_code_tools", "mcp_tools")
+        ).all()
+
+        existing = None
+        for agent in potential_candidates:
+            # If there are configs and agent has no configs - skip
+            if not agent.llm_config and llm_config:
+                continue
+            if not agent.fcm_llm_config and fcm_llm_config:
+                continue
+            if agent.python_code_tools.count() != len(python_tools):
+                continue
+            if agent.mcp_tools.count() != len(mcp_tools):
+                continue
+
+            # if any name of llm_config does not match - skip
+            if llm_config and not (
+                (agent.llm_config.custom_name == llm_config.custom_name)
+                and (agent.llm_config.model.name == llm_config.model.name)
+                and (
+                    agent.llm_config.model.llm_provider.name
+                    == llm_config.model.llm_provider.name
+                )
+            ):
+                continue
+
+            # if any name of fcm_llm_config does not match - skip
+            if fcm_llm_config and not (
+                (agent.fcm_llm_config.custom_name == fcm_llm_config.custom_name)
+                and (agent.fcm_llm_config.model.name == fcm_llm_config.model.name)
+                and (
+                    agent.fcm_llm_config.model.llm_provider.name
+                    == fcm_llm_config.model.llm_provider.name
+                )
+            ):
+                continue
+
+            python_tool_names = [tool.name for tool in python_tools]
+            mcp_tool_names = [tool.name for tool in mcp_tools]
+            current_python_tool_names = list(
+                agent.python_code_tools.values_list("name", flat=True)
+            )
+            current_mcp_tool_names = list(
+                agent.mcp_tools.values_list("name", flat=True)
+            )
+
+            python_tools_match = set(current_python_tool_names) == set(
+                python_tool_names
+            )
+            mcp_tools_match = set(current_mcp_tool_names) == set(mcp_tool_names)
+
+            # Check just tool names to avoid deep comparison
+            if not python_tools_match or not mcp_tools_match:
+                continue
+
+            existing = agent
+            break
+
         return existing
 
     def _get_llm_configs(self, data: dict, id_mapper: IDMapper):
@@ -97,8 +163,14 @@ class AgentStrategy(EntityImportStrategy):
             EntityType.LLM_CONFIG, old_fcm_llm_config_id
         )
 
-        llm_config = LLMConfig.objects.get(id=llm_config_id)
-        fcm_llm_config = LLMConfig.objects.get(id=fcm_llm_config_id)
+        llm_config = None
+        fcm_llm_config = None
+
+        if llm_config_id:
+            llm_config = LLMConfig.objects.get(id=llm_config_id)
+        if fcm_llm_config_id:
+            fcm_llm_config = LLMConfig.objects.get(id=fcm_llm_config_id)
+
         return llm_config, fcm_llm_config
 
     def _get_tools(self, data: dict, id_mapper: IDMapper):
@@ -156,7 +228,7 @@ class AgentStrategy(EntityImportStrategy):
             agent=agent,
             realtime_config=realtime_config,
             realtime_transcription_config=realtime_transcription_config,
-            **data
+            **data,
         )
         return realtime_agent
 
@@ -165,6 +237,6 @@ class AgentStrategy(EntityImportStrategy):
             return
 
         data["agent"] = agent.id
-        serializer = NaiveRagSearchConfigSerializer(data=data)
+        serializer = NaiveRagSearchConfigImportSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         return serializer.save()

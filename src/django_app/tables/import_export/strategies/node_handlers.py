@@ -1,18 +1,18 @@
 from tables.models import PythonNode, CrewNode, Graph, WebhookTriggerNode, EndNode
 from tables.import_export.enums import NodeType, EntityType
 from tables.import_export.id_mapper import IDMapper
-from tables.import_export.serializers.python_tools import PythonCodeSerializer
+from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 from tables.import_export.serializers.graph import (
-    StartNodeSerializer,
-    CrewNodeSerializer,
-    PythonNodeSerializer,
-    LLMNodeSerializer,
-    WebhookTriggerNodeSerializer,
-    FileExtractorNodeSerializer,
-    AudioTranscriptionNodeSerializer,
-    DecisionTableNodeSerializer,
-    TelegramTriggerNodeSerializer,
-    EndNodeSerializer,
+    StartNodeImportSerializer,
+    CrewNodeImportSerializer,
+    PythonNodeImportSerializer,
+    LLMNodeImportSerializer,
+    WebhookTriggerNodeImportSerializer,
+    FileExtractorNodeImportSerializer,
+    AudioTranscriptionNodeImportSerializer,
+    DecisionTableNodeImportSerializer,
+    TelegramTriggerNodeImportSerializer,
+    EndNodeImportSerializer,
 )
 
 
@@ -21,11 +21,11 @@ def import_python_node(
 ) -> PythonNode:
     python_code_data = node_data.pop("python_code", None)
 
-    serializer = PythonCodeSerializer(data=python_code_data)
+    serializer = PythonCodeImportSerializer(data=python_code_data)
     serializer.is_valid(raise_exception=True)
     python_code = serializer.save()
 
-    serializer = PythonNodeSerializer(
+    serializer = PythonNodeImportSerializer(
         data={**node_data, "graph": graph.id, "python_code_id": python_code.id}
     )
     serializer.is_valid(raise_exception=True)
@@ -38,7 +38,7 @@ def import_crew_node(graph: Graph, node_data: dict, id_mapper: IDMapper) -> Crew
     new_crew_id = id_mapper.get_or_none(EntityType.CREW, crew_id)
     node_data["crew"] = new_crew_id
 
-    serializer = CrewNodeSerializer(data={**node_data, "graph": graph.id})
+    serializer = CrewNodeImportSerializer(data={**node_data, "graph": graph.id})
     serializer.is_valid(raise_exception=True)
     return serializer.save()
 
@@ -48,11 +48,11 @@ def import_webhook_trigger_node(
 ) -> WebhookTriggerNode:
     python_code_data = node_data.pop("python_code", None)
 
-    serializer = PythonCodeSerializer(data=python_code_data)
+    serializer = PythonCodeImportSerializer(data=python_code_data)
     serializer.is_valid(raise_exception=True)
     python_code = serializer.save()
 
-    serializer = WebhookTriggerNodeSerializer(
+    serializer = WebhookTriggerNodeImportSerializer(
         data={**node_data, "graph": graph.id, "python_code_id": python_code.id}
     )
     serializer.is_valid(raise_exception=True)
@@ -60,53 +60,53 @@ def import_webhook_trigger_node(
 
 
 def import_end_node(graph: Graph, node_data: dict, id_mapper: IDMapper) -> EndNode:
-    serializer = EndNodeSerializer(data={**node_data, "graph": graph.id})
+    serializer = EndNodeImportSerializer(data={**node_data, "graph": graph.id})
     serializer.is_valid(raise_exception=True)
     return serializer.save()
 
 
 NODE_HANDLERS = {
     NodeType.CREW_NODE: {
-        "serializer": CrewNodeSerializer,
+        "serializer": CrewNodeImportSerializer,
         "relation": "crew_node_list",
         "import_hook": import_crew_node,
     },
     NodeType.PYTHON_NODE: {
-        "serializer": PythonNodeSerializer,
+        "serializer": PythonNodeImportSerializer,
         "relation": "python_node_list",
         "import_hook": import_python_node,
     },
     NodeType.LLM_NODE: {
-        "serializer": LLMNodeSerializer,
+        "serializer": LLMNodeImportSerializer,
         "relation": "llm_node_list",
     },
     NodeType.WEBHOOK_TRIGGER_NODE: {
-        "serializer": WebhookTriggerNodeSerializer,
+        "serializer": WebhookTriggerNodeImportSerializer,
         "relation": "webhook_trigger_node_list",
         "import_hook": import_webhook_trigger_node,
     },
     NodeType.FILE_EXTRACTOR_NODE: {
-        "serializer": FileExtractorNodeSerializer,
+        "serializer": FileExtractorNodeImportSerializer,
         "relation": "file_extractor_node_list",
     },
     NodeType.AUDIO_TRANSCRIPTION_NODE: {
-        "serializer": AudioTranscriptionNodeSerializer,
+        "serializer": AudioTranscriptionNodeImportSerializer,
         "relation": "audio_transcription_node_list",
     },
     NodeType.START_NODE: {
-        "serializer": StartNodeSerializer,
+        "serializer": StartNodeImportSerializer,
         "relation": "start_node_list",
     },
     NodeType.DECISION_TABLE_NODE: {
-        "serializer": DecisionTableNodeSerializer,
+        "serializer": DecisionTableNodeImportSerializer,
         "relation": "decision_table_node_list",
     },
     NodeType.TELEGRAM_TRIGGER_NODE: {
-        "serializer": TelegramTriggerNodeSerializer,
+        "serializer": TelegramTriggerNodeImportSerializer,
         "relation": "telegram_trigger_node_list",
     },
     NodeType.END_NODE: {
-        "serializer": EndNodeSerializer,
+        "serializer": EndNodeImportSerializer,
         "relation": "end_node",
         "import_hook": import_end_node,
     },
