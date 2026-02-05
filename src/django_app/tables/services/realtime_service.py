@@ -4,14 +4,11 @@ from django.core.exceptions import ValidationError
 from tables.models.realtime_models import RealtimeAgentChat, RealtimeAgent
 
 from utils.singleton_meta import SingletonMeta
-from utils.logger import logger
 from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
-from decimal import Decimal
 
 
 class RealtimeService(metaclass=SingletonMeta):
-
     def __init__(
         self,
         redis_service: RedisService,
@@ -26,7 +23,6 @@ class RealtimeService(metaclass=SingletonMeta):
         return rt_agent
 
     def validate_rt_agent(self, rt_agent: RealtimeAgent):
-
         missing_fields = []
 
         if rt_agent.realtime_config is None:

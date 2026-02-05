@@ -11,7 +11,6 @@ async def test_run_executor(
     get_formatted_time_with_short_uuid: str,
     clear_venvs_and_executions,
 ):
-
     test_code = """
 def main(var1, var2):
     return var1+var2
@@ -120,7 +119,6 @@ async def test_run_executor_invalid_libraries(
     get_formatted_time_with_short_uuid: str,
     clear_venvs_and_executions,
 ):
-
     test_code = """
 def main(var1, var2):
     return var1+var2
@@ -157,7 +155,6 @@ async def test_run_executor_invalid_code(
     get_formatted_time_with_short_uuid: str,
     clear_venvs_and_executions,
 ):
-
     test_code = """
 def main(var1, var2):
     retur
@@ -194,7 +191,6 @@ async def test_run_executor_invalid_kwargs(
     get_formatted_time_with_short_uuid: str,
     clear_venvs_and_executions,
 ):
-
     test_code = """
 def main(var1, var2):
     return var1 + var2

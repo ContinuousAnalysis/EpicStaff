@@ -2,12 +2,9 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    DateTime,
-    Text,
     ForeignKey,
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime
 
 from .base_models import Base
 
@@ -31,7 +28,6 @@ class BaseRagType(Base):
         ForeignKey("tables_sourcecollection.collection_id"),
         nullable=False,
     )
-
 
     # Relationships
     source_collection = relationship("SourceCollection", back_populates="rag_types")

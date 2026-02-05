@@ -11,7 +11,6 @@ from typing import Optional
 
 
 async def main():
-
     tunnel_provider: Optional[AbstractTunnelProvider] = None
 
     if settings.USE_TUNNEL:

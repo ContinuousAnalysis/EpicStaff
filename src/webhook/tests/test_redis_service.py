@@ -2,12 +2,10 @@ import pytest
 import json
 from unittest.mock import patch, AsyncMock
 from app.services.redis_service import RedisService
-from app.request_models import WebhookEventData
 
 
 @pytest.mark.asyncio
 async def test_redis_publish_message():
-
     with patch("app.services.redis_service.aioredis.from_url") as mock_from_url:
         mock_redis_client = AsyncMock()
         mock_from_url.return_value = mock_redis_client

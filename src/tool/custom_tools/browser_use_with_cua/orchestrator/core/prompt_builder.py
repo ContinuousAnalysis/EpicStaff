@@ -13,17 +13,15 @@ RULES:
   • when the DOM looks empty/changed or previous indices no longer match.
 - If the page redirects (e.g., to login), treat navigation as successful and proceed with next steps.
 - Finish EVERY step with exactly one of: PASSED / FAILED / REWIND.""",
-
     "computer": """You are automation agent that uses screenshots to get best result.
 
 RULES:
 - If BROWSER_WINDOW_ID is provided (via env/params), activate that window first and keep focus there.
-- Finish EVERY step with exactly one of: PASSED / FAILED / REWIND."""
+- Finish EVERY step with exactly one of: PASSED / FAILED / REWIND.""",
 }
 
 
 class PromptBuilder:
-
     @staticmethod
     def build_plan_prompt(plan: Dict[str, Any], tool: str) -> str:
         system_prompt = SYSTEM_PROMPTS.get(tool, SYSTEM_PROMPTS["browser"])
@@ -60,7 +58,9 @@ Your task is to execute the following plan step by step:
 - Continue until ALL steps are complete."""
 
     @staticmethod
-    def build_step_prompt(step: Dict[str, Any], plan: Dict[str, Any], step_idx: int, tool: str) -> str:
+    def build_step_prompt(
+        step: Dict[str, Any], plan: Dict[str, Any], step_idx: int, tool: str
+    ) -> str:
         system_prompt = SYSTEM_PROMPTS.get(tool, SYSTEM_PROMPTS["browser"])
         action = step.get("action", "")
         target = step.get("target", "")

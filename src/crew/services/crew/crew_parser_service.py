@@ -1,19 +1,22 @@
-import os
 from typing import Optional
-from textwrap import dedent
 from typing import Any, Type
-from services.graph.events import StopEvent
-from crewai import Agent, Crew, Task, LLM
+import copy
+
+from loguru import logger
+
+from crewai import Agent, Crew, Task
 from langchain_core.tools import BaseTool
 from langgraph.types import StreamWriter
-from utils.parse_llm import parse_llm, parse_memory_llm, parse_memory_embedder
-from callbacks.session_callback_factory import CrewCallbackFactory
-from services.schema_converter.converter import generate_model_from_schema
-from services.run_python_code_service import RunPythonCodeService
-from services.knowledge_search_service import KnowledgeSearchService
-from utils.singleton_meta import SingletonMeta
-from services.redis_service import RedisService
-from models.request_models import (
+
+from src.crew.services.graph.events import StopEvent
+from src.crew.utils.parse_llm import parse_llm, parse_memory_llm, parse_memory_embedder
+from src.crew.callbacks.session_callback_factory import CrewCallbackFactory
+from src.crew.services.schema_converter.converter import generate_model_from_schema
+from src.crew.services.run_python_code_service import RunPythonCodeService
+from src.crew.services.knowledge_search_service import KnowledgeSearchService
+from src.crew.utils.singleton_meta import SingletonMeta
+from src.crew.services.redis_service import RedisService
+from src.crew.models.request_models import (
     AgentData,
     ConfiguredToolData,
     CrewData,
@@ -22,15 +25,13 @@ from models.request_models import (
     TaskData,
 )
 
-from settings import PGVECTOR_MEMORY_CONFIG
-import copy
-from services.crew.proxy_tool_factory import ProxyToolFactory
-from services.crew.mcp_tool_factory import CrewaiMcpToolFactory
-from loguru import logger
+from src.crew.settings import PGVECTOR_MEMORY_CONFIG
+
+from src.crew.services.crew.proxy_tool_factory import ProxyToolFactory
+from src.crew.services.crew.mcp_tool_factory import CrewaiMcpToolFactory
 
 
 class CrewParserService(metaclass=SingletonMeta):
-
     def __init__(
         self,
         manager_host: str,
@@ -62,15 +63,14 @@ class CrewParserService(metaclass=SingletonMeta):
         tool_list: list[BaseTool] | None = None,
         stream_writer: Optional[StreamWriter] = None,
     ) -> Agent:
-
         llm = None
         if agent_data.llm is not None:
             try:
                 logger.info(
                     f"Temperature for agent[{agent_data.id}]: {agent_data.llm.config.temperature}"
                 )
-            except Exception as e:
-                logger.warning(f"Cannot log agent temperature")
+            except Exception:
+                logger.warning("Cannot log agent temperature")
             llm = parse_llm(agent_data.llm, stop_event=stop_event)
 
         if tool_list is None:
@@ -209,7 +209,6 @@ class CrewParserService(metaclass=SingletonMeta):
 
         tool_map = {}
         for base_tool_data in crew_data.tools:
-
             if isinstance(base_tool_data.data, PythonCodeToolData):
                 tool = self.proxy_tool_factory.create_python_code_proxy_tool(
                     python_code_tool_data=base_tool_data.data,

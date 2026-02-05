@@ -5,7 +5,9 @@ import shutil
 import pytest
 from django.core.management import call_command
 from django.core.cache import cache
-from tables.validators.python_code_tool_config_validator import PythonCodeToolConfigValidator
+from tables.validators.python_code_tool_config_validator import (
+    PythonCodeToolConfigValidator,
+)
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.realtime_models import RealtimeAgent
 from tables.models.llm_models import (
@@ -14,7 +16,12 @@ from tables.models.llm_models import (
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
 )
-from tables.models.crew_models import AgentConfiguredTools, AgentPythonCodeTools, DefaultAgentConfig, DefaultCrewConfig
+from tables.models.crew_models import (
+    AgentConfiguredTools,
+    AgentPythonCodeTools,
+    DefaultAgentConfig,
+    DefaultCrewConfig,
+)
 from tables.services.config_service import YamlConfigService
 from tables.services.redis_service import RedisService
 from tables.services.session_manager_service import SessionManagerService
@@ -50,10 +57,8 @@ from tables.serializers.export_serializers import (
     GraphExportSerializer,
 )
 
-from django.utils.crypto import get_random_string
 from tests.helpers import data_to_json_file
 
-from rest_framework.test import APIClient
 import fakeredis
 
 
@@ -90,7 +95,6 @@ def gpt_35_llm(openai_provider: Provider) -> LLMModel:
 
 @pytest.fixture
 def llm_config(gpt_4o_llm) -> LLMConfig:
-
     llm_config = LLMConfig(
         custom_name="MyGPT-4o",
         model=gpt_4o_llm,
@@ -103,7 +107,6 @@ def llm_config(gpt_4o_llm) -> LLMConfig:
 
 @pytest.fixture
 def default_agent_config(llm_config) -> DefaultAgentConfig:
-
     default_agent_config = DefaultAgentConfig(
         allow_delegation=False, memory=False, max_iter=25, llm_config=llm_config
     )
@@ -113,7 +116,6 @@ def default_agent_config(llm_config) -> DefaultAgentConfig:
 
 @pytest.fixture
 def default_crew_config(llm_config) -> DefaultCrewConfig:
-
     default_crew_config = DefaultCrewConfig(
         process="sequential",
         memory=False,
@@ -126,7 +128,6 @@ def default_crew_config(llm_config) -> DefaultCrewConfig:
 
 @pytest.fixture
 def new_llm_config(gpt_4o_llm):
-
     llm_config = LLMConfig(
         model=gpt_4o_llm, temperature=0.9, num_ctx=1024, is_visible=True
     )
@@ -136,7 +137,6 @@ def new_llm_config(gpt_4o_llm):
 
 @pytest.fixture
 def wikipedia_tool() -> Tool:
-
     wikipedia = Tool(
         name="Wikipedia",
         name_alias="wikipedia",
@@ -170,11 +170,11 @@ def wikipedia_agent(
     agent.save()
 
     AgentConfiguredTools.objects.create(
-        agent_id=agent.id,
-        toolconfig_id=wikipedia_tool_config.id
+        agent_id=agent.id, toolconfig_id=wikipedia_tool_config.id
     )
 
     return agent
+
 
 @pytest.fixture
 def embedding_model(openai_provider: Provider) -> EmbeddingModel:
@@ -197,7 +197,6 @@ def embedding_config(embedding_model: EmbeddingModel) -> EmbeddingConfig:
 
 @pytest.fixture
 def test_task(wikipedia_agent) -> Task:
-
     task = Task(
         name="test task",
         agent=wikipedia_agent,
@@ -314,7 +313,6 @@ def session_factory(db):
 
 @pytest.fixture
 def test_tool():
-
     return Tool.objects.create(
         name="Test Tool",
         name_alias="test_tool",
@@ -324,7 +322,6 @@ def test_tool():
 
 @pytest.fixture
 def test_tool_with_fields(test_tool):
-
     field1 = ToolConfigField(
         tool=test_tool,
         name="llm_config",
@@ -358,7 +355,6 @@ def test_tool_with_fields(test_tool):
 
 @pytest.fixture
 def test_tool_github_search():
-
     return Tool.objects.create(
         id=13,
         name="Test GitHub Search Tool",
@@ -369,7 +365,6 @@ def test_tool_github_search():
 
 @pytest.fixture
 def test_tool_github_search_with_fields(test_tool_github_search):
-
     llm_config = ToolConfigField(
         tool=test_tool_github_search,
         name="llm_config",
@@ -429,7 +424,6 @@ def openai_realtime_model(openai_provider):
 
 @pytest.fixture
 def openai_realtime_model_config(openai_realtime_model):
-
     # Create and return the `RealtimeModelConfig` instance
     config = RealtimeConfig.objects.create(
         custom_name="test", api_key="test", realtime_model=openai_realtime_model
@@ -735,7 +729,7 @@ def python_code() -> PythonCode:
         code="def main(): return 42",
         entrypoint="main",
         libraries="requests json",
-        global_kwargs={}
+        global_kwargs={},
     )
 
 
@@ -780,15 +774,18 @@ def python_code_tool_config(python_code_tool) -> PythonCodeToolConfig:
         configuration={"arg1": "value1", "arg2": 10},
     )
 
+
 @pytest.fixture
 def validator():
     return PythonCodeToolConfigValidator()
+
 
 @pytest.fixture
 def mock_tool(mocker):
     """Creates a mock PythonCodeTool."""
     tool = MagicMock(spec=PythonCodeTool)
     return tool
+
 
 def create_mock_field(name, data_type, required=True):
     """Helper to create a mock configuration field."""
@@ -810,6 +807,7 @@ def tool_config_field_int(db, python_code_tool):
         required=True,
     )
 
+
 @pytest.fixture
 def tool_config_field_str(db, python_code_tool):
     """Creates a String configuration field (optional) for the tool."""
@@ -820,11 +818,12 @@ def tool_config_field_str(db, python_code_tool):
         required=False,
     )
 
+
 @pytest.fixture
 def existing_config(db, python_code_tool):
     """Creates an existing configuration entry."""
     return PythonCodeToolConfig.objects.create(
         name="production_config",
         tool=python_code_tool,
-        configuration={"batch_size": 50}
+        configuration={"batch_size": 50},
     )

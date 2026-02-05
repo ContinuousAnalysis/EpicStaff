@@ -29,8 +29,6 @@ from tables.serializers.model_serializers import (
     StartNodeSerializer,
     FileExtractorNodeSerializer,
     EndNodeSerializer,
-    LLMNodeSerializer,
-    DecisionTableNodeSerializer,
 )
 from tables.serializers.export_serializers import NestedCrewExportSerializer
 from tables.utils.helpers import generate_new_unique_name
@@ -47,12 +45,10 @@ from tables.services.import_services import (
 
 
 class FileImportSerializer(serializers.Serializer):
-
     file = serializers.FileField()
 
 
 class PythonCodeImportSerializer(serializers.ModelSerializer):
-
     libraries = serializers.CharField(required=False, allow_blank=True, default="")
 
     class Meta:
@@ -61,7 +57,6 @@ class PythonCodeImportSerializer(serializers.ModelSerializer):
 
 
 class PythonCodeToolImportSerializer(serializers.ModelSerializer):
-
     python_code = PythonCodeImportSerializer()
 
     class Meta:
@@ -89,7 +84,6 @@ class PythonCodeToolImportSerializer(serializers.ModelSerializer):
 
 
 class ToolConfigImportSerilizer(serializers.ModelSerializer):
-
     tool = serializers.CharField()
 
     class Meta:
@@ -125,7 +119,6 @@ class ToolConfigImportSerilizer(serializers.ModelSerializer):
 
 
 class McpToolImportSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = McpTool
         fields = "__all__"
@@ -150,14 +143,12 @@ class McpToolImportSerializer(serializers.ModelSerializer):
 
 
 class ToolsImportSerializer(serializers.Serializer):
-
     python_tools = PythonCodeToolImportSerializer(many=True)
     configured_tools = ToolConfigImportSerilizer(many=True)
     mcp_tools = McpToolImportSerializer(many=True)
 
 
 class BaseConfigImportSerializer(serializers.ModelSerializer):
-
     model = serializers.CharField()
 
     class Meta:
@@ -251,7 +242,6 @@ class BaseConfigImportSerializer(serializers.ModelSerializer):
 
 
 class LLMConfigImportSerializer(BaseConfigImportSerializer):
-
     class Meta(BaseConfigImportSerializer.Meta):
         model = LLMConfig
 
@@ -322,7 +312,6 @@ class LLMConfigImportSerializer(BaseConfigImportSerializer):
 
 
 class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
-
     class Meta(BaseConfigImportSerializer.Meta):
         model = EmbeddingConfig
         llm_model_class = EmbeddingModel
@@ -350,7 +339,6 @@ class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
 
 
 class RealtimeConfigImportSerializer(BaseConfigImportSerializer):
-
     class Meta(BaseConfigImportSerializer.Meta):
         model = RealtimeConfig
         llm_model_class = RealtimeModel
@@ -393,7 +381,6 @@ class RealtimeConfigImportSerializer(BaseConfigImportSerializer):
 
 
 class RealtimeTranscriptionConfigImportSerializer(BaseConfigImportSerializer):
-
     class Meta(BaseConfigImportSerializer.Meta):
         model = RealtimeTranscriptionConfig
         llm_model_class = RealtimeTranscriptionModel
@@ -438,7 +425,6 @@ class RealtimeTranscriptionConfigImportSerializer(BaseConfigImportSerializer):
 
 
 class RealtimeAgentImportSerializer(serializers.ModelSerializer):
-
     realtime_config = RealtimeConfigImportSerializer(required=False, allow_null=True)
     realtime_transcription_config = RealtimeTranscriptionConfigImportSerializer(
         required=False, allow_null=True
@@ -492,7 +478,6 @@ class RealtimeAgentImportSerializer(serializers.ModelSerializer):
 
 
 class NestedRealtimeAgentImportSerializer(RealtimeAgentImportSerializer):
-
     id = serializers.IntegerField()
     realtime_config = serializers.IntegerField(required=False, allow_null=True)
     realtime_transcription_config = serializers.IntegerField(
@@ -506,7 +491,6 @@ class NestedRealtimeAgentImportSerializer(RealtimeAgentImportSerializer):
 
 
 class RealtimeDataImportSerializer(serializers.Serializer):
-
     realtime_configs = RealtimeConfigImportSerializer(many=True)
     realtime_transcription_configs = RealtimeTranscriptionConfigImportSerializer(
         many=True
@@ -543,7 +527,6 @@ class RealtimeDataImportSerializer(serializers.Serializer):
 
 
 class AgentImportSerializer(serializers.ModelSerializer):
-
     llm_config = LLMConfigImportSerializer(required=False, allow_null=True)
     fcm_llm_config = LLMConfigImportSerializer(required=False, allow_null=True)
     realtime_agent = RealtimeAgentImportSerializer(required=False, allow_null=True)
@@ -615,7 +598,6 @@ class AgentImportSerializer(serializers.ModelSerializer):
 
 
 class NestedAgentImportSerializer(AgentImportSerializer):
-
     tools = serializers.DictField(required=False)
     llm_config = serializers.IntegerField(required=False, allow_null=True)
     fcm_llm_config = serializers.IntegerField(required=False, allow_null=True)
@@ -623,7 +605,6 @@ class NestedAgentImportSerializer(AgentImportSerializer):
 
 
 class TaskImportSerializer(serializers.ModelSerializer):
-
     agent = serializers.IntegerField(required=False, allow_null=True)
     tools = serializers.DictField(required=False, allow_null=True)
     context_tasks = serializers.ListField(
@@ -645,7 +626,6 @@ class TaskImportSerializer(serializers.ModelSerializer):
 
 
 class CrewImportSerializer(serializers.ModelSerializer):
-
     tasks = TaskImportSerializer(many=True, required=False)
     agents = NestedAgentImportSerializer(many=True, required=False)
     tools = ToolsImportSerializer(required=False)
@@ -760,7 +740,6 @@ class CrewImportSerializer(serializers.ModelSerializer):
 
 
 class NestedCrewImportSerializer(CrewImportSerializer):
-
     tools = None
     llm_configs = None
     realtime_agents = None
@@ -779,7 +758,6 @@ class NestedCrewImportSerializer(CrewImportSerializer):
 
 
 class CrewNodeImportSerializer(serializers.ModelSerializer):
-
     crew_id = serializers.IntegerField()
 
     class Meta:
@@ -792,7 +770,6 @@ class CrewNodeImportSerializer(serializers.ModelSerializer):
 
 
 class PythonNodeImportSerializer(PythonNodeSerializer):
-
     python_code = PythonCodeImportSerializer()
     graph = None
 
@@ -806,7 +783,6 @@ class PythonNodeImportSerializer(PythonNodeSerializer):
 
 
 class StartNodeImportSerializer(StartNodeSerializer):
-
     class Meta(StartNodeSerializer.Meta):
         fields = None
         exclude = ["graph"]
@@ -817,7 +793,6 @@ class StartNodeImportSerializer(StartNodeSerializer):
 
 
 class EndNodeImportSerializer(EndNodeSerializer):
-
     graph = None
 
     class Meta(EndNodeSerializer.Meta):
@@ -831,7 +806,6 @@ class EndNodeImportSerializer(EndNodeSerializer):
 
 
 class FileExtractorNodeImportSerializer(FileExtractorNodeSerializer):
-
     graph = None
 
     class Meta(FileExtractorNodeSerializer.Meta):
@@ -845,7 +819,6 @@ class FileExtractorNodeImportSerializer(FileExtractorNodeSerializer):
 
 
 class EdgeImportSerializer(EdgeSerializer):
-
     graph = None
 
     class Meta(EdgeSerializer.Meta):
@@ -859,7 +832,6 @@ class EdgeImportSerializer(EdgeSerializer):
 
 
 class ConditionalEdgeImportSerializer(ConditionalEdgeSerializer):
-
     python_code = PythonCodeImportSerializer()
 
     class Meta(ConditionalEdgeSerializer.Meta):
@@ -873,7 +845,6 @@ class ConditionalEdgeImportSerializer(ConditionalEdgeSerializer):
 
 
 class MetdataNodeSerializer(serializers.Serializer):
-
     id = serializers.CharField(required=True)
     data = serializers.JSONField(required=False, allow_null=True)
     icon = serializers.CharField()
@@ -917,7 +888,6 @@ class MetdataNodeSerializer(serializers.Serializer):
 
 
 class GraphMetadataSerializer(serializers.Serializer):
-
     nodes = MetdataNodeSerializer(many=True, required=False)
     groups = serializers.JSONField(required=False)
     connections = serializers.JSONField(required=False)
@@ -945,7 +915,6 @@ class GraphMetadataSerializer(serializers.Serializer):
 
 
 class GraphImportSerializer(serializers.ModelSerializer):
-
     crews = NestedCrewImportSerializer(
         many=True, required=False, allow_null=False, default=dict
     )

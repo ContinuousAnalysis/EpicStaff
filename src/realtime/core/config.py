@@ -42,7 +42,7 @@ class Settings(BaseSettings):
         return db_url
 
     model_config = SettingsConfigDict(
-        env_file= BASE_DIR.parent / ".env",
+        env_file=BASE_DIR.parent / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
         # env_prefix="REALTIME_",
@@ -54,7 +54,6 @@ def get_settings():
     is_debug = "--debug" in sys.argv
 
     env_file = BASE_DIR.parent / ("debug.env" if is_debug else ".env")
-
 
     return Settings(
         _env_file=env_file, REALTIME_RELOAD=is_debug, REALTIME_DEBUG_MODE=is_debug

@@ -10,6 +10,7 @@ import json
 from typing import Callable
 import time
 
+
 class Agent:
     """
     A sample agent class that can be used to interact with a computer.
@@ -136,14 +137,15 @@ class Agent:
                     )
                     self.debug_print(response)
 
-
                     if "output" not in response:
                         print(json.dumps(response, indent=2))
                         raise ValueError("No output from model")
 
                     break
                 except Exception as e:
-                    print(f"Error during model call (attempt {retries + 1}/{max_retries}): {e}")
+                    print(
+                        f"Error during model call (attempt {retries + 1}/{max_retries}): {e}"
+                    )
                     if response:
                         print(json.dumps(response, indent=2))
                     retries += 1

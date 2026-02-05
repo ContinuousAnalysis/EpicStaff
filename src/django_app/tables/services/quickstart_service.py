@@ -16,7 +16,6 @@ from tables.models.provider import Provider
 
 
 class QuickstartService(metaclass=SingletonMeta):
-
     PROVIDER_CONFIGS = {
         "openai": {
             "llm_model": "gpt-4o-mini",
@@ -128,7 +127,6 @@ class QuickstartService(metaclass=SingletonMeta):
         return llm_model
 
     def _get_or_create_embedder_model(self, provider: Provider):
-
         embedder_model_name = self.PROVIDER_CONFIGS.get(provider.name, {}).get(
             "embedding_model"
         )
@@ -147,7 +145,6 @@ class QuickstartService(metaclass=SingletonMeta):
         return embedder_model
 
     def _get_or_create_realtime_model(self, provider: Provider):
-
         realtime_model_name = self.PROVIDER_CONFIGS.get(provider.name, {}).get(
             "realtime_model"
         )
@@ -174,10 +171,11 @@ class QuickstartService(metaclass=SingletonMeta):
                 f"Can not get 'realtime_transcription_model_name' from PROVIDER_CONFIGS for {provider.name}"
             )
 
-        realtime_transcription_model, created = (
-            RealtimeTranscriptionModel.objects.get_or_create(
-                provider=provider, name=realtime_transcription_model_name
-            )
+        (
+            realtime_transcription_model,
+            created,
+        ) = RealtimeTranscriptionModel.objects.get_or_create(
+            provider=provider, name=realtime_transcription_model_name
         )
         if created:
             logger.info(

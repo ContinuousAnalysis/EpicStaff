@@ -21,9 +21,7 @@ executor_chain = DynamicVenvExecutorChain(
 )
 os.chdir("savefiles")
 
-redis_service = RedisService(
-    host=redis_host, port=redis_port, password=redis_password
-)
+redis_service = RedisService(host=redis_host, port=redis_port, password=redis_password)
 
 
 async def init():

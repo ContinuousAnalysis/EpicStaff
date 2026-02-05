@@ -7,7 +7,6 @@ from rest_framework.exceptions import ValidationError
 
 @pytest.fixture
 def task_factory(db):
-
     counter = {"count": 0}
 
     def make_task(

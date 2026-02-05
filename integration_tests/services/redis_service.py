@@ -1,4 +1,3 @@
-import asyncio
 import json
 import redis.asyncio as aioredis
 from loguru import logger
@@ -15,7 +14,9 @@ class RedisService:
     async def connect(self):
         """Establish connection with Redis."""
         self.aioredis_client = await aioredis.from_url(
-            f"redis://{self.host}:{self.port}", password=self.password, decode_responses=True
+            f"redis://{self.host}:{self.port}",
+            password=self.password,
+            decode_responses=True,
         )
         logger.info("Connected to Redis.")
 

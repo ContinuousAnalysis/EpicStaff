@@ -4,9 +4,7 @@ from openai import OpenAI
 
 
 class OpenAIEmbedder(BaseEmbedder):
-
     def __init__(self, api_key, model_name):
-
         self.model_name = model_name or "text-embedding-3-small"
 
         api_key = api_key or os.getenv("OPENAI_API_KEY")

@@ -12,7 +12,6 @@ from tables.models import (
     Provider,
     Crew,
 )
-from tables.serializers.nested_model_serializers import NestedSessionSerializer
 from tables.services.converter_service import ConverterService
 from rest_framework import status
 
@@ -290,7 +289,6 @@ def test_get_llm_models_with_data(api_client, gpt_4o_llm):
 
 @pytest.mark.django_db
 def test_get_llm_default_agent_config(api_client, default_agent_config):
-
     url = reverse("default-agent-config")
     response = api_client.get(url)
 
@@ -306,7 +304,6 @@ def test_get_llm_default_agent_config(api_client, default_agent_config):
 def test_get_llm_default_crew_config(
     api_client, gpt_4o_llm, llm_config, default_crew_config
 ):
-
     url = reverse("default-crew-config")
     response = api_client.get(url)
 
@@ -785,7 +782,6 @@ def test_update_embedding_model_invalid_id(api_client):
 
 @pytest.mark.django_db
 def test_update_tool(api_client, wikipedia_tool):
-
     initial_data = {
         "name": wikipedia_tool.name,
         "name_alias": wikipedia_tool.name_alias,
@@ -890,7 +886,6 @@ def test_update_crew_invalid_id(
 
 @pytest.mark.django_db
 def test_update_task(api_client, test_task, wikipedia_agent, crew):
-
     task = test_task
     url = reverse("task-detail", args=[task.pk])
 

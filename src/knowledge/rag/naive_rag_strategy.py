@@ -118,7 +118,7 @@ class NaiveRAGStrategy(BaseRAGStrategy):
                 else:
                     logger.info(f"KNOWLEDGES: {knowledge_snippets[0][:150]}...")
             else:
-                logger.warning(f"NO KNOWLEDGE CHUNKS WERE EXTRACTED!")
+                logger.warning("NO KNOWLEDGE CHUNKS WERE EXTRACTED!")
 
         knowledge_query_results = BaseKnowledgeSearchMessageResponse(
             rag_id=naive_rag_id,
