@@ -176,7 +176,7 @@ from tables.serializers.model_serializers import (
 from tables.services.redis_service import RedisService
 from tables.utils.mixins import ImportExportMixin, DeepCopyMixin
 from tables.exceptions import BuiltInToolModificationError
-from tables.constants import DEFAULT_ORGANIZATION_NAME
+from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
 
 redis_service = RedisService()
 

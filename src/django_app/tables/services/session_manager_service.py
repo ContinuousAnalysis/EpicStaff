@@ -41,7 +41,7 @@ from tables.models import (
     AudioTranscriptionNode,
     GraphOrganizationUser,
 )
-from tables.constants import DOMAIN_VARIABLES_KEY
+from tables.constants.variables_constants import DOMAIN_VARIABLES_KEY
 
 
 class SessionManagerService(metaclass=SingletonMeta):

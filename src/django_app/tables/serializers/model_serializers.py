@@ -92,7 +92,7 @@ from tables.models import (
 from tables.models import (
     ToolConfig,
 )
-from tables.constants import (
+from tables.constants.variables_constants import (
     DOMAIN_VARIABLES_KEY,
     DOMAIN_ORGANIZATION_KEY,
     DOMAIN_USER_KEY,
