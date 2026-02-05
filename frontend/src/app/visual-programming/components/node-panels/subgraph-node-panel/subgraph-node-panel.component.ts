@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, inject, OnInit, input, computed } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, Validators, FormArray } from '@angular/forms';
 import { SubGraphNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
@@ -55,7 +55,7 @@ interface InputMapPair {
                             (change)="onFlowChange()"
                         >
                             <option [value]="null" disabled>Select a flow</option>
-                            @for (flow of availableFlows(); track flow.id) {
+                            @for (flow of filteredFlows(); track flow.id) {
                             <option [value]="flow.id">{{ flow.name }}</option>
                             }
                         </select>
@@ -134,6 +134,14 @@ export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel>
     private flowsApiService = inject(FlowsApiService);
     
     public availableFlows = signal<GraphDto[]>([]);
+    public readonly currentFlowId = input<number | null>(null);
+    public readonly filteredFlows = computed(() => {
+        const currentId = this.currentFlowId();
+        if (!currentId) {
+            return this.availableFlows();
+        }
+        return this.availableFlows().filter((flow) => flow.id !== currentId);
+    });
 
     constructor() {
         super();
@@ -157,11 +165,16 @@ export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel>
     }
 
     protected initializeForm(): FormGroup {
+        const currentFlowId = this.currentFlowId();
+        const selectedId = this.node().data.id ?? null;
+        const initialSelectedId =
+            currentFlowId && selectedId === currentFlowId ? null : selectedId;
+
         const form = this.fb.group({
             node_name: [this.node().node_name || '', this.createNodeNameValidators()],
             input_map: this.fb.array([]),
             output_variable_path: [this.node().output_variable_path || ''],
-            selectedFlowId: [this.node().data.id, Validators.required],
+            selectedFlowId: [initialSelectedId, Validators.required],
         });
 
         this.initializeInputMap(form);
