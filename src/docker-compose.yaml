@@ -2,7 +2,7 @@
 services:
   epicstaff-nginx:
     image: nginx
-    container_name: nginx_gateway
+    container_name: epicstaff-nginx
     ports:
       - "80:80"
       - "443:443"
