@@ -17,9 +17,6 @@ from django.views import View
 from django.db import IntegrityError, transaction
 
 from tables.models.knowledge_models.collection_models import DocumentMetadata
-from tables.utils.helpers import generate_file_name
-from tables.serializers.import_serializers import FileImportSerializer
-
 from tables.services.redis_service import RedisService
 from functools import partial
 
