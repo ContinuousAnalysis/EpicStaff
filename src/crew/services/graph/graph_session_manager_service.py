@@ -1,24 +1,25 @@
 import json
-import threading
 from types import CoroutineType
 import uuid
 from typing import Any
-from services.graph.events import StopEvent
-from services.graph.exceptions import StopSession
-from dotdict import DotDict
-from utils.memory_monitor import MemoryMonitor, MemoryMonitorContext
-from services.graph.graph_builder import SessionGraphBuilder, State
-from services.run_python_code_service import RunPythonCodeService
-from utils.singleton_meta import SingletonMeta
-from services.crew.crew_parser_service import CrewParserService
-from services.redis_service import AsyncPubsubSubscriber, RedisService
-from models.request_models import SessionData, StopSessionMessage
-from models.graph_models import GraphMessage
-from loguru import logger
-import asyncio
-from services.graph.graph_builder import SessionGraphBuilder
-from services.knowledge_search_service import KnowledgeSearchService
 from dataclasses import asdict, dataclass
+import asyncio
+
+from loguru import logger
+from dotdict import DotDict
+
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.graph.exceptions import StopSession
+from src.crew.services.crew.crew_parser_service import CrewParserService
+from src.crew.services.redis_service import AsyncPubsubSubscriber, RedisService
+from src.crew.services.graph.graph_builder import SessionGraphBuilder
+from src.crew.services.run_python_code_service import RunPythonCodeService
+from src.crew.services.knowledge_search_service import KnowledgeSearchService
+
+from src.crew.utils.singleton_meta import SingletonMeta
+
+from src.crew.models.request_models import SessionData, StopSessionMessage
+from src.crew.models.graph_models import GraphMessage
 
 
 @dataclass
@@ -71,7 +72,6 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
         logger.info("Session Manager Service is now running.")
 
     async def run_session(self, session_data: SessionData, stop_event: StopEvent):
-
         try:
             session_id = session_data.id
             initial_state = session_data.initial_state
@@ -100,7 +100,6 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
                 config={"recursion_limit": 1000},
                 stream_mode=["values", "custom"],
             ):  # TODO: change hardcoded recursion limit
-
                 if stream_mode == "custom":
                     data = asdict(chunk)
                     assert isinstance(data, dict), "custom chunk must be a dict"
@@ -138,7 +137,7 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
         except asyncio.CancelledError:
             # Status updated in _handle_session_timeout
             logger.warning(f"Session {session_id} was cancelled")
-        except StopSession as e:
+        except StopSession:
             await self.redis_service.aupdate_session_status(
                 session_id=session_id, status=stop_event.status
             )
@@ -179,8 +178,7 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
                 await self._handle_stop_session(data)
             else:
                 logger.info(f"Unknown channel {channel}")
-        except Exception as e:  # asyncio.CancelledError
-            ...
+        except Exception:  # asyncio.CancelledError
             logger.exception("Listener task cancelled.")
         finally:
             pass

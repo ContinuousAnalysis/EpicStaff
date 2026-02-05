@@ -1,0 +1,32 @@
+# Instalation
+# pip install pre-commit
+#pre-commit install	pre-commit
+#pre-commit install --hook-type commit-msg	commit-msg
+#pre-commit install --hook-type pre-push
+
+exclude: >
+  (?x)^(
+      src/crew/libraries
+  )$
+fail_fast: true
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+        exclude: src/crew/libraries
+
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.2
+    hooks:
+    -   id: ruff
+        args: ["--fix"]
+        exclude: ^(src/crew/libraries/|src/tool/|.*/tests/|src/shared/tools|integration_tests/|src/crew/utils/)
+    -   id: ruff-format
+        exclude: ^(src/crew/libraries/|src/tool/|src/django_app/tables/migrations)
+
+
+
+
+
+

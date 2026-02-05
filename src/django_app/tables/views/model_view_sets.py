@@ -1,8 +1,6 @@
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import WebhookTrigger
 from django_filters import rest_framework as filters
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
@@ -32,7 +30,6 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
-from django.core.exceptions import ValidationError
 from django.db.models import Prefetch
 from tables.models.graph_models import (
     Condition,
@@ -115,16 +112,12 @@ from tables.serializers.serializers import (
     UploadGraphFileSerializer,
     GraphFileUpdateSerializer,
 )
-from tables.serializers.naive_rag_serializers import (
-    NaiveRagSearchConfigSerializer,
-)
 
 from tables.models import (
     Agent,
     Task,
     TemplateAgent,
     ToolConfig,
-    Tool,
     LLMConfig,
     EmbeddingModel,
     LLMModel,
@@ -150,10 +143,8 @@ from tables.models import (
     GraphFile,
 )
 
-from tables.models import AgentSessionMessage, TaskSessionMessage, UserSessionMessage
 
 from tables.serializers.model_serializers import (
-    AgentSessionMessageSerializer,
     ConditionalEdgeSerializer,
     CrewNodeSerializer,
     EdgeSerializer,
@@ -167,7 +158,6 @@ from tables.serializers.model_serializers import (
     PythonNodeSerializer,
     FileExtractorNodeSerializer,
     AudioTranscriptionNodeSerializer,
-    TaskSessionMessageSerializer,
     TemplateAgentSerializer,
     LLMConfigSerializer,
     ProviderSerializer,
@@ -176,7 +166,6 @@ from tables.serializers.model_serializers import (
     EmbeddingConfigSerializer,
     CrewSerializer,
     ToolConfigSerializer,
-    UserSessionMessageSerializer,
     RealtimeModelSerializer,
     RealtimeTranscriptionConfigSerializer,
     RealtimeTranscriptionModelSerializer,
@@ -273,7 +262,6 @@ class EmbeddingModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
 
 
 class EmbeddingConfigReadWriteViewSet(ModelViewSet):
-
     class EmbeddingConfigFilter(filters.FilterSet):
         model_provider_id = filters.CharFilter(
             field_name="model__embedding_provider__id", lookup_expr="icontains"
@@ -586,7 +574,6 @@ class PythonCodeToolViewSet(viewsets.ModelViewSet):
 
 
 class PythonCodeToolConfigViewSet(viewsets.ModelViewSet):
-
     queryset = PythonCodeToolConfig.objects.select_related("tool").prefetch_related(
         Prefetch(
             "tool__tool_fields",
@@ -768,7 +755,6 @@ class MemoryViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-
     queryset = MemoryDatabase.objects.all()
     serializer_class = MemorySerializer
     filter_backends = [DjangoFilterBackend]
@@ -1069,25 +1055,21 @@ class GraphFileViewSet(ModelViewSet):
 
 
 class OrganizationViewSet(viewsets.ModelViewSet):
-
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
 
 
 class OrganizationUserViewSet(viewsets.ModelViewSet):
-
     queryset = OrganizationUser.objects.all()
     serializer_class = OrganizationUserSerializer
 
 
 class GraphOrganizationViewSet(viewsets.ModelViewSet):
-
     queryset = GraphOrganization.objects.all()
     serializer_class = GraphOrganizationSerializer
 
 
 class GraphOrganizationUserViewSet(viewsets.ReadOnlyModelViewSet):
-
     queryset = GraphOrganizationUser.objects.all()
     serializer_class = GraphOrganizationUserSerializer
 

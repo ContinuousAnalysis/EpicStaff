@@ -1,9 +1,6 @@
 import os
-import sys
-import gc
 import psutil
 import tracemalloc
-from collections import defaultdict
 from loguru import logger
 from utils.singleton_meta import SingletonMeta
 
@@ -39,19 +36,21 @@ class MemoryMonitor(metaclass=SingletonMeta):
             self.previous_snapshot = snapshot
             return
 
-        stats_diff = snapshot.compare_to(self.previous_snapshot, 'traceback')
+        stats_diff = snapshot.compare_to(self.previous_snapshot, "traceback")
         self.previous_snapshot = snapshot
 
         if stats_diff:
             logger.info("Top memory allocation deltas:")
             for stat in stats_diff[:limit]:
-                logger.info(f"{stat.size_diff / 1024:.2f} KB in {stat.count_diff} blocks")
+                logger.info(
+                    f"{stat.size_diff / 1024:.2f} KB in {stat.count_diff} blocks"
+                )
                 for line in stat.traceback.format()[-3:]:
                     logger.info(line)
         else:
             logger.info("No allocation deltas detected by tracemalloc.")
         pass
-    
+
 
 class MemoryMonitorContext:
     def __init__(self, label: str = ""):
@@ -63,7 +62,7 @@ class MemoryMonitorContext:
     def __enter__(self):
         logger.info(f"Entering memory monitoring context: {self.label}")
         tracemalloc.start(25)  # Store up to 25 frames in traceback
-        #gc.collect()
+        # gc.collect()
 
         self.start_mem = psutil.Process(os.getpid()).memory_info().rss
         self.last_mem = self.start_mem
@@ -72,12 +71,14 @@ class MemoryMonitorContext:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        #gc.collect()
+        # gc.collect()
         end_mem = psutil.Process(os.getpid()).memory_info().rss
         delta = (end_mem - self.last_mem) / 1024
         total_delta = (end_mem - self.start_mem) / 1024
         logger.critical(f"[{self.label}] Final memory: {end_mem / 1024:.2f} KB")
-        logger.critical(f"[{self.label}] Memory delta since enter: {total_delta:.2f} KB")
+        logger.critical(
+            f"[{self.label}] Memory delta since enter: {total_delta:.2f} KB"
+        )
         logger.critical(f"[{self.label}] Memory delta since last log: {delta:.2f} KB")
 
         self._log_tracemalloc_deltas()
@@ -86,12 +87,14 @@ class MemoryMonitorContext:
 
     def _log_tracemalloc_deltas(self, limit=5):
         end_snapshot = tracemalloc.take_snapshot()
-        stats_diff = end_snapshot.compare_to(self.start_snapshot, 'traceback')
+        stats_diff = end_snapshot.compare_to(self.start_snapshot, "traceback")
 
         if stats_diff:
             logger.info("Top memory allocation deltas:")
             for stat in stats_diff[:limit]:
-                logger.info(f"{stat.size_diff / 1024:.2f} KB in {stat.count_diff} blocks")
+                logger.info(
+                    f"{stat.size_diff / 1024:.2f} KB in {stat.count_diff} blocks"
+                )
                 for line in stat.traceback.format()[-3:]:
                     logger.info(line)
         else:

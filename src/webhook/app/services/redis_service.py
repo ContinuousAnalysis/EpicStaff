@@ -1,7 +1,6 @@
 import os
 from loguru import logger
 import redis.asyncio as aioredis
-import json
 from app.core.config import settings
 from typing import Dict, Any, Optional
 

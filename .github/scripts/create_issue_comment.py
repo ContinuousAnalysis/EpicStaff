@@ -18,7 +18,6 @@ def create_issue_comment(
     github_comment_author: str,
     github_comment_url: str,
 ):
-
     url = f"https://{domain}/rest/api/2/issue/{jira_issue_key}/comment"
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
 

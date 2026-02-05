@@ -1,8 +1,9 @@
-from typing import Any, Literal
-from decimal import Decimal
+from typing import Literal
 from itertools import chain
 
-from tables.serializers.telegram_trigger_serializers import TelegramTriggerNodeSerializer
+from tables.serializers.telegram_trigger_serializers import (
+    TelegramTriggerNodeSerializer,
+)
 from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
@@ -123,14 +124,12 @@ class ProviderSerializer(serializers.ModelSerializer):
 
 
 class LLMModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = LLMModel
         fields = "__all__"
 
 
 class EmbeddingModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = EmbeddingModel
         fields = "__all__"
@@ -153,7 +152,6 @@ class DefaultEmbeddingConfigSerializer(serializers.ModelSerializer):
 
 
 class ToolConfigFieldSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ToolConfigField
         fields = ["name", "description", "data_type", "required"]
@@ -206,7 +204,6 @@ class PythonCodeSerializer(serializers.ModelSerializer):
 
 
 class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = PythonCodeToolConfigField
         fields = [
@@ -218,6 +215,7 @@ class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
             "required",
             "secret",
         ]
+
 
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
@@ -264,6 +262,7 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
 
 class PythonCodeToolConfigSerializer(serializers.ModelSerializer):
     def __init__(self, *args, tool_config_validator=None, **kwargs):
@@ -315,7 +314,6 @@ class McpToolSerializer(serializers.ModelSerializer):
 
 
 class RealtimeAgentSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = RealtimeAgent
         exclude = ["agent"]
@@ -872,7 +870,6 @@ class TaskWriteSerializer(serializers.ModelSerializer):
         configured_tool_list = []
         mcp_tool_list = []
         for tool_id in tool_ids:
-
             prefix, id_ = tool_id.split(":")
             if prefix == "python-code-tool":
                 python_code_tool = PythonCodeTool.objects.get(pk=id_)
@@ -881,7 +878,9 @@ class TaskWriteSerializer(serializers.ModelSerializer):
                 python_code_tool_list.append(instance)
             elif prefix == "python-code-tool-config":
                 python_code_tool_config = PythonCodeToolConfig.objects.get(pk=id_)
-                instance = TaskPythonCodeToolConfigs(task=task, tool=python_code_tool_config)
+                instance = TaskPythonCodeToolConfigs(
+                    task=task, tool=python_code_tool_config
+                )
                 instance.full_clean()
                 python_code_tool_config_list.append(instance)
             elif prefix == "configured-tool":
@@ -956,7 +955,6 @@ class CrewSerializer(serializers.ModelSerializer):
 
 
 class ToolConfigSerializer(serializers.ModelSerializer):
-
     def __init__(
         self, *args, tool_config_validator: ToolConfigValidator | None = None, **kwargs
     ):
@@ -970,7 +968,6 @@ class ToolConfigSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def validate(self, data: dict):
-
         name: str = data.get("name")
         tool: Tool = data.get("tool")
         configuration: dict = data.get("configuration", dict())
@@ -997,14 +994,12 @@ class ToolConfigSerializer(serializers.ModelSerializer):
     def to_representation(
         self, instance: ToolConfig, format: Literal["rest", "pydantic"] = "rest"
     ) -> dict:
-
         data = super().to_representation(instance)
         configuration: dict = data["configuration"]
 
         for key, value in configuration.items():
             tool_config_field: ToolConfigField = instance.get_tool_config_field(key)
             if tool_config_field.data_type == ToolConfigField.FieldType.ANY:
-
                 # Get rid of ternar operator. Use only value["decoded_value"] (as pydantic)
                 value = (
                     value["user_input"] if format == "rest" else value["decoded_value"]
@@ -1018,12 +1013,11 @@ class ToolConfigSerializer(serializers.ModelSerializer):
         return data
 
     def to_internal_value(self, data: dict) -> dict:
-
         try:
             tool: Tool = Tool.objects.get(pk=data.get("tool"))
         except Tool.DoesNotExist:
             raise ToolConfigSerializerError(
-                f"Tool with id: '{data.get("tool")}' does not exist", status_code=404
+                f"Tool with id: '{data.get('tool')}' does not exist", status_code=404
             )
         configuration: dict = data.get("configuration", dict())
 
@@ -1055,7 +1049,6 @@ class ToolConfigSerializer(serializers.ModelSerializer):
 
 
 class UserSessionMessageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserSessionMessage
 
@@ -1063,7 +1056,6 @@ class UserSessionMessageSerializer(serializers.ModelSerializer):
 
 
 class TaskSessionMessageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = TaskSessionMessage
 
@@ -1071,7 +1063,6 @@ class TaskSessionMessageSerializer(serializers.ModelSerializer):
 
 
 class AgentSessionMessageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = AgentSessionMessage
         fields = "__all__"
@@ -1241,7 +1232,6 @@ class EndNodeSerializer(serializers.ModelSerializer):
 
 
 class SessionSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Session
         fields = "__all__"
@@ -1314,7 +1304,6 @@ class GraphLightSerializer(serializers.ModelSerializer):
 
 
 class RealtimeModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = RealtimeModel
         fields = "__all__"
@@ -1327,7 +1316,6 @@ class RealtimeConfigSerializer(serializers.ModelSerializer):
 
 
 class RealtimeTranscriptionModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = RealtimeTranscriptionModel
         fields = "__all__"
@@ -1487,7 +1475,6 @@ class GraphSerializer(serializers.ModelSerializer):
 
 
 class GraphFileReadSerializer(serializers.ModelSerializer):
-
     file = serializers.FileField(use_url=True)
 
     class Meta:
@@ -1507,21 +1494,18 @@ class GraphFileReadSerializer(serializers.ModelSerializer):
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Organization
         fields = ["id", "name"]
 
 
 class OrganizationUserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = OrganizationUser
         fields = ["id", "organization", "name"]
 
 
 class GraphOrganizationSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = GraphOrganization
         fields = [
@@ -1573,7 +1557,6 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
 
 
 class GraphOrganizationUserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]

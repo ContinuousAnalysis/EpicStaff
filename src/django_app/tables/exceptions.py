@@ -1,6 +1,5 @@
 from rest_framework.exceptions import APIException
 from tables.constants.knowledge_constants import (
-    MAX_FILE_SIZE,
     ALLOWED_FILE_TYPES,
 )
 
@@ -87,9 +86,11 @@ class BuiltInToolModificationError(CustomAPIExeption):
     def __init__(self, detail="Unable to remove built-in tools", code=None):
         super().__init__(detail=detail, code=code, status_code=400)
 
+
 class RegisterTelegramTriggerError(CustomAPIExeption):
     status_code = 400
     default_detail = "Error occurred while registering Telegram trigger"
+
 
 class PythonCodeToolConfigSerializerError(CustomAPIExeption):
     """
@@ -102,7 +103,6 @@ class PythonCodeToolConfigSerializerError(CustomAPIExeption):
         code=None,
     ):
         super().__init__(detail=detail, code=code, status_code=400)
-
 
 
 class DocumentUploadException(CustomAPIExeption):

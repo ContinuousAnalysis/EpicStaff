@@ -1,6 +1,7 @@
 # Cli Tool
 import subprocess
 
+
 def main(command: str) -> str:
     """
     Execute a CLI command and return its stdout and stderr.

@@ -73,9 +73,7 @@ class EmbeddingConfig(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     model_id = Column(Integer, ForeignKey("tables_embeddingmodel.id"), nullable=True)
     custom_name = Column(Text, unique=True, nullable=False)
-    task_type = Column(
-        String(255), nullable=False, default="retrieval_doc"
-    )
+    task_type = Column(String(255), nullable=False, default="retrieval_doc")
     api_key = Column(Text, nullable=True)
     is_visible = Column(Boolean, default=True)
 
@@ -165,9 +163,7 @@ class DocumentMetadata(Base):
     )
 
     # Relationships
-    source_collection = relationship(
-        "SourceCollection", back_populates="documents"
-    )
+    source_collection = relationship("SourceCollection", back_populates="documents")
     document_content = relationship(
         "DocumentContent", back_populates="metadata_records"
     )

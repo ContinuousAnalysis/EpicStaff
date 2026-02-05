@@ -1,39 +1,39 @@
 import json
-import threading
-
-from services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
-from services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
 
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.checkpoint.memory import MemorySaver
-from loguru import logger
+from langgraph.types import StreamWriter
 
+from src.crew.models.state import State
+from src.crew.services.graph.nodes import (
+    AudioTranscriptionNode,
+    FileContentExtractorNode,
+    PythonNode,
+    CrewNode,
+    BaseNode,
+    LLMNode,
+    EndNode,
+)
 
-from callbacks.session_callback_factory import CrewCallbackFactory
-from services.graph.events import StopEvent
-from services.graph.subgraphs.decision_table_node import DecisionTableNodeSubgraph
-from services.graph.subgraphs.subgraph_node import SubGraphNode
-from services.graph.nodes.llm_node import LLMNode
-from services.graph.nodes.end_node import EndNode
-from models.state import *
-from services.graph.nodes import *
-from models.request_models import SubGraphData
-
-from services.crew.crew_parser_service import CrewParserService
-from services.redis_service import RedisService
-from models.request_models import (
-    ConditionGroupData,
+from src.crew.services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
+from src.crew.services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.graph.subgraphs.decision_table_node import (
+    DecisionTableNodeSubgraph,
+)
+from src.crew.services.graph.subgraphs.subgraph_node import SubGraphNode
+from src.crew.services.crew.crew_parser_service import CrewParserService
+from src.crew.services.redis_service import RedisService
+from src.crew.models.request_models import (
     DecisionTableNodeData,
     PythonCodeData,
     SessionData,
+    SubGraphData,
 )
-from services.run_python_code_service import RunPythonCodeService
-from services.knowledge_search_service import KnowledgeSearchService
-from langgraph.types import StreamWriter
-from utils import map_variables_to_input
+from src.crew.services.run_python_code_service import RunPythonCodeService
+from src.crew.services.knowledge_search_service import KnowledgeSearchService
 
-from utils.psutil_wrapper import psutil_wrapper
+from src.crew.utils import map_variables_to_input
 
 
 class ReturnCodeError(Exception): ...
@@ -158,6 +158,7 @@ class SessionGraphBuilder:
             decision_table_node_data=decision_table_node_data,
             graph_builder=subgraph_builder,
             stop_event=self.stop_event,
+            run_code_execution_service=self.python_code_executor_service,
         )
         subgraph: CompiledStateGraph = builder.build()
 
@@ -334,7 +335,7 @@ class SessionGraphBuilder:
                     field_list=telegram_trigger_node_data.field_list,
                 )
             )
-            
+
         if schema.entrypoint is not None:
             self.set_entrypoint(schema.entrypoint)
         # name always __end_node__

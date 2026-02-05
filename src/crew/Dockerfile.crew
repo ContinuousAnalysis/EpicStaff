@@ -1,38 +1,52 @@
 # Use a base image with Python 3.12.10
 FROM python:3.12.10
 
-# Set environment variables for Poetry
+# Poetry env
 ENV POETRY_VERSION=1.8.3 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     POETRY_NO_INTERACTION=1
 
-# Install dependencies for Poetry and Python
+# Install dependencies for Poetry
 RUN apt-get update && \
     apt-get install -y curl && \
     pip install poetry && \
-    apt-get clean
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Add Poetry to the PATH
 ENV PATH="/root/.local/bin:$PATH"
 
-# Set the working directory in the Docker image
+# Project root (pyproject lives here)
 WORKDIR /home/user/root/app
 
-# Copy pyproject.toml and poetry.lock first to avoid rebuilding on code changes
-COPY crew/pyproject.toml .
-COPY crew/poetry.lock .
-COPY crew/libraries/ ./libraries
+# Copy only dependency descriptors first (better caching)
+COPY crew/pyproject.toml ./pyproject.toml
+COPY crew/poetry.lock ./poetry.lock
+COPY crew/libraries/ ./libraries/
 
 ENV PEP517_BUILD_BACKEND=setuptools.build_meta
 
+# Install deps (project root)
 RUN poetry install --no-root --without dotdict,crew -v
 RUN poetry install --no-root --only crew -v
 
-COPY ./shared ./../shared
+# Now put source code under /src
+WORKDIR /home/user/root/app/src
+
+# Copy crew sources into src/
+COPY crew/ ./crew
+
+# Copy shared as sibling folder inside src/
+WORKDIR /home/user/root
+COPY shared/ ./shared/
+
+WORKDIR /home/user/root/app
+# If dotdict is a poetry group and depends on src/shared presence, install it now from project root
+
 RUN poetry install --no-root --only dotdict -v
 
+# Cleanup
 RUN rm -rf /root/.cache
 
-#Copying file to workdir
-COPY ./crew .
-CMD ["poetry", "run", "python3", "/home/user/root/app/main.py"]
+# Run entrypoint (code is in /src)
+CMD ["poetry", "run", "python3", "/home/user/root/app/src/crew/main.py"]

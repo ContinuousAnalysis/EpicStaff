@@ -266,3 +266,5 @@ knowledge/graph_data/
 
 # Knowledge migration backup
 **/knowledge_migration_backup/
+*.pem
+*.crt
