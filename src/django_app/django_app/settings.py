@@ -15,10 +15,13 @@ import sys
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv, find_dotenv
+from loguru import logger
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-if "--debug" in sys.argv:
+
+if os.getenv("LOAD_DEBUG_ENV", "True").lower() in ("true", "1", "yes", "on"):
+    logger.info("LOAD_DEBUG_ENV=True")
     load_dotenv(find_dotenv(BASE_DIR.parent / "debug.env"))
 
 

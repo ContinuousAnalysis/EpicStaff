@@ -15,7 +15,7 @@ services:
       - SESSION_EVENT_CHANNEL=session:event
       - SESSION_STATUS_CHANNEL=sessions:session_status
       - MEMORY_UPDATE_CHANNEL=memory:update
-  
+      - LOAD_DEBUG_ENV=${LOAD_DEBUG_ENV}
       - DEBUG=${DEBUG:-True}
       - SECRET_KEY=${SECRET_KEY:-unsafe-dev-key}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
