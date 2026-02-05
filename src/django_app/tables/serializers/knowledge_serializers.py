@@ -1,7 +1,11 @@
 from rest_framework import serializers
 from loguru import logger
 
-from tables.models.knowledge_models import SourceCollection, DocumentMetadata
+from tables.models.knowledge_models import (
+    SourceCollection,
+    DocumentMetadata,
+    BaseRagType,
+)
 from tables.services.knowledge_services.collection_management_service import (
     CollectionManagementService,
 )
@@ -52,6 +56,19 @@ class RagConfigurationSummarySerializer(serializers.Serializer):
     updated_at = serializers.DateTimeField(
         help_text="When this RAG configuration was last updated"
     )
+
+
+class BaseRagTypeSerializer(serializers.ModelSerializer):
+    """Serializer for BaseRagType."""
+
+    class Meta:
+        model = BaseRagType
+        fields = [
+            "rag_type_id",
+            "rag_type",
+            "source_collection",
+        ]
+        read_only_fields = fields
 
 
 class DocumentMetadataSerializer(serializers.ModelSerializer):
@@ -219,7 +236,7 @@ class SourceCollectionDetailSerializer(serializers.ModelSerializer):
             )
             serializer = RagConfigurationSummarySerializer(rag_configs, many=True)
             return serializer.data
-        except Exception as e:           
+        except Exception as e:
             logger.error(
                 f"Error fetching RAG configurations for collection {obj.collection_id}: {e}"
             )

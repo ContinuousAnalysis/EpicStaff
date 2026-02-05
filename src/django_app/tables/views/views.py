@@ -890,18 +890,18 @@ class ProcessRagIndexingView(APIView):
             raise
 
 
-class ProcessCollectionEmbeddingView(APIView):
-    @swagger_auto_schema(request_body=ProcessCollectionEmbeddingSerializer)
-    def post(self, request):
-        serializer = ProcessCollectionEmbeddingSerializer(data=request.data)
-        if serializer.is_valid():
-            collection_id = serializer["collection_id"].value
-            if not SourceCollection.objects.filter(
-                collection_id=collection_id
-            ).exists():
-                return Response(status=status.HTTP_404_NOT_FOUND)
-            redis_service.publish_source_collection(collection_id=collection_id)
-            return Response(status=status.HTTP_202_ACCEPTED)
+# class ProcessCollectionEmbeddingView(APIView):
+#     @swagger_auto_schema(request_body=ProcessCollectionEmbeddingSerializer)
+#     def post(self, request):
+#         serializer = ProcessCollectionEmbeddingSerializer(data=request.data)
+#         if serializer.is_valid():
+#             collection_id = serializer["collection_id"].value
+#             if not SourceCollection.objects.filter(
+#                 collection_id=collection_id
+#             ).exists():
+#                 return Response(status=status.HTTP_404_NOT_FOUND)
+#             redis_service.publish_source_collection(collection_id=collection_id)
+#             return Response(status=status.HTTP_202_ACCEPTED)
 
 
 class TelegramTriggerNodeAvailableFieldsView(APIView):

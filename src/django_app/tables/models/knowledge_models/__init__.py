@@ -14,15 +14,33 @@ from .naive_rag_models import (
     NaiveRagSearchConfig,
 )
 
+from .graphrag_models import (
+    GraphRag,
+    AgentGraphRag,
+    GraphRagDocument,
+    GraphRagInputFileType,
+    GraphRagChunkStrategyType,
+    GraphRagIndexConfig,
+)
+
 __all__ = [
+    # Collection models
     "SourceCollection",
     "DocumentMetadata",
     "DocumentContent",
     "BaseRagType",
+    # Naive RAG models
     "NaiveRag",
     "NaiveRagDocumentConfig",
     "NaiveRagChunk",
     "NaiveRagEmbedding",
     "AgentNaiveRag",
     "NaiveRagSearchConfig",
+    # Graph RAG models
+    "GraphRag",
+    "AgentGraphRag",
+    "GraphRagDocument",
+    "GraphRagInputFileType",
+    "GraphRagChunkStrategyType",
+    "GraphRagIndexConfig",
 ]

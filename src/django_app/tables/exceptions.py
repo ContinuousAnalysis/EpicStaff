@@ -245,11 +245,44 @@ class RagNotReadyForIndexingException(RagException):
         super().__init__(message)
 
 
-class GraphRagNotImplementedException(RagException):
-    """GraphRag not yet implemented."""
+class GraphRagNotFoundException(RagException):
+    """Raised when GraphRag is not found."""
 
-    def __init__(self):
-        super().__init__("GraphRag is not yet implemented")
+    def __init__(self, graph_rag_id):
+        self.graph_rag_id = graph_rag_id
+        super().__init__(f"GraphRag with id {graph_rag_id} not found")
+
+
+class GraphRagAlreadyExistsException(RagException):
+    """Raised when trying to create GraphRag but it already exists."""
+
+    def __init__(self, collection_id):
+        self.collection_id = collection_id
+        super().__init__(
+            f"GraphRag already exists for collection {collection_id}. Use update endpoint instead."
+        )
+
+
+class LLMConfigNotFoundException(RagException):
+    """Raised when LLM config is not found."""
+
+    def __init__(self, llm_id):
+        self.llm_id = llm_id
+        super().__init__(f"LLM config with id {llm_id} not found")
+
+
+class GraphRagIndexConfigNotFoundException(RagException):
+    """Raised when GraphRag index config is not found."""
+
+    def __init__(self, config_id):
+        self.config_id = config_id
+        super().__init__(f"GraphRag index config with id {config_id} not found")
+
+
+class InvalidGraphRagParametersException(RagException):
+    """Raised when GraphRag parameters are invalid."""
+
+    pass
 
 
 class AgentMissingCollectionException(RagException):

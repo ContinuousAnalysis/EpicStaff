@@ -98,6 +98,9 @@ from tables.views.knowledge_views.naive_rag_views import (
     ProcessNaiveRagDocumentChunkingView,
     NaiveRagChunkViewSet,
 )
+from tables.views.knowledge_views.graph_rag_views import (
+    GraphRagViewSet,
+)
 
 
 from tables.views.sse_views import RunSessionSSEView, RunSessionSSEViewSwagger
@@ -311,6 +314,39 @@ urlpatterns = [
         "naive-rag/<str:naive_rag_id>/document-configs/bulk-delete/",
         NaiveRagDocumentConfigViewSet.as_view({"post": "bulk_delete"}),
         name="document-config-bulk-delete",
+    ),
+    # GraphRag endpoints
+    path(
+        "graph-rag/collections/<str:collection_id>/graph-rag/",
+        GraphRagViewSet.as_view(
+            {"post": "create_graph_rag", "get": "get_by_collection"}
+        ),
+        name="graph-rag-collection",
+    ),
+    path(
+        "graph-rag/<int:pk>/",
+        GraphRagViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
+        name="graph-rag-detail",
+    ),
+    path(
+        "graph-rag/<int:pk>/index-config/",
+        GraphRagViewSet.as_view({"put": "update_index_config"}),
+        name="graph-rag-index-config",
+    ),
+    path(
+        "graph-rag/<int:pk>/documents/bulk-delete/",
+        GraphRagViewSet.as_view({"post": "remove_documents"}),
+        name="graph-rag-documents-bulk-delete",
+    ),
+    path(
+        "graph-rag/<int:pk>/documents/list/",
+        GraphRagViewSet.as_view({"get": "list_documents"}),
+        name="graph-rag-documents-list",
+    ),
+    path(
+        "graph-rag/<int:pk>/documents/initialize/",
+        GraphRagViewSet.as_view({"post": "initialize_documents"}),
+        name="graph-rag-documents-initialize",
     ),
     path(
         "telegram-trigger-available-fields/",

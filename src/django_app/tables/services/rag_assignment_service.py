@@ -4,10 +4,14 @@ from tables.models.knowledge_models.naive_rag_models import (
     AgentNaiveRag,
     NaiveRagSearchConfig,
 )
+from tables.models.knowledge_models.graphrag_models import (
+    GraphRag,
+    AgentGraphRag,
+)
 from tables.models.crew_models import Agent
 from tables.exceptions import (
     NaiveRagNotFoundException,
-    GraphRagNotImplementedException,
+    GraphRagNotFoundException,
     AgentMissingCollectionException,
     RagCollectionMismatchException,
     UnknownRagTypeException,
@@ -50,7 +54,20 @@ class RagAssignmentService:
             return naive_rag
 
         elif rag_type == "graph":
-            raise GraphRagNotImplementedException()
+            try:
+                graph_rag = GraphRag.objects.select_related(
+                    "base_rag_type__source_collection"
+                ).get(graph_rag_id=rag_id)
+            except GraphRag.DoesNotExist:
+                raise GraphRagNotFoundException(rag_id)
+
+            # Validate RAG belongs to agent's collection
+            if graph_rag.base_rag_type.source_collection != agent.knowledge_collection:
+                raise RagCollectionMismatchException(
+                    "graph", rag_id, agent.knowledge_collection.collection_id
+                )
+
+            return graph_rag
 
         else:
             raise UnknownRagTypeException(rag_type)
@@ -69,7 +86,7 @@ class RagAssignmentService:
         if rag_type == "naive":
             return RagAssignmentService.assign_naive_rag_to_agent(agent, rag_id)
         elif rag_type == "graph":
-            raise GraphRagNotImplementedException()
+            return RagAssignmentService.assign_graph_rag_to_agent(agent, rag_id)
         else:
             raise UnknownRagTypeException(rag_type)
 
@@ -87,14 +104,14 @@ class RagAssignmentService:
                 "rag_status": naive_rag.rag_status,
             }
 
-        # Future: Check GraphRag assignment
-        # graph_rag = RagAssignmentService.get_agent_graph_rag(agent)
-        # if graph_rag:
-        #     return {
-        #         "rag_type": "graph",
-        #         "rag_id": graph_rag.graph_rag_id,
-        #         "rag_status": graph_rag.rag_status,
-        #     }
+        # Check GraphRag assignment
+        graph_rag = RagAssignmentService.get_agent_graph_rag(agent)
+        if graph_rag:
+            return {
+                "rag_type": "graph",
+                "rag_id": graph_rag.graph_rag_id,
+                "rag_status": graph_rag.rag_status,
+            }
 
         return None
 
@@ -111,8 +128,8 @@ class RagAssignmentService:
         # Unassign NaiveRag
         RagAssignmentService.unassign_naive_rag_from_agent(agent)
 
-        # Future: Unassign GraphRag
-        # RagAssignmentService.unassign_graph_rag_from_agent(agent)
+        # Unassign GraphRag
+        RagAssignmentService.unassign_graph_rag_from_agent(agent)
 
     @staticmethod
     def get_available_naive_rags_for_agent(agent: Agent):
@@ -166,6 +183,61 @@ class RagAssignmentService:
     def unassign_naive_rag_from_agent(agent: Agent):
         """Remove NaiveRag assignment (keeps search config)."""
         AgentNaiveRag.objects.filter(agent=agent).delete()
+
+    # GraphRag methods
+
+    @staticmethod
+    def get_available_graph_rags_for_agent(agent: Agent):
+        """
+        Get all GraphRags belonging to agent's knowledge_collection.
+        Returns empty queryset if agent has no collection.
+        """
+        if not agent.knowledge_collection:
+            return GraphRag.objects.none()
+
+        return GraphRag.objects.filter(
+            base_rag_type__source_collection=agent.knowledge_collection
+        ).select_related("base_rag_type", "embedder", "llm")
+
+    @staticmethod
+    @transaction.atomic
+    def assign_graph_rag_to_agent(agent: Agent, graph_rag_id: int):
+        """
+        Create AgentGraphRag link.
+
+        NOTE: This method does NOT validate. Use assign_rag_to_agent() for validation.
+        This is called internally after validation.
+        """
+        graph_rag = GraphRag.objects.select_related(
+            "base_rag_type__source_collection"
+        ).get(graph_rag_id=graph_rag_id)
+
+        # Validation: RAG must belong to agent's collection
+        if graph_rag.base_rag_type.source_collection != agent.knowledge_collection:
+            raise RagCollectionMismatchException(
+                "graph", graph_rag_id, agent.knowledge_collection.collection_id
+            )
+
+        RagAssignmentService.unassign_graph_rag_from_agent(agent)
+
+        # Create M2M link
+        AgentGraphRag.objects.create(agent=agent, graph_rag=graph_rag)
+
+        return graph_rag
+
+    @staticmethod
+    def get_agent_graph_rag(agent: Agent) -> GraphRag | None:
+        """Get currently assigned GraphRag (or None)."""
+        try:
+            return agent.agent_graph_rags.select_related("graph_rag").get().graph_rag
+        except AgentGraphRag.DoesNotExist:
+            return None
+
+    @staticmethod
+    @transaction.atomic
+    def unassign_graph_rag_from_agent(agent: Agent):
+        """Remove GraphRag assignment."""
+        AgentGraphRag.objects.filter(agent=agent).delete()
 
 
 class SearchConfigService:
