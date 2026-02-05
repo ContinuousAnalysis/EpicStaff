@@ -1,0 +1,24 @@
+services:
+  django_app:
+    ports:
+      - "${DJANGO_PORT:-8000}:${DJANGO_PORT:-8000}"
+
+  crewdb:
+    ports:
+      - "${DB_PORT:-5432}:${DB_PORT:-5432}"
+
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
+
+  realtime:
+    ports:
+      - "${REALTIME_PORT:-8050}:${REALTIME_PORT:-8050}"
+
+  manager:
+    ports:
+      - "${MANAGER_PORT:-8001}:${MANAGER_PORT:-8001}"
+
+  frontend:
+    ports:
+      - "4200:80"
