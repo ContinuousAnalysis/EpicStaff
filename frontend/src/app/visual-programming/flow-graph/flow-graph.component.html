@@ -250,6 +250,7 @@
     }
     <app-node-panel-shell
         [node]="sidePanelService.selectedNode()"
+        [currentFlowId]="currentFlowId"
         (save)="onNodePanelSaved($event)"
         (autosave)="onNodePanelAutosaved($event)"
         #nodePanelShell
