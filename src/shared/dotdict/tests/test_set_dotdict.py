@@ -1,5 +1,4 @@
-import pytest
-from dotdict import DotDict, DotList, DotObject
+from dotdict import DotDict, DotList
 
 
 def test_autocreate_nested_dotdict():
@@ -10,38 +9,45 @@ def test_autocreate_nested_dotdict():
     assert isinstance(variables.a.b.c, DotDict)
     assert variables.a.b.c.d == 1
 
+
 def test_model_dump_dotdict():
     variables = DotDict({})
     variables.a.b.c.d = 1
     dumped = variables.model_dump()
-    assert dumped == {'a': {'b': {'c': {'d': 1}}}}
+    assert dumped == {"a": {"b": {"c": {"d": 1}}}}
+
 
 def test_update_method():
-    variables = DotDict({'x': 5})
-    variables.update({'y': 10})
+    variables = DotDict({"x": 5})
+    variables.update({"y": 10})
     assert variables.x == 5
     assert variables.y == 10
 
+
 def test_dotlist_conversion():
-    data = [1, {'a': 2}]
+    data = [1, {"a": 2}]
     dotlist = DotList(data)
     assert isinstance(dotlist[0], int)
     assert isinstance(dotlist[1], DotDict)
     assert dotlist[1].a == 2
 
+
 def test_nested_dotlist_and_dotdict():
     variables = DotDict({})
     variables.items = []
-    from pdb import set_trace; set_trace()
+    from pdb import set_trace
+
+    set_trace()
     print(type(variables.items))
     assert isinstance(variables.items, DotList)
-    variables.items.append({'id': 1})
-    variables.items.append({'id': 2, 'nested': {'value': 5}})
-    
+    variables.items.append({"id": 1})
+    variables.items.append({"id": 2, "nested": {"value": 5}})
+
     assert isinstance(variables.items, DotList)
     assert isinstance(variables.items[0], DotDict)
     assert variables.items[0].id == 1
     assert variables.items[1].nested.value == 5
+
 
 def test_accessing_nonexistent_attribute_creates_dotdict():
     variables = DotDict({})
@@ -50,19 +56,22 @@ def test_accessing_nonexistent_attribute_creates_dotdict():
     variables.new_attr.sub = 123
     assert variables.new_attr.sub == 123
 
+
 def test_setitem_with_dotobject():
     variables = DotDict({})
-    variables['x'] = {'y': {'z': 99}}
+    variables["x"] = {"y": {"z": 99}}
     assert isinstance(variables.x, DotDict)
     assert variables.x.y.z == 99
 
+
 def test_dotlist_append_autoconversion():
     dotlist = DotList([])
-    dotlist.append({'foo': 'bar'})
+    dotlist.append({"foo": "bar"})
     assert isinstance(dotlist[0], DotDict)
-    assert dotlist[0].foo == 'bar'
+    assert dotlist[0].foo == "bar"
+
 
 def test_model_dump_dotlist():
-    dotlist = DotList([{'a': 1}, {'b': 2}])
+    dotlist = DotList([{"a": 1}, {"b": 2}])
     dumped = dotlist.model_dump()
-    assert dumped == [{'a': 1}, {'b': 2}]
+    assert dumped == [{"a": 1}, {"b": 2}]

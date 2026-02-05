@@ -19,7 +19,6 @@ def sync_edit_issue(
     github_issue_body: str,
     github_issue_url: str,
 ) -> Optional[str]:
-
     url = f"https://{domain}/rest/api/3/issue/{jira_issue_key}"
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
 

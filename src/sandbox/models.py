@@ -9,6 +9,7 @@ class CodeResultData(BaseModel):
     stdout: str
     returncode: int = 0
 
+
 class CodeTaskData(BaseModel):
     venv_name: str
     libraries: list[str]

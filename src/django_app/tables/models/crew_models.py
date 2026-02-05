@@ -1,13 +1,11 @@
 from typing import Any
 from django.db import models
 from django.db.models import CheckConstraint
-from tables.models.python_models import PythonCodeTool
 from tables.models import DefaultBaseModel, AbstractDefaultFillableModel, Process
 from django.core.exceptions import ValidationError
 
 
 class DefaultCrewConfig(DefaultBaseModel):
-
     embedding_config = models.ForeignKey(
         "EmbeddingConfig",
         on_delete=models.SET_NULL,
@@ -36,7 +34,6 @@ class DefaultCrewConfig(DefaultBaseModel):
 
 
 class DefaultAgentConfig(DefaultBaseModel):
-
     max_iter = models.IntegerField(null=True, default=20)
     max_rpm = models.IntegerField(null=True, default=100)
     max_execution_time = models.IntegerField(null=True, default=True)
@@ -114,7 +111,6 @@ class Agent(AbstractDefaultFillableModel):
         return None
 
     def fill_with_defaults(self, crew_id: int | None):
-
         if self.llm_config is not None:
             if self.default_temperature is not None:
                 self.llm_config.temperature = self.default_temperature
@@ -279,7 +275,6 @@ class Crew(AbstractDefaultFillableModel):
         related_name="planning_llm_config",
     )
     default_temperature = models.FloatField(null=True, default=None)
-
 
     def get_default_model(self):
         return DefaultCrewConfig.load()
@@ -544,7 +539,6 @@ def set_field_value_null_in_tool_configs(field_type: str, value: Any):
         # Get all tool configs for this tool
         tool_config_set = ToolConfig.objects.filter(tool=tool)
         for tool_config in tool_config_set:
-
             # Set configuration key to None if current value match
             if not tool_config.configuration.get(field.name):
                 # if config not set then skip setting None

@@ -1,12 +1,11 @@
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from django.shortcuts import get_object_or_404
 
-from tables.models import DocumentMetadata, SourceCollection
+from tables.models import DocumentMetadata
 from tables.serializers.knowledge_serializers import (
     DocumentMetadataSerializer,
     DocumentUploadSerializer,

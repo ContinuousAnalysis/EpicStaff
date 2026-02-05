@@ -52,7 +52,12 @@ def run_rag_indexing(rag_id: int, rag_type: str):
     collection_processor_service.process_rag_indexing(rag_id=rag_id, rag_type=rag_type)
 
 
-async def indexing(redis_service: RedisService, executor: ThreadPoolExecutor, semaphore: asyncio.Semaphore, background_tasks: set):
+async def indexing(
+    redis_service: RedisService,
+    executor: ThreadPoolExecutor,
+    semaphore: asyncio.Semaphore,
+    background_tasks: set,
+):
     """Handles RAG indexing (+ force chunking) from the Redis queue asynchronously."""
     logger.info(
         f"Subscribed to channel '{knowledge_indexing_channel}' for RAG indexing."
@@ -98,7 +103,12 @@ async def indexing(redis_service: RedisService, executor: ThreadPoolExecutor, se
                 logger.error(f"Error parsing indexing message: {e}")
 
 
-async def chunking(redis_service: RedisService, executor: ThreadPoolExecutor, semaphore: asyncio.Semaphore, background_tasks: set):
+async def chunking(
+    redis_service: RedisService,
+    executor: ThreadPoolExecutor,
+    semaphore: asyncio.Semaphore,
+    background_tasks: set,
+):
     """
     Handles document chunking from the Redis queue asynchronously.
 
@@ -155,7 +165,9 @@ async def chunking(redis_service: RedisService, executor: ThreadPoolExecutor, se
                 logger.error(f"Error parsing chunking message: {e}")
 
 
-async def searching(redis_service: RedisService, semaphore: asyncio.Semaphore, background_tasks: set):
+async def searching(
+    redis_service: RedisService, semaphore: asyncio.Semaphore, background_tasks: set
+):
     """
     Handles search queries from the Redis queue asynchronously.
 
@@ -228,17 +240,28 @@ async def main():
     # Track background tasks to prevent garbage collection
     background_tasks = set()
 
-    task1 = asyncio.create_task(indexing(redis_service, executor, indexing_semaphore, background_tasks))
-    task2 = asyncio.create_task(searching(redis_service, search_semaphore, background_tasks))
+    task1 = asyncio.create_task(
+        indexing(redis_service, executor, indexing_semaphore, background_tasks)
+    )
+    task2 = asyncio.create_task(
+        searching(redis_service, search_semaphore, background_tasks)
+    )
     task3 = asyncio.create_task(
-        chunking(redis_service=redis_service, executor=executor, semaphore=chunking_semaphore, background_tasks=background_tasks)
+        chunking(
+            redis_service=redis_service,
+            executor=executor,
+            semaphore=chunking_semaphore,
+            background_tasks=background_tasks,
+        )
     )
     try:
         await asyncio.gather(task1, task2, task3, return_exceptions=True)
     finally:
         # Wait for all background tasks to complete
         if background_tasks:
-            logger.info(f"Waiting for {len(background_tasks)} background tasks to complete...")
+            logger.info(
+                f"Waiting for {len(background_tasks)} background tasks to complete..."
+            )
             await asyncio.gather(*background_tasks, return_exceptions=True)
         executor.shutdown(wait=True)
 
