@@ -4,9 +4,8 @@ from rest_framework import serializers
 from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
 from tables.models.python_models import PythonCodeTool
-from tables.models.realtime_models import VoiceChoices
 from tables.models.graph_models import GraphFile, Graph
-from tables.models.python_models import PythonCodeTool, PythonCodeToolConfig
+from tables.models.python_models import PythonCodeToolConfig
 
 
 class RunSessionSerializer(serializers.Serializer):
@@ -36,10 +35,10 @@ class EnvironmentConfigSerializer(serializers.Serializer):
 
 class InitRealtimeSerializer(serializers.Serializer):
     agent_id = serializers.IntegerField(required=True)
+    config = serializers.DictField(required=False, default=dict)
 
 
 class BaseToolSerializer(serializers.Serializer):
-
     unique_name = serializers.CharField(required=True)  # type + id
     data = serializers.DictField(required=True)
 
@@ -73,7 +72,6 @@ class BaseToolSerializer(serializers.Serializer):
 
 
 class UploadGraphFileSerializer(serializers.Serializer):
-
     files = serializers.DictField(
         child=serializers.FileField(), allow_empty=False, write_only=True
     )
@@ -136,7 +134,6 @@ class UploadGraphFileSerializer(serializers.Serializer):
 
 
 class GraphFileUpdateSerializer(serializers.Serializer):
-
     domain_key = serializers.CharField()
     file = serializers.FileField()
 
@@ -173,9 +170,23 @@ class GraphFileUpdateSerializer(serializers.Serializer):
         return instance
 
 
+class RegisterTelegramTriggerSerializer(serializers.Serializer):
+    telegram_trigger_node_id = serializers.IntegerField(required=True)
+
+
 class ProcessDocumentChunkingSerializer(serializers.Serializer):
     document_id = serializers.IntegerField(required=True)
 
 
 class ProcessCollectionEmbeddingSerializer(serializers.Serializer):
     collection_id = serializers.IntegerField(required=True)
+
+
+class ProcessRagIndexingSerializer(serializers.Serializer):
+    """
+    Serializer for RAG indexing endpoint
+    Business logic is in IndexingService
+    """
+
+    rag_id = serializers.IntegerField(required=True, min_value=1)
+    rag_type = serializers.ChoiceField(required=True, choices=["naive", "graph"])

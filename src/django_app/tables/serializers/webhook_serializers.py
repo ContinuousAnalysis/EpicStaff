@@ -7,9 +7,8 @@ from rest_framework import serializers
 
 class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
-    webhook_trigger_path = serializers.CharField(
-        required=False, allow_blank=True
-    )
+    webhook_trigger_path = serializers.CharField(required=False, allow_blank=True)
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["webhook_trigger_path"] = (

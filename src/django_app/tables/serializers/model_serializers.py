@@ -1,8 +1,10 @@
-from typing import Any, Literal
-from decimal import Decimal
+from typing import Literal
 from itertools import chain
 
 from django.db import transaction
+from tables.serializers.telegram_trigger_serializers import (
+    TelegramTriggerNodeSerializer,
+)
 from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
@@ -10,7 +12,6 @@ from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConf
 from tables.models.webhook_models import WebhookTrigger
 from tables.models.graph_models import WebhookTriggerNode
 from tables.models.mcp_models import McpTool
-from tables.models.knowledge_models import Chunk, DocumentMetadata
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
     Agent,
@@ -97,6 +98,14 @@ from tables.constants import (
     DOMAIN_USER_KEY,
     DOMAIN_PERSISTENT_KEY,
 )
+from tables.services.rag_assignment_service import (
+    RagAssignmentService,
+    SearchConfigService,
+)
+from tables.serializers.naive_rag_serializers import (
+    RagInputSerializer,
+    NestedSearchConfigSerializer,
+)
 
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
@@ -121,14 +130,12 @@ class ProviderSerializer(serializers.ModelSerializer):
 
 
 class LLMModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = LLMModel
         fields = "__all__"
 
 
 class EmbeddingModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = EmbeddingModel
         fields = "__all__"
@@ -151,7 +158,6 @@ class DefaultEmbeddingConfigSerializer(serializers.ModelSerializer):
 
 
 class ToolConfigFieldSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ToolConfigField
         fields = ["name", "description", "data_type", "required"]
@@ -204,7 +210,6 @@ class PythonCodeSerializer(serializers.ModelSerializer):
 
 
 class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = PythonCodeToolConfigField
         fields = [
@@ -315,17 +320,6 @@ class McpToolSerializer(serializers.ModelSerializer):
 
 
 class RealtimeAgentSerializer(serializers.ModelSerializer):
-
-    similarity_threshold = serializers.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        min_value=Decimal("0.00"),
-        max_value=Decimal("1.00"),
-        required=False,
-    )
-
-    search_limit = serializers.IntegerField(min_value=1, max_value=1000, required=False)
-
     class Meta:
         model = RealtimeAgent
         exclude = ["agent"]
@@ -334,13 +328,8 @@ class RealtimeAgentSerializer(serializers.ModelSerializer):
 class AgentReadSerializer(serializers.ModelSerializer):
     tools = serializers.SerializerMethodField()
     realtime_agent = RealtimeAgentSerializer(read_only=True)
-    similarity_threshold = serializers.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        min_value=Decimal("0.00"),
-        max_value=Decimal("1.00"),
-        required=False,
-    )
+    rag = serializers.SerializerMethodField()
+    search_configs = serializers.SerializerMethodField()
 
     class Meta:
         model = Agent
@@ -364,8 +353,8 @@ class AgentReadSerializer(serializers.ModelSerializer):
             "fcm_llm_config",
             "knowledge_collection",
             "realtime_agent",
-            "search_limit",
-            "similarity_threshold",
+            "rag",
+            "search_configs",
         ]
 
     def get_tools(self, agent: Agent) -> list[dict]:
@@ -405,6 +394,17 @@ class AgentReadSerializer(serializers.ModelSerializer):
 
         return tools
 
+    def get_rag(self, agent: Agent) -> dict | None:
+        return RagAssignmentService.get_assigned_rag_info(agent)
+
+    def get_search_configs(self, agent: Agent) -> dict | None:
+        """
+        Get all RAG search configurations in nested format.
+        Returns: {"naive": {"search_limit": 3, "similarity_threshold": 0.2}, "graph": {...}}
+        Returns None if no configs exist.
+        """
+        return agent.get_search_configs()
+
 
 class AgentWriteSerializer(serializers.ModelSerializer):
     tool_ids = serializers.ListField(
@@ -416,14 +416,8 @@ class AgentWriteSerializer(serializers.ModelSerializer):
     llm_config = serializers.PrimaryKeyRelatedField(
         queryset=LLMConfig.objects.all(), required=False, allow_null=True
     )
-    similarity_threshold = serializers.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        min_value=Decimal("0.00"),
-        max_value=Decimal("1.00"),
-        required=False,
-    )
-    search_limit = serializers.IntegerField(min_value=1, max_value=1000, required=False)
+    rag = RagInputSerializer(required=False, allow_null=True)
+    search_configs = NestedSearchConfigSerializer(required=False, allow_null=True)
 
     class Meta:
         model = Agent
@@ -446,9 +440,9 @@ class AgentWriteSerializer(serializers.ModelSerializer):
             "llm_config",
             "fcm_llm_config",
             "knowledge_collection",
-            "search_limit",
-            "similarity_threshold",
             "realtime_agent",
+            "rag",
+            "search_configs",
         ]
 
     def _resolve_tool_ids(self, tool_ids: list[str]) -> dict[str, list[int]]:
@@ -481,6 +475,16 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         tools = self._resolve_tool_ids(tool_ids)
 
         realtime_agent_data = validated_data.pop("realtime_agent", None)
+        rag_data = validated_data.pop("rag", None)
+        search_configs_data = validated_data.pop("search_configs", None)
+
+        # Business Rule: If knowledge_collection provided, rag is REQUIRED
+        knowledge_collection = validated_data.get("knowledge_collection")
+        if knowledge_collection and not rag_data:
+            raise serializers.ValidationError(
+                {"rag": "This field is required when knowledge_collection is provided"}
+            )
+
         agent: Agent = super().create(validated_data)
 
         AgentConfiguredTools.objects.filter(agent_id=agent.id).delete()
@@ -525,6 +529,26 @@ class AgentWriteSerializer(serializers.ModelSerializer):
             ]
         )
 
+        # Handle RAG assignment
+        if rag_data:
+            RagAssignmentService.assign_rag_to_agent(
+                agent=agent,
+                rag_type=rag_data["rag_type"],
+                rag_id=rag_data["rag_id"],
+            )
+
+        # Handle search configs
+        if search_configs_data:
+            for rag_type, config in search_configs_data.items():
+                if rag_type == "naive":
+                    SearchConfigService.update_search_config(agent, **config)
+                # Future: elif rag_type == "graph": ...
+        elif rag_data:
+            # RAG assigned but no config provided - create defaults
+            if rag_data["rag_type"] == "naive":
+                SearchConfigService.create_default_search_config(agent)
+
+        # Handle realtime agent
         if realtime_agent_data:
             RealtimeAgent.objects.create(agent=agent, **realtime_agent_data)
         else:
@@ -537,6 +561,25 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         tools = self._resolve_tool_ids(tool_ids)
 
         realtime_agent_data: dict | None = validated_data.pop("realtime_agent", None)
+        rag_data = validated_data.pop("rag", None)
+        search_configs_data = validated_data.pop("search_configs", None)
+
+        # rags
+        old_knowledge_collection = instance.knowledge_collection
+        if "knowledge_collection" in validated_data:
+            new_knowledge_collection = validated_data.get("knowledge_collection")
+
+            if old_knowledge_collection != new_knowledge_collection:
+                RagAssignmentService.unassign_all_rags_from_agent(instance)
+
+                # If new collection is not None, require rag
+                if new_knowledge_collection and not rag_data:
+                    raise serializers.ValidationError(
+                        {
+                            "rag": "This field is required when changing to a new knowledge_collection"
+                        }
+                    )
+
         instance = super().update(instance, validated_data)
 
         # configured_tools
@@ -585,6 +628,23 @@ class AgentWriteSerializer(serializers.ModelSerializer):
             ]
         )
 
+        # Handle RAG assignment
+        if rag_data:
+            RagAssignmentService.unassign_all_rags_from_agent(instance)
+            RagAssignmentService.assign_rag_to_agent(
+                agent=instance,
+                rag_type=rag_data["rag_type"],
+                rag_id=rag_data["rag_id"],
+            )
+
+        # Handle search configs (independent from RAG assignment)
+        if search_configs_data:
+            for rag_type, config in search_configs_data.items():
+                if rag_type == "naive":
+                    SearchConfigService.update_search_config(instance, **config)
+                # Future: elif rag_type == "graph": ...
+
+        # Handle realtime agent
         if realtime_agent_data:
             realtime_agent, _ = RealtimeAgent.objects.get_or_create(agent=instance)
             for attr, value in realtime_agent_data.items():
@@ -816,7 +876,6 @@ class TaskWriteSerializer(serializers.ModelSerializer):
         configured_tool_list = []
         mcp_tool_list = []
         for tool_id in tool_ids:
-
             prefix, id_ = tool_id.split(":")
             if prefix == "python-code-tool":
                 python_code_tool = PythonCodeTool.objects.get(pk=id_)
@@ -884,14 +943,6 @@ class CrewSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
-    similarity_threshold = serializers.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        min_value=Decimal("0.00"),
-        max_value=Decimal("1.00"),
-        required=False,
-    )
-    search_limit = serializers.IntegerField(min_value=1, max_value=1000, required=False)
 
     class Meta:
         model = Crew
@@ -910,7 +961,6 @@ class CrewSerializer(serializers.ModelSerializer):
 
 
 class ToolConfigSerializer(serializers.ModelSerializer):
-
     def __init__(
         self, *args, tool_config_validator: ToolConfigValidator | None = None, **kwargs
     ):
@@ -924,7 +974,6 @@ class ToolConfigSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def validate(self, data: dict):
-
         name: str = data.get("name")
         tool: Tool = data.get("tool")
         configuration: dict = data.get("configuration", dict())
@@ -951,14 +1000,12 @@ class ToolConfigSerializer(serializers.ModelSerializer):
     def to_representation(
         self, instance: ToolConfig, format: Literal["rest", "pydantic"] = "rest"
     ) -> dict:
-
         data = super().to_representation(instance)
         configuration: dict = data["configuration"]
 
         for key, value in configuration.items():
             tool_config_field: ToolConfigField = instance.get_tool_config_field(key)
             if tool_config_field.data_type == ToolConfigField.FieldType.ANY:
-
                 # Get rid of ternar operator. Use only value["decoded_value"] (as pydantic)
                 value = (
                     value["user_input"] if format == "rest" else value["decoded_value"]
@@ -972,12 +1019,11 @@ class ToolConfigSerializer(serializers.ModelSerializer):
         return data
 
     def to_internal_value(self, data: dict) -> dict:
-
         try:
             tool: Tool = Tool.objects.get(pk=data.get("tool"))
         except Tool.DoesNotExist:
             raise ToolConfigSerializerError(
-                f"Tool with id: '{data.get("tool")}' does not exist", status_code=404
+                f"Tool with id: '{data.get('tool')}' does not exist", status_code=404
             )
         configuration: dict = data.get("configuration", dict())
 
@@ -1009,7 +1055,6 @@ class ToolConfigSerializer(serializers.ModelSerializer):
 
 
 class UserSessionMessageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserSessionMessage
 
@@ -1017,7 +1062,6 @@ class UserSessionMessageSerializer(serializers.ModelSerializer):
 
 
 class TaskSessionMessageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = TaskSessionMessage
 
@@ -1025,7 +1069,6 @@ class TaskSessionMessageSerializer(serializers.ModelSerializer):
 
 
 class AgentSessionMessageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = AgentSessionMessage
         fields = "__all__"
@@ -1293,7 +1336,6 @@ class EndNodeSerializer(serializers.ModelSerializer):
 
 
 class SessionSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Session
         fields = "__all__"
@@ -1366,7 +1408,6 @@ class GraphLightSerializer(serializers.ModelSerializer):
 
 
 class RealtimeModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = RealtimeModel
         fields = "__all__"
@@ -1379,7 +1420,6 @@ class RealtimeConfigSerializer(serializers.ModelSerializer):
 
 
 class RealtimeTranscriptionModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = RealtimeTranscriptionModel
         fields = "__all__"
@@ -1508,6 +1548,9 @@ class GraphSerializer(serializers.ModelSerializer):
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
+    telegram_trigger_node_list = TelegramTriggerNodeSerializer(
+        many=True, read_only=True
+    )
 
     class Meta:
         model = Graph
@@ -1529,11 +1572,11 @@ class GraphSerializer(serializers.ModelSerializer):
             "end_node_list",
             "time_to_live",
             "persistent_variables",
+            "telegram_trigger_node_list",
         ]
 
 
 class GraphFileReadSerializer(serializers.ModelSerializer):
-
     file = serializers.FileField(use_url=True)
 
     class Meta:
@@ -1553,21 +1596,18 @@ class GraphFileReadSerializer(serializers.ModelSerializer):
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Organization
         fields = ["id", "name"]
 
 
 class OrganizationUserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = OrganizationUser
         fields = ["id", "organization", "name"]
 
 
 class GraphOrganizationSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = GraphOrganization
         fields = [
@@ -1619,19 +1659,7 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
 
 
 class GraphOrganizationUserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
-
-
-class ChunkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Chunk
-        fields = "__all__"
-
-    def validate_document_id(self, value):
-        if not DocumentMetadata.objects.filter(document_id=value).exists():
-            raise serializers.ValidationError("Document with this id does not exist.")
-        return value

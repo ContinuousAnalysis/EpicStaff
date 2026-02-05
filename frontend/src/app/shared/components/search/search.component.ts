@@ -1,54 +1,37 @@
 import {
-  Component,
-  Input,
-  Output,
-  EventEmitter,
-  ChangeDetectionStrategy,
-  OnChanges,
-  SimpleChanges,
+    Component,
+    ChangeDetectionStrategy,
+    model, input,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { AppIconComponent } from '../app-icon/app-icon.component';
-import { ButtonComponent } from '../buttons/button/button.component';
-import { SearchShortcutDirective } from '../../directives/search-shortcut.directive';
+import {CommonModule} from '@angular/common';
+import {AppIconComponent} from '../app-icon/app-icon.component';
+import {FormsModule} from "@angular/forms";
 
 @Component({
-  selector: 'app-search',
-  standalone: true,
-  imports: [CommonModule, AppIconComponent, SearchShortcutDirective],
-  templateUrl: './search.component.html',
-  styleUrls: ['./search.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-search',
+    standalone: true,
+    imports: [CommonModule, AppIconComponent, FormsModule],
+    templateUrl: './search.component.html',
+    styleUrls: ['./search.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SearchComponent implements OnChanges {
-  @Input() public value: string = '';
-  @Input() public placeholder: string = 'Search...';
-  @Input() public icon: string = 'ui/search';
-  @Input() public width: string = '20rem';
-  @Input() public ariaLabel: string = 'Search';
-  @Output() public valueChange = new EventEmitter<string>();
+export class SearchComponent {
+    width = input<string>('100%');
+    mod = input<'default' | 'small'>('default');
+    placeholder = input<string>('Search...');
+    icon = input<string>('ui/search');
+    searchTerm = model<string>('');
 
-  private internalValue: string = '';
+    onSearchTermChange(value: string): void {
+        const trimmedValue = value.trim();
 
-  ngOnChanges(changes: SimpleChanges): void {
-    // Update internal value when external value changes
-    if (changes['value'] && changes['value'].currentValue !== undefined) {
-      this.internalValue = changes['value'].currentValue;
+        // Only emit if the value has actually changed
+        if (trimmedValue !== this.searchTerm()) {
+            this.searchTerm.set(value);
+        }
     }
-  }
 
-  public onInput(value: string): void {
-    const trimmedValue = value.trim();
-
-    // Only emit if the value has actually changed
-    if (trimmedValue !== this.internalValue) {
-      this.internalValue = trimmedValue;
-      this.valueChange.emit(trimmedValue);
+    clearSearch(): void {
+        this.searchTerm.set('');
     }
-  }
-
-  public clear(): void {
-    this.internalValue = '';
-    this.valueChange.emit('');
-  }
 }

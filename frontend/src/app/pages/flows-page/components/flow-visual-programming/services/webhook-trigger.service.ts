@@ -47,8 +47,4 @@ export class WebhookTriggerNodeService {
       headers: this.headers,
     });
   }
-
-  getTunnelUrl(): Observable<{ status: string; tunnel_url?: string | null }> {
-    return this.http.get<{ status: string; tunnel_url?: string | null }>('http://localhost:8009/api/tunnel-url');
-  }
 }

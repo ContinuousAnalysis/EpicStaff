@@ -1,6 +1,5 @@
 from fastapi import WebSocket
 import pytest
-import asyncio
 from unittest.mock import AsyncMock
 from services.tool_manager_service import ToolManagerService
 from services.redis_service import RedisService
@@ -62,7 +61,11 @@ def sample_chat_data() -> RealtimeAgentChatData:
 
 @pytest.fixture
 def redis_service():
-    return RedisService(host="localhost", port=6379)
+    return RedisService(
+        host="localhost",
+        port=6379,
+        password="redis_password",
+    )
 
 
 @pytest.fixture

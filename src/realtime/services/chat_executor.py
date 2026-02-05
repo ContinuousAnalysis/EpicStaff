@@ -46,8 +46,7 @@ class ChatExecutor:
         self.tool_manager_service = tool_manager_service
         self.connections = connections
         self.wake_word = realtime_agent_chat_data.wake_word
-        self.current_chat_mode = ChatMode.LISTEN
-
+        self.current_chat_mode = ChatMode.CONVERSATION
         self.tool_manager_service.register_tools_from_rt_agent_chat_data(
             realtime_agent_chat_data=realtime_agent_chat_data, chat_executor=self
         )
@@ -80,7 +79,6 @@ class ChatExecutor:
         OpenaiRealtimeAgentClient,
         OpenaiRealtimeTranscriptionClient,
     ]:
-
         rt_tools = await self.tool_manager_service.get_realtime_tool_models(
             connection_key=self.realtime_agent_chat_data.connection_key
         )
@@ -95,6 +93,8 @@ class ChatExecutor:
             voice=self.realtime_agent_chat_data.voice,
             instructions=self.instructions,
             temperature=self.realtime_agent_chat_data.temperature,
+            input_audio_format=self.realtime_agent_chat_data.input_audio_format,
+            output_audio_format=self.realtime_agent_chat_data.output_audio_format,
             turn_detection_mode=TurnDetectionMode.SERVER_VAD,
         )
 
@@ -145,7 +145,9 @@ class ChatExecutor:
             logger.info("WebSocket connection established")
 
             previous_input = ""
-            wake_words: list[str] = [w.strip("!?., ") for w in self.wake_word.lower().split()]
+            wake_words: list[str] = [
+                w.strip("!?., ") for w in self.wake_word.lower().split()
+            ]
             # Main communication loop
             while True:
                 if self.current_chat_mode == ChatMode.LISTEN:
@@ -158,9 +160,7 @@ class ChatExecutor:
                         # Cheks for triggers in the last input only once when last input was changed
                         logger.debug(f"Last input was changed: {last_input}")
                         previous_input = last_input  # cache last input
-                        if any(
-                            trigger in last_input for trigger in wake_words
-                        ):
+                        if any(trigger in last_input for trigger in wake_words):
                             final_buffer = buffer.get_final_buffer()
 
                             await rt_agent_client.send_conversation_item_to_server(
@@ -183,7 +183,7 @@ class ChatExecutor:
 
                     if not buffer.check_free_buffer():
                         # Summarize buffer
-                        logger.debug(f"Starting summarization of the buffer process...")
+                        logger.debug("Starting summarization of the buffer process...")
                         await summ_buffer_client.summarize_buffer()
 
                 else:
@@ -214,7 +214,7 @@ class ChatExecutor:
 
         except WebSocketDisconnect:
             logger.info("Client disconnected")
-        except Exception as e:
+        except Exception:
             logger.exception("Unexpected exception")
         finally:
             # Clean up

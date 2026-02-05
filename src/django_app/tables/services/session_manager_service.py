@@ -1,12 +1,12 @@
-import json
 from tables.validators.end_node_validator import EndNodeValidator
-from tables.exceptions import EndNodeValidationError, GraphEntryPointException
+from tables.exceptions import GraphEntryPointException
 from tables.models.graph_models import (
     ConditionalEdge,
     DecisionTableNode,
     GraphSessionMessage,
     LLMNode,
     StartNode,
+    TelegramTriggerNode,
     WebhookTriggerNode,
 )
 
@@ -28,6 +28,7 @@ from tables.request_models import (
     FileExtractorNodeData,
     AudioTranscriptionNodeData,
     SessionData,
+    TelegramTriggerNodeData,
 )
 
 from tables.models import (
@@ -36,18 +37,14 @@ from tables.models import (
     Edge,
     Graph,
     PythonNode,
-    EndNode,
     FileExtractorNode,
     AudioTranscriptionNode,
-    Organization,
-    OrganizationUser,
     GraphOrganizationUser,
 )
 from tables.constants import DOMAIN_VARIABLES_KEY
 
 
 class SessionManagerService(metaclass=SingletonMeta):
-
     def __init__(
         self,
         redis_service: RedisService,
@@ -75,11 +72,10 @@ class SessionManagerService(metaclass=SingletonMeta):
         username: str | None = None,
         entrypoint: str | None = None,
     ) -> Session:
-
-        start_node = StartNode.objects.filter(graph_id=graph_id).first()
-
         if variables is None:
             variables = dict()
+        # it might not exist if graph has no start node
+        start_node = StartNode.objects.filter(graph_id=graph_id).first()
 
         if variables and start_node.variables:
             start_node_variables = self._get_actual_variables(start_node.variables)
@@ -118,6 +114,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
         webhook_trigger_node_list = WebhookTriggerNode.objects.filter(graph=graph.pk)
+        telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
 
         crew_node_data_list: list[CrewNodeData] = []
         if file_extractor_node_list:
@@ -126,7 +123,6 @@ class SessionManagerService(metaclass=SingletonMeta):
             self.file_node_validator.validate_file_nodes(audio_transcription_node_list)
 
         for item in crew_node_list:
-
             crew_node_data_list.append(
                 self.converter_service.convert_crew_node_to_pydantic(crew_node=item)
             )
@@ -141,6 +137,13 @@ class SessionManagerService(metaclass=SingletonMeta):
             webhook_trigger_node_data_list.append(
                 self.converter_service.convert_webhook_trigger_node_to_pydantic(
                     webhook_trigger_node=item
+                )
+            )
+        telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
+        for item in telegram_trigger_node_list:
+            telegram_trigger_node_data_list.append(
+                self.converter_service.convert_telegram_trigger_node_to_pydantic(
+                    telegram_trigger_node=item
                 )
             )
 
@@ -226,6 +229,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             decision_table_node_list=decision_table_node_data_list,
             entrypoint=entrypoint,
             end_node=end_node_data,
+            telegram_trigger_node_data_list=telegram_trigger_node_data_list,
         )
         session_data = SessionData(
             id=session.pk, graph=graph_data, initial_state=session.variables
@@ -263,7 +267,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         )
         required_listeners = 2
         if received_n != required_listeners:
-            logger.error(f"Data was sent but not received.")
+            logger.error("Data was sent but not received.")
             session.status = Session.SessionStatus.ERROR
             session.status_data = {
                 "reason": f"Data was sent and received by ({received_n}) listeners, but ({required_listeners}) required."
@@ -293,7 +297,7 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         else:
             raise ValueError(
-                f"Unsupported message_type: {data["message_data"]["message_type"]}"
+                f"Unsupported message_type: {data['message_data']['message_type']}"
             )
 
     def choose_variables(
@@ -324,7 +328,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             )
             if not latest_ended_session_id:
                 logger.warning(
-                    f"There are no sessions for this graph which ended successfully"
+                    "There are no sessions for this graph which ended successfully"
                 )
                 return variables
 

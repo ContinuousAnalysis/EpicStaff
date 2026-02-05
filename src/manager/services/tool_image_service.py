@@ -8,7 +8,6 @@ from repositories.import_tool_data_repository import ImportToolDataRepository
 
 import docker
 from docker.models.images import Image
-from docker.models.containers import Container
 from docker.client import DockerClient
 
 
@@ -19,7 +18,6 @@ class ToolImageService:
         self.import_tool_data_repository = import_tool_data_repository
 
     def build_image(self, image_name: str) -> Image:
-
         import_tool_data = self.import_tool_data_repository.get_import_class_data(
             image_name=image_name
         )
@@ -56,11 +54,14 @@ class ToolImageService:
         return None
 
     def get_or_build_tool_alias(self, tool_alias: str) -> Image:
-
         image_name = self.import_tool_data_repository.find_image_name_by_tool_alias(
             tool_alias=tool_alias
         )
-        image_list = [img for img in self.client.images.list() if f'{image_name}:latest' in img.tags]
+        image_list = [
+            img
+            for img in self.client.images.list()
+            if f"{image_name}:latest" in img.tags
+        ]
 
         if image_list:
             logger.info(f"Image found locally for alias {tool_alias}: {image_name}")
@@ -80,5 +81,5 @@ class ToolImageService:
 
             logger.info(f"Image for alias {tool_alias} not found on DockerHub.")
 
-        logger.info(f"Building new image.")
+        logger.info("Building new image.")
         return self.build_image(image_name=image_name)

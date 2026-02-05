@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Any, List, Literal, Union
-from pydantic import BaseModel, HttpUrl, model_validator
+from typing import Annotated, Any, List, Literal, Union
+from pydantic import BaseModel, Field, HttpUrl, model_validator
 
 
 class LLMConfigData(BaseModel):
@@ -82,6 +82,52 @@ class RunToolParamsModel(BaseModel):
     run_kwargs: dict[str, Any]
 
 
+# RAG Search Configuration Models
+class BaseRagSearchConfig(BaseModel):
+    """Base class for RAG-specific search parameters."""
+
+    rag_type: str  # Discriminator field for polymorphism
+
+
+class NaiveRagSearchConfig(BaseRagSearchConfig):
+    """Search parameters specific to naive RAG implementation."""
+
+    rag_type: Literal["naive"] = "naive"
+    search_limit: int = 3
+    similarity_threshold: float = 0.2
+
+
+class GraphRagSearchConfig(BaseRagSearchConfig):
+    """Search parameters specific to graph RAG implementation"""
+
+    rag_type: Literal["graph"] = "graph"
+    pass
+
+
+RagSearchConfig = Annotated[
+    Union[NaiveRagSearchConfig, GraphRagSearchConfig],
+    Field(discriminator="rag_type"),
+]
+
+
+class BaseKnowledgeSearchMessage(BaseModel):
+    """
+    Base message for searching in a RAG implementation.
+
+    Uses discriminated union for rag_search_config to automatically
+    handle different RAG types (naive, graph, etc.) during serialization.
+    """
+
+    collection_id: int
+    rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
+    rag_type: str  # Type of RAG ("naive", "graph", etc.)
+    uuid: str
+    query: str
+    rag_search_config: (
+        RagSearchConfig  # Discriminated union automatically handles subtypes
+    )
+
+
 class AgentData(BaseModel):
     id: int
     role: str
@@ -117,7 +163,7 @@ class BaseToolData(BaseModel):
             prefix, id = unique_name.split(":")
             assert prefix != ""
             assert id != ""
-        except ValueError as e:
+        except ValueError:
             raise ValueError(
                 "Invalid unique_name. Unique name should be splited by `:`. \nFor example: python-code-tool:1"
             )
@@ -136,14 +182,14 @@ class RealtimeAgentChatData(BaseModel):
     goal: str
     backstory: str
     knowledge_collection_id: int | None
+    rag_type_id: str | None = None
+    rag_search_config: RagSearchConfig | None = None
     llm: LLMData | None = None
     rt_model_name: str
     rt_api_key: str
     transcript_model_name: str
     transcript_api_key: str
     temperature: float | None
-    search_limit: int = 3
-    similarity_threshold: float
     memory: bool
     tools: list[BaseToolData] = []
     connection_key: str
@@ -152,14 +198,8 @@ class RealtimeAgentChatData(BaseModel):
     language: str | None
     voice_recognition_prompt: str | None
     voice: str
-
-
-class KnowledgeSearchMessage(BaseModel):
-    collection_id: int
-    uuid: str
-    query: str
-    search_limit: int | None
-    similarity_threshold: float | None
+    input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
+    output_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
 
 
 class CrewData(BaseModel):

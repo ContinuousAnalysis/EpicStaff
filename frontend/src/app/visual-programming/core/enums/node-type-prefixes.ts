@@ -15,5 +15,6 @@ export const NODE_TYPE_PREFIXES: Record<NodeType, string> = {
     [NodeType.FILE_EXTRACTOR]: 'File Extractor',
     [NodeType.AUDIO_TO_TEXT]: 'Audio-to-text',
     [NodeType.WEBHOOK_TRIGGER]: 'Webhook Trigger',
+    [NodeType.TELEGRAM_TRIGGER]: 'Telegram Trigger',
     [NodeType.END]: 'End',
 };

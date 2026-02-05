@@ -261,3 +261,8 @@ src/django_app/staticfiles/*
 
 #knowledge data
 knowledge/graph_data/
+
+# Knowledge migration backup
+**/knowledge_migration_backup/
+*.pem
+*.crt

@@ -9,7 +9,6 @@ from tables.models import TaskPythonCodeTools, TaskConfiguredTools, TaskContext
 
 
 class ToolsImportService:
-
     CONFIGURED_TOOLS_KEY = "configured_tools"
     PYTHON_TOOLS_KEY = "python_tools"
     MCP_TOOLS_KEY = "mcp_tools"
@@ -116,7 +115,6 @@ class ToolsImportService:
 
 
 class BaseConfigsImportService:
-
     def __init__(self, configs):
         self.configs = configs
         self.mapped_configs = {}
@@ -140,7 +138,6 @@ class BaseConfigsImportService:
 
 
 class LLMConfigsImportService(BaseConfigsImportService):
-
     def __init__(self, configs):
         from tables.serializers.import_serializers import LLMConfigImportSerializer
 
@@ -149,7 +146,6 @@ class LLMConfigsImportService(BaseConfigsImportService):
 
 
 class RealtimeConfigsImportService(BaseConfigsImportService):
-
     def __init__(self, configs):
         from tables.serializers.import_serializers import RealtimeConfigImportSerializer
 
@@ -158,7 +154,6 @@ class RealtimeConfigsImportService(BaseConfigsImportService):
 
 
 class RealtimeTranscriptionConfigsImportService(BaseConfigsImportService):
-
     def __init__(self, configs):
         from tables.serializers.import_serializers import (
             RealtimeTranscriptionConfigImportSerializer,
@@ -169,7 +164,6 @@ class RealtimeTranscriptionConfigsImportService(BaseConfigsImportService):
 
 
 class RealtimeAgentImportService:
-
     def __init__(self, realtime_agents):
         from tables.serializers.import_serializers import RealtimeAgentImportSerializer
 
@@ -206,7 +200,6 @@ class RealtimeAgentImportService:
 
 
 class AgentsImportService:
-
     def __init__(self, agents, serializer_class):
         self.serializer_class = serializer_class
         self.agents = agents
@@ -265,7 +258,6 @@ class AgentsImportService:
 
 
 class TasksImportService:
-
     def __init__(self):
         from tables.serializers.import_serializers import TaskImportSerializer
 
@@ -294,7 +286,6 @@ class TasksImportService:
 
 
 class CrewsImportService:
-
     def __init__(self, crews, serializer_class):
         from tables.serializers.import_serializers import TaskImportSerializer
 

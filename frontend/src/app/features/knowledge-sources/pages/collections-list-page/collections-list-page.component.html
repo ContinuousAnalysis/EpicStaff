@@ -1,0 +1,33 @@
+<div class="collections-page">
+    <header class="collections-page__header">
+        <h1 class="collections-page__title">
+            Knowledge Sources
+        </h1>
+    </header>
+
+    <div class="collections-page__body">
+        @if (isLoading()) {
+            <div class="collections-page__body-loading">
+                <app-spinner
+                    [text]="'Loading knowledge sources...'"
+                    [accentColor]="'#6562f5'"
+                    [isOverlay]="false"
+                ></app-spinner>
+            </div>
+        } @else {
+            <div class="collections-page__sidebar">
+                <app-collections-list-sidebar
+                    [collections]="collections()"
+                    (onCreateCollection)="createCollection()"
+                    [(selectedCollectionId)]="selectedCollectionId"
+                />
+            </div>
+
+            <div class="collections-page__content">
+                <app-collection-details
+                    [selectedCollectionId]="selectedCollectionId()"
+                />
+            </div>
+        }
+    </div>
+</div>
