@@ -67,14 +67,14 @@ export class AddLlmConfigDialogComponent implements OnInit {
         customName: ['', Validators.required],
         apiKey: ['', Validators.required],
         temperature: [0.7],
-        topP: [1],
+        topP: [1, [Validators.min(0.1)]],
         presencePenalty: [0],
         frequencyPenalty: [0],
-        maxTokens: [4096],
-        maxCompletionTokens: [2048],
-        nCompletions: [1],
-        timeout: [30],
-        seed: [null as number | null],
+        maxTokens: [4096, [Validators.required, Validators.min(1)]],
+        maxCompletionTokens: [2048, [Validators.required, Validators.min(1)]],
+        nCompletions: [1, [Validators.required, Validators.min(1)]],
+        timeout: [30, [Validators.required, Validators.min(1)]],
+        seed: [null as number | null, [Validators.min(-2147483648), Validators.max(2147483647)]],
         headers: this.fb.array([this.createHeaderGroup()]),
         stopSequences: this.fb.array([this.createStopSequenceControl()]),
     });
@@ -208,6 +208,12 @@ export class AddLlmConfigDialogComponent implements OnInit {
                 this.selectedModel.set(model);
                 this.selectedProviderId.set(provider.id);
                 this.selectedModelId.set(model.id);
+            } else if (result === null) {
+                console.log('[MODEL DESELECTED]');
+                this.selectedProvider.set(null);
+                this.selectedModel.set(null);
+                this.selectedProviderId.set(null);
+                this.selectedModelId.set(null);
             }
         });
     }
@@ -220,14 +226,16 @@ export class AddLlmConfigDialogComponent implements OnInit {
             customName: config.custom_name,
             apiKey: config.api_key,
             temperature: config.temperature,
-            topP: config.top_p,
+            topP: config.top_p && config.top_p >= 0.1 ? config.top_p : 1,
             presencePenalty: config.presence_penalty,
             frequencyPenalty: config.frequency_penalty,
             maxTokens: config.max_tokens,
             maxCompletionTokens: config.max_completion_tokens,
             nCompletions: config.n,
             timeout: config.timeout,
-            seed: config.seed,
+            seed: config.seed !== null && config.seed >= -2147483648 && config.seed <= 2147483647 
+                ? config.seed 
+                : null,
         });
 
         this.selectedModelId.set(config.model);
@@ -433,6 +441,12 @@ export class AddLlmConfigDialogComponent implements OnInit {
         const headersObj = this.headers();
         const headers = Object.keys(headersObj).length > 0 ? headersObj : undefined;
 
+        const seedValue = formValue.seed !== null && 
+            formValue.seed >= -2147483648 && 
+            formValue.seed <= 2147483647 
+            ? formValue.seed 
+            : null;
+
         const configData: CreateLLMConfigRequest = {
             model: this.selectedModelId()!,
             custom_name: formValue.customName,
@@ -445,7 +459,7 @@ export class AddLlmConfigDialogComponent implements OnInit {
             max_completion_tokens: formValue.maxCompletionTokens,
             n: formValue.nCompletions,
             timeout: formValue.timeout,
-            seed: formValue.seed,
+            seed: seedValue,
             stop: stopSequences,
             logit_bias: logitBias,
             response_format: responseFormat,

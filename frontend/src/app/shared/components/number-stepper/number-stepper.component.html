@@ -9,6 +9,7 @@
     <div
         class="number-stepper__control"
         [class]="'number-stepper__control--' + size()"
+        [class.number-stepper__control--error]="hasError()"
         (mouseenter)="hovered.set(true)"
         (mouseleave)="hovered.set(false)"
     >
@@ -33,6 +34,7 @@
             [placeholder]="placeholder()"
             [value]="displayValue()"
             (input)="onInputChange($event)"
+            (keydown)="onKeyDown($event)"
             (blur)="onTouched()"
             [disabled]="isDisabled()"
         />
@@ -51,5 +53,9 @@
             </button>
         }
     </div>
+
+    @if (hasError() && errorMessage()) {
+        <div class="number-stepper__error">{{ errorMessage() }}</div>
+    }
 </div>
 

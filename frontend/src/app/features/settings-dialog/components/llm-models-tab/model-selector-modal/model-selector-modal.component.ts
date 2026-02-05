@@ -109,6 +109,10 @@ export class ModelSelectorModalComponent implements OnInit {
             this.selectedModelId.set(this.dialogData.selectedModelId);
         }
         this.loadProvidersAndModels();
+
+        this.dialogRef.backdropClick.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.onClose();
+        });
     }
 
     private sortProviders(providers: LLM_Provider[]): LLM_Provider[] {
@@ -224,10 +228,8 @@ export class ModelSelectorModalComponent implements OnInit {
                     },
                 });
 
-                dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
-                    if (result) {
-                        this.reloadProviderModels(provider.id);
-                    }
+                dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+                    this.reloadProviderModels(provider.id);
                 });
             }
         });
@@ -250,18 +252,6 @@ export class ModelSelectorModalComponent implements OnInit {
                 });
             }
         });
-    }
-
-    onConfirm(): void {
-        const model = this.selectedModel();
-        const provider = this.selectedProvider();
-        
-        if (model && provider) {
-            const result: ModelSelectorResult = { provider, model };
-            this.dialogRef.close(result);
-        } else {
-            this.dialogRef.close(null);
-        }
     }
 
     onClose(): void {

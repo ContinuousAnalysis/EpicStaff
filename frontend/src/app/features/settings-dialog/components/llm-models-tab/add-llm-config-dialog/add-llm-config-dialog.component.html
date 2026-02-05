@@ -12,11 +12,11 @@
     </div>
 
     <div class="llm-dialog__content">
-        @if (errorMessage()) {
+            @if (errorMessage()) {
             <div class="llm-dialog__error">
-                <p>{{ errorMessage() }}</p>
-            </div>
-        }
+                    <p>{{ errorMessage() }}</p>
+                </div>
+            }
 
         <form [formGroup]="form">
             <section class="llm-dialog__section">
@@ -92,8 +92,8 @@
                         placeholder="Enter a custom name"
                         formControlName="customName"
                     />
-                </div>
-                
+            </div>
+
                 <div class="llm-dialog__section-divider"></div>
             </section>
 
@@ -106,8 +106,8 @@
                         <app-help-tooltip text="Add custom HTTP headers for API requests" />
                     </label>
                     <div class="llm-dialog__headers-container" formArrayName="headers">
-                        @for (header of headersArray.controls; track $index) {
-                            <div class="llm-dialog__header-row" [formGroupName]="$index">
+                        @for (header of headersArray.controls; track header; let i = $index) {
+                            <div class="llm-dialog__header-row" [formGroupName]="i">
                                 <input
                                     type="text"
                                     class="llm-dialog__input llm-dialog__input--header"
@@ -123,12 +123,12 @@
                                 <button
                                     type="button"
                                     class="llm-dialog__header-action llm-dialog__header-action--remove"
-                                    (click)="removeHeaderEntry($index)"
+                                    (click)="removeHeaderEntry(i)"
                                     [title]="'Remove header'"
                                 >
                                     <app-icon icon="ui/x" size="1rem" />
                                 </button>
-                                @if ($index === headersArray.length - 1) {
+                                @if (i === headersArray.length - 1) {
                                     <button
                                         type="button"
                                         class="llm-dialog__header-action llm-dialog__header-action--add"
@@ -152,8 +152,8 @@
                             />
                         </div>
                     </div>
-                </div>
-                
+            </div>
+
                 <div class="llm-dialog__section-divider"></div>
             </section>
 
@@ -173,7 +173,7 @@
                 <app-slider-with-stepper
                     label="Top P"
                     tooltipText="Nucleus sampling. Consider tokens with top_p probability mass."
-                    [min]="0"
+                    [min]="0.1"
                     [max]="1"
                     [step]="0.1"
                     [decimals]="1"
@@ -215,6 +215,7 @@
                             [max]="128000"
                             [step]="256"
                             formControlName="maxTokens"
+                            [control]="$any(form.get('maxTokens'))"
                             placeholder="4096"
                             size="lg"
                         />
@@ -227,11 +228,12 @@
                             [max]="128000"
                             [step]="256"
                             formControlName="maxCompletionTokens"
+                            [control]="$any(form.get('maxCompletionTokens'))"
                             placeholder="2048"
                             size="lg"
                         />
                     </div>
-                </div>
+            </div>
 
                 <div class="llm-dialog__field-row">
                     <div class="llm-dialog__field llm-dialog__field--half">
@@ -242,6 +244,7 @@
                             [max]="10"
                             [step]="1"
                             formControlName="nCompletions"
+                            [control]="$any(form.get('nCompletions'))"
                             placeholder="1"
                             size="lg"
                         />
@@ -254,12 +257,13 @@
                             [max]="600"
                             [step]="5"
                             formControlName="timeout"
+                            [control]="$any(form.get('timeout'))"
                             placeholder="30"
                             size="lg"
                         />
                     </div>
-                </div>
-                
+            </div>
+
                 <div class="llm-dialog__section-divider"></div>
             </section>
 
@@ -270,9 +274,11 @@
                     <app-number-stepper
                         label="Seed"
                         tooltipText="Random seed for reproducible outputs"
-                        [min]="0"
+                        [min]="-2147483648"
+                        [max]="2147483647"
                         [step]="1"
                         formControlName="seed"
+                        [control]="$any(form.get('seed'))"
                         placeholder="Random"
                         size="lg"
                     />
@@ -284,23 +290,23 @@
                         <app-help-tooltip text="Sequences that will stop generation when encountered" />
                     </label>
                     <div class="llm-dialog__headers-container" formArrayName="stopSequences">
-                        @for (seq of stopSequencesArray.controls; track $index) {
+                        @for (seq of stopSequencesArray.controls; track seq; let i = $index) {
                             <div class="llm-dialog__header-row">
                                 <input
                                     type="text"
                                     class="llm-dialog__input llm-dialog__input--header"
-                                    [formControlName]="$index"
+                                    [formControlName]="i"
                                     style="flex: 1;"
                                 />
                                 <button
                                     type="button"
                                     class="llm-dialog__header-action llm-dialog__header-action--remove"
-                                    (click)="removeStopSequence($index)"
+                                    (click)="removeStopSequence(i)"
                                     [title]="'Remove'"
                                 >
                                     <app-icon icon="ui/x" size="1rem" />
                                 </button>
-                                @if ($index === stopSequencesArray.length - 1) {
+                                @if (i === stopSequencesArray.length - 1) {
                                     <button
                                         type="button"
                                         class="llm-dialog__header-action llm-dialog__header-action--add"
@@ -344,7 +350,7 @@
                 </div>
             </section>
         </form>
-    </div>
+            </div>
 
     <div class="llm-dialog__footer">
         <app-button
@@ -354,12 +360,12 @@
         >
             Cancel
         </app-button>
-        <app-button
-            type="primary"
-            (click)="onSubmit()"
+                <app-button
+                    type="primary"
+                    (click)="onSubmit()"
             [disabled]="!isFormValid() || isSubmitting()"
-        >
+                >
             {{ submitButtonText() }}
-        </app-button>
+                </app-button>
     </div>
 </div>
