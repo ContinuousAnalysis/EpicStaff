@@ -11,10 +11,10 @@ from src.crew.services.graph.nodes import (
     PythonNode,
     CrewNode,
     BaseNode,
-    LLMNode,
     EndNode,
 )
 
+from src.crew.services.graph.nodes.llm_node import LLMNode
 from src.crew.services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
 from src.crew.services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
 from src.crew.services.graph.events import StopEvent
