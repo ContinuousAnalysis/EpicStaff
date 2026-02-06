@@ -2,12 +2,13 @@
 services:
   epicstaff-nginx:
     image: nginx
-    container_name: nginx_gateway
+    container_name: epicstaff-nginx
     ports:
       - "80:80"
       - "443:443"
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME}
+      - SSL_ENABLE=${SSL_ENABLE}
     volumes:
       - ./nginx/templates/default.conf.template:/etc/nginx/templates/default.conf.template
       - ./nginx/certs:/etc/nginx/certs:ro
@@ -39,7 +40,7 @@ services:
       - SESSION_EVENT_CHANNEL=session:event
       - SESSION_STATUS_CHANNEL=sessions:session_status
       - MEMORY_UPDATE_CHANNEL=memory:update
-  
+      - LOAD_DEBUG_ENV=${LOAD_DEBUG_ENV}
       - DEBUG=${DEBUG:-True}
       - SECRET_KEY=${SECRET_KEY:-unsafe-dev-key}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
@@ -352,11 +353,12 @@ services:
       context: ../frontend
       dockerfile: Dockerfile.fe
     container_name: epicstaff-frontend
-
+    environment:
+      - API_URL:${API_URL}
+      - REALTIME_API_URL:${REALTIME_API_URL}
     networks:
      - frontend-network
-    volumes:
-     - ../frontend-config/frontend-config.json:/usr/share/nginx/html/config.json:ro
+
   
   webhook:
     image: webhook
