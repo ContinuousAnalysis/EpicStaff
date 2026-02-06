@@ -75,4 +75,29 @@
         </li>
         }
     </ul>
+
+    @if (isEpicChatEnabled) {
+        <epic-chat
+            #epicChat
+            class="epic-chat-host my-app-light"
+            style="
+                --ep-color-surface: var(--color-modals-background);
+                --ep-color-surface-alt: var(--color-input-background);
+                --ep-color-text: var(--color-text-primary);
+                --ep-color-text-muted: var(--color-text-secondary);
+                --ep-color-border: var(--color-divider-regular);
+                --ep-color-border-muted: var(--color-text-secondary);
+                --ep-color-accent: rgba(51, 51, 51, 0.85);
+                --ep-color-accent-contrast: #ffffff;
+                --ep-color-accent-soft: var(--color-ghost-btn-hover);
+                --ep-color-danger: var(--color-ks-status-failed);
+                --ep-color-shadow: rgba(0, 0, 0, 0.35);
+                --ep-color-scrollbar: var(--color-scrollbar-thumb);
+            "
+            base-path="/epicchat-widget/"
+            chat-left="68px"
+            chat-bottom="10px"
+            chat-icon-path=""
+        ></epic-chat>
+    }
 </nav>

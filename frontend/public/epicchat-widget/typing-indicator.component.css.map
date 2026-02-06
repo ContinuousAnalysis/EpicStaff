@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/components/shared/typing-indicator/typing-indicator.component.scss"],
+  "sourcesContent": [".typing-indicator {\n  display: flex;\n  gap: 4px;\n  align-items: center;\n  padding: 12px 16px;\n}\n\n.typing-indicator span {\n  width: 8px;\n  height: 8px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  animation: typing 1.4s infinite;\n}\n\n.typing-indicator span:nth-child(2) {\n  animation-delay: 0.2s;\n}\n\n.typing-indicator span:nth-child(3) {\n  animation-delay: 0.4s;\n}\n\n@keyframes typing {\n  0%,\n  60%,\n  100% {\n    transform: translateY(0);\n  }\n  30% {\n    transform: translateY(-10px);\n  }\n}\n"],
+  "mappings": ";AAAA,CAAA;AACE,WAAA;AACA,OAAA;AACA,eAAA;AACA,WAAA,KAAA;;AAGF,CAPA,iBAOA;AACE,SAAA;AACA,UAAA;AACA,iBAAA;AACA,cAAA,IAAA;AACA,aAAA,OAAA,KAAA;;AAGF,CAfA,iBAeA,IAAA;AACE,mBAAA;;AAGF,CAnBA,iBAmBA,IAAA;AACE,mBAAA;;AAGF,WAXE;AAYA;AAGE,eAAA,WAAA;;AAEF;AACE,eAAA,WAAA;;;",
+  "names": []
+}
