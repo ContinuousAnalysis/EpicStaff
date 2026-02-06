@@ -1,0 +1,122 @@
+import { LlmLibraryProviderGroup } from '../interfaces/llm-library-provider-group.interface';
+
+export const LLM_LIBRARY_MOCK_DATA: LlmLibraryProviderGroup[] = [
+  {
+    id: 'openai',
+    providerName: 'OpenAI',
+    providerIconPath: 'llm-providers-logos/openai-logo',
+    models: [
+      {
+        id: 'openai-1',
+        name: 'gpt-4-turbopreview',
+        createdBy: 'Lana',
+        tags: ['#Embedding', '#Realtime', '#Voice', '#Memory', '#ToolsEmbedding', '#AgentFunctionCalling'],
+        temperature: 7,
+        usedByCount: 5,
+      },
+      {
+        id: 'openai-2',
+        name: 'gpt-4.1-chat-2024-12',
+        createdBy: 'Vasyl',
+        tags: ['#Embedding', '#Realtime', '#Voice', '#Memory'],
+        temperature: 7,
+        usedByCount: null,
+      },
+      {
+        id: 'openai-3',
+        name: 'gpt-4o-mini-realtime-preview',
+        createdBy: 'Petro',
+        tags: ['#Realtime', '#Voice', '#Memory'],
+        temperature: 7,
+        usedByCount: 5,
+      },
+      {
+        id: 'openai-4',
+        name: 'o3-embedding-2024',
+        createdBy: 'Anna',
+        tags: [],
+        temperature: 7,
+        usedByCount: 5,
+      },
+    ],
+  },
+  {
+    id: 'ollama',
+    providerName: 'Ollama',
+    providerIconPath: 'llm-providers-logos/ollama-logo',
+    models: [
+      {
+        id: 'ollama-1',
+        name: 'ChatLlama',
+        createdBy: 'Lana',
+        tags: ['#Embedding', '#Realtime', '#Voice', '#Memory'],
+        temperature: 7,
+        usedByCount: 5,
+      },
+      {
+        id: 'ollama-2',
+        name: 'CodeLlama',
+        createdBy: 'Vasyl',
+        tags: ['#Embedding', '#Realtime', '#Voice', '#Memory'],
+        temperature: 7,
+        usedByCount: 5,
+      },
+      {
+        id: 'ollama-3',
+        name: 'MedicalLlama',
+        createdBy: 'Petro',
+        tags: ['#Embedding', '#Realtime', '#Voice', '#Memory'],
+        temperature: 7,
+        usedByCount: null,
+      },
+      {
+        id: 'ollama-4',
+        name: 'CreativeLlama',
+        createdBy: 'Petro',
+        tags: ['#Embedding', '#Realtime', '#Voice', '#Memory'],
+        temperature: 7,
+        usedByCount: null,
+      },
+      {
+        id: 'ollama-5',
+        name: 'FinLlama',
+        createdBy: 'Petro',
+        tags: ['#Embedding', '#Realtime', '#Voice', '#Memory'],
+        temperature: 7,
+        usedByCount: null,
+      },
+    ],
+  },
+  {
+    id: 'anthropic',
+    providerName: 'Anthropic',
+    providerIconPath: 'llm-providers-logos/claude-logo',
+    models: [
+      {
+        id: 'anthropic-1',
+        name: 'claude-3-opus-chat',
+        createdBy: 'Lana',
+        tags: ['#Embedding', '#Realtime', '#Voice', '#Memory'],
+        temperature: 7,
+        usedByCount: 5,
+      },
+      {
+        id: 'anthropic-2',
+        name: 'claude-embedding-v1-2024',
+        createdBy: 'Vasyl',
+        tags: ['#Embedding', '#Realtime', '#Voice', '#Memory'],
+        temperature: 7,
+        usedByCount: 5,
+      },
+      {
+        id: 'anthropic-3',
+        name: 'claude-3-5-sonnet-chat',
+        createdBy: 'Petro',
+        tags: ['#ToolsEmbedding', '#AgentFunctionCalling'],
+        temperature: 7,
+        usedByCount: null,
+      },
+    ],
+  },
+];
+

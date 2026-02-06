@@ -3,7 +3,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ICONS } from '../../../shared/constants/icons.constants';
 import { TooltipComponent } from './tooltip/tooltip.component';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { SettingsDialogService } from '../../../features/settings-dialog/settings-dialog.service';
+import { ConfigureModelsDialogService } from '../../../features/configure-models/services/configure-models-dialog.service';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
 
@@ -37,7 +37,7 @@ export class LeftSidebarComponent {
 
     constructor(
         private sanitizer: DomSanitizer,
-        private settingsDialogService: SettingsDialogService
+        private configureModelsDialogService: ConfigureModelsDialogService
     ) {
         this.topNavItems = [
             {
@@ -97,7 +97,7 @@ export class LeftSidebarComponent {
     }
 
     private onSettingsClick(): void {
-        this.settingsDialogService.openSettingsDialog();
+        this.configureModelsDialogService.open();
     }
 
     public handleItemClick(item: NavItem, event: MouseEvent): void {

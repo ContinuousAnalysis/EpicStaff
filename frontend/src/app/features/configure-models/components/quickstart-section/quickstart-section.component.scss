@@ -1,0 +1,337 @@
+.quickstart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--color-text-primary);
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--configure-models-dialog-active-color, #d9d9de);
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(217, 217, 222, 0.6);
+  }
+
+  &__layout {
+    display: flex;
+    gap: 24px;
+    align-items: start;
+  }
+
+  &__left {
+    flex: 0 0 55%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    position: relative;
+  }
+
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: rgba(217, 217, 222, 0.8);
+
+    i {
+      font-size: 14px;
+      color: rgba(217, 217, 222, 0.5);
+    }
+  }
+
+  &__tooltip-icon {
+    cursor: help;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: rgba(217, 217, 222, 0.8) !important;
+    }
+  }
+
+  &__select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: var(--configure-models-dialog-active-color, #d9d9de);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  &__select-label {
+    flex: 1;
+    text-align: left;
+    font-size: 14px;
+  }
+
+  &__dropdown {
+    position: absolute;
+    left: 112px;
+    right: 0;
+    top: 48px;
+    background: #1f1f22;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 6px 0;
+    max-height: 220px;
+    overflow: auto;
+    z-index: 2;
+  }
+
+  &__dropdown-item {
+    width: 100%;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(217, 217, 222, 0.8);
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--configure-models-dialog-active-color, #d9d9de);
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  &__input {
+    position: relative;
+  }
+
+  &__input-field {
+    width: 100%;
+    padding: 10px 40px 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: 14px;
+    line-height: 20px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &::placeholder {
+      color: rgba(217, 217, 222, 0.5);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--configure-models-dialog-inactive-color, #685fff);
+      box-shadow: 0 0 0 2px rgba(104, 95, 255, 0.15);
+    }
+  }
+
+  &__toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(217, 217, 222, 0.6);
+
+    &:hover {
+      color: var(--configure-models-dialog-active-color, #d9d9de);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 6px;
+  }
+
+  &__ghost {
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 8px;
+    border: 1px solid rgba(104, 95, 255, 0.6);
+    background: transparent;
+    color: var(--configure-models-dialog-inactive-color, #685fff);
+    cursor: pointer;
+  }
+
+  &__primary {
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--configure-models-dialog-inactive-color, #685fff);
+    color: #ffffff;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &__right {
+    flex: 0 0 calc(45% - 24px);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  &__card {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    padding: 24px;
+  }
+
+  &__card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--configure-models-dialog-inactive-color, #685fff);
+    line-height: 1.4;
+
+    i {
+      color: var(--configure-models-dialog-inactive-color, #685fff);
+    }
+  }
+
+  &__card-title--success {
+    i {
+      font-size: 24px;
+    }
+  }
+
+  &__steps {
+    margin: 16px 0 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 14px;
+    color: rgba(217, 217, 222, 0.8);
+    line-height: 1.6;
+    list-style: decimal;
+
+    li {
+      padding-left: 4px;
+
+      &::marker {
+        color: rgba(217, 217, 222, 0.8);
+      }
+    }
+  }
+
+  &__arrow-icon {
+    color: var(--configure-models-dialog-inactive-color, #685fff);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 6px;
+    position: relative;
+    top: 3px;
+
+    svg {
+      display: block;
+    }
+  }
+
+  &__card-text {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: rgba(217, 217, 222, 0.7);
+    line-height: 1.6;
+  }
+
+  &__card--success {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  &__card-title--success {
+    color: var(--configure-models-dialog-active-color, #d9d9de);
+
+    i {
+      color: var(--configure-models-dialog-inactive-color, #685fff);
+    }
+  }
+
+  &__card-link {
+    color: var(--configure-models-dialog-inactive-color, #685fff);
+  }
+
+  &__card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+
+  &__cta {
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: none;
+    background: var(--configure-models-dialog-inactive-color, #685fff);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+}
+
+@media (max-width: 1100px) {
+  .quickstart-section {
+    &__layout {
+      flex-direction: column;
+    }
+
+    &__left {
+      flex: 1;
+      width: 100%;
+    }
+
+    &__right {
+      flex: 1;
+      width: 100%;
+    }
+  }
+}
+
+

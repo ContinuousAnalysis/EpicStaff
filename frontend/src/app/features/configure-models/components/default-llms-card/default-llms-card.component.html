@@ -1,0 +1,52 @@
+<article class="default-llms-card">
+  <div class="default-llms-card__header">
+    <div class="default-llms-card__icon">
+      <i [ngClass]="card().iconClass" aria-hidden="true"></i>
+    </div>
+    <div class="default-llms-card__title">{{ card().title }}</div>
+  </div>
+  <div class="default-llms-card__controls">
+    <button
+      type="button"
+      class="default-llms-card__select"
+      (click)="toggleDropdown()"
+    >
+      <span class="default-llms-card__select-label">
+        {{ selectedModel()?.name || card().selectLabel }}
+      </span>
+      <i class="ti ti-chevron-down" aria-hidden="true"></i>
+    </button>
+    <button
+      class="default-llms-card__add"
+      type="button"
+      aria-label="Add"
+      (click)="toggleDropdown()"
+    >
+      <i class="ti ti-plus" aria-hidden="true"></i>
+    </button>
+  </div>
+  @if (isDropdownOpen()) {
+    <div class="default-llms-card__dropdown">
+      @if (isLoading()) {
+        <div class="default-llms-card__dropdown-item">Loading...</div>
+      } @else {
+        @for (model of models(); track model.id) {
+          <button
+            type="button"
+            class="default-llms-card__dropdown-item"
+            (click)="selectModel(model)"
+          >
+            {{ model.name }}
+          </button>
+        }
+        @if (models().length === 0) {
+          <div class="default-llms-card__dropdown-item">No models</div>
+        }
+      }
+    </div>
+  }
+  <div class="default-llms-card__divider" aria-hidden="true"></div>
+  <p class="default-llms-card__description">{{ card().description }}</p>
+</article>
+
+

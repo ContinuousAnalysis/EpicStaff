@@ -1,0 +1,183 @@
+<section class="quickstart-section">
+  <header class="quickstart-section__header">
+    <h3 class="quickstart-section__title">Quickstart</h3>
+    <p class="quickstart-section__subtitle">
+      Quickly configure your environment with your AI provider
+    </p>
+  </header>
+
+  <div class="quickstart-section__layout">
+    <div class="quickstart-section__left">
+      <form class="quickstart-section__form" [formGroup]="quickStartForm">
+        <div class="quickstart-section__row">
+          <div class="quickstart-section__label">
+            <span>Provider</span>
+            <i 
+              class="ti ti-help-circle quickstart-section__tooltip-icon" 
+              title="Select your AI provider (OpenAI, Anthropic, Groq, etc.)"
+            ></i>
+          </div>
+          <button
+            type="button"
+            class="quickstart-section__select"
+            (click)="toggleProviders()"
+          >
+            <app-icon
+              [icon]="getProviderIcon(selectedProvider())"
+              [size]="'18px'"
+              ariaLabel="Provider"
+            ></app-icon>
+            <span class="quickstart-section__select-label">
+              {{ formatProviderName(selectedProvider()) }}
+            </span>
+            <i class="ti ti-chevron-down" aria-hidden="true"></i>
+          </button>
+
+          @if (isProvidersOpen()) {
+            <div class="quickstart-section__dropdown">
+              @for (provider of providers(); track provider.id) {
+                <button
+                  type="button"
+                  class="quickstart-section__dropdown-item"
+                  (click)="selectProvider(provider)"
+                >
+                  <app-icon
+                    [icon]="getProviderIcon(provider)"
+                    [size]="'18px'"
+                    [ariaLabel]="provider.name"
+                  ></app-icon>
+                  <span>{{ formatProviderName(provider) }}</span>
+                </button>
+              }
+              @if (providers().length === 0) {
+                <div class="quickstart-section__dropdown-item">No providers</div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="quickstart-section__row">
+          <div class="quickstart-section__label">
+            <span>API Key</span>
+            <i 
+              class="ti ti-help-circle quickstart-section__tooltip-icon" 
+              title="Enter your API key from your provider's dashboard"
+            ></i>
+          </div>
+          <div class="quickstart-section__input">
+            <input
+              [type]="showApiKey() ? 'text' : 'password'"
+              formControlName="apiKey"
+              placeholder="Enter API key"
+              class="quickstart-section__input-field"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              data-lpignore="true"
+              data-form-type="other"
+            />
+            <button
+              type="button"
+              class="quickstart-section__toggle"
+              (click)="toggleApiKeyVisibility()"
+            >
+              <i
+                class="ti"
+                [ngClass]="showApiKey() ? 'ti-eye-off' : 'ti-eye'"
+                aria-hidden="true"
+              ></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="quickstart-section__actions">
+          <button type="button" class="quickstart-section__ghost" (click)="onReset()">
+            Reset
+          </button>
+          <button
+            type="button"
+            class="quickstart-section__primary"
+            [disabled]="!quickStartForm.get('apiKey')?.value || !selectedProvider()"
+            (click)="onQuickStart()"
+          >
+            Activate
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="quickstart-section__right">
+      <div class="quickstart-section__card">
+        <div class="quickstart-section__card-title">
+          How to find your provider's API key
+        </div>
+        <ol class="quickstart-section__steps">
+          <li>
+            Go to the official website of your provider
+            <span class="quickstart-section__arrow-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  d="M5 12h14M13 5l6 7-6 7"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            open Settings
+            <span class="quickstart-section__arrow-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  d="M5 12h14M13 5l6 7-6 7"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            API Keys.
+          </li>
+          <li>Create or find a key.</li>
+          <li>Copy the key and paste it here.</li>
+        </ol>
+      </div>
+
+      <div class="quickstart-section__card quickstart-section__card--success">
+        <div class="quickstart-section__card-title quickstart-section__card-title--success">
+          <i class="ti ti-check" aria-hidden="true"></i>
+          Default models successfully updated
+        </div>
+        <p class="quickstart-section__card-text">
+          Your new LLM model has been successfully applied as the default across all
+          supported tasks. This includes models for:
+          <span class="quickstart-section__card-link">Knowledge</span>,
+          <span class="quickstart-section__card-link">Agents</span>,
+          <span class="quickstart-section__card-link">Planning</span>,
+          <span class="quickstart-section__card-link">Memory</span>,
+          <span class="quickstart-section__card-link">Tools</span>,
+          <span class="quickstart-section__card-link">Voice</span> and
+          <span class="quickstart-section__card-link">Transcription</span>.
+        </p>
+        <p class="quickstart-section__card-text">
+          You can review or adjust these assignments at any time.
+        </p>
+        <div class="quickstart-section__card-actions">
+          <button
+            type="button"
+            class="quickstart-section__cta"
+            (click)="onReviewDefaults()"
+          >
+            Review default models
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
