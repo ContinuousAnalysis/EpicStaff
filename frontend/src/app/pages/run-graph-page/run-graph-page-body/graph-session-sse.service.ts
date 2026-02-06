@@ -3,12 +3,16 @@ import { GraphSessionStatus } from '../../../features/flows/services/flows-sessi
 import { GraphMessage } from '../../running-graph/models/graph-session-message.model';
 import { Memory } from '../../running-graph/components/memory-sidebar/models/memory.model';
 import { ConfigService } from '../../../services/config/config.service';
+import { AuthService } from '../../../services/auth/auth.service';
 
 @Injectable()
 export class RunSessionSSEService {
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private authService: AuthService
+  ) {}
 
-  private eventSource: EventSource | null = null;
+  private abortController: AbortController | null = null;
   private currentSessionId: string | null = null;
   private reconnectTimeout: any = null;
 
@@ -62,7 +66,7 @@ export class RunSessionSSEService {
   }
 
   public startStream(sessionId: string): void {
-    if (this.currentSessionId === sessionId && this.eventSource) return;
+    if (this.currentSessionId === sessionId && this.abortController) return;
     this.cleanup();
     this.currentSessionId = sessionId;
     this.isManualDisconnect = false;
@@ -82,110 +86,38 @@ export class RunSessionSSEService {
   }
 
   private connect(sessionId: string): void {
-    if (this.eventSource) {
+    if (this.abortController) {
       console.warn('SSE already started');
       return;
     }
 
+    const token = this.authService.getAccessToken();
+    if (!token) {
+      this.handleConnectionLoss();
+      return;
+    }
+
     this.connectionStatusSignal.set('connecting');
+    this.abortController = new AbortController();
 
-    const eventSourceUrl = this.apiUrl;
-    console.log('=== EventSource Creation Debug ===');
-    console.log('Creating EventSource with URL:', eventSourceUrl);
-
-    console.log(
-      'URL contains /epicstaff/:',
-      eventSourceUrl.includes('/epicstaff/')
-    );
-    console.log(
-      'URL starts with https://chat.mym.hysdev.com/:',
-      eventSourceUrl.startsWith('https://chat.mym.hysdev.com/')
-    );
-    console.log('=== End EventSource Creation Debug ===');
-
-    this.eventSource = new EventSource(eventSourceUrl);
-
-    this.eventSource.onopen = () => {
-      console.log('SSE connection established');
-      this.reconnectAttempts = 0;
-      this.streamOpen.set(true);
-      this.connectionStatusSignal.set('connected');
-    };
-
-    this.eventSource.onmessage = (event) => {
-      console.warn('Unnamed event received:', event.data);
-    };
-
-    this.eventSource.addEventListener('messages', (event: MessageEvent) => {
-      const raw = JSON.parse(event.data);
-
-      const msg: GraphMessage = {
-        id: raw.id,
-        uuid: raw.uuid,
-        session: raw.session_id,
-        name: raw.name,
-        execution_order: raw.execution_order,
-        created_at: raw.created_at || raw.timestamp,
-        message_data: raw.message_data,
-      };
-
-      const messagesList = this.messages();
-      const exists = messagesList.some((m) => m.uuid === msg.uuid);
-      if (!exists) {
-        messagesList.push(msg);
-        messagesList.sort(
-          (a, b) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-        this.messagesSignal.set([...messagesList]);
-      }
-    });
-
-    this.eventSource.addEventListener('status', (event: MessageEvent) => {
-      const statusData = JSON.parse(event.data);
-      this.statusSignal.set(statusData.status as GraphSessionStatus);
-    });
-
-    this.eventSource.addEventListener('memory', (event: MessageEvent) => {
-      const memory = JSON.parse(event.data) as Memory;
-      const memoriesList = this.memories();
-      const existingIndex = memoriesList.findIndex((m) => m.id === memory.id);
-
-      if (existingIndex !== -1) {
-        // Update existing memory
-        memoriesList[existingIndex] = memory;
-      } else {
-        // Add new memory
-        memoriesList.push(memory);
-      }
-
-      this.memoriesSignal.set([...memoriesList]);
-    });
-
-    this.eventSource.addEventListener(
-      'memory-delete',
-      (event: MessageEvent) => {
-        const memory = JSON.parse(event.data);
-        const memoriesList = this.memories();
-        const existingIndex = memoriesList.findIndex((m) => m.id === memory);
-
-        if (existingIndex !== -1) {
-          // Delete existing memory
-          memoriesList.splice(existingIndex, 1);
-          this.memoriesSignal.set([...memoriesList]);
+    fetch(this.apiUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: this.abortController.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok || !response.body) {
+          throw new Error(`SSE failed with status ${response.status}`);
         }
-      }
-    );
-
-    this.eventSource.addEventListener('fatal-error', (event: MessageEvent) => {
-      console.error('Fatal SSE error received');
-      this.handleConnectionLoss();
-    });
-
-    this.eventSource.onerror = (err) => {
-      console.error('SSE error:', err);
-      this.handleConnectionLoss();
-    };
+        console.log('SSE connection established');
+        this.reconnectAttempts = 0;
+        this.streamOpen.set(true);
+        this.connectionStatusSignal.set('connected');
+        await this.consumeStream(response.body);
+      })
+      .catch((err) => {
+        console.error('SSE error:', err);
+        this.handleConnectionLoss();
+      });
   }
 
   private handleConnectionLoss(): void {
@@ -256,9 +188,9 @@ export class RunSessionSSEService {
       this.reconnectTimeout = null;
     }
 
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
       console.log('SSE connection closed');
     }
 
@@ -272,9 +204,9 @@ export class RunSessionSSEService {
       this.reconnectTimeout = null;
     }
 
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
       console.log('SSE cleanup completed');
     }
 
@@ -287,5 +219,120 @@ export class RunSessionSSEService {
     this.statusSignal.set(GraphSessionStatus.RUNNING);
     this.streamOpen.set(false);
     this.connectionStatusSignal.set('disconnected');
+  }
+
+  private async consumeStream(stream: ReadableStream<Uint8Array>): Promise<void> {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) {
+        this.handleConnectionLoss();
+        break;
+      }
+      buffer += decoder.decode(value, { stream: true });
+
+      let boundaryIndex = buffer.indexOf('\n\n');
+      while (boundaryIndex !== -1) {
+        const chunk = buffer.slice(0, boundaryIndex);
+        buffer = buffer.slice(boundaryIndex + 2);
+        this.handleSseChunk(chunk);
+        boundaryIndex = buffer.indexOf('\n\n');
+      }
+    }
+  }
+
+  private handleSseChunk(chunk: string): void {
+    const lines = chunk.split('\n').map((l) => l.trim()).filter(Boolean);
+    let eventName = 'message';
+    const dataLines: string[] = [];
+
+    for (const line of lines) {
+      if (line.startsWith('event:')) {
+        eventName = line.replace('event:', '').trim();
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.replace('data:', '').trim());
+      }
+    }
+
+    const data = dataLines.join('\n');
+    this.dispatchEvent(eventName, data);
+  }
+
+  private dispatchEvent(eventName: string, data: string): void {
+    if (eventName === 'messages') {
+      this.handleMessages(data);
+    } else if (eventName === 'status') {
+      this.handleStatus(data);
+    } else if (eventName === 'memory') {
+      this.handleMemory(data);
+    } else if (eventName === 'memory-delete') {
+      this.handleMemoryDelete(data);
+    } else if (eventName === 'fatal-error') {
+      this.handleFatal();
+    } else {
+      console.warn('Unnamed event received:', data);
+    }
+  }
+
+  private handleMessages(rawData: string): void {
+    const raw = JSON.parse(rawData);
+    const msg: GraphMessage = {
+      id: raw.id,
+      uuid: raw.uuid,
+      session: raw.session_id,
+      name: raw.name,
+      execution_order: raw.execution_order,
+      created_at: raw.created_at || raw.timestamp,
+      message_data: raw.message_data,
+    };
+
+    const messagesList = this.messages();
+    const exists = messagesList.some((m) => m.uuid === msg.uuid);
+    if (!exists) {
+      messagesList.push(msg);
+      messagesList.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      this.messagesSignal.set([...messagesList]);
+    }
+  }
+
+  private handleStatus(rawData: string): void {
+    const statusData = JSON.parse(rawData);
+    this.statusSignal.set(statusData.status as GraphSessionStatus);
+  }
+
+  private handleMemory(rawData: string): void {
+    const memory = JSON.parse(rawData) as Memory;
+    const memoriesList = this.memories();
+    const existingIndex = memoriesList.findIndex((m) => m.id === memory.id);
+
+    if (existingIndex !== -1) {
+      memoriesList[existingIndex] = memory;
+    } else {
+      memoriesList.push(memory);
+    }
+
+    this.memoriesSignal.set([...memoriesList]);
+  }
+
+  private handleMemoryDelete(rawData: string): void {
+    const memory = JSON.parse(rawData);
+    const memoriesList = this.memories();
+    const existingIndex = memoriesList.findIndex((m) => m.id === memory);
+
+    if (existingIndex !== -1) {
+      memoriesList.splice(existingIndex, 1);
+      this.memoriesSignal.set([...memoriesList]);
+    }
+  }
+
+  private handleFatal(): void {
+    console.error('Fatal SSE error received');
+    this.handleConnectionLoss();
   }
 }

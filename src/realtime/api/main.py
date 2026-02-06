@@ -17,6 +17,7 @@ from ai.transcription.realtime_transcription import (
     OpenaiRealtimeTranscriptionClient,
 )
 from core.config import settings
+from utils.auth import introspect_token
 
 
 from db.database import get_db, engine
@@ -112,6 +113,22 @@ async def root(
     connection_key: str | None = None,
     db_session: AsyncSession = Depends(get_db),
 ):
+    token = websocket.query_params.get("token")
+    logger.info(
+        f"WebSocket connect attempt path={websocket.url.path} "
+        f"query_params={websocket.query_params}"
+    )
+    if not token:
+        logger.warning("WebSocket auth missing token")
+        await websocket.close(code=1008)
+        return
+
+    user_info = introspect_token(token)
+    if not user_info:
+        logger.warning("WebSocket auth failed: token invalid or introspection failed")
+        await websocket.close(code=1008)
+        return
+
     if connection_key is None:
         logger.error("Invalid connection_key. Connection refused!")
         await websocket.close(code=1008)
@@ -138,6 +155,7 @@ async def root(
         connections=connections,
     )
 
+    websocket.state.user = user_info
     await strategy.execute()
 
 

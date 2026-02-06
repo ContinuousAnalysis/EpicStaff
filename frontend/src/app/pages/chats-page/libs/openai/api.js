@@ -73,15 +73,16 @@ export class RealtimeAPI extends RealtimeEventHandler {
         );
       }
       const WebSocket = globalThis.WebSocket;
-      const key = localStorage.getItem("connectionKey"); // Retrieve connection key
-      console.log(key);
+      const key = localStorage.getItem("connectionKey");
+      const token = localStorage.getItem("auth.access");
+      const params = new URLSearchParams();
+      if (key) params.set("connection_key", key);
+      if (token) params.set("token", token);
+      const qs = params.toString();
+
       const ws = new WebSocket(
-        `${this.url}${key ? `?connection_key=${key}` : ""}`,
-        [
-          "realtime",
-          `openai-insecure-api-key.${this.apiKey}`,
-          "openai-beta.realtime-v1",
-        ]
+        `${this.url}${qs ? `?${qs}` : ""}`,
+        ["realtime", "openai-beta.realtime-v1"]
       );
       ws.addEventListener("message", (event) => {
         const message = JSON.parse(event.data);

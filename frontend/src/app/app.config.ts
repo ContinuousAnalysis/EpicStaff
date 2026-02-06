@@ -9,10 +9,11 @@ import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { MarkdownModule } from 'ngx-markdown';
 import { ConfigService } from './services/config/config.service';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import { authInterceptor } from './core/interceptors/auth.interceptor';
 
 export function initializeApp(configService: ConfigService) {
     return () => configService.loadConfig();
@@ -24,7 +25,7 @@ export const appConfig: ApplicationConfig = {
         provideRouter(routes, withComponentInputBinding()),
         provideAnimationsAsync(),
 
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([authInterceptor])),
         importProvidersFrom(
             MarkdownModule.forRoot({}),
             MonacoEditorModule.forRoot()

@@ -8,6 +8,9 @@ from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from asgiref.sync import sync_to_async
+from django.http import HttpResponse
+
+from tables.authentication import JwtOrApiKeyAuthentication
 
 from tables.utils.mixins import SSEMixin
 from tables.models.session_models import Session
@@ -243,6 +246,17 @@ class RunSessionSSEView(SSEMixin):
 
         Append ?test=true to the URL for a finite sample response
         """
+        auth = JwtOrApiKeyAuthentication()
+        try:
+            user_auth = await sync_to_async(auth.authenticate)(request)
+        except Exception as exc:
+            logger.warning(f"SSE auth failed: {exc}")
+            logger.debug(f"SSE headers: {dict(request.headers)}")
+            return HttpResponse(status=401)
+        if not user_auth:
+            logger.warning("SSE auth missing credentials")
+            logger.debug(f"SSE headers: {dict(request.headers)}")
+            return HttpResponse(status=401)
         logger.info("Started run session SSE")
         return await super().get(request, *args, **kwargs)
 

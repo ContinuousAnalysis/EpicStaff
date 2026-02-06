@@ -89,6 +89,8 @@ services:
     build:
       context: ./realtime
       dockerfile: Dockerfile.realtime
+    env_file:
+      - .env
 
     environment:
       - KNOWLEDGE_SEARCH_GET_CHANNEL=knowledge:search:get
@@ -105,6 +107,9 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_REALTIME_USER=${DB_REALTIME_USER}
       - DB_REALTIME_PASSWORD=${DB_REALTIME_PASSWORD}
+      - DJANGO_AUTH_URL=${DJANGO_AUTH_URL}
+      - DJANGO_API_KEY=${DJANGO_API_KEY}
+      - DJANGO_AUTH_TIMEOUT=${DJANGO_AUTH_TIMEOUT:-5}
 
     networks:
       - backend-network

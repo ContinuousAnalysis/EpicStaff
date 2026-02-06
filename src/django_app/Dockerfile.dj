@@ -2,6 +2,9 @@
 FROM python:3.12.10
 
 # Install updated pip, setuptools, and wheel
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 RUN pip install --upgrade pip setuptools wheel
 
 RUN pip install poetry
@@ -15,7 +18,9 @@ COPY django_app/pyproject.toml .
 COPY django_app/poetry.lock .
 
 # Configure poetry to not create a virtual environment and install dependencies and delete cache
-RUN poetry config virtualenvs.create false && poetry install --no-root && rm -rf /root/.cache
+RUN poetry config virtualenvs.create false \
+  && poetry install --no-root \
+  && rm -rf /root/.cache
 
 #Coping file to workdir
 COPY ./django_app ./django_app

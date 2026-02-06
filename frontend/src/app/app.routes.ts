@@ -19,16 +19,30 @@ import { ProjectTemplatesComponent } from './features/projects/pages/projects-li
 import { MyFlowsComponent } from './features/flows/pages/flows-list-page/components/my-flows/my-flows.component';
 import { FlowTemplatesComponent } from './features/flows/pages/flows-list-page/components/flow-templates/flow-templates.component';
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
+import { authGuard } from './core/guards/auth.guard';
 import { ToolsListPageComponent } from './features/tools/pages/tools-list-page/tools-list-page.component';
 import { FlowsListPageComponent } from './features/flows/pages/flows-list-page/flows-list-page.component';
+import { LoginPageComponent } from './pages/login-page/login-page.component';
+import { SetupPageComponent } from './pages/setup-page/setup-page.component';
+import { setupGuard } from './core/guards/setup.guard';
 import {
     CollectionsListPageComponent
 } from "./features/knowledge-sources/pages/collections-list-page/collections-list-page.component";
 
 export const routes: Routes = [
     {
+        path: 'login',
+        component: LoginPageComponent,
+    },
+    {
+        path: 'setup',
+        component: SetupPageComponent,
+        canActivate: [setupGuard],
+    },
+    {
         path: '',
         component: MainLayoutComponent,
+        canActivate: [authGuard],
         children: [
             {
                 path: '',

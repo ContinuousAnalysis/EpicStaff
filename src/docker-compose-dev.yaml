@@ -25,7 +25,7 @@ services:
       - SESSION_STATUS_CHANNEL=sessions:session_status
       - MEMORY_UPDATE_CHANNEL=memory:update
   
-      - DEBUG=${DEBUG:-True}
+      - DEBUG=True
       - SECRET_KEY=${SECRET_KEY:-unsafe-dev-key}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
     
@@ -79,6 +79,8 @@ services:
       dockerfile: Dockerfile.realtime
     ports:
       - "${REALTIME_PORT:-8050}:${REALTIME_PORT:-8050}"
+    env_file:
+      - .env
     environment:
       - KNOWLEDGE_SEARCH_GET_CHANNEL=knowledge:search:get
       - KNOWLEDGE_SEARCH_RESPONSE_CHANNEL=knowledge:search:response
@@ -94,6 +96,9 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_REALTIME_USER=${DB_REALTIME_USER}
       - DB_REALTIME_PASSWORD=${DB_REALTIME_PASSWORD}
+      - DJANGO_AUTH_URL=${DJANGO_AUTH_URL}
+      - DJANGO_API_KEY=${DJANGO_API_KEY}
+      - DJANGO_AUTH_TIMEOUT=${DJANGO_AUTH_TIMEOUT:-5}
 
     networks:
       - backend-network
@@ -355,7 +360,7 @@ services:
     networks:
      - frontend-network
     volumes:
-     - ../frontend-config/frontend-config.json:/usr/share/nginx/html/config.json:ro
+     - ../frontend-config/frontend-config-dev.json:/usr/share/nginx/html/config.json:ro
   
   webhook:
     image: webhook

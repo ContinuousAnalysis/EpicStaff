@@ -1,4 +1,4 @@
 {
-	"apiUrl": "http://127.0.0.1/api/",
-	"realtimeApiUrl": "http://127.0.0.1/realtime/"
+  "apiUrl": "https://localhost/api/",
+  "realtimeApiUrl": "https://localhost/realtime/"
 }

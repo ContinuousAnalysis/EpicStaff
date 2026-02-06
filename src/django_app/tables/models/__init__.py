@@ -15,3 +15,4 @@ from .knowledge_models.collection_models import *
 from .tag_models import *
 from .realtime_models import *
 from .mcp_models import *
+from .auth_models import *

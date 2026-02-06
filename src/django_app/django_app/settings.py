@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 import sys
+from datetime import timedelta
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key
 
@@ -66,6 +67,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "tables",
     "rest_framework",
+    "rest_framework_simplejwt",
     "drf_yasg",
     "django_filters",
     "corsheaders",
@@ -93,9 +95,28 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "tables.authentication.JwtOrApiKeyAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+JWT_SECRET = os.getenv("JWT_SECRET", SECRET_KEY)
+
+SIMPLE_JWT = {
+    "SIGNING_KEY": JWT_SECRET,
+    "ALGORITHM": "HS256",
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15"))
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "7"))),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+}
 
 ROOT_URLCONF = "django_app.urls"
 
