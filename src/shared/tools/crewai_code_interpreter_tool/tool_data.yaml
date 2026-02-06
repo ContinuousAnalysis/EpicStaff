@@ -1,5 +1,5 @@
 tool-data:
-  name: "Code Interpreter Tool DEVELOP"
+  name: "Code Interpreter Tool TESTED"
   description: "Execute Python code in Docker, restricted sandbox, or unsafe host mode"
   args-schema: "args_schema.json"
   code-file: "main.py"
