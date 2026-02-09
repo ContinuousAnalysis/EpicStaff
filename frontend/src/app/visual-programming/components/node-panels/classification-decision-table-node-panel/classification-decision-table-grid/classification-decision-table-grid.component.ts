@@ -8,7 +8,6 @@ import {
     ChangeDetectorRef,
     ElementRef,
     inject,
-    OnInit,
     OnDestroy,
     effect,
 } from '@angular/core';
@@ -46,7 +45,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
     styleUrls: ['./classification-decision-table-grid.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ClassificationDecisionTableGridComponent implements OnInit, OnDestroy {
+export class ClassificationDecisionTableGridComponent implements OnDestroy {
     public conditionGroups = input.required<ConditionGroup[]>();
     public activeColor = input<string>('#685fff');
     public currentNodeId = input.required<string>();
@@ -166,14 +165,6 @@ export class ClassificationDecisionTableGridComponent implements OnInit, OnDestr
             }
             this.rebuildColumnDefs();
         });
-    }
-
-    ngOnInit(): void {
-        const groups = this.conditionGroups();
-        if (groups && groups.length > 0) {
-            this.rowData.set([...groups]);
-            this.initFieldColumnsFromData(groups);
-        }
     }
 
     private initFieldColumnsFromData(groups: ConditionGroup[]): void {
@@ -534,12 +525,14 @@ export class ClassificationDecisionTableGridComponent implements OnInit, OnDestr
     // Column hue spacing (degrees) for merged cell colors
     private static readonly COL_HUE_STEP = 67;
 
+    private getMergeableColIds(): string[] {
+        return [...this.activeFieldColumns().map(f => `field_${f}`), 'expression'];
+    }
+
     // Returns the row range that column `colId` is allowed to merge within,
     // based on the left column's merge group hierarchy.
     private getHierarchicalBounds(params: any, colId: string, idx: number): { start: number; end: number } {
-        const fields = this.activeFieldColumns();
-        const mergeableCols = fields.map(f => `field_${f}`);
-        mergeableCols.push('expression');
+        const mergeableCols = this.getMergeableColIds();
         const colIndex = mergeableCols.indexOf(colId);
 
         if (colIndex <= 0) {
@@ -665,9 +658,7 @@ export class ClassificationDecisionTableGridComponent implements OnInit, OnDestr
     }
 
     private computeMergedBg(params: any, colId: string, idx: number): string {
-        const fields = this.activeFieldColumns();
-        const mergeableCols = fields.map(f => `field_${f}`);
-        mergeableCols.push('expression');
+        const mergeableCols = this.getMergeableColIds();
         const colIndex = mergeableCols.indexOf(colId);
         if (colIndex < 0) return '';
 
@@ -717,8 +708,10 @@ export class ClassificationDecisionTableGridComponent implements OnInit, OnDestr
         if (ug && ug.colId === colId && idx >= ug.startRow && idx <= ug.endRow) return style;
         const cur = getValue(params.data) || '';
         if (!cur) return style;
-        const prevNode = idx > 0 ? params.api?.getDisplayedRowAtIndex(idx - 1) : null;
-        const nextNode = params.api?.getDisplayedRowAtIndex(idx + 1);
+
+        const bounds = this.getHierarchicalBounds(params, colId, idx);
+        const prevNode = idx > bounds.start ? params.api?.getDisplayedRowAtIndex(idx - 1) : null;
+        const nextNode = idx < bounds.end ? params.api?.getDisplayedRowAtIndex(idx + 1) : null;
         const matchesAbove = prevNode ? cur === (getValue(prevNode.data) || '') : false;
         const matchesBelow = nextNode ? cur === (getValue(nextNode.data) || '') : false;
 
@@ -736,22 +729,28 @@ export class ClassificationDecisionTableGridComponent implements OnInit, OnDestr
 
     private findMergeGroup(colId: string, rowIndex: number): { startRow: number; endRow: number } {
         const rows = this.rowData();
-        const getVal = (i: number): string => {
-            if (i < 0 || i >= rows.length) return '';
-            if (colId === 'expression') return rows[i].expression || '';
-            if (colId.startsWith('field_')) {
-                const field = colId.replace('field_', '');
-                return (rows[i].field_expressions || {})[field] || '';
-            }
-            return '';
-        };
+        const getVal = (i: number): string => this.getMergeableValueFromData(rows[i], colId);
+
         const val = getVal(rowIndex);
         if (!val) return { startRow: rowIndex, endRow: rowIndex };
 
+        // Respect hierarchical bounds from left columns
+        const mergeableCols = this.getMergeableColIds();
+        const colIdx = mergeableCols.indexOf(colId);
+        let boundsStart = 0;
+        let boundsEnd = rows.length - 1;
+
+        if (colIdx > 0) {
+            const leftColId = mergeableCols[colIdx - 1];
+            const leftGroup = this.findMergeGroup(leftColId, rowIndex);
+            boundsStart = leftGroup.startRow;
+            boundsEnd = leftGroup.endRow;
+        }
+
         let start = rowIndex;
-        while (start > 0 && getVal(start - 1) === val) start--;
+        while (start > boundsStart && getVal(start - 1) === val) start--;
         let end = rowIndex;
-        while (end < rows.length - 1 && getVal(end + 1) === val) end++;
+        while (end < boundsEnd && getVal(end + 1) === val) end++;
         return { startRow: start, endRow: end };
     }
 
@@ -931,26 +930,14 @@ export class ClassificationDecisionTableGridComponent implements OnInit, OnDestr
         this.emitChanges([...currentRows, newRow]);
     }
 
-    addRowAbove(): void {
-        const ctx = this.contextMenu();
-        if (!ctx) return;
-        const currentRows = this.rowData();
-        const newRow = this.createNewRow(ctx.rowIndex);
-        const updated = [
-            ...currentRows.slice(0, ctx.rowIndex),
-            newRow,
-            ...currentRows.slice(ctx.rowIndex),
-        ].map((r, i) => ({ ...r, order: i + 1 }));
-        this.rowData.set(updated);
-        this.emitChanges(updated);
-        this.contextMenu.set(null);
-    }
+    addRowAbove(): void { this.insertRowAtContext(0); }
+    addRowBelow(): void { this.insertRowAtContext(1); }
 
-    addRowBelow(): void {
+    private insertRowAtContext(offset: 0 | 1): void {
         const ctx = this.contextMenu();
         if (!ctx) return;
         const currentRows = this.rowData();
-        const insertAt = ctx.rowIndex + 1;
+        const insertAt = ctx.rowIndex + offset;
         const newRow = this.createNewRow(insertAt);
         const updated = [
             ...currentRows.slice(0, insertAt),

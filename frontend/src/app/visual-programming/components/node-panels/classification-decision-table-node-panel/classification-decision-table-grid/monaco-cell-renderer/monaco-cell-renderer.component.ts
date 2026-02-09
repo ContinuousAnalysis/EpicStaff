@@ -199,11 +199,9 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         // Measure actual text position inside the cell
         const agCell = this.elRef.nativeElement.closest('.ag-cell');
         const cellRect = agCell ? agCell.getBoundingClientRect() : this.codeContainer.nativeElement.getBoundingClientRect();
-        const codeCellRect = this.codeContainer.nativeElement.getBoundingClientRect();
-
         // Text element inside .code-cell (span.plain-text, span.colorized-code, or span.placeholder)
         const textEl = this.codeContainer.nativeElement.querySelector('span');
-        const textRect = textEl ? textEl.getBoundingClientRect() : codeCellRect;
+        const textRect = textEl ? textEl.getBoundingClientRect() : this.codeContainer.nativeElement.getBoundingClientRect();
 
         // Compute offsets from .ag-cell edge to actual text start
         const leftOffset = textRect.left - cellRect.left;
@@ -266,10 +264,6 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
             contextmenu: false,
             readOnly: merged,
             domReadOnly: merged,
-            ...(this.singleLine ? {
-                renderLineHighlight: 'none' as const,
-                lineHeight: monacoLineHeight,
-            } : {}),
         });
         this.editorInstance = editor;
 

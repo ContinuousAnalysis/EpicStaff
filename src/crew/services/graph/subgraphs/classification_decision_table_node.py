@@ -525,6 +525,10 @@ def main(**kwargs) -> dict:
             for group in sorted_groups:
                 try:
                     # Step 1: Build combined expression from field_expressions + main expression
+                    # Field expression format:
+                    #   - Bare value: auto-wrapped as `field == value` (value must be valid Python, e.g. `"start"`, `True`, `42`)
+                    #   - Operator prefix: `> 5`, `!= "end"`, `in ("a", "b")` → prepended with field name
+                    #   - Full expression with operators: used as-is (e.g. `field > 0 and field < 10`)
                     parts = []
                     _operator_prefixes = ('==', '!=', '>=', '<=', '>', '<', ' in ', ' not ')
                     if group.field_expressions:
