@@ -226,16 +226,25 @@ class BaseNode(ABC):
         the state at the time of execution.
         """
 
-        variables = state["variables"]
+        import json
+        
         state_history = state["state_history"]
+        
+        # Serialize via JSON to avoid deepcopy pickle issues with asyncio objects
+        def json_serialize(obj):
+            try:
+                return json.loads(json.dumps(obj, default=str))
+            except Exception:
+                return str(obj)
+        
         state_history.append(
             {
                 "type": type,
                 "name": name,
-                "additional_data": copy.deepcopy(kwargs),
-                "input": copy.deepcopy(input),
-                "variables": copy.deepcopy(variables.model_dump()),
-                "output": copy.deepcopy(output),
+                "additional_data": json_serialize(kwargs),
+                "input": json_serialize(input),
+                "variables": json_serialize(state["variables"].model_dump()),
+                "output": json_serialize(output),
             }
         )
 

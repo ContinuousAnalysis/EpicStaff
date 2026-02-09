@@ -64,6 +64,33 @@ class SessionManagerService(metaclass=SingletonMeta):
         session: Session = self.get_session(session_id=session_id)
         return session.status
 
+    def _resolve_template_variables(self, obj, context: dict):
+        """Recursively resolve {variable} or {variable:default} templates in nested structures"""
+        if isinstance(obj, str):
+            import re
+            pattern = r'\{([^}:]+)(?::([^}]*))?\}'
+            
+            def replace_template(match):
+                var_name = match.group(1)
+                default_value = match.group(2)
+                if var_name in context:
+                    return str(context[var_name])
+                elif default_value is not None:
+                    return default_value
+                else:
+                    return match.group(0)
+            
+            return re.sub(pattern, replace_template, obj)
+        elif isinstance(obj, dict):
+            return {
+                self._resolve_template_variables(k, context): self._resolve_template_variables(v, context)
+                for k, v in obj.items()
+            }
+        elif isinstance(obj, list):
+            return [self._resolve_template_variables(item, context) for item in obj]
+        else:
+            return obj
+
     def create_session(
         self,
         graph_id: int,
@@ -77,17 +104,25 @@ class SessionManagerService(metaclass=SingletonMeta):
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
 
         if start_node is not None:
-            if variables and start_node.variables:
-                variables = {**start_node.variables, **variables}
-            elif start_node.variables:
-                variables = start_node.variables
+            if start_node.variables:
+                # Resolve template variables in start_node config using user-provided variables
+                resolved_start_vars = self._resolve_template_variables(
+                    start_node.variables, variables
+                )
+                if variables:
+                    variables = {**resolved_start_vars, **variables}
+                else:
+                    variables = resolved_start_vars
+
+        # Remove 'shared' initialization dict - it's for Redis proxy, not storage
+        variables_for_db = {k: v for k, v in variables.items() if k != 'shared'}
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
         graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
         session = Session.objects.create(
             graph_id=graph_id,
             status=Session.SessionStatus.PENDING,
-            variables=variables,
+            variables=variables_for_db,
             time_to_live=time_to_live,
             graph_user=graph_user,
             entrypoint=entrypoint,

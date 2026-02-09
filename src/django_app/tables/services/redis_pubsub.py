@@ -81,6 +81,9 @@ class RedisPubSub:
                     session.status_data = status_data
                     session.token_usage = status_data["total_token_usage"]
                     session.save()
+
+                    if data["status"] == Session.SessionStatus.END:
+                        self._save_organization_variables(session, data)
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
 
