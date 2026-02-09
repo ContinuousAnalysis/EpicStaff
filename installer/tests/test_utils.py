@@ -1,8 +1,6 @@
 import os
 import sys
 import tempfile
-import pytest
-from pathlib import Path
 from app.utils import (
     get_config_dir,
     save_config,

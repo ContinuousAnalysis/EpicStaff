@@ -104,7 +104,6 @@ class NaiveRagDocumentConfig(models.Model):
         CSV = "csv"
 
     class NaiveRagDocumentStatus(models.TextChoices):
-
         NEW = "new"
         CHUNKED = "chunked"
         PROCESSING = "processing"
@@ -292,7 +291,6 @@ class AgentNaiveRag(models.Model):
 
 
 class NaiveRagSearchConfig(models.Model):
-
     agent = models.OneToOneField(
         "Agent",
         on_delete=models.CASCADE,

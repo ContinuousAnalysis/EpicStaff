@@ -31,6 +31,10 @@ export interface GraphSession {
   finished_at: string | null;
 }
 
+export interface SessionUpdates {
+  status: GraphSessionStatus;
+}
+
 export interface GraphSessionLight {
   id: number;
   graph_id: number;
@@ -101,6 +105,10 @@ export class GraphSessionService {
 
   getSessionById(sessionId: number): Observable<GraphSession> {
     return this.http.get<GraphSession>(`${this.apiUrl}${sessionId}/`);
+  }
+
+  getSessionUpdates(sessionId: string): Observable<SessionUpdates> {
+    return this.http.get<SessionUpdates>(`${this.apiUrl}${sessionId}/get-updates/`);
   }
 
   getSessionsByGraphId(

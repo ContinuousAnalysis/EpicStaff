@@ -44,7 +44,7 @@ class Command(BaseCommand):
 
         for collection in migrated_collections:
             old_name = collection.collection_name
-            new_name = old_name[len(MIGRATE_PREFIX):]
+            new_name = old_name[len(MIGRATE_PREFIX) :]
 
             if dry_run:
                 logger.info(f"[DRY-RUN] Would rename: '{old_name}' -> '{new_name}'")
@@ -63,17 +63,13 @@ class Command(BaseCommand):
 
             except Exception as e:
                 logger.error(f"Failed to rename '{old_name}': {e}")
-                self.stdout.write(
-                    self.style.ERROR(f"  FAIL: '{old_name}' - {e}")
-                )
+                self.stdout.write(self.style.ERROR(f"  FAIL: '{old_name}' - {e}"))
                 error_count += 1
 
         # Summary
         self.stdout.write("")
         if dry_run:
-            self.stdout.write(
-                self.style.WARNING("Dry run completed - no changes made")
-            )
+            self.stdout.write(self.style.WARNING("Dry run completed - no changes made"))
         else:
             self.stdout.write(
                 self.style.SUCCESS(

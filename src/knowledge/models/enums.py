@@ -1,4 +1,6 @@
 from enum import StrEnum
+
+
 class Status(StrEnum):
     """
     Statuses for DocumentMetadata and SourceCollection models
@@ -10,6 +12,7 @@ class Status(StrEnum):
     COMPLETED = "completed"
     WARNING = "warning"
     FAILED = "failed"
+
 
 class SourceCollectionStatus(StrEnum):
     """Status of document in SourceCollection"""
@@ -55,6 +58,7 @@ class DocumentStatus(StrEnum):
 
 class EmbedderTask(StrEnum):
     """Task types for embedding models"""
+
     RETRIEVAL_DOC = "retrieval_doc"
     RETRIEVAL_QUERY = "retrieval_query"
     SEMANTIC_SIMILARITY = "semantic_similarity"

@@ -1,5 +1,3 @@
-from typing import Any
-from loguru import logger
 from models.request_models import (
     PythonCodeToolData,
 )
@@ -30,7 +28,6 @@ class PythonCodeToolExecutor(BaseToolExecutor):
     def _gen_python_realtime_tool_model(
         self, python_code_tool_data: PythonCodeToolData
     ) -> RealtimeTool:
-
         tool_parameters = ToolParameters(
             properties=python_code_tool_data.args_schema.properties,
             required=python_code_tool_data.args_schema.required,

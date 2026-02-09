@@ -9,7 +9,6 @@ from tables.models import (
     Crew,
 )
 from django.core.exceptions import ValidationError
-from loguru import logger
 from ast import literal_eval
 
 
@@ -24,7 +23,6 @@ def eval_any(key: str, value: str) -> Any:
 
 
 class ToolConfigValidator:
-
     @staticmethod
     def llm_config_validation(key: str, llm_config_id: int):
         try:
@@ -95,7 +93,6 @@ class ToolConfigValidator:
         tool: Tool,
         configuration: dict,
     ) -> ToolConfig:
-
         if self._validate_missing_reqired_fields:
             self.__validate_missing_fields(
                 name=name, tool=tool, configuration=configuration
@@ -208,7 +205,6 @@ class ToolConfigValidator:
 
 
 def validate_session(schema: dict):
-
     crew_name = schema["crew"]["name"]
     tasks = schema["crew"]["tasks"]
     agents = schema["crew"]["agents"]
@@ -230,7 +226,6 @@ def validate_session(schema: dict):
 
 
 def validate_tool_configs(crew: Crew) -> list[ToolConfig]:
-
     configured_tool_ids: Iterable[int] = Agent.objects.filter(crew=crew).values_list(
         "configured_tools", flat=True
     )
@@ -245,7 +240,6 @@ def validate_tool_configs(crew: Crew) -> list[ToolConfig]:
 
     evaled_tool_confgs = list()
     for tool_config in configured_tool_set:
-
         evaled_tool_confgs.append(
             validator.validate(
                 name=tool_config.name,

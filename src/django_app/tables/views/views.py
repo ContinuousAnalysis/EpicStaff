@@ -11,7 +11,6 @@ from tables.utils.telegram_fields import load_telegram_trigger_fields
 from tables.models import Tool
 from tables.models import Crew
 from tables.models import GraphFile
-from tables.models.crew_models import DefaultAgentConfig, DefaultCrewConfig
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
 from tables.services.realtime_service import RealtimeService
@@ -20,19 +19,15 @@ from utils.logger import logger
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from django.db import transaction
-from django.db.models import Count, Q, Prefetch
+from django.db.models import Count
 from django.conf import settings
 
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 
 from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, ListModelMixin
 from rest_framework.viewsets import GenericViewSet
 
 from rest_framework.decorators import api_view, action
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView
-from rest_framework import generics
 from rest_framework import viewsets, mixins
 from rest_framework.response import Response
 from rest_framework import status
@@ -242,7 +237,6 @@ class SessionViewSet(
 
 
 class RunSession(APIView):
-
     @swagger_auto_schema(
         request_body=RunSessionSerializer,
         responses={
@@ -284,7 +278,7 @@ class RunSession(APIView):
         graph = Graph.objects.filter(id=graph_id).first()
         if not graph:
             return Response(
-                {"message": f"Provided graph does not exist"},
+                {"message": "Provided graph does not exist"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -396,7 +390,6 @@ class GetUpdates(APIView):
         }
     )
     def get(self, request, *args, **kwargs):
-
         session_id = kwargs.get("session_id", None)
         if session_id is None:
             return Response("Session id not found", status=status.HTTP_404_NOT_FOUND)
@@ -415,7 +408,6 @@ class GetUpdates(APIView):
 
 
 class StopSession(APIView):
-
     @swagger_auto_schema(
         responses={
             204: openapi.Response(description="Session stoped"),
@@ -432,7 +424,6 @@ class StopSession(APIView):
             required_listeners = 2  # manager and crew
             received_n = session_manager_service.stop_session(session_id=session_id)
             if received_n < required_listeners:
-
                 logger.error(f"Stop session ({session_id}) was sent but not received.")
                 session = Session.objects.get(pk=session_id)
                 session.status = Session.SessionStatus.ERROR
@@ -457,7 +448,6 @@ class EnvironmentConfig(APIView):
         },
     )
     def get(self, request, format=None):
-
         config_dict: dict = config_service.get_all()
         logger.info("Configuration retrieved successfully.")
 
@@ -474,7 +464,6 @@ class EnvironmentConfig(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
-
         serializer = EnvironmentConfigSerializer(data=request.data)
         if not serializer.is_valid():
             logger.error("Invalid configuration data provided.")
@@ -515,7 +504,6 @@ def delete_environment_config(request, *args, **kwargs):
 
 
 class AnswerToLLM(APIView):
-
     @swagger_auto_schema(
         request_body=AnswerToLLMSerializer,
         responses={
@@ -583,7 +571,6 @@ class AnswerToLLM(APIView):
 
 
 class CrewDeleteAPIView(APIView):
-
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
@@ -601,7 +588,6 @@ class CrewDeleteAPIView(APIView):
         },
     )
     def delete(self, request, id):
-
         delete_sessions = request.query_params.get("delete_sessions", "false").lower()
         if delete_sessions not in {"true", "false"}:
             raise ValidationError(
@@ -633,7 +619,6 @@ class CrewDeleteAPIView(APIView):
 
 
 class DefaultLLMConfigAPIView(APIView):
-
     @swagger_auto_schema(
         operation_summary="Get llm config defaults",
         responses={
@@ -657,7 +642,6 @@ class DefaultLLMConfigAPIView(APIView):
         },
     )
     def put(self, request, *args, **kwargs):
-
         try:
             obj = DefaultLLMConfig.objects.get(pk=1)
         except DefaultLLMConfig.DoesNotExist:
@@ -673,7 +657,6 @@ class DefaultLLMConfigAPIView(APIView):
 
 
 class DefaultEmbeddingConfigAPIView(APIView):
-
     @swagger_auto_schema(
         operation_summary="Get embedding config defaults",
         responses={
@@ -697,7 +680,6 @@ class DefaultEmbeddingConfigAPIView(APIView):
         },
     )
     def put(self, request, *args, **kwargs):
-
         try:
             obj = DefaultEmbeddingConfig.objects.get(pk=1)
         except DefaultEmbeddingConfig.DoesNotExist:
@@ -767,7 +749,6 @@ class RunPythonCodeAPIView(APIView):
 
 
 class InitRealtimeAPIView(APIView):
-
     @swagger_auto_schema(
         request_body=InitRealtimeSerializer,
         responses={
@@ -921,7 +902,7 @@ class ProcessRagIndexingView(APIView):
                 status=status.HTTP_202_ACCEPTED,
             )
 
-        except Exception as e:
+        except Exception:
             # DRF handle
             raise
 
