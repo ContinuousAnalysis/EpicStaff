@@ -35,7 +35,7 @@
   [class.collapsed]="collapsible && collapsed"
   #editorContainer
 >
-  @if (!collapsed || editorLoaded) {
+  @if (!collapsible || !collapsed) {
     <ngx-monaco-editor
       [options]="editorOptions"
       [(ngModel)]="jsonData"

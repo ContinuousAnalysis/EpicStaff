@@ -11,6 +11,7 @@ import {
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from "@angular/forms";
 import { SpinnerComponent } from "@shared/components";
+import { MATERIAL_FORMS } from "@shared/material-forms";
 import { calcLimit } from "../../../helpers/calculate-chunks-fetch-limit.util";
 import {
     DocumentChunkingState,
@@ -35,6 +36,7 @@ interface DisplayedChunk {
         CdkVirtualForOf,
         NgClass,
         FormsModule,
+        MATERIAL_FORMS,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })

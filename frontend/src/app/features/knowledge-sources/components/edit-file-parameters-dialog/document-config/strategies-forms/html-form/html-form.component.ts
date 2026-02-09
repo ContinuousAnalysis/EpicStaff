@@ -1,9 +1,13 @@
-import {ChangeDetectionStrategy, Component} from "@angular/core";
-import {StrategyForm} from "../strategy-config-form.abstract";
-import {FormGroup} from "@angular/forms";
-import {HtmlStrategyModel} from "../../../../../models/strategy.model";
-import {CustomInputComponent, InputNumberComponent, ToggleSwitchComponent} from "@shared/components";
-import {MATERIAL_FORMS} from "@shared/material-forms";
+import { ChangeDetectionStrategy, Component } from "@angular/core";
+import { StrategyForm } from "../strategy-config-form.abstract";
+import { FormGroup, ReactiveFormsModule } from "@angular/forms";
+import { HtmlStrategyModel } from "../../../../../models/strategy.model";
+import {
+    CustomInputComponent,
+    JsonEditorComponent,
+    ToggleSwitchComponent
+} from "@shared/components";
+import { MATERIAL_FORMS } from "@shared/material-forms";
 
 @Component({
     selector: 'app-html-form',
@@ -14,11 +18,56 @@ import {MATERIAL_FORMS} from "@shared/material-forms";
         ToggleSwitchComponent,
         MATERIAL_FORMS,
         CustomInputComponent,
-        InputNumberComponent
+        ReactiveFormsModule,
+        JsonEditorComponent
     ]
 })
 export class HtmlFormComponent extends StrategyForm<HtmlStrategyModel> {
+    jsonData: string = '{}';
+    editorOptions: any = {
+        lineNumbers: 'off',
+        theme: 'vs-dark',
+        language: 'json',
+        automaticLayout: true,
+        minimap: {enabled: false},
+        scrollBeyondLastLine: false,
+        wordWrap: 'on',
+        wrappingIndent: 'indent',
+        wordWrapBreakAfterCharacters: ',',
+        wordWrapBreakBeforeCharacters: '}]',
+        tabSize: 2,
+    };
+
+    additionalParamsFG!: FormGroup;
+
+    onJsonChange(value: string) {
+        const control = this.additionalParamsFG.get('external_metadata');
+
+        control?.setValue(value);
+    }
+
+    onJsonValidationChange(hasError: boolean) {
+        const control = this.additionalParamsFG.get('external_metadata');
+
+        if (hasError) {
+            control?.setErrors({ 'jsonInvalid': true })
+        } else {
+            control?.setErrors(null)
+        }
+    }
+
     initializeForm(config: HtmlStrategyModel): FormGroup {
-        return this.fb.group({});
+        this.additionalParamsFG = this.fb.group({
+            preserve_links: [config.preserve_links || false],
+            normalize_text: [config.normalize_text || false],
+            external_metadata: [config.external_metadata || '{}'],
+            denylist_tags: [config.denylist_tags || ''],
+        });
+
+        this.jsonData = config.external_metadata || '{}';
+        return this.fb.group({
+            mainParams: this.fb.group({}),
+            additionalParams: this.additionalParamsFG,
+        });
     }
 }

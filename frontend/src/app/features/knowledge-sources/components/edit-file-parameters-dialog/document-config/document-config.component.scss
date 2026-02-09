@@ -36,6 +36,10 @@
         display: flex;
         align-items: center;
 
+        &--self-start {
+            align-self: flex-start;
+        }
+
         &:nth-child(odd) {
             justify-self: end;
         }
@@ -45,13 +49,19 @@
         }
     }
 
+    &__input {
+        width: 100%;
+    }
+
     &__tooltip {
         color: var(--accent-color);
     }
 
-    &__json-preview-container {
-        flex-grow: 1;
-        padding: 0 2.5rem 1.5rem 1.875rem;
+    &__external-metadata {
+        border: 1px solid var(--color-input-border);
+        border-radius: 0.5rem;
+        height: 200px;
+        overflow: hidden;
     }
 
     &__json-preview {

@@ -1,4 +1,4 @@
-import { NaiveRagChunkStrategy } from "./naive-rag-document.model";
+import { NaiveRagChunkStrategy } from "../enums/naive-rag-chunk-strategy";
 
 export type DocumentChunkingProcessStatus =
     | 'completed'

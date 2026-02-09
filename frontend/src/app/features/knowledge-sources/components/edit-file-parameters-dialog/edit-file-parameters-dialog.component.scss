@@ -53,6 +53,11 @@
             border-color: var(--accent-color-hover);
             color: var(--accent-color-hover);
         }
+
+        &--disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     }
 
     &__content {
@@ -63,22 +68,17 @@
 
     &__chunk-preview {
         border-right: 1px solid var(--color-divider-subtle);
-        padding-left: 2.5rem;
-    }
-
-    &__chunk-preview-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 1rem;
-        font-size: 1.125rem;
+        padding-left: 0.625rem;
+        flex-grow: 1;
     }
 
     &__chunk-preview-button {
+        margin-left: auto;
         width: 85px;
     }
 
     &__document-config {
-        min-width: 35%;
+        width: 550px;
+        flex-shrink: 0;
     }
 }

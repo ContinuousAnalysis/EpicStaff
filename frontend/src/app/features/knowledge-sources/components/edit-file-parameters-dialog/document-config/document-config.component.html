@@ -20,56 +20,10 @@
         </div>
     </div>
 
-    @switch (selectedStrategy()) {
-        @case ('markdown') {
-            <app-markdown-form
-                [params]="params"
-                [parentForm]="form"
-            />
-        }
-        @case ('character') {
-            <app-character-form
-                [params]="params"
-                [parentForm]="form"
-            />
-        }
-        @case ('csv') {
-            <app-csv-form
-                [params]="params"
-                [parentForm]="form"
-            />
-        }
-        @case ('html') {
-            <app-html-form
-                [params]="params"
-                [parentForm]="form"
-            />
-        }
-        @case ('token') {
-            <app-token-form
-                [params]="params"
-                [parentForm]="form"
-            />
-        }
-        @case ('json') {
-            <app-json-form
-                [params]="params"
-                [parentForm]="form"
-            />
-        }
+    @if (formComponent()) {
+        <ng-container
+            [ngComponentOutlet]="formComponent()"
+            [ngComponentOutletInputs]="componentInputs()"
+        ></ng-container>
     }
-
-    <div class="config__json-preview-container">
-        <app-json-editor
-            class="config__json-preview"
-            [jsonData]="jsonConfig()"
-            [title]="'JSON'"
-            [allowCopy]="true"
-            [collapsible]="true"
-            (jsonChange)="jsonConfig.set($event)"
-            (validationChange)="onJsonValidChange($event)"
-            [fullHeight]="true"
-        ></app-json-editor>
-    </div>
-
 </div>

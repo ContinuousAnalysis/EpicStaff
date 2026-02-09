@@ -1,9 +1,9 @@
-import {ChangeDetectionStrategy, Component} from "@angular/core";
-import {StrategyForm} from "../strategy-config-form.abstract";
-import {FormGroup} from "@angular/forms";
-import {ChipsInputComponent, InputNumberComponent, SelectItem, ToggleSwitchComponent} from "@shared/components";
-import {MATERIAL_FORMS} from "@shared/material-forms";
-import {MarkdownStrategyModel} from "../../../../../models/strategy.model";
+import { ChangeDetectionStrategy, Component } from "@angular/core";
+import { StrategyForm } from "../strategy-config-form.abstract";
+import { FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { ChipsInputComponent, InputNumberComponent, SelectItem, ToggleSwitchComponent } from "@shared/components";
+import { MATERIAL_FORMS } from "@shared/material-forms";
+import { MarkdownStrategyModel } from "../../../../../models/strategy.model";
 
 @Component({
     selector: 'app-markdown-form',
@@ -14,30 +14,49 @@ import {MarkdownStrategyModel} from "../../../../../models/strategy.model";
         ChipsInputComponent,
         ToggleSwitchComponent,
         MATERIAL_FORMS,
-        InputNumberComponent
+        InputNumberComponent,
+        ReactiveFormsModule
     ]
 })
 export class MarkdownFormComponent extends StrategyForm<MarkdownStrategyModel> {
     headerItems: SelectItem[] = [
         {
-            name: '#header 1',
-            value: '1'
+            name: '# Header 1',
+            value: '#'
         },
         {
-            name: '##header 2',
-            value: '2'
+            name: '## Header 2',
+            value: '##'
         },
         {
-            name: '###header 3',
-            value: '3'
+            name: '### Header 3',
+            value: '###'
+        },
+        {
+            name: '#### Header 4',
+            value: '####'
+        },
+        {
+            name: '##### Header 5',
+            value: '#####'
+        },
+        {
+            name: '###### Header 6',
+            value: '######'
         },
     ]
 
     initializeForm(config: MarkdownStrategyModel): FormGroup {
-        return this.fb.group({});
-    }
-
-    onToggle(value: boolean) {
-
+        return this.fb.group({
+            mainParams: this.fb.group({
+                chunk_size: [config.chunk_size || 20, Validators.required],
+                chunk_overlap: [config.chunk_overlap || 0, Validators.required],
+            }),
+            additionalParams: this.fb.group({
+                headers_to_split_on: [config.headers_to_split_on || []],
+                return_each_line: [config.return_each_line || false],
+                strip_headers: [config.strip_headers || false],
+            })
+        });
     }
 }

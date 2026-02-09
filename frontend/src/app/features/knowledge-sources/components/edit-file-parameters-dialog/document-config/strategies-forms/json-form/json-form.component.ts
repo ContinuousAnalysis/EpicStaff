@@ -1,9 +1,9 @@
-import {ChangeDetectionStrategy, Component} from "@angular/core";
-import {StrategyForm} from "../strategy-config-form.abstract";
-import {FormGroup} from "@angular/forms";
-import {JsonStrategyModel} from "../../../../../models/strategy.model";
-import {InputNumberComponent} from "@shared/components";
-import {MATERIAL_FORMS} from "@shared/material-forms";
+import { ChangeDetectionStrategy, Component } from "@angular/core";
+import { StrategyForm } from "../strategy-config-form.abstract";
+import { FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { JsonStrategyModel } from "../../../../../models/strategy.model";
+import { InputNumberComponent } from "@shared/components";
+import { MATERIAL_FORMS } from "@shared/material-forms";
 
 @Component({
     selector: 'app-json-form',
@@ -12,11 +12,17 @@ import {MATERIAL_FORMS} from "@shared/material-forms";
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         InputNumberComponent,
-        MATERIAL_FORMS
+        MATERIAL_FORMS,
+        ReactiveFormsModule
     ]
 })
 export class JsonFormComponent extends StrategyForm<JsonStrategyModel> {
     initializeForm(config: JsonStrategyModel): FormGroup {
-        return this.fb.group({});
+        return this.fb.group({
+            mainParams: this.fb.group({
+                chunk_size: [config.chunk_size || 20, Validators.required],
+            }),
+            additionalParams: this.fb.group({}),
+        });
     }
 }

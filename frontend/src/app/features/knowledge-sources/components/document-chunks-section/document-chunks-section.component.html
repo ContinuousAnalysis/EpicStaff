@@ -96,14 +96,16 @@
             </div>
         }
 
-        <app-button
-            class="chunks__action-btn"
-            type="primary"
-            mod="small"
-            (click)="runChunking()"
-            [disabled]="disabled"
-        >
-            {{ btnText }}
-        </app-button>
+        <ng-content>
+            <app-button
+                class="chunks__action-btn"
+                type="primary"
+                mod="small"
+                (click)="runChunking()"
+                [disabled]="disabled"
+            >
+                {{ btnText }}
+            </app-button>
+        </ng-content>
     </div>
 </ng-template>

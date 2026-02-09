@@ -62,7 +62,7 @@ export class JsonEditorComponent {
 
   @HostBinding('class.collapsed')
   get hostCollapsed() {
-    return this.collapsed;
+    return this.collapsible && this.collapsed;
   }
 
   constructor(private cdr: ChangeDetectorRef, private zone: NgZone, private toast: ToastService) {}

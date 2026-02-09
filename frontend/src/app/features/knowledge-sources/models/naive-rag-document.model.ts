@@ -1,3 +1,4 @@
+import { NaiveRagChunkStrategy } from "../enums/naive-rag-chunk-strategy";
 import { RagType } from "./naive-rag.model";
 
 export type NaiveRagDocumentStatus =
@@ -9,13 +10,9 @@ export type NaiveRagDocumentStatus =
     | 'warning'
     | 'failed';
 
-export type NaiveRagChunkStrategy =
-    | 'token'
-    | 'character'
-    | 'markdown'
-    | 'json'
-    | 'html'
-    | 'csv'
+export type NaiveRagAdditionalParams = {
+    [key in NaiveRagChunkStrategy]: any;
+};
 
 export interface NaiveRagDocumentConfig {
     naive_rag_document_id: number;
@@ -24,7 +21,7 @@ export interface NaiveRagDocumentConfig {
     chunk_strategy: NaiveRagChunkStrategy;
     chunk_size: number;
     chunk_overlap: number;
-    additional_params: {};
+    additional_params: NaiveRagAdditionalParams;
     status: NaiveRagDocumentStatus;
     total_chunks: number;
     total_embeddings: number;

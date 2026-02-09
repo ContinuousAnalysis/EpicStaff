@@ -1,8 +1,6 @@
 <cdk-virtual-scroll-viewport
     #viewport
     [itemSize]="itemSize"
-    [minBufferPx]="100"
-    [maxBufferPx]="500"
     class="chunk__viewport"
     (scrolledIndexChange)="onScroll($event)"
 >
@@ -33,12 +31,15 @@
             </span>
             @if (chunk.overlap) {
                 <span
+                    [matTooltip]="'Overlap for chunks ' + chunk.chunkIndex + ' and ' + (chunk.chunkIndex - 1)"
+                    matTooltipPosition="before"
                     [style.z-index]="count - i"
                     class="chunk__text-item chunk__text-item--overlap"
                 >{{ chunk.overlap }}</span>
             }
             @if (chunk.text) {
                 <span
+                    [matTooltip]="'Chunk ' + chunk.chunkIndex"
                     class="chunk__text-item"
                     [style.z-index]="count - i"
                     [ngClass]="{

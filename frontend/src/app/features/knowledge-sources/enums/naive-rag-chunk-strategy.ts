@@ -1,4 +1,4 @@
-export enum ChunkStrategy {
+export enum NaiveRagChunkStrategy {
     MARKDOWN = 'markdown',
     CHARACTER = 'character',
     CSV = 'csv',

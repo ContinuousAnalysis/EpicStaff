@@ -76,6 +76,11 @@
 
     &__text-item {
         position: relative;
+
+        &:hover {
+            text-decoration: underline;
+        }
+
         &::before {
             content: '';
             position: absolute;

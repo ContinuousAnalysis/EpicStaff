@@ -122,13 +122,15 @@ export class ConfigurationTableComponent {
         };
     }
 
-    tuneChunk(docRagId: number) {
+    tuneChunk(ragDocumentId: number) {
+        const allDocumentIds = this.filteredDocuments().map(d => d.naive_rag_document_id);
         this.dialog.open(EditFileParametersDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
             data: {
                 ragId: this.ragId(),
-                docRagId
+                ragDocumentId,
+                allDocumentIds,
             },
             disableClose: true
         });

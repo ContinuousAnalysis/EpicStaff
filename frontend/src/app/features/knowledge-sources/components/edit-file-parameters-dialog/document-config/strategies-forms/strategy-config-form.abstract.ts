@@ -1,18 +1,21 @@
-import {FormBuilder, FormGroup} from "@angular/forms";
-import {Component, inject, input, OnDestroy, OnInit} from "@angular/core";
-import {StrategyModel} from "../../../../models/strategy.model";
+import { FormBuilder, FormGroup } from "@angular/forms";
+import { Component, inject, input, OnChanges, OnDestroy, SimpleChanges } from "@angular/core";
+import { StrategyModel } from "../../../../models/strategy.model";
 
 @Component({
-    template: ''
+    template: '',
 })
-export abstract class StrategyForm<T extends StrategyModel> implements OnInit, OnDestroy {
+export abstract class StrategyForm<T extends StrategyModel> implements OnChanges, OnDestroy {
     protected fb = inject(FormBuilder);
     protected strategyForm!: FormGroup;
 
     parentForm = input.required<FormGroup>();
     params = input.required<T>();
 
-    ngOnInit() {
+    // Rebuild form on each document change
+    ngOnChanges(changes: SimpleChanges): void {
+        console.log('rebuild')
+        this.parentForm().removeControl('strategyParams');
         this.strategyForm = this.initializeForm(this.params());
         this.parentForm().addControl('strategyParams', this.strategyForm);
     }
@@ -20,7 +23,6 @@ export abstract class StrategyForm<T extends StrategyModel> implements OnInit, O
     ngOnDestroy() {
         this.parentForm().removeControl('strategyParams');
     }
-
 
     protected abstract initializeForm(config: T): FormGroup;
 }

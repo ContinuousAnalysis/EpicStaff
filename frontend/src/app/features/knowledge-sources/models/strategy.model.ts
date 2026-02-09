@@ -1,10 +1,4 @@
-import {ChunkStrategy} from "../enums/chunk-strategy";
-
-export interface BaseStrategyModel {
-   strategy: ChunkStrategy;
-}
-
-export interface MarkdownStrategyModel extends BaseStrategyModel {
+export interface MarkdownStrategyModel {
     chunk_size: number;
     chunk_overlap: number;
     headers_to_split_on: string[];
@@ -12,32 +6,30 @@ export interface MarkdownStrategyModel extends BaseStrategyModel {
     strip_headers: boolean;
 }
 
-export interface CharacterStrategyModel extends BaseStrategyModel {
+export interface CharacterStrategyModel {
     chunk_size: number;
     chunk_overlap: number;
     regex: string;
 }
 
-export interface CsvStrategyModel extends BaseStrategyModel {
+export interface CsvStrategyModel {
     rows_in_chunk: number;
     headers_level: number;
 }
 
-export interface HtmlStrategyModel extends BaseStrategyModel {
-    chunk_size: number;
-    chunk_overlap: number;
+export interface HtmlStrategyModel {
     preserve_links: boolean;
     normalize_text: boolean;
     external_metadata: string;
     denylist_tags: string;
 }
 
-export interface TokenStrategyModel extends BaseStrategyModel {
+export interface TokenStrategyModel {
     chunk_size: number;
     chunk_overlap: number;
 }
 
-export interface JsonStrategyModel extends BaseStrategyModel {
+export interface JsonStrategyModel {
     chunk_size: number;
 }
 

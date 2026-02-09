@@ -129,15 +129,8 @@ export class NaiveRagDocumentsStorageService {
 
             switch (doc.status) {
                 case 'new':
-                    status = 'new';
-                    break;
                 case 'chunking':
-                    status = 'chunking';
-                    break;
-                // document-config status 'chunked' does not represent is chunks are up-to-date
-                case 'chunked':
-                    status = 'new';
-                    break;
+                case 'chunked': // document-config status 'chunked' does not represent is chunks up-to-date
                 case 'completed':
                     status = 'new';
                     break;
@@ -166,15 +159,28 @@ export class NaiveRagDocumentsStorageService {
         this.updateDocsState([documentId], s => ({ ...s, status: 'chunking' }));
 
         return this.naiveRagService.runChunkingProcess(ragId, documentId).pipe(
-            // TODO: handle chunking errors
-            filter(r => r.status === 'completed'),
-
-            tap(() => {
+            tap((res) => {
                 const state = this.documentStates().get(documentId);
                 if (state?.status === 'chunks_outdated') return;
 
-                this.updateDocsState([documentId], s => ({ ...s, status: 'chunked' }));
-            })
+                switch (res.status) {
+                    case 'completed': {
+                        this.updateDocsState([documentId], s => ({ ...s, status: 'chunked' }));
+                        return;
+                    }
+                    case 'canceled': {
+                        return;
+                    }
+                    case 'failed': {
+                        this.updateDocsState([documentId], s => ({ ...s, status: 'chunking_failed' }));
+                        return;
+                    }
+                    case 'timeout': {
+                        this.updateDocsState([documentId], s => ({ ...s, status: 'chunking_failed' }));
+                        return;
+                    }
+                }
+            }),
         )
     }
 
@@ -190,6 +196,24 @@ export class NaiveRagDocumentsStorageService {
             tap(response => this.handleUpdateSuccess(response)),
             catchError(err => {
                 this.handleUpdateError(err, field, documentId)
+                return throwError(() => err)
+            })
+        );
+    }
+
+    public updateDocumentFields(
+        naiveRagId: number,
+        documentId: number,
+        data: UpdateNaiveRagDocumentDtoRequest,
+    ): Observable<UpdateNaiveRagDocumentResponse> {
+        return this.naiveRagService.updateDocumentConfigById(
+            naiveRagId,
+            documentId,
+            data
+        ).pipe(
+            tap(response => this.handleUpdateSuccess(response)),
+            catchError(err => {
+                // this.handleUpdateError(err, field, documentId)
                 return throwError(() => err)
             })
         );
