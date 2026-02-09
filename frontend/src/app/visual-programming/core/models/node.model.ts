@@ -117,6 +117,14 @@ export interface TelegramTriggerNodeModel extends BaseNodeModel {
     }
 }
 
+export interface ClassificationDecisionTableNodeModel extends BaseNodeModel {
+    type: NodeType.CLASSIFICATION_TABLE;
+    data: {
+        name?: string;
+        table: any;
+    };
+}
+
 export interface EndNodeData {
     output_map: Record<string, unknown>;
 }
@@ -142,4 +150,5 @@ export type NodeModel =
     | AudioToTextNodeModel
     | WebhookTriggerNodeModel
     | TelegramTriggerNodeModel
+    | ClassificationDecisionTableNodeModel
     | EndNodeModel;

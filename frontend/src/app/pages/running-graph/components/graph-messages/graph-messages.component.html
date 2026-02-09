@@ -61,6 +61,18 @@
       <app-error-message [message]="message"></app-error-message>
       } @case ('task') {
       <app-task-message [message]="message"></app-task-message>
+      } @case ('condition_group') {
+      <app-classification-dt-message
+        [message]="message"
+      ></app-classification-dt-message>
+      } @case ('classification_prompt') {
+      <app-classification-dt-message
+        [message]="message"
+      ></app-classification-dt-message>
+      } @case ('condition_group_manipulation') {
+      <app-classification-dt-message
+        [message]="message"
+      ></app-classification-dt-message>
       } @case ('finish') {
       <app-finish-message
         [message]="message"

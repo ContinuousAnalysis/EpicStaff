@@ -29,6 +29,8 @@ from tables.models.realtime_models import RealtimeAgentChat
 from tables.models.graph_models import (
     Condition,
     ConditionGroup,
+    ClassificationConditionGroup,
+    ClassificationDecisionTableNode,
     ConditionalEdge,
     CrewNode,
     DecisionTableNode,
@@ -516,6 +518,87 @@ class ConverterService(metaclass=SingletonMeta):
                 for condition in condition_group.conditions.all()
             ],
             next_node=condition_group.next_node,
+        )
+
+    def convert_classification_decision_table_node_to_pydantic(
+        self, node: ClassificationDecisionTableNode
+    ):
+        from utils.logger import logger
+
+        condition_groups = [
+            ClassificationConditionGroupData(
+                group_name=cg.group_name,
+                expression=cg.expression,
+                prompt_id=cg.prompt_id,
+                manipulation=cg.manipulation,
+                continue_flag=cg.continue_flag,
+                route_code=cg.route_code,
+                dock_visible=cg.dock_visible,
+                order=cg.order,
+            )
+            for cg in node.condition_groups.all()
+        ]
+
+        prompts_dict = {}
+        if node.prompts:
+            for prompt_id, prompt_data in node.prompts.items():
+                prompt_config = PromptConfigData(**prompt_data)
+                if prompt_config.llm_id:
+                    try:
+                        llm_config_obj = LLMConfig.objects.get(pk=int(prompt_config.llm_id))
+                        prompt_config.llm_data = self.convert_llm_config_to_pydantic(llm_config_obj)
+                    except (LLMConfig.DoesNotExist, ValueError):
+                        logger.warning(f"LLM config {prompt_config.llm_id} not found for prompt '{prompt_id}'")
+                prompts_dict[prompt_id] = prompt_config
+
+        # Fallback: if DB fields are empty, read from graph metadata
+        pre_input_map = node.pre_input_map or {}
+        post_input_map = node.post_input_map or {}
+        pre_computation_code = node.pre_computation_code
+        post_computation_code = node.post_computation_code
+        pre_output_variable_path = node.pre_output_variable_path
+        post_output_variable_path = node.post_output_variable_path
+
+        if not pre_input_map or not post_input_map or not pre_computation_code:
+            try:
+                metadata = node.graph.metadata or {}
+                for mn in metadata.get("nodes", []):
+                    mn_name = mn.get("data", {}).get("node_name") or mn.get("node_name")
+                    if mn_name == node.node_name and mn.get("type") == "classification-decision-table":
+                        table = mn.get("data", {}).get("table", {})
+                        pre_comp = table.get("pre_computation", {})
+                        post_comp = table.get("post_computation", {})
+                        if not pre_input_map:
+                            pre_input_map = pre_comp.get("input_map") or table.get("pre_input_map") or {}
+                        if not post_input_map:
+                            post_input_map = post_comp.get("input_map") or table.get("post_input_map") or {}
+                        if not pre_computation_code:
+                            pre_computation_code = pre_comp.get("code") or table.get("pre_computation_code")
+                        if not post_computation_code:
+                            post_computation_code = post_comp.get("code") or table.get("post_computation_code")
+                        if not pre_output_variable_path:
+                            pre_output_variable_path = pre_comp.get("output_variable_path")
+                        if not post_output_variable_path:
+                            post_output_variable_path = post_comp.get("output_variable_path")
+                        if pre_input_map:
+                            logger.info(f"CDT '{node.node_name}': loaded input maps from graph metadata fallback")
+                        break
+            except Exception as e:
+                logger.warning(f"CDT '{node.node_name}': metadata fallback failed: {e}")
+
+        return ClassificationDecisionTableNodeData(
+            node_name=node.node_name,
+            pre_computation_code=pre_computation_code,
+            pre_input_map=pre_input_map,
+            pre_output_variable_path=pre_output_variable_path,
+            post_computation_code=post_computation_code,
+            post_input_map=post_input_map,
+            post_output_variable_path=post_output_variable_path,
+            condition_groups=condition_groups,
+            prompts=prompts_dict,
+            route_variable_name=node.route_variable_name,
+            default_next_node=node.default_next_node,
+            next_error_node=node.next_error_node,
         )
 
     def convert_decision_table_node_to_pydantic(

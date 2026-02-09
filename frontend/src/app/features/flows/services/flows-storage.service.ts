@@ -227,6 +227,7 @@ export class FlowsStorageService {
                     end_node_list: sourceFlow.end_node_list,
                     audio_transcription_node_list: sourceFlow.audio_transcription_node_list,
                     decision_table_node_list: sourceFlow.decision_table_node_list,
+                    classification_decision_table_node_list: sourceFlow.classification_decision_table_node_list,
                 };
                 return this.flowsApiService.copyGraph(payload).pipe(
                     tap((created) => this.addFlowToCache(created))

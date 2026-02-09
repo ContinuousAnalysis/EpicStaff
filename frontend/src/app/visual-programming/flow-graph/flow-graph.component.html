@@ -99,14 +99,14 @@
             connection.id) {
             <f-connection
                 [fBehavior]="connection.behavior || 'fixed'"
-                [fType]="connection.type || 'segment'"
-                [fOffset]="30"
+                [fType]="getConnectionType(connection)"
+                [fOffset]="getConnectionOffset(connection)"
                 [fStartColor]="'#555'"
                 [fEndColor]="'#555'"
                 [fOutputId]="connection.sourcePortId"
                 [fInputId]="connection.targetPortId"
                 [fConnectionId]="connection.id"
-                [class.dashed-connection]="connection.category === 'virtual'"
+                [class.dashed-connection]="connection.category === 'virtual' || isBackwardConnection(connection)"
             >
                 <svg
                     viewBox="0 0 10 10"

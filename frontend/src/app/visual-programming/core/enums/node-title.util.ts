@@ -16,6 +16,8 @@ export function getNodeTitle(node: NodeModel): string {
 
         case NodeType.TABLE:
             return (node as any).data.name || '';
+        case NodeType.CLASSIFICATION_TABLE:
+            return (node as any).data.name || '';
         case NodeType.LLM:
             return (node as any).data.custom_name || '';
         case NodeType.START:

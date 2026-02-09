@@ -7,12 +7,16 @@ export interface DecisionTableNode {
 export interface ConditionGroup {
     group_name: string;
     group_type: 'simple' | 'complex';
+    prompt_id?: string | null;
     expression: string | null;
     conditions: Condition[];
     manipulation: string | null;
     next_node: string | null;
     valid?: boolean;
     order?: number;
+    continue?: boolean;
+    route_code?: string;
+    dock_visible?: boolean;
 }
 
 export interface Condition {

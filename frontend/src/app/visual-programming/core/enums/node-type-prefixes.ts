@@ -11,6 +11,7 @@ export const NODE_TYPE_PREFIXES: Record<NodeType, string> = {
     [NodeType.START]: 'Start-Node',
     [NodeType.GROUP]: 'Group',
     [NodeType.TABLE]: 'Decision Table',
+    [NodeType.CLASSIFICATION_TABLE]: 'Classification Decision Table',
     [NodeType.NOTE]: 'Note',
     [NodeType.FILE_EXTRACTOR]: 'File Extractor',
     [NodeType.AUDIO_TO_TEXT]: 'Audio-to-text',

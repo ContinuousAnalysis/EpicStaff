@@ -58,6 +58,8 @@ from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.graph_models import (
     Condition,
     ConditionGroup,
+    ClassificationConditionGroup,
+    ClassificationDecisionTableNode,
     DecisionTableNode,
     EndNode,
     LLMNode,
@@ -1355,6 +1357,26 @@ class DecisionTableNodeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class ClassificationConditionGroupSerializer(serializers.ModelSerializer):
+    classification_decision_table_node = serializers.PrimaryKeyRelatedField(
+        read_only=True
+    )
+
+    class Meta:
+        model = ClassificationConditionGroup
+        fields = "__all__"
+
+
+class ClassificationDecisionTableNodeSerializer(serializers.ModelSerializer):
+    condition_groups = ClassificationConditionGroupSerializer(
+        many=True, required=False
+    )
+
+    class Meta:
+        model = ClassificationDecisionTableNode
+        fields = "__all__"
+
+
 class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
     webhook_trigger_path = serializers.CharField(required=False, allow_blank=True)
@@ -1434,6 +1456,9 @@ class GraphSerializer(serializers.ModelSerializer):
     webhook_trigger_node_list = WebhookTriggerNodeSerializer(many=True, read_only=True)
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
+    classification_decision_table_node_list = ClassificationDecisionTableNodeSerializer(
+        many=True, read_only=True
+    )
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
@@ -1455,6 +1480,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "llm_node_list",
             "webhook_trigger_node_list",
             "decision_table_node_list",
+            "classification_decision_table_node_list",
             "start_node_list",
             "end_node_list",
             "time_to_live",

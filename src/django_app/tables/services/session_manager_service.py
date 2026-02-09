@@ -1,6 +1,7 @@
 from tables.validators.end_node_validator import EndNodeValidator
 from tables.exceptions import GraphEntryPointException
 from tables.models.graph_models import (
+    ClassificationDecisionTableNode,
     ConditionalEdge,
     DecisionTableNode,
     GraphSessionMessage,
@@ -145,6 +146,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
         llm_node_list = LLMNode.objects.filter(graph=graph.pk)
         decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
+        classification_decision_table_node_list = ClassificationDecisionTableNode.objects.filter(graph=graph.pk)
         webhook_trigger_node_list = WebhookTriggerNode.objects.filter(graph=graph.pk)
         telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
 
@@ -238,6 +240,42 @@ class SessionManagerService(metaclass=SingletonMeta):
             )
             decision_table_node_data_list.append(decision_table_node_data)
 
+        classification_dt_node_data_list = []
+        for item in classification_decision_table_node_list:
+            classification_dt_node_data_list.append(
+                self.converter_service.convert_classification_decision_table_node_to_pydantic(
+                    node=item
+                )
+            )
+
+        # Build route_map for classification DT nodes from graph metadata connections
+        metadata = graph.metadata or {}
+        metadata_nodes = metadata.get("nodes", [])
+        metadata_connections = metadata.get("connections", [])
+        uuid_to_node_name = {n["id"]: n.get("node_name", "") for n in metadata_nodes}
+
+        for ct_node_data in classification_dt_node_data_list:
+            ct_uuid = None
+            for mn in metadata_nodes:
+                if mn.get("node_name") == ct_node_data.node_name:
+                    ct_uuid = mn["id"]
+                    break
+            if ct_uuid is None:
+                continue
+
+            route_map = {}
+            prefix = f"{ct_uuid}_decision-route-"
+            for conn in metadata_connections:
+                source_port = conn.get("sourcePortId", "")
+                if source_port.startswith(prefix):
+                    route_code = source_port[len(prefix):]
+                    target_uuid = conn.get("targetNodeId", "")
+                    target_name = uuid_to_node_name.get(target_uuid)
+                    if route_code and target_name:
+                        route_map[route_code] = target_name
+            ct_node_data.route_map = route_map
+            logger.info(f"Classification DT '{ct_node_data.node_name}' route_map: {route_map}")
+
         end_node = self.end_node_validator.validate(graph_id=graph.pk)
 
         # TODO: remove validation
@@ -259,6 +297,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,
             decision_table_node_list=decision_table_node_data_list,
+            classification_decision_table_node_list=classification_dt_node_data_list,
             entrypoint=entrypoint,
             end_node=end_node_data,
             telegram_trigger_node_data_list=telegram_trigger_node_data_list,

@@ -1,5 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 import { FlowModel } from '../core/models/flow.model';
 import {
@@ -15,7 +15,8 @@ import {
     DecisionTableNode,
     ConditionGroup,
 } from '../core/models/decision-table.model';
-import { generatePortsForDecisionTableNode } from '../core/helpers/helpers';
+import { generatePortsForDecisionTableNode, generatePortsForClassificationDecisionTableNode } from '../core/helpers/helpers';
+import { parsePortId } from '../core/helpers/helpers';
 
 import { NodeType } from '../core/enums/node-type';
 import { FDropToGroupEvent } from '@foblex/flow';
@@ -35,6 +36,10 @@ export class FlowService {
         connections: [],
         groups: [],
     });
+
+    // Subject to request canvas redraw (e.g., after port reordering)
+    private canvasRedrawRequest$ = new Subject<void>();
+    public readonly canvasRedrawRequested = this.canvasRedrawRequest$.asObservable();
 
     public readonly nodes = computed(() => this.flowSignal().nodes);
     public readonly connections = computed(() => this.flowSignal().connections);
@@ -245,6 +250,10 @@ export class FlowService {
         return this.flowSignal();
     }
 
+    public requestCanvasRedraw(): void {
+        this.canvasRedrawRequest$.next();
+    }
+
     public setFlow(flow: FlowModel) {
         this.flowSignal.set(flow);
     }
@@ -430,7 +439,7 @@ export class FlowService {
             existingNodeIndex >= 0 ? currentFlow.nodes[existingNodeIndex] : null;
 
         const shouldResetDecisionTableConnections =
-            updatedNode.type === NodeType.TABLE &&
+            (updatedNode.type === NodeType.TABLE || updatedNode.type === NodeType.CLASSIFICATION_TABLE) &&
             this.haveDecisionTableTargetsChanged(
                 existingNode as DecisionTableNodeModel | null,
                 updatedNode as DecisionTableNodeModel
@@ -632,11 +641,11 @@ export class FlowService {
             (node) => node.id === connection.sourceNodeId
         );
 
-        if (!sourceNode || sourceNode.type !== NodeType.TABLE) {
+        if (!sourceNode || (sourceNode.type !== NodeType.TABLE && sourceNode.type !== NodeType.CLASSIFICATION_TABLE)) {
             return;
         }
 
-        const tableData = (sourceNode as DecisionTableNodeModel).data?.table;
+        const tableData = (sourceNode as any).data?.table;
         if (!tableData) {
             return;
         }
@@ -656,9 +665,9 @@ export class FlowService {
         const normalizedSourceRole =
             this.normalizeDecisionPortRole(sourcePortRole);
 
-        const updatedTable: DecisionTableNode = {
+        const updatedTable = {
             ...tableData,
-            condition_groups: (tableData.condition_groups || []).map((group) => {
+            condition_groups: (tableData.condition_groups || []).map((group: any) => {
                 const normalizedGroupRole = group.group_name
                     ? this.normalizeDecisionPortRole(
                           `decision-out-${group.group_name}`
@@ -686,17 +695,17 @@ export class FlowService {
             nextErrorNode = targetNode.node_name || targetNode.id || null;
         }
 
-        const updatedNode: DecisionTableNodeModel = {
-            ...(sourceNode as DecisionTableNodeModel),
+        const updatedNode = {
+            ...sourceNode,
             data: {
-                ...(sourceNode as DecisionTableNodeModel).data,
+                ...(sourceNode as any).data,
                 table: {
                     ...updatedTable,
                     default_next_node: defaultNextNode,
                     next_error_node: nextErrorNode,
                 },
             },
-        };
+        } as NodeModel;
 
         this.updateNode(updatedNode, { skipDecisionTableReset: true });
     }
@@ -710,14 +719,18 @@ export class FlowService {
             return;
         }
 
-        const sourceNodeId = sourcePortId.split('_')[0];
+        const sourceInfo = parsePortId(sourcePortId);
+        if (!sourceInfo) {
+            return;
+        }
+        const sourceNodeId = sourceInfo.nodeId;
         const sourceNode = this.nodes().find((node) => node.id === sourceNodeId);
 
-        if (!sourceNode || sourceNode.type !== NodeType.TABLE) {
+        if (!sourceNode || (sourceNode.type !== NodeType.TABLE && sourceNode.type !== NodeType.CLASSIFICATION_TABLE)) {
             return;
         }
 
-        const tableData = (sourceNode as DecisionTableNodeModel).data?.table;
+        const tableData = (sourceNode as any).data?.table;
         if (!tableData) {
             return;
         }
@@ -747,9 +760,9 @@ export class FlowService {
             return;
         }
 
-        const updatedTable: DecisionTableNode = {
+        const updatedTable = {
             ...tableData,
-            condition_groups: (tableData.condition_groups || []).map((group) => {
+            condition_groups: (tableData.condition_groups || []).map((group: any) => {
                 const normalizedGroupRole = group.group_name
                     ? this.normalizeDecisionPortRole(
                           `decision-out-${group.group_name}`
@@ -774,10 +787,10 @@ export class FlowService {
             nextErrorNode = null;
         }
 
-        const updatedNode: DecisionTableNodeModel = {
-            ...(sourceNode as DecisionTableNodeModel),
+        const updatedNode = {
+            ...sourceNode,
             data: {
-                ...(sourceNode as DecisionTableNodeModel).data,
+                ...(sourceNode as any).data,
                 table: {
                     ...updatedTable,
                     default_next_node: defaultNextNode,
@@ -1044,7 +1057,7 @@ export class FlowService {
                     (node) => node.id === conn.sourceNodeId
                 );
 
-                if (!sourceNode || sourceNode.type !== NodeType.TABLE) {
+                if (!sourceNode || (sourceNode.type !== NodeType.TABLE && sourceNode.type !== NodeType.CLASSIFICATION_TABLE)) {
                     return;
                 }
 
@@ -1071,6 +1084,7 @@ export class FlowService {
                     updatedTable.next_error_node = null;
                 } else {
                     const prefix = `${sourceNode.id}_decision-out-`;
+                    const routePrefix = `${sourceNode.id}_decision-route-`;
                     if (portId.startsWith(prefix)) {
                         const normalizedGroupKey = portId.slice(prefix.length);
                         updatedTable.condition_groups =
@@ -1086,15 +1100,35 @@ export class FlowService {
                                 }
                                 return group;
                             });
+                    } else if (portId.startsWith(routePrefix)) {
+                        const normalizedRouteKey = portId.slice(routePrefix.length);
+                        updatedTable.condition_groups =
+                            updatedTable.condition_groups.map((group) => {
+                                const routeKey = (group.route_code || '').toLowerCase().replace(/\s+/g, '-');
+                                if (routeKey === normalizedRouteKey) {
+                                    return {
+                                        ...group,
+                                        next_node: null,
+                                    } as ConditionGroup;
+                                }
+                                return group;
+                            });
                     }
                 }
 
-                const updatedPorts = generatePortsForDecisionTableNode(
-                    sourceNode.id,
-                    updatedTable.condition_groups,
-                    !!updatedTable.default_next_node,
-                    !!updatedTable.next_error_node
-                );
+                const updatedPorts = sourceNode.type === NodeType.CLASSIFICATION_TABLE
+                    ? generatePortsForClassificationDecisionTableNode(
+                        sourceNode.id,
+                        updatedTable.condition_groups,
+                        !!updatedTable.default_next_node,
+                        !!updatedTable.next_error_node
+                    )
+                    : generatePortsForDecisionTableNode(
+                        sourceNode.id,
+                        updatedTable.condition_groups,
+                        !!updatedTable.default_next_node,
+                        !!updatedTable.next_error_node
+                    );
 
                 decisionTableUpdates.set(sourceNode.id, {
                     table: updatedTable,

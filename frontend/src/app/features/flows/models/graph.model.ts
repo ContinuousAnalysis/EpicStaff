@@ -26,6 +26,9 @@ import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/componen
 import {
     GetTelegramTriggerNodeRequest
 } from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
+import {
+    GetClassificationDecisionTableNodeRequest
+} from "../../../pages/flows-page/components/flow-visual-programming/models/classification-decision-table-node.model";
 
 export interface GraphDto {
     id: number;
@@ -41,6 +44,7 @@ export interface GraphDto {
     telegram_trigger_node_list: GetTelegramTriggerNodeRequest[];
     end_node_list: EndNode[];
     decision_table_node_list: GetDecisionTableNodeRequest[];
+    classification_decision_table_node_list: GetClassificationDecisionTableNodeRequest[];
     description: string;
     metadata: FlowModel;
     tags?: [];

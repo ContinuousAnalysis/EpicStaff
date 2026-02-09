@@ -139,6 +139,12 @@ export class FlowGraphCoreMenuComponent {
             color: NODE_COLORS[NodeType.TABLE],
         },
         {
+            label: 'Classification Decision Table',
+            type: NodeType.CLASSIFICATION_TABLE,
+            icon: NODE_ICONS[NodeType.CLASSIFICATION_TABLE],
+            color: NODE_COLORS[NodeType.CLASSIFICATION_TABLE],
+        },
+        {
             label: 'Webhook Trigger',
             type: NodeType.WEBHOOK_TRIGGER,
             icon: NODE_ICONS[NodeType.WEBHOOK_TRIGGER],
@@ -204,6 +210,31 @@ export class FlowGraphCoreMenuComponent {
                         }
                     ],
                     node_name: '',
+                    default_next_node: null,
+                    next_error_node: null,
+                },
+            };
+        } else if (type === NodeType.CLASSIFICATION_TABLE) {
+            data = {
+                name: 'Classification Decision Table',
+                table: {
+                    pre_computation_code: 'def main(arg1: str, arg2: str) -> dict:\n    return {\n        "result": arg1 + arg2,\n    }\n',
+                    condition_groups: [
+                        {
+                            group_name: 'Condition 1',
+                            group_type: 'complex',
+                            expression: null,
+                            conditions: [],
+                            manipulation: null,
+                            continue: false,
+                            route_code: 'ROUTE_1',
+                            dock_visible: true,
+                            next_node: null,
+                            order: 1,
+                            valid: false,
+                        }
+                    ],
+                    route_variable_name: 'route_code',
                     default_next_node: null,
                     next_error_node: null,
                 },

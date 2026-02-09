@@ -389,3 +389,49 @@ class TelegramTriggerNodeField(models.Model):
                 name="unique_telegram_trigger_node_field_name_parent",
             )
         ]
+
+
+class ClassificationDecisionTableNode(models.Model):
+    graph = models.ForeignKey(
+        "Graph",
+        on_delete=models.CASCADE,
+        related_name="classification_decision_table_node_list",
+    )
+    node_name = models.CharField(max_length=255, blank=True)
+    pre_computation_code = models.TextField(null=True, default=None, blank=True)
+    pre_input_map = models.JSONField(default=dict, blank=True)
+    pre_output_variable_path = models.CharField(max_length=512, null=True, default=None, blank=True)
+    post_computation_code = models.TextField(null=True, default=None, blank=True)
+    post_input_map = models.JSONField(default=dict, blank=True)
+    post_output_variable_path = models.CharField(max_length=512, null=True, default=None, blank=True)
+    prompts = models.JSONField(default=dict, blank=True)
+    route_variable_name = models.CharField(max_length=255, default="route_code")
+    default_next_node = models.CharField(max_length=255, null=True, default=None)
+    next_error_node = models.CharField(max_length=255, null=True, default=None)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_classification_dt_node",
+            )
+        ]
+
+
+class ClassificationConditionGroup(models.Model):
+    classification_decision_table_node = models.ForeignKey(
+        "ClassificationDecisionTableNode",
+        on_delete=models.CASCADE,
+        related_name="condition_groups",
+    )
+    group_name = models.CharField(max_length=255, blank=False)
+    order = models.PositiveIntegerField(blank=False, default=0)
+    expression = models.TextField(null=True, default=None, blank=True)
+    prompt_id = models.CharField(max_length=255, null=True, default=None, blank=True)
+    manipulation = models.TextField(null=True, default=None, blank=True)
+    continue_flag = models.BooleanField(default=False)
+    route_code = models.CharField(max_length=255, null=True, default=None, blank=True)
+    dock_visible = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["order"]

@@ -325,6 +325,42 @@ class DecisionTableNodeData(BaseModel):
     next_error_node: str | None = None
 
 
+class PromptConfigData(BaseModel):
+    prompt_text: str
+    llm_id: str
+    output_schema: dict[str, Any] | str = {}
+    result_variable: str = "prompt_result"
+    variable_mappings: dict[str, str] = {}
+    llm_data: Optional["LLMData"] = None
+
+
+class ClassificationConditionGroupData(BaseModel):
+    group_name: str
+    expression: str | None = None
+    prompt_id: str | None = None
+    manipulation: str | None = None
+    continue_flag: bool = False
+    route_code: str | None = None
+    dock_visible: bool = True
+    order: int = 0
+
+
+class ClassificationDecisionTableNodeData(BaseModel):
+    node_name: str
+    pre_computation_code: str | None = None
+    pre_input_map: dict[str, str] = {}
+    pre_output_variable_path: str | None = None
+    post_computation_code: str | None = None
+    post_input_map: dict[str, str] = {}
+    post_output_variable_path: str | None = None
+    condition_groups: list[ClassificationConditionGroupData] = []
+    prompts: dict[str, PromptConfigData] = {}
+    route_variable_name: str = "route_code"
+    route_map: dict[str, str] = {}
+    default_next_node: str | None = None
+    next_error_node: str | None = None
+
+
 class EndNodeData(BaseModel):
     output_map: dict[str, Any]
 
@@ -368,6 +404,7 @@ class GraphData(BaseModel):
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
+    classification_decision_table_node_list: list[ClassificationDecisionTableNodeData] = []
     entrypoint: str
     end_node: EndNodeData | None
     telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []

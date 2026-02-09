@@ -1,4 +1,5 @@
 import json
+from loguru import logger
 
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -19,6 +20,9 @@ from src.crew.services.graph.events import StopEvent
 from src.crew.services.graph.subgraphs.decision_table_node import (
     DecisionTableNodeSubgraph,
 )
+from src.crew.services.graph.subgraphs.classification_decision_table_node import (
+    ClassificationDecisionTableNodeSubgraph,
+)
 from src.crew.services.graph.nodes.llm_node import LLMNode
 from src.crew.services.graph.nodes.end_node import EndNode
 
@@ -26,6 +30,7 @@ from src.crew.services.graph.nodes.end_node import EndNode
 from src.crew.services.crew.crew_parser_service import CrewParserService
 from src.crew.services.redis_service import RedisService
 from src.crew.models.request_models import (
+    ClassificationDecisionTableNodeData,
     DecisionTableNodeData,
     PythonCodeData,
     SessionData,
@@ -174,6 +179,51 @@ class SessionGraphBuilder:
             decision_table_node_data.node_name, condition
         )
 
+    def add_classification_decision_table_node(
+        self, node_data: ClassificationDecisionTableNodeData
+    ) -> str:
+        subgraph_builder = StateGraph(State)
+        builder = ClassificationDecisionTableNodeSubgraph(
+            session_id=self.session_id,
+            node_data=node_data,
+            graph_builder=subgraph_builder,
+            stop_event=self.stop_event,
+            redis_service=self.redis_service,
+        )
+        subgraph: CompiledStateGraph = builder.build()
+
+        self._graph_builder.add_node(node_data.node_name, subgraph)
+
+        route_map = dict(node_data.route_map or {})
+        default_next_node = node_data.default_next_node
+
+        async def condition(
+            state: State,
+            writer: StreamWriter,
+            _route_map: dict[str, str] = route_map,
+            _default_next_node: str | None = default_next_node,
+        ):
+            decision_node_variables = state["system_variables"]["nodes"][
+                builder.node_name
+            ]
+            result_node = decision_node_variables["result_node"]
+            # Resolve route_code to actual node name via route_map
+            resolved = _route_map.get(result_node)
+            if resolved is None:
+                for key, val in _route_map.items():
+                    if key.lower() == str(result_node).lower():
+                        resolved = val
+                        break
+            if resolved is not None:
+                return resolved
+            if result_node is not None:
+                return result_node
+            return _default_next_node
+
+        self._graph_builder.add_conditional_edges(
+            node_data.node_name, condition
+        )
+
     @property
     def end_node_result(self):
         """Getter for end_node_result"""
@@ -284,6 +334,10 @@ class SessionGraphBuilder:
         for decision_table_node_data in schema.decision_table_node_list:
             self.add_decision_table_node(
                 decision_table_node_data=decision_table_node_data
+            )
+        for ct_node_data in schema.classification_decision_table_node_list:
+            self.add_classification_decision_table_node(
+                node_data=ct_node_data
             )
         for webhook_trigger_node_data in schema.webhook_trigger_node_data_list:
             self.add_node(

@@ -36,6 +36,7 @@ import { CustomPortId } from '../../core/models/port.model';
 
 import { ConditionalEdgeNodeComponent } from '../nodes-components/conditional-edge/conditional-edge.component';
 import { DecisionTableNodeComponent } from '../nodes-components/decision-table-node/decision-table-node.component';
+import { ClassificationDecisionTableNodeComponent } from '../nodes-components/classification-decision-table-node/classification-decision-table-node.component';
 import { NoteNodeComponent } from '../nodes-components/note-node/note-node.component';
 import { getNodeTitle } from '../../core/enums/node-title.util';
 import { ResizeHandleComponent } from '../resize-handle/resize-handle.component';
@@ -54,6 +55,7 @@ import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay
         ClickOrDragDirective,
         ConditionalEdgeNodeComponent,
         DecisionTableNodeComponent,
+        ClassificationDecisionTableNodeComponent,
         NoteNodeComponent,
         FlowNodeVariablesOverlayComponent,
     ],
@@ -131,6 +133,8 @@ export class FlowBaseNodeComponent {
                 return 'type-start';
             case NodeType.TABLE:
                 return 'type-table';
+            case NodeType.CLASSIFICATION_TABLE:
+                return 'type-table';
             case NodeType.NOTE:
                 return 'type-note';
             default:
@@ -164,7 +168,7 @@ export class FlowBaseNodeComponent {
     }
 
     public get tableNode() {
-        return this.node.type === NodeType.TABLE ? (this.node as any) : null;
+        return this.node.type === NodeType.TABLE || this.node.type === NodeType.CLASSIFICATION_TABLE ? (this.node as any) : null;
     }
 
     public get startNode() {

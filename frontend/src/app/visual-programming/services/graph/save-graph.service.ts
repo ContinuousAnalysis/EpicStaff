@@ -79,6 +79,14 @@ import {
 import {
     TelegramTriggerNodeService
 } from "../../../pages/flows-page/components/flow-visual-programming/services/telegram-trigger-node.service";
+import {
+    CreateClassificationConditionGroupRequest,
+    CreateClassificationDecisionTableNodeRequest,
+    GetClassificationDecisionTableNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/classification-decision-table-node.model';
+import {
+    ClassificationDecisionTableNodeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/classification-decision-table-node.service';
 
 @Injectable({
     providedIn: 'root',
@@ -97,6 +105,7 @@ export class GraphUpdateService {
         private telegramTriggerService: TelegramTriggerNodeService,
         private endNodeService: EndNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
+        private classificationDecisionTableNodeService: ClassificationDecisionTableNodeService,
         private toastService: ToastService
     ) { }
 
@@ -105,12 +114,17 @@ export class GraphUpdateService {
      * This reduces the metadata size and prevents storing unnecessary port data
      */
     private clearNodePorts(flowState: FlowModel): FlowModel {
-        // Create a deep copy of the flow state to avoid mutating the original
+        const preservePortTypes = new Set([
+            NodeType.TABLE,
+            NodeType.CLASSIFICATION_TABLE,
+        ]);
         const flowStateCopy: FlowModel = {
             ...flowState,
             nodes: flowState.nodes.map((node) => ({
                 ...node,
-                ports: null, // Set all node ports to null
+                ports: preservePortTypes.has(node.type as NodeType)
+                    ? node.ports
+                    : null,
             })),
             connections: [...flowState.connections],
             groups: [...flowState.groups],
@@ -437,6 +451,20 @@ export class GraphUpdateService {
             deleteDecisionTableNodes$ = forkJoin(deleteDecisionTableReqs);
         }
 
+        let deleteClassificationDTNodes$: Observable<any> = of(null);
+        if (
+            graph.classification_decision_table_node_list &&
+            graph.classification_decision_table_node_list.length > 0
+        ) {
+            const deleteReqs = graph.classification_decision_table_node_list.map(
+                (dtNode: GetClassificationDecisionTableNodeRequest) =>
+                    this.classificationDecisionTableNodeService
+                        .deleteNode(dtNode.id.toString())
+                        .pipe(catchError((err) => throwError(err)))
+            );
+            deleteClassificationDTNodes$ = forkJoin(deleteReqs);
+        }
+
         // ---- Handle Conditional Edges ----
         let deleteConditionalEdges$: Observable<any> = of(null);
         if (
@@ -532,8 +560,8 @@ export class GraphUpdateService {
                             return false;
                         if (targetNode && targetNode.type === NodeType.EDGE)
                             return false;
-                        // Skip if source node is of type TABLE
-                        if (sourceNode && sourceNode.type === NodeType.TABLE)
+                        // Skip if source node is of type TABLE or CLASSIFICATION_TABLE
+                        if (sourceNode && (sourceNode.type === NodeType.TABLE || sourceNode.type === NodeType.CLASSIFICATION_TABLE))
                             return false;
                         return true;
                     })
@@ -627,6 +655,69 @@ export class GraphUpdateService {
             })
         );
 
+        const classificationDTNodes$ = deleteClassificationDTNodes$.pipe(
+            switchMap(() => {
+                const classificationDTNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.CLASSIFICATION_TABLE
+                );
+
+                const requests = classificationDTNodes.map((node) => {
+                    const tableData = (node as any).data?.table;
+
+                    const resolveNodeName = (idOrName: string | null): string | null => {
+                        if (!idOrName) return null;
+                        const targetNode = flowState.nodes.find((n) => n.id === idOrName);
+                        if (targetNode) return targetNode.node_name;
+                        return idOrName;
+                    };
+
+                    const conditionGroups: CreateClassificationConditionGroupRequest[] = (
+                        tableData?.condition_groups || []
+                    )
+                        .sort(
+                            (a: any, b: any) =>
+                                (a.order ?? Number.MAX_SAFE_INTEGER) -
+                                (b.order ?? Number.MAX_SAFE_INTEGER)
+                        )
+                        .map((group: any, index: number) => ({
+                            group_name: group.group_name,
+                            order: typeof group.order === 'number' ? group.order : index + 1,
+                            expression: group.expression || null,
+                            prompt_id: group.prompt_id || null,
+                            manipulation: group.manipulation || null,
+                            continue_flag: !!(group.continue_flag ?? group.continue),
+                            route_code: group.route_code || null,
+                            dock_visible: group.dock_visible !== false,
+                        }));
+
+                    const preComp = tableData?.pre_computation || {};
+                    const postComp = tableData?.post_computation || {};
+
+                    const payload: CreateClassificationDecisionTableNodeRequest = {
+                        graph: graph.id,
+                        node_name: node.node_name,
+                        pre_computation_code: tableData?.pre_computation_code || preComp.code || null,
+                        pre_input_map: preComp.input_map || tableData?.pre_input_map || null,
+                        pre_output_variable_path: preComp.output_variable_path || tableData?.pre_output_variable_path || null,
+                        post_computation_code: tableData?.post_computation_code || postComp.code || null,
+                        post_input_map: postComp.input_map || tableData?.post_input_map || null,
+                        post_output_variable_path: postComp.output_variable_path || tableData?.post_output_variable_path || null,
+                        prompts: tableData?.prompts || {},
+                        route_variable_name: tableData?.route_variable_name || 'route_code',
+                        default_next_node: resolveNodeName(tableData?.default_next_node),
+                        next_error_node: resolveNodeName(tableData?.next_error_node),
+                        condition_groups: conditionGroups,
+                    };
+
+                    return this.classificationDecisionTableNodeService
+                        .createNode(payload)
+                        .pipe(catchError((err) => throwError(err)));
+                });
+
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
         // ---- Combine and Update Graph ----
         return forkJoin({
             crewNodes: crewNodes$,
@@ -640,6 +731,7 @@ export class GraphUpdateService {
             endNodes: endNodes$,
             edges: createEdges$,
             decisionTableNodes: decisionTableNodes$,
+            classificationDTNodes: classificationDTNodes$,
         }).pipe(
             switchMap(
                 (results: {

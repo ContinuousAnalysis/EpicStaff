@@ -10,6 +10,7 @@ import { NodeType } from './node-type';
 import { DecisionTableNodePanelComponent } from '../../components/node-panels/decision-table-node-panel/decision-table-node-panel.component';
 import { WebhookTriggerNodePanelComponent } from '../../components/node-panels/webhook-trigger-node-panel/webhook-trigger-node-panel';
 import { TelegramTriggerNodePanelComponent } from "../../components/node-panels/telegram-trigger-node-panel/telegram-trigger-node-panel.component";
+import { ClassificationDecisionTableNodePanelComponent } from '../../components/node-panels/classification-decision-table-node-panel/classification-decision-table-node-panel.component';
 
 
 export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
@@ -21,6 +22,7 @@ export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
     'telegram-trigger': TelegramTriggerNodePanelComponent,
     end: EndNodePanelComponent,
     table: DecisionTableNodePanelComponent,
+    'classification-decision-table': ClassificationDecisionTableNodePanelComponent,
     [NodeType.AUDIO_TO_TEXT]: AudioToTextNodePanelComponent,
     // start: StartNodePanelComponent,
 };

@@ -29,11 +29,13 @@ import {
     IFFlowState,
     FDragStartedEvent,
     EFZoomDirection,
+    F_CONNECTION_BUILDERS,
 } from '@foblex/flow';
 
 import { IPoint, IRect, PointExtensions } from '@foblex/2d';
 import { FlowService } from '../services/flow.service';
 import { SidePanelService } from '../services/side-panel.service';
+import { BackwardConnectionBuilder } from '../core/connection-builders/backward-connection.builder';
 
 import { ShortcutListenerDirective } from '../core/directives/shortcut-listener.directive';
 import { UndoRedoService } from '../services/undo-redo.service';
@@ -55,6 +57,7 @@ import {
     defineSourceTargetPair,
     generatePortsForNode,
     generatePortsForDecisionTableNode,
+    generatePortsForClassificationDecisionTableNode,
 } from '../core/helpers/helpers';
 
 import { NgClass, NgIf } from '@angular/common';
@@ -93,13 +96,19 @@ import { ToastService } from '../../services/notifications/toast.service';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
 
+const connectionBuilders = {
+    ['backward']: new BackwardConnectionBuilder(),
+};
+
 @Component({
     selector: 'app-flow-graph',
     templateUrl: './flow-graph.component.html',
     styleUrls: ['../styles/_variables.scss', './flow-graph.component.scss'],
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    //   providers: [FlowService],
+    providers: [
+        { provide: F_CONNECTION_BUILDERS, useValue: connectionBuilders }
+    ],
     imports: [
         FFlowModule,
         FZoomDirective,
@@ -139,6 +148,60 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
 
     public readonly eMarkerType = EFMarkerType;
     public readonly eResizeHandleType = EFResizeHandleType;
+
+    public isBackwardConnection(connection: ConnectionModel): boolean {
+        const sourceNode = this.flowService.nodes().find(
+            (n) => n.id === connection.sourceNodeId
+        );
+        const targetNode = this.flowService.nodes().find(
+            (n) => n.id === connection.targetNodeId
+        );
+
+        if (!sourceNode || !targetNode) {
+            return false;
+        }
+
+        // Connection is backward if it flows right to left
+        return targetNode.position.x < sourceNode.position.x;
+    }
+
+    public getConnectionType(connection: ConnectionModel): string {
+        const sourceNode = this.flowService.nodes().find(
+            (n) => n.id === connection.sourceNodeId
+        );
+        const targetNode = this.flowService.nodes().find(
+            (n) => n.id === connection.targetNodeId
+        );
+
+        if (!sourceNode || !targetNode) {
+            return 'segment';
+        }
+
+        // Check if connection goes backward (right to left)
+        const isBackward = this.isBackwardConnection(connection);
+
+        // Use custom backward builder for backward connections
+        return isBackward ? 'backward' : 'segment';
+    }
+
+    public getConnectionOffset(connection: ConnectionModel): number {
+        const sourceNode = this.flowService.nodes().find(
+            (n) => n.id === connection.sourceNodeId
+        );
+        const targetNode = this.flowService.nodes().find(
+            (n) => n.id === connection.targetNodeId
+        );
+
+        if (!sourceNode || !targetNode) {
+            return 30;
+        }
+
+        // Check if connection goes backward (right to left)
+        const isBackward = targetNode.position.x < sourceNode.position.x;
+
+        // Use larger offset for backward connections to provide clearance
+        return isBackward ? 80 : 30;
+    }
 
     public mouseCursorPosition: { x: number; y: number } = { x: 0, y: 0 };
     public contextMenuPostion: { x: number; y: number } = {
@@ -237,6 +300,13 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
                         true
                     );
                 }
+            } else if (node.type === NodeType.CLASSIFICATION_TABLE) {
+                (node as any).ports = generatePortsForClassificationDecisionTableNode(
+                    node.id,
+                    (node as any)?.data?.table?.condition_groups ?? [],
+                    true,
+                    true
+                );
             }
             return node;
         });

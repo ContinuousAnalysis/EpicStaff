@@ -143,7 +143,7 @@ export class NodePanelShellComponent {
             const node = this.node();
             if (node) {
                 // Auto-expand for decision table nodes
-                if (node.type === 'table') {
+                if (node.type === 'table' || node.type === 'classification-decision-table') {
                     this.isExpanded.set(true);
                 }
 

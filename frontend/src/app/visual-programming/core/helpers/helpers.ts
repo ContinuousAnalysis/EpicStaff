@@ -21,6 +21,7 @@ import {DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS} from "../rules/telegram-trigger-por
 
 export const isDecisionPortRole = (role: string) =>
     role.startsWith('decision-out-') ||
+    role.startsWith('decision-route-') ||
     role === 'decision-default' ||
     role === 'decision-error';
 
@@ -61,6 +62,8 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
         case NodeType.GROUP:
             return DEFAULT_GROUP_NODE_PORTS;
         case NodeType.TABLE:
+            return DEFAULT_TABLE_NODE_PORTS;
+        case NodeType.CLASSIFICATION_TABLE:
             return DEFAULT_TABLE_NODE_PORTS;
         case NodeType.FILE_EXTRACTOR:
             return DEFAULT_FILE_EXTRACTOR_NODE_PORTS;
@@ -249,6 +252,20 @@ export function generatePortsForNode(
             hasError
         );
     }
+
+    if (nodeType === NodeType.CLASSIFICATION_TABLE) {
+        const tableData = data?.table ?? {};
+        const conditionGroups = tableData?.condition_groups ?? [];
+        const hasDefault = Boolean(tableData?.default_next_node);
+        const hasError = Boolean(tableData?.next_error_node);
+        return generatePortsForClassificationDecisionTableNode(
+            newNodeId,
+            conditionGroups,
+            hasDefault,
+            hasError
+        );
+    }
+
     const portsConfig: BasePort[] = getPortsForType(nodeType);
     return portsConfig.map((config) => ({
         ...config,
@@ -324,6 +341,97 @@ export function generatePortsForDecisionTableNode(
             role: `decision-out-${group.group_name}`,
             label: group.group_name,
             id: `${nodeId}_decision-out-${normalizedGroupName}` as `${string}_${string}`,
+        };
+    });
+
+    const specialPorts: ViewPort[] = [];
+
+    if (defaultOutputConfig) {
+        specialPorts.push({
+            ...defaultOutputConfig,
+            role: 'decision-default',
+            label: 'Default',
+            id: `${nodeId}_decision-default` as `${string}_${string}`,
+        });
+
+        specialPorts.push({
+            ...defaultOutputConfig,
+            role: 'decision-error',
+            label: 'Error',
+            id: `${nodeId}_decision-error` as `${string}_${string}`,
+        });
+    }
+
+    return [inputPort, ...outputPorts, ...specialPorts];
+}
+
+export function generatePortsForClassificationDecisionTableNode(
+    nodeId: string,
+    conditionGroups: ConditionGroup[],
+    _hasDefaultNode?: boolean,
+    _hasErrorNode?: boolean
+): ViewPort[] {
+    const inputPortConfig = DEFAULT_TABLE_NODE_PORTS.find(
+        (p) => p.port_type === 'input'
+    );
+    const inputPort = {
+        ...(inputPortConfig ?? {
+            port_type: 'input',
+            role: 'table-in',
+            multiple: true,
+            label: 'In',
+            allowedConnections: [
+                'project-out',
+                'python-out',
+                'edge-out',
+                'table-out',
+                'start-start',
+                'llm-out-right',
+                'file-extractor-out',
+            ],
+            position: 'left',
+            color: '#00aaff',
+        }),
+        id: `${nodeId}_table-in` as `${string}_${string}`,
+    };
+
+    // Extract unique route codes where dock_visible=true
+    const uniqueRouteCodes = new Map<string, string>();
+    conditionGroups
+        .filter((group) => group.route_code && group.dock_visible)
+        .forEach((group) => {
+            if (!uniqueRouteCodes.has(group.route_code!)) {
+                uniqueRouteCodes.set(group.route_code!, group.route_code!);
+            }
+        });
+
+    const defaultOutputConfig = DEFAULT_TABLE_NODE_PORTS.find(
+        (p) => p.port_type === 'output'
+    );
+
+    const outputPorts: ViewPort[] = Array.from(uniqueRouteCodes.keys()).map((routeCode) => {
+        const normalizedRouteCode = routeCode.toLowerCase().replace(/\s+/g, '-');
+
+        return {
+            ...(defaultOutputConfig ?? {
+                port_type: 'output',
+                allowedConnections: [
+                    'project-in',
+                    'python-in',
+                    'edge-in',
+                    'table-in',
+                    'llm-out-left',
+                    'end-in',
+                    'decision-out-in',
+                    'file-extractor-in',
+                ],
+                position: 'right',
+                color: '#00aaff',
+                multiple: false,
+            }),
+            role: `decision-route-${routeCode}`,
+            label: routeCode,
+            id: `${nodeId}_decision-route-${normalizedRouteCode}` as `${string}_${string}`,
         };
     });
 

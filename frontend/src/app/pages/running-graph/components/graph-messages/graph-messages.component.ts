@@ -25,7 +25,7 @@ import { takeUntil, map, exhaustMap } from 'rxjs/operators';
 
 import {
   GraphSessionStatus,
-  GraphSession, GraphSessionService, SessionUpdates,
+  GraphSession,
 } from '../../../../features/flows/services/flows-sessions.service';
 import {
   GraphMessage,
@@ -49,6 +49,7 @@ import { RunGraphPageService } from '../../run-graph-page.service';
 import { RunSessionSSEService } from '../../../run-graph-page/run-graph-page-body/graph-session-sse.service';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { ExtractedChunksMessageComponent } from './components/extracted-chunks/extracted-chunks-message.component';
+import { ClassificationDtMessageComponent } from './components/classification-dt-message/classification-dt-message.component';
 
 @Component({
   selector: 'app-graph-messages',
@@ -69,6 +70,7 @@ import { ExtractedChunksMessageComponent } from './components/extracted-chunks/e
     WaitForUserInputComponent,
     UserMessageComponent,
     ExtractedChunksMessageComponent,
+    ClassificationDtMessageComponent,
   ],
   templateUrl: './graph-messages.component.html',
   styleUrls: ['./graph-messages.component.scss'],
@@ -120,8 +122,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
     private cdr: ChangeDetectorRef,
     private answerToLLMService: AnswerToLLMService,
     private runGraphPageService: RunGraphPageService,
-    private flowService: FlowsApiService,
-    private graphSessionService: GraphSessionService,
+    private flowService: FlowsApiService
   ) {
     effect(() => {
       const messages = this.sseService.messages();
@@ -136,7 +137,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
       this.sessionStatusChanged.emit(status);
       this.statusWaitForUser = status === GraphSessionStatus.WAITING_FOR_USER;
       this.showUserInputWithDelay = this.statusWaitForUser;
-
+      this.checkIfFinish();
       this.cdr.markForCheck();
     });
 
@@ -153,17 +154,6 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   get isProcessing(): boolean {
-    const status = this.sseService.status();
-    const isTerminalStatus =
-      status === GraphSessionStatus.ERROR ||
-      status === GraphSessionStatus.STOP ||
-      status === GraphSessionStatus.ENDED ||
-      status === GraphSessionStatus.EXPIRED;
-
-    if (isTerminalStatus) {
-      return false;
-    }
-
     return this.isLoading || this.sseService.isStreaming();
   }
 
@@ -292,75 +282,59 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  // UPD (EST-904 Mark message final in session)
-  // Stop session only after message with type 'graph_end'
   private checkIfFinish() {
+    const sessionStatus = this.sseService.status();
     const messages = this.sseService.messages();
-    if (messages.length > 0) {
-      const lastMessage: GraphMessage = messages[messages.length - 1];
-      const lastTime = lastMessage.created_at;
-      const sameTimeMessages = messages.filter(
-        (msg) => msg.created_at === lastTime
-      );
-      const sessionStatus = this.sseService.status();
 
-      // Check for graph_end message - marks the session as finished
+    if (messages.length === 0) {
       if (
-        sameTimeMessages.some(
-          (msg) => msg.message_data.message_type === MessageType.GRAPH_END
-        )
+        sessionStatus === GraphSessionStatus.ENDED ||
+        sessionStatus === GraphSessionStatus.ERROR ||
+        sessionStatus === GraphSessionStatus.EXPIRED ||
+        sessionStatus === GraphSessionStatus.STOP
       ) {
         this.sseService.stopStream();
-        this.updateSessionStatus();
-        return;
       }
-
-      if (
-        sameTimeMessages.some(
-          (msg) =>
-            msg.message_data.message_type === 'update_session_status' &&
-            msg.message_data.status === GraphSessionStatus.WAITING_FOR_USER
-        ) &&
-        sessionStatus === GraphSessionStatus.WAITING_FOR_USER
-      ) {
-        this.sseService.stopStream();
-        this.updateSessionStatus();
-      }
-
-      // if (
-      //   sameTimeMessages.some(
-      //     (msg) => msg.message_data.message_type === 'finish'
-      //   ) &&
-      //   sessionStatus === GraphSessionStatus.ENDED
-      // ) {
-      //   this.sseService.stopStream();
-      // } else if (
-      //   sameTimeMessages.some(
-      //     (msg) => msg.message_data.message_type === 'error'
-      //   ) &&
-      //   sessionStatus === GraphSessionStatus.ERROR
-      // ) {
-      //   this.sseService.stopStream();
-      // } else if (sessionStatus === GraphSessionStatus.EXPIRED) {
-      //   this.sseService.stopStream();
-      // } else if (sessionStatus === GraphSessionStatus.STOP) {
-      //   this.sseService.stopStream();
-      // } else if (sessionStatus === GraphSessionStatus.ERROR) {
-      //   this.sseService.stopStream();
-      // } else if (sessionStatus === GraphSessionStatus.ENDED) {
-      //   this.sseService.stopStream();
-      // }
-      // Note: PENDING is a transitional state - don't stop stream, wait for final status
+      return;
     }
-  }
 
-  private updateSessionStatus(): void {
-    this.graphSessionService.getSessionUpdates(this.sessionId!)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: ({ status }: SessionUpdates) => this.sseService.setStatus(status),
-        error: (err) => console.log(err),
-      });
+    const lastMessage: GraphMessage = messages[messages.length - 1];
+    const lastTime = lastMessage.created_at;
+    const sameTimeMessages = messages.filter(
+      (msg) => msg.created_at === lastTime
+    );
+
+    if (
+      sameTimeMessages.some(
+        (msg) =>
+          msg.message_data.message_type === 'finish' ||
+          msg.message_data.message_type === 'graph_end'
+      ) &&
+      sessionStatus === GraphSessionStatus.ENDED
+    ) {
+      this.sseService.stopStream();
+    } else if (
+      sameTimeMessages.some(
+        (msg) => msg.message_data.message_type === 'error'
+      ) &&
+      sessionStatus === GraphSessionStatus.ERROR
+    ) {
+      this.sseService.stopStream();
+    } else if (
+      sameTimeMessages.some(
+        (msg) =>
+          msg.message_data.message_type === 'update_session_status' &&
+          msg.message_data.status === GraphSessionStatus.WAITING_FOR_USER
+      ) &&
+      sessionStatus === GraphSessionStatus.WAITING_FOR_USER
+    ) {
+      this.sseService.stopStream();
+    } else if (sessionStatus === GraphSessionStatus.EXPIRED) {
+      this.sseService.stopStream();
+    }
+    else if (sessionStatus === GraphSessionStatus.STOP) {
+      this.sseService.stopStream();
+    }
   }
 
   public getAgentFromMessage(message: GraphMessage): GetAgentRequest | null {

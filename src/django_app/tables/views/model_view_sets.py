@@ -32,6 +32,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
 from django.db.models import Prefetch
 from tables.models.graph_models import (
+    ClassificationConditionGroup,
+    ClassificationDecisionTableNode,
     Condition,
     ConditionGroup,
     DecisionTableNode,
@@ -60,6 +62,7 @@ from django.db.models.functions import Cast
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentWriteSerializer,
+    ClassificationDecisionTableNodeSerializer,
     CrewTagSerializer,
     AgentTagSerializer,
     DecisionTableNodeSerializer,
@@ -963,6 +966,57 @@ class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
         # Save conditions in bulk
         if conditions_to_create:
             Condition.objects.bulk_create(conditions_to_create)
+
+
+class ClassificationDecisionTableNodeModelViewSet(viewsets.ModelViewSet):
+    queryset = ClassificationDecisionTableNode.objects.all()
+    serializer_class = ClassificationDecisionTableNodeSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["graph"]
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        node, _ = self._create_or_update_node(data=request.data)
+        return Response(self.get_serializer(node).data, status=status.HTTP_201_CREATED)
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        node, _ = self._create_or_update_node(
+            data=request.data, instance=instance, partial=partial
+        )
+        return Response(self.get_serializer(node).data, status=status.HTTP_200_OK)
+
+    def _create_or_update_node(self, data, instance=None, partial=False):
+        data = data.copy()
+        condition_groups_data = data.pop("condition_groups", None)
+
+        node_serializer = self.get_serializer(instance, data=data, partial=partial)
+        node_serializer.is_valid(raise_exception=True)
+        node = node_serializer.save()
+
+        if partial and condition_groups_data is None:
+            return node, None
+
+        if instance:
+            ClassificationConditionGroup.objects.filter(
+                classification_decision_table_node=node
+            ).delete()
+
+        if condition_groups_data:
+            groups_to_create = []
+            for group_data in condition_groups_data:
+                gd = {k: v for k, v in group_data.items()
+                      if k not in ("id", "classification_decision_table_node")}
+                groups_to_create.append(
+                    ClassificationConditionGroup(
+                        classification_decision_table_node=node, **gd
+                    )
+                )
+            ClassificationConditionGroup.objects.bulk_create(groups_to_create)
+
+        return node, condition_groups_data
 
 
 class McpToolViewSet(viewsets.ModelViewSet):

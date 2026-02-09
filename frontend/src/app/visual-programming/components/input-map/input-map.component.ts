@@ -21,7 +21,7 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
         },
     ],
     template: `
-        <div class="input-map-container" formArrayName="input_map">
+        <div class="input-map-container" [formArrayName]="arrayName">
             <div class="input-map-header">
                 <label>Input List</label>
                 <app-help-tooltip
@@ -198,6 +198,7 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
 })
 export class InputMapComponent implements OnInit {
     @Input() activeColor: string = '#685fff';
+    @Input() arrayName: string = 'input_map';
 
     constructor(
         private controlContainer: ControlContainer,
@@ -221,7 +222,7 @@ export class InputMapComponent implements OnInit {
     }
 
     get pairs(): FormArray {
-        return this.parentForm.get('input_map') as FormArray;
+        return this.parentForm.get(this.arrayName) as FormArray;
     }
 
     addPair() {
