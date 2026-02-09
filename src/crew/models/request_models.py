@@ -378,6 +378,7 @@ class ClassificationConditionGroupData(BaseModel):
     route_code: str | None = None
     dock_visible: bool = True
     order: int = 0
+    field_expressions: dict[str, str] = {}
 
 
 class ClassificationDecisionTableNodeData(BaseModel):

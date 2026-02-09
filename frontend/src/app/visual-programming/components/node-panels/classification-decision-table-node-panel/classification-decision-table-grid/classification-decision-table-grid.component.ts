@@ -6,8 +6,10 @@ import {
     signal,
     computed,
     ChangeDetectorRef,
+    ElementRef,
     inject,
     OnInit,
+    OnDestroy,
     effect,
 } from '@angular/core';
 import { AgGridModule } from 'ag-grid-angular';
@@ -18,6 +20,7 @@ import {
     GridReadyEvent,
     CellValueChangedEvent,
     CellClickedEvent,
+    CellContextMenuEvent,
     ICellEditorParams,
 } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
@@ -31,24 +34,27 @@ import { MonacoCellEditorComponent } from './monaco-cell-editor/monaco-cell-edit
 import { MonacoCellRendererComponent } from './monaco-cell-renderer/monaco-cell-renderer.component';
 import { PromptTooltipRendererComponent } from './prompt-tooltip-renderer/prompt-tooltip-renderer.component';
 import { PromptIdCellEditorComponent } from './prompt-id-cell-editor/prompt-id-cell-editor.component';
+import { IconHeaderComponent } from './icon-header/icon-header.component';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
     selector: 'app-classification-decision-table-grid',
     standalone: true,
-    imports: [AgGridModule, ButtonComponent, MonacoCellEditorComponent, MonacoCellRendererComponent, PromptTooltipRendererComponent, PromptIdCellEditorComponent],
+    imports: [AgGridModule, ButtonComponent, MonacoCellEditorComponent, MonacoCellRendererComponent, PromptTooltipRendererComponent, PromptIdCellEditorComponent, IconHeaderComponent],
     templateUrl: './classification-decision-table-grid.component.html',
     styleUrls: ['./classification-decision-table-grid.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ClassificationDecisionTableGridComponent implements OnInit {
+export class ClassificationDecisionTableGridComponent implements OnInit, OnDestroy {
     public conditionGroups = input.required<ConditionGroup[]>();
     public activeColor = input<string>('#685fff');
     public currentNodeId = input.required<string>();
     public prompts = input<Record<string, PromptConfig>>({});
     public defaultLlmId = input<string>('');
     public llmConfigs = input<{ id: number; label: string }[]>([]);
+    public preInputMapKeys = input<string[]>([]);
+    public domainKeys = input<string[]>([]);
 
     public conditionGroupsChange = output<ConditionGroup[]>();
     public promptChange = output<{ promptId: string; field: keyof PromptConfig; value: any }>();
@@ -56,11 +62,69 @@ export class ClassificationDecisionTableGridComponent implements OnInit {
 
     private flowService = inject(FlowService);
     private cdr = inject(ChangeDetectorRef);
+    private elRef = inject(ElementRef);
 
     private gridApi!: GridApi;
     public rowData = signal<ConditionGroup[]>([]);
+    public showFieldColumnPicker = signal(false);
+    public fieldSearchQuery = signal('');
+    public contextMenu = signal<{ x: number; y: number; rowIndex: number } | null>(null);
+
+    // Ordered list of ALL movable colIds (field_* and expression), including hidden
+    private movableColumnOrder = signal<string[]>(['expression']);
+    // Which field names are currently hidden
+    private hiddenFieldsSet = signal<Set<string>>(new Set());
+
+    // Computed: visible field names in their column order
+    public activeFieldColumns = computed(() => {
+        const hidden = this.hiddenFieldsSet();
+        return this.movableColumnOrder()
+            .filter(id => id.startsWith('field_') && !hidden.has(id.substring(6)))
+            .map(id => id.substring(6));
+    });
 
     public isEmpty = computed(() => this.rowData().length === 0);
+
+    public availableInputMapFields = computed(() => {
+        const active = new Set(this.activeFieldColumns());
+        const q = this.fieldSearchQuery().toLowerCase();
+        return this.preInputMapKeys()
+            .filter(k => !active.has(k) && (!q || k.toLowerCase().includes(q)));
+    });
+
+    public availableDomainFields = computed(() => {
+        const active = new Set(this.activeFieldColumns());
+        const inputMapKeys = new Set(this.preInputMapKeys());
+        const q = this.fieldSearchQuery().toLowerCase();
+        return this.domainKeys()
+            .filter(k => !active.has(k) && !inputMapKeys.has(k) && (!q || k.toLowerCase().includes(q)));
+    });
+
+    public hiddenFieldColumns = computed(() => {
+        const visible = new Set(this.activeFieldColumns());
+        const q = this.fieldSearchQuery().toLowerCase();
+        const hidden = new Set<string>();
+        // Fields in movableColumnOrder that are hidden
+        this.movableColumnOrder()
+            .filter(id => id.startsWith('field_'))
+            .map(id => id.substring(6))
+            .forEach(name => { if (!visible.has(name)) hidden.add(name); });
+        // Also check row data for orphaned fields
+        this.rowData().forEach(row => {
+            if (row.field_expressions) {
+                Object.entries(row.field_expressions).forEach(([k, v]) => {
+                    if (v && !visible.has(k)) hidden.add(k);
+                });
+            }
+        });
+        return [...hidden].filter(k => !q || k.toLowerCase().includes(q));
+    });
+
+    public hasAvailableFields = computed(() =>
+        this.availableInputMapFields().length > 0
+        || this.availableDomainFields().length > 0
+        || this.hiddenFieldColumns().length > 0
+    );
 
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
@@ -84,6 +148,7 @@ export class ClassificationDecisionTableGridComponent implements OnInit {
             const groups = this.conditionGroups();
             if (groups && groups.length > 0) {
                 this.rowData.set([...groups]);
+                this.initFieldColumnsFromData(groups);
             }
         });
         effect(() => {
@@ -92,12 +157,39 @@ export class ClassificationDecisionTableGridComponent implements OnInit {
                 this.gridApi.refreshCells({ columns: ['prompt_id'], force: true });
             }
         });
+        effect(() => {
+            this.movableColumnOrder();
+            this.hiddenFieldsSet();
+            if (this.skipRebuild) {
+                this.skipRebuild = false;
+                return;
+            }
+            this.rebuildColumnDefs();
+        });
     }
 
     ngOnInit(): void {
         const groups = this.conditionGroups();
         if (groups && groups.length > 0) {
             this.rowData.set([...groups]);
+            this.initFieldColumnsFromData(groups);
+        }
+    }
+
+    private initFieldColumnsFromData(groups: ConditionGroup[]): void {
+        // Restore saved state first
+        this.restoreGridState();
+
+        const fieldKeys = new Set<string>();
+        groups.forEach(g => {
+            if (g.field_expressions) {
+                Object.keys(g.field_expressions).forEach(k => fieldKeys.add(k));
+            }
+        });
+        if (fieldKeys.size > 0 && this.movableColumnOrder().length <= 1) {
+            const colIds = [...fieldKeys].map(f => `field_${f}`);
+            colIds.push('expression');
+            this.movableColumnOrder.set(colIds);
         }
     }
 
@@ -114,13 +206,57 @@ export class ClassificationDecisionTableGridComponent implements OnInit {
 
     public defaultColDef: ColDef = {
         sortable: false,
+        resizable: true,
+        minWidth: 30,
     };
+
+    private unmergedGroup = signal<{ colId: string; startRow: number; endRow: number } | null>(null);
+    private savedColumnWidths = new Map<string, number>();
+    private saveTimeout: any = null;
+    private skipRebuild = false;
+
+    private get storageKey(): string {
+        return `cdt-grid-state-${this.currentNodeId()}`;
+    }
+
+    private saveGridState(): void {
+        if (this.saveTimeout) clearTimeout(this.saveTimeout);
+        this.saveTimeout = setTimeout(() => {
+            const widths: Record<string, number> = {};
+            this.gridApi?.getColumnState()?.forEach(s => {
+                if (s.colId && s.width) widths[s.colId] = s.width;
+            });
+            const state = {
+                widths,
+                order: this.movableColumnOrder(),
+                hidden: [...this.hiddenFieldsSet()],
+            };
+            try { localStorage.setItem(this.storageKey, JSON.stringify(state)); } catch {}
+        }, 300);
+    }
+
+    private restoreGridState(): void {
+        try {
+            const raw = localStorage.getItem(this.storageKey);
+            if (!raw) return;
+            const state = JSON.parse(raw);
+            if (state.widths) {
+                Object.entries(state.widths).forEach(([k, v]) => this.savedColumnWidths.set(k, v as number));
+            }
+            if (state.order?.length > 0) {
+                this.movableColumnOrder.set(state.order);
+            }
+            if (state.hidden?.length > 0) {
+                this.hiddenFieldsSet.set(new Set(state.hidden));
+            }
+        } catch {}
+    }
 
     public gridOptions: GridOptions = {
         theme: this.myTheme,
         rowHeight: 50,
         headerHeight: 45,
-        suppressMovableColumns: true,
+        suppressRowTransform: true,
         suppressCellFocus: false,
         singleClickEdit: true,
         stopEditingWhenCellsLoseFocus: true,
@@ -131,186 +267,699 @@ export class ClassificationDecisionTableGridComponent implements OnInit {
             const updatedRows = this.getUpdatedRows();
             this.emitChanges(updatedRows);
         },
+        preventDefaultOnContextMenu: true,
+        onCellContextMenu: (event) => {
+            const mouseEvent = event.event as MouseEvent;
+            this.contextMenu.set({
+                x: mouseEvent.clientX,
+                y: mouseEvent.clientY,
+                rowIndex: event.node.rowIndex!,
+            });
+            this.cdr.markForCheck();
+        },
+        onColumnMoved: (event) => {
+            if (!(event as any).finished) return;
+            const colState = this.gridApi?.getColumnState();
+            if (!colState) return;
+            const newVisibleOrder = colState
+                .map(s => s.colId!)
+                .filter(id => id?.startsWith('field_') || id === 'expression');
+            // Merge hidden fields back at their relative positions
+            const oldOrder = this.movableColumnOrder();
+            const hidden = this.hiddenFieldsSet();
+            const hiddenIds = oldOrder.filter(id =>
+                id.startsWith('field_') && hidden.has(id.substring(6))
+            );
+            const result = [...newVisibleOrder];
+            for (const hid of hiddenIds) {
+                const oldIdx = oldOrder.indexOf(hid);
+                let insertAfter = -1;
+                for (let i = oldIdx - 1; i >= 0; i--) {
+                    const pos = result.indexOf(oldOrder[i]);
+                    if (pos >= 0) { insertAfter = pos; break; }
+                }
+                result.splice(insertAfter + 1, 0, hid);
+            }
+            this.skipRebuild = true;
+            this.movableColumnOrder.set(result);
+            this.saveGridState();
+        },
+        onColumnResized: (event) => {
+            if ((event as any).finished) {
+                this.saveGridState();
+            }
+        },
     };
 
-    public columnDefs: ColDef[] = [
-        {
-            headerName: '#',
-            valueGetter: 'node.rowIndex + 1',
-            width: 60,
-            minWidth: 60,
-            maxWidth: 60,
-            rowDrag: true,
-            cellStyle: {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: 'rgba(255, 255, 255, 0.5)',
-            },
-        },
-        {
-            headerName: '',
-            field: 'valid',
-            editable: true,
-            width: 50,
-            minWidth: 50,
-            maxWidth: 50,
-            cellDataType: 'boolean',
-            headerTooltip: 'Enabled',
-            cellStyle: {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            },
-        },
-        {
-            headerName: 'Condition Name',
-            field: 'group_name',
-            editable: true,
+    public columnDefs: ColDef[] = this.buildColumnDefs();
+
+    private buildFieldColDef(fieldName: string): ColDef {
+        return {
+            headerName: fieldName,
+            colId: `field_${fieldName}`,
+            editable: false,
             flex: 1,
-            minWidth: 150,
-            cellStyle: {
-                fontSize: '14px',
+            cellRenderer: MonacoCellRendererComponent,
+            cellRendererParams: { singleLine: true },
+            rowSpan: (params: any) => this.getRowSpan(
+                params, `field_${fieldName}`,
+                (d) => d?.field_expressions?.[fieldName] || '',
+            ),
+            cellStyle: (params: any) => this.getSpanCellStyle(
+                params, `field_${fieldName}`,
+                (d) => d?.field_expressions?.[fieldName] || '',
+                { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
+            ),
+            valueGetter: (params: any) => {
+                return params.data?.field_expressions?.[fieldName] || '';
             },
-        },
-        {
+            valueSetter: (params: any) => {
+                if (!params.data.field_expressions) {
+                    params.data.field_expressions = {};
+                }
+                params.data.field_expressions[fieldName] = params.newValue || '';
+                return true;
+            },
+        };
+    }
+
+    private buildExpressionColDef(): ColDef {
+        return {
             headerName: 'Expression',
+            colId: 'expression',
             field: 'expression',
             editable: false,
             flex: 1,
-            minWidth: 200,
             cellRenderer: MonacoCellRendererComponent,
-            cellStyle: {
-                fontSize: '13px',
-                fontFamily: 'monospace',
-                color: '#d4d4d4',
-            },
-        },
-        {
-            headerName: 'Prompt ID',
-            field: 'prompt_id',
-            editable: true,
-            width: 150,
-            cellRenderer: PromptTooltipRendererComponent,
-            cellRendererParams: () => ({
-                prompts: this.prompts(),
-                onPromptChange: (promptId: string, field: keyof PromptConfig, value: any) => {
-                    this.promptChange.emit({ promptId, field, value });
+            rowSpan: (params: any) => this.getRowSpan(
+                params, 'expression',
+                (d) => d?.expression || '',
+            ),
+            cellStyle: (params: any) => this.getSpanCellStyle(
+                params, 'expression',
+                (d) => d?.expression || '',
+                { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
+            ),
+        };
+    }
+
+    private buildColumnDefs(): ColDef[] {
+        const staticBefore: ColDef[] = [
+            {
+                headerName: '#',
+                valueGetter: 'node.rowIndex + 1',
+                width: 60,
+                minWidth: 60,
+                maxWidth: 60,
+                rowDrag: true,
+                suppressMovable: true,
+                cellStyle: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: 'rgba(255, 255, 255, 0.5)',
                 },
-            }),
-            cellEditor: PromptIdCellEditorComponent,
-            cellEditorParams: () => ({
-                prompts: this.prompts(),
-                defaultLlmId: this.defaultLlmId(),
-                llmConfigs: this.llmConfigs(),
-                onAddPrompt: (id: string, config: PromptConfig) => {
-                    this.promptAdd.emit({ id, config });
+            },
+            {
+                headerName: '',
+                field: 'valid',
+                editable: true,
+                width: 50,
+                minWidth: 50,
+                maxWidth: 50,
+                cellDataType: 'boolean',
+                headerTooltip: 'Enabled',
+                suppressMovable: true,
+                cellStyle: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                 },
-                onPromptChange: (promptId: string, field: keyof PromptConfig, value: any) => {
-                    this.promptChange.emit({ promptId, field, value });
+            },
+            {
+                headerName: 'Condition Name',
+                field: 'group_name',
+                editable: true,
+                flex: 1,
+                suppressMovable: true,
+                cellStyle: {
+                    fontSize: '14px',
                 },
-            }),
-            cellEditorPopup: true,
-            cellStyle: {
-                fontSize: '14px',
             },
-        },
-        {
-            headerName: 'Manipulation',
-            field: 'manipulation',
-            editable: false,
-            flex: 1,
-            minWidth: 200,
-            cellRenderer: MonacoCellRendererComponent,
-            cellStyle: {
-                fontSize: '13px',
-                fontFamily: 'monospace',
-                color: '#d4d4d4',
+        ];
+
+        // Build movable columns from movableColumnOrder, filtered by visibility
+        const hidden = this.hiddenFieldsSet();
+        const movableCols: ColDef[] = this.movableColumnOrder()
+            .filter(colId => {
+                if (colId === 'expression') return true;
+                if (colId.startsWith('field_')) return !hidden.has(colId.substring(6));
+                return false;
+            })
+            .map(colId => {
+                if (colId === 'expression') return this.buildExpressionColDef();
+                return this.buildFieldColDef(colId.substring(6));
+            });
+
+        const staticAfter: ColDef[] = [
+            {
+                headerName: 'Prompt ID',
+                field: 'prompt_id',
+                suppressMovable: true,
+                editable: true,
+                width: 150,
+                cellRenderer: PromptTooltipRendererComponent,
+                cellRendererParams: () => ({
+                    prompts: this.prompts(),
+                    onPromptChange: (promptId: string, field: keyof PromptConfig, value: any) => {
+                        this.promptChange.emit({ promptId, field, value });
+                    },
+                }),
+                cellEditor: PromptIdCellEditorComponent,
+                cellEditorParams: () => ({
+                    prompts: this.prompts(),
+                    defaultLlmId: this.defaultLlmId(),
+                    llmConfigs: this.llmConfigs(),
+                    onAddPrompt: (id: string, config: PromptConfig) => {
+                        this.promptAdd.emit({ id, config });
+                    },
+                    onPromptChange: (promptId: string, field: keyof PromptConfig, value: any) => {
+                        this.promptChange.emit({ promptId, field, value });
+                    },
+                }),
+                cellEditorPopup: true,
+                cellStyle: {
+                    fontSize: '14px',
+                },
             },
-        },
-        {
-            headerName: 'Continue',
-            field: 'continue',
-            editable: true,
-            width: 110,
-            cellDataType: 'boolean',
-            cellStyle: {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+            {
+                headerName: 'Manipulation',
+                field: 'manipulation',
+                editable: false,
+                flex: 1,
+                suppressMovable: true,
+                cellRenderer: MonacoCellRendererComponent,
+                cellStyle: {
+                    fontSize: '13px',
+                    fontFamily: 'monospace',
+                    color: '#d4d4d4',
+                },
             },
-        },
-        {
-            headerName: 'Route Code',
-            field: 'route_code',
-            editable: true,
-            width: 150,
-            cellStyle: {
-                fontSize: '14px',
+            {
+                headerName: 'Route Code',
+                field: 'route_code',
+                editable: true,
+                width: 150,
+                suppressMovable: true,
+                cellStyle: {
+                    fontSize: '14px',
+                },
             },
-        },
-        {
-            headerName: 'Dock Visible',
-            field: 'dock_visible',
-            editable: true,
-            width: 120,
-            cellDataType: 'boolean',
-            cellStyle: {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+            {
+                headerComponent: IconHeaderComponent,
+                headerComponentParams: { iconClass: 'ti ti-player-skip-forward', tooltip: 'Continue' },
+                field: 'continue',
+                editable: true,
+                width: 55,
+                minWidth: 55,
+                maxWidth: 55,
+                cellDataType: 'boolean',
+                cellStyle: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                },
             },
-        },
-        {
-            headerName: '',
-            field: 'actions',
-            cellRenderer: () => {
-                return `<i class="ti ti-trash" style="color: #ff3b30; font-size: 1.1rem; transition: all 0.2s ease; cursor: pointer;"></i>`;
+            {
+                headerComponent: IconHeaderComponent,
+                headerComponentParams: { iconClass: 'ti ti-eye', tooltip: 'Dock Visible' },
+                field: 'dock_visible',
+                editable: true,
+                width: 55,
+                minWidth: 55,
+                maxWidth: 55,
+                cellDataType: 'boolean',
+                cellStyle: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                },
             },
-            width: 60,
-            minWidth: 60,
-            maxWidth: 60,
-            cellStyle: {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
+            {
+                headerName: '',
+                field: 'actions',
+                cellRenderer: () => {
+                    return `<i class="ti ti-trash" style="color: #ff3b30; font-size: 1.1rem; transition: all 0.2s ease; cursor: pointer;"></i>`;
+                },
+                width: 60,
+                minWidth: 60,
+                maxWidth: 60,
+                cellStyle: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                },
+                onCellClicked: (event: CellClickedEvent) => {
+                    this.deleteRow(event.node.rowIndex!);
+                },
             },
-            onCellClicked: (event: CellClickedEvent) => {
-                this.deleteRow(event.node.rowIndex!);
-            },
-        },
-    ];
+        ];
+
+        return [...staticBefore, ...movableCols, ...staticAfter];
+    }
+
+    // Column hue spacing (degrees) for merged cell colors
+    private static readonly COL_HUE_STEP = 67;
+
+    // Returns the row range that column `colId` is allowed to merge within,
+    // based on the left column's merge group hierarchy.
+    private getHierarchicalBounds(params: any, colId: string, idx: number): { start: number; end: number } {
+        const fields = this.activeFieldColumns();
+        const mergeableCols = fields.map(f => `field_${f}`);
+        mergeableCols.push('expression');
+        const colIndex = mergeableCols.indexOf(colId);
+
+        if (colIndex <= 0) {
+            // First column or not found — full table range
+            return { start: 0, end: (params.api?.getDisplayedRowCount?.() ?? 1000) - 1 };
+        }
+
+        const leftColId = mergeableCols[colIndex - 1];
+        // Recursively get the left column's own bounds
+        const leftBounds = this.getHierarchicalBounds(params, leftColId, idx);
+
+        const leftVal = this.getMergeableValueFromData(
+            params.api?.getDisplayedRowAtIndex(idx)?.data, leftColId,
+        );
+        if (!leftVal) return { start: idx, end: idx };
+
+        let start = idx;
+        while (start > leftBounds.start) {
+            const prev = params.api?.getDisplayedRowAtIndex(start - 1);
+            if (!prev || this.getMergeableValueFromData(prev.data, leftColId) !== leftVal) break;
+            start--;
+        }
+        let end = idx;
+        while (end < leftBounds.end) {
+            const next = params.api?.getDisplayedRowAtIndex(end + 1);
+            if (!next || this.getMergeableValueFromData(next.data, leftColId) !== leftVal) break;
+            end++;
+        }
+        return { start, end };
+    }
+
+    private getRowSpan(
+        params: any,
+        colId: string,
+        getValue: (data: any) => string,
+    ): number {
+        const idx = params.node?.rowIndex ?? 0;
+        const ug = this.unmergedGroup();
+        if (ug && ug.colId === colId && idx >= ug.startRow && idx <= ug.endRow) return 1;
+        const cur = getValue(params.data) || '';
+        if (!cur) return 1;
+
+        const bounds = this.getHierarchicalBounds(params, colId, idx);
+
+        // If this cell matches the one above (within bounds), AG Grid hides it behind the span above
+        if (idx > bounds.start) {
+            const prevNode = params.api?.getDisplayedRowAtIndex(idx - 1);
+            if (prevNode && cur === (getValue(prevNode.data) || '')) {
+                return 1;
+            }
+        }
+        // Count consecutive matching rows below, bounded by hierarchy
+        let span = 1;
+        while (idx + span <= bounds.end) {
+            const nextNode = params.api?.getDisplayedRowAtIndex(idx + span);
+            if (!nextNode || cur !== (getValue(nextNode.data) || '')) break;
+            span++;
+        }
+        return span;
+    }
+
+    private isCellMerged(params: any, colId: string, idx: number): boolean {
+        const ug = this.unmergedGroup();
+        if (ug && ug.colId === colId && idx >= ug.startRow && idx <= ug.endRow) return false;
+        const val = this.getMergeableValue(params, colId);
+        if (!val) return false;
+
+        const bounds = this.getHierarchicalBounds(params, colId, idx);
+        const prevNode = idx > bounds.start ? params.api?.getDisplayedRowAtIndex(idx - 1) : null;
+        const nextNode = idx < bounds.end ? params.api?.getDisplayedRowAtIndex(idx + 1) : null;
+        return (prevNode && val === this.getMergeableValueFromData(prevNode.data, colId))
+            || (nextNode && val === this.getMergeableValueFromData(nextNode.data, colId));
+    }
+
+    private getMergeableValue(params: any, colId: string): string {
+        return this.getMergeableValueFromData(params.data, colId);
+    }
+
+    private getMergeableValueFromData(data: any, colId: string): string {
+        if (!data) return '';
+        if (colId === 'expression') return data.expression || '';
+        if (colId.startsWith('field_')) {
+            const field = colId.replace('field_', '');
+            return data.field_expressions?.[field] || '';
+        }
+        return '';
+    }
+
+    private static hashStr(s: string): number {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) {
+            h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+        }
+        return h;
+    }
+
+    private getMergeGroupIndex(params: any, colId: string, idx: number): number {
+        // Count how many times the value changes from row 0 to idx,
+        // respecting hierarchical bounds
+        const bounds = this.getHierarchicalBounds(params, colId, idx);
+        let groupIdx = 0;
+        let prevVal = '';
+        for (let r = bounds.start; r <= idx; r++) {
+            const node = params.api?.getDisplayedRowAtIndex(r);
+            const val = node ? this.getMergeableValueFromData(node.data, colId) : '';
+            if (val !== prevVal && val) groupIdx++;
+            prevVal = val;
+        }
+        return groupIdx;
+    }
+
+    private getTotalMergeGroups(params: any, colId: string): number {
+        const totalRows = params.api?.getDisplayedRowCount?.() ?? 0;
+        let groups = 0;
+        let prevVal = '';
+        for (let r = 0; r < totalRows; r++) {
+            const node = params.api?.getDisplayedRowAtIndex(r);
+            const val = node ? this.getMergeableValueFromData(node.data, colId) : '';
+            if (val && val !== prevVal) groups++;
+            prevVal = val;
+        }
+        return groups;
+    }
+
+    private computeMergedBg(params: any, colId: string, idx: number): string {
+        const fields = this.activeFieldColumns();
+        const mergeableCols = fields.map(f => `field_${f}`);
+        mergeableCols.push('expression');
+        const colIndex = mergeableCols.indexOf(colId);
+        if (colIndex < 0) return '';
+
+        let hue = 0;
+        let totalWeight = 0;
+        let count = 0;
+        let groupParity = 0;
+        for (let i = 0; i <= colIndex; i++) {
+            if (this.isCellMerged(params, mergeableCols[i], idx)) {
+                const gIdx = this.getMergeGroupIndex(params, mergeableCols[i], idx);
+                groupParity += gIdx;
+                // First column: evenly space hues around the wheel for max contrast
+                // Deeper columns: golden ratio offset for variety
+                let colHue: number;
+                if (i === 0) {
+                    // Count total groups in this column for even spacing
+                    const totalGroups = this.getTotalMergeGroups(params, mergeableCols[i]);
+                    colHue = totalGroups > 1 ? ((gIdx - 1) * 360) / totalGroups : 0;
+                } else {
+                    const val = this.getMergeableValue(params, mergeableCols[i]);
+                    const valHash = ClassificationDecisionTableGridComponent.hashStr(val);
+                    colHue = ((Math.abs(valHash) * 0.618033988749895) % 1) * 360;
+                }
+                // Each deeper column contributes less: weight = 1 / (depth+1)
+                const weight = 1 / (count + 1);
+                hue += colHue * weight;
+                totalWeight += weight;
+                count++;
+            }
+        }
+        if (count === 0) return '';
+        hue = ((hue / totalWeight) % 360 + 360) % 360;
+        const sat = Math.min(8 + count * 3, 20);
+        const lit = 14 + count * 1.5 + (groupParity % 2 === 0 ? 0 : 2);
+        return `hsl(${hue}, ${sat}%, ${lit}%)`;
+    }
+
+    private getSpanCellStyle(
+        params: any,
+        colId: string,
+        getValue: (data: any) => string,
+        baseStyle: Record<string, string>,
+    ): Record<string, string> {
+        const style: any = { ...baseStyle };
+        const idx = params.node?.rowIndex ?? 0;
+        const ug = this.unmergedGroup();
+        if (ug && ug.colId === colId && idx >= ug.startRow && idx <= ug.endRow) return style;
+        const cur = getValue(params.data) || '';
+        if (!cur) return style;
+        const prevNode = idx > 0 ? params.api?.getDisplayedRowAtIndex(idx - 1) : null;
+        const nextNode = params.api?.getDisplayedRowAtIndex(idx + 1);
+        const matchesAbove = prevNode ? cur === (getValue(prevNode.data) || '') : false;
+        const matchesBelow = nextNode ? cur === (getValue(nextNode.data) || '') : false;
+
+        if (matchesAbove || matchesBelow) {
+            style.backgroundColor = this.computeMergedBg(params, colId, idx);
+            style.display = 'flex';
+            style.alignItems = 'center';
+        }
+        // Add separator border at bottom of spanning cell (group boundary)
+        if (!matchesAbove && matchesBelow) {
+            style.borderBottom = '2px solid rgba(255, 255, 255, 0.18)';
+        }
+        return style;
+    }
+
+    private findMergeGroup(colId: string, rowIndex: number): { startRow: number; endRow: number } {
+        const rows = this.rowData();
+        const getVal = (i: number): string => {
+            if (i < 0 || i >= rows.length) return '';
+            if (colId === 'expression') return rows[i].expression || '';
+            if (colId.startsWith('field_')) {
+                const field = colId.replace('field_', '');
+                return (rows[i].field_expressions || {})[field] || '';
+            }
+            return '';
+        };
+        const val = getVal(rowIndex);
+        if (!val) return { startRow: rowIndex, endRow: rowIndex };
+
+        let start = rowIndex;
+        while (start > 0 && getVal(start - 1) === val) start--;
+        let end = rowIndex;
+        while (end < rows.length - 1 && getVal(end + 1) === val) end++;
+        return { startRow: start, endRow: end };
+    }
+
+    private rebuildColumnDefs(): void {
+        // Capture current column widths to prevent layout jump
+        const widthMap = new Map<string, number>(this.savedColumnWidths);
+        this.gridApi?.getColumnState()?.forEach(s => {
+            if (s.colId && s.width) widthMap.set(s.colId, s.width);
+        });
+
+        this.columnDefs = this.buildColumnDefs();
+
+        // Apply captured widths, replacing flex with explicit width
+        if (widthMap.size > 0) {
+            this.columnDefs = this.columnDefs.map(col => {
+                const id = (col as any).colId || col.field;
+                if (id && widthMap.has(id)) {
+                    const { flex, ...rest } = col as any;
+                    return { ...rest, width: widthMap.get(id) };
+                }
+                return col;
+            });
+        }
+
+        if (this.gridApi) {
+            this.gridApi.setGridOption('columnDefs', this.columnDefs);
+        }
+    }
+
+    toggleFieldPicker(): void {
+        const isOpen = this.showFieldColumnPicker();
+        this.showFieldColumnPicker.set(!isOpen);
+        if (!isOpen) {
+            this.fieldSearchQuery.set('');
+        }
+    }
+
+    addFieldColumn(fieldName: string): void {
+        const hidden = this.hiddenFieldsSet();
+        if (hidden.has(fieldName)) {
+            // Unhide - position preserved in movableColumnOrder
+            const newHidden = new Set(hidden);
+            newHidden.delete(fieldName);
+            this.hiddenFieldsSet.set(newHidden);
+        } else {
+            // New field - insert before expression in movableColumnOrder
+            const colId = `field_${fieldName}`;
+            const order = this.movableColumnOrder();
+            if (!order.includes(colId)) {
+                const exprIdx = order.indexOf('expression');
+                const newOrder = [...order];
+                newOrder.splice(exprIdx >= 0 ? exprIdx : newOrder.length, 0, colId);
+                this.movableColumnOrder.set(newOrder);
+            }
+        }
+        this.showFieldColumnPicker.set(false);
+        this.fieldSearchQuery.set('');
+        this.saveGridState();
+    }
+
+    removeFieldColumn(fieldName: string): void {
+        const newHidden = new Set(this.hiddenFieldsSet());
+        newHidden.add(fieldName);
+        this.hiddenFieldsSet.set(newHidden);
+        this.saveGridState();
+    }
 
     onGridReady(params: GridReadyEvent): void {
         this.gridApi = params.api;
+        this.setupBodyClickListener();
+        // Apply saved column widths after grid is ready
+        if (this.savedColumnWidths.size > 0) {
+            const colState = this.gridApi.getColumnState().map(s => {
+                const saved = s.colId ? this.savedColumnWidths.get(s.colId) : undefined;
+                return saved ? { ...s, width: saved } : s;
+            });
+            this.gridApi.applyColumnState({ state: colState });
+        }
+    }
+
+    private bodyClickHandler = (event: MouseEvent) => {
+        // Close context menu on any click
+        if (this.contextMenu()) {
+            this.contextMenu.set(null);
+        }
+
+        const currentUnmerged = this.unmergedGroup();
+        const target = event.target as HTMLElement;
+
+        // Don't act if clicking inside a Monaco tooltip popover or AG Grid header (resize handles)
+        if (target?.closest('.code-tooltip-popover')) return;
+        if (target?.closest('.ag-header')) return;
+
+        // Check if the click landed on an AG Grid cell and extract its col-id
+        const cellEl = target?.closest('[col-id]') as HTMLElement | null;
+        const clickedColId = cellEl?.getAttribute('col-id') || null;
+
+        if (clickedColId) {
+            // Click is on a grid cell
+            const isMergeableCol = clickedColId === 'expression' || clickedColId.startsWith('field_');
+
+            if (isMergeableCol && (!currentUnmerged || currentUnmerged.colId !== clickedColId)) {
+                // Determine which row was clicked within a spanned cell
+                const rowHeight = this.gridOptions.rowHeight || 50;
+                const cellRect = cellEl!.getBoundingClientRect();
+                const rowOffset = Math.floor((event.clientY - cellRect.top) / rowHeight);
+                const rowEl = cellEl!.closest('.ag-row');
+                const topRowIndex = parseInt(rowEl?.getAttribute('row-index') || '0', 10);
+                const targetRowIndex = topRowIndex + rowOffset;
+
+                // Find merge group boundaries for this cell
+                const groupRange = this.findMergeGroup(clickedColId, topRowIndex);
+
+                // Unmerge only this group
+                this.unmergedGroup.set({ colId: clickedColId, ...groupRange });
+                this.rebuildColumnDefs();
+
+                // After re-render, trigger editor on the target row's cell
+                setTimeout(() => {
+                    const targetCell = this.elRef.nativeElement.querySelector(
+                        `.ag-row[row-index="${targetRowIndex}"] [col-id="${clickedColId}"] .code-cell`
+                    );
+                    if (targetCell) {
+                        targetCell.click();
+                    }
+                }, 100);
+            } else if (!isMergeableCol && currentUnmerged) {
+                // Clicked a non-mergeable column → re-merge
+                this.unmergedGroup.set(null);
+                this.rebuildColumnDefs();
+            }
+        } else if (currentUnmerged) {
+            // Click is outside any grid cell → re-merge
+            this.unmergedGroup.set(null);
+            this.rebuildColumnDefs();
+        }
+    };
+
+    private setupBodyClickListener(): void {
+        document.addEventListener('click', this.bodyClickHandler);
+    }
+
+    ngOnDestroy(): void {
+        document.removeEventListener('click', this.bodyClickHandler);
     }
 
     onCellValueChanged(event: CellValueChangedEvent): void {
+        this.unmergedGroup.set(null);
         const updatedRows = this.getUpdatedRows();
         this.emitChanges(updatedRows);
+        this.rebuildColumnDefs();
     }
 
-    addRow(): void {
-        const currentRows = this.rowData();
-        const newRow: ConditionGroup = {
-            group_name: `Condition ${currentRows.length + 1}`,
+    private createNewRow(index: number): ConditionGroup {
+        const fieldExpressions: Record<string, string> = {};
+        this.activeFieldColumns().forEach(f => fieldExpressions[f] = '');
+        return {
+            group_name: `Condition ${index + 1}`,
             group_type: 'complex',
             expression: null,
             conditions: [],
             manipulation: null,
             continue: false,
-            route_code: `ROUTE_${currentRows.length + 1}`,
+            route_code: `ROUTE_${index + 1}`,
             dock_visible: true,
             next_node: null,
-            order: currentRows.length + 1,
+            order: index + 1,
             valid: true,
+            field_expressions: fieldExpressions,
         };
+    }
 
+    addRow(): void {
+        const currentRows = this.rowData();
+        const newRow = this.createNewRow(currentRows.length);
         this.rowData.set([...currentRows, newRow]);
         this.emitChanges([...currentRows, newRow]);
+    }
+
+    addRowAbove(): void {
+        const ctx = this.contextMenu();
+        if (!ctx) return;
+        const currentRows = this.rowData();
+        const newRow = this.createNewRow(ctx.rowIndex);
+        const updated = [
+            ...currentRows.slice(0, ctx.rowIndex),
+            newRow,
+            ...currentRows.slice(ctx.rowIndex),
+        ].map((r, i) => ({ ...r, order: i + 1 }));
+        this.rowData.set(updated);
+        this.emitChanges(updated);
+        this.contextMenu.set(null);
+    }
+
+    addRowBelow(): void {
+        const ctx = this.contextMenu();
+        if (!ctx) return;
+        const currentRows = this.rowData();
+        const insertAt = ctx.rowIndex + 1;
+        const newRow = this.createNewRow(insertAt);
+        const updated = [
+            ...currentRows.slice(0, insertAt),
+            newRow,
+            ...currentRows.slice(insertAt),
+        ].map((r, i) => ({ ...r, order: i + 1 }));
+        this.rowData.set(updated);
+        this.emitChanges(updated);
+        this.contextMenu.set(null);
     }
 
     deleteRow(rowIndex: number): void {

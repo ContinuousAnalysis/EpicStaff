@@ -688,6 +688,7 @@ export class GraphUpdateService {
                             continue_flag: !!(group.continue_flag ?? group.continue),
                             route_code: group.route_code || null,
                             dock_visible: group.dock_visible !== false,
+                            field_expressions: group.field_expressions || {},
                         }));
 
                     const preComp = tableData?.pre_computation || {};

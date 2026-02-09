@@ -55,8 +55,9 @@ function ensureMonacoLoaded(): Promise<void> {
         <div
             class="code-cell"
             #codeContainer
-            (mouseenter)="showTooltip($event)"
+            (mouseenter)="onMouseEnter($event)"
             (mouseleave)="scheduleHide()"
+            (click)="onCellClick($event)"
         >
             <span *ngIf="!value" class="placeholder">—</span>
             <span *ngIf="value && !colorized" class="plain-text">{{ displayText }}</span>
@@ -114,10 +115,14 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
     private tooltipEl: HTMLElement | null = null;
     private hideTimeout: any = null;
     private editorInstance: any = null;
+    private singleLine = false;
+    private pendingValue: string | null = null;
+    private readonlyTooltip = false;
 
     agInit(params: ICellRendererParams): void {
         this.params = params;
         this.value = params.value || '';
+        this.singleLine = (params as any).singleLine === true;
         this.updateDisplayText();
     }
 
@@ -144,12 +149,31 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         if (this.hideTimeout) clearTimeout(this.hideTimeout);
     }
 
+    onMouseEnter(event: MouseEvent): void {
+        if (!this.singleLine && this.value) {
+            this.showTooltip(event);
+        }
+    }
+
+    onCellClick(event: MouseEvent): void {
+        if (this.singleLine || !this.value) {
+            this.showTooltip(event);
+        }
+    }
+
+    private isCellMerged(): boolean {
+        const agCell = this.elRef.nativeElement.closest('.ag-cell');
+        if (!agCell) return false;
+        const rowSpan = parseInt(agCell.getAttribute('rowspan') || '1', 10);
+        return rowSpan > 1;
+    }
+
     showTooltip(event: MouseEvent): void {
         if (this.hideTimeout) {
             clearTimeout(this.hideTimeout);
             this.hideTimeout = null;
         }
-        if (!this.value || this.tooltipEl) return;
+        if (this.tooltipEl) return;
 
         const monaco = (window as any).monaco;
         if (!monaco?.editor?.create) return;
@@ -172,31 +196,49 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         document.body.appendChild(tooltip);
         this.tooltipEl = tooltip;
 
-        // Position on top of the cell, aligned with text
-        const containerRect = this.codeContainer.nativeElement.getBoundingClientRect();
-        const cellPaddingLeft = 8; // .code-cell padding
-        const monacoInternalLeft = 4; // Monaco's internal left margin with decorations off
-        const borderWidth = 1; // tooltip border
+        // Measure actual text position inside the cell
+        const agCell = this.elRef.nativeElement.closest('.ag-cell');
+        const cellRect = agCell ? agCell.getBoundingClientRect() : this.codeContainer.nativeElement.getBoundingClientRect();
+        const codeCellRect = this.codeContainer.nativeElement.getBoundingClientRect();
 
-        // Horizontal: align Monaco text start with cell text start
-        const tooltipLeft = containerRect.left + cellPaddingLeft - monacoInternalLeft - borderWidth;
+        // Text element inside .code-cell (span.plain-text, span.colorized-code, or span.placeholder)
+        const textEl = this.codeContainer.nativeElement.querySelector('span');
+        const textRect = textEl ? textEl.getBoundingClientRect() : codeCellRect;
 
-        // Vertical: cell text is vertically centered; first line of Monaco starts at padding.top
-        // Cell center = containerRect.top + containerRect.height/2
-        // Text center in cell ≈ cell center (since align-items: center)
-        // Monaco first line center = padding.top + lineHeight/2
-        // So: tooltipTop + padding.top + lineHeight/2 = containerRect.top + containerRect.height/2
+        // Compute offsets from .ag-cell edge to actual text start
+        const leftOffset = textRect.left - cellRect.left;
+        const topOffset = textRect.top - cellRect.top;
+
         const monacoLineHeight = 19;
-        const monacoPaddingTop = Math.max(0, Math.round(containerRect.height / 2 - monacoLineHeight / 2));
 
-        const editorWidth = Math.max(containerRect.width - cellPaddingLeft + monacoInternalLeft + borderWidth, 550);
-        const lineCount = this.value.split('\n').length;
-        const editorHeight = Math.max(lineCount * monacoLineHeight + monacoPaddingTop + 8, 120);
+        let editorWidth: number;
+        let editorHeight: number;
 
-        tooltip.style.left = `${tooltipLeft}px`;
-        tooltip.style.top = `${containerRect.top - borderWidth}px`;
+        const gridEl = this.elRef.nativeElement.closest('.decision-table-grid-container');
+        const maxWidth = gridEl ? gridEl.getBoundingClientRect().right - cellRect.left : 800;
+        const charWidth = 7.2;
+        const lines = (this.value || '').split('\n');
+        const longestLine = Math.max(...lines.map(l => l.length), 20);
+        const contentWidth = longestLine * charWidth + leftOffset + 20;
+
+        if (this.singleLine) {
+            editorWidth = Math.min(Math.max(contentWidth, cellRect.width), maxWidth);
+            editorHeight = cellRect.height;
+        } else {
+            editorWidth = Math.min(Math.max(contentWidth, cellRect.width), maxWidth);
+            editorHeight = Math.min(
+                Math.max(lines.length * monacoLineHeight + topOffset + 8, cellRect.height),
+                400,
+            );
+        }
+
+        tooltip.style.left = `${cellRect.left}px`;
+        tooltip.style.top = `${cellRect.top}px`;
         editorContainer.style.width = `${editorWidth}px`;
         editorContainer.style.height = `${editorHeight}px`;
+
+        // Merged cells get a readonly tooltip
+        const merged = this.isCellMerged();
 
         // Create Monaco editor
         const editor = monaco.editor.create(editorContainer, {
@@ -208,7 +250,7 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
             lineNumbers: 'off',
             glyphMargin: false,
             folding: false,
-            lineDecorationsWidth: 0,
+            lineDecorationsWidth: leftOffset,
             lineNumbersMinChars: 0,
             renderLineHighlight: 'none',
             overviewRulerLanes: 0,
@@ -218,10 +260,16 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
             fontSize: 12,
             fontFamily: "'Menlo', 'Monaco', 'Courier New', monospace",
             lineHeight: monacoLineHeight,
-            padding: { top: monacoPaddingTop, bottom: 4 },
+            padding: { top: Math.max(topOffset - 1, 0), bottom: 4 },
             automaticLayout: true,
             wordWrap: 'off',
             contextmenu: false,
+            readOnly: merged,
+            domReadOnly: merged,
+            ...(this.singleLine ? {
+                renderLineHighlight: 'none' as const,
+                lineHeight: monacoLineHeight,
+            } : {}),
         });
         this.editorInstance = editor;
 
@@ -229,18 +277,30 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         editor.addCommand(monaco.KeyCode.Escape, () => {
             this.removeTooltipNow();
         });
+        // Enter saves and closes; Shift+Enter inserts newline (only for editable)
+        if (!merged) {
+            editor.addCommand(monaco.KeyCode.Enter, () => {
+                this.removeTooltipNow();
+            });
+        }
         tooltip.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 e.stopPropagation();
                 this.removeTooltipNow();
             }
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.stopPropagation();
+            }
         });
 
-        // Wire up content changes
-        editor.onDidChangeModelContent(() => {
-            const newVal = editor.getValue() || null;
-            this.params.node.setDataValue(this.params.column!, newVal);
-        });
+        this.readonlyTooltip = merged;
+
+        // Track changes but don't save until tooltip closes
+        if (!merged) {
+            editor.onDidChangeModelContent(() => {
+                this.pendingValue = editor.getValue() || null;
+            });
+        }
 
         // Adjust if overflowing viewport
         const tooltipRect = tooltip.getBoundingClientRect();
@@ -277,6 +337,12 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
     }
 
     private removeTooltip(): void {
+        // Save pending value before destroying (skip for readonly)
+        if (this.pendingValue !== null && !this.readonlyTooltip) {
+            const val = this.pendingValue;
+            this.pendingValue = null;
+            this.params.node.setDataValue(this.params.column!, val);
+        }
         if (this.editorInstance) {
             this.editorInstance.dispose();
             this.editorInstance = null;

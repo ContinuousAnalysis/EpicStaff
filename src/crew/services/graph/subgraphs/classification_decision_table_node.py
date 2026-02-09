@@ -524,11 +524,27 @@ def main(**kwargs) -> dict:
 
             for group in sorted_groups:
                 try:
-                    # Step 1: Evaluate expression (if empty, treat as True)
-                    expression_result = True
+                    # Step 1: Build combined expression from field_expressions + main expression
+                    parts = []
+                    _operator_prefixes = ('==', '!=', '>=', '<=', '>', '<', ' in ', ' not ')
+                    if group.field_expressions:
+                        for field_name, field_expr in group.field_expressions.items():
+                            if field_expr and field_expr.strip():
+                                expr = field_expr.strip()
+                                if expr.startswith(_operator_prefixes) or expr.startswith(('in ', 'not ')):
+                                    expr = f"{field_name} {expr}"
+                                elif not any(op in expr for op in ('==', '!=', '>=', '<=', '>', '<', ' in ', ' not ', ' and ', ' or ')):
+                                    expr = f"{field_name} == {expr}"
+                                parts.append(f"({expr})")
                     if group.expression:
+                        parts.append(f"({group.expression})")
+
+                    combined_expression = " and ".join(parts) if parts else None
+
+                    expression_result = True
+                    if combined_expression:
                         expression_result = await self._execute_expression(
-                            expression=group.expression,
+                            expression=combined_expression,
                             state=state,
                         )
 

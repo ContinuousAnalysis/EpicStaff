@@ -9,6 +9,7 @@ export interface ClassificationConditionGroupBackend {
     continue_flag: boolean;
     route_code: string | null;
     dock_visible: boolean;
+    field_expressions: Record<string, string>;
 }
 
 export interface CreateClassificationConditionGroupRequest {
@@ -20,6 +21,7 @@ export interface CreateClassificationConditionGroupRequest {
     continue_flag: boolean;
     route_code: string | null;
     dock_visible: boolean;
+    field_expressions: Record<string, string>;
 }
 
 export interface GetClassificationDecisionTableNodeRequest {

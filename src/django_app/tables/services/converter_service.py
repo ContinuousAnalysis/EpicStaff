@@ -535,6 +535,7 @@ class ConverterService(metaclass=SingletonMeta):
                 route_code=cg.route_code,
                 dock_visible=cg.dock_visible,
                 order=cg.order,
+                field_expressions=cg.field_expressions or {},
             )
             for cg in node.condition_groups.all()
         ]

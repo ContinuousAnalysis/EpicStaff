@@ -76,6 +76,36 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         return Object.entries(p).map(([id, config]) => ({ id, ...config }));
     });
 
+    public preInputMapKeys = computed(() => {
+        if (!this.form) return [];
+        const arr = this.form.get('pre_input_map') as FormArray;
+        if (!arr) return [];
+        return arr.controls
+            .map((ctrl) => ctrl.value?.key?.trim())
+            .filter((k: string) => !!k);
+    });
+
+    public inputMapVariableNames = computed(() => {
+        if (!this.form) return [];
+        const arr = this.form.get('pre_input_map') as FormArray;
+        if (!arr) return [];
+        return arr.controls
+            .map((ctrl) => {
+                const val = (ctrl.value?.value || '').trim();
+                if (val.startsWith('variables.')) {
+                    return val.substring('variables.'.length);
+                }
+                return null;
+            })
+            .filter((k: string | null): k is string => !!k);
+    });
+
+    public domainKeys = computed(() => {
+        const state = this.flowService.startNodeInitialState();
+        if (!state || typeof state !== 'object') return [];
+        return Object.keys(state);
+    });
+
     public get llmConfigOptions(): { id: number; label: string }[] {
         return this.llmConfigs.map(c => ({
             id: c.id,

@@ -5,7 +5,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("tables", "0144_add_leader_end_prompt_to_end_node"),
+        ("tables", "0136_merge_20260126_1313"),
     ]
 
     operations = [

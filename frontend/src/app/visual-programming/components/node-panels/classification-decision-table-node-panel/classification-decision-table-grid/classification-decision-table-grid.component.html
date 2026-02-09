@@ -9,13 +9,66 @@
                 <i class="ti ti-help-circle"></i>
             </span>
         </h3>
-        <app-button
-            type="primary"
-            [leftIcon]="'ui/plus'"
-            (click)="addRow()"
-        >
-            Add Condition
-        </app-button>
+        <div class="grid-header-actions">
+            <div class="field-column-controls">
+                @for (field of activeFieldColumns(); track field) {
+                    <span class="field-chip">
+                        {{ field }}
+                        <i class="ti ti-x field-chip-remove" (click)="removeFieldColumn(field)"></i>
+                    </span>
+                }
+                @for (field of hiddenFieldColumns(); track field) {
+                    <span class="field-chip field-chip--hidden" (click)="addFieldColumn(field)" title="Hidden column (has data) — click to show">
+                        <i class="ti ti-eye-off"></i>
+                        {{ field }}
+                    </span>
+                }
+                <div class="field-picker-wrapper">
+                    <button type="button" class="add-field-btn" (click)="toggleFieldPicker()">
+                        <i class="ti ti-columns-3"></i> Add Field
+                    </button>
+                    @if (showFieldColumnPicker()) {
+                        <div class="field-picker-dropdown">
+                            <input
+                                class="field-search-input"
+                                type="text"
+                                placeholder="Search fields..."
+                                [value]="fieldSearchQuery()"
+                                (input)="fieldSearchQuery.set($any($event.target).value)"
+                                (click)="$event.stopPropagation()"
+                            />
+                            @if (hiddenFieldColumns().length > 0) {
+                                <div class="field-picker-group-label">Hidden</div>
+                                @for (field of hiddenFieldColumns(); track field) {
+                                    <div class="field-picker-item field-picker-item--hidden" (click)="addFieldColumn(field)">
+                                        <i class="ti ti-eye-off"></i> {{ field }}
+                                    </div>
+                                }
+                            }
+                            @if (availableInputMapFields().length > 0) {
+                                <div class="field-picker-group-label">Input Map</div>
+                                @for (field of availableInputMapFields(); track field) {
+                                    <div class="field-picker-item" (click)="addFieldColumn(field)">
+                                        {{ field }}
+                                    </div>
+                                }
+                            }
+                            @if (availableDomainFields().length > 0) {
+                                <div class="field-picker-group-label">Domain</div>
+                                @for (field of availableDomainFields(); track field) {
+                                    <div class="field-picker-item" (click)="addFieldColumn(field)">
+                                        {{ field }}
+                                    </div>
+                                }
+                            }
+                            @if (!hasAvailableFields()) {
+                                <div class="field-picker-empty">No fields available</div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 
     <ag-grid-angular
@@ -30,4 +83,29 @@
         (cellValueChanged)="onCellValueChanged($event)"
     >
     </ag-grid-angular>
+
+    <div class="grid-footer">
+        <app-button
+            type="primary"
+            [leftIcon]="'ui/plus'"
+            (click)="addRow()"
+        >
+            Add Condition
+        </app-button>
+    </div>
+
+    @if (contextMenu()) {
+        <div
+            class="context-menu"
+            [style.left.px]="contextMenu()!.x"
+            [style.top.px]="contextMenu()!.y"
+        >
+            <div class="context-menu-item" (click)="addRowAbove()">
+                <i class="ti ti-row-insert-top"></i> Add Row Above
+            </div>
+            <div class="context-menu-item" (click)="addRowBelow()">
+                <i class="ti ti-row-insert-bottom"></i> Add Row Below
+            </div>
+        </div>
+    }
 </div>
