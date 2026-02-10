@@ -50,7 +50,6 @@ import { RunSessionSSEService } from '../../../run-graph-page/run-graph-page-bod
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { ExtractedChunksMessageComponent } from './components/extracted-chunks/extracted-chunks-message.component';
 import { WarningMessagesComponent } from '../warning-messages/warning-messages.component';
-import { GraphSessionService } from '../../../../features/flows/services/flows-sessions.service';
 
 @Component({
   selector: 'app-graph-messages',
