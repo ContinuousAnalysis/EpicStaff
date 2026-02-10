@@ -1,17 +1,14 @@
-import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 import { NgClass } from "@angular/common";
 import {
-    AfterViewInit,
     ChangeDetectionStrategy,
     Component,
     computed, DestroyRef, inject,
-    input, OnChanges, QueryList, SimpleChanges,
-    ViewChild, ViewChildren, ElementRef
+    input, NgZone, OnChanges, SimpleChanges,
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from "@angular/forms";
-import { SpinnerComponent } from "@shared/components";
 import { MATERIAL_FORMS } from "@shared/material-forms";
+import { take } from "rxjs";
 import { calcLimit } from "../../../helpers/calculate-chunks-fetch-limit.util";
 import {
     DocumentChunkingState,
@@ -30,46 +27,27 @@ interface DisplayedChunk {
     templateUrl: './chunk-preview.component.html',
     styleUrls: ['./chunk-preview.component.scss'],
     imports: [
-        SpinnerComponent,
-        CdkVirtualScrollViewport,
-        CdkFixedSizeVirtualScroll,
-        CdkVirtualForOf,
         NgClass,
         FormsModule,
         MATERIAL_FORMS,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
+export class ChunkPreviewComponent implements OnChanges {
     ragId = input.required<number>();
     docId = input.required<number>();
     chunkingState = input.required<DocumentChunkingState>();
-    blurredChunk: NaiveRagDocumentChunk = {
-        preview_chunk_id: 0,
-        text: 'The policeman on the beat moved up the avenue impressively. The impressiveness was habitual and not for show, for spectators were few. The time was barely 10 o\'clock at night, but chilly gusts of wind with a taste of rain in them had well nigh depeopled the streets.\n' +
-            'Trying doors as he went, twirling his club with many intricate and artful movements, turning now and then to cast his watchful eye adown the pacific thoroughfare, the officer, with his stalwart form and slight swagger, made a fine picture of a guardian of the peace. ',
-        chunk_index: 0,
-        token_count: null,
-        metadata: {},
-        overlap_start_index: null,
-        overlap_end_index: null,
-        created_at: ''
-    };
 
-    @ViewChild('viewport') viewport!: CdkVirtualScrollViewport;
-    @ViewChildren('textContainers') textContainers!: QueryList<ElementRef<HTMLParagraphElement>>;
-
+    private ngZone = inject(NgZone)
     private documentStorageService = inject(NaiveRagDocumentsStorageService);
     private destroyRef = inject(DestroyRef);
 
-    itemSize = 100;
     private limit: number = 0;
     private totalChunks: number = 0;
     private bufferLimit: number = 50;
     private nextOffset: number = 0;
     private prevOffset: number = 0;
     private loading: boolean = false;
-    private anchorChunkIndex: number | null = null;
 
     chunks = computed<DisplayedChunk[]>(() => {
         const state = this.chunkingState();
@@ -95,7 +73,7 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
 
         this.limit = limit;
         this.totalChunks = state.total;
-        this.bufferLimit = limit * 3;
+        this.bufferLimit = limit * 2;
 
         const firstChunkId = state.chunks[0].chunk_index;
         const lastChunkId = state.chunks[state.chunks.length - 1].chunk_index;
@@ -104,72 +82,62 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
         this.nextOffset = lastChunkId;
     }
 
-    ngAfterViewInit() {
-        setTimeout(() => {
-            const elementRefs = this.textContainers.toArray();
-            if (!elementRefs.length) return;
+    onScroll(event: Event) {
+        if (this.loading) return;
+        const el = event.target as HTMLElement;
 
-            const totalHeight = elementRefs.reduce((sum, el) => sum + el.nativeElement.offsetHeight, 0);
+        const scrollTop = el.scrollTop;
+        const scrollHeight = el.scrollHeight;
+        const clientHeight = el.clientHeight;
 
-            this.itemSize = totalHeight / elementRefs.length;
-        })
-    }
+        const thresholdPx = 500;
 
-    onScroll(index: number) {
-        const threshold = Math.max(Math.floor(this.limit * 0.2), 5);
-
-        if (index > this.chunks().length - threshold) {
-            this.loadMoreDown(index);
+        if (scrollTop + clientHeight >= scrollHeight - thresholdPx) {
+            this.loadMoreDown(el);
         }
 
-        if (index < threshold && this.prevOffset >= 0) {
-            this.loadMoreUp(index);
+        if (scrollTop <= thresholdPx) {
+            this.loadMoreUp(el);
         }
     }
 
-    private loadMoreDown(anchorIndex: number) {
+    // Correct scroll position after adding new and removing old items handled in a service
+    private loadMoreDown(container: HTMLElement) {
         if (this.loading || this.nextOffset >= this.totalChunks) return;
         this.loading = true;
-        this.anchorChunkIndex = anchorIndex;
 
-        this.documentStorageService.loadNextChunks(
-            this.ragId(),
-            this.docId(),
-            this.nextOffset,
-            this.limit,
-            this.bufferLimit
-        )
+        this.documentStorageService
+            .loadNextChunks(this.ragId(), this.docId(), this.nextOffset, this.limit, this.bufferLimit)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(({ removedCount, fetchedCount }) => {
-                if (removedCount > 0 && this.anchorChunkIndex !== null) {
-                    this.viewport.scrollToIndex(this.anchorChunkIndex - fetchedCount);
-                }
-                this.anchorChunkIndex = null;
-                this.loading = false;
+            .subscribe(() => {
+                setTimeout(() => {
+                    this.loading = false;
+                }, 500)
             });
     }
 
-    private loadMoreUp(anchorIndex: number) {
-        const firstId = this.chunks()[0].chunkIndex;
+    private loadMoreUp(container: HTMLElement) {
+        const firstChunkId = this.chunks()[0]?.chunkIndex;
+        if (!firstChunkId || firstChunkId <= 1 || this.loading || this.prevOffset < 0) return;
 
-        if (this.loading || this.prevOffset < 0 || firstId <= 1) return;
         this.loading = true;
-        this.anchorChunkIndex = anchorIndex;
 
-        this.documentStorageService.loadPrevChunks(
-            this.ragId(),
-            this.docId(),
-            this.prevOffset,
-            this.limit,
-            this.bufferLimit
-        )
+        const anchorEl = container.querySelector(`[data-chunk-index="${firstChunkId}"]`) as HTMLElement;
+        const containerTop = container.getBoundingClientRect().top;
+        const anchorRelativeTopBefore = anchorEl?.getBoundingClientRect().top - containerTop || 0;
+
+        this.documentStorageService
+            .loadPrevChunks(this.ragId(), this.docId(), this.prevOffset, this.limit, this.bufferLimit)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(({ removedCount, fetchedCount }) => {
-                if (removedCount > 0 && this.anchorChunkIndex !== null) {
-                    this.viewport.scrollToIndex(this.anchorChunkIndex + fetchedCount);
-                }
-                this.anchorChunkIndex = null;
-                this.loading = false;
+            .subscribe(() => {
+                this.ngZone.onStable.pipe(take(1)).subscribe(() => {
+                    const newAnchorEl = container.querySelector(`[data-chunk-index="${firstChunkId}"]`) as HTMLElement;
+                    if (newAnchorEl) {
+                        const anchorRelativeTopAfter = newAnchorEl.getBoundingClientRect().top - containerTop;
+                        container.scrollTop += anchorRelativeTopAfter - anchorRelativeTopBefore;
+                    }
+                    this.loading = false;
+                });
             });
     }
 
@@ -202,9 +170,5 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
                 text,
             };
         });
-    }
-
-    trackByFn(index: number, chunk: DisplayedChunk) {
-        return chunk.chunkIndex;
     }
 }

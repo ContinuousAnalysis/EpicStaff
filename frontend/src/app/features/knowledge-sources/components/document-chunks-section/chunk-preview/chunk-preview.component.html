@@ -1,79 +1,41 @@
-<cdk-virtual-scroll-viewport
-    #viewport
-    [itemSize]="itemSize"
-    class="chunk__viewport"
-    (scrolledIndexChange)="onScroll($event)"
->
+<div class="chunk__items" (scroll)="onScroll($event)">
     <div class="chunk__id-container">
         <!--space area for chunk IDs-->
     </div>
-    <div class="chunk__text-container">
-        <p
-            #textContainers
-            class="chunk__text"
-            *cdkVirtualFor="
-                let chunk of chunks();
-                trackBy: trackByFn;
-                let odd = odd;
-                let f = first;
-                let l = last;
-                let count = count;
-                let i = index
-            "
-        >
-
+    <p
+        class="chunk__text-container"
+    >
+        @for (chunk of chunks(); track chunk.chunkIndex) {
             <span
                 class="chunk__id-item"
-                [style.z-index]="count - i"
-                [ngClass]="odd ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
+                [style.z-index]="$count - $index"
+                [ngClass]="$odd ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
             >
                 {{ chunk.chunkIndex }}
             </span>
             @if (chunk.overlap) {
                 <span
-                    [matTooltip]="'Overlap for chunks ' + chunk.chunkIndex + ' and ' + (chunk.chunkIndex - 1)"
-                    matTooltipPosition="before"
-                    [style.z-index]="count - i"
-                    class="chunk__text-item chunk__text-item--overlap"
+                    [style.z-index]="$count - $index"
+                    class="chunk__item chunk__item--overlap"
+                    [matTooltip]="'Overlap for chunks ' + (chunk.chunkIndex - 1) + ' and ' + chunk.chunkIndex"
                 >{{ chunk.overlap }}</span>
             }
             @if (chunk.text) {
                 <span
+                    class="chunk__item"
+                    [style.z-index]="$count - $index"
                     [matTooltip]="'Chunk ' + chunk.chunkIndex"
-                    class="chunk__text-item"
-                    [style.z-index]="count - i"
+                    [attr.data-chunk-index]="chunk.chunkIndex"
                     [ngClass]="{
-                        'chunk__text-item--odd': odd,
-                        'chunk__text-item--even': !odd,
-                        'chunk__text-item--first': f,
-                        'chunk__text-item--last': l,
-                        'chunk__text-item--single': count === 1,
+                        'chunk__item--odd': $odd,
+                        'chunk__item--even': !$odd,
+                        'chunk__item--first': $first,
+                        'chunk__item--last': $last,
+                        'chunk__item--single': $count === 1,
                     }"
                 >{{ chunk.text }}</span>
             }
-        </p>
-    </div>
-</cdk-virtual-scroll-viewport>
-
-<!--  chunk loader-->
-<!--            @if (hasMore()) {-->
-<!--                <span-->
-<!--                    class="chunk__id-item"-->
-<!--                    [ngClass]="chunks().length % 2 !== 0 ? 'chunk__id-item&#45;&#45;odd' : 'chunk__id-item&#45;&#45;even'"-->
-<!--                >-->
-<!--                    <app-spinner-->
-<!--                        class="chunk__id-spinner"-->
-<!--                        [size]="18"-->
-<!--                        [borderWidth]="2"-->
-<!--                        [borderColor]="'transparent'"-->
-<!--                        [backgroundColor]="'transparent'"-->
-<!--                    />-->
-
-<!--                </span>-->
-<!--                <span-->
-<!--                    class="chunk__item chunk__item&#45;&#45;blurred"-->
-<!--                    [ngClass]="chunks().length % 2 !== 0 ? 'chunk__item&#45;&#45;odd' : 'chunk__item&#45;&#45;even'"-->
-
-<!--                >{{ blurredChunk.text }}</span>-->
-<!--            }-->
+        }
+    </p>
+</div>
 
