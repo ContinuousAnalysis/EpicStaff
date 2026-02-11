@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 import { PromptConfig } from '../../../../../core/models/classification-decision-table.model';
+import { MonacoCellRendererComponent } from '../monaco-cell-renderer/monaco-cell-renderer.component';
 
 interface PromptTooltipParams extends ICellRendererParams {
     prompts: Record<string, PromptConfig>;
@@ -79,6 +80,20 @@ export class PromptTooltipRendererComponent implements ICellRendererAngularComp,
     private tooltipEl: HTMLElement | null = null;
     private hideTimeout: any = null;
     private promptConfig: PromptConfig | null = null;
+    private mouseInsideTooltip = false;
+    private activeTextarea: HTMLTextAreaElement | null = null;
+    private mouseGuard = (e: MouseEvent) => {
+        if (this.activeTextarea && this.tooltipEl && !this.tooltipEl.contains(e.target as Node)) {
+            // User clicked outside — close tooltip and let click through to new target
+            this.removeTooltipNow();
+        }
+    };
+    private focusReclaim = (e: FocusEvent) => {
+        // If focus escapes to something outside the tooltip (not via click), reclaim it
+        if (this.activeTextarea && this.tooltipEl && !this.tooltipEl.contains(e.target as Node)) {
+            this.activeTextarea.focus();
+        }
+    };
 
     agInit(params: PromptTooltipParams): void {
         this.params = params;
@@ -116,6 +131,8 @@ export class PromptTooltipRendererComponent implements ICellRendererAngularComp,
 
         if (!this.value || !this.hasPrompt) return;
         if (this.tooltipEl) return;
+        // Close any active Monaco editor tooltip
+        MonacoCellRendererComponent.closeActiveTooltip();
 
         this.resolvePrompt();
         if (!this.promptConfig) return;
@@ -125,13 +142,35 @@ export class PromptTooltipRendererComponent implements ICellRendererAngularComp,
         tooltip.innerHTML = this.buildTooltipHTML(this.promptConfig);
 
         tooltip.addEventListener('mouseenter', () => {
+            this.mouseInsideTooltip = true;
             if (this.hideTimeout) {
                 clearTimeout(this.hideTimeout);
                 this.hideTimeout = null;
             }
         });
         tooltip.addEventListener('mouseleave', () => {
+            this.mouseInsideTooltip = false;
             this.scheduleHide();
+        });
+        tooltip.addEventListener('focusin', (e: FocusEvent) => {
+            const target = e.target as HTMLElement;
+            if (target?.tagName === 'TEXTAREA') {
+                this.activeTextarea = target as HTMLTextAreaElement;
+                document.addEventListener('mousedown', this.mouseGuard, true);
+                document.addEventListener('focus', this.focusReclaim, true);
+            }
+        });
+        tooltip.addEventListener('focusout', () => {
+            setTimeout(() => {
+                if (!this.tooltipEl?.contains(document.activeElement)) {
+                    this.activeTextarea = null;
+                    document.removeEventListener('mousedown', this.mouseGuard, true);
+                    document.removeEventListener('focus', this.focusReclaim, true);
+                    if (!this.mouseInsideTooltip) {
+                        this.scheduleHide();
+                    }
+                }
+            }, 0);
         });
         tooltip.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -165,6 +204,8 @@ export class PromptTooltipRendererComponent implements ICellRendererAngularComp,
     }
 
     scheduleHide(): void {
+        // Don't hide while a textarea inside the tooltip is focused
+        if (this.tooltipEl?.contains(document.activeElement)) return;
         if (this.hideTimeout) clearTimeout(this.hideTimeout);
         this.hideTimeout = setTimeout(() => {
             this.removeTooltip();
@@ -181,6 +222,9 @@ export class PromptTooltipRendererComponent implements ICellRendererAngularComp,
 
     private removeTooltip(): void {
         if (this.tooltipEl) {
+            this.activeTextarea = null;
+            document.removeEventListener('mousedown', this.mouseGuard, true);
+            document.removeEventListener('focus', this.focusReclaim, true);
             this.tooltipEl.remove();
             this.tooltipEl = null;
         }

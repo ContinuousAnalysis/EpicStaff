@@ -98,6 +98,50 @@ class ClassificationDecisionTableNodeSubgraph:
         data["uuid"] = str(uuid.uuid4())
         self.redis_service.publish("graph:messages", data)
 
+    @staticmethod
+    def _resolve_path(path_expr: str, ctx: dict):
+        """Safely resolve a dot/bracket path expression against a context dict.
+
+        Supports:
+          - dot access:    "variables.chat_id"
+          - bracket access with dynamic key: "variables.shared[variables.chat_id].lease_holder"
+          - direct lookup: "session_id"
+
+        No eval() is used.
+        """
+        import re
+        # Tokenise into dot-segments and bracket-segments
+        # e.g. "variables.shared[variables.chat_id].lease_holder"
+        #   → ["variables", "shared", "[variables.chat_id]", "lease_holder"]
+        tokens: list[str] = []
+        for part in re.split(r'\.(?![^\[]*\])', path_expr):
+            # Split bracket sub-expressions within each part
+            sub = re.split(r'(\[[^\]]+\])', part)
+            for s in sub:
+                if s:
+                    tokens.append(s)
+
+        value = None
+        for i, token in enumerate(tokens):
+            if token.startswith("[") and token.endswith("]"):
+                # Bracket access — resolve the inner expression recursively
+                inner = token[1:-1]
+                key = ClassificationDecisionTableNodeSubgraph._resolve_path(inner, ctx)
+                value = value[key]
+            elif i == 0:
+                # First token — look up in context
+                if token in ctx:
+                    value = ctx[token]
+                else:
+                    raise KeyError(f"'{token}' not found in context")
+            else:
+                # Dot access — try getattr, then [] for dict-like objects
+                try:
+                    value = getattr(value, token)
+                except AttributeError:
+                    value = value[token]
+        return value
+
     def _build_exec_namespace(self, state: State, input_map: dict[str, str] | None = None) -> dict:
         """Build a namespace dict for in-process exec().
 
@@ -122,10 +166,15 @@ class ClassificationDecisionTableNodeSubgraph:
 
         namespace: dict = {}
 
+        # Clear shared-variable caches so we always read fresh from Redis
+        shared = getattr(state["variables"], "shared", None)
+        if shared is not None and hasattr(shared, "_clear_cache"):
+            shared._clear_cache()
+
         if input_map:
             for local_name, path_expr in input_map.items():
                 try:
-                    namespace[local_name] = eval(path_expr, {"__builtins__": {}}, resolve_ctx)
+                    namespace[local_name] = self._resolve_path(path_expr, resolve_ctx)
                 except Exception as e:
                     logger.warning(f"Input map resolve failed for '{local_name}' = '{path_expr}': {e}")
                     namespace[local_name] = None
@@ -173,16 +222,62 @@ class ClassificationDecisionTableNodeSubgraph:
                 f"{label} main() failed: {e}"
             )
 
-        if result is not None and output_variable_path:
-            from src.crew.utils.set_output_variables import set_output_variables
-            set_output_variables(
-                state=state,
-                output_variable_path=output_variable_path,
-                output=result,
-            )
+        if result is not None:
+            # Handle atomic list appends before normal output.
+            # Pre/post computation can return {"shared_append": {access_key: {"var_name": [items]}}}
+            # to atomically append items to shared list variables (avoids read-modify-write races).
+            shared_append = result.pop("shared_append", None)
+            if shared_append and isinstance(shared_append, dict):
+                shared = getattr(state.get("variables", {}), "shared", None)
+                if shared is not None:
+                    for access_key, updates in shared_append.items():
+                        if isinstance(updates, dict):
+                            scope = shared[access_key]
+                            for var_name, items in updates.items():
+                                if isinstance(items, list):
+                                    updated = scope.atomic_list_append(var_name, items)
+                                    logger.info(f"{label} shared_append: {access_key}.{var_name} now has {len(updated)} items")
+                else:
+                    logger.warning(f"{label} shared_append requested but no shared proxy available")
+
+            # Handle atomic claims (SETNX). Returns claim results into the result dict.
+            # Format: {"shared_claim": {access_key: {"var_name": value_or_dict}}}
+            #   value_or_dict can be a plain value (uses default TTL)
+            #   or {"value": X, "ttl": seconds} for custom TTL.
+            # Result: {"claim_results": {"var_name": True/False}}
+            shared_claim = result.pop("shared_claim", None)
+            if shared_claim and isinstance(shared_claim, dict):
+                shared = getattr(state.get("variables", {}), "shared", None)
+                if shared is not None:
+                    claim_results = {}
+                    for access_key, claims in shared_claim.items():
+                        if isinstance(claims, dict):
+                            scope = shared[access_key]
+                            for var_name, raw_value in claims.items():
+                                if isinstance(raw_value, dict) and "value" in raw_value:
+                                    value = raw_value["value"]
+                                    ttl = raw_value.get("ttl")
+                                else:
+                                    value = raw_value
+                                    ttl = None
+                                claimed = scope.claim(var_name, value, ttl=ttl)
+                                claim_results[var_name] = claimed
+                                logger.info(f"{label} shared_claim: {access_key}.{var_name} = {claimed}")
+                    result["claim_results"] = claim_results
+
+            if output_variable_path:
+                from utils.set_output_variables import set_output_variables
+                set_output_variables(
+                    state=state,
+                    output_variable_path=output_variable_path,
+                    output=result,
+                )
 
     async def _execute_pre_computation(self, state: State) -> None:
-        """Execute pre-computation code using main() function pattern."""
+        """Execute pre-computation code using main() function pattern.
+        Supports two-phase execution: if the computation returns needs_rerun=True
+        (e.g. after a shared_append), the shared variable cache is cleared and
+        the computation re-runs so it reads fresh data from Redis."""
         await self._execute_computation(
             code=self.node_data.pre_computation_code,
             input_map=self.node_data.pre_input_map,
@@ -190,6 +285,21 @@ class ClassificationDecisionTableNodeSubgraph:
             state=state,
             label="Pre-computation",
         )
+
+        needs_rerun = getattr(state.get("variables", {}), "needs_rerun", None)
+        logger.info(f"Pre-computation phase 1 done. needs_rerun={needs_rerun}")
+        if needs_rerun:
+            state["variables"]["needs_rerun"] = None
+            shared = getattr(state.get("variables", {}), "shared", None)
+            if shared is not None:
+                shared._clear_cache()
+            await self._execute_computation(
+                code=self.node_data.pre_computation_code,
+                input_map=self.node_data.pre_input_map,
+                output_variable_path=self.node_data.pre_output_variable_path,
+                state=state,
+                label="Pre-computation (rerun)",
+            )
 
     async def _execute_post_computation(self, state: State) -> None:
         """Execute post-computation code using main() function pattern."""
@@ -468,6 +578,12 @@ def main(**kwargs) -> dict:
                     state["system_variables"]["nodes"][self.node_name]["execution_order"] + 1
                 )
 
+            # Also reset route_code in state variables so stale values from
+            # previous passes don't leak into condition group evaluation.
+            route_var = self.node_data.route_variable_name
+            if route_var:
+                state["variables"].update({route_var: None})
+
             input_vars = state["variables"].model_dump()
             if "shared" in input_vars:
                 del input_vars["shared"]
@@ -535,13 +651,13 @@ def main(**kwargs) -> dict:
                         for field_name, field_expr in group.field_expressions.items():
                             if field_expr and field_expr.strip():
                                 expr = field_expr.strip()
-                                if expr.startswith(_operator_prefixes) or expr.startswith(('in ', 'not ')):
+                                if expr.startswith(_operator_prefixes) or expr.startswith(('in ', 'not ', 'is ')):
                                     expr = f"{field_name} {expr}"
-                                elif not any(op in expr for op in ('==', '!=', '>=', '<=', '>', '<', ' in ', ' not ', ' and ', ' or ')):
+                                elif not any(op in expr for op in ('==', '!=', '>=', '<=', '>', '<', ' in ', ' not ', ' is ', ' and ', ' or ')):
                                     expr = f"{field_name} == {expr}"
                                 parts.append(f"({expr})")
-                    if group.expression:
-                        parts.append(f"({group.expression})")
+                    if group.expression and group.expression.strip():
+                        parts.append(f"({group.expression.strip()})")
 
                     combined_expression = " and ".join(parts) if parts else None
 
@@ -587,12 +703,21 @@ def main(**kwargs) -> dict:
                             )
                             self._publish_message(msg)
 
-                    # Step 3: Execute manipulation
+                    # Step 3: Execute manipulation (field_manipulations + main manipulation)
+                    manip_parts = []
+                    if group.field_manipulations:
+                        for var_name, var_expr in group.field_manipulations.items():
+                            if var_expr and var_expr.strip():
+                                manip_parts.append(f"{var_name} = {var_expr.strip()}")
                     if group.manipulation:
+                        manip_parts.append(group.manipulation)
+                    combined_manipulation = "\n".join(manip_parts) if manip_parts else None
+
+                    if combined_manipulation:
                         vars_before = state["variables"].model_dump()
                         if "shared" in vars_before:
                             del vars_before["shared"]
-                        await self._execute_manipulation(group.manipulation, state)
+                        await self._execute_manipulation(combined_manipulation, state)
                         vars_after = state["variables"].model_dump()
                         if "shared" in vars_after:
                             del vars_after["shared"]
@@ -620,6 +745,19 @@ def main(**kwargs) -> dict:
 
                 except ClassificationDecisionTableNodeError as e:
                     error = f"Error in condition '{group.group_name}': {e}"
+                    if self.node_data.expression_errors_as_false:
+                        logger.warning(f"{error} — treating as false (expression_errors_as_false=True)")
+                        msg = self.custom_session_message_writer.add_condition_group_message(
+                            session_id=self.session_id,
+                            node_name=self.node_name,
+                            group_name=group.group_name,
+                            result=False,
+                            writer=writer,
+                            execution_order=self.execution_order(state),
+                            expression=f"ERROR: {e}",
+                        )
+                        self._publish_message(msg)
+                        continue
                     logger.error(error)
                     decision_vars["result_node"] = self.node_data.next_error_node or END
                     msg = self.custom_session_message_writer.add_error_message(

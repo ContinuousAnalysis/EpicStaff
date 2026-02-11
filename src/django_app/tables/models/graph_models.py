@@ -408,6 +408,7 @@ class ClassificationDecisionTableNode(models.Model):
     route_variable_name = models.CharField(max_length=255, default="route_code")
     default_next_node = models.CharField(max_length=255, null=True, default=None)
     next_error_node = models.CharField(max_length=255, null=True, default=None)
+    expression_errors_as_false = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
@@ -433,6 +434,7 @@ class ClassificationConditionGroup(models.Model):
     route_code = models.CharField(max_length=255, null=True, default=None, blank=True)
     dock_visible = models.BooleanField(default=True)
     field_expressions = models.JSONField(default=dict, blank=True)
+    field_manipulations = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["order"]

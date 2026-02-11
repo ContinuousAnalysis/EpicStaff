@@ -2,98 +2,72 @@
     <div class="panel-content">
         @if (form) {
         <form [formGroup]="form" class="form-container">
-            <!-- Tabs -->
+            <!-- Tabs + compact config -->
             <div class="tabs-header">
-                <app-tab-button
-                    [active]="activeTab() === 'table'"
-                    (action)="setActiveTab('table')"
-                >
-                    Decision Table
-                </app-tab-button>
-                <app-tab-button
-                    [active]="activeTab() === 'precomputation'"
-                    (action)="setActiveTab('precomputation')"
-                >
-                    Pre-computation
-                </app-tab-button>
-                <app-tab-button
-                    [active]="activeTab() === 'postcomputation'"
-                    (action)="setActiveTab('postcomputation')"
-                >
-                    Post-computation
-                </app-tab-button>
-                <app-tab-button
-                    [active]="activeTab() === 'prompts'"
-                    (action)="setActiveTab('prompts')"
-                >
-                    Prompt Library
-                </app-tab-button>
+                <div class="tabs-left">
+                    <app-tab-button
+                        [active]="activeTab() === 'table'"
+                        (action)="setActiveTab('table')"
+                    >
+                        Decision Table
+                    </app-tab-button>
+                    <app-tab-button
+                        [active]="activeTab() === 'precomputation'"
+                        (action)="setActiveTab('precomputation')"
+                    >
+                        Pre-computation
+                    </app-tab-button>
+                    <app-tab-button
+                        [active]="activeTab() === 'postcomputation'"
+                        (action)="setActiveTab('postcomputation')"
+                    >
+                        Post-computation
+                    </app-tab-button>
+                    <app-tab-button
+                        [active]="activeTab() === 'prompts'"
+                        (action)="setActiveTab('prompts')"
+                    >
+                        Prompt Library
+                    </app-tab-button>
+                </div>
+                <div class="tabs-right">
+                    <div class="inline-field">
+                        <label title="The unique identifier used to reference this decision table node.">Name</label>
+                        <input type="text" formControlName="node_name" placeholder="node name" class="inline-input" />
+                    </div>
+                    <div class="inline-field">
+                        <label title="Variable name in scope that holds the route code after evaluation.">Route Var</label>
+                        <input type="text" formControlName="route_variable_name" placeholder="route_code" class="inline-input" />
+                    </div>
+                    <div class="inline-field">
+                        <label title="Fallback route when no condition matches">Default</label>
+                        <select formControlName="default_next_node" class="inline-select">
+                            <option value="">—</option>
+                            @for (node of availableNodes(); track node.value) {
+                            <option [value]="node.value">{{ node.label }}</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="inline-field">
+                        <label title="Route taken if decision evaluation fails">Error</label>
+                        <select formControlName="next_error_node" class="inline-select">
+                            <option value="">—</option>
+                            @for (node of availableNodes(); track node.value) {
+                            <option [value]="node.value">{{ node.label }}</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="inline-field inline-checkbox">
+                        <label title="When enabled, expression errors are treated as false instead of aborting">
+                            <input type="checkbox" formControlName="expression_errors_as_false" />
+                            Errors → false
+                        </label>
+                    </div>
+                </div>
             </div>
 
             <!-- Decision Table Tab -->
             @if (activeTab() === 'table') {
-            <div class="form-header">
-                <app-custom-input
-                    label="Node Name"
-                    tooltipText="The unique identifier used to reference this decision table node."
-                    icon="ti ti-help-circle"
-                    formControlName="node_name"
-                    placeholder="Enter node name"
-                    [activeColor]="activeColor"
-                    [errorMessage]="getNodeNameErrorMessage()"
-                ></app-custom-input>
-
-                <app-custom-input
-                    label="Route Variable"
-                    tooltipText="Variable name in scope that holds the route code after evaluation."
-                    icon="ti ti-help-circle"
-                    formControlName="route_variable_name"
-                    placeholder="route_code"
-                    [activeColor]="activeColor"
-                ></app-custom-input>
-
-                <div class="select-wrapper">
-                    <label>
-                        Default Route
-                        <span
-                            class="tooltip-icon"
-                            title="Fallback route when no condition matches"
-                        >
-                            <i class="ti ti-help-circle"></i>
-                        </span>
-                    </label>
-                    <select
-                        formControlName="default_next_node"
-                        class="node-select"
-                    >
-                        <option value="">-- Select Node --</option>
-                        @for (node of availableNodes(); track node.value) {
-                        <option [value]="node.value">{{ node.label }}</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="select-wrapper">
-                    <label>
-                        Error Route
-                        <span
-                            class="tooltip-icon"
-                            title="Route taken if decision evaluation fails"
-                        >
-                            <i class="ti ti-help-circle"></i>
-                        </span>
-                    </label>
-                    <select
-                        formControlName="next_error_node"
-                        class="node-select"
-                    >
-                        <option value="">-- Select Node --</option>
-                        @for (node of availableNodes(); track node.value) {
-                        <option [value]="node.value">{{ node.label }}</option>
-                        }
-                    </select>
-                </div>
-            </div>
 
             <div class="grid-section">
                 <app-classification-decision-table-grid

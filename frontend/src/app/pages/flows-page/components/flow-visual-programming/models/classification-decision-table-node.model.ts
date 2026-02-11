@@ -10,6 +10,7 @@ export interface ClassificationConditionGroupBackend {
     route_code: string | null;
     dock_visible: boolean;
     field_expressions: Record<string, string>;
+    field_manipulations: Record<string, string>;
 }
 
 export interface CreateClassificationConditionGroupRequest {
@@ -22,6 +23,7 @@ export interface CreateClassificationConditionGroupRequest {
     route_code: string | null;
     dock_visible: boolean;
     field_expressions: Record<string, string>;
+    field_manipulations: Record<string, string>;
 }
 
 export interface GetClassificationDecisionTableNodeRequest {
@@ -34,6 +36,7 @@ export interface GetClassificationDecisionTableNodeRequest {
     default_next_node: string | null;
     next_error_node: string | null;
     condition_groups: ClassificationConditionGroupBackend[];
+    expression_errors_as_false: boolean;
 }
 
 export interface CreateClassificationDecisionTableNodeRequest {
@@ -50,4 +53,5 @@ export interface CreateClassificationDecisionTableNodeRequest {
     default_next_node: string | null;
     next_error_node: string | null;
     condition_groups: CreateClassificationConditionGroupRequest[];
+    expression_errors_as_false: boolean;
 }

@@ -80,8 +80,6 @@ import {
     TelegramTriggerNodeService
 } from "../../../pages/flows-page/components/flow-visual-programming/services/telegram-trigger-node.service";
 import {
-    CreateClassificationConditionGroupRequest,
-    CreateClassificationDecisionTableNodeRequest,
     GetClassificationDecisionTableNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/classification-decision-table-node.model';
 import {
@@ -582,6 +580,30 @@ export class GraphUpdateService {
                             .createEdge(payload)
                             .pipe(catchError((err) => throwError(err)));
                     });
+                // Add edges to __end__ for terminal nodes (no outgoing connections)
+                const nodesWithOutgoing = new Set(
+                    flowState.connections.map((c: ConnectionModel) => c.sourceNodeId)
+                );
+                const skipTypes = new Set([
+                    NodeType.END, NodeType.START, NodeType.EDGE,
+                    NodeType.TABLE, NodeType.CLASSIFICATION_TABLE,
+                    NodeType.WEBHOOK_TRIGGER, NodeType.TELEGRAM_TRIGGER,
+                    NodeType.NOTE,
+                ]);
+                const endNode = flowState.nodes.find((n) => n.type === NodeType.END);
+                const endKey = endNode ? endNode.node_name : '__end__';
+                flowState.nodes
+                    .filter((n) => !nodesWithOutgoing.has(n.id) && !skipTypes.has(n.type))
+                    .forEach((n) => {
+                        edgeRequests.push(
+                            this.edgeService.createEdge({
+                                start_key: n.node_name,
+                                end_key: endKey,
+                                graph: graph.id,
+                            }).pipe(catchError((err) => throwError(err)))
+                        );
+                    });
+
                 return edgeRequests.length ? forkJoin(edgeRequests) : of([]);
             })
         );
@@ -662,8 +684,6 @@ export class GraphUpdateService {
                 );
 
                 const requests = classificationDTNodes.map((node) => {
-                    const tableData = (node as any).data?.table;
-
                     const resolveNodeName = (idOrName: string | null): string | null => {
                         if (!idOrName) return null;
                         const targetNode = flowState.nodes.find((n) => n.id === idOrName);
@@ -671,44 +691,8 @@ export class GraphUpdateService {
                         return idOrName;
                     };
 
-                    const conditionGroups: CreateClassificationConditionGroupRequest[] = (
-                        tableData?.condition_groups || []
-                    )
-                        .sort(
-                            (a: any, b: any) =>
-                                (a.order ?? Number.MAX_SAFE_INTEGER) -
-                                (b.order ?? Number.MAX_SAFE_INTEGER)
-                        )
-                        .map((group: any, index: number) => ({
-                            group_name: group.group_name,
-                            order: typeof group.order === 'number' ? group.order : index + 1,
-                            expression: group.expression || null,
-                            prompt_id: group.prompt_id || null,
-                            manipulation: group.manipulation || null,
-                            continue_flag: !!(group.continue_flag ?? group.continue),
-                            route_code: group.route_code || null,
-                            dock_visible: group.dock_visible !== false,
-                            field_expressions: group.field_expressions || {},
-                        }));
-
-                    const preComp = tableData?.pre_computation || {};
-                    const postComp = tableData?.post_computation || {};
-
-                    const payload: CreateClassificationDecisionTableNodeRequest = {
-                        graph: graph.id,
-                        node_name: node.node_name,
-                        pre_computation_code: tableData?.pre_computation_code || preComp.code || null,
-                        pre_input_map: preComp.input_map || tableData?.pre_input_map || null,
-                        pre_output_variable_path: preComp.output_variable_path || tableData?.pre_output_variable_path || null,
-                        post_computation_code: tableData?.post_computation_code || postComp.code || null,
-                        post_input_map: postComp.input_map || tableData?.post_input_map || null,
-                        post_output_variable_path: postComp.output_variable_path || tableData?.post_output_variable_path || null,
-                        prompts: tableData?.prompts || {},
-                        route_variable_name: tableData?.route_variable_name || 'route_code',
-                        default_next_node: resolveNodeName(tableData?.default_next_node),
-                        next_error_node: resolveNodeName(tableData?.next_error_node),
-                        condition_groups: conditionGroups,
-                    };
+                    const payload = this.classificationDecisionTableNodeService
+                        .buildCreatePayload(graph.id, node, resolveNodeName);
 
                     return this.classificationDecisionTableNodeService
                         .createNode(payload)

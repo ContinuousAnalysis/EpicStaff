@@ -204,6 +204,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
             default_next_node: [defaultNext],
             next_error_node: [errorNext],
             default_llm_id: [tableData.default_llm_id || null],
+            expression_errors_as_false: [tableData.expression_errors_as_false ?? false],
         });
 
         this.initializeInputMapArray(form, 'pre_input_map', preComp.input_map || {});
@@ -241,6 +242,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
             default_next_node: this.form.value.default_next_node,
             next_error_node: this.form.value.next_error_node,
             default_llm_id: this.form.value.default_llm_id || null,
+            expression_errors_as_false: this.form.value.expression_errors_as_false ?? false,
             prompts: { ...this.prompts() },
         };
 

@@ -12,20 +12,21 @@
         <div class="grid-header-actions">
             <div class="field-column-controls">
                 @for (field of activeFieldColumns(); track field) {
-                    <span class="field-chip">
+                    <span class="field-chip field-chip--expr">
+                        <span class="field-chip-prefix">E</span>
                         {{ field }}
                         <i class="ti ti-x field-chip-remove" (click)="removeFieldColumn(field)"></i>
                     </span>
                 }
                 @for (field of hiddenFieldColumns(); track field) {
-                    <span class="field-chip field-chip--hidden" (click)="addFieldColumn(field)" title="Hidden column (has data) — click to show">
+                    <span class="field-chip field-chip--expr field-chip--hidden" (click)="addFieldColumn(field)" title="Hidden expression column (has data) — click to show">
                         <i class="ti ti-eye-off"></i>
                         {{ field }}
                     </span>
                 }
                 <div class="field-picker-wrapper">
-                    <button type="button" class="add-field-btn" (click)="toggleFieldPicker()">
-                        <i class="ti ti-columns-3"></i> Add Field
+                    <button type="button" class="add-field-btn add-field-btn--expr" (click)="toggleFieldPicker()">
+                        <i class="ti ti-columns-3"></i> Add Expr Field
                     </button>
                     @if (showFieldColumnPicker()) {
                         <div class="field-picker-dropdown">
@@ -40,7 +41,7 @@
                             @if (hiddenFieldColumns().length > 0) {
                                 <div class="field-picker-group-label">Hidden</div>
                                 @for (field of hiddenFieldColumns(); track field) {
-                                    <div class="field-picker-item field-picker-item--hidden" (click)="addFieldColumn(field)">
+                                    <div class="field-picker-item field-picker-item--hidden" (click)="addFieldColumn(field); $event.stopPropagation()">
                                         <i class="ti ti-eye-off"></i> {{ field }}
                                     </div>
                                 }
@@ -48,7 +49,7 @@
                             @if (availableInputMapFields().length > 0) {
                                 <div class="field-picker-group-label">Input Map</div>
                                 @for (field of availableInputMapFields(); track field) {
-                                    <div class="field-picker-item" (click)="addFieldColumn(field)">
+                                    <div class="field-picker-item" (click)="addFieldColumn(field); $event.stopPropagation()">
                                         {{ field }}
                                     </div>
                                 }
@@ -56,12 +57,70 @@
                             @if (availableDomainFields().length > 0) {
                                 <div class="field-picker-group-label">Domain</div>
                                 @for (field of availableDomainFields(); track field) {
-                                    <div class="field-picker-item" (click)="addFieldColumn(field)">
+                                    <div class="field-picker-item" (click)="addFieldColumn(field); $event.stopPropagation()">
                                         {{ field }}
                                     </div>
                                 }
                             }
                             @if (!hasAvailableFields()) {
+                                <div class="field-picker-empty">No fields available</div>
+                            }
+                        </div>
+                    }
+                </div>
+                <span class="field-controls-divider"></span>
+                @for (field of activeManipFieldColumns(); track field) {
+                    <span class="field-chip field-chip--manip">
+                        <span class="field-chip-prefix">M</span>
+                        {{ field }}
+                        <i class="ti ti-x field-chip-remove" (click)="removeManipFieldColumn(field)"></i>
+                    </span>
+                }
+                @for (field of hiddenManipFieldColumns(); track field) {
+                    <span class="field-chip field-chip--manip field-chip--hidden" (click)="addManipFieldColumn(field)" title="Hidden manipulation column (has data) — click to show">
+                        <i class="ti ti-eye-off"></i>
+                        {{ field }}
+                    </span>
+                }
+                <div class="field-picker-wrapper">
+                    <button type="button" class="add-field-btn add-field-btn--manip" (click)="toggleManipFieldPicker()">
+                        <i class="ti ti-columns-3"></i> Add Manip Field
+                    </button>
+                    @if (showManipFieldPicker()) {
+                        <div class="field-picker-dropdown">
+                            <input
+                                class="field-search-input"
+                                type="text"
+                                placeholder="Search fields..."
+                                [value]="manipFieldSearchQuery()"
+                                (input)="manipFieldSearchQuery.set($any($event.target).value)"
+                                (click)="$event.stopPropagation()"
+                            />
+                            @if (hiddenManipFieldColumns().length > 0) {
+                                <div class="field-picker-group-label">Hidden</div>
+                                @for (field of hiddenManipFieldColumns(); track field) {
+                                    <div class="field-picker-item field-picker-item--hidden" (click)="addManipFieldColumn(field); $event.stopPropagation()">
+                                        <i class="ti ti-eye-off"></i> {{ field }}
+                                    </div>
+                                }
+                            }
+                            @if (availableManipInputMapFields().length > 0) {
+                                <div class="field-picker-group-label">Input Map</div>
+                                @for (field of availableManipInputMapFields(); track field) {
+                                    <div class="field-picker-item" (click)="addManipFieldColumn(field); $event.stopPropagation()">
+                                        {{ field }}
+                                    </div>
+                                }
+                            }
+                            @if (availableManipDomainFields().length > 0) {
+                                <div class="field-picker-group-label">Domain</div>
+                                @for (field of availableManipDomainFields(); track field) {
+                                    <div class="field-picker-item" (click)="addManipFieldColumn(field); $event.stopPropagation()">
+                                        {{ field }}
+                                    </div>
+                                }
+                            }
+                            @if (!hasAvailableManipFields()) {
                                 <div class="field-picker-empty">No fields available</div>
                             }
                         </div>

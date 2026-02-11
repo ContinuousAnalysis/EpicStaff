@@ -415,9 +415,12 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
                 prev_session_vars = message.message_data["state"]["variables"]
                 logger.info(f"prev_session_var: {prev_session_vars}")
+                # Merge: previous session vars as base, incoming trigger vars override
+                if variables:
+                    prev_session_vars.update(variables)
                 variables = prev_session_vars
                 logger.info(
-                    f"Variables from previous session are set to current run: {variables}"
+                    f"Variables from previous session merged with trigger vars: {list(variables.keys())}"
                 )
             except Exception as e:
                 logger.error(

@@ -102,6 +102,20 @@ function ensureMonacoLoaded(): Promise<void> {
     encapsulation: ViewEncapsulation.None,
 })
 export class MonacoCellRendererComponent implements ICellRendererAngularComp, AfterViewInit, OnDestroy {
+    private static activeInstance: MonacoCellRendererComponent | null = null;
+
+    static closeActiveTooltip(): void {
+        if (MonacoCellRendererComponent.activeInstance) {
+            MonacoCellRendererComponent.activeInstance.removeTooltipNow();
+        }
+    }
+
+    private static isAnyEditorActive(): boolean {
+        const active = document.activeElement;
+        if (!active || active === document.body) return false;
+        return !!(active.closest('.code-tooltip-popover') || active.closest('.prompt-tooltip-popover'));
+    }
+
     @ViewChild('codeContainer', { static: true }) codeContainer!: ElementRef<HTMLDivElement>;
 
     private cdr = inject(ChangeDetectorRef);
@@ -117,7 +131,9 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
     private editorInstance: any = null;
     private singleLine = false;
     private pendingValue: string | null = null;
-    private readonlyTooltip = false;
+    private hasPendingEdit = false;
+    private clickOpened = false;
+    private clickAwayHandler: ((e: MouseEvent) => void) | null = null;
 
     agInit(params: ICellRendererParams): void {
         this.params = params;
@@ -150,14 +166,21 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
     }
 
     onMouseEnter(event: MouseEvent): void {
-        if (!this.singleLine && this.value) {
-            this.showTooltip(event);
+        // Don't open hover tooltip if any editor is actively being used
+        if (MonacoCellRendererComponent.isAnyEditorActive()) return;
+        if (this.value) {
+            this.showTooltip(event, false);
         }
     }
 
     onCellClick(event: MouseEvent): void {
-        if (this.singleLine || !this.value) {
-            this.showTooltip(event);
+        if (this.tooltipEl && !this.clickOpened) {
+            // Upgrade hover tooltip to click-opened (pinned)
+            this.clickOpened = true;
+            return;
+        }
+        if (!this.tooltipEl) {
+            this.showTooltip(event, true);
         }
     }
 
@@ -168,12 +191,18 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         return rowSpan > 1;
     }
 
-    showTooltip(event: MouseEvent): void {
+    showTooltip(event: MouseEvent, clickOpened = false): void {
         if (this.hideTimeout) {
             clearTimeout(this.hideTimeout);
             this.hideTimeout = null;
         }
         if (this.tooltipEl) return;
+        // Close any other active tooltip before opening a new one
+        if (clickOpened && MonacoCellRendererComponent.activeInstance && MonacoCellRendererComponent.activeInstance !== this) {
+            MonacoCellRendererComponent.activeInstance.removeTooltipNow();
+        }
+        // Block new hover tooltips if any editor is actively being used
+        if (!clickOpened && MonacoCellRendererComponent.isAnyEditorActive()) return;
 
         const monaco = (window as any).monaco;
         if (!monaco?.editor?.create) return;
@@ -185,16 +214,37 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         editorContainer.className = 'ctp-editor-container';
         tooltip.appendChild(editorContainer);
 
-        tooltip.addEventListener('mouseenter', () => {
-            if (this.hideTimeout) {
-                clearTimeout(this.hideTimeout);
-                this.hideTimeout = null;
-            }
-        });
-        tooltip.addEventListener('mouseleave', () => this.scheduleHide());
+        // Merged cells get a readonly tooltip
+        const merged = this.isCellMerged();
+        this.clickOpened = clickOpened;
+
+        if (!clickOpened) {
+            // Hover-opened: close on mouseleave, but pin on click (edit)
+            tooltip.addEventListener('mouseenter', () => {
+                if (this.hideTimeout) {
+                    clearTimeout(this.hideTimeout);
+                    this.hideTimeout = null;
+                }
+            });
+            tooltip.addEventListener('mouseleave', () => this.scheduleHide());
+            tooltip.addEventListener('mousedown', () => {
+                if (!this.clickOpened) {
+                    this.clickOpened = true;
+                    setTimeout(() => {
+                        this.clickAwayHandler = (e: MouseEvent) => {
+                            if (this.tooltipEl && !this.tooltipEl.contains(e.target as Node)) {
+                                this.removeTooltipNow();
+                            }
+                        };
+                        document.addEventListener('mousedown', this.clickAwayHandler);
+                    });
+                }
+            });
+        }
 
         document.body.appendChild(tooltip);
         this.tooltipEl = tooltip;
+        MonacoCellRendererComponent.activeInstance = this;
 
         // Measure actual text position inside the cell
         const agCell = this.elRef.nativeElement.closest('.ag-cell');
@@ -235,9 +285,6 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         editorContainer.style.width = `${editorWidth}px`;
         editorContainer.style.height = `${editorHeight}px`;
 
-        // Merged cells get a readonly tooltip
-        const merged = this.isCellMerged();
-
         // Create Monaco editor
         const editor = monaco.editor.create(editorContainer, {
             value: this.value,
@@ -254,7 +301,7 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
             overviewRulerBorder: false,
-            scrollbar: { vertical: 'hidden', horizontal: 'auto', useShadows: false },
+            scrollbar: { vertical: 'auto', horizontal: 'auto', useShadows: false, verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
             fontSize: 12,
             fontFamily: "'Menlo', 'Monaco', 'Courier New', monospace",
             lineHeight: monacoLineHeight,
@@ -287,12 +334,11 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
             }
         });
 
-        this.readonlyTooltip = merged;
-
         // Track changes but don't save until tooltip closes
         if (!merged) {
             editor.onDidChangeModelContent(() => {
-                this.pendingValue = editor.getValue() || null;
+                this.pendingValue = editor.getValue();
+                this.hasPendingEdit = true;
             });
         }
 
@@ -303,6 +349,18 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         }
         if (tooltipRect.bottom > window.innerHeight - 8) {
             tooltip.style.top = `${window.innerHeight - tooltipRect.height - 8}px`;
+        }
+
+        // Click-opened: close on click-away
+        if (clickOpened) {
+            setTimeout(() => {
+                this.clickAwayHandler = (e: MouseEvent) => {
+                    if (this.tooltipEl && !this.tooltipEl.contains(e.target as Node)) {
+                        this.removeTooltipNow();
+                    }
+                };
+                document.addEventListener('mousedown', this.clickAwayHandler);
+            });
         }
 
         // Focus editor and place cursor at approximate click position
@@ -318,6 +376,24 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
     }
 
     scheduleHide(): void {
+        // Click-opened tooltips don't auto-hide on mouseleave
+        if (this.clickOpened) return;
+        // Don't hide while the editor inside has focus (user is typing)
+        if (this.tooltipEl?.contains(document.activeElement)) {
+            // Auto-pin: user is actively editing, treat as click-opened
+            this.clickOpened = true;
+            setTimeout(() => {
+                if (!this.clickAwayHandler) {
+                    this.clickAwayHandler = (e: MouseEvent) => {
+                        if (this.tooltipEl && !this.tooltipEl.contains(e.target as Node)) {
+                            this.removeTooltipNow();
+                        }
+                    };
+                    document.addEventListener('mousedown', this.clickAwayHandler);
+                }
+            });
+            return;
+        }
         if (this.hideTimeout) clearTimeout(this.hideTimeout);
         this.hideTimeout = setTimeout(() => this.removeTooltip(), 200);
     }
@@ -331,11 +407,19 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
     }
 
     private removeTooltip(): void {
+        if (MonacoCellRendererComponent.activeInstance === this) {
+            MonacoCellRendererComponent.activeInstance = null;
+        }
         // Save pending value before destroying (skip for readonly)
-        if (this.pendingValue !== null && !this.readonlyTooltip) {
-            const val = this.pendingValue;
+        if (this.hasPendingEdit) {
+            const val = this.pendingValue ?? '';
             this.pendingValue = null;
+            this.hasPendingEdit = false;
             this.params.node.setDataValue(this.params.column!, val);
+        }
+        if (this.clickAwayHandler) {
+            document.removeEventListener('mousedown', this.clickAwayHandler);
+            this.clickAwayHandler = null;
         }
         if (this.editorInstance) {
             this.editorInstance.dispose();

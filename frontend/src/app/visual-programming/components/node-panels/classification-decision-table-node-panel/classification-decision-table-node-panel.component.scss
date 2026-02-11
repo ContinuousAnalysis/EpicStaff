@@ -31,10 +31,85 @@
 
 .tabs-header {
     display: flex;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem 0 1.5rem;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0.75rem 1rem 0 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
+    gap: 0.75rem;
+
+    .tabs-left {
+        display: flex;
+        gap: 0.25rem;
+        flex-shrink: 0;
+    }
+
+    .tabs-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        padding-bottom: 0.4rem;
+    }
+}
+
+.inline-field {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+
+    label {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 0.7rem;
+        font-weight: 500;
+        white-space: nowrap;
+        cursor: help;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+}
+
+.inline-input {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #d4d4d4;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.78rem;
+    width: 100px;
+    outline: none;
+    transition: border-color 0.15s ease;
+
+    &:focus {
+        border-color: #685fff;
+    }
+
+    &::placeholder {
+        color: rgba(255, 255, 255, 0.25);
+    }
+}
+
+.inline-select {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #d4d4d4;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.78rem;
+    max-width: 120px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+
+    &:focus {
+        border-color: #685fff;
+    }
+
+    option {
+        background: #1a1a1a;
+        color: #ffffff;
+    }
 }
 
 .tab-btn {

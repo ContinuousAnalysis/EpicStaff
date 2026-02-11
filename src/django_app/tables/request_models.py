@@ -344,6 +344,7 @@ class ClassificationConditionGroupData(BaseModel):
     dock_visible: bool = True
     order: int = 0
     field_expressions: dict[str, str] = {}
+    field_manipulations: dict[str, str] = {}
 
 
 class ClassificationDecisionTableNodeData(BaseModel):
@@ -360,6 +361,7 @@ class ClassificationDecisionTableNodeData(BaseModel):
     route_map: dict[str, str] = {}
     default_next_node: str | None = None
     next_error_node: str | None = None
+    expression_errors_as_false: bool = False
 
 
 class EndNodeData(BaseModel):

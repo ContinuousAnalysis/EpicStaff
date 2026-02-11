@@ -536,6 +536,7 @@ class ConverterService(metaclass=SingletonMeta):
                 dock_visible=cg.dock_visible,
                 order=cg.order,
                 field_expressions=cg.field_expressions or {},
+                field_manipulations=cg.field_manipulations or {},
             )
             for cg in node.condition_groups.all()
         ]
@@ -600,6 +601,7 @@ class ConverterService(metaclass=SingletonMeta):
             route_variable_name=node.route_variable_name,
             default_next_node=node.default_next_node,
             next_error_node=node.next_error_node,
+            expression_errors_as_false=node.expression_errors_as_false,
         )
 
     def convert_decision_table_node_to_pydantic(

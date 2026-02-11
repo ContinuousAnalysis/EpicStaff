@@ -17,6 +17,7 @@ export interface ClassificationDecisionTableData {
     default_next_node: string | null;
     next_error_node: string | null;
     default_llm_id?: number | null;
+    expression_errors_as_false?: boolean;
     prompts?: Record<string, PromptConfig>;
     output_variables?: OutputVariableMapping[];
 }
