@@ -266,3 +266,7 @@ knowledge/graph_data/
 **/knowledge_migration_backup/
 *.pem
 *.crt
+
+
+# git log --pretty=format:"%h %s%n%b%n" --patch --no-merges from..to
+changes.txt
