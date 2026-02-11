@@ -76,6 +76,8 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
+      webhook:
+        condition: service_started
   
     healthcheck:
       test: >
@@ -277,10 +279,10 @@ services:
     tty: true
     stdin_open: true
     depends_on:
-      crewdb:
-        condition: service_healthy
       redis:
         condition: service_healthy
+      sandbox:
+        condition: service_started
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -349,8 +351,8 @@ services:
       dockerfile: Dockerfile.fe
     container_name: epicstaff-frontend
     environment:
-      - API_URL:${API_URL}
-      - REALTIME_API_URL:${REALTIME_API_URL}
+      - API_URL=${API_URL}
+      - REALTIME_API_URL=${REALTIME_API_URL}
     networks:
      - frontend-network
 
@@ -374,8 +376,16 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}  
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:${WEBHOOK_PORT:-8051}/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+      
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - backend-network
 volumes:

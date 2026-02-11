@@ -60,6 +60,7 @@ from tables.views.views import (
     InitRealtimeAPIView,
     RegisterTelegramTriggerApiView,
     ProcessRagIndexingView,
+    RegisterWebhooksApiView,
     RunPythonCodeAPIView,
     TelegramTriggerNodeAvailableFieldsView,
     ToolListRetrieveUpdateGenericViewSet,
@@ -323,4 +324,9 @@ urlpatterns = [
         RegisterTelegramTriggerApiView.as_view(),
         name="register-telegram-trigger",
     ),
+    path(
+        "register-webhooks/",
+        RegisterWebhooksApiView.as_view(),
+        name="register-webhooks",
+    )
 ]

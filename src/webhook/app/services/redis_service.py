@@ -1,7 +1,7 @@
 import os
 from loguru import logger
 import redis.asyncio as aioredis
-from app.core.config import settings
+from app.core.settings import settings
 from typing import Dict, Any, Optional
 from redis.client import PubSub
 
@@ -41,26 +41,28 @@ class RedisService:
         return pubsub
 
 
-_redis_client: Optional[RedisService] = None
+_redis_service: Optional[RedisService] = None
 
 
 async def get_redis_service() -> RedisService:
     """FastAPI dependency to get the singleton RedisService."""
-    global _redis_client
+    global _redis_service
     WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
-    if _redis_client is None:
-        _redis_client = RedisService(
+    if _redis_service is None:
+        _redis_service = RedisService(
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,
             password=settings.REDIS_PASSWORD,
             webhook_channel=WEBHOOK_MESSAGE_CHANNEL,
         )
-    return _redis_client
+        _redis_service
+        
+    return _redis_service
 
 
 async def close_redis_connection():
     """Event handler to cleanly close the connection on shutdown."""
-    global _redis_client
-    if _redis_client:
-        await _redis_client.close()
-        _redis_client = None
+    global _redis_service
+    if _redis_service:
+        await _redis_service.close()
+        _redis_service = None

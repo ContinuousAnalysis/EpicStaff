@@ -1,7 +1,7 @@
 from django.core.validators import RegexValidator
 from django.db import models
 
-
+    
 class NgrokWebhookConfig(models.Model):
     class Region(models.TextChoices):
         US = ("us",)
@@ -13,8 +13,8 @@ class NgrokWebhookConfig(models.Model):
         unique=True,
     )
 
-    authtoken = models.CharField(
-        max_length=255, help_text="Token from dashboard.ngrok.com"
+    auth_token = models.CharField(
+        max_length=255, help_text="Token from dashboard.ngrok.com", unique=True
     )
 
     domain = models.CharField(

@@ -16,31 +16,18 @@ else:
 
 
 class Settings(BaseSettings):
-    USE_TUNNEL: bool = False
     WEBHOOK_TUNNEL: Optional[str] = None
     WEBHOOK_AUTH: Optional[str] = None
     NGROK_DOMAIN: Optional[str] = None
     WEBHOOK_PORT: int = 8009
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
-    REDIS_PASSWORD: str
+    REDIS_PASSWORD: str = "redis_password"
+    REDIS_TUNNEL_CONFIG_CHANNEL: str = "REDIS_TUNNEL_CONFIG_CHANNEL"
+    WEBHOOK_TUNNEL_RECONNECT_TIMEOUT: int = 10
+    LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(**config_dict)
-
-    @model_validator(mode="after")
-    def check_tunnel_config(self) -> "Settings":
-        if self.USE_TUNNEL:
-            if not self.WEBHOOK_TUNNEL:
-                raise ValueError(
-                    "Configuration error: USE_TUNNEL is True, "
-                    "but WEBHOOK_TUNNEL is not set."
-                )
-            if not self.WEBHOOK_AUTH:
-                raise ValueError(
-                    f"Configuration error for provider '{self.WEBHOOK_TUNNEL}': "
-                    "USE_TUNNEL is True, but WEBHOOK_AUTH (the auth token) is not set."
-                )
-        return self
 
 
 try:

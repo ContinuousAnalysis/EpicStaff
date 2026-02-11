@@ -1,10 +1,12 @@
+from loguru import logger
 from rest_framework import serializers
 from tables.models import (
-    TelegramTriggerNode, 
-    TelegramTriggerNodeField, 
-    WebhookTrigger, 
-    NgrokWebhookConfig
+    TelegramTriggerNode,
+    TelegramTriggerNodeField,
+    WebhookTrigger,
+    NgrokWebhookConfig,
 )
+
 
 class TelegramTriggerNodeFieldSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,16 +21,6 @@ class TelegramTriggerNodeFieldSerializer(serializers.ModelSerializer):
 
 class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
     fields = TelegramTriggerNodeFieldSerializer(many=True)
-    
-    # write_only
-    ngrok_webhook_config_id = serializers.PrimaryKeyRelatedField(
-        queryset=NgrokWebhookConfig.objects.all(),
-        required=False,
-        allow_null=True,
-        write_only=True,
-    )
-
-    # read_only
     webhook_full_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -39,30 +31,29 @@ class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
             "telegram_bot_api_key",
             "graph",
             "fields",
-            "ngrok_webhook_config_id",
+            "webhook_trigger",
             "webhook_full_url",
         ]
 
-    def get_webhook_full_url(self, instance):
-        if instance.webhook_trigger and hasattr(instance.webhook_trigger, 'ngrok_webhook_config'):
-            config = instance.webhook_trigger.ngrok_webhook_config
-            if config and config.domain:
-                return f"https://{config.domain}/{instance.webhook_trigger.path}/"
+
+    def get_webhook_full_url(self, instance: TelegramTriggerNode):
+        from tables.services.webhook_trigger_service import WebhookTriggerService
+        webhook_trigger = instance.webhook_trigger
+        if webhook_trigger is None:
+            return None
+        
+        if hasattr(webhook_trigger, "ngrok_webhook_config") and webhook_trigger.ngrok_webhook_config is not None:
+            try:
+                return WebhookTriggerService().get_tunnel_url(webhook_trigger=webhook_trigger)
+            except Exception as e:
+                logger.exception()
         return None
 
     def create(self, validated_data):
         fields_data = validated_data.pop("fields", [])
-        ngrok_config = validated_data.pop("ngrok_webhook_config_id", None)
+        webhook_trigger = validated_data.pop("webhook_trigger", None)
 
         node = TelegramTriggerNode.objects.create(**validated_data)
-
-        webhook_trigger, _ = WebhookTrigger.objects.get_or_create(
-            path=str(node.url_path)
-        )
-
-        if ngrok_config:
-            webhook_trigger.ngrok_webhook_config = ngrok_config
-            webhook_trigger.save()
 
         node.webhook_trigger = webhook_trigger
         node.save()
@@ -74,23 +65,13 @@ class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         fields_data = validated_data.pop("fields", None)
-        ngrok_config = validated_data.pop("ngrok_webhook_config_id", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        if ngrok_config is not None or 'ngrok_webhook_config_id' in self.initial_data:
-            if not instance.webhook_trigger:
-                instance.webhook_trigger, _ = WebhookTrigger.objects.get_or_create(
-                    path=str(instance.url_path)
-                )
-                instance.save()
-            
-            instance.webhook_trigger.ngrok_webhook_config = ngrok_config
-            instance.webhook_trigger.save()
-
         if fields_data is not None:
+            # Delete old fields and recreate new ones (simple nested update strategy)
             instance.fields.all().delete()
             for item in fields_data:
                 TelegramTriggerNodeField.objects.create(

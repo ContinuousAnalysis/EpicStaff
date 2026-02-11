@@ -1361,16 +1361,15 @@ class NgrokWebhookConfigModelSerializer(serializers.ModelSerializer):
 
 
 class WebhookTriggerNestedSerializer(serializers.ModelSerializer):
-    ngrok_webhook_config_id = serializers.PrimaryKeyRelatedField(
+    ngrok_webhook_config = serializers.PrimaryKeyRelatedField(
         queryset=NgrokWebhookConfig.objects.all(),
-        source="ngrok_webhook_config",
         required=False,
         allow_null=True,
     )
 
     class Meta:
         model = WebhookTrigger
-        fields = ["path", "ngrok_webhook_config_id"]
+        fields = ["path", "ngrok_webhook_config"]
         extra_kwargs = {"path": {"validators": []}}
 
 
@@ -1421,7 +1420,7 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
                 ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
                 webhook_trigger_instance, created = (
-                    WebhookTrigger.objects.update_or_create(
+                        WebhookTrigger.objects.update_or_create(
                         path=path, defaults={"ngrok_webhook_config": ngrok_conf}
                     )
                 )

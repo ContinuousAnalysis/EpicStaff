@@ -359,7 +359,6 @@ class TelegramTriggerNode(models.Model):
     telegram_bot_api_key = models.CharField(
         max_length=255, blank=True, null=True, default=None
     )
-    url_path = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="telegram_trigger_node_list"
     )
