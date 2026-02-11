@@ -168,6 +168,32 @@ class SharedVariableScope:
             raw = json.dumps(value, default=_json_serializer)
             self._redis().set(f"{var_id}:data", raw, ex=_DEFAULT_TTL)
 
+    def atomic_list_append(self, name: str, items: list) -> list:
+        """Atomically append items to a shared list variable.
+        Uses a Redis lock to serialize the read-modify-write cycle."""
+        r = self._redis()
+        key = f"{self._var_key(name)}:data"
+        with r.lock(f"{key}:lock", timeout=5):
+            raw = r.get(key)
+            current = json.loads(raw) if raw else []
+            current.extend(items)
+            r.set(key, json.dumps(current, default=_json_serializer), ex=_DEFAULT_TTL)
+        self._register_session_sync(self._var_key(name))
+        self._cache[name] = self._wrap_mutable(name, current)
+        return current
+
+    def claim(self, name: str, value, ttl: int = None) -> bool:
+        """Atomically claim a variable using Redis SET NX (first-writer-wins).
+        Returns True if this call set the value, False if already set."""
+        r = self._redis()
+        key = f"{self._var_key(name)}:data"
+        raw = json.dumps(value, default=_json_serializer)
+        result = r.set(key, raw, nx=True, ex=ttl or _DEFAULT_TTL)
+        if result:
+            self._register_session_sync(self._var_key(name))
+            self._cache[name] = self._wrap_mutable(name, value)
+        return bool(result)
+
     def _register_session_sync(self, var_id: str):
         """Register this session as using this variable (sync)."""
         r = self._redis()
@@ -249,6 +275,14 @@ class SharedVariableScope:
         self._register_session_sync(var_id)
         self._cache[name] = value
 
+    def _clear_cache(self):
+        """Drop all cached values so next access re-reads from Redis."""
+        object.__getattribute__(self, "_cache").clear()
+
+    def model_dump(self) -> dict:
+        """Return cached shared variables as a plain dict."""
+        return dict(self._cache)
+
     def __repr__(self):
         return f"<SharedVariableScope access_key={self._access_key!r}>"
 
@@ -284,6 +318,15 @@ class SharedVariables:
                 redis_service=self._redis_service,
             )
         return self._scopes[key]
+
+    def _clear_cache(self):
+        """Drop cached values in all scopes so next access re-reads from Redis."""
+        for scope in self._scopes.values():
+            scope._clear_cache()
+
+    def model_dump(self) -> dict:
+        """Return all cached scopes as a plain dict of dicts."""
+        return {k: v.model_dump() for k, v in self._scopes.items()}
 
     def __repr__(self):
         return f"<SharedVariables session_id={self._session_id}>"
@@ -331,9 +374,11 @@ async def cleanup_session(
                 if s == "active":
                     active_count += 1
 
-            # 5. If no active sessions, delete variable data
+            # 5. If no active sessions, clean up session metadata only.
+            # Variable data is NOT deleted here — it expires naturally via TTL.
+            # Deleting eagerly caused a race where a later session (e.g. leader
+            # at end-stage) still needs the data written by a now-finished session.
             if active_count == 0:
-                await r.delete(f"{var_id}:data")
                 await r.delete(f"{var_id}:sessions")
                 for other_sid in session_ids:
                     await r.delete(f"session:{other_sid}:status")

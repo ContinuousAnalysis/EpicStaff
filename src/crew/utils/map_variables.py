@@ -3,6 +3,25 @@ import re
 from loguru import logger
 
 
+def _clean_value(v):
+    """Recursively convert proxy objects (DotDict, SharedVariables, etc.) to plain types."""
+    if hasattr(v, 'model_dump'):
+        v = v.model_dump()
+    if isinstance(v, dict):
+        return _clean_dict(v)
+    if isinstance(v, list):
+        return _clean_list(v)
+    return v
+
+
+def _clean_dict(d: dict) -> dict:
+    return {k: _clean_value(v) for k, v in d.items()}
+
+
+def _clean_list(lst: list) -> list:
+    return [_clean_value(v) for v in lst]
+
+
 def map_variables_to_input(
     variables: DotDict, map: dict, set_missing_variables: bool = False
 ) -> dict:
@@ -127,16 +146,21 @@ def map_variables_to_input(
                             f"Cannot find variable `{key}` for `{input_key}`. Setted {key} = 'not found'"
                         )
                         value = "not found"
+                    else:
+                        logger.warning(
+                            f"Variable `{key}` not found for `{input_key}` (output_key=`{output_key}`). Setting to None."
+                        )
+                        value = None
+                        break
                 except Exception as e:
                     raise Exception(e)
 
-        if isinstance(value, DotDict):
+        if hasattr(value, 'model_dump'):
             value = value.model_dump()
+        if isinstance(value, dict):
+            value = _clean_dict(value)
         if isinstance(value, list):
-            converted_list = [
-                v.model_dump() if isinstance(v, DotDict) else v for v in value
-            ]
-            value = converted_list
+            value = _clean_list(value)
 
         output_dict[output_key] = value
 
