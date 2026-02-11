@@ -113,3 +113,11 @@ class TaskSessionMessage(CrewSessionMessage):
     expected_output = models.TextField(blank=True, default="")
     raw = models.TextField(blank=True, default="")
     agent = models.TextField(blank=True, default="")
+
+
+class SessionWarningMessage(models.Model):
+    session = models.OneToOneField(
+        Session, on_delete=models.CASCADE, related_name="warnings"
+    )
+    messages = models.JSONField(default=dict)
+    created_at = models.DateTimeField(default=timezone.now)
