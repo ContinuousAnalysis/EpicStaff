@@ -92,6 +92,38 @@ class SessionManagerService(metaclass=SingletonMeta):
         else:
             return obj
 
+    @staticmethod
+    def _build_route_maps(
+        ct_node_data_list: list,
+        metadata: dict,
+    ) -> None:
+        """Populate route_map on each classification DT node from metadata connections.
+
+        Each CDT output port has an ID like `{uuid}_decision-route-{route_code}`.
+        We extract the route_code and map it to the target node name.
+        """
+        metadata_nodes = metadata.get("nodes", [])
+        metadata_connections = metadata.get("connections", [])
+        uuid_to_node_name = {n["id"]: n.get("node_name", "") for n in metadata_nodes}
+        name_to_uuid = {n.get("node_name", ""): n["id"] for n in metadata_nodes}
+
+        for ct_node_data in ct_node_data_list:
+            ct_uuid = name_to_uuid.get(ct_node_data.node_name)
+            if ct_uuid is None:
+                continue
+
+            route_map = {}
+            prefix = f"{ct_uuid}_decision-route-"
+            for conn in metadata_connections:
+                source_port = conn.get("sourcePortId", "")
+                if source_port.startswith(prefix):
+                    route_code = source_port[len(prefix):]
+                    target_name = uuid_to_node_name.get(conn.get("targetNodeId", ""))
+                    if route_code and target_name:
+                        route_map[route_code] = target_name
+            ct_node_data.route_map = route_map
+            logger.info(f"Classification DT '{ct_node_data.node_name}' route_map: {route_map}")
+
     def create_session(
         self,
         graph_id: int,
@@ -248,33 +280,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
 
-        # Build route_map for classification DT nodes from graph metadata connections
-        metadata = graph.metadata or {}
-        metadata_nodes = metadata.get("nodes", [])
-        metadata_connections = metadata.get("connections", [])
-        uuid_to_node_name = {n["id"]: n.get("node_name", "") for n in metadata_nodes}
-
-        for ct_node_data in classification_dt_node_data_list:
-            ct_uuid = None
-            for mn in metadata_nodes:
-                if mn.get("node_name") == ct_node_data.node_name:
-                    ct_uuid = mn["id"]
-                    break
-            if ct_uuid is None:
-                continue
-
-            route_map = {}
-            prefix = f"{ct_uuid}_decision-route-"
-            for conn in metadata_connections:
-                source_port = conn.get("sourcePortId", "")
-                if source_port.startswith(prefix):
-                    route_code = source_port[len(prefix):]
-                    target_uuid = conn.get("targetNodeId", "")
-                    target_name = uuid_to_node_name.get(target_uuid)
-                    if route_code and target_name:
-                        route_map[route_code] = target_name
-            ct_node_data.route_map = route_map
-            logger.info(f"Classification DT '{ct_node_data.node_name}' route_map: {route_map}")
+        self._build_route_maps(classification_dt_node_data_list, graph.metadata or {})
 
         end_node = self.end_node_validator.validate(graph_id=graph.pk)
 

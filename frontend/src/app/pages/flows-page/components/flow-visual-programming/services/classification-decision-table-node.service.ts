@@ -7,6 +7,9 @@ import {
     GetClassificationDecisionTableNodeRequest,
 } from '../models/classification-decision-table-node.model';
 import { ConfigService } from '../../../../../services/config/config.service';
+import {
+    ClassificationDecisionTableNodeModel,
+} from '../../../../../visual-programming/core/models/node.model';
 
 @Injectable({
     providedIn: 'root',
@@ -50,7 +53,7 @@ export class ClassificationDecisionTableNodeService {
 
     buildCreatePayload(
         graphId: number,
-        node: any,
+        node: ClassificationDecisionTableNodeModel,
         resolveNodeName: (idOrName: string | null) => string | null
     ): CreateClassificationDecisionTableNodeRequest {
         const tableData = node.data?.table;
