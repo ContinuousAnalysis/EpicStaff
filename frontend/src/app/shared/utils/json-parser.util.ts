@@ -3,28 +3,20 @@ export function safeJsonParse(jsonString: string): any {
         return jsonString;
     }
 
-    try {
-        if (
-            jsonString.startsWith('"') &&
-            jsonString.endsWith('"') &&
-            !jsonString.startsWith('""')
-        ) {
-            const innerString = jsonString.slice(1, -1);           
-
-            return JSON.parse(innerString);
-        }
-       
-        const unescaped = jsonString
-            .replace(/\\"/g, '"') 
-            .replace(/\\n/g, '\n') 
-            .replace(/\\\\/g, '\\'); 
-
-        return JSON.parse(unescaped);
+    try {       
+        return JSON.parse(jsonString);
     } catch (e) {       
-        return jsonString;
+        try {           
+            const parsed = JSON.parse(jsonString);
+            if (typeof parsed === 'string') {             
+                return safeJsonParse(parsed);
+            }
+            return parsed;
+        } catch (e2) {           
+            return jsonString;
+        }
     }
 }
-
 
 export function parseNestedJson(obj: any, maxDepth = 3, currentDepth = 0): any {
     if (currentDepth >= maxDepth) {
@@ -58,20 +50,27 @@ export function formatExecutionDataForDisplay(
     if (!executionData || typeof executionData !== 'object') {
         return executionData;
     }
-    
+
     const dataCopy = JSON.parse(JSON.stringify(executionData));
-    
+   
     Object.keys(dataCopy).forEach((field) => {
-        if (dataCopy[field] && typeof dataCopy[field] === 'string') {
-            const value = dataCopy[field].trim();
-           
+        const value = dataCopy[field];
+       
+        if (value && typeof value === 'string') {
+            const trimmedValue = value.trim();
+
             if (
-                (value.startsWith('{') && value.endsWith('}')) ||
-                (value.startsWith('"') && value.endsWith('"')) ||
-                (value.startsWith('""') && value.endsWith('""'))
+                (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) ||
+                (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) ||
+                (trimmedValue.startsWith('[') && trimmedValue.endsWith(']')) ||
+                (trimmedValue.startsWith('""') && trimmedValue.endsWith('""'))
             ) {
-                dataCopy[field] = safeJsonParse(dataCopy[field]);
+                dataCopy[field] = safeJsonParse(trimmedValue);
             }
+        }
+                
+        else if (value && typeof value === 'object') {
+            dataCopy[field] = parseNestedJson(value);
         }
     });
 
