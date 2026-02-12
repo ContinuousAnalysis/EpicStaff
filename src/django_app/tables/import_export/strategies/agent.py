@@ -8,6 +8,8 @@ from tables.models import (
     LLMConfig,
     AgentPythonCodeTools,
     AgentMcpTools,
+    PythonCodeTool,
+    McpTool,
 )
 from tables.models.knowledge_models.naive_rag_models import NaiveRagSearchConfig
 from tables.import_export.strategies.base import EntityImportExportStrategy
@@ -134,10 +136,10 @@ class AgentStrategy(EntityImportExportStrategy):
             python_tool_names = [tool.name for tool in python_tools]
             mcp_tool_names = [tool.name for tool in mcp_tools]
             current_python_tool_names = list(
-                agent.python_code_tools.values_list("name", flat=True)
+                agent.python_code_tools.values_list("pythoncodetool__name", flat=True)
             )
             current_mcp_tool_names = list(
-                agent.mcp_tools.values_list("name", flat=True)
+                agent.mcp_tools.values_list("mcptool__name", flat=True)
             )
 
             python_tools_match = set(current_python_tool_names) == set(
@@ -176,15 +178,17 @@ class AgentStrategy(EntityImportExportStrategy):
     def _get_tools(self, data: dict, id_mapper: IDMapper):
         tools = data.pop("tools", {})
 
-        python_tools = [
+        python_tool_ids = [
             id_mapper.get_or_none(EntityType.PYTHON_CODE_TOOL, tool_id)
             for tool_id in tools.get(EntityType.PYTHON_CODE_TOOL, [])
         ]
+        python_tools = PythonCodeTool.objects.filter(id__in=python_tool_ids)
 
-        mcp_tools = [
+        mcp_tool_ids = [
             id_mapper.get_or_none(EntityType.MCP_TOOL, tool_id)
             for tool_id in tools.get(EntityType.MCP_TOOL, [])
         ]
+        mcp_tools = McpTool.objects.filter(id__in=mcp_tool_ids)
 
         return python_tools, mcp_tools
 
@@ -196,12 +200,12 @@ class AgentStrategy(EntityImportExportStrategy):
     def _assign_tools(self, agent: Agent, python_tools: list, mcp_tools: list):
         AgentPythonCodeTools.objects.bulk_create(
             [
-                AgentPythonCodeTools(agent=agent, pythoncodetool_id=tool_id)
-                for tool_id in python_tools
+                AgentPythonCodeTools(agent=agent, pythoncodetool_id=tool.id)
+                for tool in python_tools
             ]
         )
         AgentMcpTools.objects.bulk_create(
-            [AgentMcpTools(agent=agent, mcptool_id=tool_id) for tool_id in mcp_tools]
+            [AgentMcpTools(agent=agent, mcptool_id=tool.id) for tool in mcp_tools]
         )
 
     def _create_realtime_agent(self, agent, data, id_mapper: IDMapper):
