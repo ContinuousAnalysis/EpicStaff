@@ -265,6 +265,20 @@ class ClassificationDecisionTableNodeSubgraph:
                                 logger.info(f"{label} shared_claim: {access_key}.{var_name} = {claimed}")
                     result["claim_results"] = claim_results
 
+            # Handle shared variable releases (key deletion).
+            # Format: {"shared_release": {access_key: ["var_name", ...]}}
+            # Deletes the Redis key so a subsequent claim() can succeed.
+            shared_release = result.pop("shared_release", None)
+            if shared_release and isinstance(shared_release, dict):
+                shared = getattr(state.get("variables", {}), "shared", None)
+                if shared is not None:
+                    for access_key, var_names in shared_release.items():
+                        if isinstance(var_names, list):
+                            scope = shared[access_key]
+                            for var_name in var_names:
+                                released = scope.release(var_name)
+                                logger.info(f"{label} shared_release: {access_key}.{var_name} = {released}")
+
             if output_variable_path:
                 from utils.set_output_variables import set_output_variables
                 set_output_variables(
@@ -509,7 +523,14 @@ def main(**kwargs) -> dict:
             f"result_variable='{prompt_config.result_variable}'"
         )
 
-        result, usage = await self._run_json_llm(prompt=rendered_prompt, llm=llm_data)
+        try:
+            result, usage = await self._run_json_llm(prompt=rendered_prompt, llm=llm_data)
+        except Exception as e:
+            error_msg = f"ERROR Prompt '{prompt_id}' LLM call failed: {type(e).__name__}: {e}"
+            logger.info(error_msg)
+            raise ClassificationDecisionTableNodeError(
+                f"LLM call failed for prompt '{prompt_id}': {type(e).__name__}: {e}"
+            ) from e
 
         # Capture raw response text before JSON parsing
         raw_response = str(result) if not isinstance(result, str) else result
@@ -758,7 +779,20 @@ def main(**kwargs) -> dict:
                         )
                         self._publish_message(msg)
                         continue
-                    logger.error(error)
+                    logger.info(f"ERROR {error}")
+                    decision_vars["result_node"] = self.node_data.next_error_node or END
+                    msg = self.custom_session_message_writer.add_error_message(
+                        session_id=self.session_id,
+                        node_name=self.node_name,
+                        error=error,
+                        writer=writer,
+                        execution_order=self.execution_order(state),
+                    )
+                    self._publish_message(msg)
+                    return state
+                except Exception as e:
+                    error = f"Unexpected error in condition '{group.group_name}': {type(e).__name__}: {e}"
+                    logger.info(f"ERROR {error}")
                     decision_vars["result_node"] = self.node_data.next_error_node or END
                     msg = self.custom_session_message_writer.add_error_message(
                         session_id=self.session_id,
