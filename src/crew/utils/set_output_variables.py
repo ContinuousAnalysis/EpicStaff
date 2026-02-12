@@ -80,10 +80,33 @@ def set_output_variables(
                 # Remove 'shared' before updating to avoid overwriting proxy
                 output_copy = {k: v for k, v in output.items() if k != "shared"}
                 if output_copy:
-                    value.update(output_copy)
+                    # Use deep-merge for remaining keys (same logic as below)
+                    for out_key, out_val in output_copy.items():
+                        existing = getattr(value, out_key, None)
+                        if (
+                            isinstance(out_val, dict)
+                            and existing is not None
+                            and isinstance(existing, (dict, DotDict))
+                        ):
+                            existing.update(out_val)
+                        else:
+                            setattr(value, out_key, out_val)
                 return
 
-        value.update(output)
+        # Deep-merge: for dict-type values where the existing variable is
+        # also a dict/DotDict, merge keys instead of replacing the whole dict.
+        # This prevents e.g. message_history={chat_A: [...]} from wiping chat_B's
+        # entries when two sessions for different chats save concurrently.
+        for out_key, out_val in output.items():
+            existing = getattr(value, out_key, None)
+            if (
+                isinstance(out_val, dict)
+                and existing is not None
+                and isinstance(existing, (dict, DotDict))
+            ):
+                existing.update(out_val)
+            else:
+                setattr(value, out_key, out_val)
         return
 
     for key in keys[:-1]:
