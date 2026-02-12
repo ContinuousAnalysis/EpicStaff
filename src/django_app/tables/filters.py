@@ -12,7 +12,7 @@ class CharInFilter(filters.BaseInFilter, filters.CharFilter):
 class SessionFilter(filters.FilterSet):
     status = CharInFilter(field_name="status", lookup_expr="in")
     node_name = filters.CharFilter(
-        field_name="graphsessionmessage__name", lookup_expr="exact"
+        field_name="graphsessionmessage__name", lookup_expr="exact", distinct=True
     )
     is_error_cause = filters.BooleanFilter(method="filter_by_error_cause")
 
