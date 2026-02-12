@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Annotated, Literal, Union, List
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 
 # RAG Search Configuration Models
@@ -77,7 +77,6 @@ class ChunkDocumentMessage(BaseModel):
 
 
 class ChunkDocumentMessageResponse(BaseModel):
-
     chunking_job_id: str  # UUID
     rag_type: Literal["naive", "graph"]
     document_config_id: int

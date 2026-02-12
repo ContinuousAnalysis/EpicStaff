@@ -4,7 +4,6 @@ from langchain_text_splitters import HTMLSemanticPreservingSplitter
 
 
 class HTMLChunker(BaseChunker):
-
     def __init__(self, chunk_size, chunk_overlap, additional_params):
         """
         Initialize the chunker with the provided chunk size and overlap.
@@ -71,11 +70,12 @@ class HTMLChunker(BaseChunker):
             return []
 
     def chunk(self, html_text: str) -> list[BaseChunkData]:
-
         documents = self.splitter.split_text(html_text)
         chunks = [
             BaseChunkData(
-                text=f"{doc.metadata}\n{doc.page_content}" if doc.metadata else doc.page_content
+                text=f"{doc.metadata}\n{doc.page_content}"
+                if doc.metadata
+                else doc.page_content
             )
             for doc in documents
         ]

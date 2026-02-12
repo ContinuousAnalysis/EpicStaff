@@ -106,7 +106,7 @@ class ChatSummarizedBuffer(ChatBuffer):
 
         if self._chunks_tokens_count:
             # if chunks are not empty add 'chunks_text' to 'buffer_text'
-            logger.debug(f"Adding text from the chunks to text from buffer")
+            logger.debug("Adding text from the chunks to text from buffer")
             chunks_text = "\n\n".join(self._chunks)
             buffer_text = chunks_text + "\n\n" + buffer_text
 

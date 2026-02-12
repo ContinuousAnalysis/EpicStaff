@@ -81,7 +81,7 @@ class RedisService(metaclass=SingletonMeta):
 
     def publish_session_data(self, session_data: SessionData) -> int:
         return self.redis_client.publish(
-            f"sessions:schema", session_data.model_dump_json()
+            "sessions:schema", session_data.model_dump_json()
         )
 
     def send_user_input(
@@ -92,7 +92,6 @@ class RedisService(metaclass=SingletonMeta):
         execution_order: str,
         message: str,
     ) -> None:
-
         user_input_message = {
             "crew_id": crew_id,
             "node_name": node_name,
@@ -125,13 +124,10 @@ class RedisService(metaclass=SingletonMeta):
             collection_id: Source collection ID
         """
         message = ProcessRagIndexingMessage(
-            rag_id=rag_id,
-            rag_type=rag_type,
-            collection_id=collection_id
+            rag_id=rag_id, rag_type=rag_type, collection_id=collection_id
         )
         self.redis_client.publish(
-            channel=KNOWLEDGE_INDEXING_CHANNEL,
-            message=message.model_dump_json()
+            channel=KNOWLEDGE_INDEXING_CHANNEL, message=message.model_dump_json()
         )
         logger.info(
             f"Sent RAG indexing request to {KNOWLEDGE_INDEXING_CHANNEL}: "
@@ -142,9 +138,9 @@ class RedisService(metaclass=SingletonMeta):
         self, rt_agent_chat_data: RealtimeAgentChatData
     ) -> None:
         self.redis_client.publish(
-            f"realtime_agents:schema", rt_agent_chat_data.model_dump_json()
+            "realtime_agents:schema", rt_agent_chat_data.model_dump_json()
         )
-        logger.info(f"Sent realtime agent chat to: realtime_agents:schema.")
+        logger.info("Sent realtime agent chat to: realtime_agents:schema.")
         logger.debug(f"Schema: {rt_agent_chat_data.model_dump()}.")
 
     def publish_user_graph_message(
@@ -172,7 +168,7 @@ class RedisService(metaclass=SingletonMeta):
         try:
             async for message in pubsub.listen():
                 if message["type"] == "message":
-                    logger.debug(f"message from redis_get_message {message["data"]}")
+                    logger.debug(f"message from redis_get_message {message['data']}")
                     yield message
                     await asyncio.sleep(0.01)
 
@@ -257,7 +253,9 @@ class RedisService(metaclass=SingletonMeta):
                                 )
                                 return ChunkDocumentMessageResponse.model_validate(data)
                         except json.JSONDecodeError:
-                            logger.warning(f"Invalid JSON in chunking response: {msg['data']}")
+                            logger.warning(
+                                f"Invalid JSON in chunking response: {msg['data']}"
+                            )
                         except Exception as e:
                             logger.warning(f"Error parsing chunking response: {e}")
 

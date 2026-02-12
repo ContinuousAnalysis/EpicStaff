@@ -5,7 +5,6 @@ from loguru import logger
 
 class CharacterChunker(BaseChunker):
     def __init__(self, chunk_size, chunk_overlap, additional_params):
-
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         character_params = additional_params.get("character", {})

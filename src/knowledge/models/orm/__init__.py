@@ -27,7 +27,6 @@ from .naive_rag_models import (
 __all__ = [
     # SQLAlchemy Base
     "Base",
-
     # Base models
     "Provider",
     "EmbeddingModel",
@@ -35,10 +34,8 @@ __all__ = [
     "SourceCollection",
     "DocumentContent",
     "DocumentMetadata",
-
     # RAG type models
     "BaseRagType",
-
     # Naive RAG models
     "NaiveRag",
     "NaiveRagDocumentConfig",

@@ -1,14 +1,18 @@
 from typing import Any, Dict, List, Literal, Optional, Union
 from fastmcp import FastMCP
 
-from src import BaseClient, GitLabClient, GitHubClient, ClientFactory
+from src import ClientFactory
 
 mcp = FastMCP("GitTools")
 
 
 @mcp.tool
 async def get_open_pull_requests(
-    client_type: Literal["github", "gitlab"], token: str, owner: str, repo_name: str, url: str = "https://gitlab.com"
+    client_type: Literal["github", "gitlab"],
+    token: str,
+    owner: str,
+    repo_name: str,
+    url: str = "https://gitlab.com",
 ) -> List[Dict[str, Any]]:
     """Get all opened pull requests"""
     client = ClientFactory.create_client(

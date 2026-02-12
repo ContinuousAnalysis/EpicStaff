@@ -1,8 +1,7 @@
 import json
-from typing import Any, List, Dict, Optional, Set
+from typing import Any, Dict
 from pathlib import Path
 
-from pydantic import BaseModel
 from base_models import Callable, ImportToolData  # need when we copy for docker image
 
 base_path = Path(__file__).resolve().parent
@@ -13,7 +12,7 @@ class ImportToolDataRepository:
     tools_paths_path = base_path.parent / "tools_paths.json"
 
     def __init__(
-            self, *, tools_config_path=None, tools_paths_path=None, force_build=False
+        self, *, tools_config_path=None, tools_paths_path=None, force_build=False
     ):
         if tools_config_path:
             self.tools_config_path = tools_config_path
@@ -70,7 +69,6 @@ class ImportToolDataRepository:
             raise ValueError(f"Incorrect key {image_name}")
 
     def get_tool_alias_list(self) -> list[str]:
-
         tool_alias_set = set()
 
         for item in self.tools_config:
@@ -88,7 +86,6 @@ class ImportToolDataRepository:
                     return item["image_name"]
 
     def get_import_class_data(self, image_name: str) -> ImportToolData:
-
         tool_group = self.get_tool_group(image_name)
         dependencies = tool_group.get("dependencies")
         tool_dict = {}

@@ -6,16 +6,14 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 import json
 import os
 from fastapi import FastAPI, HTTPException
-import asyncio
-
 from db.config import AsyncSessionLocal
 from sqlalchemy import text
-from repositories.session_repository import SessionRepository
 import uvicorn
+
+from repositories.session_repository import SessionRepository
 from models.models import (
     RunToolParamsModel,
     ToolInitConfigurationModel,
-    ToolListResponseModel,
     ClassDataResponseModel,
     RunToolResponseModel,
 )

@@ -3,8 +3,6 @@ from django.db import transaction
 from loguru import logger
 
 from tables.models.knowledge_models import (
-    SourceCollection,
-    BaseRagType,
     NaiveRag,
     DocumentMetadata,
 )

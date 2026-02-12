@@ -1,10 +1,7 @@
-from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple
-from contextlib import contextmanager
+from typing import List, Optional
 from sqlalchemy.orm import selectinload
 
 from loguru import logger
-from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from models.dto.models_dto import DocumentMetadataDTO
@@ -18,7 +15,6 @@ from models.orm.document_models import (
 )
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func
-
 
 
 class ORMDocumentStorage(BaseORMStorage):
@@ -36,7 +32,7 @@ class ORMDocumentStorage(BaseORMStorage):
 
             documents = (
                 self.session.query(DocumentMetadata)
-                .options(selectinload(DocumentMetadata.document_content)) 
+                .options(selectinload(DocumentMetadata.document_content))
                 .filter(
                     DocumentMetadata.source_collection_id == collection_id,
                     DocumentMetadata.status.in_(status),
@@ -96,7 +92,6 @@ class ORMDocumentStorage(BaseORMStorage):
     ) -> Optional[DocumentMetadataDTO]:
         """Get a document by its document_id."""
         try:
-
             document = (
                 self.session.query(DocumentMetadata)
                 .options(selectinload(DocumentMetadata.document_content))

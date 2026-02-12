@@ -1,5 +1,5 @@
-from services.graph.nodes.python_node import PythonNode
-from models.request_models import PythonCodeData
+from src.crew.services.graph.nodes.python_node import PythonNode
+from src.crew.models.request_models import PythonCodeData
 
 
 class AudioTranscriptionNode(PythonNode):
@@ -15,7 +15,7 @@ class AudioTranscriptionNode(PythonNode):
         python_code_executor_service,
     ):
         if not input_map:
-            raise ValueError(f"AudioTranscriptionNode input cannot be empty.")
+            raise ValueError("AudioTranscriptionNode input cannot be empty.")
 
         arg_names = input_map.keys()
         code_data = PythonCodeData(
