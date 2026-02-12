@@ -14,7 +14,7 @@ class SessionFilter(filters.FilterSet):
     node_name = filters.CharFilter(
         field_name="graphsessionmessage__name", lookup_expr="exact"
     )
-    is_error_cause = filters.BooleanFilter(method="filter_by_last_message")
+    is_error_cause = filters.BooleanFilter(method="filter_by_error_cause")
 
     class Meta:
         model = Session
