@@ -1,4 +1,11 @@
-from tables.models import PythonNode, CrewNode, Graph, WebhookTriggerNode, EndNode
+from tables.models import (
+    PythonNode,
+    CrewNode,
+    Graph,
+    WebhookTriggerNode,
+    EndNode,
+    WebhookTrigger,
+)
 from tables.import_export.enums import NodeType, EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
@@ -47,13 +54,22 @@ def import_webhook_trigger_node(
     graph: Graph, node_data: dict, id_mapper: IDMapper
 ) -> WebhookTriggerNode:
     python_code_data = node_data.pop("python_code", None)
+    old_trigger_id = node_data.pop("webhook_trigger", None)
+    new_trigger_id = id_mapper.get_or_none(EntityType.WEBHOOK_TRIGGER, old_trigger_id)
 
-    serializer = PythonCodeImportSerializer(data=python_code_data)
-    serializer.is_valid(raise_exception=True)
-    python_code = serializer.save()
+    webhook_trigger = WebhookTrigger.objects.get(id=new_trigger_id)
+
+    python_code_serializer = PythonCodeImportSerializer(data=python_code_data)
+    python_code_serializer.is_valid(raise_exception=True)
+    python_code = python_code_serializer.save()
 
     serializer = WebhookTriggerNodeImportSerializer(
-        data={**node_data, "graph": graph.id, "python_code_id": python_code.id}
+        data={
+            **node_data,
+            "graph": graph.id,
+            "python_code_id": python_code.id,
+            "webhook_trigger_id": webhook_trigger.id,
+        }
     )
     serializer.is_valid(raise_exception=True)
     return serializer.save()

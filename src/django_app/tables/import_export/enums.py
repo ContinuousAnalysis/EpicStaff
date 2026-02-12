@@ -2,13 +2,13 @@ from enum import Enum
 
 
 class EntityType(str, Enum):
-
     LLM_CONFIG = "LLMConfig"
     EMBEDDING_CONFIG = "EmbeddingConfig"
     REALTIME_CONFIG = "RealtimeConfig"
     REALTIME_TRANSCRIPTION_CONFIG = "RealtimeTranscriptionConfig"
     PYTHON_CODE_TOOL = "PythonCodeTool"
     MCP_TOOL = "MCPTool"
+    WEBHOOK_TRIGGER = "WebhookTrigger"
     REALTIME_AGENT = "RealtimeAgent"
     AGENT = "Agent"
     CREW = "Project"
@@ -16,7 +16,6 @@ class EntityType(str, Enum):
 
 
 class NodeType(str, Enum):
-
     START_NODE = "StartNode"
     CREW_NODE = "CrewNode"
     PYTHON_NODE = "PythonNode"

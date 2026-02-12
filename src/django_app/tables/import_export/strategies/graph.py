@@ -1,7 +1,9 @@
 from copy import deepcopy
 
 from tables.models import Graph, Crew
-from tables.serializers.model_serializers import CrewSerializer
+from tables.serializers.model_serializers import (
+    CrewSerializer,
+)
 from tables.import_export.strategies.base import EntityImportExportStrategy
 from tables.import_export.serializers.graph import (
     GraphImportSerializer,
@@ -26,6 +28,11 @@ class GraphStrategy(EntityImportExportStrategy):
         deps = {}
         deps[EntityType.CREW] = list(
             instance.crew_node_list.values_list("crew_id", flat=True)
+        )
+        deps[EntityType.WEBHOOK_TRIGGER] = list(
+            instance.webhook_trigger_node_list.values_list(
+                "webhook_trigger_id", flat=True
+            )
         )
         return deps
 
@@ -117,5 +124,11 @@ class GraphStrategy(EntityImportExportStrategy):
                 crew = Crew.objects.get(id=new_id)
 
                 node["data"] = CrewSerializer(instance=crew).data
+            if node["type"] == "webhook-trigger":
+                old_id = node["data"]["webhook_trigger"]
+
+                node["data"]["webhook_trigger"] = id_mapper.get_or_none(
+                    EntityType.WEBHOOK_TRIGGER, old_id
+                )
 
         return metadata_copy

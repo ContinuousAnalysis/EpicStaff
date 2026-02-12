@@ -14,6 +14,7 @@ from tables.models import (
     AudioTranscriptionNode,
     Edge,
     PythonCode,
+    WebhookTrigger,
 )
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 
@@ -40,6 +41,11 @@ class WebhookTriggerNodeImportSerializer(BaseNodeImportSerializer):
     python_code_id = serializers.PrimaryKeyRelatedField(
         queryset=PythonCode.objects.all(),
         source="python_code",
+        write_only=True,
+    )
+    webhook_trigger_id = serializers.PrimaryKeyRelatedField(
+        queryset=WebhookTrigger.objects.all(),
+        source="webhook_trigger",
         write_only=True,
     )
 

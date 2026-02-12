@@ -45,6 +45,7 @@ class ImportService:
             EntityType.MCP_TOOL,
             EntityType.AGENT,
             EntityType.CREW,
+            EntityType.WEBHOOK_TRIGGER,
             EntityType.GRAPH,
         ]
 
