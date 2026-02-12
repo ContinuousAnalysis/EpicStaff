@@ -319,6 +319,13 @@ import { FormatExecutionDataPipe } from '../../../../../../shared/pipes/format-e
         max-height: 600px;
       }
 
+      .raw-data-content ::ng-deep ngx-json-viewer,
+       .raw-data-content ::ng-deep .ngx-json-viewer {
+          display: inline-block;
+          min-width: 100%;
+      }
+
+
       .error-content {
         color: #ff6b6b;
       }
