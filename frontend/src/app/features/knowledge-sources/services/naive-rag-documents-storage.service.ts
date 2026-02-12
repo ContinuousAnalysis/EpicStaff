@@ -223,8 +223,6 @@ export class NaiveRagDocumentsStorageService {
         ).pipe(
             tap(response => this.handleUpdateSuccess(response)),
             catchError(err => {
-                // TODO handle multiple fields update
-                // this.handleUpdateError(err, field, documentId)
                 return throwError(() => err)
             })
         );
@@ -327,13 +325,16 @@ export class NaiveRagDocumentsStorageService {
         field: keyof TableDocument,
         documentId: number
     ) {
-        const errorMessage = error.error.error;
+        // Update of one field will return array with 1 error
+        const [err] = error.error.errors;
+
+        if (!err) return;
 
         this.documentsSignal.update(items =>
             items.map(item => {
                 return item.naive_rag_document_id === documentId ? {
                     ...item,
-                    errors: { [field]: { reason: errorMessage } }
+                    errors: { [field]: { reason: err.reason } }
                 } : item;
             })
         );

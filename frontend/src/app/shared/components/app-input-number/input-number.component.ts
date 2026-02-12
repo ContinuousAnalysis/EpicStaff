@@ -33,6 +33,7 @@ export class InputNumberComponent implements ControlValueAccessor {
     label = input<string>('');
     required = input<boolean>(false);
     tooltipText = input<string>('');
+    alwaysShowSteps = input<true>();
 
     mod = input<'default' | 'small'>('default');
     placeholder = input<string>('Type here');

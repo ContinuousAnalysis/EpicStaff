@@ -87,7 +87,9 @@ export class RagConfigurationComponent implements OnInit {
                 switchMap(change => this.documentsStorageService.updateDocumentField(id, change)
                     .pipe(
                         catchError((err) => {
-                            this.toastService.error(`Update failed: ${err.error?.error}`);
+                            const [error] = err.error?.errors;
+
+                            this.toastService.error(`Update failed: ${error.reason}`);
                             return EMPTY;
                         }))),
             )),

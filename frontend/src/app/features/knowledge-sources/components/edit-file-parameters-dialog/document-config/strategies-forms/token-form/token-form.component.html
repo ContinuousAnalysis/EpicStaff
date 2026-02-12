@@ -14,9 +14,10 @@
         <div class="config__grid-item config__grid-item--short">
             <app-input-number
                 formControlName="chunk_size"
-                [min]="20"
-                [max]="8000"
+                [alwaysShowSteps]="true"
+                [invalid]="!!getMainParamControl('chunk_size')?.invalid"
             />
+            <app-validation-errors [control]="getMainParamControl('chunk_size')!"/>
         </div>
 
         <div class="config__grid-item">
@@ -33,9 +34,10 @@
         <div class="config__grid-item config__grid-item--short">
             <app-input-number
                 formControlName="chunk_overlap"
-                [min]="0"
-                [max]="1000"
+                [alwaysShowSteps]="true"
+                [invalid]="!!getMainParamControl('chunk_overlap')?.invalid"
             />
+            <app-validation-errors [control]="getMainParamControl('chunk_overlap')!"/>
         </div>
     </div>
 </form>
