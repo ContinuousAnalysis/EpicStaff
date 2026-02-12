@@ -576,7 +576,7 @@ class NaiveRagDocumentConfigViewSet(
 
             return Response(
                 {
-                    "message": f"Document config deleted successfully",
+                    "message": "Document config deleted successfully",
                     **result,
                 },
                 status=status.HTTP_200_OK,

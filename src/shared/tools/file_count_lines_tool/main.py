@@ -4,6 +4,7 @@ import os
 import encodings
 from pathlib import Path
 
+
 class RouteTool:
     @staticmethod
     def _is_path_within_path(source_path: Path, dest_path: Path) -> bool:
@@ -23,11 +24,19 @@ class RouteTool:
 
 def _get_sorted_encodings():
     common_encodings = [
-        "utf-8", "ascii", "utf-16", "utf-32",
-        "cp1251", "cp1252", "latin-1", "iso-8859-1", "iso-8859-2"
+        "utf-8",
+        "ascii",
+        "utf-16",
+        "utf-32",
+        "cp1251",
+        "cp1252",
+        "latin-1",
+        "iso-8859-1",
+        "iso-8859-2",
     ]
     low_freq = list(set(encodings.aliases.aliases.values()) - set(common_encodings))
     return common_encodings + low_freq
+
 
 def _retrieve_encoding(file_path: Path | str):
     for encoding in _get_sorted_encodings():

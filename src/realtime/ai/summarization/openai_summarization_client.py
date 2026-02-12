@@ -37,7 +37,7 @@ class OpenaiSummarizationClient:
             logger.debug(f"Text was successfully summarized:\n\n{summarized_text}\n")
 
             return summarized_text
-        except Exception as e:
+        except Exception:
             logger.exception("Error during litellm completion request")
             return ""
 
@@ -49,7 +49,7 @@ class OpenaiSummarizationClient:
         """
         if not to_summarize:
             logger.error(
-                f"Couldn't summarize the buffer. Parameter 'to_summarize' cannot be empty"
+                "Couldn't summarize the buffer. Parameter 'to_summarize' cannot be empty"
             )
             return ""
 
@@ -79,7 +79,7 @@ class OpenaiSummarizationClient:
         """
         if not to_summarize:
             logger.error(
-                f"Couldn't summarize the chunks. Parameter 'to_summarize' cannot be empty"
+                "Couldn't summarize the chunks. Parameter 'to_summarize' cannot be empty"
             )
             return ""
 

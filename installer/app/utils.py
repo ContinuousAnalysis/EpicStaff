@@ -231,7 +231,6 @@ def save_image_tag(image_tag: str):
 
 
 def save_git_build_repository(git_build_repository: str):
-
     allowed_regex = r"^[a-zA-Z0-9][a-zA-Z0-9_.:\-\/]{1,127}$"
     if not git_build_repository or not re.match(allowed_regex, git_build_repository):
         print(f"Invalid git_build_repository: {git_build_repository}")

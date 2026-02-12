@@ -4,7 +4,7 @@ from models.models import (
     RunToolParamsModel,
     ClassDataResponseModel,
     RunToolResponseModel,
-    ToolInitConfigurationModel
+    ToolInitConfigurationModel,
 )
 from utils import get_tool_data, load_env_from_yaml_config, run_tool, init_tools
 from pickle_encode import obj_to_txt
@@ -17,16 +17,22 @@ load_env_from_yaml_config("/home/user/root/app/env_config/config.yaml")
 init_tools()
 os.chdir("savefiles")
 
+
 @app.post(
     "/tool/{tool_alias}/class-data/",
     status_code=200,
     response_model=ClassDataResponseModel,
 )
-def get_class_data(tool_alias: str,  tool_init_configuration: ToolInitConfigurationModel):
+def get_class_data(
+    tool_alias: str, tool_init_configuration: ToolInitConfigurationModel
+):
     logger.info(f"{tool_alias}; {tool_init_configuration.model_dump()}")
 
     try:
-        tool = tool_factory.create(tool_alias=tool_alias, tool_kwargs=tool_init_configuration.tool_init_configuration)
+        tool = tool_factory.create(
+            tool_alias=tool_alias,
+            tool_kwargs=tool_init_configuration.tool_init_configuration,
+        )
     except ToolNotFoundException as e:
         logger.error(f"Tool class not found by tool alias {tool_alias}")
         return Response(

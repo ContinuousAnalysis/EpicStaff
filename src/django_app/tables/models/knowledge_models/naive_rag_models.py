@@ -299,7 +299,6 @@ class AgentNaiveRag(models.Model):
 
 
 class NaiveRagSearchConfig(models.Model):
-
     agent = models.OneToOneField(
         "Agent",
         on_delete=models.CASCADE,

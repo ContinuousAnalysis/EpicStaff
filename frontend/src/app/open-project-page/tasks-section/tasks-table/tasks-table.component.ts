@@ -156,6 +156,11 @@ export class TasksTableComponent implements OnChanges {
     private globalClickUnlistener: (() => void) | null = null;
     private globalKeydownUnlistener: (() => void) | null = null;
 
+    // Track drag state for header drop detection
+    private isDragOutsideRows = false;
+    private draggedTaskData: TableFullTask | null = null;
+    private dragMouseUpListener: (() => void) | null = null;
+
     constructor(
         private overlay: Overlay,
         private cdr: ChangeDetectorRef,
@@ -513,9 +518,28 @@ export class TasksTableComponent implements OnChanges {
         onCellKeyDown: (event: CellKeyDownEvent) => this.onCellKeyDown(event),
         onCellValueChanged: (event) => this.onCellValueChanged(event),
         onRowDragEnd: (event) => this.onRowDragEnd(event),
+        onRowDragEnter: (event) => {
+            // Clear the outside flag when re-entering the row area
+            this.isDragOutsideRows = false;
+            this.draggedTaskData = null;
+            this.removeDragMouseUpListener();
+        },
+        onRowDragLeave: (event) => {
+            // When drag leaves the grid area (e.g., into header), set flag and wait for mouseup
+            this.isDragOutsideRows = true;
+            this.draggedTaskData = event.node?.data as TableFullTask;
+            
+            // Add mouseup listener to detect when user releases the mouse outside rows
+            this.addDragMouseUpListener();
+        },
     };
     // Event handler for rowDragEnd
     onRowDragEnd(event: RowDragEndEvent) {
+        // Clear drag outside state
+        this.isDragOutsideRows = false;
+        this.draggedTaskData = null;
+        this.removeDragMouseUpListener();
+        
         // Get the moved data
         const movedData = event.node.data as TableFullTask;
 
@@ -524,6 +548,15 @@ export class TasksTableComponent implements OnChanges {
         const toIndex = event.overIndex;
 
         if (fromIndex === -1 || toIndex === null || toIndex === undefined) {
+            return;
+        }
+
+        // Check if dropped outside the valid rows area (e.g., into header or above rows)
+        if (toIndex < 0 || toIndex >= this.rowData.length) {
+            this.toastService.error('Cannot move task outside the tasks area.');
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
             return;
         }
 
@@ -665,6 +698,41 @@ export class TasksTableComponent implements OnChanges {
 
         // Update task orders on the backend
         this.updateTaskOrders();
+    }
+
+    // Add mouseup listener to detect drop outside rows
+    private addDragMouseUpListener(): void {
+        if (this.dragMouseUpListener) return; // Already listening
+        
+        this.dragMouseUpListener = this.renderer.listen('document', 'mouseup', () => {
+            if (this.isDragOutsideRows && this.draggedTaskData) {
+                // User released mouse while outside row area - handle as drop to first position
+                this.handleDragToFirstPosition();
+            }
+            // Clean up
+            this.isDragOutsideRows = false;
+            this.draggedTaskData = null;
+            this.removeDragMouseUpListener();
+        });
+    }
+
+    // Remove mouseup listener
+    private removeDragMouseUpListener(): void {
+        if (this.dragMouseUpListener) {
+            this.dragMouseUpListener();
+            this.dragMouseUpListener = null;
+        }
+    }
+
+    // Handle drag to area outside the table (header or above) - show warning and revert
+    private handleDragToFirstPosition(): void {
+        // Show warning that task cannot be dropped outside the table area
+        this.toastService.error('Cannot drop task outside the table area. Please drop it on a valid row.');
+        
+        // Revert the visual state
+        if (this.gridApi) {
+            this.gridApi.setGridOption('rowData', [...this.rowData]);
+        }
     }
 
     private parseTaskData(taskData: FullTask) {
@@ -873,6 +941,7 @@ export class TasksTableComponent implements OnChanges {
 
     ngOnDestroy(): void {
         this.closePopup();
+        this.removeDragMouseUpListener();
     }
 
     openSettingsDialog(taskData: TableFullTask) {
