@@ -58,7 +58,7 @@ jobs:
           echo ">> docker compose down"
           docker compose down --remove-orphans
 
-          echo ">> docker compose --env-file deploy.env up --build -d "
+          echo ">> docker compose --env-file .env --env-file deploy.env up --build -d "
           docker compose up --build -d --remove-orphans
 
           echo ">> docker image prune"
