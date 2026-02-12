@@ -1,4 +1,6 @@
+from django.db.models import OuterRef, Exists
 from django_filters import rest_framework as filters
+from tables.models import GraphSessionMessage
 from tables.models.session_models import Session
 from tables.models import Provider  # SourceCollection,
 
@@ -9,10 +11,29 @@ class CharInFilter(filters.BaseInFilter, filters.CharFilter):
 
 class SessionFilter(filters.FilterSet):
     status = CharInFilter(field_name="status", lookup_expr="in")
+    node_name = filters.CharFilter(
+        field_name="graphsessionmessage__name", lookup_expr="exact"
+    )
+    is_error_cause = filters.BooleanFilter(method="filter_by_last_message")
 
     class Meta:
         model = Session
-        fields = ["graph_id", "status"]
+        fields = ["graph_id", "status", "node_name"]
+
+    def filter_by_error_cause(self, queryset, name, value):
+        """Returns sessions that finished with error on specific node"""
+        if not value:
+            return queryset
+
+        node_name = self.data.get("node_name")
+
+        messages = GraphSessionMessage.objects.filter(
+            session=OuterRef("pk"), message_data__message_type="error"
+        )
+        if node_name:
+            messages = messages.filter(name=node_name)
+
+        return queryset.filter(Exists(messages)).distinct()
 
 
 # class CollectionFilter(filters.FilterSet):
