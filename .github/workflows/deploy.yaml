@@ -1,0 +1,54 @@
+name: Deploy on self-hosted
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+concurrency:
+  group: epicstaff-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, test2]
+    steps:
+      - name: Deploy (stash + pull + docker compose up)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APP_DIR="/home/developer/EpicStaff"
+
+          echo ">> cd $APP_DIR"
+          cd "$APP_DIR"
+
+          echo ">> git status"
+          git status --porcelain || true
+
+          echo ">> git stash (safe if nothing to stash)"
+          git stash push -u -m "actions: auto-stash $(date -Is)" || true
+
+          echo ">> git fetch"
+          git fetch --prune
+
+          echo ">> git checkout main"
+          git checkout main
+
+          echo ">> git pull --ff-only"
+          git pull --ff-only
+
+          echo ">> cd src"
+          cd src
+          echo ">> apply shash" 
+          git stash apply || true
+          echo ">> docker compose down"
+          docker compose down --remove-orphans
+          
+          echo ">> docker compose up --build -d --remove-orphans"
+          docker compose up --build -d --remove-orphans
+          
+          docker image prune -f
+
+          echo ">> docker compose ps"
+          docker compose ps
