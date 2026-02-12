@@ -37,11 +37,14 @@
             (docsCheckChange)="filteredAndCheckedDocIds.set($event)"
             (docFieldChange)="onDocFieldChange($event)"
             (applyBulkUpdate)="applyBulkEdit($event)"
+            (onTuneChunk)="openTuneChunkModal($event)"
         />
     </div>
 
-    <app-document-chunks-section
-        [naiveRagId]="naiveRagId()"
-        [selectedDocumentId]="selectedRagDocId()"
-    />
+    @if (!tuneChunkOpened()) {
+        <app-document-chunks-section
+            [naiveRagId]="naiveRagId()"
+            [selectedDocumentId]="selectedRagDocId()"
+        />
+    }
 </div>

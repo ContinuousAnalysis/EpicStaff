@@ -1,3 +1,4 @@
+import { Dialog } from "@angular/cdk/dialog";
 import {
     ChangeDetectionStrategy,
     Component,
@@ -25,6 +26,9 @@ import { UpdateNaiveRagDocumentDtoRequest, } from "../../models/naive-rag-docume
 import { NaiveRagDocumentsStorageService } from "../../services/naive-rag-documents-storage.service";
 import { NaiveRagService } from "../../services/naive-rag.service";
 import { DocumentChunksSectionComponent } from "../document-chunks-section/document-chunks-section.component";
+import {
+    EditFileParametersDialogComponent
+} from "../edit-file-parameters-dialog/edit-file-parameters-dialog.component";
 import { ConfigurationTableComponent } from "./configuration-table/configuration-table.component";
 import { DocFieldChange, } from "./configuration-table/configuration-table.interface";
 
@@ -48,6 +52,7 @@ export class RagConfigurationComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private toastService = inject(ToastService);
     private documentsStorageService = inject(NaiveRagDocumentsStorageService);
+    private dialog = inject(Dialog);
 
     naiveRagId = input.required<number>();
     collection = input.required<CreateCollectionDtoResponse>();
@@ -56,6 +61,7 @@ export class RagConfigurationComponent implements OnInit {
     bulkBtnActive = signal<boolean>(false);
     selectedRagDocId = signal<number | null>(null);
     filteredAndCheckedDocIds = signal<number[]>([]);
+    tuneChunkOpened = signal<boolean>(false);
 
     showBulkRow = computed(() => this.bulkBtnActive() && !!this.filteredAndCheckedDocIds().length);
 
@@ -164,5 +170,22 @@ export class RagConfigurationComponent implements OnInit {
                 next: (res) => this.toastService.success(res.message),
                 error: (e) => console.log(e),
             });
+    }
+
+    openTuneChunkModal({ragDocumentId, allDocumentIds}: {ragDocumentId: number, allDocumentIds: number[]}) {
+        this.tuneChunkOpened.set(true);
+        const dialogRef = this.dialog.open(EditFileParametersDialogComponent, {
+            width: 'calc(100vw - 2rem)',
+            height: 'calc(100vh - 2rem)',
+            data: {
+                ragId: this.naiveRagId(),
+                ragDocumentId,
+                allDocumentIds,
+            },
+            disableClose: true
+        });
+
+        dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.tuneChunkOpened.set(false))
     }
 }

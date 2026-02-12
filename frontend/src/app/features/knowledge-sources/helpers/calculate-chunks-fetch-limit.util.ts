@@ -6,6 +6,6 @@ export function calcLimit(chunkSize: number): number {
     if (chunkSize >= 500) return 36;
     if (chunkSize >= 200) return 60;
     if (chunkSize >= 100) return 100;
-    if (chunkSize >= 50) return 140;
-    return 180; // chunkSize < 500
+    if (chunkSize >= 50) return 160;
+    return 300; // chunkSize < 50
 }

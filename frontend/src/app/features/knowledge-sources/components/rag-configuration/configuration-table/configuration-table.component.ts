@@ -25,10 +25,6 @@ import {
     CheckboxComponent
 } from "@shared/components";
 import { CHUNK_STRATEGIES_SELECT_ITEMS, FILE_TYPES } from "../../../constants/constants";
-import { Dialog } from "@angular/cdk/dialog";
-import {
-    EditFileParametersDialogComponent
-} from "../../edit-file-parameters-dialog/edit-file-parameters-dialog.component";
 
 @Component({
     selector: 'app-configuration-table',
@@ -49,7 +45,6 @@ export class ConfigurationTableComponent {
     fileTypeSelectItems: SelectItem[] = FILE_TYPES.map(t => ({ name: t, value: t }));
     chunkStrategySelectItems: SelectItem[] = CHUNK_STRATEGIES_SELECT_ITEMS;
 
-    private dialog = inject(Dialog);
     private documentsStorageService = inject(NaiveRagDocumentsStorageService);
 
     searchTerm = input<string>('');
@@ -61,6 +56,7 @@ export class ConfigurationTableComponent {
     docsCheckChange = output<number[]>();
     docFieldChange = output<DocFieldChange>();
     applyBulkUpdate = output<UpdateNaiveRagDocumentDtoRequest>();
+    onTuneChunk = output<{ragDocumentId: number, allDocumentIds: number[]}>();
 
     bulkChunkStrategy = signal<string | null>(null);
     bulkChunkSize = signal<number | null>(null);
@@ -124,16 +120,7 @@ export class ConfigurationTableComponent {
 
     tuneChunk(ragDocumentId: number) {
         const allDocumentIds = this.filteredDocuments().map(d => d.naive_rag_document_id);
-        this.dialog.open(EditFileParametersDialogComponent, {
-            width: 'calc(100vw - 2rem)',
-            height: 'calc(100vh - 2rem)',
-            data: {
-                ragId: this.ragId(),
-                ragDocumentId,
-                allDocumentIds,
-            },
-            disableClose: true
-        });
+        this.onTuneChunk.emit({ ragDocumentId, allDocumentIds });
     }
 
     onApplyBulkEdit() {

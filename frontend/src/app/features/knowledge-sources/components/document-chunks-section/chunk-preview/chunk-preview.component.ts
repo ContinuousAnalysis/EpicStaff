@@ -3,7 +3,7 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed, DestroyRef, inject,
-    input, NgZone, OnChanges, SimpleChanges,
+    input, NgZone, OnChanges, signal, SimpleChanges,
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from "@angular/forms";
@@ -37,6 +37,8 @@ export class ChunkPreviewComponent implements OnChanges {
     ragId = input.required<number>();
     docId = input.required<number>();
     chunkingState = input.required<DocumentChunkingState>();
+    blurredChunk: string = 'The policeman on the beat moved up the avenue impressively. The impressiveness was habitual and not for show, for spectators were few. The time was barely 10 o\'clock at night, but chilly gusts of wind with a taste of rain in them had well nigh depeopled the streets.\n' +
+            'Trying doors as he went, twirling his club with many intricate and artful movements, turning now and then to cast his watchful eye adown the pacific thoroughfare, the officer, with his stalwart form and slight swagger, made a fine picture of a guardian of the peace. ';
 
     private ngZone = inject(NgZone)
     private documentStorageService = inject(NaiveRagDocumentsStorageService);
@@ -47,7 +49,7 @@ export class ChunkPreviewComponent implements OnChanges {
     private bufferLimit: number = 50;
     private nextOffset: number = 0;
     private prevOffset: number = 0;
-    private loading: boolean = false;
+    loading = signal<boolean>(false);
 
     chunks = computed<DisplayedChunk[]>(() => {
         const state = this.chunkingState();
@@ -73,7 +75,9 @@ export class ChunkPreviewComponent implements OnChanges {
 
         this.limit = limit;
         this.totalChunks = state.total;
-        this.bufferLimit = limit * 2;
+        this.bufferLimit = limit * 5;
+
+        if (!state.chunks.length) return;
 
         const firstChunkId = state.chunks[0].chunk_index;
         const lastChunkId = state.chunks[state.chunks.length - 1].chunk_index;
@@ -83,7 +87,7 @@ export class ChunkPreviewComponent implements OnChanges {
     }
 
     onScroll(event: Event) {
-        if (this.loading) return;
+        if (this.loading()) return;
         const el = event.target as HTMLElement;
 
         const scrollTop = el.scrollTop;
@@ -103,24 +107,24 @@ export class ChunkPreviewComponent implements OnChanges {
 
     // Correct scroll position after adding new and removing old items handled in a service
     private loadMoreDown(container: HTMLElement) {
-        if (this.loading || this.nextOffset >= this.totalChunks) return;
-        this.loading = true;
+        if (this.loading() || this.nextOffset >= this.totalChunks) return;
+        this.loading.set(true);
 
         this.documentStorageService
             .loadNextChunks(this.ragId(), this.docId(), this.nextOffset, this.limit, this.bufferLimit)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(() => {
                 setTimeout(() => {
-                    this.loading = false;
+                    this.loading.set(false);
                 }, 500)
             });
     }
 
     private loadMoreUp(container: HTMLElement) {
         const firstChunkId = this.chunks()[0]?.chunkIndex;
-        if (!firstChunkId || firstChunkId <= 1 || this.loading || this.prevOffset < 0) return;
+        if (!firstChunkId || firstChunkId <= 1 || this.loading() || this.prevOffset < 0) return;
 
-        this.loading = true;
+        this.loading.set(true);
 
         const anchorEl = container.querySelector(`[data-chunk-index="${firstChunkId}"]`) as HTMLElement;
         const containerTop = container.getBoundingClientRect().top;
@@ -136,7 +140,7 @@ export class ChunkPreviewComponent implements OnChanges {
                         const anchorRelativeTopAfter = newAnchorEl.getBoundingClientRect().top - containerTop;
                         container.scrollTop += anchorRelativeTopAfter - anchorRelativeTopBefore;
                     }
-                    this.loading = false;
+                    this.loading.set(false);
                 });
             });
     }
