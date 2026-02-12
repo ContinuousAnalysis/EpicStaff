@@ -194,6 +194,15 @@ class SharedVariableScope:
             self._cache[name] = self._wrap_mutable(name, value)
         return bool(result)
 
+    def release(self, name: str) -> bool:
+        """Delete a shared variable key (e.g. release a claim).
+        Returns True if the key existed and was deleted."""
+        r = self._redis()
+        key = f"{self._var_key(name)}:data"
+        result = r.delete(key)
+        self._cache.pop(name, None)
+        return bool(result)
+
     def _register_session_sync(self, var_id: str):
         """Register this session as using this variable (sync)."""
         r = self._redis()
