@@ -14,11 +14,13 @@ import {
   PythonMessageData,
 } from '../../../../models/graph-session-message.model';
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { FormatExecutionDataPipe } from '../../../../../../shared/pipes/format-execution-data.pipe';
+
 
 @Component({
   selector: 'app-python-message',
   standalone: true,
-  imports: [CommonModule, NgxJsonViewerModule],
+  imports: [CommonModule, NgxJsonViewerModule ,FormatExecutionDataPipe],
   animations: [expandCollapseAnimation],
   template: `
     <div class="python-flow-container">
@@ -181,7 +183,7 @@ import { expandCollapseAnimation } from '../../../../../../shared/animations/ani
               <div class="raw-data-wrapper">
                 <div class="raw-data-content">
                   <ngx-json-viewer
-                    [json]="getExecutionData()"
+                    [json]="getExecutionData()|formatExecutionData"
                     [expanded]="false"
                   ></ngx-json-viewer>
                 </div>
