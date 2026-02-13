@@ -1,15 +1,12 @@
 from dataclasses import dataclass
 import json
-import os
 from pathlib import Path
-import sys
-from django.core.management.base import BaseCommand
 
 from tables.models import PythonCodeTool, PythonCode
-from pathlib import Path
 import yaml
 from django.db import transaction
 from loguru import logger
+
 
 @dataclass
 class ToolData:
@@ -64,8 +61,8 @@ def get_requirements(tool_path: Path, requirements_file_name: str) -> list[str]:
         lines = f.readlines()
 
     requirements = [
-        line.strip() 
-        for line in lines 
+        line.strip()
+        for line in lines
         if line.strip() and not line.strip().startswith("#")
     ]
 

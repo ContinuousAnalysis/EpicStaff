@@ -1,4 +1,3 @@
-from typing import Any
 from django.utils import timezone
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
@@ -61,7 +60,6 @@ class Session(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
-
         result = super().delete(using, False)
         return result
 
@@ -94,7 +92,6 @@ class Session(models.Model):
 
 
 class UserSessionMessage(CrewSessionMessage):
-
     text = models.TextField()
 
 
@@ -116,3 +113,11 @@ class TaskSessionMessage(CrewSessionMessage):
     expected_output = models.TextField(blank=True, default="")
     raw = models.TextField(blank=True, default="")
     agent = models.TextField(blank=True, default="")
+
+
+class SessionWarningMessage(models.Model):
+    session = models.OneToOneField(
+        Session, on_delete=models.CASCADE, related_name="warnings"
+    )
+    messages = models.JSONField(default=dict)
+    created_at = models.DateTimeField(default=timezone.now)

@@ -1,21 +1,21 @@
-from datetime import datetime
 import json
 from loguru import logger
-from services.graph.events import StopEvent
-from services.graph.custom_message_writer import CustomSessionMessageWriter
-from models.graph_models import FinishMessageData, GraphMessage, StartMessageData
-from models.request_models import (
-    ConditionGroupData,
-    DecisionTableNodeData,
-    PythonCodeData,
-)
-from models.state import *
-from langgraph.types import StreamWriter
-from services.run_python_code_service import RunPythonCodeService
 
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.graph import START, END
+from langgraph.types import StreamWriter
+
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.graph.custom_message_writer import CustomSessionMessageWriter
+from src.crew.models.request_models import (
+    ConditionGroupData,
+    DecisionTableNodeData,
+    PythonCodeData,
+)
+from src.crew.models.state import State
+
+from src.crew.services.run_python_code_service import RunPythonCodeService
 
 
 class DecisionTableNodeDataError(Exception):
@@ -31,6 +31,7 @@ class DecisionTableNodeSubgraph:
         decision_table_node_data: DecisionTableNodeData,
         graph_builder: StateGraph,
         stop_event: StopEvent,
+        run_code_execution_service: RunPythonCodeService,
         custom_session_message_writer: CustomSessionMessageWriter | None = None,
     ):
         self.decision_table_node_data = decision_table_node_data
@@ -43,13 +44,13 @@ class DecisionTableNodeSubgraph:
         self.custom_session_message_writer = (
             custom_session_message_writer or CustomSessionMessageWriter()
         )
+        self.run_code_execution_service = run_code_execution_service
 
     async def _execute_condition_group(
         self,
         condition_group: ConditionGroupData,
         state: State,
     ) -> bool:
-
         condition_group_result: bool = False
         if condition_group.group_type == "simple":
             for condition in condition_group.condition_list:
@@ -93,10 +94,12 @@ def main(**kwargs) -> bool:
             entrypoint="main",
             libraries=[],
         )
-        python_code_execution_data: dict = await RunPythonCodeService().run_code(
-            python_code_data=python_code_data,
-            inputs={"variables": state["variables"].model_dump()},
-            stop_event=self.stop_event,
+        python_code_execution_data: dict = (
+            await self.run_code_execution_service.run_code(
+                python_code_data=python_code_data,
+                inputs={"variables": state["variables"].model_dump()},
+                stop_event=self.stop_event,
+            )
         )
 
         logger.info(f"Python code execution data: {python_code_execution_data}")
@@ -113,13 +116,13 @@ def main(**kwargs) -> bool:
         expression: str,
         state: State,
     ) -> bool:
-
         code = f"""
 def main(variables: dict) -> bool:
     result: bool = {expression}
     assert isinstance(result, bool), "Expression must return a boolean value"
     return result
 """
+
         python_code_data = PythonCodeData(
             venv_name="default",
             code=code,
@@ -127,12 +130,13 @@ def main(variables: dict) -> bool:
             libraries=[],
         )
 
-        python_code_execution_data: dict = await RunPythonCodeService().run_code(
-            python_code_data=python_code_data,
-            inputs={"variables": state["variables"].model_dump()},
-            stop_event=self.stop_event,
+        python_code_execution_data: dict = (
+            await self.run_code_execution_service.run_code(
+                python_code_data=python_code_data,
+                inputs={"variables": state["variables"].model_dump()},
+                stop_event=self.stop_event,
+            )
         )
-        logger.info(f"Python code execution data: {python_code_execution_data}")
         if python_code_execution_data["returncode"] != 0:
             raise DecisionTableNodeDataError(
                 f"Expression execution failed with error: {python_code_execution_data['stderr']}"
@@ -196,7 +200,6 @@ def main(variables: dict) -> bool:
             return state
 
         async def main_node_function(state: State, writer: StreamWriter):
-
             logger.info(
                 f"Entering main decision table node: {self.decision_table_node_data.node_name}"
             )
@@ -244,7 +247,7 @@ def main(variables: dict) -> bool:
             # If not, set the next node to the current condition group
             else:
                 decision_node_variables["next_node"] = (
-                    f"{self.decision_table_node_data.node_name}_condition_group_{decision_node_variables["last_condition_group_index"]}"
+                    f"{self.decision_table_node_data.node_name}_condition_group_{decision_node_variables['last_condition_group_index']}"
                 )
 
             return state
@@ -256,7 +259,6 @@ def main(variables: dict) -> bool:
         def condition_group_wrapper(
             condition_group: ConditionGroupData,
         ) -> callable:
-
             async def condition_group_function(state: State, writer: StreamWriter):
                 try:
                     logger.info(
@@ -326,7 +328,6 @@ def main(variables: dict) -> bool:
         for condition_index, condition_group in enumerate(
             self.decision_table_node_data.conditional_group_list
         ):
-
             condition_group_name = f"{self.node_name}_condition_group_{condition_index}"
             self._graph_builder.add_node(
                 condition_group_name,

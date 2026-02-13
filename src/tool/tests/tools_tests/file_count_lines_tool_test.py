@@ -2,21 +2,14 @@ from crewai import Task
 from pathlib import Path
 
 import pytest
-import pytest_mock
-from pytest_mock import mocker
 
 from tests.tools_tests.mocks.tools_mocks import mock_file_with_content
-from tests.tools_tests.fixtures import (
-    file_count_lines_tool,
-    file_count_lines_tool_setup_test_dir,
-)
 from tests.conftest import test_dir
 
 
 class TestFileCountLinesTool:
 
-
-    #TODO: REWRITE TEST
+    # TODO: REWRITE TEST
     @pytest.mark.skip
     @pytest.mark.parametrize(
         "lines_num_expected, lines_num_counted",
@@ -41,7 +34,7 @@ class TestFileCountLinesTool:
         assert result == f"Total lines: {lines_num_counted}"
         assert mocked_open.call_args_list.count(expected_call) == 2
 
-    #TODO: REWRITE TEST
+    # TODO: REWRITE TEST
     @pytest.mark.skip
     @pytest.mark.parametrize(
         "file_passed, file_called, expectation, message",
@@ -88,7 +81,7 @@ class TestFileCountLinesTool:
         result = (
             tool._run(file_path=file_passed) if file_passed is not None else tool._run()
         )
-        
+
         expected_call = mocker.call(file_called, "r", encoding="utf-8")
         if expectation is None:
             assert mocked_open.call_args_list.count(expected_call) == 2
@@ -96,7 +89,7 @@ class TestFileCountLinesTool:
             assert mocked_open.call_args_list.count(expected_call) == 1
         assert result == message
 
-    #TODO: REWRITE TEST
+    # TODO: REWRITE TEST
     @pytest.mark.skip
     @pytest.mark.parametrize(
         "file_passed, is_dir, message",
@@ -128,7 +121,7 @@ class TestFileCountLinesTool:
         if not is_dir:
             assert mocked_open.call_args_list.count(expected_call) == 2
 
-    #TODO: REWRITE TEST
+    # TODO: REWRITE TEST
     @pytest.mark.skip
     @pytest.mark.skip
     @pytest.mark.vcr(filter_headers=["authorization"], record_mode="once")

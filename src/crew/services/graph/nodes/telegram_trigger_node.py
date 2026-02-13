@@ -1,9 +1,13 @@
-import json
+from typing import Any
 
+from langgraph.types import StreamWriter
 from loguru import logger
-from models.request_models import TelegramTriggerNodeFieldData
-from .base_node import *
-from models.state import *
+
+from src.crew.models.request_models import TelegramTriggerNodeFieldData
+from src.crew.models.state import State
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.graph.nodes import BaseNode
+from src.crew.utils import set_output_variables
 
 
 class TelegramTriggerNode(BaseNode):
@@ -28,7 +32,6 @@ class TelegramTriggerNode(BaseNode):
     async def execute(
         self, state: State, writer: StreamWriter, execution_order: int, input_: Any
     ):
-
         for field in self.field_list:
             # You wonder why set_output_variables is used here?
             # By design it used only at the end of node.
@@ -37,15 +40,15 @@ class TelegramTriggerNode(BaseNode):
             # I don't like it too, but whatever.
             output = (
                 input_.get("telegram_payload", {})
-                    .get(field.parent, {})
-                    .get(field.field_name)
+                .get(field.parent, {})
+                .get(field.field_name)
             )
-            
+
             if output is None:
                 logger.debug(
                     f"Field '{field.field_name}' not found in '{field.parent}'"
                 )  # if user using 1 trigger for different telegram updates it's ok
-            
+
             set_output_variables(
                 state=state,
                 output_variable_path=field.variable_path,

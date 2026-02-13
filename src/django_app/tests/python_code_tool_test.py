@@ -1,16 +1,13 @@
 import pytest
-from rest_framework.exceptions import ValidationError as DRFValidationError
 from tables.exceptions import PythonCodeToolConfigSerializerError
 from tables.serializers.model_serializers import (
     PythonCodeSerializer,
-    PythonCodeToolConfigFieldSerializer,
     PythonCodeToolConfigSerializer,
     PythonCodeToolSerializer,
 )
 from tables.models import (
     PythonCode,
     PythonCodeTool,
-    PythonCodeToolConfig,
     PythonCodeToolConfigField,
 )
 

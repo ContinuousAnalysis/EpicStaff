@@ -118,8 +118,6 @@ def extract_text_from_csv(binary_content: bytes) -> str:
         raise
 
 
-
-
 def extract_text_from_docx(binary_content: bytes) -> str:
     """
     Extract text from DOCX files using python-docx.

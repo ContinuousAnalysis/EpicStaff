@@ -1,6 +1,13 @@
 from django.contrib import admin
-from .models import Agent, Tool, ToolConfig, ToolConfigField, DefaultCrewConfig, DefaultAgentConfig, \
-    DefaultToolConfig
+from .models import (
+    Agent,
+    Tool,
+    ToolConfig,
+    ToolConfigField,
+    DefaultCrewConfig,
+    DefaultAgentConfig,
+    DefaultToolConfig,
+)
 from .models import LLMConfig
 from .models import EmbeddingModel
 from .models import Provider

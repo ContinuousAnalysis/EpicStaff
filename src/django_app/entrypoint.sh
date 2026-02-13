@@ -36,8 +36,18 @@ PORT="${DJANGO_PORT:-8000}"
 
 echo "Starting Django server on port $PORT..."
 
+echo "GUNICORN_RELOAD=$GUNICORN_RELOAD"
+RELOAD_ARGS=""
+if [ "${GUNICORN_RELOAD:-0}" = "1" ]; then
+  RELOAD_ARGS="--reload"
+  echo "SETUP GUNICORN_WORKERS and GUNICORN_THREADS to 1"
+  export GUNICORN_WORKERS=1
+  export GUNICORN_THREADS=1
+fi
+
 exec gunicorn django_app.asgi:application \
   -k uvicorn.workers.UvicornWorker \
   --bind "0.0.0.0:$PORT" \
+  $RELOAD_ARGS \
   --workers "${GUNICORN_WORKERS:-1}" \
   --threads "${GUNICORN_THREADS:-4}"

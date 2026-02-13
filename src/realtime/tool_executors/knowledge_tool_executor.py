@@ -68,7 +68,6 @@ class KnowledgeSearchToolExecutor(BaseToolExecutor):
             data = json.loads(message["data"])
 
             if data["uuid"] == execution_uuid:
-
                 knowledges = "\n\n".join(data["results"])
                 result = (
                     f"\nUse this information for answer: {knowledges}"

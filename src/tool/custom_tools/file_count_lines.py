@@ -20,9 +20,7 @@ class FileCountLinesToolSchema(BaseModel):
 
 class FileCountLinesTool(RouteTool):
     name: str = "Count a file's lines"
-    description: str = (
-        "A tool that can be used to count the number of lines in a file from a given filepath."
-    )
+    description: str = "A tool that can be used to count the number of lines in a file from a given filepath."
     args_schema: Type[BaseModel] = FileCountLinesToolSchema
 
     def __init__(self, **kwargs):
@@ -36,11 +34,11 @@ class FileCountLinesTool(RouteTool):
         file_path = kwargs.get("file_path")
         if file_path is None:
             return "file_path argument is mandatory and it wasn't given to the tool"
-        
+
         file_savepath = self.construct_savepath(frompath=file_path)
         if not FileCountLinesTool.is_path_has_permission(file_savepath):
             return "Given filepath doesn't have access to the specified directory."
-        
+
         try:
             if os.path.isdir(file_savepath):
                 return "The provided path is a directory, not a file name"
@@ -51,8 +49,8 @@ class FileCountLinesTool(RouteTool):
             return "The file cannot be read as it may be a binary or non-text file"
         except FileNotFoundError:
             return "The file cannot be found, probably it doesn't exist"
-        except Exception as e:
-            return f"Didn't manage to read a file. Unpredicted exception occured, I cannot figure out how to handle this"
+        except Exception:
+            return "Didn't manage to read a file. Unpredicted exception occured, I cannot figure out how to handle this"
 
     @staticmethod
     def _get_sorted_encodings():

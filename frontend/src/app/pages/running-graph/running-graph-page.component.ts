@@ -24,7 +24,6 @@ import { FlowsApiService } from '../../features/flows/services/flows-api.service
   standalone: true,
   imports: [
     CommonModule,
-
     RouterModule,
     RunningGraphHeaderComponent,
     GraphMessagesComponent,

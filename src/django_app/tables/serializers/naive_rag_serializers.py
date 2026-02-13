@@ -4,7 +4,6 @@ from tables.models.knowledge_models import (
     NaiveRag,
     NaiveRagDocumentConfig,
     NaiveRagChunk,
-    DocumentMetadata,
 )
 
 from tables.models.knowledge_models.naive_rag_models import (

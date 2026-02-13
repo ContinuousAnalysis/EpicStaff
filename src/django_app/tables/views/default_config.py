@@ -47,7 +47,6 @@ class BaseDefaultConfigAPIView(APIView):
 
 
 class DefaultConfigAPIView(APIView):
-
     @swagger_auto_schema(
         operation_summary="Get default config",
         responses={
