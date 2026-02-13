@@ -1,6 +1,7 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    DestroyRef,
     inject,
     signal,
     computed,
@@ -8,13 +9,15 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
+import { Dialog, DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
 import { LLM_Provider } from '../../../models/LLM_provider.model';
 import { LLM_Model } from '../../../models/llms/LLM.model';
 import { LLM_Models_Service } from '../../../services/llms/LLM_models.service';
 import { getProviderIconPath } from '../../../utils/get-provider-icon';
+import { CreateLlmModelModalComponent } from '../create-llm-model-modal/create-llm-model-modal.component';
 
 export interface AllModelsDialogData {
     provider: LLM_Provider;
@@ -35,8 +38,10 @@ export interface AllModelsResult {
 })
 export class AllModelsModalComponent implements OnInit {
     private dialogRef = inject(DialogRef);
+    private dialog = inject(Dialog);
     private dialogData = inject<AllModelsDialogData>(DIALOG_DATA);
     private modelsService = inject(LLM_Models_Service);
+    private destroyRef = inject(DestroyRef);
 
     searchQuery = signal('');
     models = signal<LLM_Model[]>([]);
@@ -88,6 +93,28 @@ export class AllModelsModalComponent implements OnInit {
             },
             error: (err) => console.error('Error updating model visibility:', err)
         });
+    }
+
+    openCreateModelModal(): void {
+        const createDialogRef = this.dialog.open(CreateLlmModelModalComponent, {
+            data: {
+                provider: this.provider(),
+            },
+        });
+
+        createDialogRef.closed
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((createdModel) => {
+                if (!createdModel) {
+                    return;
+                }
+
+                const created = createdModel as LLM_Model;
+                this.models.update((current) =>
+                    [...current, created].sort((a, b) => a.name.localeCompare(b.name))
+                );
+                this.hasChanges.set(true);
+            });
     }
 
     onClose(): void {

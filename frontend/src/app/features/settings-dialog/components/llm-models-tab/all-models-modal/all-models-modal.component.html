@@ -6,7 +6,7 @@
                 [icon]="getProviderIcon(provider().name)"
                 size="1.25rem"
             />
-            <h3 class="all-models__title">{{ provider().name }} Models</h3>
+            <h3 class="all-models__title">{{ provider().name | uppercase }} Models</h3>
         </div>
         <button
             type="button"
@@ -26,6 +26,9 @@
             [value]="searchQuery()"
             (input)="onSearchChange($event)"
         />
+        <button type="button" class="all-models__create-btn" (click)="openCreateModelModal()">
+            + Add custom model
+        </button>
     </div>
 
     <!-- Models List -->
