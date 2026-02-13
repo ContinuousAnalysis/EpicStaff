@@ -1,23 +1,25 @@
 import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  EventEmitter,
-  Input,
-  NgZone,
-  OnDestroy,
-  Output,
-  ViewChild,
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    ElementRef,
+    EventEmitter, HostBinding,
+    Input,
+    NgZone,
+    OnDestroy,
+    Output,
+    ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { ResizableDirective } from '../../../user-settings-page/tools/custom-tool-editor/directives/resizable.directive';
+import { AppIconComponent } from "../app-icon/app-icon.component";
+import { ToastService } from "../../../services/notifications";
 
 @Component({
   selector: 'app-json-editor',
-  imports: [FormsModule, NgIf, MonacoEditorModule, ResizableDirective],
+  imports: [FormsModule, NgIf, MonacoEditorModule, ResizableDirective, AppIconComponent],
   templateUrl: './json-editor.component.html',
   styleUrls: ['./json-editor.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,7 +32,11 @@ export class JsonEditorComponent {
   @Input() public editorHeight: number = 200;
   @Input() public fullHeight: boolean = false;
   @Input() public showHeader: boolean = true;
+  @Input() public title: string = 'JSON Editor';
+  @Input() public collapsible: boolean = false;
+  @Input() public allowCopy : boolean = false;
 
+  public collapsed: boolean = true;
   public editorLoaded = false;
   @Output() public jsonChange = new EventEmitter<string>();
   @Output() public validationChange = new EventEmitter<boolean>();
@@ -54,7 +60,12 @@ export class JsonEditorComponent {
     readOnly: false,
   };
 
-  constructor(private cdr: ChangeDetectorRef, private zone: NgZone) {}
+  @HostBinding('class.collapsed')
+  get hostCollapsed() {
+    return this.collapsible && this.collapsed;
+  }
+
+  constructor(private cdr: ChangeDetectorRef, private zone: NgZone, private toast: ToastService) {}
 
   public onJsonChange(newValue: string): void {
     try {
@@ -85,6 +96,16 @@ export class JsonEditorComponent {
     }
 
     this.cdr.markForCheck();
+  }
+
+  public onToggle() {
+      this.collapsed = !this.collapsed;
+  }
+
+  public onCopy() {
+    navigator.clipboard.writeText(this.jsonData).then(() => {
+      this.toast.success('Copied to clipboard!');
+    });
   }
 
   /**

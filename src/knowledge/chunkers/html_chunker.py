@@ -1,4 +1,4 @@
-from chunkers.base_chunker import BaseChunker
+from chunkers.base_chunker import BaseChunker, BaseChunkData
 
 from langchain_text_splitters import HTMLSemanticPreservingSplitter
 
@@ -69,10 +69,14 @@ class HTMLChunker(BaseChunker):
         else:
             return []
 
-    def chunk(self, html_text: str) -> list[str]:
+    def chunk(self, html_text: str) -> list[BaseChunkData]:
         documents = self.splitter.split_text(html_text)
         chunks = [
-            f"{doc.metadata}\n{doc.page_content}" if doc.metadata else doc.page_content
+            BaseChunkData(
+                text=f"{doc.metadata}\n{doc.page_content}"
+                if doc.metadata
+                else doc.page_content
+            )
             for doc in documents
         ]
 
