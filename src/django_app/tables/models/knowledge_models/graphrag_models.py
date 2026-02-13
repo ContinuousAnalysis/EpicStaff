@@ -2,8 +2,6 @@ from django.db import models
 from ..crew_models import Task
 
 
-
-
 from ..embedding_models import EmbeddingConfig
 from ..llm_models import LLMConfig
 from .collection_models import BaseRagType, DocumentMetadata
@@ -94,6 +92,10 @@ class AgentGraphRag(models.Model):
     - Keeps Agent model clean and unchanged when adding new RAG types
     """
 
+    class SearchMethod(models.TextChoices):
+        BASIC = "basic", "Basic Search"
+        LOCAL = "local", "Local Search"
+
     agent = models.ForeignKey(
         Agent,
         on_delete=models.CASCADE,
@@ -102,6 +104,12 @@ class AgentGraphRag(models.Model):
     )
     graph_rag = models.ForeignKey(
         GraphRag, on_delete=models.CASCADE, related_name="agent_links"
+    )
+    search_method = models.CharField(
+        max_length=10,
+        choices=SearchMethod.choices,
+        default=SearchMethod.BASIC,
+        help_text="Active search method: basic or local",
     )
 
     class Meta:
@@ -150,7 +158,6 @@ class GraphRagDocument(models.Model):
 
     def __str__(self):
         return f"GraphRagDocument({self.graph_rag_id}, {self.document_id})"
-
 
 
 class GraphRagInputFileType(models.TextChoices):
@@ -228,134 +235,98 @@ class GraphRagIndexConfig(models.Model):
         )
 
 
-# class TaskGraphRagSearchConfig(models.Model):
-#     """
-#     Container for all possible GraphRAG search configurations for a given Task.
-#     """
+class GraphRagBasicSearchConfig(models.Model):
+    """
+    The default configuration section for Basic Search.
+    Linked to Agent via OneToOneField (same pattern as NaiveRagSearchConfig).
+    """
 
-#     task = models.OneToOneField(
-#         "Task",
-#         on_delete=models.CASCADE,
-#         related_name="graph_search_config",
-#         help_text="Search configuration container linked to a specific task.",
-#     )
+    agent = models.OneToOneField(
+        Agent,
+        on_delete=models.CASCADE,
+        related_name="graph_basic_search_config",
+        help_text="Agent this basic search configuration belongs to",
+    )
 
-#     basic_config = models.ForeignKey(
-#         "GraphRagBasicSearchConfig",
-#         on_delete=models.SET_NULL,
-#         null=True,
-#         blank=True,
-#         related_name="tasks_using_basic",
-#     )
-#     local_config = models.ForeignKey(
-#         "GraphRagLocalSearchConfig",
-#         on_delete=models.SET_NULL,
-#         null=True,
-#         blank=True,
-#         related_name="tasks_using_local",
-#     )
-#     global_config = models.ForeignKey(
-#         "GraphRagGlobalSearchConfig",
-#         on_delete=models.SET_NULL,
-#         null=True,
-#         blank=True,
-#         related_name="tasks_using_global",
-#     )
-#     drift_config = models.ForeignKey(
-#         "GraphRagDriftSearchConfig",
-#         on_delete=models.SET_NULL,
-#         null=True,
-#         blank=True,
-#         related_name="tasks_using_drift",
-#     )
+    prompt = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The basic search prompt to use.",
+        default=None,
+    )
+
+    k = models.IntegerField(
+        default=10,
+        help_text="The number of text units to include in search context.",
+    )
+
+    max_context_tokens = models.IntegerField(
+        default=12000,
+        help_text="The maximum tokens.",
+    )
+
+    class Meta:
+        db_table = "graph_rag_basic_search_config"
+
+    def __str__(self):
+        return f"GraphRagBasicSearchConfig({self.pk})"
 
 
-#     def get_active_config(self):
-#         """
-#         Return the active search configuration instance based on the task's search_method.
-#         """
-#         mapping = {
-#             Task.SearchMethod.GR_BASIC: self.basic_config,
-#             Task.SearchMethod.GR_LOCAL: self.local_config,
-#             Task.SearchMethod.GR_GLOBAL: self.global_config,
-#             Task.SearchMethod.GR_DRIFT: self.drift_config,
-#         }
-#         return mapping.get(self.task.search_method)
+class GraphRagLocalSearchConfig(models.Model):
+    """
+    The default configuration section for Local Search.
+    Linked to Agent via OneToOneField (same pattern as NaiveRagSearchConfig).
+    """
 
-#     def __str__(self):
-#         return f"GraphRAG Search Config for Task {self.task_id}"
+    agent = models.OneToOneField(
+        Agent,
+        on_delete=models.CASCADE,
+        related_name="graph_local_search_config",
+        help_text="Agent this local search configuration belongs to",
+    )
 
+    prompt = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The local search prompt to use.",
+        default=None,
+    )
 
-# class GraphRagBasicSearchConfig(models.Model):
-#     """
-#     The default configuration section for Basic Search.
-#     """
+    text_unit_prop = models.FloatField(
+        default=0.5,
+        help_text="The text unit proportion.",
+    )
 
-#     prompt = models.TextField(
-#         null=True,
-#         blank=True,
-#         help_text="The basic search prompt to use.",
-#         default=None,
-#     )
+    community_prop = models.FloatField(
+        default=0.15,
+        help_text="The community proportion.",
+    )
 
-#     k = models.IntegerField(
-#         default=10,
-#         help_text="The number of text units to include in search context.",
-#     )
+    conversation_history_max_turns = models.IntegerField(
+        default=5,
+        help_text="The conversation history maximum turns.",
+    )
 
-#     max_context_tokens = models.IntegerField(
-#         default=12000,
-#         help_text="The maximum tokens.",
-#     )
+    top_k_entities = models.IntegerField(
+        default=10,
+        help_text="The top k mapped entities.",
+    )
 
-#     def __str__(self):
-#         return f"GraphRagBasicSearchConfig({self.pk})"
+    top_k_relationships = models.IntegerField(
+        default=10,
+        help_text="The top k mapped relations.",
+    )
 
+    max_context_tokens = models.IntegerField(
+        default=12000,
+        help_text="The maximum tokens.",
+    )
 
-# class GraphRagLocalSearchConfig(models.Model):
-#     """
-#     The default configuration section for Local Search.
-#     """
+    class Meta:
+        db_table = "graph_rag_local_search_config"
 
-#     prompt = models.TextField(
-#         null=True,
-#         blank=True,
-#         help_text="The local search prompt to use.",
-#         default=None,
-#     )
-
-#     text_unit_prop = models.FloatField(
-#         default=0.5,
-#         help_text="The text unit proportion.",
-#     )
-
-#     community_prop = models.FloatField(
-#         default=0.15,
-#         help_text="The community proportion.",
-#     )
-
-#     conversation_history_max_turns = models.IntegerField(
-#         default=5,
-#         help_text="The conversation history maximum turns.",
-#     )
-
-#     top_k_entities = models.IntegerField(
-#         default=10,
-#         help_text="The top k mapped entities.",
-#     )
-
-#     top_k_relationships = models.IntegerField(
-#         default=10,
-#         help_text="The top k mapped relations.",
-#     )
-
-#     max_context_tokens = models.IntegerField(
-#         default=12000,
-#         help_text="The maximum tokens.",
-#     )
-
-#     def __str__(self):
-#         return f"GraphRagLocalSearchConfig({self.pk})"
+    def __str__(self):
+        return f"GraphRagLocalSearchConfig({self.pk})"
 
 
 # class GraphRagGlobalSearchConfig(models.Model):

@@ -139,40 +139,18 @@ class Agent(AbstractDefaultFillableModel):
         Get assigned RAG type and ID in format "rag_type:id".
         """
         try:
-            # Get the AgentNaiveRag link (currently only one due to unique=True constraint)
             agent_naive_rag = self.agent_naive_rags.select_related("naive_rag").get()
-            naive_rag = agent_naive_rag.naive_rag
-            return f"naive:{naive_rag.naive_rag_id}"
-        except Exception:
-            return None
-
-    def get_search_configs(self) -> dict | None:
-        """
-        Get all RAG search configurations as nested dictionary.
-        """
-        configs = {}
-
-        # Collect NaiveRag search config
-        try:
-            naive_config = self.naive_search_config
-            configs["naive"] = {
-                "search_limit": naive_config.search_limit,
-                "similarity_threshold": round(
-                    float(naive_config.similarity_threshold), 2
-                ),
-            }
+            return f"naive:{agent_naive_rag.naive_rag.naive_rag_id}"
         except Exception:
             pass
 
-        # Collect GraphRag search config
-        # try:
-        #     graph_config = self.graph_search_config
-        #     configs["graph"] ={...}}
-        # except Exception:
-        #     pass
+        try:
+            agent_graph_rag = self.agent_graph_rags.select_related("graph_rag").get()
+            return f"graph:{agent_graph_rag.graph_rag.graph_rag_id}"
+        except Exception:
+            pass
 
-        # Return None if no configs found, otherwise return dict
-        return configs if configs else None
+        return None
 
     def __str__(self):
         return self.role

@@ -21,6 +21,8 @@ from .graphrag_models import (
     GraphRagInputFileType,
     GraphRagChunkStrategyType,
     GraphRagIndexConfig,
+    GraphRagBasicSearchConfig,
+    GraphRagLocalSearchConfig,
 )
 
 __all__ = [
@@ -43,4 +45,6 @@ __all__ = [
     "GraphRagInputFileType",
     "GraphRagChunkStrategyType",
     "GraphRagIndexConfig",
+    "GraphRagBasicSearchConfig",
+    "GraphRagLocalSearchConfig",
 ]
