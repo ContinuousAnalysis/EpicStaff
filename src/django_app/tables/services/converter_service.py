@@ -334,6 +334,8 @@ class ConverterService(metaclass=SingletonMeta):
             language=rt_agent_chat.language,
             voice_recognition_prompt=rt_agent_chat.voice_recognition_prompt,
             voice=rt_agent_chat.voice,
+            input_audio_format=rt_agent_chat.input_audio_format.value,
+            output_audio_format=rt_agent_chat.output_audio_format.value,
         )
 
         return rt_agent_chat_data
@@ -444,6 +446,7 @@ class ConverterService(metaclass=SingletonMeta):
             provider=config.model.llm_provider.name,
             config=LLMConfigData(
                 model=config.model.name,
+                timeout=config.timeout,
                 temperature=config.temperature,
                 top_p=config.top_p,
                 stop=config.stop,
@@ -453,12 +456,12 @@ class ConverterService(metaclass=SingletonMeta):
                 logit_bias=config.logit_bias,
                 response_format=config.response_format,
                 seed=config.seed,
-                logprobs=config.logprobs,
-                top_logprobs=config.top_logprobs,
-                base_url=config.base_url,
-                api_version=config.api_version,
+                base_url=config.model.base_url,
+                api_version=config.model.api_version,
                 api_key=config.api_key,
-                timeout=config.timeout,
+                deployment_id=config.model.deployment_id,
+                headers=config.headers,
+                extra_headers=config.extra_headers,
             ),
         )
 

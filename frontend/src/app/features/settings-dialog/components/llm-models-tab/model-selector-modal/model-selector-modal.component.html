@@ -46,7 +46,7 @@
                                 size="1.125rem"
                             />
                             <span class="model-selector__provider-name">
-                                {{ providerData.provider.name }}
+                                {{ providerData.provider.name | uppercase }}
                             </span>
                         </div>
                         <button
@@ -57,14 +57,14 @@
                             <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
                                 <path d="M5 0V10M0 5H10" stroke="currentColor" stroke-width="1.5"/>
                             </svg>
-                            <span>Add model</span>
+                            <span>Edit models</span>
                         </button>
                     </div>
 
-                    <!-- Favorite Models -->
-                    @if (providerData.favoriteModels.length > 0) {
+                    <!-- Visible Models -->
+                    @if (providerData.visibleModels.length > 0) {
                         <div class="model-selector__models">
-                            @for (model of providerData.favoriteModels; track model.id) {
+                            @for (model of providerData.visibleModels; track model.id) {
                                 <button
                                     type="button"
                                     class="model-selector__model"
@@ -72,22 +72,12 @@
                                     (click)="toggleModelSelection(providerData.provider, model)"
                                 >
                                     <span class="model-selector__model-name">{{ model.name }}</span>
-                                    <button
-                                        type="button"
-                                        class="model-selector__star-btn model-selector__star-btn--active"
-                                        (click)="toggleFavorite($event, providerData, model)"
-                                        title="Remove from favorites"
-                                    >
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                    </button>
                                 </button>
                             }
                         </div>
                     } @else {
                         <div class="model-selector__no-favorites">
-                            <p>No favorite models. Click "Add model" to select models.</p>
+                            <p>No visible models. Click "Edit models" to manage visibility.</p>
                         </div>
                     }
                 </div>
@@ -95,11 +85,10 @@
         }
     </div>
 
-    <!-- Footer -->
     <div class="model-selector__footer">
         @if (selectedModel()) {
             <span class="model-selector__footer-text">
-                Selected: {{ selectedProvider()?.name }} / {{ selectedModel()?.name }}
+                Selected: {{ selectedProvider()?.name | uppercase }} / {{ selectedModel()?.name }}
             </span>
         } @else {
             <span class="model-selector__footer-text model-selector__footer-text--placeholder">

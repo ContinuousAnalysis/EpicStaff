@@ -16,11 +16,13 @@ class LLMConfigData(BaseModel):
     logit_bias: dict[int, float] | None = None
     response_format: dict[str, Any] | None = None
     seed: int | None = None
-    logprobs: bool | None = None
-    top_logprobs: int | None = None
     base_url: str | None = None
     api_version: str | None = None
     api_key: str | None = None
+    deployment_id: str | None = None
+    headers: dict[str, str] | None = None
+    extra_headers: dict[str, str] | None = None
+    
 
 
 class EmbedderConfigData(BaseModel):
@@ -190,6 +192,7 @@ class BaseKnowledgeSearchMessageResponse(BaseModel):
     rag_search_config: RagSearchConfig
     # Support backwards compatibility
     results: List[str] = []  # deprecated, use chunks instead
+    token_usage: dict = {}
 
 
 class AgentData(BaseModel):

@@ -15,7 +15,6 @@ import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
 import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
-import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { LLM_Provider, ModelTypes } from '../../../models/LLM_provider.model';
 import { LLM_Model } from '../../../models/llms/LLM.model';
 import { LLM_Providers_Service } from '../../../services/LLM_providers.service';
@@ -35,11 +34,9 @@ export interface ModelSelectorResult {
 interface ProviderWithModels {
     provider: LLM_Provider;
     models: LLM_Model[];
-    favoriteModels: LLM_Model[];
-    favoriteModelIds: Set<number>;
+    visibleModels: LLM_Model[];
 }
 
-// Priority order for top providers
 const TOP_PROVIDERS = [
     'openai',
     'anthropic',
@@ -56,7 +53,7 @@ const TOP_PROVIDERS = [
 @Component({
     selector: 'app-model-selector-modal',
     standalone: true,
-    imports: [CommonModule, FormsModule, AppIconComponent, ButtonComponent],
+    imports: [CommonModule, FormsModule, AppIconComponent],
     templateUrl: './model-selector-modal.component.html',
     styleUrls: ['./model-selector-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -69,7 +66,6 @@ export class ModelSelectorModalComponent implements OnInit {
     private modelsService = inject(LLM_Models_Service);
     private destroyRef = inject(DestroyRef);
 
-    // State
     isLoading = signal(true);
     searchQuery = signal('');
     providersWithModels = signal<ProviderWithModels[]>([]);
@@ -77,7 +73,6 @@ export class ModelSelectorModalComponent implements OnInit {
     selectedModel = signal<LLM_Model | null>(null);
     selectedProvider = signal<LLM_Provider | null>(null);
 
-    // Computed
     filteredProviders = computed(() => {
         const query = this.searchQuery().toLowerCase().trim();
         const providers = this.providersWithModels();
@@ -89,7 +84,7 @@ export class ModelSelectorModalComponent implements OnInit {
         return providers
             .map(p => {
                 const providerMatches = p.provider.name.toLowerCase().includes(query);
-                const matchingModels = p.favoriteModels.filter(m =>
+                const matchingModels = p.visibleModels.filter(m =>
                     m.name.toLowerCase().includes(query)
                 );
 
@@ -100,7 +95,7 @@ export class ModelSelectorModalComponent implements OnInit {
                 if (matchingModels.length > 0) {
                     return {
                         ...p,
-                        favoriteModels: matchingModels,
+                        visibleModels: matchingModels,
                     };
                 }
 
@@ -114,6 +109,10 @@ export class ModelSelectorModalComponent implements OnInit {
             this.selectedModelId.set(this.dialogData.selectedModelId);
         }
         this.loadProvidersAndModels();
+
+        this.dialogRef.backdropClick.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.onClose();
+        });
     }
 
     private sortProviders(providers: LLM_Provider[]): LLM_Provider[] {
@@ -121,15 +120,11 @@ export class ModelSelectorModalComponent implements OnInit {
             const aIndex = TOP_PROVIDERS.indexOf(a.name.toLowerCase());
             const bIndex = TOP_PROVIDERS.indexOf(b.name.toLowerCase());
 
-            // If both are in the priority list, sort by priority
             if (aIndex !== -1 && bIndex !== -1) {
                 return aIndex - bIndex;
             }
-            // If only a is in priority list, a comes first
             if (aIndex !== -1) return -1;
-            // If only b is in priority list, b comes first
             if (bIndex !== -1) return 1;
-            // Otherwise, alphabetical
             return a.name.localeCompare(b.name);
         });
     }
@@ -142,12 +137,10 @@ export class ModelSelectorModalComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (providers) => {
-                    // Sort providers with top ones first
                     const sortedProviders = this.sortProviders(providers);
 
-                    // Load models for all providers in parallel
                     const modelRequests = sortedProviders.map(provider =>
-                        this.modelsService.getLLMModels(provider.id)
+                        this.modelsService.getLLMModels(provider.id, true)
                     );
 
                     if (modelRequests.length === 0) {
@@ -164,15 +157,11 @@ export class ModelSelectorModalComponent implements OnInit {
                         .subscribe({
                             next: (modelsArrays) => {
                                 const providersWithModels: ProviderWithModels[] = sortedProviders.map((provider, index) => {
-                                    const models = modelsArrays[index] || [];
-                                    // First 5 models are "favorites" (shown by default)
-                                    const favoriteModels = models.slice(0, 5);
-                                    const favoriteModelIds = new Set(favoriteModels.map(m => m.id));
+                                    const visibleModels = modelsArrays[index] || [];
 
-                                    // Check if selected model belongs to this provider
                                     const selectedId = this.selectedModelId();
                                     if (selectedId) {
-                                        const selectedInProvider = models.find(m => m.id === selectedId);
+                                        const selectedInProvider = visibleModels.find(m => m.id === selectedId);
                                         if (selectedInProvider) {
                                             this.selectedModel.set(selectedInProvider);
                                             this.selectedProvider.set(provider);
@@ -181,9 +170,8 @@ export class ModelSelectorModalComponent implements OnInit {
 
                                     return {
                                         provider,
-                                        models,
-                                        favoriteModels,
-                                        favoriteModelIds,
+                                        models: visibleModels,
+                                        visibleModels,
                                     };
                                 });
 
@@ -214,12 +202,10 @@ export class ModelSelectorModalComponent implements OnInit {
     toggleModelSelection(provider: LLM_Provider, model: LLM_Model): void {
         const currentId = this.selectedModelId();
         if (currentId === model.id) {
-            // Deselect
             this.selectedModelId.set(null);
             this.selectedModel.set(null);
             this.selectedProvider.set(null);
         } else {
-            // Select
             this.selectedModelId.set(model.id);
             this.selectedModel.set(model);
             this.selectedProvider.set(provider);
@@ -230,63 +216,37 @@ export class ModelSelectorModalComponent implements OnInit {
         return this.selectedModelId() === modelId;
     }
 
-    isModelFavorite(providerData: ProviderWithModels, modelId: number): boolean {
-        return providerData.favoriteModelIds.has(modelId);
-    }
-
-    toggleFavorite(event: Event, providerData: ProviderWithModels, model: LLM_Model): void {
-        event.stopPropagation();
-        
-        this.providersWithModels.update(providers => {
-            return providers.map(p => {
-                if (p.provider.id !== providerData.provider.id) return p;
-
-                const newFavoriteIds = new Set(p.favoriteModelIds);
-                let newFavorites = [...p.favoriteModels];
-
-                if (newFavoriteIds.has(model.id)) {
-                    // Remove from favorites
-                    newFavoriteIds.delete(model.id);
-                    newFavorites = newFavorites.filter(m => m.id !== model.id);
-                } else {
-                    // Add to favorites
-                    newFavoriteIds.add(model.id);
-                    newFavorites.push(model);
-                }
-
-                return {
-                    ...p,
-                    favoriteModels: newFavorites,
-                    favoriteModelIds: newFavoriteIds,
-                };
-            });
-        });
-    }
-
     openAllModelsModal(provider: LLM_Provider, providerData: ProviderWithModels): void {
-        const dialogRef = this.dialog.open(AllModelsModalComponent, {
-            data: {
-                provider,
-                models: providerData.models,
-                favoriteModelIds: providerData.favoriteModelIds,
-            },
-        });
+        this.modelsService.getLLMModels(provider.id).pipe(
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe({
+            next: (allModels) => {
+                const dialogRef = this.dialog.open(AllModelsModalComponent, {
+                    data: {
+                        provider,
+                        models: allModels,
+                    },
+                });
 
-        dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
-            if (result) {
-                const { favoriteModelIds } = result as AllModelsResult;
-                
-                // Update favorites for this provider
+                dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+                    this.reloadProviderModels(provider.id);
+                });
+            }
+        });
+    }
+
+    private reloadProviderModels(providerId: number): void {
+        this.modelsService.getLLMModels(providerId, true).pipe(
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe({
+            next: (visibleModels) => {
                 this.providersWithModels.update(providers => {
                     return providers.map(p => {
-                        if (p.provider.id !== provider.id) return p;
-
-                        const newFavorites = p.models.filter(m => favoriteModelIds.has(m.id));
-                        
+                        if (p.provider.id !== providerId) return p;
                         return {
                             ...p,
-                            favoriteModels: newFavorites,
-                            favoriteModelIds,
+                            models: visibleModels,
+                            visibleModels,
                         };
                     });
                 });
@@ -294,20 +254,7 @@ export class ModelSelectorModalComponent implements OnInit {
         });
     }
 
-    onConfirm(): void {
-        const model = this.selectedModel();
-        const provider = this.selectedProvider();
-        
-        if (model && provider) {
-            const result: ModelSelectorResult = { provider, model };
-            this.dialogRef.close(result);
-        } else {
-            this.dialogRef.close(null);
-        }
-    }
-
     onClose(): void {
-        // On close (click outside), apply selection if exists
         const model = this.selectedModel();
         const provider = this.selectedProvider();
         

@@ -116,7 +116,7 @@ connections: Dict[
 
 
 @app.websocket("/")
-async def healthcheck_endpoint(
+async def root(
     websocket: WebSocket,
     model: str | None = None,
     connection_key: str | None = None,

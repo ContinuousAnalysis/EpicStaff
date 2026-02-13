@@ -1,78 +1,60 @@
 export interface GetLlmConfigRequest {
-    id: number;
+  id: number;
     custom_name: string;
-    model: number;
-    api_key: string;
+  model: number;
+  api_key: string;
     temperature: number | null;
     top_p: number | null;
-    n: number | null;
     stop: string[] | null;
-    max_completion_tokens: number | null;
     max_tokens: number | null;
     presence_penalty: number | null;
     frequency_penalty: number | null;
     logit_bias: Record<string, number> | null;
     response_format: Record<string, unknown> | null;
     seed: number | null;
-    logprobs: boolean | null;
-    top_logprobs: number | null;
-    base_url: string | null;
-    api_version: string | null;
     timeout: number | null;
     is_visible: boolean;
-    capabilities?: string[];
     headers?: Record<string, string>;
+    extra_headers?: Record<string, string>;
 }
 
 export interface CreateLLMConfigRequest {
     custom_name: string;
-    model: number;
-    api_key: string;
+  model: number;
+  api_key: string;
     temperature?: number | null;
     top_p?: number | null;
-    n?: number | null;
     stop?: string[] | null;
-    max_completion_tokens?: number | null;
     max_tokens?: number | null;
     presence_penalty?: number | null;
     frequency_penalty?: number | null;
     logit_bias?: Record<string, number> | null;
     response_format?: Record<string, unknown> | null;
     seed?: number | null;
-    logprobs?: boolean | null;
-    top_logprobs?: number | null;
-    base_url?: string | null;
-    api_version?: string | null;
     timeout?: number | null;
     is_visible?: boolean;
-    capabilities?: string[];
     headers?: Record<string, string>;
+    extra_headers?: Record<string, string>;
 }
 
 export interface UpdateLLMConfigRequest {
-    id: number;
+  id: number;
     custom_name: string;
     model: number;
-    api_key: string;
+  api_key: string;
     temperature?: number | null;
     top_p?: number | null;
-    n?: number | null;
     stop?: string[] | null;
-    max_completion_tokens?: number | null;
     max_tokens?: number | null;
     presence_penalty?: number | null;
     frequency_penalty?: number | null;
     logit_bias?: Record<string, number> | null;
     response_format?: Record<string, unknown> | null;
     seed?: number | null;
-    logprobs?: boolean | null;
-    top_logprobs?: number | null;
-    base_url?: string | null;
-    api_version?: string | null;
     timeout?: number | null;
     is_visible?: boolean;
-    capabilities?: string[];
     headers?: Record<string, string>;
+    extra_headers?: Record<string, string>;
 }
 
 export interface LLMConfigFormValue {
@@ -80,21 +62,14 @@ export interface LLMConfigFormValue {
     modelId: number | null;
     customName: string;
     apiKey: string;
-    capabilities: string[];
-    baseUrl: string;
-    apiVersion: string;
-    deployment: string;
     headers: Record<string, string>;
     temperature: number | null;
     topP: number | null;
     presencePenalty: number | null;
     frequencyPenalty: number | null;
     maxTokens: number | null;
-    maxCompletionTokens: number | null;
-    n: number | null;
     timeout: number | null;
     seed: number | null;
-    topLogprobs: number | null;
     stop: string[] | null;
     logitBias: Record<string, number> | null;
     responseFormat: Record<string, unknown> | null;
