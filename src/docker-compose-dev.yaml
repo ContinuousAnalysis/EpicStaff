@@ -334,6 +334,9 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_KNOWLEDGE_USER=${DB_KNOWLEDGE_USER}
       - DB_KNOWLEDGE_PASSWORD=${DB_KNOWLEDGE_PASSWORD}
+      - GRAPH_DATA_DIR=/home/user/root/app/graph_data
+    volumes:
+      - graph_data:/home/user/root/app/graph_data
     networks:
       - backend-network
     tty: true
@@ -394,6 +397,9 @@ volumes:
     external: true
   
   media_data:
+    external: true
+
+  graph_data:
     external: true
 
 networks:
