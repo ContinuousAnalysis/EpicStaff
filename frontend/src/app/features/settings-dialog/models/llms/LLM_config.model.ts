@@ -5,9 +5,7 @@ export interface GetLlmConfigRequest {
   api_key: string;
     temperature: number | null;
     top_p: number | null;
-    n: number | null;
     stop: string[] | null;
-    max_completion_tokens: number | null;
     max_tokens: number | null;
     presence_penalty: number | null;
     frequency_penalty: number | null;
@@ -26,9 +24,7 @@ export interface CreateLLMConfigRequest {
   api_key: string;
     temperature?: number | null;
     top_p?: number | null;
-    n?: number | null;
     stop?: string[] | null;
-    max_completion_tokens?: number | null;
     max_tokens?: number | null;
     presence_penalty?: number | null;
     frequency_penalty?: number | null;
@@ -48,9 +44,7 @@ export interface UpdateLLMConfigRequest {
   api_key: string;
     temperature?: number | null;
     top_p?: number | null;
-    n?: number | null;
     stop?: string[] | null;
-    max_completion_tokens?: number | null;
     max_tokens?: number | null;
     presence_penalty?: number | null;
     frequency_penalty?: number | null;
@@ -74,8 +68,6 @@ export interface LLMConfigFormValue {
     presencePenalty: number | null;
     frequencyPenalty: number | null;
     maxTokens: number | null;
-    maxCompletionTokens: number | null;
-    n: number | null;
     timeout: number | null;
     seed: number | null;
     stop: string[] | null;

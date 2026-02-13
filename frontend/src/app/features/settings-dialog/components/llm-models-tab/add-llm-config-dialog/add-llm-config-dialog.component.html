@@ -207,7 +207,7 @@
                 <h3 class="llm-dialog__section-title">Token Limits & Completion</h3>
 
                 <div class="llm-dialog__field-row">
-                    <div class="llm-dialog__field llm-dialog__field--half">
+                    <div class="llm-dialog__field">
                         <app-number-stepper
                             label="Max Tokens"
                             tooltipText="Maximum number of tokens in the response"
@@ -220,36 +220,7 @@
                             size="lg"
                         />
                     </div>
-                    <div class="llm-dialog__field llm-dialog__field--half">
-                        <app-number-stepper
-                            label="Max Completion Tokens"
-                            tooltipText="Maximum tokens for completion (may differ from max tokens)"
-                            [min]="1"
-                            [max]="128000"
-                            [step]="256"
-                            formControlName="maxCompletionTokens"
-                            [control]="$any(form.get('maxCompletionTokens'))"
-                            placeholder="2048"
-                            size="lg"
-                        />
-                    </div>
-            </div>
-
-                <div class="llm-dialog__field-row">
-                    <div class="llm-dialog__field llm-dialog__field--half">
-                        <app-number-stepper
-                            label="N (Completions)"
-                            tooltipText="Number of completions to generate"
-                            [min]="1"
-                            [max]="10"
-                            [step]="1"
-                            formControlName="nCompletions"
-                            [control]="$any(form.get('nCompletions'))"
-                            placeholder="1"
-                            size="lg"
-                        />
-                    </div>
-                    <div class="llm-dialog__field llm-dialog__field--half">
+                    <div class="llm-dialog__field">
                         <app-number-stepper
                             label="Timeout (seconds)"
                             tooltipText="Request timeout in seconds"

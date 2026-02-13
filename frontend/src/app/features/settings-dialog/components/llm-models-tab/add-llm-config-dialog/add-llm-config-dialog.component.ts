@@ -37,8 +37,6 @@ const LLM_FORM_DEFAULTS = {
     presencePenalty: 0,
     frequencyPenalty: 0,
     maxTokens: 4096,
-    maxCompletionTokens: 2048,
-    nCompletions: 1,
     timeout: 30,
     seed: null as number | null,
 };
@@ -83,8 +81,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
         presencePenalty: [LLM_FORM_DEFAULTS.presencePenalty],
         frequencyPenalty: [LLM_FORM_DEFAULTS.frequencyPenalty],
         maxTokens: [LLM_FORM_DEFAULTS.maxTokens, [Validators.required, Validators.min(1)]],
-        maxCompletionTokens: [LLM_FORM_DEFAULTS.maxCompletionTokens, [Validators.required, Validators.min(1)]],
-        nCompletions: [LLM_FORM_DEFAULTS.nCompletions, [Validators.required, Validators.min(1)]],
         timeout: [LLM_FORM_DEFAULTS.timeout, [Validators.required, Validators.min(1)]],
         seed: [LLM_FORM_DEFAULTS.seed, [Validators.min(-2147483648), Validators.max(2147483647)]],
         headers: this.fb.array([this.createHeaderGroup()]),
@@ -226,12 +222,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
         const maxTokens = typeof config.max_tokens === 'number' && config.max_tokens >= 1
             ? config.max_tokens
             : LLM_FORM_DEFAULTS.maxTokens;
-        const maxCompletionTokens = typeof config.max_completion_tokens === 'number' && config.max_completion_tokens >= 1
-            ? config.max_completion_tokens
-            : LLM_FORM_DEFAULTS.maxCompletionTokens;
-        const nCompletions = typeof config.n === 'number' && config.n >= 1
-            ? config.n
-            : LLM_FORM_DEFAULTS.nCompletions;
         const timeout = typeof config.timeout === 'number' && config.timeout >= 1
             ? config.timeout
             : LLM_FORM_DEFAULTS.timeout;
@@ -247,8 +237,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
             presencePenalty,
             frequencyPenalty,
             maxTokens,
-            maxCompletionTokens,
-            nCompletions,
             timeout,
             seed,
         });
@@ -470,8 +458,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
             presence_penalty: formValue.presencePenalty,
             frequency_penalty: formValue.frequencyPenalty,
             max_tokens: formValue.maxTokens,
-            max_completion_tokens: formValue.maxCompletionTokens,
-            n: formValue.nCompletions,
             timeout: formValue.timeout,
             seed: seedValue,
             stop: stopSequences,
