@@ -49,7 +49,6 @@ class LLMConfig(AbstractDefaultFillableModel):
     model = models.ForeignKey(LLMModel, on_delete=models.CASCADE, null=True)
     temperature = models.FloatField(default=0.7, null=True, blank=True)
     top_p = models.FloatField(null=True, blank=True)
-    n = models.IntegerField(null=True, blank=True)
     stop = models.JSONField(null=True, blank=True)
     max_completion_tokens = models.IntegerField(null=True, blank=True)
     max_tokens = models.IntegerField(default=None, null=True, blank=True)

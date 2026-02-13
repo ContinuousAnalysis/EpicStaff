@@ -446,7 +446,6 @@ class ConverterService(metaclass=SingletonMeta):
                 model=config.model.name,
                 temperature=config.temperature,
                 top_p=config.top_p,
-                n=config.n,
                 stop=config.stop,
                 max_completion_tokens=config.max_completion_tokens,
                 max_tokens=config.max_tokens,
