@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator
 from tables.models import (
     DefaultBaseModel,
     Provider,
@@ -27,7 +28,12 @@ class DefaultLLMConfig(DefaultBaseModel):
     temperature = models.FloatField(default=0.7, null=True, blank=True)
     top_p = models.FloatField(null=True, blank=True)
     stop = models.JSONField(null=True, blank=True)
-    max_tokens = models.IntegerField(default=4096, null=True, blank=True)
+    max_tokens = models.IntegerField(
+        default=4096,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(500)],
+    )
     presence_penalty = models.FloatField(null=True, blank=True)
     frequency_penalty = models.FloatField(null=True, blank=True)
     logit_bias = models.JSONField(null=True, blank=True)
