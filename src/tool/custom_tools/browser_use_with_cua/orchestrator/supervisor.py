@@ -31,7 +31,6 @@ def choose_tool_for_step(
 
 
 class Supervisor:
-
     def __init__(
         self,
         hub,

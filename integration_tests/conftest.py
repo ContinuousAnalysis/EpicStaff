@@ -18,6 +18,7 @@ REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
+
 # Fixture for embedder configuration
 @pytest.fixture
 def embedder_config_id():

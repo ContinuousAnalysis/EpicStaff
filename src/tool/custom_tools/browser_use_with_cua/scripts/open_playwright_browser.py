@@ -1,5 +1,9 @@
 from playwright.sync_api import sync_playwright
-import os, time, sys, traceback
+import os
+import time
+import sys
+import traceback
+
 
 def launch_once(start_url: str, extra_args: list[str]) -> None:
     with sync_playwright() as pw:
@@ -15,18 +19,22 @@ def launch_once(start_url: str, extra_args: list[str]) -> None:
                 *extra_args,
             ],
         )
-        ctx = browser.new_context(no_viewport=True) 
+        ctx = browser.new_context(no_viewport=True)
         page = ctx.new_page()
         page.goto(start_url)
         while True:
             time.sleep(60)
+
 
 if __name__ == "__main__":
     os.environ.setdefault("DISPLAY", ":99")
     start_url = os.environ.get("START_URL", "about:blank")
     extra = os.environ.get("BROWSER_EXTRA_ARGS", "").strip()
     extra_args = [a for a in extra.split() if a] if extra else []
-    print(f"[playwright] DISPLAY={os.environ['DISPLAY']} url={start_url} extra={extra_args}", flush=True)
+    print(
+        f"[playwright] DISPLAY={os.environ['DISPLAY']} url={start_url} extra={extra_args}",
+        flush=True,
+    )
     backoff = 2
     while True:
         try:

@@ -11,12 +11,10 @@ from tables.models.knowledge_models import (
 )
 from tables.models.embedding_models import EmbeddingConfig
 from tables.exceptions import (
-    RagTypeNotFoundException,
     NaiveRagNotFoundException,
     DocumentConfigNotFoundException,
     EmbedderNotFoundException,
     InvalidChunkParametersException,
-    DocumentsNotFoundException,
     CollectionNotFoundException,
 )
 from tables.constants.knowledge_constants import (
@@ -46,7 +44,6 @@ class NaiveRagService:
 
     @staticmethod
     def is_strategy_allowed_for_file_type(strategy: str, file_type: str) -> bool:
-
         allowed = NaiveRagService.get_allowed_strategies_for_file_type(file_type)
         return strategy in allowed
 
@@ -210,7 +207,6 @@ class NaiveRagService:
         )
 
         return naive_rag
-
 
     @staticmethod
     @transaction.atomic

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Annotated, Literal, Union, List
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 
 # RAG Search Configuration Models
@@ -67,6 +67,7 @@ class BaseKnowledgeSearchMessageResponse(BaseModel):
     rag_search_config: RagSearchConfig
     # Support backwards compatibility
     results: List[str] = []  # deprecated, use chunks instead
+    token_usage: dict = {}
 
 
 class ChunkDocumentMessage(BaseModel):

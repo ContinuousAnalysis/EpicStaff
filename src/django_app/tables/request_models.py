@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Annotated, Any, List, Literal, Optional, Union
-from pydantic import AnyUrl, BaseModel, Field, HttpUrl, model_validator, root_validator
-from decimal import Decimal
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class LLMConfigData(BaseModel):
@@ -192,6 +191,8 @@ class RealtimeAgentChatData(BaseModel):
     language: str | None
     voice_recognition_prompt: str | None
     voice: str
+    input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
+    output_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
 
 
 class CrewData(BaseModel):
@@ -393,7 +394,6 @@ class ChunkDocumentMessage(BaseModel):
     naive_rag_document_id: int
 
 
-
 class ChunkDocumentMessageResponse(BaseModel):
     naive_rag_document_id: int
     success: bool
@@ -410,7 +410,35 @@ class WebhookEventData(BaseModel):
 
 
 class ProcessRagIndexingMessage(BaseModel):
-
     rag_id: int
     rag_type: str  # "naive" or "graph"
     collection_id: int
+
+
+class BaseTunnelConfigData(BaseModel):
+    name: str
+
+    @classmethod
+    def _tunnel_prefix(cls):
+        return "base"
+
+    @property
+    def unique_id(self):
+        return f"{self.__class__._tunnel_prefix()}:{self.name}"
+
+
+class NgrokConfigData(BaseTunnelConfigData):
+
+    auth_token: str
+    domain: str | None = None
+    region: Literal["us", "eu", "ap"] | None = None
+
+    @classmethod
+    def _tunnel_prefix(cls) -> str:
+        return "ngrok"
+
+
+class WebhookConfigData(BaseModel):
+    ngrok_configs: list[NgrokConfigData]
+    # other configs
+    ...

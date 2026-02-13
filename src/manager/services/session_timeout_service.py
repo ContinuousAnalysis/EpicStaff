@@ -94,7 +94,7 @@ class SessionTimeoutService:
                             await self._handle_session_start(session_id)
                         else:
                             logger.warning(
-                                f"Can not get session ID from message: {message["data"]}"
+                                f"Can not get session ID from message: {message['data']}"
                             )
                     except Exception as e:
                         logger.error(f"Error processing session start message: {e}")

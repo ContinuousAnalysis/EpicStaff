@@ -1,10 +1,10 @@
 import subprocess
 import time
-import shlex
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 class DockerComputer:
     def get_environment(self):
@@ -20,7 +20,9 @@ class DockerComputer:
         display=None,
         port_mapping=None,
     ):
-        self.container_name = container_name or os.getenv("CUA_CONTAINER_NAME", "browser_use_with_cua")
+        self.container_name = container_name or os.getenv(
+            "CUA_CONTAINER_NAME", "browser_use_with_cua"
+        )
         self.image = image
         self.display = display
         self.port_mapping = port_mapping
@@ -30,10 +32,12 @@ class DockerComputer:
         self.use_local = os.getenv("CUA_USE_LOCAL", "1") == "1"
 
     def __enter__(self):
-    # Локальний режим: взагалі не чіпаємо docker
+        # Локальний режим: взагалі не чіпаємо docker
         if self.use_local:
             # Витягуємо геометрію дисплея локально через _exec
-            geometry = self._exec(f"DISPLAY={self.display} xdotool getdisplaygeometry").strip()
+            geometry = self._exec(
+                f"DISPLAY={self.display} xdotool getdisplaygeometry"
+            ).strip()
             if geometry:
                 w, h = geometry.split()
                 self.dimensions = (int(w), int(h))
@@ -63,7 +67,9 @@ class DockerComputer:
                 f"-p {self.port_mapping} -e DISPLAY={self.display} {self.container_name}"
             )
 
-        geometry = self._exec(f"DISPLAY={self.display} xdotool getdisplaygeometry").strip()
+        geometry = self._exec(
+            f"DISPLAY={self.display} xdotool getdisplaygeometry"
+        ).strip()
         if geometry:
             w, h = geometry.split()
             self.dimensions = (int(w), int(h))
@@ -116,10 +122,14 @@ class DockerComputer:
         safe_cmd = cmd.replace('"', '\\"')
         if self.use_local:
             # Локально в цьому ж контейнері
-            return subprocess.check_output(f'sh -c "{safe_cmd}"', shell=True).decode("utf-8", errors="ignore")
+            return subprocess.check_output(f'sh -c "{safe_cmd}"', shell=True).decode(
+                "utf-8", errors="ignore"
+            )
         else:
             docker_cmd = f'docker exec {self.container_name} sh -c "{safe_cmd}"'
-            return subprocess.check_output(docker_cmd, shell=True).decode("utf-8", errors="ignore")
+            return subprocess.check_output(docker_cmd, shell=True).decode(
+                "utf-8", errors="ignore"
+            )
 
     def screenshot(self) -> str:
         """

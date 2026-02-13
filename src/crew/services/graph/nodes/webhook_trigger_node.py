@@ -1,9 +1,17 @@
 import json
-from services.run_python_code_service import RunPythonCodeService
-from services.graph.exceptions import ReturnCodeError
-from models.request_models import PythonCodeData
-from .base_node import *
-from models.state import *
+from typing import Any
+
+from langgraph.types import StreamWriter
+
+from src.crew.services.run_python_code_service import RunPythonCodeService
+
+from src.crew.services.graph.exceptions import ReturnCodeError
+from src.crew.models.request_models import PythonCodeData
+
+from src.crew.models.graph_models import GraphMessage, PythonMessageData
+from src.crew.models.state import State
+from src.crew.services.graph.nodes.base_node import BaseNode
+from src.crew.services.graph.events import StopEvent
 
 
 class WebhookTriggerNode(BaseNode):
@@ -22,7 +30,7 @@ class WebhookTriggerNode(BaseNode):
             node_name=node_name,
             stop_event=stop_event,
             input_map="__all__",
-            output_variable_path="variables"
+            output_variable_path="variables",
         )
         self.python_code_executor_service = python_code_executor_service
         self.python_code_data = python_code_data

@@ -1,13 +1,11 @@
 from pathlib import Path
 from dotenv import load_dotenv
-import json
 import os
-from typing import Any, Type
+from typing import Any
 import yaml
 from base_models import Callable
 from pickle_encode import txt_to_obj
 from langchain_core.tools import BaseTool
-from pydantic.v1 import BaseModel as V1BaseModel
 from langchain_core.tools import create_schema_from_function
 from parse_model_data import CallableParser
 from tool_factory import DynamicToolFactory
@@ -71,16 +69,13 @@ def create_tool_class(callable: Callable) -> tuple[BaseTool, tuple, dict]:
     return cp.eval_callable(callable=callable, eval=False)
 
 
-def get_tool_data(
-    tool: BaseTool
-) -> dict:
+def get_tool_data(tool: BaseTool) -> dict:
     """
     Creates tool dict schema from tool using it's name, description and args_schema.
 
     If args_schema doesn't exist, creates it from `_run` method.
     """
     tool_dict = tool.dict(include={"name", "description", "args_schema"})
-
 
     args_schema = tool_dict.get("args_schema")
     if args_schema is None:

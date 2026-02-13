@@ -1,6 +1,7 @@
 from fastmcp import Client
 import uuid
 
+
 class Hub:
     def __init__(self, url: str, timeout: float = 600.0, session_id: str | None = None):
         self.url = url
@@ -15,10 +16,17 @@ class Hub:
         if self.client:
             await self.client.__aexit__(None, None, None)
 
-    async def run_step(self, step_idx: int, step: dict, plan_ctx: dict,
-                       tool: str = "auto", reset: bool = False,
-                       model: str | None = None, temperature: float | None = None,
-                       start_tool: str | None = None):
+    async def run_step(
+        self,
+        step_idx: int,
+        step: dict,
+        plan_ctx: dict,
+        tool: str = "auto",
+        reset: bool = False,
+        model: str | None = None,
+        temperature: float | None = None,
+        start_tool: str | None = None,
+    ):
         payload = {
             "session_id": self.session_id,
             "step_idx": step_idx,
@@ -27,9 +35,11 @@ class Hub:
             "plan": plan_ctx,
             "reset": reset,
         }
-        if model: payload["model"] = model
-        if temperature is not None: payload["temperature"] = temperature
+        if model:
+            payload["model"] = model
+        if temperature is not None:
+            payload["temperature"] = temperature
         if start_tool and step_idx == 1:
-            payload["start_tool"] = start_tool 
+            payload["start_tool"] = start_tool
 
         return await self.client.call_tool("run_step", payload)

@@ -80,11 +80,18 @@ class NaiveRAGStrategy(BaseRAGStrategy):
         naive_rag_id = rag_id
         search_limit = rag_search_config.search_limit
         similarity_threshold = rag_search_config.similarity_threshold
+        token_usage = {}
 
         embedder = self._get_cached_embedder(naive_rag_id=naive_rag_id)
 
         # Embed the query
-        embedded_query = embedder.embed(query)
+        embedded_data = embedder.embed(query)
+
+        if isinstance(embedded_data, dict):
+            embedded_query = embedded_data.get("embedding", [])
+            token_usage = embedded_data.get("token_usage")
+        else:
+            embedded_query = embedded_data
 
         uow = UnitOfWork()
         with uow.start() as uow_ctx:
@@ -111,7 +118,7 @@ class NaiveRAGStrategy(BaseRAGStrategy):
                 else:
                     logger.info(f"KNOWLEDGES: {knowledge_snippets[0][:150]}...")
             else:
-                logger.warning(f"NO KNOWLEDGE CHUNKS WERE EXTRACTED!")
+                logger.warning("NO KNOWLEDGE CHUNKS WERE EXTRACTED!")
 
         knowledge_query_results = BaseKnowledgeSearchMessageResponse(
             rag_id=naive_rag_id,
@@ -123,6 +130,7 @@ class NaiveRAGStrategy(BaseRAGStrategy):
             chunks=knowledge_chunk_list,
             rag_search_config=rag_search_config,
             results=knowledge_snippets,
+            token_usage=token_usage,
         )
 
         return knowledge_query_results.model_dump()
@@ -206,7 +214,13 @@ class NaiveRAGStrategy(BaseRAGStrategy):
 
                         # Embed all chunks (using simple dict data)
                         for chunk_data in chunk_data_list:
-                            vector = embedder.embed(chunk_data["text"])
+                            embedded_data = embedder.embed(chunk_data["text"])
+
+                            if isinstance(embedded_data, dict):
+                                vector = embedded_data.get("embedding", [])
+                            else:
+                                vector = embedded_data
+
                             uow_ctx.naive_rag_storage.save_embedding(
                                 chunk_id=chunk_data["chunk_id"],
                                 embedding=vector,

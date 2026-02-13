@@ -1,4 +1,5 @@
-import os, requests
+import os
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -7,7 +8,7 @@ headers = {"Authorization": f"Bearer {os.getenv('DEEPSEEK_API_KEY')}"}
 payload = {
     "model": "deepseek-chat",
     "messages": [{"role": "user", "content": "ping"}],
-    "temperature": 0
+    "temperature": 0,
 }
 r = requests.post(url, json=payload, headers=headers, timeout=30)
 print(r.status_code, r.text)

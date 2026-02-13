@@ -9,14 +9,11 @@ from tables.services.telegram_trigger_service import TelegramTriggerService
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.models import GraphSessionMessage
 from tables.models import PythonCodeResult
-from tables.models import GraphOrganization, GraphOrganizationUser
+from tables.models import GraphOrganization
 from tables.request_models import CodeResultData, GraphSessionMessageData
 from tables.request_models import (
-    CodeResultData,
-    GraphSessionMessageData,
     WebhookEventData,
 )
-from tables.services.session_manager_service import SessionManagerService
 from tables.models import Session
 from loguru import logger
 
@@ -34,7 +31,6 @@ TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
 
 
 class RedisPubSub:
-
     def __init__(self):
         redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
         redis_port = int(os.getenv("REDIS_PORT", 6379))
@@ -77,15 +73,14 @@ class RedisPubSub:
                         f'Unable change status from {session.status} to {data["status"]}'
                     )
                 else:
+                    status_data = data.get("status_data", {})
+                    status_data["total_token_usage"] = (
+                        self._calculate_total_token_usage(data["session_id"])
+                    )
                     session.status = data["status"]
-                    session.status_data = data.get("status_data", {})
+                    session.status_data = status_data
+                    session.token_usage = status_data["total_token_usage"]
                     session.save()
-
-                    if session.status in [
-                        Session.SessionStatus.END,
-                        Session.SessionStatus.ERROR,
-                    ]:
-                        self._save_organization_variables(session=session, data=data)
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
 
@@ -104,7 +99,8 @@ class RedisPubSub:
             data = WebhookEventData.model_validate_json(message["data"])
             if data.path.startswith(TELEGRAM_TRIGGER_PREFIX):
                 TelegramTriggerService().handle_telegram_trigger(
-                    url_path=data.path[len(TELEGRAM_TRIGGER_PREFIX) :-1], payload=data.payload
+                    url_path=data.path[len(TELEGRAM_TRIGGER_PREFIX) : -1],
+                    payload=data.payload,
                 )
             else:
                 WebhookTriggerService().handle_webhook_trigger(
@@ -143,13 +139,53 @@ class RedisPubSub:
     def _buffer_save(self, data, model: Type[models.Model]):
         try:
             with transaction.atomic():
-
                 created_objects = model.objects.bulk_create(data, ignore_conflicts=True)
                 logger.debug(
                     f"{model.__name__} updated with {len(created_objects)}/{len(data)} entities"
                 )
         except IntegrityError as e:
             logger.error(f"Failed to save {model.__name__}: {e}")
+
+    def _calculate_total_token_usage(self, session_id):
+        pattern = f"graph:message:{session_id}:*"
+        cached_keys = self.redis_client.keys(pattern)
+
+        total_usage = {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "successful_requests": 0,
+        }
+
+        for key in cached_keys:
+            try:
+                data = json.loads(self.redis_client.get(key))
+                message_data = data.get("message_data", {})
+
+                if not message_data:
+                    return total_usage
+
+                token_usage = None
+
+                if "output" in message_data and "token_usage" in message_data["output"]:
+                    token_usage = message_data["output"]["token_usage"]
+                elif "token_usage" in message_data:
+                    token_usage = message_data["token_usage"]
+
+                if token_usage:
+                    total_usage["total_tokens"] += token_usage.get("total_tokens", 0)
+                    total_usage["prompt_tokens"] += token_usage.get("prompt_tokens", 0)
+                    total_usage["completion_tokens"] += token_usage.get(
+                        "completion_tokens", 0
+                    )
+                    total_usage["successful_requests"] += token_usage.get(
+                        "successful_requests", 0
+                    )
+
+            except Exception as e:
+                logger.error(f"Error parsing cached message for key {key}: {e}")
+
+        return total_usage
 
     def graph_session_message_handler(self, message: dict):
         try:
@@ -239,12 +275,11 @@ class RedisPubSub:
                 # 2. Bulk save the buffer, clear state
                 buffer = self.buffers.get(GRAPH_MESSAGES_CHANNEL)
                 if buffer and time.time() - start_time >= 3:
-
                     try:
                         graph_session_message_list = [
                             GraphSessionMessage(**data) for data in list(buffer)
                         ]
-                    except Exception as e:
+                    except Exception:
                         logger.critical(
                             "Error creating GraphSessionMessage cache_for_redis_messages_worker"
                         )

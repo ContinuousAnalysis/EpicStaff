@@ -26,9 +26,9 @@ export enum MessageType {
   TASK = 'task',
   UPDATE_SESSION_STATUS = 'update_session_status',
   EXTRACTED_CHUNKS = 'extracted_chunks',
+  GRAPH_END = 'graph_end',
 }
 
-// Message data interfaces - these match the camelCase structure used in your code
 export interface FinishMessageData {
   output: any;
   state: Record<string, any>;
@@ -134,6 +134,10 @@ export interface ExtractedChunksMessageData {
   rag_search_config: RagSearchConfig;
 }
 
+export interface GraphEndMessageData {
+  message_type: MessageType.GRAPH_END;
+}
+
 // Type union for all message data types
 export type MessageData =
   | FinishMessageData
@@ -146,4 +150,5 @@ export type MessageData =
   | UserMessageData
   | TaskMessageData
   | UpdateSessionStatusMessageData
-  | ExtractedChunksMessageData;
+  | ExtractedChunksMessageData
+  | GraphEndMessageData;

@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from tables.models import SourceCollection, Agent
-from tables.services.import_services import TasksImportService, ToolsImportService
+from tables.models import SourceCollection
+from tables.services.import_services import ToolsImportService
 from tables.serializers.export_serializers import (
     AgentExportSerializer,
     CrewExportSerializer,
@@ -18,7 +18,6 @@ from tables.serializers.utils.mixins import (
 
 
 class AgentCopySerializer(AgentExportSerializer):
-
     knowledge_collection = serializers.PrimaryKeyRelatedField(
         queryset=SourceCollection.objects.all(), allow_null=True, required=False
     )
@@ -29,7 +28,6 @@ class AgentCopySerializer(AgentExportSerializer):
 
 
 class AgentCopyDeserializer(AgentImportSerializer):
-
     knowledge_collection = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta(AgentImportSerializer.Meta):
@@ -49,7 +47,6 @@ class AgentCopyDeserializer(AgentImportSerializer):
 
 
 class NestedAgentCopySerializer(NestedAgentExportMixin, AgentCopySerializer):
-
     llm_config = serializers.SerializerMethodField()
     fcm_llm_config = serializers.SerializerMethodField()
     realtime_agent = serializers.SerializerMethodField()
@@ -59,7 +56,6 @@ class NestedAgentCopySerializer(NestedAgentExportMixin, AgentCopySerializer):
 
 
 class NestedAgentCopyDeserializer(AgentCopyDeserializer):
-
     tools = serializers.DictField(required=False)
     llm_config = serializers.IntegerField(required=False, allow_null=True)
     fcm_llm_config = serializers.IntegerField(required=False, allow_null=True)
@@ -68,7 +64,6 @@ class NestedAgentCopyDeserializer(AgentCopyDeserializer):
 
 
 class CrewCopySerializer(CrewExportSerializer):
-
     agent_serializer_class = NestedAgentCopySerializer
 
     class Meta(CrewExportSerializer.Meta):
@@ -80,7 +75,6 @@ class CrewCopySerializer(CrewExportSerializer):
 
 
 class NestedCrewCopySerializer(NestedCrewExportMixin, CrewCopySerializer):
-
     tools = None
     llm_configs = None
     realtime_agents = None
@@ -94,7 +88,6 @@ class NestedCrewCopySerializer(NestedCrewExportMixin, CrewCopySerializer):
 
 
 class CrewCopyDeserializer(CrewImportSerializer):
-
     agents = NestedAgentCopyDeserializer(many=True, required=False)
 
     agent_serializer_class = NestedAgentCopyDeserializer
@@ -134,7 +127,6 @@ class CrewCopyDeserializer(CrewImportSerializer):
 
 
 class NestedCrewCopyDeserializer(CrewCopyDeserializer):
-
     tools = None
     llm_configs = None
     realtime_agents = None
@@ -149,13 +141,11 @@ class NestedCrewCopyDeserializer(CrewCopyDeserializer):
 
 
 class GraphCopySerializer(GraphExportSerializer):
-
     crew_serializer_class = NestedCrewCopySerializer
     agent_serializer_class = NestedAgentCopySerializer
 
 
 class GraphCopyDeserializer(GraphImportSerializer):
-
     crews = NestedCrewCopyDeserializer(
         many=True, required=False, allow_null=False, default=dict
     )

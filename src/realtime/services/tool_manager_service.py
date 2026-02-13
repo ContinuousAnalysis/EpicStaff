@@ -17,7 +17,6 @@ from tool_executors import (
 
 
 class ToolManagerService(metaclass=SingletonMeta):
-
     def __init__(
         self,
         redis_service: RedisService,
@@ -44,7 +43,6 @@ class ToolManagerService(metaclass=SingletonMeta):
         self.connection_tool_executors[connection_key] = []
 
         if chat_executor is not None:
-
             stop_agent_tool_executor = StopAgentToolExecutor(
                 stop_prompt=realtime_agent_chat_data.stop_prompt,
                 chat_executor=chat_executor,

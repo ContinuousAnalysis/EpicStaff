@@ -12,7 +12,6 @@ else:
     load_dotenv(find_dotenv(".env"))
 
 
-
 def get_required_env_var(key: str) -> str:
     """
     If you see this error during local launch set all required variables in manager/.env

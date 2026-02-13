@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class LocalPlaywrightBrowser(BasePlaywrightComputer):
     """Launches a local Chromium instance using Playwright."""
 

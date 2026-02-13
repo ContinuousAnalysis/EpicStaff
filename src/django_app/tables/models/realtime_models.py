@@ -1,5 +1,4 @@
 from django.utils import timezone
-from typing import Any
 from django.db import models
 
 from tables.models import DefaultBaseModel, AbstractDefaultFillableModel
@@ -17,6 +16,12 @@ class VoiceChoices(models.TextChoices):
     SAGE = "sage", "Sage"
     SHIMMER = "shimmer", "Shimmer"
     VERSE = "verse", "Verse"
+
+
+class AudioFormatChoices(models.TextChoices):
+    PCM16 = "pcm16", "PCM 16-bit"
+    g711_ulaw = "g711_ulaw", "G.711 u-law"
+    g711_alaw = "g711_alaw", "G.711 a-law"
 
 
 # AbstractDefaultFillableModel
@@ -103,6 +108,17 @@ class RealtimeAgentChat(models.Model):
         default=None,
     )
     created_at = models.DateTimeField(default=timezone.now)
+
+    input_audio_format = models.CharField(
+        max_length=20,
+        choices=AudioFormatChoices.choices,
+        default=AudioFormatChoices.PCM16,
+    )
+    output_audio_format = models.CharField(
+        max_length=20,
+        choices=AudioFormatChoices.choices,
+        default=AudioFormatChoices.PCM16,
+    )
 
 
 class RealtimeSessionItem(models.Model):

@@ -4,14 +4,12 @@ import time
 from uuid import uuid4
 from typing import Dict, Any, Optional
 from loguru import logger
-from typing import Optional
 from langgraph.types import StreamWriter
-from models.graph_models import GraphMessage
 
-from services.graph.events import StopEvent
-from utils.singleton_meta import SingletonMeta
-from services.redis_service import RedisService, SyncPubsubSubscriber
-from models.request_models import (
+from src.crew.models.graph_models import GraphMessage
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.redis_service import RedisService, SyncPubsubSubscriber
+from src.crew.models.request_models import (
     RagSearchConfig,
     NaiveRagSearchConfig,
     GraphRagSearchConfig,
@@ -157,6 +155,7 @@ class KnowledgeSearchService:
                 if self.writer is not None:
                     self._add_knowledges_to_graph_message(
                         knowledge_results=knowledge_callback_receiver.results,
+                        token_usage=knowledge_callback_receiver.token_usage,
                     )
                 return knowledge_callback_receiver.results.results
 
@@ -197,8 +196,7 @@ class KnowledgeSearchService:
             ) from e
 
     def _add_knowledges_to_graph_message(
-        self,
-        knowledge_results: BaseKnowledgeSearchMessageResponse,
+        self, knowledge_results: BaseKnowledgeSearchMessageResponse, token_usage: dict
     ):
         chunks_data_list = [chunk.model_dump() for chunk in knowledge_results.chunks]
         knowledge_results_data = {
@@ -210,6 +208,7 @@ class KnowledgeSearchService:
             "knowledge_query": knowledge_results.query,
             "rag_search_config": knowledge_results.rag_search_config.model_dump(),
             "chunks": chunks_data_list,
+            "token_usage": token_usage,
         }
         graph_message = GraphMessage(
             session_id=self.session_id,
@@ -227,11 +226,16 @@ class KnowledgeSearchReceiver:
 
     def __init__(self, execution_uuid: str):
         self.execution_uuid = execution_uuid
+        self._token_usage = {}
         self._results = None
 
     @property
     def results(self):
         return self._results
+
+    @property
+    def token_usage(self):
+        return self._token_usage
 
     def callback(self, message: dict):
         """
@@ -247,5 +251,7 @@ class KnowledgeSearchReceiver:
                 logger.info(f"Search results received for UUID: {self.execution_uuid}")
                 self._results = validated_results
                 logger.debug(f"Results: {self._results.results}")
+                self._token_usage = data.get("token_usage", {})
+                logger.info(f"Tokens used for knowledge retrieval: {self._token_usage}")
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Error parsing search results: {e}")

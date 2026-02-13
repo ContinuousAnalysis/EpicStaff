@@ -2,7 +2,6 @@ from time import sleep
 
 import pytest
 
-from mcp_fixture import run_mcp_tool
 from utils.utils import *
 from utils.knowledge_utils import *
 from utils.cleaning_utils import *
@@ -11,8 +10,8 @@ from loguru import logger
 
 from utils.variables import MANAGER_URL, TEST_TOOL_NAME
 
-def test_create_and_run_session():
 
+def test_create_and_run_session():
     # TODO: create a function to ensure container is running
     sleep(1)  # sleep to make sure that predifined models uploaded
 
@@ -90,6 +89,7 @@ def test_create_and_run_session():
     delete_graph(graph_id=graph_id)
     delete_custom_tools()
 
+
 @pytest.mark.asyncio
 async def test_knowledges(collection_id, redis_service):
     """Knowledges created in 'collection_id' fixture"""
@@ -110,6 +110,7 @@ async def test_knowledges(collection_id, redis_service):
         in str_results
     )
 
+
 @pytest.mark.skip
 def test_get_tool_class_data():
     with open(Path("../src/manager/tools_config.json"), "r") as f:
@@ -129,7 +130,7 @@ def test_get_tool_class_data():
             validate_response(response=tool_class_data_response)
             tool_alias_list = tool_class_data_response.json()["classdata"]
             print(tool_alias)
-        except HTTPError as e:
+        except HTTPError:
             error_tools.append(
                 {"tool_alias": tool_alias, "message": tool_class_data_response.reason}
             )
@@ -139,8 +140,8 @@ def test_get_tool_class_data():
     if error_tools:
         assert False, str(error_tools)
 
+
 def test_mcp_session(run_mcp_tool):
-    
     # Create configurations
     llm_id = get_llm_model()
     config_id = create_llm_config(llm_id=llm_id)
@@ -205,6 +206,7 @@ def create_author_crew(llm_config_id):
     )
     return author_crew_id
 
+
 def create_mcp_test_crew(llm_config_id):
     mcp_tool_id = create_mcp_tool(
         "test-mcp", "http://localhost:8082/mcp", "test_tool_1"
@@ -245,7 +247,6 @@ def create_wiki_task(crew_id: int, agent_id: int) -> tuple:
 
 
 def create_poem_task(crew_id: int, agent_id: int) -> tuple:
-
     task_data = {
         "name": f"Test write poem task {random.randint(1,100000)}",
         "instructions": "Write short rhyming poem about nature",
@@ -258,9 +259,8 @@ def create_poem_task(crew_id: int, agent_id: int) -> tuple:
 
 
 def create_user_task(crew_id: int, agent_id: int) -> tuple:
-
     task_data = {
-        "name": f"user task",
+        "name": "user task",
         "instructions": "Get user name by user id {user_id}",
         "expected_output": "name",
         "order": 1,
@@ -282,7 +282,7 @@ def create_user_task(crew_id: int, agent_id: int) -> tuple:
 
 def create_mcp_task(crew_id: int, agent_id: int) -> tuple:
     task_data = {
-        "name": f"user task",
+        "name": "user task",
         "instructions": "Use mcp tool to discover what it does. Argument is a name, Max",
         "expected_output": "tool result",
         "order": 1,
@@ -367,7 +367,6 @@ def create_mcp_agent(config_id: int, mcp_tool_ids: list[int]):
 
 
 def create_user_python_code_tool() -> int:
-
     code = """
 def main(user_id: int):
     ids = {

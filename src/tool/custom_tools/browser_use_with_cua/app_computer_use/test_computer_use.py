@@ -14,7 +14,9 @@ client = OpenAI()
 
 COMPUTER_ENV = os.getenv("COMPUTER_ENV", "docker")
 if COMPUTER_ENV not in computers_config:
-    raise ValueError(f"Unknown COMPUTER_ENV='{COMPUTER_ENV}'. Known: {list(computers_config.keys())}")
+    raise ValueError(
+        f"Unknown COMPUTER_ENV='{COMPUTER_ENV}'. Known: {list(computers_config.keys())}"
+    )
 ComputerClass = computers_config[COMPUTER_ENV]
 
 TASK_PROMPT = """
@@ -250,6 +252,7 @@ def main(prompt):
     state = {}
 
     import os
+
     orchestrator_mode = os.getenv("ORCHESTRATOR_COMPUTER_PROMPT") == "1"
     if orchestrator_mode:
         test_description = ""
