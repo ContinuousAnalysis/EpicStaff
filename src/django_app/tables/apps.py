@@ -33,6 +33,7 @@ class TablesConfig(AppConfig):
             crew,
             graph,
             webhook,
+            llm_model,
         )
 
         if "runserver" in sys.argv:
@@ -52,7 +53,8 @@ class TablesConfig(AppConfig):
         WebhookTriggerService(session_manager_service=session_manager_service)
         TelegramTriggerService(session_manager_service=session_manager_service)
 
-        # Register strategies for import/export composite entities
+        # Register strategies for import/export entities
+        entity_registry.register(llm_model.LLMModelStrategy())
         entity_registry.register(configs.LLMConfigStrategy())
         entity_registry.register(configs.EmbeddingConfigStrategy())
         entity_registry.register(configs.RealtimeConfigStrategy())

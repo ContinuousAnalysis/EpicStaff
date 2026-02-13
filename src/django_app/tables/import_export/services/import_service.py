@@ -4,7 +4,7 @@ from django.db import transaction
 
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.registry import EntityRegistry
-from tables.import_export.enums import EntityType
+from tables.import_export.constants import DEPENDENCY_ORDER
 
 
 class ImportService:
@@ -36,22 +36,9 @@ class ImportService:
         Topological sort based on dependencies.
         """
         # Entities will be imported from top to bottom based on this list
-        dependency_order = [
-            EntityType.LLM_CONFIG,
-            EntityType.EMBEDDING_CONFIG,
-            EntityType.REALTIME_CONFIG,
-            EntityType.REALTIME_TRANSCRIPTION_CONFIG,
-            EntityType.PYTHON_CODE_TOOL,
-            EntityType.MCP_TOOL,
-            EntityType.AGENT,
-            EntityType.CREW,
-            EntityType.WEBHOOK_TRIGGER,
-            EntityType.GRAPH,
-        ]
-
         sorted_keys = [
             entity_type
-            for entity_type in dependency_order
+            for entity_type in DEPENDENCY_ORDER
             if entity_type in export_data
         ]
 

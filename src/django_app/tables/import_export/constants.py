@@ -1,1 +1,19 @@
+from tables.import_export.enums import EntityType
+
+
 MAIN_ENTITY_KEY = "main_entity"
+
+# Entities will be imported from top to bottom based on this list
+DEPENDENCY_ORDER = (
+    EntityType.LLM_MODEL,
+    EntityType.LLM_CONFIG,
+    EntityType.EMBEDDING_CONFIG,
+    EntityType.REALTIME_CONFIG,
+    EntityType.REALTIME_TRANSCRIPTION_CONFIG,
+    EntityType.PYTHON_CODE_TOOL,
+    EntityType.MCP_TOOL,
+    EntityType.AGENT,
+    EntityType.CREW,
+    EntityType.WEBHOOK_TRIGGER,
+    EntityType.GRAPH,
+)

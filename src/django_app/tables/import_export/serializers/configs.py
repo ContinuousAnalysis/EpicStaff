@@ -48,7 +48,7 @@ class BaseConfigImportSerializer(serializers.ModelSerializer):
             validated_data[self.model_fk_field] = model_obj
             validated_data["api_key"] = self._get_api_key(provider_name)
 
-        return self.create(validated_data)
+        return super().create(validated_data)
 
     def _get_api_key(self, provider_name):
         return (
@@ -63,6 +63,32 @@ class BaseConfigImportSerializer(serializers.ModelSerializer):
         return getattr(instance, self.model_fk_field)
 
 
+class LLMConfigImportSerializer(serializers.ModelSerializer):
+    model_id = serializers.PrimaryKeyRelatedField(
+        queryset=LLMModel.objects.all(),
+        source="model",
+        write_only=True,
+    )
+    api_key = serializers.CharField(write_only=True, required=False)
+
+    class Meta:
+        model = LLMConfig
+        fields = "__all__"
+
+    def create(self, validated_data):
+        model = validated_data["model"]
+        validated_data["api_key"] = self._get_api_key(model.llm_provider.name)
+
+        return super().create(validated_data)
+
+    def _get_api_key(self, provider_name):
+        return (
+            LLMConfig.objects.filter(model__llm_provider__name=provider_name)
+            .values_list("api_key", flat=True)
+            .first()
+        )
+
+
 class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
     model_class = EmbeddingModel
     provider_field = "embedding_provider"
@@ -71,16 +97,6 @@ class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
 
     class Meta(BaseConfigImportSerializer.Meta):
         model = EmbeddingConfig
-
-
-class LLMConfigImportSerializer(BaseConfigImportSerializer):
-    model_class = LLMModel
-    provider_field = "llm_provider"
-    model_fk_field = "model"
-    config_model = LLMConfig
-
-    class Meta(BaseConfigImportSerializer.Meta):
-        model = LLMConfig
 
 
 class RealtimeConfigImportSerializer(BaseConfigImportSerializer):

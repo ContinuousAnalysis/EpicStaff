@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class EntityType(str, Enum):
+    LLM_MODEL = "LLMModel"
     LLM_CONFIG = "LLMConfig"
     EMBEDDING_CONFIG = "EmbeddingConfig"
     REALTIME_CONFIG = "RealtimeConfig"
