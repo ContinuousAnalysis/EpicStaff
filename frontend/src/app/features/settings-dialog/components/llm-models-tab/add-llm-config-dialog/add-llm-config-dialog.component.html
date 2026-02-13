@@ -206,34 +206,33 @@
             <section class="llm-dialog__section">
                 <h3 class="llm-dialog__section-title">Token Limits & Completion</h3>
 
-                <div class="llm-dialog__field-row">
-                    <div class="llm-dialog__field">
-                        <app-number-stepper
-                            label="Max Tokens"
-                            tooltipText="Maximum number of tokens in the response"
-                            [min]="1"
-                            [max]="128000"
-                            [step]="256"
-                            formControlName="maxTokens"
-                            [control]="$any(form.get('maxTokens'))"
-                            placeholder="4096"
-                            size="lg"
-                        />
-                    </div>
-                    <div class="llm-dialog__field">
-                        <app-number-stepper
-                            label="Timeout (seconds)"
-                            tooltipText="Request timeout in seconds"
-                            [min]="1"
-                            [max]="600"
-                            [step]="5"
-                            formControlName="timeout"
-                            [control]="$any(form.get('timeout'))"
-                            placeholder="30"
-                            size="lg"
-                        />
-                    </div>
-            </div>
+                <div class="llm-dialog__field">
+                    <app-number-stepper
+                        label="Max Tokens"
+                        tooltipText="Maximum number of tokens in the response"
+                        [min]="1"
+                        [max]="128000"
+                        [step]="256"
+                        formControlName="maxTokens"
+                        [control]="$any(form.get('maxTokens'))"
+                        placeholder="4096"
+                        size="lg"
+                    />
+                </div>
+
+                <div class="llm-dialog__field">
+                    <app-number-stepper
+                        label="Timeout (seconds)"
+                        tooltipText="Request timeout in seconds"
+                        [min]="1"
+                        [max]="600"
+                        [step]="5"
+                        formControlName="timeout"
+                        [control]="$any(form.get('timeout'))"
+                        placeholder="30"
+                        size="lg"
+                    />
+                </div>
 
                 <div class="llm-dialog__section-divider"></div>
             </section>
