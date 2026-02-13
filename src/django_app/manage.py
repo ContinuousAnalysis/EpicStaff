@@ -19,9 +19,10 @@ def main():
         ) from exc
     try:
         execute_from_command_line(sys.argv)
-    except Exception as e:
-        logger.exception(e)
-
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
