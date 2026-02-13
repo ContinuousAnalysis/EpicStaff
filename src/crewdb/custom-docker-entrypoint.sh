@@ -118,6 +118,8 @@ create_knowledge_user(){
       GRANT SELECT ON TABLE tables_provider TO "${knowledge_user}";
       GRANT SELECT ON TABLE tables_embeddingmodel TO "${knowledge_user}";
       GRANT SELECT ON TABLE tables_embeddingconfig TO "${knowledge_user}";
+      GRANT SELECT ON TABLE tables_llmmodel TO "${knowledge_user}";
+      GRANT SELECT ON TABLE tables_llmconfig TO "${knowledge_user}";
 
       -- Collection and document tables
       GRANT SELECT ON TABLE tables_sourcecollection TO "${knowledge_user}";
@@ -140,6 +142,15 @@ create_knowledge_user(){
 
       -- NaiveRagEmbedding table
       GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE tables_naiveragembedding TO "${knowledge_user}";
+
+      -- GraphRag table
+      GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE graph_rag TO "${knowledge_user}";
+      
+      -- GraphRagDocument table
+      GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE graph_rag_document TO "${knowledge_user}";
+      
+      -- GraphRagIndexConfig table
+      GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE graph_rag_index_config TO "${knowledge_user}";
 
       -- === SEQUENCES ===
 
