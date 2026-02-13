@@ -161,8 +161,10 @@ services:
       context: ./crewdb
       dockerfile: Dockerfile.crewdb
     container_name: crewdb
+    ports:
+    - "5432:${DB_PORT:-5432}"
     command: ["postgres", "-c", "port=${DB_PORT:-5432}"]
-
+    
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-crew}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}

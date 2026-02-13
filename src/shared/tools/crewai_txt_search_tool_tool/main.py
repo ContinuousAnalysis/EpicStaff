@@ -1,4 +1,3 @@
-# TXTSearchTool standalone implementation
 import os
 from typing import Optional
 import urllib.request
