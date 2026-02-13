@@ -117,11 +117,35 @@ class NaiveRagSearchConfig(BaseRagSearchConfig):
     similarity_threshold: float = 0.2
 
 
+class GraphRagBasicSearchParams(BaseModel):
+    search_method: Literal["basic"] = "basic"
+    prompt: str | None = None
+    k: int = 10
+    max_context_tokens: int = 12000
+
+
+class GraphRagLocalSearchParams(BaseModel):
+    search_method: Literal["local"] = "local"
+    prompt: str | None = None
+    text_unit_prop: float = 0.5
+    community_prop: float = 0.15
+    conversation_history_max_turns: int = 5
+    top_k_entities: int = 10
+    top_k_relationships: int = 10
+    max_context_tokens: int = 12000
+
+
+GraphSearchParams = Annotated[
+    Union[GraphRagBasicSearchParams, GraphRagLocalSearchParams],
+    Field(discriminator="search_method"),
+]
+
+
 class GraphRagSearchConfig(BaseRagSearchConfig):
     """Search parameters specific to graph RAG implementation"""
 
     rag_type: Literal["graph"] = "graph"
-    pass
+    search_params: GraphSearchParams
 
 
 RagSearchConfig = Annotated[
@@ -380,14 +404,6 @@ class GraphSessionMessageData(BaseModel):
     timestamp: str
     message_data: dict
     uuid: str
-
-
-class KnowledgeSearchMessage(BaseModel):
-    collection_id: int
-    uuid: str
-    query: str
-    search_limit: int | None
-    similarity_threshold: float | None
 
 
 class ChunkDocumentMessage(BaseModel):
