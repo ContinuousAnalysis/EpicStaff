@@ -313,6 +313,51 @@ class CopySourceCollectionSerializer(serializers.Serializer):
     new_collection_name = serializers.CharField(required=False)
 
 
+class RagInputSerializer(serializers.Serializer):
+    """
+    Input serializer for rag field in Agent create/update.
+    """
+
+    rag_type = serializers.ChoiceField(
+        choices=["naive", "graph"], help_text="Type of RAG implementation"
+    )
+    rag_id = serializers.IntegerField(min_value=1, help_text="ID of the RAG instance")
+
+
+class NestedSearchConfigSerializer(serializers.Serializer):
+    """
+    Nested search config serializer
+    Handles multiple RAG types: {"naive": {...}, "graph": {...}}
+
+    Uses get_fields() for lazy imports to avoid circular dependencies
+    """
+
+    def get_fields(self):
+        from tables.serializers.naive_rag_serializers import (
+            NaiveSearchConfigInputSerializer,
+        )
+        from tables.serializers.graph_rag_serializers import (
+            GraphSearchConfigInputSerializer,
+        )
+
+        fields = super().get_fields()
+        fields["naive"] = NaiveSearchConfigInputSerializer(
+            required=False, help_text="Naive RAG search config"
+        )
+        fields["graph"] = GraphSearchConfigInputSerializer(
+            required=False, help_text="Graph RAG search config"
+        )
+        return fields
+
+    def validate(self, attrs):
+        """Ensure at least one RAG type is provided."""
+        if not attrs:
+            raise serializers.ValidationError(
+                "At least one RAG type must be provided (e.g., 'naive', 'graph')"
+            )
+        return attrs
+
+
 # class CollectionStatusSerializer(serializers.ModelSerializer):
 
 #     class Meta:

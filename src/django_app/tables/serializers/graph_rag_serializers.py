@@ -272,3 +272,94 @@ class GraphRagLightSerializer(serializers.ModelSerializer):
             "indexed_at",
         ]
         read_only_fields = fields
+
+
+# Search Config Serializers
+
+
+class GraphBasicSearchConfigInputSerializer(serializers.Serializer):
+    """Input serializer for graph RAG basic search config."""
+
+    prompt = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Custom basic search prompt",
+    )
+    k = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=100,
+        help_text="Number of text units to include (1-100)",
+    )
+    max_context_tokens = serializers.IntegerField(
+        required=False,
+        min_value=100,
+        max_value=100000,
+        help_text="Maximum context tokens (100-100000)",
+    )
+
+
+class GraphLocalSearchConfigInputSerializer(serializers.Serializer):
+    """Input serializer for graph RAG local search config."""
+
+    prompt = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Custom local search prompt",
+    )
+    text_unit_prop = serializers.FloatField(
+        required=False,
+        min_value=0.0,
+        max_value=1.0,
+        help_text="Text unit proportion (0.0-1.0)",
+    )
+    community_prop = serializers.FloatField(
+        required=False,
+        min_value=0.0,
+        max_value=1.0,
+        help_text="Community proportion (0.0-1.0)",
+    )
+    conversation_history_max_turns = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=50,
+        help_text="Max conversation history turns (1-50)",
+    )
+    top_k_entities = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=100,
+        help_text="Top K entities (1-100)",
+    )
+    top_k_relationships = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=100,
+        help_text="Top K relationships (1-100)",
+    )
+    max_context_tokens = serializers.IntegerField(
+        required=False,
+        min_value=100,
+        max_value=100000,
+        help_text="Maximum context tokens (100-100000)",
+    )
+
+
+class GraphSearchConfigInputSerializer(serializers.Serializer):
+    """Input serializer for graph RAG search config wrapper."""
+
+    search_method = serializers.ChoiceField(
+        choices=["basic", "local"],
+        required=False,
+        help_text="Active search method",
+    )
+    basic = GraphBasicSearchConfigInputSerializer(
+        required=False,
+        help_text="Basic search configuration",
+    )
+    local = GraphLocalSearchConfigInputSerializer(
+        required=False,
+        help_text="Local search configuration",
+    )

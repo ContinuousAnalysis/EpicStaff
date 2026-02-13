@@ -48,6 +48,7 @@ from tables.validators.tool_config_validator import (
 )
 from tables.validators.crew_memory_validator import CrewMemoryValidator
 from tables.validators.task_validator import TaskValidator
+from tables.services.rag_assignment_service import SearchConfigService
 
 tool_config_serializer = ToolConfigSerializer(
     ToolConfigValidator(validate_missing_reqired_fields=True, validate_null_fields=True)
@@ -65,6 +66,10 @@ class ConverterService(metaclass=SingletonMeta):
     ) -> RagSearchConfig | None:
         """
         Factory method to build appropriate RAG search config based on rag_type.
+
+        Handles nested graph format:
+            {"search_method": "basic", "basic": {...}, "local": {...}}
+        Extracts only the active method's params for the flat pydantic model.
 
         Returns:
             NaiveRagSearchConfig | GraphRagSearchConfig | None
@@ -87,11 +92,17 @@ class ConverterService(metaclass=SingletonMeta):
             "graph": lambda config: GraphRagSearchConfig(rag_type="graph", **config),
         }
 
-        builder = rag_config_map.get(rag_type)
-        if not builder:
-            return None
+        if rag_type == "naive":
+            return NaiveRagSearchConfig(rag_type="naive", **rag_specific_config)
 
-        return builder(rag_specific_config)
+        if rag_type == "graph":
+            search_method = rag_specific_config.get("search_method", "basic")
+            active_params = rag_specific_config.get(search_method) or {}
+            return GraphRagSearchConfig(
+                search_params={"search_method": search_method, **active_params},
+            )
+
+        return None
 
     def convert_crew_to_pydantic(self, crew_id: int) -> CrewData:
         crew = Crew.objects.get(pk=crew_id).fill_with_defaults()
@@ -255,7 +266,7 @@ class ConverterService(metaclass=SingletonMeta):
 
         # Build RAG search config using factory method
         rag_type_id = agent.get_rag_type_and_id()
-        all_search_configs = agent.get_search_configs()
+        all_search_configs = SearchConfigService.get_search_configs(agent)
         rag_search_config = self.build_rag_search_config(
             rag_type_id, all_search_configs
         )
@@ -298,7 +309,7 @@ class ConverterService(metaclass=SingletonMeta):
 
         # Build RAG search config using factory method
         rag_type_id = agent.get_rag_type_and_id()
-        all_search_configs = agent.get_search_configs()
+        all_search_configs = SearchConfigService.get_search_configs(agent)
         rag_search_config = self.build_rag_search_config(
             rag_type_id, all_search_configs
         )
