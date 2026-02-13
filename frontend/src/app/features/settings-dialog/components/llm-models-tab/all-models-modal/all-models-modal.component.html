@@ -43,13 +43,14 @@
                 <div
                     class="all-models__model"
                     [class.all-models__model--visible]="isModelVisible(model)"
+                    (click)="toggleVisibility(model)"
                 >
                     <span class="all-models__model-name">{{ model.name }}</span>
                     <button
                         type="button"
                         class="all-models__eye-btn"
                         [class.all-models__eye-btn--active]="isModelVisible(model)"
-                        (click)="toggleVisibility(model)"
+                        (click)="toggleVisibility(model); $event.stopPropagation()"
                         [title]="isModelVisible(model) ? 'Hide model' : 'Show model'"
                     >
                         @if (isModelVisible(model)) {

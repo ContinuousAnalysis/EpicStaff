@@ -139,6 +139,7 @@
         background: var(--color-ks-line, #2b2d30);
         border: 1px solid rgba(217, 217, 222, 0.16);
         border-radius: 0.25rem;
+        cursor: pointer;
         transition: all 0.2s ease;
 
         &:hover {
