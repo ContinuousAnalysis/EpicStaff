@@ -41,6 +41,7 @@ export class SelectComponent implements ControlValueAccessor {
     label = input<string>('');
     required = input<boolean>(false);
     tooltipText = input<string>('');
+    loading = input<boolean>(false);
 
     mod = input<'default' | 'small'>('default');
     items = input<SelectItem[]>([]);

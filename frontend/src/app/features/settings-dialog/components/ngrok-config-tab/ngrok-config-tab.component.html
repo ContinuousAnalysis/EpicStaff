@@ -1,0 +1,95 @@
+<div class="ngrok__container">
+    <div class="ngrok__header">
+        <h3 class="ngrok__header-title">
+            Ngrok Configuration Parameters
+        </h3>
+        <p class="ngrok__header-subtitle">
+            Some text to explain purpose of this tab
+        </p>
+    </div>
+
+    <div class="ngrok__content">
+        <form
+            class="ngrok__form"
+            [formGroup]="form"
+        >
+            <div class="ngrok__form-label">
+                <label>Name</label>
+                <mat-icon
+                    class="ngrok__tooltip"
+                    matTooltip="tooltip"
+                    matTooltipPosition="above"
+                    matTooltipClass="dialog__label-tooltip"
+                >
+                    help_outline
+                </mat-icon>
+            </div>
+            <app-custom-input
+                formControlName="name"
+                [required]="true"
+                placeholder="Enter configuration name"
+                tooltipText="Configuration name"
+            />
+
+            <div class="ngrok__form-label">
+                <label>Auth Token</label>
+                <mat-icon
+                    class="ngrok__tooltip"
+                    matTooltip="Auth Token from: https://dashboard.ngrok.com/get-started/your-authtoken"
+                    matTooltipPosition="above"
+                    matTooltipClass="dialog__label-tooltip"
+                >
+                    help_outline
+                </mat-icon>
+            </div>
+            <app-custom-input
+                formControlName="auth_token"
+                [required]="true"
+                tooltipText="token"
+                placeholder="e.g. 39HouLFMClthJIAw5a••••••••••••••"
+            />
+
+            <div class="ngrok__form-label">
+                <label>Region</label>
+                <mat-icon
+                    class="ngrok__tooltip"
+                    matTooltip="tooltip"
+                    matTooltipPosition="above"
+                    matTooltipClass="dialog__label-tooltip"
+                >
+                    help_outline
+                </mat-icon>
+            </div>
+            <app-select
+                formControlName="region"
+                [items]="regionSelectItems"
+                placeholder="Select region"
+                tooltipText="region"
+            />
+
+            <div class="ngrok__form-label">
+                <label>Domain</label>
+                <mat-icon
+                    class="ngrok__tooltip"
+                    matTooltip="tooltip"
+                    matTooltipPosition="above"
+                    matTooltipClass="dialog__label-tooltip"
+                >
+                    help_outline
+                </mat-icon>
+            </div>
+            <app-custom-input
+                formControlName="domain"
+                placeholder="e.g. my-app.ngrok.io"
+                tooltipText="url"
+            />
+        </form>
+    </div>
+    <app-button
+        class="ngrok__action_btn"
+        type="primary"
+        (click)="createNgrokConfig()"
+    >
+        Create config
+    </app-button>
+</div>

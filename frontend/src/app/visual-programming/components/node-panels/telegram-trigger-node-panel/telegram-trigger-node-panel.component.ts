@@ -1,25 +1,32 @@
-import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, signal} from "@angular/core";
-import {BaseSidePanel} from "../../../core/models/node-panel.abstract";
-import {TelegramTriggerNodeModel} from "../../../core/models/node.model";
-import {FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
-import {CustomInputComponent} from "../../../../shared/components/form-input/form-input.component";
-import {ButtonComponent} from "../../../../shared/components/buttons/button/button.component";
-import {AppIconComponent} from "../../../../shared/components/app-icon/app-icon.component";
-import {MATERIAL_FORMS} from "../../../../shared/material-forms";
-import {Dialog} from "@angular/cdk/dialog";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, signal } from "@angular/core";
+import {
+    SelectComponent,
+    SelectItem,
+    CustomInputComponent,
+    ButtonComponent,
+    AppIconComponent,
+    JsonEditorComponent,
+} from "@shared/components";
+import { NgrokConfigService } from "../../../../features/settings-dialog/services/ngrok-config.service";
+import { ToastService } from "../../../../services/notifications";
+import { BaseSidePanel } from "../../../core/models/node-panel.abstract";
+import { TelegramTriggerNodeModel } from "../../../core/models/node.model";
+import { FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+
+import { MATERIAL_FORMS } from "@shared/material-forms";
+import { Dialog } from "@angular/cdk/dialog";
 import {
     TelegramTriggerEditingDialogComponent
 } from "../../telegram-trigger-editing-dialog/telegram-trigger-editing-dialog.component";
-import {WebhookService} from "../../../../pages/flows-page/components/flow-visual-programming/services/webhook.service";
-import {WebhookStatus} from "../../../../pages/flows-page/components/flow-visual-programming/models/webhook.model";
-import {JsonEditorComponent} from "../../../../shared/components/json-editor/json-editor.component";
-import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {tap} from "rxjs/operators";
+import { WebhookStatus } from "../../../../pages/flows-page/components/flow-visual-programming/models/webhook.model";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { tap } from "rxjs/operators";
 import {
     DisplayedTelegramField,
     TelegramTriggerNodeField,
 } from "../../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
-import {TELEGRAM_TRIGGER_FIELDS} from "../../../core/constants/telegram-trigger-fields";
+import { TELEGRAM_TRIGGER_FIELDS } from "../../../core/constants/telegram-trigger-fields";
+import { WEBHOOK_NAME_PATTERN } from "../webhook-trigger-node-panel/webhook-trigger-node-panel.component";
 
 @Component({
     selector: 'app-telegram-trigger-node-panel',
@@ -31,18 +38,22 @@ import {TELEGRAM_TRIGGER_FIELDS} from "../../../core/constants/telegram-trigger-
         ButtonComponent,
         AppIconComponent,
         MATERIAL_FORMS,
-        JsonEditorComponent
+        JsonEditorComponent,
+        SelectComponent
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTriggerNodeModel> {
+export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTriggerNodeModel> implements OnInit {
     public readonly isExpanded = input<boolean>(false);
 
     private dialog = inject(Dialog);
     private destroyRef = inject(DestroyRef);
-    private webhookService = inject(WebhookService);
+    private ngrokConfigService = inject(NgrokConfigService);
+    private toastService = inject(ToastService);
 
     webhookStatus = signal<WebhookStatus | 'pending' | 'registering'>('pending');
+    ngrokConfigSelectItems = signal<SelectItem[]>([]);
+    ngrokConfigsLoading = signal<boolean>(false);
 
     selectedFields = signal<DisplayedTelegramField[]>([]);
     jsonValues = computed(() => {
@@ -59,7 +70,7 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
         theme: 'vs-dark',
         language: 'json',
         automaticLayout: true,
-        minimap: {enabled: false},
+        minimap: { enabled: false },
         scrollBeyondLastLine: false,
         wordWrap: 'on',
         wrappingIndent: 'indent',
@@ -71,16 +82,39 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
 
     constructor() {
         super();
+    }
+
+    ngOnInit() {
+        this.getNgrokConfigs();
         this.getTunnelStatus();
     }
 
     private getTunnelStatus(): void {
-        this.webhookService.getTunnel()
+        const id = this.node().data.webhook_trigger?.ngrok_webhook_config;
+        if (!id) {
+            this.webhookStatus.set(WebhookStatus.FAIL);
+            return;
+        }
+
+        this.ngrokConfigService.getNgrokConfigById(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (response) => this.webhookStatus.set(response.status),
+                next: () => this.webhookStatus.set(WebhookStatus.SUCCESS),
                 error: () => this.webhookStatus.set(WebhookStatus.FAIL)
-            });
+            })
+    }
+
+    private getNgrokConfigs(): void {
+        this.ngrokConfigsLoading.set(true);
+        this.ngrokConfigService.getNgrokConfigs()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (configs) => {
+                    this.ngrokConfigSelectItems.set(configs.map(config => ({ name: config.name, value: config.id })))
+                },
+                error: () => this.toastService.error('Failed to load Ngrok configs.'),
+                complete: () => this.ngrokConfigsLoading.set(false),
+            })
     }
 
     private setSelectedFields(nodeFields: TelegramTriggerNodeField[]): void {
@@ -103,6 +137,10 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
             telegram_bot_api_key: [this.node().data.telegram_bot_api_key || '', Validators.required],
+            webhook_trigger_path: [this.node().data.webhook_trigger?.path || null,
+                [Validators.required, Validators.pattern(WEBHOOK_NAME_PATTERN)]
+            ],
+            ngrok_webhook_config: [this.node().data.webhook_trigger?.ngrok_webhook_config || null, Validators.required],
             fields: [this.node().data.fields || []],
         });
 
@@ -110,6 +148,13 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
     }
 
     createUpdatedNode(): TelegramTriggerNodeModel {
+        const webhookTriggerPath = this.form.value.webhook_trigger_path;
+
+        const webhook_trigger = webhookTriggerPath ? {
+            path: webhookTriggerPath,
+            ngrok_webhook_config:  this.form.value.ngrok_webhook_config,
+        } : null;
+
         return {
             ...this.node(),
             node_name: this.form.value.node_name,
@@ -117,6 +162,7 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
             data: {
                 ...this.node().data,
                 telegram_bot_api_key: this.form.value.telegram_bot_api_key,
+                webhook_trigger,
                 fields: this.form.value.fields
             }
         }

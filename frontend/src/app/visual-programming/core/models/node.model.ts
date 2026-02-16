@@ -17,6 +17,7 @@ import { DecisionTableNode } from './decision-table.model';
 import {
     TelegramTriggerNodeField
 } from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
+import { WebhookTriggerModel } from "./webhook-trigger.model";
 
 export interface BaseNodeModel {
     id: string;
@@ -104,7 +105,7 @@ export interface AudioToTextNodeModel extends BaseNodeModel {
 export interface WebhookTriggerNodeModel extends BaseNodeModel {
     type: NodeType.WEBHOOK_TRIGGER;
     data: {
-        webhook_trigger_path: string;
+        webhook_trigger: WebhookTriggerModel | null;
         python_code: CustomPythonCode;
     }
 }
@@ -113,6 +114,7 @@ export interface TelegramTriggerNodeModel extends BaseNodeModel {
     type: NodeType.TELEGRAM_TRIGGER;
     data: {
         telegram_bot_api_key: string;
+        webhook_trigger: WebhookTriggerModel | null;
         fields: TelegramTriggerNodeField[];
     }
 }

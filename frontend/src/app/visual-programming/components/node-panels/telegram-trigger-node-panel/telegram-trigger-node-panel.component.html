@@ -27,6 +27,23 @@
                             [activeColor]="activeColor"
                             [errorMessage]="getTelegramKeyErrorMessage()"
                         ></app-custom-input>
+
+                        <app-custom-input
+                            label="Webhook trigger path"
+                            tooltipText="Path"
+                            formControlName="webhook_trigger_path"
+                            placeholder="Enter webhook path"
+                            [required]="true"
+                            [activeColor]="activeColor"
+                        ></app-custom-input>
+
+                        <app-select
+                            [loading]="ngrokConfigsLoading()"
+                            label="Select Ngrok config"
+                            tooltipText="tooltipText"
+                            formControlName="ngrok_webhook_config"
+                            [items]="ngrokConfigSelectItems()"
+                        />
                     </div>
 
                     <div class="webhook-section">

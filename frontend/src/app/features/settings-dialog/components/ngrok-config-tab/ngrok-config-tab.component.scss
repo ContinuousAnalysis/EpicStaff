@@ -1,0 +1,51 @@
+.ngrok {
+    &__container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 20px;
+    }
+
+    &__header {
+        margin-bottom: 24px;
+    }
+
+    &__header-title {
+        font-size: 1.25rem;
+        font-weight: 400;
+        color: var(--color-text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    &__header-subtitle {
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+
+    &__form {
+        display: grid;
+        grid-template-columns: 130px auto;
+        row-gap: 1rem;
+        column-gap: 1.875rem;
+        align-items: center;
+    }
+
+    &__form-label {
+        column-gap: 1rem;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        height: 40px;
+        justify-self: end;
+        align-self: flex-start;
+    }
+
+    &__tooltip {
+        color: var(--accent-color);
+    }
+
+    &__action_btn {
+        align-self: self-end;
+        margin-top: auto;
+    }
+}
