@@ -31,6 +31,8 @@
 
     <!-- Messages list -->
     <div class="messages-list" *ngIf="messages.length > 0">
+        <!-- Warnings -->
+        <app-warning-messages [messages]="warningMessages"/>
         @for (entry of visibleMessageEntries; track entry.key; let i = $index) {
         <div class="message">
             <app-project-transition

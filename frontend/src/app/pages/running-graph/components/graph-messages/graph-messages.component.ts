@@ -57,6 +57,7 @@ import { RunSessionSSEService } from '../../../run-graph-page/run-graph-page-bod
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { GraphDto } from '../../../../features/flows/models/graph.model';
 import { ExtractedChunksMessageComponent } from './components/extracted-chunks/extracted-chunks-message.component';
+import { WarningMessagesComponent } from '../warning-messages/warning-messages.component';
 
 interface MessageContext {
   key: string;
@@ -112,6 +113,7 @@ interface RootDrilldownView {
     WaitForUserInputComponent,
     UserMessageComponent,
     ExtractedChunksMessageComponent,
+    WarningMessagesComponent,
     SubgraphStartMessageComponent,
     SubgraphFinishMessageComponent,
   ],
@@ -144,6 +146,9 @@ export class GraphMessagesComponent
   // New property for storing update status data from messages
   public updateSessionStatusData: SessionStatusMessageData | null = null;
   public statusWaitForUser: boolean = false;
+
+  // Warning messages
+  public warningMessages: string[] | null = null;
 
   // Connection status
   public connectionStatus:
@@ -276,6 +281,7 @@ export class GraphMessagesComponent
       this.updateSessionStatusData = null;
       this.statusWaitForUser = false;
       this.showUserInputWithDelay = false;
+      this.warningMessages = null;
       this.messages = [];
       this.visibleMessageEntries = [];
       this.drillPaths.clear();
@@ -305,6 +311,21 @@ export class GraphMessagesComponent
     if (!this.sessionId || !this.graphId) return;
 
     this.sseService.startStream(this.sessionId!);
+
+    // Load warning messages
+    this.graphSessionService
+      .getSessionWarnings(this.sessionId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.warningMessages = response.messages;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Failed to load warnings:', err);
+          this.warningMessages = null;
+        },
+      });
 
     this.flowService
       .getGraphById(this.graphId)
