@@ -40,6 +40,6 @@ class McpToolStrategy(EntityImportExportStrategy):
         data_copy = deepcopy(data)
         data_copy.pop("id", None)
 
-        filters, null_filters = create_filters(data)
+        filters, null_filters = create_filters(data_copy)
         existing = McpTool.objects.filter(**filters, **null_filters).first()
         return existing
