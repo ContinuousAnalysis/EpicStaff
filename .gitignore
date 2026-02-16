@@ -258,6 +258,8 @@ executions
 openai-realtime-console
 src/django_app/staticfiles/*
 
+# Cursor AI rules
+.cursorrules
 
 #knowledge data
 knowledge/graph_data/
