@@ -217,12 +217,6 @@ frontend/node_modules
 frontend/npm-debug.log
 frontend/yarn-error.log
 node_modules/
-frontend/package-lock.json
-
-
-# Node modules and package files in libraries
-**/node_modules/
-**/package-lock.json
 
 # IDEs and editors
 frontend/.idea/
