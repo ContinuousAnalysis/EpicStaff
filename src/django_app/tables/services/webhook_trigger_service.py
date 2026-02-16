@@ -17,6 +17,7 @@ from tenacity import (
 )
 import requests
 
+
 class WebhookTriggerService(metaclass=SingletonMeta):
     def __init__(
         self,
@@ -47,7 +48,6 @@ class WebhookTriggerService(metaclass=SingletonMeta):
             )
 
     def register_webhooks(self) -> bool:
-
         data = WebhookConfigData(
             ngrok_configs=[
                 self.converter_service.convert_ngrok_webhook_config_to_pydantic(config)
@@ -62,15 +62,15 @@ class WebhookTriggerService(metaclass=SingletonMeta):
         return delivered_n > 0
 
     @retry(
-        stop=stop_after_attempt(1),
+        stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=5),
-        retry=retry_if_exception_type(requests.RequestException),
+        retry=retry_if_exception_type((requests.RequestException, ValueError)),
         reraise=True,
     )
-    def get_tunnel_url(self, webhook_trigger: WebhookTrigger) -> str:
+    def get_tunnel_url(self, ngrok_webhook_config: NgrokWebhookConfig) -> str:
         """Fetch the tunnel URL from the local service with retries."""
 
-        unique_id = f"ngrok:{webhook_trigger.ngrok_webhook_config.name}"
+        unique_id = f"ngrok:{ngrok_webhook_config.name}"
 
         response = requests.get(
             f"http://{WEBHOOK_HOST_NAME}:{WEBHOOK_PORT}/api/tunnel-url/{unique_id}",

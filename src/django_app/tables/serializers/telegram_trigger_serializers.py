@@ -1,11 +1,15 @@
 from loguru import logger
 from rest_framework import serializers
+
+from tables.models.webhook_models import WebhookTrigger
+from tables.models.graph_models import TelegramTriggerNode, TelegramTriggerNodeField
 from tables.models import (
     TelegramTriggerNode,
     TelegramTriggerNodeField,
     WebhookTrigger,
-    NgrokWebhookConfig,
 )
+
+from tables.serializers.base_serializers import WebhookTriggerNestedSerializer
 
 
 class TelegramTriggerNodeFieldSerializer(serializers.ModelSerializer):
@@ -20,8 +24,8 @@ class TelegramTriggerNodeFieldSerializer(serializers.ModelSerializer):
 
 
 class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
+    webhook_trigger = WebhookTriggerNestedSerializer(required=False, allow_null=True)
     fields = TelegramTriggerNodeFieldSerializer(many=True)
-    webhook_full_url = serializers.SerializerMethodField()
 
     class Meta:
         model = TelegramTriggerNode
@@ -32,32 +36,25 @@ class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
             "graph",
             "fields",
             "webhook_trigger",
-            "webhook_full_url",
         ]
-
-
-    def get_webhook_full_url(self, instance: TelegramTriggerNode):
-        from tables.services.webhook_trigger_service import WebhookTriggerService
-        webhook_trigger = instance.webhook_trigger
-        if webhook_trigger is None:
-            return None
-        
-        if hasattr(webhook_trigger, "ngrok_webhook_config") and webhook_trigger.ngrok_webhook_config is not None:
-            try:
-                return WebhookTriggerService().get_tunnel_url(webhook_trigger=webhook_trigger)
-            except Exception as e:
-                logger.exception()
-        return None
 
     def create(self, validated_data):
         fields_data = validated_data.pop("fields", [])
-        webhook_trigger = validated_data.pop("webhook_trigger", None)
 
-        node = TelegramTriggerNode.objects.create(**validated_data)
+        webhook_trigger_data = validated_data.pop("webhook_trigger", None)
+        webhook_trigger_instance = None
 
-        node.webhook_trigger = webhook_trigger
-        node.save()
+        if webhook_trigger_data:
+            path = webhook_trigger_data.get("path")
+            ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
+            webhook_trigger_instance, created = WebhookTrigger.objects.update_or_create(
+                path=path, defaults={"ngrok_webhook_config": ngrok_conf}
+            )
+
+        node = TelegramTriggerNode.objects.create(
+            webhook_trigger=webhook_trigger_instance, **validated_data
+        )
         for item in fields_data:
             TelegramTriggerNodeField.objects.create(telegram_trigger_node=node, **item)
 
@@ -66,12 +63,27 @@ class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         fields_data = validated_data.pop("fields", None)
 
+        if "webhook_trigger" in validated_data:
+            webhook_trigger_data = validated_data.pop("webhook_trigger")
+
+            if webhook_trigger_data:
+                path = webhook_trigger_data.get("path")
+                ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
+
+                webhook_trigger_instance, created = (
+                    WebhookTrigger.objects.update_or_create(
+                        path=path, defaults={"ngrok_webhook_config": ngrok_conf}
+                    )
+                )
+                instance.webhook_trigger = webhook_trigger_instance
+            else:
+                instance.webhook_trigger = None
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
         if fields_data is not None:
-            # Delete old fields and recreate new ones (simple nested update strategy)
             instance.fields.all().delete()
             for item in fields_data:
                 TelegramTriggerNodeField.objects.create(

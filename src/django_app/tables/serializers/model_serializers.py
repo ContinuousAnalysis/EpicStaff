@@ -1,6 +1,8 @@
 from typing import Literal
 from itertools import chain
 
+from loguru import logger
+
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
 )
@@ -99,7 +101,7 @@ from tables.serializers.naive_rag_serializers import (
     RagInputSerializer,
     NestedSearchConfigSerializer,
 )
-
+from tables.serializers.base_serializers import WebhookTriggerNestedSerializer
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
 
@@ -1355,22 +1357,27 @@ class WebhookTriggerSerializer(serializers.ModelSerializer):
 
 
 class NgrokWebhookConfigModelSerializer(serializers.ModelSerializer):
+    webhook_full_url = serializers.SerializerMethodField()
+
     class Meta:
         model = NgrokWebhookConfig
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "auth_token",
+            "domain",
+            "region",
+            "webhook_full_url",
+        ]
 
+    def get_webhook_full_url(self, instance: NgrokWebhookConfig):
+        from tables.services.webhook_trigger_service import WebhookTriggerService
 
-class WebhookTriggerNestedSerializer(serializers.ModelSerializer):
-    ngrok_webhook_config = serializers.PrimaryKeyRelatedField(
-        queryset=NgrokWebhookConfig.objects.all(),
-        required=False,
-        allow_null=True,
-    )
-
-    class Meta:
-        model = WebhookTrigger
-        fields = ["path", "ngrok_webhook_config"]
-        extra_kwargs = {"path": {"validators": []}}
+        try:
+            return WebhookTriggerService().get_tunnel_url(ngrok_webhook_config=instance)
+        except Exception as e:
+            logger.exception(e)
+        return None
 
 
 class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
@@ -1420,7 +1427,7 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
                 ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
                 webhook_trigger_instance, created = (
-                        WebhookTrigger.objects.update_or_create(
+                    WebhookTrigger.objects.update_or_create(
                         path=path, defaults={"ngrok_webhook_config": ngrok_conf}
                     )
                 )
