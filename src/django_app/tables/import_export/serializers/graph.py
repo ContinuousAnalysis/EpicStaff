@@ -15,6 +15,8 @@ from tables.models import (
     Edge,
     PythonCode,
     WebhookTrigger,
+    ConditionGroup,
+    Condition,
 )
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 
@@ -54,7 +56,33 @@ class WebhookTriggerNodeImportSerializer(BaseNodeImportSerializer):
         fields = "__all__"
 
 
+class ConditionImportSerializer(serializers.ModelSerializer):
+    condition_group = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Condition
+        fields = "__all__"
+
+
+class ConditionGroupImportSerializer(serializers.ModelSerializer):
+    conditions = ConditionImportSerializer(many=True, required=False, read_only=True)
+    decision_table_node = serializers.PrimaryKeyRelatedField(read_only=True)
+    decision_table_node_id = serializers.PrimaryKeyRelatedField(
+        queryset=DecisionTableNode.objects.all(),
+        source="decision_table_node",
+        write_only=True,
+    )
+
+    class Meta:
+        model = ConditionGroup
+        fields = "__all__"
+
+
 class DecisionTableNodeImportSerializer(BaseNodeImportSerializer):
+    condition_groups = ConditionGroupImportSerializer(
+        many=True, required=False, read_only=True
+    )
+
     class Meta(BaseNodeImportSerializer.Meta):
         model = DecisionTableNode
         fields = "__all__"

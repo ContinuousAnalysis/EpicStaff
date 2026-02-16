@@ -5,6 +5,7 @@ from tables.models import (
     WebhookTriggerNode,
     EndNode,
     WebhookTrigger,
+    DecisionTableNode,
 )
 from tables.import_export.enums import NodeType, EntityType
 from tables.import_export.id_mapper import IDMapper
@@ -20,6 +21,8 @@ from tables.import_export.serializers.graph import (
     DecisionTableNodeImportSerializer,
     TelegramTriggerNodeImportSerializer,
     EndNodeImportSerializer,
+    ConditionGroupImportSerializer,
+    ConditionImportSerializer,
 )
 
 
@@ -81,6 +84,28 @@ def import_end_node(graph: Graph, node_data: dict, id_mapper: IDMapper) -> EndNo
     return serializer.save()
 
 
+def import_decision_table_node(
+    graph: Graph, node_data: dict, id_mapper: IDMapper
+) -> DecisionTableNode:
+    condition_groups_data = node_data.pop("condition_groups", [])
+
+    serializer = DecisionTableNodeImportSerializer(
+        data={**node_data, "graph": graph.id}
+    )
+    serializer.is_valid(raise_exception=True)
+    decision_table_node = serializer.save()
+
+    for data in condition_groups_data:
+        conditions_data = data.pop("conditions", [])
+        data["decision_table_node_id"] = decision_table_node.id
+
+        serializer = ConditionGroupImportSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+    return decision_table_node
+
+
 NODE_HANDLERS = {
     NodeType.CREW_NODE: {
         "serializer": CrewNodeImportSerializer,
@@ -116,6 +141,7 @@ NODE_HANDLERS = {
     NodeType.DECISION_TABLE_NODE: {
         "serializer": DecisionTableNodeImportSerializer,
         "relation": "decision_table_node_list",
+        "import_hook": import_decision_table_node,
     },
     NodeType.TELEGRAM_TRIGGER_NODE: {
         "serializer": TelegramTriggerNodeImportSerializer,
