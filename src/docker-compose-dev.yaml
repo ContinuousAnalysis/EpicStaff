@@ -1,5 +1,13 @@
-# docker compose -f ./docker-compose-dev.yaml --env-file ../dev/.env --env-file ../dev/dev.env up --build -d
- # Shared environment for backend services
+#setup development env for autoreload
+# ____________________________________________
+# rewrite dev.env.example ro dev.env with your specific environment
+#
+# run docker compose with this env
+# docker compose -f ./docker-compose-dev.yaml --env-file ./.env --env-file ../dev/dev.env up --build -d
+
+
+# Shared environment for backend services
+
 x-common-env: &common_env
   CODE_RESULT_CHANNEL: code_results
   CODE_EXEC_TASK_CHANNEL: code_exec_tasks
@@ -70,7 +78,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 12
-      
+
+
   realtime:
     image: realtime
     container_name: realtime
@@ -177,7 +186,8 @@ services:
       timeout: 10s
       retries: 10
       start_period: 15s
-      
+
+
   redis:
     image: redis
     container_name: redis
@@ -290,6 +300,7 @@ services:
     stdin_open: true
     depends_on:
       - redis
+
   knowledge:
     image: knowledge
     build:
@@ -337,6 +348,9 @@ services:
       dockerfile: ./webhook/Dockerfile
     ports:
       - "${WEBHOOK_PORT:-8051}:${WEBHOOK_PORT:-8051}"
+    env_file:
+      - ./.env
+      - ../dev/dev.env
     environment:
       <<: *common_env
       USE_TUNNEL: ${USE_TUNNEL}
