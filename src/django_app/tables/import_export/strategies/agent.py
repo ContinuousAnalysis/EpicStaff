@@ -52,11 +52,11 @@ class AgentStrategy(EntityImportExportStrategy):
         )
 
         if realtime_config:
-            deps[EntityType.REALTIME_CONFIG] = realtime_config.id
+            deps[EntityType.REALTIME_CONFIG] = [realtime_config.id]
         if realtime_transcription_config:
-            deps[EntityType.REALTIME_TRANSCRIPTION_CONFIG] = (
+            deps[EntityType.REALTIME_TRANSCRIPTION_CONFIG] = [
                 realtime_transcription_config.id
-            )
+            ]
 
         return deps
 
