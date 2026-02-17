@@ -18,6 +18,7 @@ import {
     TelegramTriggerNodeField
 } from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
 import { WebhookTriggerModel } from "./webhook-trigger.model";
+import { GetGraphLightRequest } from '../../../features/flows/models/graph.model';
 
 export interface BaseNodeModel {
     id: string;
@@ -32,6 +33,8 @@ export interface BaseNodeModel {
         width: number;
         height: number;
     };
+    // UI-only flag for invalid references (e.g. deleted subgraph)
+    isBlocked?: boolean;
     // New fields
     input_map: Record<string, any>;
     output_variable_path: string | null;
@@ -128,6 +131,12 @@ export interface EndNodeModel extends BaseNodeModel {
     data: EndNodeData;
 }
 
+
+export interface SubGraphNodeModel extends BaseNodeModel {
+    type: NodeType.SUBGRAPH;
+    data: GetGraphLightRequest;
+}
+
 export type NodeModel =
     | AgentNodeModel
     | TaskNodeModel
@@ -142,6 +151,7 @@ export type NodeModel =
     | NoteNodeModel
     | FileExtractorNodeModel
     | AudioToTextNodeModel
+    | SubGraphNodeModel
     | WebhookTriggerNodeModel
     | TelegramTriggerNodeModel
     | EndNodeModel;
