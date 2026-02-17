@@ -7,8 +7,9 @@ import {
     OnInit, signal, SimpleChanges
 } from '@angular/core';
 import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { GetNgrokConfigResponse } from "../../../../features/settings-dialog/models/ngrok-config.model";
-import { NgrokConfigService } from "../../../../features/settings-dialog/services/ngrok-config.service";
+import {
+    NgrokConfigStorageService
+} from "../../../../features/settings-dialog/services/ngrok-config/ngrok-config-storage.service";
 import { ToastService } from "../../../../services/notifications";
 import { WebhookTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
@@ -39,18 +40,21 @@ export const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTriggerNodeModel> implements OnInit, OnChanges {
+    private readonly destroyRef = inject(DestroyRef);
+    private ngrokStorageService = inject(NgrokConfigStorageService);
+
     public readonly isExpanded = input<boolean>(false);
 
-    ngrokConfigSelectItems = signal<SelectItem[]>([]);
     ngrokConfigsLoading = signal<boolean>(false);
     webhookPath = signal<string | null>(null);
     ngrokConfigUrl = signal<string | null>(null);
+    loadingTunnel = signal<boolean>(false);
+    ngrokConfigs = this.ngrokStorageService.configs;
 
-    ngrokConfigs: GetNgrokConfigResponse[] = [];
     pythonCode: string = '';
     initialPythonCode: string = '';
     codeEditorHasError: boolean = false;
-    loadingTunnel = signal<boolean>(false);
+
     webhookUrlDisplay = computed<string | null>(() => {
         const configUrl = this.ngrokConfigUrl();
         const path = this.webhookPath();
@@ -58,12 +62,12 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
         if (!configUrl || !path) return null;
 
         return configUrl + path;
-    })
-
-    private readonly destroyRef = inject(DestroyRef);
+    });
+    ngrokConfigSelectItems = computed<SelectItem[]>(() => {
+        return this.ngrokStorageService.configs().map(c => ({ name: c.name, value: c.id }))
+    });
 
     constructor(
-        private ngrokConfigService: NgrokConfigService,
         private clipboard: Clipboard,
         private toastService: ToastService,
     ) {
@@ -81,13 +85,10 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
 
     private getNgrokConfigs(): void {
         this.ngrokConfigsLoading.set(true);
-        this.ngrokConfigService.getNgrokConfigs()
+        this.ngrokStorageService.getConfigs()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (configs) => {
-                    this.ngrokConfigs = configs;
-                    this.ngrokConfigSelectItems.set(configs.map(config => ({ name: config.name, value: config.id })))
-                },
+                next: () => {},
                 error: () => this.toastService.error('Failed to load Ngrok configs.'),
                 complete: () => this.ngrokConfigsLoading.set(false),
             })
@@ -99,7 +100,7 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
         if (!id || !path) return;
         this.loadingTunnel.set(true);
 
-        this.ngrokConfigService.getNgrokConfigById(id)
+        this.ngrokStorageService.getConfigById(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
@@ -152,7 +153,7 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
     }
 
     onNgrokConfigChange(id: number): void {
-        const config = this.ngrokConfigs.find(c => c.id === id);
+        const config = this.ngrokConfigs().find(c => c.id === id);
 
         if (!config || !config.webhook_full_url) return;
 

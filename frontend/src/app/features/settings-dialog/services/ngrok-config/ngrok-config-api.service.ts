@@ -2,13 +2,13 @@ import { HttpClient } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { ApiGetResponse } from "@services";
 import { map, Observable } from "rxjs";
-import { ConfigService } from "../../../services/config";
-import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from "../models/ngrok-config.model";
+import { ConfigService } from "../../../../services/config";
+import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from "../../models/ngrok-config.model";
 
 @Injectable({
     providedIn: 'root',
 })
-export class NgrokConfigService {
+export class NgrokConfigApiService {
     private configService = inject(ConfigService);
     private http = inject(HttpClient);
 
@@ -26,14 +26,14 @@ export class NgrokConfigService {
     }
 
     getNgrokConfigById(id: number): Observable<GetNgrokConfigResponse> {
-        return this.http.get<GetNgrokConfigResponse>(this.apiUrl + id);
+        return this.http.get<GetNgrokConfigResponse>(this.apiUrl + id + '/');
     }
 
     updateNgrokConfig(id: number, dto: Partial<CreateNgrokConfigRequest>): Observable<GetNgrokConfigResponse> {
-        return this.http.put<GetNgrokConfigResponse>(this.apiUrl + id, dto);
+        return this.http.put<GetNgrokConfigResponse>(this.apiUrl + id + '/', dto);
     }
 
     deleteNgrokConfig(id: number): Observable<void> {
-        return this.http.delete<void>(this.apiUrl + id);
+        return this.http.delete<void>(this.apiUrl + id + '/');
     }
 }

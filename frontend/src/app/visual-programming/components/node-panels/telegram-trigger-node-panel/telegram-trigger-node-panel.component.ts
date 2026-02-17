@@ -7,7 +7,7 @@ import {
     AppIconComponent,
     JsonEditorComponent,
 } from "@shared/components";
-import { NgrokConfigService } from "../../../../features/settings-dialog/services/ngrok-config.service";
+import { NgrokConfigStorageService } from "../../../../features/settings-dialog/services/ngrok-config/ngrok-config-storage.service";
 import { ToastService } from "../../../../services/notifications";
 import { BaseSidePanel } from "../../../core/models/node-panel.abstract";
 import { TelegramTriggerNodeModel } from "../../../core/models/node.model";
@@ -48,14 +48,13 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
 
     private dialog = inject(Dialog);
     private destroyRef = inject(DestroyRef);
-    private ngrokConfigService = inject(NgrokConfigService);
     private toastService = inject(ToastService);
+    private ngrokStorageService = inject(NgrokConfigStorageService);
 
     webhookStatus = signal<WebhookStatus | 'pending' | 'registering'>('pending');
-    ngrokConfigSelectItems = signal<SelectItem[]>([]);
     ngrokConfigsLoading = signal<boolean>(false);
-
     selectedFields = signal<DisplayedTelegramField[]>([]);
+
     jsonValues = computed(() => {
         const checkedItemsObj = this.selectedFields().reduce<Record<string, any>>((acc, field) => {
             acc[field.field_name] = field.model;
@@ -63,6 +62,9 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
         }, {});
 
         return JSON.stringify(checkedItemsObj, null, 2);
+    });
+    ngrokConfigSelectItems = computed<SelectItem[]>(() => {
+        return this.ngrokStorageService.configs().map(c => ({ name: c.name, value: c.id }))
     });
 
     editorOptions: any = {
@@ -96,7 +98,7 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
             return;
         }
 
-        this.ngrokConfigService.getNgrokConfigById(id)
+        this.ngrokStorageService.getConfigById(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.webhookStatus.set(WebhookStatus.SUCCESS),
@@ -106,12 +108,10 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
 
     private getNgrokConfigs(): void {
         this.ngrokConfigsLoading.set(true);
-        this.ngrokConfigService.getNgrokConfigs()
+        this.ngrokStorageService.getConfigs()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (configs) => {
-                    this.ngrokConfigSelectItems.set(configs.map(config => ({ name: config.name, value: config.id })))
-                },
+                next: () => {},
                 error: () => this.toastService.error('Failed to load Ngrok configs.'),
                 complete: () => this.ngrokConfigsLoading.set(false),
             })

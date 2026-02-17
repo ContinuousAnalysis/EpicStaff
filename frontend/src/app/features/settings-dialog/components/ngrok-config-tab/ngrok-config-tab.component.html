@@ -1,95 +1,48 @@
-<div class="ngrok__container">
-    <div class="ngrok__header">
-        <h3 class="ngrok__header-title">
-            Ngrok Configuration Parameters
-        </h3>
-        <p class="ngrok__header-subtitle">
-            Some text to explain purpose of this tab
-        </p>
-    </div>
-
-    <div class="ngrok__content">
-        <form
-            class="ngrok__form"
-            [formGroup]="form"
+<div class="tab">
+    <div class="tab__header">
+        <div>
+            <h3 class="tab__title">Ngrok Configuration Parameters</h3>
+            <p class="tab__subtitle">
+                Configure and manage settings through the Ngrok tunnel.
+            </p>
+        </div>
+        <app-button
+            type="primary"
+            leftIcon="ui/plus"
+            (click)="onAddConfig()"
         >
-            <div class="ngrok__form-label">
-                <label>Name</label>
-                <mat-icon
-                    class="ngrok__tooltip"
-                    matTooltip="tooltip"
-                    matTooltipPosition="above"
-                    matTooltipClass="dialog__label-tooltip"
-                >
-                    help_outline
-                </mat-icon>
-            </div>
-            <app-custom-input
-                formControlName="name"
-                [required]="true"
-                placeholder="Enter configuration name"
-                tooltipText="Configuration name"
-            />
-
-            <div class="ngrok__form-label">
-                <label>Auth Token</label>
-                <mat-icon
-                    class="ngrok__tooltip"
-                    matTooltip="Auth Token from: https://dashboard.ngrok.com/get-started/your-authtoken"
-                    matTooltipPosition="above"
-                    matTooltipClass="dialog__label-tooltip"
-                >
-                    help_outline
-                </mat-icon>
-            </div>
-            <app-custom-input
-                formControlName="auth_token"
-                [required]="true"
-                tooltipText="token"
-                placeholder="e.g. 39HouLFMClthJIAw5a••••••••••••••"
-            />
-
-            <div class="ngrok__form-label">
-                <label>Region</label>
-                <mat-icon
-                    class="ngrok__tooltip"
-                    matTooltip="tooltip"
-                    matTooltipPosition="above"
-                    matTooltipClass="dialog__label-tooltip"
-                >
-                    help_outline
-                </mat-icon>
-            </div>
-            <app-select
-                formControlName="region"
-                [items]="regionSelectItems"
-                placeholder="Select region"
-                tooltipText="region"
-            />
-
-            <div class="ngrok__form-label">
-                <label>Domain</label>
-                <mat-icon
-                    class="ngrok__tooltip"
-                    matTooltip="tooltip"
-                    matTooltipPosition="above"
-                    matTooltipClass="dialog__label-tooltip"
-                >
-                    help_outline
-                </mat-icon>
-            </div>
-            <app-custom-input
-                formControlName="domain"
-                placeholder="e.g. my-app.ngrok.io"
-                tooltipText="url"
-            />
-        </form>
+            Add
+        </app-button>
     </div>
-    <app-button
-        class="ngrok__action_btn"
-        type="primary"
-        (click)="createNgrokConfig()"
-    >
-        Create config
-    </app-button>
+
+    <div class="tab__ngrok-config-list">
+        @if (status() === 'loading') {
+            <div class="tab__loading-state">
+                <p>Loading Ngrok configurations...</p>
+            </div>
+        } @else if (status() === 'error') {
+            <div class="tab__loading-state tab__loading-state--error">
+                <p>{{ errorMessage() }}</p>
+                <app-button
+                    type="secondary"
+                    leftIcon="ui/refresh"
+                    (click)="refreshData()"
+                >
+                    Retry
+                </app-button>
+            </div>
+        } @else if (ngrokConfigs().length === 0) {
+            <div class="tab__loading-state">
+                <p>No ngrok configurations found. Add one to get started.</p>
+            </div>
+        } @else {
+            @for (config of ngrokConfigs(); track config.id) {
+                <app-ngrok-config-item
+                    [config]="config"
+                    (configureClicked)="onEditConfig(config)"
+                    (deleteClicked)="onRemoveConfig(config)"
+                />
+            }
+        }
+    </div>
 </div>
