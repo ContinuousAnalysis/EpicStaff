@@ -1,6 +1,7 @@
 from typing import Literal
 from itertools import chain
 
+from tables.serializers.base_serializer import BaseGraphEntityMixin
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
 )
@@ -1279,13 +1280,13 @@ class LLMNodeSerializer(serializers.ModelSerializer):
 
 
 class EdgeSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = Edge
         fields = "__all__"
 
 
 class SubGraphNodeSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = SubGraphNode
         fields = "__all__"
 
@@ -1302,7 +1303,7 @@ class SubGraphNodeSerializer(serializers.ModelSerializer):
 class ConditionalEdgeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = ConditionalEdge
         fields = "__all__"
 
@@ -1339,9 +1340,14 @@ class ConditionalEdgeSerializer(serializers.ModelSerializer):
 class StartNodeSerializer(serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = StartNode
-        fields = ["id", "graph", "variables", "node_name"]
+        fields = [
+            "id",
+            "graph",
+            "variables",
+            "node_name",
+        ] + BaseGraphEntityMixin.Meta.common_fields
         read_only_fields = ["node_name"]
 
     def get_node_name(self, obj):
@@ -1351,9 +1357,14 @@ class StartNodeSerializer(serializers.ModelSerializer):
 class EndNodeSerializer(serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = EndNode
-        fields = ["id", "graph", "output_map", "node_name"]
+        fields = [
+            "id",
+            "graph",
+            "output_map",
+            "node_name",
+        ] + BaseGraphEntityMixin.Meta.common_fields
         read_only_fields = ["node_name"]
 
     def get_node_name(self, obj):
