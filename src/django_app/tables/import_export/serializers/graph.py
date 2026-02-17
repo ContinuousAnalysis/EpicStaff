@@ -17,6 +17,7 @@ from tables.models import (
     WebhookTrigger,
     ConditionGroup,
     Condition,
+    SubGraphNode,
 )
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 
@@ -134,6 +135,12 @@ class LLMNodeImportSerializer(BaseNodeImportSerializer):
 class CrewNodeImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
         model = CrewNode
+        fields = "__all__"
+
+
+class SubgraphNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
+        model = SubGraphNode
         fields = "__all__"
 
 

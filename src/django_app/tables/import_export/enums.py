@@ -26,4 +26,5 @@ class NodeType(str, Enum):
     TELEGRAM_TRIGGER_NODE = "TelegramTriggerNode"
     WEBHOOK_TRIGGER_NODE = "WebhookTriggerNode"
     DECISION_TABLE_NODE = "DecisionTableNode"
+    SUBGRAPH_NODE = "SubgraphNode"
     END_NODE = "EndNode"

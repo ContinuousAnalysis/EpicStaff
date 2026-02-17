@@ -6,6 +6,7 @@ from tables.models import (
     EndNode,
     WebhookTrigger,
     DecisionTableNode,
+    SubGraphNode,
 )
 from tables.import_export.enums import NodeType, EntityType
 from tables.import_export.id_mapper import IDMapper
@@ -23,6 +24,7 @@ from tables.import_export.serializers.graph import (
     EndNodeImportSerializer,
     ConditionGroupImportSerializer,
     ConditionImportSerializer,
+    SubgraphNodeImportSerializer,
 )
 
 
@@ -106,11 +108,28 @@ def import_decision_table_node(
     return decision_table_node
 
 
+def import_subgraph_node(
+    graph: Graph, node_data: dict, id_mapper: IDMapper
+) -> SubGraphNode:
+    subgraph_id = id_mapper.get_or_none(EntityType.GRAPH, node_data["subgraph"])
+
+    serializer = SubgraphNodeImportSerializer(
+        data={**node_data, "graph": graph.id, "subgraph": subgraph_id}
+    )
+    serializer.is_valid(raise_exception=True)
+    return serializer.save()
+
+
 NODE_HANDLERS = {
     NodeType.CREW_NODE: {
         "serializer": CrewNodeImportSerializer,
         "relation": "crew_node_list",
         "import_hook": import_crew_node,
+    },
+    NodeType.SUBGRAPH_NODE: {
+        "serializer": SubgraphNodeImportSerializer,
+        "relation": "subgraph_node_list",
+        "import_hook": import_subgraph_node,
     },
     NodeType.PYTHON_NODE: {
         "serializer": PythonNodeImportSerializer,

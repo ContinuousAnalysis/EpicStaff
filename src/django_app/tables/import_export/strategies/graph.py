@@ -26,13 +26,16 @@ class GraphStrategy(EntityImportExportStrategy):
         self, instance: Graph
     ) -> dict[str, list[int]]:
         deps = {}
-        deps[EntityType.CREW] = list(
+        deps[EntityType.CREW] = set(
             instance.crew_node_list.values_list("crew_id", flat=True)
         )
         deps[EntityType.WEBHOOK_TRIGGER] = list(
             instance.webhook_trigger_node_list.values_list(
                 "webhook_trigger_id", flat=True
             )
+        )
+        deps[EntityType.GRAPH] = set(
+            instance.subgraph_node_list.values_list("subgraph_id", flat=True)
         )
         return deps
 
@@ -130,5 +133,14 @@ class GraphStrategy(EntityImportExportStrategy):
                 node["data"]["webhook_trigger"] = id_mapper.get_or_none(
                     EntityType.WEBHOOK_TRIGGER, old_id
                 )
+            if node["type"] == "subgraph":
+                old_id = node["data"]["id"]
+                new_id = id_mapper.get_or_none(EntityType.GRAPH, old_id)
+
+                subgraph = Graph.objects.get(id=new_id)
+
+                node["data"]["id"] = new_id
+                node["data"]["name"] = subgraph.name
+                node["data"]["description"] = subgraph.description
 
         return metadata_copy
