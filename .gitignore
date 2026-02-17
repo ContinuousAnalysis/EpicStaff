@@ -255,6 +255,8 @@ executions
 openai-realtime-console
 src/django_app/staticfiles/*
 
+# Cursor AI rules
+.cursorrules
 
 #knowledge data
 knowledge/graph_data/
@@ -262,4 +264,6 @@ knowledge/graph_data/
 # Knowledge migration backup
 **/knowledge_migration_backup/
 *.pem
-*.crt
+*.crt!
+dev/dev.config.json
+dev/dev.env
