@@ -5,6 +5,9 @@ from django.db import models
 from loguru import logger
 from django.utils import timezone
 
+from tables.models.base_models import BaseGraphEntity
+
+
 class Graph(models.Model):
     tags = models.ManyToManyField(to="GraphTag", blank=True, default=[])
 
@@ -18,32 +21,8 @@ class Graph(models.Model):
         default=False, help_text="If 'True' -> use variables from last session."
     )
 
-class MetadataMixin(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    content_hash = models.CharField(max_length=64, editable=False, null=True)
-    metadata = models.JSONField(default=dict, blank=True)
-    class Meta:
-        abstract = True
 
-    def generate_hash(self):
-        """
-        Generates a SHA-256 hash of the model's critical fields to detect changes.
-        """
-        excluded_fields = ['id', 'created_at', 'updated_at', 'content_hash', 'metadata']
-        data = {
-            f.name: str(getattr(self, f.name)) 
-            for f in self._meta.fields 
-            if f.name not in excluded_fields
-        }
-        data_string = json.dumps(data, sort_keys=True).encode('utf-8')
-        return hashlib.sha256(data_string).hexdigest()
-
-    def save(self, *args, **kwargs):
-        self.content_hash = self.generate_hash()
-        super().save(*args, **kwargs)
-
-class BaseNode(MetadataMixin, models.Model):
+class BaseNode(BaseGraphEntity, models.Model):
     graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
     node_name = models.CharField(max_length=255, blank=True)
     input_map = models.JSONField(default=dict)
@@ -136,7 +115,7 @@ class LLMNode(BaseNode):
         ]
 
 
-class EndNode(MetadataMixin, models.Model):
+class EndNode(BaseGraphEntity, models.Model):
     # TODO: can be OneToOne field
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="end_node"
@@ -179,7 +158,7 @@ class SubGraphNode(BaseNode):
         ]
 
 
-class Edge(MetadataMixin, models.Model):
+class Edge(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="edge_list"
     )
@@ -194,7 +173,7 @@ class Edge(MetadataMixin, models.Model):
         ]
 
 
-class ConditionalEdge(MetadataMixin, models.Model):
+class ConditionalEdge(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="conditional_edge_list"
     )
@@ -220,7 +199,7 @@ class GraphSessionMessage(models.Model):
     uuid = models.UUIDField(null=False, editable=False, unique=True)
 
 
-class StartNode(MetadataMixin, models.Model):
+class StartNode(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="start_node_list"
     )
@@ -232,7 +211,7 @@ class StartNode(MetadataMixin, models.Model):
         ]
 
 
-class DecisionTableNode(MetadataMixin, models.Model):
+class DecisionTableNode(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="decision_table_node_list"
     )
@@ -377,7 +356,7 @@ class GraphOrganizationUser(BasePersistentEntity):
         ]
 
 
-class WebhookTriggerNode(MetadataMixin, models.Model):
+class WebhookTriggerNode(BaseGraphEntity, models.Model):
     node_name = models.CharField(max_length=255, blank=False)
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="webhook_trigger_node_list"
@@ -399,7 +378,7 @@ class WebhookTriggerNode(MetadataMixin, models.Model):
         ]
 
 
-class TelegramTriggerNode(MetadataMixin, models.Model):
+class TelegramTriggerNode(BaseGraphEntity, models.Model):
     node_name = models.CharField(max_length=255, blank=False)
     telegram_bot_api_key = models.CharField(
         max_length=255, blank=True, null=True, default=None

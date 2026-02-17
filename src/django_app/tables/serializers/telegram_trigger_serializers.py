@@ -1,10 +1,10 @@
 from rest_framework import serializers
 from tables.models.graph_models import TelegramTriggerNode, TelegramTriggerNodeField
-from tables.serializers.base_serializer import BaseMetadataSerializer
+from tables.serializers.base_serializer import BaseGraphEntityMixin
+
 
 class TelegramTriggerNodeFieldSerializer(serializers.ModelSerializer):
     class Meta:
-        
         model = TelegramTriggerNodeField
         fields = [
             "id",
@@ -17,7 +17,7 @@ class TelegramTriggerNodeFieldSerializer(serializers.ModelSerializer):
 class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
     fields = TelegramTriggerNodeFieldSerializer(many=True)
 
-    class Meta(BaseMetadataSerializer.Meta):
+    class Meta(BaseGraphEntityMixin.Meta):
         model = TelegramTriggerNode
         fields = [
             "id",
@@ -25,7 +25,7 @@ class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
             "telegram_bot_api_key",
             "graph",
             "fields",
-        ]  + BaseMetadataSerializer.Meta.common_fields
+        ] + BaseGraphEntityMixin.Meta.common_fields
 
     def create(self, validated_data):
         fields_data = validated_data.pop("fields", [])
