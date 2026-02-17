@@ -1,9 +1,15 @@
-name: PR - build images from compose (src)
+name: build images from compose
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
+  workflow_call:
+    inputs:
+      compose-file:
+        required: true
+        type: string
+      max-parallel:
+        required: false
+        type: number
+        default: 4
 
 permissions:
   contents: read
