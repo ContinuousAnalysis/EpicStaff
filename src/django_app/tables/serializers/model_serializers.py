@@ -80,7 +80,13 @@ from tables.models.realtime_models import (
     RealtimeAgent,
     RealtimeAgentChat,
 )
-from tables.models.tag_models import AgentTag, CrewTag, GraphTag
+from tables.models.tag_models import (
+    AgentTag,
+    CrewTag,
+    EmbeddingModelTag,
+    GraphTag,
+    LLMModelTag,
+)
 from tables.models.vector_models import MemoryDatabase
 from tables.validators.tool_config_validator import ToolConfigValidator, eval_any
 from tables.models import (
@@ -123,16 +129,139 @@ class ProviderSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class LLMModelSerializer(serializers.ModelSerializer):
+class LLMModelTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LLMModelTag
+        fields = ("id", "name", "predefined")
+        read_only_fields = ("predefined",)
+
+
+class EmbeddingTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmbeddingModelTag
+        fields = ("id", "name", "predefined")
+        read_only_fields = ("predefined",)
+
+
+class TagHandlingMixin:
+    """
+    Mixin for handling model tags.
+    Rules:
+    1. Predefined tags MAY be present in the request.
+    2. Users CANNOT remove an existing predefined tag (validation error).
+    3. Users CANNOT manually add/assign a predefined tag that was not previously present (validation error).
+    """
+
+    tag_model = None
+
+    def _resolve_tags(self, tags_data):
+        resolved = []
+        for tag in tags_data:
+            if "id" in tag:
+                try:
+                    obj = self.tag_model.objects.get(id=tag["id"])
+                except self.tag_model.DoesNotExist:
+                    raise serializers.ValidationError(
+                        f"Tag with id {tag['id']} not found."
+                    )
+            elif "name" in tag:
+                obj, _ = self.tag_model.objects.get_or_create(
+                    name=tag["name"],
+                    defaults={"predefined": False},
+                )
+            else:
+                continue
+
+            resolved.append(obj)
+        return resolved
+
+    def _validate_predefined_tags_on_update(self, instance, resolved_tags):
+        resolved_set = set(resolved_tags)
+        existing_predefined = set(instance.tags.filter(predefined=True))
+
+        missing_tags = existing_predefined - resolved_set
+        if missing_tags:
+            names = ", ".join([t.name for t in missing_tags])
+            raise serializers.ValidationError(
+                f"You cannot remove the following predefined tags: {names}. They must be present in the request."
+            )
+
+        incoming_predefined = {t for t in resolved_set if t.predefined}
+        new_predefined = incoming_predefined - existing_predefined
+        if new_predefined:
+            names = ", ".join([t.name for t in new_predefined])
+            raise serializers.ValidationError(
+                f"You cannot manually assign predefined tags: {names}."
+            )
+
+    def _validate_predefined_tags_on_create(self, resolved_tags):
+        for tag in resolved_tags:
+            if tag.predefined:
+                raise serializers.ValidationError(
+                    f"You cannot manually assign predefined tag '{tag.name}' during creation."
+                )
+
+
+class LLMModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
+    tags = LLMModelTagSerializer(many=True, required=False)
+    tag_model = LLMModelTag
+
     class Meta:
         model = LLMModel
         fields = "__all__"
 
+    def create(self, validated_data):
+        tags_data = validated_data.pop("tags", [])
+        instance = super().create(validated_data)
 
-class EmbeddingModelSerializer(serializers.ModelSerializer):
+        if tags_data:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_create(resolved_tags)
+            instance.tags.set(resolved_tags)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop("tags", None)
+
+        if tags_data is not None:
+            resolved_tags = self._resolve_tags(tags_data)
+
+            self._validate_predefined_tags_on_update(instance, resolved_tags)
+
+            instance.tags.set(resolved_tags)
+
+        return super().update(instance, validated_data)
+
+
+class EmbeddingModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
+    tags = EmbeddingTagSerializer(many=True, required=False)
+    tag_model = EmbeddingModelTag
+
     class Meta:
         model = EmbeddingModel
         fields = "__all__"
+
+    def create(self, validated_data):
+        tags_data = validated_data.pop("tags", [])
+        instance = super().create(validated_data)
+
+        if tags_data:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_create(resolved_tags)
+            instance.tags.set(resolved_tags)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop("tags", None)
+
+        if tags_data is not None:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_update(instance, resolved_tags)
+            instance.tags.set(resolved_tags)
+
+        return super().update(instance, validated_data)
 
 
 class EmbeddingConfigSerializer(serializers.ModelSerializer):
