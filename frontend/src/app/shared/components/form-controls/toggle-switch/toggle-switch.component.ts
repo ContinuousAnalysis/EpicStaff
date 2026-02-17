@@ -7,7 +7,7 @@ import {
   forwardRef, input,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import {TooltipComponent} from "../../tooltip/tooltip.component";
+import { TooltipComponent } from "../../tooltip/tooltip.component";
 
 @Component({
   selector: 'app-toggle-switch',

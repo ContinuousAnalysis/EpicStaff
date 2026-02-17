@@ -6,9 +6,9 @@ import {
     model,
     signal, computed, forwardRef,
 } from '@angular/core';
-import {ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR} from "@angular/forms";
-import {NgClass} from "@angular/common";
-import {TooltipComponent} from "../tooltip/tooltip.component";
+import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from "@angular/forms";
+import { NgClass } from "@angular/common";
+import { TooltipComponent } from "../tooltip/tooltip.component";
 
 @Component({
     selector: 'app-input-number',
@@ -61,8 +61,10 @@ export class InputNumberComponent implements ControlValueAccessor {
         return this.invalid() || this.isOutOfRange();
     });
 
-    onChange: (value: number | null) => void = () => {};
-    onTouched: () => void = () => {};
+    onChange: (value: number | null) => void = () => {
+    };
+    onTouched: () => void = () => {
+    };
     isDisabled = signal(false);
 
     onInputChange(value: number) {

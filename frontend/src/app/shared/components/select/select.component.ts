@@ -9,11 +9,11 @@ import {
     model, output, computed, inject
 } from '@angular/core';
 
-import {TemplatePortal} from '@angular/cdk/portal';
-import {NgClass} from "@angular/common";
-import {Overlay, OverlayPositionBuilder, OverlayRef} from "@angular/cdk/overlay";
-import {ControlValueAccessor, NG_VALUE_ACCESSOR} from "@angular/forms";
-import {TooltipComponent} from "../tooltip/tooltip.component";
+import { TemplatePortal } from '@angular/cdk/portal';
+import { NgClass } from "@angular/common";
+import { Overlay, OverlayPositionBuilder, OverlayRef } from "@angular/cdk/overlay";
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
+import { TooltipComponent } from "../tooltip/tooltip.component";
 
 export interface SelectItem {
     name: string;

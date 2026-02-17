@@ -1,7 +1,7 @@
-import {ChangeDetectionStrategy, Component, forwardRef, input, model, output} from "@angular/core";
-import {ControlValueAccessor, NG_VALUE_ACCESSOR} from "@angular/forms";
-import {NgClass} from "@angular/common";
-import {TooltipComponent} from "../tooltip/tooltip.component";
+import { ChangeDetectionStrategy, Component, forwardRef, input, model, output } from "@angular/core";
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
+import { NgClass } from "@angular/common";
+import { TooltipComponent } from "../tooltip/tooltip.component";
 
 export interface SegmentedOption<T = unknown> {
     label: string;

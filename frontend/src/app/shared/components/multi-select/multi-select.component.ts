@@ -9,13 +9,13 @@ import {
     input,
     output, inject, computed, OnInit
 } from '@angular/core';
-import {TemplatePortal} from '@angular/cdk/portal';
+import { TemplatePortal } from '@angular/cdk/portal';
 
-import {AppIconComponent} from "../app-icon/app-icon.component";
-import {CheckboxComponent} from "../checkbox/checkbox.component";
-import {ButtonComponent} from "../buttons/button/button.component";
-import {Overlay, OverlayPositionBuilder, OverlayRef} from "@angular/cdk/overlay";
-import {SelectItem} from "../select/select.component";
+import { AppIconComponent } from "../app-icon/app-icon.component";
+import { CheckboxComponent } from "../checkbox/checkbox.component";
+import { ButtonComponent } from "../buttons/button/button.component";
+import { Overlay, OverlayPositionBuilder, OverlayRef } from "@angular/cdk/overlay";
+import { SelectItem } from "../select/select.component";
 
 interface GroupedItems {
     group: string | null;

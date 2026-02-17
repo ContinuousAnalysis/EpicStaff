@@ -1,5 +1,5 @@
-import {ChangeDetectionStrategy, Component, forwardRef, input, model} from "@angular/core";
-import {AppIconComponent, CustomInputComponent, TooltipComponent} from "@shared/components";
+import { ChangeDetectionStrategy, Component, forwardRef, input, model } from "@angular/core";
+import { AppIconComponent, CustomInputComponent, TooltipComponent } from "@shared/components";
 import {
     ControlValueAccessor,
     FormControl,
@@ -33,8 +33,10 @@ export class ListboxComponent implements ControlValueAccessor {
     tooltipText = input<string>('');
     inputPlaceholder = input<string>('Type here...');
 
-    private onChange: (value: string[]) => void = () => {};
-    private onTouched: () => void = () => {};
+    private onChange: (value: string[]) => void = () => {
+    };
+    private onTouched: () => void = () => {
+    };
     private isDisabled = false;
 
     value = model<string[]>([]);

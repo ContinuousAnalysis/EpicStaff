@@ -1,5 +1,5 @@
-import {ChangeDetectionStrategy, Component, input} from "@angular/core";
-import {MATERIAL_FORMS} from "@shared/material-forms";
+import { ChangeDetectionStrategy, Component, input } from "@angular/core";
+import { MATERIAL_FORMS } from "@shared/material-forms";
 
 @Component({
     selector: 'app-tooltip',
