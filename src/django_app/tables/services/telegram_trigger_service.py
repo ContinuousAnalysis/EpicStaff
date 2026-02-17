@@ -1,4 +1,6 @@
 import requests
+from tables.services.webhook_trigger_service import WebhookTriggerService
+from tables.models.webhook_models import WebhookTrigger
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -6,7 +8,7 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from django_app.settings import WEBHOOK_HOST_NAME, WEBHOOK_PORT
+
 from tables.exceptions import RegisterTelegramTriggerError
 from tables.models.graph_models import TelegramTriggerNode
 from tables.services.session_manager_service import SessionManagerService
@@ -14,27 +16,15 @@ from utils.singleton_meta import SingletonMeta
 
 
 class TelegramTriggerService(metaclass=SingletonMeta):
-    def __init__(self, session_manager_service: SessionManagerService | None = None):
+    def __init__(
+        self,
+        session_manager_service: SessionManagerService,
+        webhook_trigger_service: WebhookTriggerService,
+    ):
+        self.webhook_trigger_service = webhook_trigger_service
         self.session_manager_service = (
             session_manager_service or SessionManagerService()
         )
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=5),
-        retry=retry_if_exception_type(requests.RequestException),
-        reraise=True,
-    )
-    def _get_tunnel_url(self) -> str:
-        """Fetch the tunnel URL from the local service with retries."""
-        response = requests.get(
-            f"http://{WEBHOOK_HOST_NAME}:{WEBHOOK_PORT}/api/tunnel-url", timeout=5
-        )
-        response.raise_for_status()
-        url = response.json().get("tunnel_url")
-        if not url:
-            raise ValueError("Tunnel service returned an empty URL")
-        return url
 
     @retry(
         stop=stop_after_attempt(3),
@@ -57,20 +47,30 @@ class TelegramTriggerService(metaclass=SingletonMeta):
 
         return data
 
-    def register_telegram_trigger(self, path: str, telegram_bot_api_key: str):
+    def register_telegram_trigger(self, telegram_trigger_instance: TelegramTriggerNode):
+        # TODO: update this to extend to other tunnels
+        webhook_trigger: WebhookTrigger = telegram_trigger_instance.webhook_trigger
+        if webhook_trigger.ngrok_webhook_config is None:
+            raise RegisterTelegramTriggerError(
+                f"Webhook trigger does not set", status_code=400
+            )
         try:
-            webhook_tunnel_url = self._get_tunnel_url()
+            webhook_tunnel_url = self.webhook_trigger_service.get_tunnel_url(
+                webhook_trigger=telegram_trigger_instance.webhook_trigger
+            )
         except Exception as e:
             raise RegisterTelegramTriggerError(
                 f"Failed to fetch tunnel URL after retries: {str(e)}", status_code=503
             )
 
-        telegram_webhook_url = f"{webhook_tunnel_url}/webhooks/telegram-trigger/{path}/"
+        telegram_webhook_url = (
+            f"{webhook_tunnel_url}/webhooks/telegram-trigger/{webhook_trigger.path}/"
+        )
 
         try:
             return self._call_telegram_api(
                 method="POST",
-                api_key=telegram_bot_api_key,
+                api_key=telegram_trigger_instance.telegram_bot_api_key,
                 endpoint="setWebhook",
                 params={"url": telegram_webhook_url},
             )
@@ -89,7 +89,7 @@ class TelegramTriggerService(metaclass=SingletonMeta):
 
     def handle_telegram_trigger(self, url_path: str, payload: dict) -> None:
         telegram_trigger_node_list = TelegramTriggerNode.objects.filter(
-            url_path=url_path
+            webhook_trigger__path=url_path
         )
 
         for telegram_trigger_node in telegram_trigger_node_list:

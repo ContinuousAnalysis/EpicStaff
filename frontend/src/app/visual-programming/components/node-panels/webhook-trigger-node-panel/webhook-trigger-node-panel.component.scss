@@ -1,0 +1,158 @@
+@use '../../../styles/node-panel-mixins.scss' as mixins;
+
+.panel-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.panel-content {
+    @include mixins.panel-content;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-header {
+    @include mixins.section-header;
+}
+
+.form-container {
+    @include mixins.form-container;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-layout {
+    height: 100%;
+    min-height: 0;
+
+    &.expanded {
+        display: flex;
+        gap: 1rem;
+        height: 100%;
+    }
+
+    &.collapsed {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.form-fields {
+    display: flex;
+    flex-direction: column;
+
+    .expanded & {
+        flex: 0 0 400px;
+        max-width: 400px;
+        height: 100%;
+        overflow-y: auto;
+    }
+}
+
+.btn-primary {
+    @include mixins.primary-button;
+}
+
+.btn-secondary {
+    @include mixins.secondary-button;
+}
+
+.code-editor-section {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    .expanded & {
+        flex: 1;
+        height: 100%;
+        min-height: 0;
+    }
+
+    .collapsed & {
+        height: 300px;
+    }
+}
+
+.webhook-url-display {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.65);
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+    margin-bottom: 16px;
+}
+
+.webhook-url-text {
+    flex: 1;
+}
+
+.webhook-url-placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.webhook-url-error {
+    color: #ef4444;
+}
+
+.copy-button {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.copy-button:hover:not(:disabled) {
+    border-color: var(--active-color, #685fff);
+    color: white;
+}
+
+.copy-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.copy-icon {
+    position: relative;
+    width: 14px;
+    height: 10px;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.copy-icon::before,
+.copy-icon::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    background: transparent;
+}
+
+.copy-icon::before {
+    top: 0;
+    left: 0;
+}
+
+.copy-icon::after {
+    top: -3px;
+    left: 3px;
+    opacity: 0.7;
+}

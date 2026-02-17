@@ -1,5 +1,5 @@
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
-from tables.models.webhook_models import WebhookTrigger
+from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
 from django_filters import rest_framework as filters
 from tables.models.crew_models import (
     AgentConfiguredTools,
@@ -67,6 +67,7 @@ from tables.serializers.model_serializers import (
     SubGraphNodeSerializer,
     GraphLightSerializer,
     GraphTagSerializer,
+    NgrokWebhookConfigModelSerializer,
     PythonCodeToolConfigFieldSerializer,
     PythonCodeToolConfigSerializer,
     RealtimeConfigSerializer,
@@ -1095,3 +1096,7 @@ class TelegramTriggerNodeViewSet(ModelViewSet):
 class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     queryset = TelegramTriggerNodeField.objects.select_related("telegram_trigger_node")
     serializer_class = TelegramTriggerNodeFieldSerializer
+
+class NgrokWebhookConfigViewSet(ModelViewSet):
+    queryset = NgrokWebhookConfig.objects.all()
+    serializer_class = NgrokWebhookConfigModelSerializer

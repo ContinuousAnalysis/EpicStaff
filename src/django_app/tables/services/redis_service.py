@@ -200,3 +200,5 @@ class RedisService(metaclass=SingletonMeta):
         return self.redis_client.publish(
             STOP_SESSION_CHANNEL, json.dumps(message.model_dump())
         )
+
+        
