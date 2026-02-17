@@ -41,7 +41,7 @@ jobs:
         id: gen
         run: |
           python --version
-          python scripts/compose_matrix.py --compose-json compose.json --repo-root .
+          python ./.github/scripts/compose_matrix.py --compose-json compose.json --repo-root .
 
       - name: Show matrix
         run: |
