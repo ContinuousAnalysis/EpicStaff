@@ -280,7 +280,7 @@ interface InputMapPair {
                 flex: 1;
                 min-height: 0;
                 min-width: 0;
-                transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);                
+                transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 
                 .toggle-icon-button {
                     flex-shrink: 0;
@@ -305,6 +305,7 @@ interface InputMapPair {
 
                     &:hover:not(:disabled) {
                         color: #d9d9d9;
+                        background: #2c2c2e;
                     }
 
                     &:active:not(:disabled) {
@@ -323,17 +324,25 @@ interface InputMapPair {
             }
 
             .code-editor-section {
-                border: 1px solid var(--color-divider-subtle, rgba(255, 255, 255, 0.1));                
+                border: 1px solid
+                    var(--color-divider-subtle, rgba(255, 255, 255, 0.1));
                 border-radius: 0 8px 8px 0;
                 overflow: hidden;
                 display: flex;
-                flex-direction: column;
-                flex: 1;
-                height: 100%;
-                min-height: 0;
-                transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-                transform: scaleX(0.3) translateX(-50px);
-                opacity: 0;
+                flex-direction: column;               
+
+                .expanded & {
+                    flex: 1;
+                    height: 100%;
+                    min-height: 0;
+                    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+                    transform: scaleX(0.3) translateX(-50px);
+                    opacity: 0;
+                }
+
+                .collapsed & {
+                    height: 300px;
+                }
 
                 .form-layout.expanded:not(.code-editor-fullwidth) & {
                     transform: scaleX(1) translateX(0);
@@ -478,5 +487,5 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
     toggleCodeEditorFullWidth(): void {
         this.isCodeEditorFullWidth.update((value) => !value);
-    }    
+    }
 }
