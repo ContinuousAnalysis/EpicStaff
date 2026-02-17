@@ -79,7 +79,6 @@ jobs:
             echo "Deploy failed"
             echo ">> docker image prune"
             docker image prune -f
-            echo " doc
   
             echo ">> docker compose ps"
             docker compose ps
