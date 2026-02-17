@@ -19,7 +19,6 @@ export class ExpandPanelComponent {
     label = input<string>('Expand');
     required = input<boolean>(false);
     tooltipText = input<string>('');
-
     expanded = input<boolean>(false);
 
     expandedState = signal<boolean>(this.expanded());
