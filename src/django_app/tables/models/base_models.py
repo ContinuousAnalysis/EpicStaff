@@ -2,6 +2,8 @@ from enum import Enum
 import hashlib
 import json
 from django.db import models
+from django.db.models import Func, Value
+
 from abc import abstractmethod
 
 
@@ -160,5 +162,30 @@ class ContentHashMixin(models.Model):
 
 
 class BaseGraphEntity(TimestampMixin, MetadataMixin, ContentHashMixin):
+    class Meta:
+        abstract = True
+
+
+class NextVal(Func):
+    """
+    Helper to tell Django to use the SQL function 'nextval'.
+    Required for Django 5.0+ to automate the migration generation.
+    """
+
+    function = "nextval"
+    template = "%(function)s(%(expressions)s)"
+
+
+class BaseGlobalNode(models.Model):
+    """
+    Abstract base class for all nodes that must share the same Global ID sequence.
+    """
+
+    id = models.BigIntegerField(
+        primary_key=True,
+        db_default=NextVal(Value("tables_global_node_seq")),
+        editable=False,
+    )
+
     class Meta:
         abstract = True

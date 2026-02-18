@@ -5,7 +5,7 @@ from django.db import models
 from loguru import logger
 from django.utils import timezone
 
-from tables.models.base_models import BaseGraphEntity
+from tables.models.base_models import BaseGraphEntity, BaseGlobalNode
 
 
 class Graph(models.Model):
@@ -22,7 +22,7 @@ class Graph(models.Model):
     )
 
 
-class BaseNode(BaseGraphEntity, models.Model):
+class BaseNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
     node_name = models.CharField(max_length=255, blank=True)
     input_map = models.JSONField(default=dict)
@@ -115,7 +115,7 @@ class LLMNode(BaseNode):
         ]
 
 
-class EndNode(BaseGraphEntity, models.Model):
+class EndNode(BaseGraphEntity, BaseGlobalNode):
     # TODO: can be OneToOne field
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="end_node"
@@ -199,7 +199,7 @@ class GraphSessionMessage(models.Model):
     uuid = models.UUIDField(null=False, editable=False, unique=True)
 
 
-class StartNode(BaseGraphEntity, models.Model):
+class StartNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="start_node_list"
     )
@@ -211,7 +211,7 @@ class StartNode(BaseGraphEntity, models.Model):
         ]
 
 
-class DecisionTableNode(BaseGraphEntity, models.Model):
+class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="decision_table_node_list"
     )
@@ -356,7 +356,7 @@ class GraphOrganizationUser(BasePersistentEntity):
         ]
 
 
-class WebhookTriggerNode(BaseGraphEntity, models.Model):
+class WebhookTriggerNode(BaseGraphEntity, BaseGlobalNode):
     node_name = models.CharField(max_length=255, blank=False)
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="webhook_trigger_node_list"
@@ -378,7 +378,7 @@ class WebhookTriggerNode(BaseGraphEntity, models.Model):
         ]
 
 
-class TelegramTriggerNode(BaseGraphEntity, models.Model):
+class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
     node_name = models.CharField(max_length=255, blank=False)
     telegram_bot_api_key = models.CharField(
         max_length=255, blank=True, null=True, default=None
