@@ -1,19 +1,14 @@
-<div class="label__container">
-    <label class="label__text">{{ label() }}</label>
-    @if (required()) {
-        <span class="label__required">
-            *
-        </span>
-    }
-
+<div class="tooltip-label-container">
+    <label class="tooltip-label">
+        <span class="tooltip-label-text">{{ label() }}</span>
+        @if (required()) {
+            <span class="tooltip-label-required">*</span>
+        }
+    </label>
     @if (tooltipText()) {
-        <mat-icon
-            [matTooltip]="tooltipText()"
-            matTooltipPosition="right"
-            matTooltipClass="custom-tooltip"
-            class="label__help-icon"
-        >
-            {{ icon() }}
-        </mat-icon>
+        <app-help-tooltip
+            [text]="tooltipText()"
+            position="right"
+        ></app-help-tooltip>
     }
 </div>
