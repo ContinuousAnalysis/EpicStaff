@@ -130,8 +130,13 @@ class Migration(migrations.Migration):
                 (SELECT COALESCE(MAX(id), 0) FROM tables_webhooktriggernode),
                 (SELECT COALESCE(MAX(id), 0) FROM tables_telegramtriggernode)
               )' INTO max_id;
-
-              PERFORM setval('tables_global_node_seq', max_id, true);
+              IF max_id < 1 THEN
+                -- If tables are empty, reset sequence so the NEXT value is 1
+                PERFORM setval('tables_global_node_seq', 1, false);
+              ELSE
+                -- If data exists, set sequence to the max_id
+                PERFORM setval('tables_global_node_seq', max_id, true);
+              END IF;
 
             END $$;
             """,
