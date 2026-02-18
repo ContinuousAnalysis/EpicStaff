@@ -61,6 +61,7 @@
         margin-left: 2rem;
         padding: 0.5rem 0;
         line-height: 150%;
+        width: calc(100% - 100px - 2rem); //100% - id-container_width - margin-left
     }
 
     &__item {

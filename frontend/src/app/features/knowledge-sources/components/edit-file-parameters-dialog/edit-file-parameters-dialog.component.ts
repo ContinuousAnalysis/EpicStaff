@@ -96,7 +96,7 @@ export class EditFileParametersDialogComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (v) => {
-                    this.toastService.error(`Document updated`);
+                    this.toastService.success(`Document updated`);
                     this.chunksSection.runChunking();
                 },
                 error: (err: HttpErrorResponse) => {

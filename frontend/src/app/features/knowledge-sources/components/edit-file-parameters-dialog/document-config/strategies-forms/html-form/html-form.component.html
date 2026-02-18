@@ -9,7 +9,7 @@
             <label>Preserve Links</label>
             <mat-icon
                 class="config__tooltip"
-                matTooltip="Tooltip"
+                matTooltip="Keeps hyperlinks in the extracted content instead of removing them. Useful when link references provide important context."
                 matTooltipPosition="above"
                 matTooltipClass="dialog__label-tooltip"
             >
@@ -25,7 +25,7 @@
             <label>Normalize Text</label>
             <mat-icon
                 class="config__tooltip"
-                matTooltip="Tooltip"
+                matTooltip="Cleans and standardizes extracted text by removing extra whitespace, formatting inconsistencies, and HTML artifacts."
                 matTooltipPosition="above"
                 matTooltipClass="dialog__label-tooltip"
             >
@@ -41,7 +41,7 @@
             <label>External Metadata</label>
             <mat-icon
                 class="config__tooltip"
-                matTooltip="Tooltip"
+                matTooltip="Additional metadata provided as a JSON object. This metadata will be attached to each generated chunk."
                 matTooltipPosition="above"
                 matTooltipClass="dialog__label-tooltip"
             >
@@ -57,7 +57,6 @@
                 [allowCopy]="true"
                 [fullHeight]="true"
                 (jsonChange)="onJsonChange($event)"
-                (validationChange)="onJsonValidationChange($event)"
             ></app-json-editor>
         </div>
 
@@ -65,7 +64,7 @@
             <label>Denylist Tags</label>
             <mat-icon
                 class="config__tooltip"
-                matTooltip="Tooltip"
+                matTooltip="A list of HTML tags to exclude from processing (e.g., script, style). Content inside these tags will be removed before chunking."
                 matTooltipPosition="above"
                 matTooltipClass="dialog__label-tooltip"
             >

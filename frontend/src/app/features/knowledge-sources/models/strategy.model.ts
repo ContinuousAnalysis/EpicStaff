@@ -31,6 +31,7 @@ export interface TokenStrategyModel {
 
 export interface JsonStrategyModel {
     chunk_size: number;
+    chunk_overlap: number;
 }
 
 export type StrategyModel =

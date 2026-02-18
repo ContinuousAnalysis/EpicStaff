@@ -9,7 +9,6 @@ import { MATERIAL_FORMS } from "@shared/material-forms";
 import { SelectComponent } from "@shared/components";
 import { CHUNK_STRATEGIES_SELECT_ITEMS } from "../../../constants/constants";
 
-import { JsonEditorComponent } from "@shared/components";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { ADDITIONAL_PARAMS_FORM_COMPONENT_MAP } from "../../../enums/additional-params-form.map";
 import { NaiveRagChunkStrategy } from "../../../enums/naive-rag-chunk-strategy";
@@ -22,7 +21,6 @@ import { TableDocument } from "../../rag-configuration/configuration-table/confi
     imports: [
         MATERIAL_FORMS,
         SelectComponent,
-        JsonEditorComponent,
         ReactiveFormsModule,
         NgComponentOutlet,
     ],
@@ -61,6 +59,7 @@ export class DocumentConfigComponent implements OnChanges {
             case 'json':
                 return {
                     chunk_size: document.chunk_size,
+                    chunk_overlap: document.chunk_overlap,
                 }
             case 'html':
                 return {

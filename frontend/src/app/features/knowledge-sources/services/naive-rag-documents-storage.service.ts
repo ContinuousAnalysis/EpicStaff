@@ -315,7 +315,8 @@ export class NaiveRagDocumentsStorageService {
             status: s.status !== 'new' ? 'chunks_outdated' : s.status,
             chunkStrategy: config.chunk_strategy,
             chunkSize: config.chunk_size,
-            chunkOverlap: config.chunk_overlap,
+            // Update overlap only after chunk fetching
+            // chunkOverlap: config.chunk_overlap,
             total: config.total_chunks,
         }));
     }
@@ -370,7 +371,8 @@ export class NaiveRagDocumentsStorageService {
                     status: prevState.status !== 'new' ? 'chunks_outdated' : prevState.status,
                     chunkStrategy: updated.chunk_strategy,
                     chunkSize: updated.chunk_size,
-                    chunkOverlap: updated.chunk_overlap,
+                    // Update overlap only after chunk fetching
+                    // chunkOverlap: updated.chunk_overlap,
                     total: updated.total_chunks,
                 });
             }

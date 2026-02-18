@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core";
+import { jsonValidator } from "@shared/form-validators";
 import { StrategyForm } from "../strategy-config-form.abstract";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { HtmlStrategyModel } from "../../../../../models/strategy.model";
@@ -46,21 +47,11 @@ export class HtmlFormComponent extends StrategyForm<HtmlStrategyModel> {
         control?.setValue(value);
     }
 
-    onJsonValidationChange(hasError: boolean) {
-        const control = this.additionalParamsFG.get('external_metadata');
-
-        if (hasError) {
-            control?.setErrors({ 'jsonInvalid': true })
-        } else {
-            control?.setErrors(null)
-        }
-    }
-
     initializeForm(config: HtmlStrategyModel): FormGroup {
         this.additionalParamsFG = this.fb.group({
             preserve_links: [config.preserve_links || false],
             normalize_text: [config.normalize_text || false],
-            external_metadata: [config.external_metadata || '{}'],
+            external_metadata: [config.external_metadata || '{}', jsonValidator()],
             denylist_tags: [config.denylist_tags || ''],
         });
 

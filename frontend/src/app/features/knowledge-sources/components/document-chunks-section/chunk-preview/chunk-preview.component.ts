@@ -154,19 +154,14 @@ export class ChunkPreviewComponent implements OnChanges {
             const isFirst = index === 0;
             const isLast = index === arr.length - 1;
 
-            const start = getStart(chunk) ?? 0;
-            const end = getEnd(chunk) ?? 0;
+            const start = isFirst ? 0 : (getStart(chunk) ?? 0);
+            const end = isLast ? 0 : (getEnd(chunk) ?? 0);
 
             const overlap = isFirst ? '' : chunk.text.slice(0, start);
 
-            let text: string;
-            if (isFirst) {
-                text = end ? chunk.text.slice(0, -end) : chunk.text;
-            } else if (isLast) {
-                text = chunk.text.slice(start);
-            } else {
-                text = end ? chunk.text.slice(start, -end) : chunk.text.slice(start);
-            }
+            const text = end
+                ? chunk.text.slice(start, -end)
+                : chunk.text.slice(start);
 
             return {
                 chunkIndex: chunk.chunk_index,

@@ -29,6 +29,7 @@
                 <span
                     [style.z-index]="$count - $index"
                     class="chunk__item chunk__item--overlap"
+                    [class.chunk__item--last]="$last && !loading() && !chunk.text"
                     [matTooltip]="'Overlap for chunks ' + (chunk.chunkIndex - 1) + ' and ' + chunk.chunkIndex"
                 >{{ chunk.overlap }}</span>
             }
