@@ -8,6 +8,7 @@ export interface GetWebhookTriggerNodeRequest {
     input_map: Record<string, any>;
     output_variable_path: string | null;
     webhook_trigger_path: string;
+    metadata: Record<string, any>;
 }
 
 export interface CreateWebhookTriggerNodeRequest {
@@ -17,4 +18,5 @@ export interface CreateWebhookTriggerNodeRequest {
     input_map: Record<string, any>;
     output_variable_path: string | null;
     webhook_trigger_path: string;
+    metadata?: Record<string, any>;
 }

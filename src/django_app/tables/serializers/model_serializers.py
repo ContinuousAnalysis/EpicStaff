@@ -1278,6 +1278,11 @@ class LLMNodeSerializer(serializers.ModelSerializer):
         model = LLMNode
         fields = "__all__"
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["llm_config_detail"] = LLMConfigSerializer(instance.llm_config).data
+        return data
+
 
 class EdgeSerializer(serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1298,6 +1303,11 @@ class SubGraphNodeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Graph and subgraph cannot be the same.")
 
         return attrs
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["subgraph_detail"] = GraphLightSerializer(instance.subgraph).data
+        return data
 
 
 class ConditionalEdgeSerializer(serializers.ModelSerializer):

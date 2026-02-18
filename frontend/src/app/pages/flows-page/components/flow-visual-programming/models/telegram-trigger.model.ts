@@ -27,6 +27,7 @@ export interface CreateTelegramTriggerNodeRequest {
     graph: number;
     telegram_bot_api_key: string;
     fields: CreateTelegramTriggerNodeField[];
+    metadata?: Record<string, any>;
 }
 
 export interface TelegramTriggerNodeField {
@@ -42,4 +43,5 @@ export interface GetTelegramTriggerNodeRequest {
     graph: number;
     telegram_bot_api_key: string;
     fields: TelegramTriggerNodeField[];
+    metadata: Record<string, any>;
 }

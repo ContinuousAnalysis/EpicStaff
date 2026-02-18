@@ -1,8 +1,8 @@
 import { Injectable, signal } from '@angular/core';
-import { GraphSessionStatus } from '../../../features/flows/services/flows-sessions.service';
-import { GraphMessage } from '../../running-graph/models/graph-session-message.model';
-import { Memory } from '../../running-graph/components/memory-sidebar/models/memory.model';
-import { ConfigService } from '../../../services/config/config.service';
+import { GraphSessionStatus } from '../../features/flows/services/flows-sessions.service';
+import { GraphMessage } from './models/graph-session-message.model';
+import { Memory } from './components/memory-sidebar/models/memory.model';
+import { ConfigService } from '../../services/config/config.service';
 
 @Injectable()
 export class RunSessionSSEService {
@@ -127,6 +127,7 @@ export class RunSessionSSEService {
         execution_order: raw.execution_order,
         created_at: raw.created_at || raw.timestamp,
         message_data: raw.message_data,
+        metadata: raw.metadata || {},
       };
 
       const messagesList = this.messages();
