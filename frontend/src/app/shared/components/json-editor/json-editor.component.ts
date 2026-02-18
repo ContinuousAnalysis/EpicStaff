@@ -1,14 +1,17 @@
 import {
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    Component,
-    ElementRef,
-    EventEmitter, HostBinding,
-    Input,
-    NgZone,
-    OnDestroy,
-    Output,
-    ViewChild,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  NgZone,
+  OnChanges,
+  OnDestroy,
+  Output,
+  SimpleChanges,
+  HostBinding,
+  ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
@@ -25,7 +28,7 @@ import { ToastService } from "../../../services/notifications";
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
 })
-export class JsonEditorComponent {
+export class JsonEditorComponent implements OnChanges {
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
 
   @Input() public jsonData: string = '{}';
@@ -38,6 +41,8 @@ export class JsonEditorComponent {
 
   public collapsed: boolean = true;
   public editorLoaded = false;
+  private lastExternalValue: string = '{}';
+  private isUserTyping: boolean = false;
   @Output() public jsonChange = new EventEmitter<string>();
   @Output() public validationChange = new EventEmitter<boolean>();
 
@@ -67,9 +72,41 @@ export class JsonEditorComponent {
 
   constructor(private cdr: ChangeDetectorRef, private zone: NgZone, private toast: ToastService) {}
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['jsonData']) {
+      const newValue = changes['jsonData'].currentValue;
+      const isFirst = changes['jsonData'].firstChange;
+
+      // Skip setValue if the change came from user typing (prevents cursor jump)
+      if (this.isUserTyping) {
+        return;
+      }
+
+      // On first change, if editor exists, set the value directly
+      if (isFirst && this.monacoEditor && newValue && newValue !== '{}') {
+        this.lastExternalValue = newValue;
+        this.monacoEditor.setValue(newValue);
+        setTimeout(() => this.monacoEditor?.getAction('editor.action.formatDocument')?.run(), 50);
+        this.cdr.markForCheck();
+      }
+      // On subsequent changes from external sources
+      else if (!isFirst && this.monacoEditor && newValue !== this.lastExternalValue) {
+        this.lastExternalValue = newValue;
+        this.monacoEditor.setValue(newValue || '{}');
+        setTimeout(() => {
+          this.monacoEditor?.getAction('editor.action.formatDocument')?.run();
+        }, 50);
+        this.cdr.markForCheck();
+      }
+    }
+  }
+
   public onJsonChange(newValue: string): void {
+    // Mark that user is typing to prevent cursor jump
+    this.isUserTyping = true;
+    this.lastExternalValue = newValue;
+
     try {
-      // Try to parse the JSON to check if it's valid
       JSON.parse(newValue);
       this.jsonIsValid = true;
     } catch (e) {
@@ -79,19 +116,24 @@ export class JsonEditorComponent {
     this.validationChange.emit(this.jsonIsValid);
     this.jsonChange.emit(newValue);
     this.cdr.markForCheck();
+
+    // Reset the flag after a short delay to allow ngOnChanges to skip
+    setTimeout(() => {
+      this.isUserTyping = false;
+    }, 50);
   }
 
   public onEditorInit(editor: any): void {
     this.editorLoaded = true;
     this.monacoEditor = editor;
+    this.lastExternalValue = this.jsonData;
 
-    // Update options based on input properties
     if (this.monacoEditor) {
       this.monacoEditor.updateOptions(this.editorOptions);
+      this.monacoEditor.setValue(this.jsonData || '{}');
 
-      // Format the document on initial load
       setTimeout(() => {
-        this.monacoEditor.getAction('editor.action.formatDocument').run();
+        this.monacoEditor?.getAction('editor.action.formatDocument')?.run();
       }, 100);
     }
 

@@ -11,7 +11,7 @@ import {
 
 import { TemplatePortal } from '@angular/cdk/portal';
 import { NgClass } from "@angular/common";
-import { Overlay, OverlayPositionBuilder, OverlayRef } from "@angular/cdk/overlay";
+import { Overlay, OverlayPositionBuilder, OverlayRef, OverlayModule } from "@angular/cdk/overlay";
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
 import { TooltipComponent } from "../tooltip/tooltip.component";
 
@@ -24,7 +24,7 @@ export interface SelectItem {
 
 @Component({
     selector: 'app-select',
-    imports: [NgClass, TooltipComponent],
+    imports: [NgClass, TooltipComponent, OverlayModule],
     templateUrl: './select.component.html',
     styleUrls: ['./select.component.scss'],
     providers: [
@@ -41,11 +41,13 @@ export class SelectComponent implements ControlValueAccessor {
     label = input<string>('');
     required = input<boolean>(false);
     tooltipText = input<string>('');
-
     mod = input<'default' | 'small'>('default');
     items = input<SelectItem[]>([]);
     placeholder = input<string>('Select option');
     invalid = input<boolean>(false);
+
+    open = signal(false);
+    isDisabled = signal(false);
 
     selectedValue = model<unknown | null>(null);
     selectedItem = computed(() => {
@@ -57,14 +59,8 @@ export class SelectComponent implements ControlValueAccessor {
 
     changed = output<any>();
 
-    open = signal(false);
-
-    private onChange: (value: unknown) => void = () => {
-    };
-    private onTouched: () => void = () => {
-    };
-
-    isDisabled = signal(false);
+    private onChange: (value: unknown) => void = () => {};
+    private onTouched: () => void = () => {};
 
     @ViewChild('triggerBtn') triggerBtn!: ElementRef<HTMLButtonElement>;
     @ViewChild('dropdownTemplate') dropdownTemplate!: any;

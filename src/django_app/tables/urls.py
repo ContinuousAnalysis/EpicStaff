@@ -7,6 +7,7 @@ from tables.views.model_view_sets import (
     DecisionTableNodeModelViewSet,
     EdgeViewSet,
     EndNodeModelViewSet,
+    SubGraphNodeModelViewSet,
     GraphLightViewSet,
     GraphViewSet,
     McpToolViewSet,
@@ -133,6 +134,7 @@ router.register(r"audio-transcription-nodes", AudioTranscriptionNodeViewSet)
 router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
+router.register(r"subgraph-nodes", SubGraphNodeModelViewSet)
 
 router.register(r"edges", EdgeViewSet)
 router.register(r"conditionaledges", ConditionalEdgeViewSet)
