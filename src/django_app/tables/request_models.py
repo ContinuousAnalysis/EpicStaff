@@ -21,7 +21,6 @@ class LLMConfigData(BaseModel):
     deployment_id: str | None = None
     headers: dict[str, str] | None = None
     extra_headers: dict[str, str] | None = None
-    
 
 
 class EmbedderConfigData(BaseModel):
@@ -338,7 +337,7 @@ class EdgeData(BaseModel):
 class ConditionalEdgeData(BaseModel):
     source: str
     python_code: PythonCodeData
-    then: str | None
+    then: str | None = None
     input_map: dict[str, Any]
 
 

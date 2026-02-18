@@ -294,7 +294,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         for item in file_extractor_node_list:
             file_extractor_node_data_list.append(
                 FileExtractorNodeData(
-                    node_name=item.node_name,
+                    node_name=str(item.id),  # Используем ID как имя ноды
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
                 )
@@ -304,7 +304,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         for item in audio_transcription_node_list:
             audio_transcription_node_data_list.append(
                 AudioTranscriptionNodeData(
-                    node_name=item.node_name,
+                    node_name=str(item.id),  # Используем ID как имя ноды
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
                 )
@@ -318,16 +318,21 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         edge_data_list: list[EdgeData] = []
 
-        # If entrypoint is set for session than use it. If not, than use entrypoint from edges.
         entrypoint = session.entrypoint
 
+        start_node_obj = StartNode.objects.filter(graph=graph.pk).first()
+        start_node_id = start_node_obj.id if start_node_obj else None
+
         for item in edge_list:
-            if item.start_key == "__start__":
+            if start_node_id and item.start_node_id == start_node_id:
                 if entrypoint is None:
-                    entrypoint = item.end_key
+                    entrypoint = str(item.end_node_id)
                 continue
+
             edge_data_list.append(
-                EdgeData(start_key=item.start_key, end_key=item.end_key)
+                EdgeData(
+                    start_key=str(item.start_node_id), end_key=str(item.end_node_id)
+                )
             )
 
         if entrypoint is None:
@@ -339,8 +344,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                 self.converter_service.convert_conditional_edge_to_pydantic(item)
             )
 
-        start_edge = Edge.objects.filter(start_key="__start__", graph=graph).first()
-        if start_edge is None:
+        if start_node_obj is None and entrypoint is None:
             raise GraphEntryPointException()
 
         decision_table_node_data_list: list[DecisionTableNodeData] = []
@@ -376,7 +380,7 @@ class SessionManagerService(metaclass=SingletonMeta):
 
             subgraph_node_data_list.append(
                 SubGraphNodeData(
-                    node_name=item.node_name,
+                    node_name=str(item.id),
                     subgraph_id=subgraph.id,
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
