@@ -337,8 +337,6 @@ services:
       - ../dev/dev.env
     networks:
      - frontend-network
-    volumes:
-     - ../dev/dev.config.json:/usr/share/nginx/html/config.json
   
   webhook:
     image: webhook
