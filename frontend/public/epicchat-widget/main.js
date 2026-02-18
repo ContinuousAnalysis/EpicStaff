@@ -61888,8 +61888,10 @@ var _DropdownComponent = class _DropdownComponent {
   onDocumentClick(event) {
     if (!this.isOpen)
       return;
+    const path = event.composedPath?.() ?? [];
     const target = event.target;
-    if (!this.host.nativeElement.contains(target)) {
+    const isInside = path.includes(this.host.nativeElement) || !!target && this.host.nativeElement.contains(target);
+    if (!isInside) {
       this.close();
     }
   }
@@ -67500,7 +67502,10 @@ var _MessageTableColumnsConfigurationComponent = class _MessageTableColumnsConfi
   }
   onDocumentClick(event) {
     if (!this.isEmbedded && this.isDropdownOpen) {
-      if (!this.eRef.nativeElement.contains(event.target)) {
+      const path = event.composedPath?.() ?? [];
+      const target = event.target;
+      const isInside = path.includes(this.eRef.nativeElement) || !!target && this.eRef.nativeElement.contains(target);
+      if (!isInside) {
         this.closeDropdown();
       }
     }
@@ -68689,8 +68694,10 @@ var _MessageTableComponent = class _MessageTableComponent {
   }
   onDocumentClick(event) {
     const target = event.target;
+    const path = event.composedPath?.() ?? [];
+    const hasMatchInPath = (selector) => path.some((node) => node instanceof Element && (node.matches(selector) || node.closest(selector) !== null));
     if (this.editingKey && this.editingRow) {
-      const active = target.closest(".ep-message-table__cell-editor, .ep-message-table__cell-editor-wrapper, .ep-message-table__date-input, .mat-datepicker-content, .mat-mdc-datepicker-content, .mat-calendar, .mat-mdc-calendar, .mat-calendar-body-cell, .mat-calendar-body-cell-content, .mat-mdc-calendar-body-cell, .mat-mdc-calendar-body-cell-content, .cdk-overlay-pane, .cdk-overlay-container");
+      const active = hasMatchInPath(".ep-message-table__cell-editor, .ep-message-table__cell-editor-wrapper, .ep-message-table__date-input, .mat-datepicker-content, .mat-mdc-datepicker-content, .mat-calendar, .mat-mdc-calendar, .mat-calendar-body-cell, .mat-calendar-body-cell-content, .mat-mdc-calendar-body-cell, .mat-mdc-calendar-body-cell-content, .cdk-overlay-pane, .cdk-overlay-container") || target.closest(".ep-message-table__cell-editor, .ep-message-table__cell-editor-wrapper, .ep-message-table__date-input, .mat-datepicker-content, .mat-mdc-datepicker-content, .mat-calendar, .mat-mdc-calendar, .mat-calendar-body-cell, .mat-calendar-body-cell-content, .mat-mdc-calendar-body-cell, .mat-mdc-calendar-body-cell-content, .cdk-overlay-pane, .cdk-overlay-container");
       if (!active) {
         const column = this.visibleColumns.find((c) => c.key === this.editingKey);
         if (column) {
@@ -68701,7 +68708,7 @@ var _MessageTableComponent = class _MessageTableComponent {
       }
     }
     if (this.editingColumnKey) {
-      const activeTitleEditor = target.closest(".ep-message-table__title-editor");
+      const activeTitleEditor = hasMatchInPath(".ep-message-table__title-editor") || target.closest(".ep-message-table__title-editor");
       if (!activeTitleEditor) {
         const column = this.visibleColumns.find((c) => c.key === this.editingColumnKey);
         if (column) {
@@ -68712,8 +68719,8 @@ var _MessageTableComponent = class _MessageTableComponent {
       }
     }
     if (this.showColumnsDropdown) {
-      const dropdown = target.closest(".ep-message-table__columns-dropdown");
-      const settingsButton = target.closest(".ep-message-table__settings");
+      const dropdown = hasMatchInPath(".ep-message-table__columns-dropdown") || target.closest(".ep-message-table__columns-dropdown");
+      const settingsButton = hasMatchInPath(".ep-message-table__settings") || target.closest(".ep-message-table__settings");
       if (!dropdown && !settingsButton) {
         this.showColumnsDropdown = false;
       }
@@ -71342,22 +71349,20 @@ var _ApiService = class _ApiService {
   constructor(http, storageService) {
     this.http = http;
     this.storageService = storageService;
-    this.EPICSTAFF_BASIC_LOGIN = "sergey.tokarev@hys-enterprise.com";
-    this.EPICSTAFF_BASIC_PASSWORD = "foxohPhap{ue2kah";
   }
   /**
    * Creates HTTP headers with Basic Authentication
    */
-  createAuthHeaders() {
-    const credentials = btoa(`${this.EPICSTAFF_BASIC_LOGIN}:${this.EPICSTAFF_BASIC_PASSWORD}`);
+  createAuthHeaders(auth) {
+    const credentials = btoa(`${auth.login}:${auth.password}`);
     return new HttpHeaders({
       Authorization: `Basic ${credentials}`
     });
   }
-  sendMessage(message, agentUrl, flowId, attachedFiles, chatHistory, userParams) {
+  sendMessage(message, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth) {
     return __async(this, null, function* () {
       if (agentUrl && flowId !== null && flowId !== void 0) {
-        return yield this.sendEpicstaffMessage(message, agentUrl, flowId, attachedFiles || [], chatHistory, userParams);
+        return yield this.sendEpicstaffMessage(message, agentUrl, flowId, attachedFiles || [], chatHistory, userParams, basicAuth);
       }
       const botMessage = {
         id: `msg_${Date.now()}`,
@@ -71372,12 +71377,12 @@ var _ApiService = class _ApiService {
   /**
    * Send action message with user_action instead of user_input
    */
-  sendActionMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams) {
+  sendActionMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth) {
     return __async(this, null, function* () {
       if (agentUrl && flowId !== null && flowId !== void 0) {
-        return yield this.sendEpicstaffActionMessage(actionText, agentUrl, flowId, attachedFiles || [], chatHistory, userParams);
+        return yield this.sendEpicstaffActionMessage(actionText, agentUrl, flowId, attachedFiles || [], chatHistory, userParams, basicAuth);
       }
-      return yield this.sendMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams);
+      return yield this.sendMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth);
     });
   }
   /**
@@ -71388,7 +71393,7 @@ var _ApiService = class _ApiService {
    * 4. Обрабатываем SSE сообщения и ждем статус "end"
    * 5. Возвращаем финальные данные из message_data
    */
-  sendEpicstaffMessage(message, agentUrl, flowId, attachedFiles, chatHistory, userParams) {
+  sendEpicstaffMessage(message, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth) {
     return __async(this, null, function* () {
       try {
         const formData = new FormData();
@@ -71408,10 +71413,8 @@ var _ApiService = class _ApiService {
         attachedFiles.forEach((file) => {
           formData.append("files", file);
         });
-        const headers = this.createAuthHeaders();
-        const sessionResponse = yield firstValueFrom(this.http.post(`${agentUrl}/run-session/`, formData, {
-          headers
-        }));
+        const headers = basicAuth ? this.createAuthHeaders(basicAuth) : void 0;
+        const sessionResponse = yield firstValueFrom(this.http.post(`${agentUrl}/run-session/`, formData, headers ? { headers } : void 0));
         const sessionId = sessionResponse.session_id;
         return yield this.subscribeToEpicstaffSseSession(agentUrl, sessionId);
       } catch (error) {
@@ -71423,7 +71426,7 @@ var _ApiService = class _ApiService {
   /**
    * Send Epicstaff action message with user_action instead of user_input
    */
-  sendEpicstaffActionMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams) {
+  sendEpicstaffActionMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth) {
     return __async(this, null, function* () {
       try {
         const formData = new FormData();
@@ -71443,10 +71446,8 @@ var _ApiService = class _ApiService {
         attachedFiles.forEach((file) => {
           formData.append("files", file);
         });
-        const headers = this.createAuthHeaders();
-        const sessionResponse = yield firstValueFrom(this.http.post(`${agentUrl}/run-session/`, formData, {
-          headers
-        }));
+        const headers = basicAuth ? this.createAuthHeaders(basicAuth) : void 0;
+        const sessionResponse = yield firstValueFrom(this.http.post(`${agentUrl}/run-session/`, formData, headers ? { headers } : void 0));
         const sessionId = sessionResponse.session_id;
         return yield this.subscribeToEpicstaffSseSession(agentUrl, sessionId);
       } catch (error) {
@@ -71459,43 +71460,65 @@ var _ApiService = class _ApiService {
     return new Promise((resolve, reject) => {
       const subscribeUrl = `${agentUrl}/run-session/subscribe/${sessionId}/`;
       const eventSource = new EventSource(subscribeUrl, { withCredentials: true });
-      let finalMessageData = null;
       let finalStatusData = null;
+      let parsedFinalOutput = null;
       let isEndReceived = false;
+      let timeoutId = null;
+      const buildResponseMessage = (responseData) => {
+        if (responseData) {
+          return {
+            id: `msg_${Date.now()}`,
+            response: this.convertEpicstaffResponseToEpResponse(responseData),
+            time: getCurrentTimestamp()
+          };
+        }
+        return {
+          id: `msg_${Date.now()}`,
+          response: {
+            message: "Response received"
+          },
+          time: getCurrentTimestamp()
+        };
+      };
+      const resolveWithResponseData = (responseData) => {
+        resolve(buildResponseMessage(responseData));
+      };
+      const scheduleTimeout = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        timeoutId = setTimeout(() => {
+          if (!isEndReceived) {
+            eventSource.close();
+            const responseData = parsedFinalOutput ?? finalStatusData;
+            if (responseData) {
+              resolveWithResponseData(responseData);
+            } else {
+              reject(new Error("Timeout waiting for session end"));
+            }
+          }
+        }, 12e4);
+      };
       eventSource.addEventListener("status", (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("SSE status:", data);
+          console.log({ status: data });
+          scheduleTimeout();
           if (data.status === "end") {
             finalStatusData = data.status_data;
             isEndReceived = true;
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
             eventSource.close();
-            let responseData = null;
-            if (finalMessageData) {
-              const output = extractOutputFromFinishMessage(finalMessageData);
-              responseData = this.parseOutputIfString(output);
-              console.log({ responseData });
+            const rawFinalResult = data.status_data?.variables?.final_result ?? null;
+            const parsedFinalResult = this.parseOutputIfString(rawFinalResult);
+            if (parsedFinalResult) {
+              console.log({ final_result: parsedFinalResult });
             }
-            if (!responseData && finalStatusData) {
-              responseData = finalStatusData;
-            }
-            if (responseData) {
-              const epicstaffResponse = this.parseEpicstaffResponse(responseData);
-              const responseMessage = {
-                id: `msg_${Date.now()}`,
-                response: this.convertEpicstaffResponseToEpResponse(epicstaffResponse),
-                time: getCurrentTimestamp()
-              };
-              resolve(responseMessage);
-            } else {
-              resolve({
-                id: `msg_${Date.now()}`,
-                response: {
-                  message: "Response received"
-                },
-                time: getCurrentTimestamp()
-              });
-            }
+            const responseData = parsedFinalResult ?? parsedFinalOutput ?? finalStatusData;
+            resolveWithResponseData(responseData);
           }
         } catch (error) {
           console.warn("Failed to parse SSE status message:", error);
@@ -71504,11 +71527,13 @@ var _ApiService = class _ApiService {
       eventSource.addEventListener("messages", (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log({ data });
+          console.log({ message: data });
+          scheduleTimeout();
           if (data.message_data) {
             const messageData = data.message_data;
             if (isFinishMessageData(messageData)) {
-              finalMessageData = messageData;
+              const output = extractOutputFromFinishMessage(messageData);
+              parsedFinalOutput = this.parseOutputIfString(output);
             }
           }
         } catch (error) {
@@ -71518,34 +71543,15 @@ var _ApiService = class _ApiService {
       eventSource.onerror = (error) => {
         console.error("SSE error:", error);
         eventSource.close();
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
         if (!isEndReceived) {
           reject(new Error("SSE connection error"));
         }
       };
-      setTimeout(() => {
-        if (!isEndReceived) {
-          eventSource.close();
-          let responseData = null;
-          if (finalMessageData) {
-            const output = extractOutputFromFinishMessage(finalMessageData);
-            responseData = this.parseOutputIfString(output);
-          }
-          if (!responseData && finalStatusData) {
-            responseData = finalStatusData;
-          }
-          if (responseData) {
-            const epicstaffResponse = this.parseEpicstaffResponse(responseData);
-            const responseMessage = {
-              id: `msg_${Date.now()}`,
-              response: this.convertEpicstaffResponseToEpResponse(epicstaffResponse),
-              time: getCurrentTimestamp()
-            };
-            resolve(responseMessage);
-          } else {
-            reject(new Error("Timeout waiting for session end"));
-          }
-        }
-      }, 6e4);
+      scheduleTimeout();
     });
   }
   /**
@@ -71568,12 +71574,6 @@ var _ApiService = class _ApiService {
       return null;
     }
     return output;
-  }
-  /**
-   * Парсит данные ответа в структурированный EpicstaffResponse
-   */
-  parseEpicstaffResponse(responseData) {
-    return responseData;
   }
   /**
    * Преобразует EpicstaffResponse в EpResponse для использования в UI
@@ -71689,16 +71689,6 @@ var _ApiService = class _ApiService {
   generateTableId() {
     return `table_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
-  /**
-   * Извлечение текстового сообщения из данных Epicstaff
-   * Принимает output из finish message data или status_data
-   * @deprecated Используйте parseEpicstaffResponse и convertEpicstaffResponseToEpResponse
-   */
-  /**
-   * Форматирует историю чата для отправки в API Epicstaff
-   * Преобразует EpMessage[] в массив { role: string, content: string }[]
-   * Берет последние 10 сообщений
-   */
   formatChatHistory(messages) {
     const contextLength = 10;
     const recentMessages = messages.slice(-contextLength);
@@ -73336,8 +73326,9 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
     this.toggleFullHeightClicked.emit();
   }
   onDocumentClick(event) {
-    const target = event.target;
-    if (!target.closest(".chat-header") && !target.closest(".chat-header__agent-menu") && !target.closest(".chat-header__actions-menu")) {
+    const path = event.composedPath?.() ?? [];
+    const hasMatchInPath = (selector) => path.some((node) => node instanceof Element && (node.matches(selector) || node.closest(selector) !== null));
+    if (!hasMatchInPath(".chat-header") && !hasMatchInPath(".chat-header__agent-menu") && !hasMatchInPath(".chat-header__actions-menu")) {
       this.closeAgentMenu();
       this.closeActionsMenu();
     }
@@ -73685,6 +73676,7 @@ function ChatToggleButtonComponent_Conditional_2_Template(rf, ctx) {
 var _ChatToggleButtonComponent = class _ChatToggleButtonComponent {
   constructor() {
     this.iconPath = "";
+    this.chatIconSize = 42;
     this.unreadCount = 0;
     this.clicked = new EventEmitter();
   }
@@ -73695,7 +73687,7 @@ var _ChatToggleButtonComponent = class _ChatToggleButtonComponent {
 _ChatToggleButtonComponent.\u0275fac = function ChatToggleButtonComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _ChatToggleButtonComponent)();
 };
-_ChatToggleButtonComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatToggleButtonComponent, selectors: [["ep-chat-toggle-button"]], inputs: { iconPath: "iconPath", unreadCount: "unreadCount" }, outputs: { clicked: "clicked" }, decls: 3, vars: 2, consts: [["type", "button", "aria-label", "Toggle chat", 1, "ep-chat-toggle-button", 3, "click", "keydown.enter", "keydown.space"], ["height", "42", "width", "42", "alt", "Chat", 3, "src"], [1, "ep-chat-toggle-button__badge"]], template: function ChatToggleButtonComponent_Template(rf, ctx) {
+_ChatToggleButtonComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatToggleButtonComponent, selectors: [["ep-chat-toggle-button"]], inputs: { iconPath: "iconPath", chatIconSize: "chatIconSize", unreadCount: "unreadCount" }, outputs: { clicked: "clicked" }, decls: 3, vars: 4, consts: [["type", "button", "aria-label", "Toggle chat", 1, "ep-chat-toggle-button", 3, "click", "keydown.enter", "keydown.space"], ["alt", "Chat", 3, "src"], [1, "ep-chat-toggle-button__badge"]], template: function ChatToggleButtonComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275domElementStart(0, "button", 0);
     \u0275\u0275domListener("click", function ChatToggleButtonComponent_Template_button_click_0_listener() {
@@ -73712,16 +73704,19 @@ _ChatToggleButtonComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCompone
   if (rf & 2) {
     \u0275\u0275advance();
     \u0275\u0275domProperty("src", ctx.iconPath, \u0275\u0275sanitizeUrl);
+    \u0275\u0275attribute("height", ctx.chatIconSize)("width", ctx.chatIconSize);
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.unreadCount > 0 ? 2 : -1);
   }
-}, styles: ["\n\n.ep-chat-toggle-button[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 1003;\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  appearance: none;\n  background: transparent;\n  border: 0;\n  padding: 0;\n  margin: 0;\n  font: inherit;\n  color: inherit;\n  line-height: 0;\n}\n.ep-chat-toggle-button[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n}\n.ep-chat-toggle-button[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid var(--ep-color-accent);\n  outline-offset: 2px;\n}\n.ep-chat-toggle-button__badge[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  background: var(--ep-color-danger);\n  color: var(--ep-color-accent-contrast);\n  border-radius: 10px;\n  padding: 2px 6px;\n  font-size: 11px;\n  font-weight: 600;\n  min-width: 18px;\n  text-align: center;\n  line-height: 1.2;\n}\n/*# sourceMappingURL=chat-toggle-button.component.css.map */"] });
+}, styles: ["\n\n.ep-chat-toggle-button[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 1003;\n  cursor: pointer;\n  display: inline-flex;\n  width: 100%;\n  align-items: center;\n  justify-content: center;\n  appearance: none;\n  background: transparent;\n  border: 0;\n  padding: 0;\n  margin: 0;\n  font: inherit;\n  color: inherit;\n  line-height: 0;\n}\n.ep-chat-toggle-button[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n}\n.ep-chat-toggle-button[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid var(--ep-color-accent);\n  outline-offset: 2px;\n}\n.ep-chat-toggle-button__badge[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  background: var(--ep-color-danger);\n  color: var(--ep-color-accent-contrast);\n  border-radius: 10px;\n  padding: 2px 6px;\n  font-size: 11px;\n  font-weight: 600;\n  min-width: 18px;\n  text-align: center;\n  line-height: 1.2;\n}\n/*# sourceMappingURL=chat-toggle-button.component.css.map */"] });
 var ChatToggleButtonComponent = _ChatToggleButtonComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatToggleButtonComponent, [{
     type: Component,
-    args: [{ selector: "ep-chat-toggle-button", template: '<button\n  type="button"\n  class="ep-chat-toggle-button"\n  (click)="onClick()"\n  (keydown.enter)="onClick()"\n  (keydown.space)="onClick()"\n  aria-label="Toggle chat"\n>\n  <img [src]="iconPath" height="42" width="42" alt="Chat" />\n  @if (unreadCount > 0) {\n    <span class="ep-chat-toggle-button__badge">{{ unreadCount }}</span>\n  }\n</button>\n', styles: ["/* src/app/components/chat-toggle-button/chat-toggle-button.component.scss */\n.ep-chat-toggle-button {\n  position: relative;\n  z-index: 1003;\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  appearance: none;\n  background: transparent;\n  border: 0;\n  padding: 0;\n  margin: 0;\n  font: inherit;\n  color: inherit;\n  line-height: 0;\n}\n.ep-chat-toggle-button img {\n  display: block;\n}\n.ep-chat-toggle-button:focus-visible {\n  outline: 2px solid var(--ep-color-accent);\n  outline-offset: 2px;\n}\n.ep-chat-toggle-button__badge {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  background: var(--ep-color-danger);\n  color: var(--ep-color-accent-contrast);\n  border-radius: 10px;\n  padding: 2px 6px;\n  font-size: 11px;\n  font-weight: 600;\n  min-width: 18px;\n  text-align: center;\n  line-height: 1.2;\n}\n/*# sourceMappingURL=chat-toggle-button.component.css.map */\n"] }]
+    args: [{ selector: "ep-chat-toggle-button", template: '<button\n  type="button"\n  class="ep-chat-toggle-button"\n  (click)="onClick()"\n  (keydown.enter)="onClick()"\n  (keydown.space)="onClick()"\n  aria-label="Toggle chat"\n>\n  <img [src]="iconPath" [attr.height]="chatIconSize" [attr.width]="chatIconSize" alt="Chat" />\n  @if (unreadCount > 0) {\n    <span class="ep-chat-toggle-button__badge">{{ unreadCount }}</span>\n  }\n</button>\n', styles: ["/* src/app/components/chat-toggle-button/chat-toggle-button.component.scss */\n.ep-chat-toggle-button {\n  position: relative;\n  z-index: 1003;\n  cursor: pointer;\n  display: inline-flex;\n  width: 100%;\n  align-items: center;\n  justify-content: center;\n  appearance: none;\n  background: transparent;\n  border: 0;\n  padding: 0;\n  margin: 0;\n  font: inherit;\n  color: inherit;\n  line-height: 0;\n}\n.ep-chat-toggle-button img {\n  display: block;\n}\n.ep-chat-toggle-button:focus-visible {\n  outline: 2px solid var(--ep-color-accent);\n  outline-offset: 2px;\n}\n.ep-chat-toggle-button__badge {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  background: var(--ep-color-danger);\n  color: var(--ep-color-accent-contrast);\n  border-radius: 10px;\n  padding: 2px 6px;\n  font-size: 11px;\n  font-weight: 600;\n  min-width: 18px;\n  text-align: center;\n  line-height: 1.2;\n}\n/*# sourceMappingURL=chat-toggle-button.component.css.map */\n"] }]
   }], null, { iconPath: [{
+    type: Input
+  }], chatIconSize: [{
     type: Input
   }], unreadCount: [{
     type: Input
@@ -74284,12 +74279,12 @@ _EpicstaffAgentConfigComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCom
     \u0275\u0275advance();
     \u0275\u0275textInterpolate1(" ", ctx.isEdit ? "Edit" : "Create", " ");
   }
-}, dependencies: [CommonModule, ReactiveFormsModule, DefaultValueAccessor, NumberValueAccessor, NgControlStatus, NgControlStatusGroup, FormGroupDirective, FormControlName, ButtonComponent, ModalComponent], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n}\n.agent-config-header[_ngcontent-%COMP%] {\n  padding: 12px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n  -webkit-user-select: none;\n  user-select: none;\n}\n.agent-config-title[_ngcontent-%COMP%] {\n  margin: 0;\n  font-weight: 600;\n  font-size: 14px;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n.agent-config-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  padding: 16px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-field[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  font-weight: 400;\n  font-size: 14px;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n.agent-config-field[_ngcontent-%COMP%]   textarea.agent-config-input[_ngcontent-%COMP%] {\n  resize: none;\n  height: auto;\n}\n.agent-config-label[_ngcontent-%COMP%] {\n  color: var(--ep-color-text-muted);\n  -webkit-user-select: none;\n  user-select: none;\n}\n.agent-config-footer[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n  padding: 16px 20px;\n  gap: 12px;\n}\n.import-btn[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 12px;\n  right: 50px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-accent);\n  cursor: pointer;\n  font-size: 14px;\n  font-weight: 400;\n  text-decoration: underline;\n}\n.import-btn[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n}\n.import-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n/*# sourceMappingURL=epicstaff-agent-config.component.css.map */"] });
+}, dependencies: [CommonModule, ReactiveFormsModule, DefaultValueAccessor, NumberValueAccessor, NgControlStatus, NgControlStatusGroup, FormGroupDirective, FormControlName, ButtonComponent, ModalComponent], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n}\n.agent-config-header[_ngcontent-%COMP%] {\n  padding: 12px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-title[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.agent-config-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  padding: 16px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-field[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n}\n.agent-config-field[_ngcontent-%COMP%]   textarea.agent-config-input[_ngcontent-%COMP%] {\n  resize: none;\n  height: auto;\n}\n.agent-config-footer[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n  padding: 16px 20px;\n  gap: 12px;\n}\n.import-btn[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 12px;\n  right: 50px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-link);\n  cursor: pointer;\n  font-size: 13px;\n  text-decoration: none;\n}\n.import-btn[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n  text-decoration: underline;\n}\n.import-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n/*# sourceMappingURL=epicstaff-agent-config.component.css.map */"] });
 var EpicstaffAgentConfigComponent = _EpicstaffAgentConfigComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(EpicstaffAgentConfigComponent, [{
     type: Component,
-    args: [{ selector: "ep-epicstaff-agent-config", imports: [CommonModule, ReactiveFormsModule, ButtonComponent, ModalComponent], template: '<ep-modal\n  [closable]="true"\n  [closableOverlay]="true"\n  styleClass="ep-agent-config"\n  (closed)="cancel()"\n>\n  <button type="button" class="import-btn" modal-actions (click)="importFromClipboard()">\n    Import\n  </button>\n  <div class="agent-config-header">\n    <p class="agent-config-title">{{ isEdit ? "Edit" : "Create" }} Agent</p>\n  </div>\n\n  <div class="agent-config-content" [formGroup]="form">\n    <div class="agent-config-field">\n      <div class="agent-config-label">Agent name:</div>\n      <input\n        type="text"\n        class="agent-config-input"\n        formControlName="name"\n        placeholder="Enter agent name"\n      />\n    </div>\n\n    <div class="agent-config-field">\n      <div class="agent-config-label">Agent description:</div>\n      <textarea class="agent-config-input" rows="3" formControlName="description"></textarea>\n    </div>\n\n    <div class="agent-config-field">\n      <div class="agent-config-label">Epicstaff flow url:</div>\n      <input\n        type="text"\n        class="agent-config-input"\n        formControlName="flowUrl"\n        placeholder="Enter flow url"\n      />\n    </div>\n\n    <div class="agent-config-field">\n      <div class="agent-config-label">Epicstaff flow id:</div>\n      <input\n        type="number"\n        class="agent-config-input"\n        formControlName="flowId"\n        placeholder="Enter flow id"\n      />\n    </div>\n  </div>\n\n  <div class="agent-config-footer">\n    <ep-button (buttonClick)="cancel()">Cancel</ep-button>\n    <ep-button (buttonClick)="apply()" [disabled]="!isValidForm">\n      {{ isEdit ? "Edit" : "Create" }}\n    </ep-button>\n  </div>\n</ep-modal>\n', styles: ["/* src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.scss */\n:host {\n  display: block;\n}\n.agent-config-header {\n  padding: 12px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n  -webkit-user-select: none;\n  user-select: none;\n}\n.agent-config-title {\n  margin: 0;\n  font-weight: 600;\n  font-size: 14px;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n.agent-config-content {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  padding: 16px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-field {\n  display: flex;\n  flex-direction: column;\n  font-weight: 400;\n  font-size: 14px;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n.agent-config-field textarea.agent-config-input {\n  resize: none;\n  height: auto;\n}\n.agent-config-label {\n  color: var(--ep-color-text-muted);\n  -webkit-user-select: none;\n  user-select: none;\n}\n.agent-config-footer {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n  padding: 16px 20px;\n  gap: 12px;\n}\n.import-btn {\n  position: absolute;\n  top: 12px;\n  right: 50px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-accent);\n  cursor: pointer;\n  font-size: 14px;\n  font-weight: 400;\n  text-decoration: underline;\n}\n.import-btn:hover {\n  opacity: 0.8;\n}\n.import-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n/*# sourceMappingURL=epicstaff-agent-config.component.css.map */\n"] }]
+    args: [{ selector: "ep-epicstaff-agent-config", imports: [CommonModule, ReactiveFormsModule, ButtonComponent, ModalComponent], template: '<ep-modal\n  [closable]="true"\n  [closableOverlay]="true"\n  styleClass="ep-agent-config"\n  (closed)="cancel()"\n>\n  <button type="button" class="import-btn" modal-actions (click)="importFromClipboard()">\n    Import\n  </button>\n  <div class="agent-config-header">\n    <p class="agent-config-title">{{ isEdit ? "Edit" : "Create" }} Agent</p>\n  </div>\n\n  <div class="agent-config-content" [formGroup]="form">\n    <div class="agent-config-field">\n      <div class="agent-config-label">Agent name:</div>\n      <input\n        type="text"\n        class="agent-config-input"\n        formControlName="name"\n        placeholder="Enter agent name"\n      />\n    </div>\n\n    <div class="agent-config-field">\n      <div class="agent-config-label">Agent description:</div>\n      <textarea class="agent-config-input" rows="3" formControlName="description"></textarea>\n    </div>\n\n    <div class="agent-config-field">\n      <div class="agent-config-label">Epicstaff flow url:</div>\n      <input\n        type="text"\n        class="agent-config-input"\n        formControlName="flowUrl"\n        placeholder="Enter flow url"\n      />\n    </div>\n\n    <div class="agent-config-field">\n      <div class="agent-config-label">Epicstaff flow id:</div>\n      <input\n        type="number"\n        class="agent-config-input"\n        formControlName="flowId"\n        placeholder="Enter flow id"\n      />\n    </div>\n  </div>\n\n  <div class="agent-config-footer">\n    <ep-button (buttonClick)="cancel()">Cancel</ep-button>\n    <ep-button (buttonClick)="apply()" [disabled]="!isValidForm">\n      {{ isEdit ? "Edit" : "Create" }}\n    </ep-button>\n  </div>\n</ep-modal>\n', styles: ["/* src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.scss */\n:host {\n  display: block;\n}\n.agent-config-header {\n  padding: 12px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-title {\n  margin: 0;\n}\n.agent-config-content {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  padding: 16px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-field {\n  display: flex;\n  flex-direction: column;\n}\n.agent-config-field textarea.agent-config-input {\n  resize: none;\n  height: auto;\n}\n.agent-config-footer {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n  padding: 16px 20px;\n  gap: 12px;\n}\n.import-btn {\n  position: absolute;\n  top: 12px;\n  right: 50px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-link);\n  cursor: pointer;\n  font-size: 13px;\n  text-decoration: none;\n}\n.import-btn:hover {\n  opacity: 0.8;\n  text-decoration: underline;\n}\n.import-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n/*# sourceMappingURL=epicstaff-agent-config.component.css.map */\n"] }]
   }], () => [{ type: FormBuilder }, { type: EpicstaffAgentService }], { popupState: [{
     type: Input
   }], currentAgent: [{
@@ -74313,8 +74308,11 @@ var _ClickOutsideDirective = class _ClickOutsideDirective {
     this.elementRef = elementRef;
     this.epClickOutside = new EventEmitter();
   }
-  onClick(target) {
-    const clickedInside = this.elementRef.nativeElement.contains(target);
+  onClick(event) {
+    const path = event.composedPath?.() ?? [];
+    const host = this.elementRef.nativeElement;
+    const target = event.target;
+    const clickedInside = path.includes(host) || !!target && host.contains(target);
     if (!clickedInside) {
       this.epClickOutside.emit();
     }
@@ -74326,7 +74324,7 @@ _ClickOutsideDirective.\u0275fac = function ClickOutsideDirective_Factory(__ngFa
 _ClickOutsideDirective.\u0275dir = /* @__PURE__ */ \u0275\u0275defineDirective({ type: _ClickOutsideDirective, selectors: [["", "epClickOutside", ""]], hostBindings: function ClickOutsideDirective_HostBindings(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275listener("click", function ClickOutsideDirective_click_HostBindingHandler($event) {
-      return ctx.onClick($event.target);
+      return ctx.onClick($event);
     }, \u0275\u0275resolveDocument);
   }
 }, outputs: { epClickOutside: "epClickOutside" } });
@@ -74341,7 +74339,7 @@ var ClickOutsideDirective = _ClickOutsideDirective;
     type: Output
   }], onClick: [{
     type: HostListener,
-    args: ["document:click", ["$event.target"]]
+    args: ["document:click", ["$event"]]
   }] });
 })();
 
@@ -95886,6 +95884,7 @@ var _ChatComponent = class _ChatComponent {
     this.chatRight = "";
     this.chatBottom = "";
     this.chatIconPath = "";
+    this.chatIconSize = 42;
     this.dateLocale = "en-GB";
     this.chatPosition = "";
     this.isMonoAgent = false;
@@ -95894,6 +95893,8 @@ var _ChatComponent = class _ChatComponent {
     this.defaultAgentFlowUrl = "";
     this.defaultAgentFlowId = null;
     this.fileAttachmentDisabled = true;
+    this.basicAuthLogin = "";
+    this.basicAuthPassword = "";
     this.chatClosed = new EventEmitter();
     this.unreadMessagesCount = 0;
     this.isTyping = false;
@@ -96047,6 +96048,7 @@ var _ChatComponent = class _ChatComponent {
         _isFirstMessageOfDay: this.isFirstMessageOfDay(currentTime)
       };
       const chatHistory = this.chatService.getMessagesValue();
+      const basicAuth = this.getEpicstaffBasicAuth();
       this.chatService.addMessage(userMessage);
       this.lockPreviousTables();
       this.scrollMode = "user-message";
@@ -96055,7 +96057,7 @@ var _ChatComponent = class _ChatComponent {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = yield this.apiService.sendMessage(text, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0);
+        const botMessage = yield this.apiService.sendMessage(text, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0);
         if (!botMessage.id) {
           botMessage.id = generateMessageId();
         }
@@ -96107,6 +96109,7 @@ var _ChatComponent = class _ChatComponent {
         _isFirstMessageOfDay: this.isFirstMessageOfDay(currentTime)
       };
       const chatHistory = this.chatService.getMessagesValue();
+      const basicAuth = this.getEpicstaffBasicAuth();
       this.chatService.addMessage(userMessage);
       this.lockPreviousTables();
       this.scrollMode = "user-message";
@@ -96115,7 +96118,7 @@ var _ChatComponent = class _ChatComponent {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = yield this.apiService.sendActionMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0);
+        const botMessage = yield this.apiService.sendActionMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0);
         if (!botMessage.id) {
           botMessage.id = generateMessageId();
         }
@@ -96347,6 +96350,14 @@ var _ChatComponent = class _ChatComponent {
       return {};
     }
   }
+  getEpicstaffBasicAuth() {
+    const login = this.basicAuthLogin?.trim();
+    const password = this.basicAuthPassword?.trim();
+    if (!login || !password) {
+      return null;
+    }
+    return { login, password };
+  }
   sendInitialAgentRequest() {
     return __async(this, null, function* () {
       if (this.isTyping || !this.currentAgent || this.isDefaultAgent(this.currentAgent)) {
@@ -96357,12 +96368,13 @@ var _ChatComponent = class _ChatComponent {
         return;
       }
       const userParams = this.getUserParams();
+      const basicAuth = this.getEpicstaffBasicAuth();
       this.isTyping = true;
       try {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = yield this.apiService.sendMessage("Hi!", agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0);
+        const botMessage = yield this.apiService.sendMessage("Hi!", agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0);
         if (!botMessage.id) {
           botMessage.id = generateMessageId();
         }
@@ -96503,7 +96515,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatFooter = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.resizableChat = _t.first);
   }
-}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled" }, outputs: { chatClosed: "chatClosed" }, features: [\u0275\u0275ProvidersFeature([]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 4, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "unreadCount"], [3, "popupState", "currentAgent"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], ["role", "button", "tabindex", "0", "aria-label", "Close popup", 1, "ep-mat", 3, "click", "keydown.enter", "keydown.space"], [3, "closed", "popupState", "currentAgent"]], template: function ChatComponent_Template(rf, ctx) {
+}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword" }, outputs: { chatClosed: "chatClosed" }, features: [\u0275\u0275ProvidersFeature([]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], [3, "popupState", "currentAgent"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], ["role", "button", "tabindex", "0", "aria-label", "Close popup", 1, "ep-mat", 3, "click", "keydown.enter", "keydown.space"], [3, "closed", "popupState", "currentAgent"]], template: function ChatComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275listener("click", function ChatComponent_Template_div_click_0_listener() {
@@ -96520,7 +96532,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
   }
   if (rf & 2) {
     \u0275\u0275advance();
-    \u0275\u0275property("iconPath", ctx.iconPath)("unreadCount", ctx.chatService.unreadCount());
+    \u0275\u0275property("iconPath", ctx.iconPath)("chatIconSize", ctx.chatIconSize)("unreadCount", ctx.chatService.unreadCount());
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.chatService.isOpen() ? 2 : -1);
     \u0275\u0275advance();
@@ -96536,7 +96548,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
   EpicstaffAgentConfigComponent,
   ClickOutsideDirective,
   ResizableChatDirective
-], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  position: relative;\n  width: 100%;\n}\n.ep-chat-click-area[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup[_ngcontent-%COMP%] {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: #ffffff;\n  border: 1px solid #dcdcdc;\n  box-shadow: 0 2px 8px rgba(76, 82, 105, 0.2);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   img[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   button[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   [role=button][_ngcontent-%COMP%] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup[_ngcontent-%COMP%]   p[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   span[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   div[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   label[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   input[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   textarea[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   [contenteditable=true][_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   [contenteditable][_ngcontent-%COMP%] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup[_ngcontent-%COMP%]   ep-chat-body[_ngcontent-%COMP%], \n.ep-popup[_ngcontent-%COMP%]   ep-chat-body[_ngcontent-%COMP%]   *[_ngcontent-%COMP%] {\n  margin-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-mat[_ngcontent-%COMP%] {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=chat.component.css.map */"] });
+], styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-scrollbar: #d0d0d0;\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: #ffffff;\n  border: 1px solid #dcdcdc;\n  box-shadow: 0 2px 8px rgba(76, 82, 105, 0.2);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  margin-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'], encapsulation: 3 });
 var ChatComponent = _ChatComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatComponent, [{
@@ -96550,7 +96562,7 @@ var ChatComponent = _ChatComponent;
       EpicstaffAgentConfigComponent,
       ClickOutsideDirective,
       ResizableChatDirective
-    ], providers: [], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.agents()"\n      [isMonoAgent]="isMonoAgent"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n    />\n  </div>\n\n  <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div>\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ["/* src/app/chat.component.scss */\n:host {\n  display: block;\n  position: relative;\n  width: 100%;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: #ffffff;\n  border: 1px solid #dcdcdc;\n  box-shadow: 0 2px 8px rgba(76, 82, 105, 0.2);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body,\n.ep-popup ep-chat-body * {\n  margin-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=chat.component.css.map */\n"] }]
+    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.agents()"\n      [isMonoAgent]="isMonoAgent"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n    />\n  </div>\n\n  <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div>\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-scrollbar: #d0d0d0;\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: #ffffff;\n  border: 1px solid #dcdcdc;\n  box-shadow: 0 2px 8px rgba(76, 82, 105, 0.2);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  margin-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
   }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: DateAdapter }], { uniqueUserId: [{
     type: Input
   }], userData: [{
@@ -96573,6 +96585,8 @@ var ChatComponent = _ChatComponent;
     type: Input
   }], chatIconPath: [{
     type: Input
+  }], chatIconSize: [{
+    type: Input
   }], dateLocale: [{
     type: Input
   }], chatPosition: [{
@@ -96589,6 +96603,10 @@ var ChatComponent = _ChatComponent;
     type: Input
   }], fileAttachmentDisabled: [{
     type: Input
+  }], basicAuthLogin: [{
+    type: Input
+  }], basicAuthPassword: [{
+    type: Input
   }], chatClosed: [{
     type: Output
   }], chatFooter: [{
@@ -96600,7 +96618,7 @@ var ChatComponent = _ChatComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 56 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 58 });
 })();
 
 // src/app/config/markdown.config.ts
