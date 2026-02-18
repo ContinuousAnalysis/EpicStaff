@@ -1,7 +1,7 @@
 from enum import Enum
 import hashlib
 import json
-from django.db import models
+from django.db import connection, models
 from django.db.models import Func, Value
 
 from abc import abstractmethod
@@ -176,9 +176,61 @@ class NextVal(Func):
     template = "%(function)s(%(expressions)s)"
 
 
+class GlobalNodeManager(models.Manager):
+    """
+    Custom manager to handle cross-table lookups for entities
+    sharing the global ID sequence.
+    """
+
+    def _get_all_node_models(self, cls=None):
+        """
+        Recursively finds all non-abstract Django models inheriting from BaseGlobalNode.
+        """
+        if cls is None:
+            # We start from the base class that owns this manager
+            cls = self.model
+
+        models_list = []
+        for subclass in cls.__subclasses__():
+            if not subclass._meta.abstract:
+                models_list.append(subclass)
+            models_list.extend(self._get_all_node_models(subclass))
+        return list(set(models_list))
+
+    def find_globally(self, node_id):
+        """
+        Executes a single SQL UNION query to find which table contains the given ID
+        and returns the actual model instance.
+        """
+        node_models = self._get_all_node_models()
+        if not node_models:
+            return None
+
+        # Map table names to model classes for quick reverse lookup
+        table_to_model = {m._meta.db_table: m for m in node_models}
+        tables = list(table_to_model.keys())
+
+        # Build UNION ALL query: SELECT 'table_name' as tbl FROM table_name WHERE id = %s
+        union_parts = [f"SELECT '{t}' as tbl FROM {t} WHERE id = %s" for t in tables]
+        query = " UNION ALL ".join(union_parts)
+        params = [node_id] * len(tables)
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, params)
+            row = cursor.fetchone()
+
+        if row:
+            table_name = row[0]
+            target_model = table_to_model[table_name]
+            return target_model.objects.get(id=node_id)
+
+        return None
+
+
 class BaseGlobalNode(models.Model):
     """
-    Abstract base class for all nodes that must share the same Global ID sequence.
+    Abstract base class for all nodes.
+    Manages global ID sequence and provides cross-table lookup logic.
     """
 
     id = models.BigIntegerField(
@@ -186,6 +238,8 @@ class BaseGlobalNode(models.Model):
         db_default=NextVal(Value("tables_global_node_seq")),
         editable=False,
     )
+    # Attach the custom manager
+    objects = GlobalNodeManager()
 
     class Meta:
         abstract = True

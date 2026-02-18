@@ -4,7 +4,7 @@ import uuid
 from django.db import models
 from loguru import logger
 from django.utils import timezone
-
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from tables.models.base_models import BaseGraphEntity, BaseGlobalNode
 
 
@@ -162,32 +162,54 @@ class Edge(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="edge_list"
     )
-    start_key = models.CharField(max_length=255, blank=False)
-    end_key = models.CharField(max_length=255, blank=False)
+    start_node_id = models.BigIntegerField(null=False, default=0)
+    end_node_id = models.BigIntegerField(null=False, default=0)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["graph", "start_key", "end_key"], name="unique_graph_edge"
+                fields=["graph", "start_node_id", "end_node_id"],
+                name="unique_graph_edge",
             )
         ]
+
+    def clean(self):
+        # Using the unified class method to find any node type by ID
+        start_node = BaseGlobalNode.objects.find_globally(self.start_node_id)
+        if not start_node:
+            raise ObjectDoesNotExist(
+                f"Start node with ID {self.start_node_id} not found."
+            )
+
+        end_node = BaseGlobalNode.objects.find_globally(self.end_node_id)
+        if not end_node:
+            raise ObjectDoesNotExist(f"End node with ID {self.end_node_id} not found.")
 
 
 class ConditionalEdge(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="conditional_edge_list"
     )
-    source = models.CharField(max_length=255, blank=False)
+
+    source_node_id = models.BigIntegerField(null=False, default=0)
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
-    then = models.CharField(max_length=255, null=True, default=None)
     input_map = models.JSONField(default=dict)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["graph", "source"], name="unique_graph_conditional_edge_source"
+                fields=["graph", "source_node_id"],
+                name="unique_graph_conditional_edge_source",
             )
         ]
+
+    def clean(self):
+        if not BaseGlobalNode.objects.find_globally(self.source_node_id):
+            raise ValidationError(
+                {
+                    "source_node_id": f"Node with ID {self.source_node_id} does not exist."
+                }
+            )
 
 
 class GraphSessionMessage(models.Model):

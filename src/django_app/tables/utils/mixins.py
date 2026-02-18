@@ -9,6 +9,8 @@ from abc import ABC, abstractmethod
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from drf_yasg.utils import swagger_auto_schema  # <--- Импортируйте это
+from rest_framework.parsers import MultiPartParser, FormParser
 from loguru import logger
 from asgiref.sync import sync_to_async
 from django.http import StreamingHttpResponse, HttpResponse
@@ -212,7 +214,13 @@ class ImportExportMixin:
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
-    @action(detail=False, methods=["post"], url_path="import")
+    @swagger_auto_schema(request_body=FileImportSerializer)
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="import",
+        parser_classes=[MultiPartParser, FormParser],
+    )
     def import_entity(self, request):
         serializer_response_class = self.get_serializer_response_class()
 

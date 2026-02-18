@@ -477,7 +477,7 @@ class ConverterService(metaclass=SingletonMeta):
         python_code_data = self.convert_python_code_to_pydantic(python_code=python_code)
 
         return PythonNodeData(
-            node_name=python_node.node_name,
+            node_name=str(python_node.id),
             python_code=python_code_data,
             input_map=python_node.input_map,
             output_variable_path=python_node.output_variable_path,
@@ -487,16 +487,15 @@ class ConverterService(metaclass=SingletonMeta):
         python_code = conditional_edge.python_code
         python_code_data = self.convert_python_code_to_pydantic(python_code=python_code)
         return ConditionalEdgeData(
-            source=conditional_edge.source,
+            source=str(conditional_edge.source),
             python_code=python_code_data,
-            then=conditional_edge.then,
             input_map=conditional_edge.input_map,
         )
 
     def convert_llm_node_to_pydantic(self, llm_node: LLMNode):
         llm_data = self.convert_llm_config_to_pydantic(config=llm_node.llm_config)
         return LLMNodeData(
-            node_name=llm_node.node_name,
+            node_name=str(llm_node.id),
             llm_data=llm_data,
             input_map=llm_node.input_map,
             output_variable_path=llm_node.output_variable_path,
@@ -527,7 +526,7 @@ class ConverterService(metaclass=SingletonMeta):
         ]
 
         return DecisionTableNodeData(
-            node_name=decision_table_node.node_name,
+            node_name=str(decision_table_node.id),
             conditional_group_list=condition_group_list,
             default_next_node=decision_table_node.default_next_node,
             next_error_node=decision_table_node.next_error_node,
@@ -539,7 +538,7 @@ class ConverterService(metaclass=SingletonMeta):
 
         crew_data = self.convert_crew_to_pydantic(crew_id=crew.pk)
         return CrewNodeData(
-            node_name=crew_node.node_name,
+            node_name=str(crew_node.id),
             crew=crew_data,
             input_map=crew_node.input_map,
             output_variable_path=crew_node.output_variable_path,
@@ -555,7 +554,7 @@ class ConverterService(metaclass=SingletonMeta):
         python_code_data = self.convert_python_code_to_pydantic(python_code=python_code)
 
         return WebhookTriggerNodeData(
-            node_name=webhook_trigger_node.node_name,
+            node_name=str(webhook_trigger_node.id),
             python_code=python_code_data,
         )
 
@@ -573,6 +572,6 @@ class ConverterService(metaclass=SingletonMeta):
             )
 
         return TelegramTriggerNodeData(
-            node_name=telegram_trigger_node.node_name,
+            node_name=str(telegram_trigger_node.id),
             field_list=telegram_trigger_node_field_data,
         )
