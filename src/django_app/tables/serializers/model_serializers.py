@@ -10,7 +10,7 @@ from tables.validators.python_code_tool_config_validator import (
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import WebhookTrigger
-from tables.models.graph_models import WebhookTriggerNode
+from tables.models.graph_models import NoteNode, WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
@@ -1711,3 +1711,9 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
+
+
+class NoteNodeSerializer(BaseGraphEntityMixin):
+    class Meta(BaseGraphEntityMixin.Meta):
+        model = NoteNode
+        fields = "__all__"

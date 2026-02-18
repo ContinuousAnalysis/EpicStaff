@@ -412,3 +412,10 @@ class TelegramTriggerNodeField(models.Model):
                 name="unique_telegram_trigger_node_field_name_parent",
             )
         ]
+
+
+class NoteNode(BaseGraphEntity, BaseGlobalNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="note_node_list"
+    )
+    content = models.TextField()
