@@ -56,7 +56,7 @@ class TelegramTriggerService(metaclass=SingletonMeta):
             )
         try:
             webhook_tunnel_url = self.webhook_trigger_service.get_tunnel_url(
-                webhook_trigger=telegram_trigger_instance.webhook_trigger
+                ngrok_webhook_config=webhook_trigger.ngrok_webhook_config
             )
         except Exception as e:
             raise RegisterTelegramTriggerError(
