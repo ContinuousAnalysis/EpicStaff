@@ -204,6 +204,13 @@ export class FlowsStorageService {
             tap(() => {
                 const currentFlows = this.flowsSignal();
                 this.flowsSignal.set(currentFlows.filter((f) => f.id !== id));
+                // Remove deleted flow from export selection
+                const currentSelected = this.selectedFlowIds();
+                if (currentSelected.includes(id)) {
+                    this.selectedFlowIds.set(
+                        currentSelected.filter((selectedId) => selectedId !== id)
+                    );
+                }
             })
         );
     }
