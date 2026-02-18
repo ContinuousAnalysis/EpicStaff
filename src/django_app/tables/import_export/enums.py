@@ -4,8 +4,11 @@ from enum import Enum
 class EntityType(str, Enum):
     LLM_MODEL = "LLMModel"
     LLM_CONFIG = "LLMConfig"
+    EMBEDDING_MODEL = "EmbeddingModel"
     EMBEDDING_CONFIG = "EmbeddingConfig"
+    REALTIME_MODEL = "RealtimeModel"
     REALTIME_CONFIG = "RealtimeConfig"
+    REALTIME_TRANSCRIPTION_MODEL = "RealtimeTranscriptionModel"
     REALTIME_TRANSCRIPTION_CONFIG = "RealtimeTranscriptionConfig"
     PYTHON_CODE_TOOL = "PythonCodeTool"
     MCP_TOOL = "MCPTool"

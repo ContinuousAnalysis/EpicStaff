@@ -7,8 +7,11 @@ MAIN_ENTITY_KEY = "main_entity"
 DEPENDENCY_ORDER = (
     EntityType.LLM_MODEL,
     EntityType.LLM_CONFIG,
+    EntityType.EMBEDDING_MODEL,
     EntityType.EMBEDDING_CONFIG,
+    EntityType.REALTIME_MODEL,
     EntityType.REALTIME_CONFIG,
+    EntityType.REALTIME_TRANSCRIPTION_MODEL,
     EntityType.REALTIME_TRANSCRIPTION_CONFIG,
     EntityType.PYTHON_CODE_TOOL,
     EntityType.MCP_TOOL,

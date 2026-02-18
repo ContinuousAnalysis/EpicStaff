@@ -14,8 +14,6 @@ from tables.models import (
 
 
 class BaseConfigImportSerializer(serializers.ModelSerializer):
-    model_name = serializers.CharField(required=False)
-    provider_name = serializers.CharField(required=False)
     api_key = serializers.CharField(write_only=True, required=False)
 
     model_class = None
@@ -26,27 +24,23 @@ class BaseConfigImportSerializer(serializers.ModelSerializer):
     class Meta:
         abstract = True
         model = None
-        exclude = ["model"]
+        fields = "__all__"
 
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
-        model = self._get_model_instance(instance)
-        ret["model_name"] = model.name
-        ret["provider_name"] = getattr(model, self.provider_field).name
-        return ret
+    def get_fields(self):
+        fields = super().get_fields()
+        if self.model_class and self.model_fk_field:
+            fields["model_id"] = serializers.PrimaryKeyRelatedField(
+                queryset=self.model_class.objects.all(),
+                source=self.model_fk_field,
+                write_only=True,
+            )
+        return fields
 
     def create(self, validated_data):
-        model_name = validated_data.pop("model_name", None)
-        provider_name = validated_data.pop("provider_name", None)
-
-        if model_name and provider_name:
-            provider = Provider.objects.get(name=provider_name)
-            model_obj = self.model_class.objects.get(
-                name=model_name,
-                **{self.provider_field: provider},
-            )
-            validated_data[self.model_fk_field] = model_obj
-            validated_data["api_key"] = self._get_api_key(provider_name)
+        model = validated_data[self.model_fk_field]
+        validated_data["api_key"] = self._get_api_key(
+            getattr(model, self.provider_field).name
+        )
 
         return super().create(validated_data)
 
@@ -59,34 +53,17 @@ class BaseConfigImportSerializer(serializers.ModelSerializer):
             .first()
         )
 
-    def _get_model_instance(self, instance):
-        return getattr(instance, self.model_fk_field)
 
+class LLMConfigImportSerializer(BaseConfigImportSerializer):
+    model_class = LLMModel
+    provider_field = "llm_provider"
+    model_fk_field = "model"
+    config_model = LLMConfig
 
-class LLMConfigImportSerializer(serializers.ModelSerializer):
-    model_id = serializers.PrimaryKeyRelatedField(
-        queryset=LLMModel.objects.all(),
-        source="model",
-        write_only=True,
-    )
-    api_key = serializers.CharField(write_only=True, required=False)
+    model = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    class Meta:
+    class Meta(BaseConfigImportSerializer.Meta):
         model = LLMConfig
-        fields = "__all__"
-
-    def create(self, validated_data):
-        model = validated_data["model"]
-        validated_data["api_key"] = self._get_api_key(model.llm_provider.name)
-
-        return super().create(validated_data)
-
-    def _get_api_key(self, provider_name):
-        return (
-            LLMConfig.objects.filter(model__llm_provider__name=provider_name)
-            .values_list("api_key", flat=True)
-            .first()
-        )
 
 
 class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
@@ -94,6 +71,8 @@ class EmbeddingConfigImportSerializer(BaseConfigImportSerializer):
     provider_field = "embedding_provider"
     model_fk_field = "model"
     config_model = EmbeddingConfig
+
+    embedding_model = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta(BaseConfigImportSerializer.Meta):
         model = EmbeddingConfig
@@ -105,9 +84,10 @@ class RealtimeConfigImportSerializer(BaseConfigImportSerializer):
     model_fk_field = "realtime_model"
     config_model = RealtimeConfig
 
+    realtime_model = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta(BaseConfigImportSerializer.Meta):
         model = RealtimeConfig
-        exclude = ["realtime_model"]
 
 
 class RealtimeTranscriptionConfigImportSerializer(BaseConfigImportSerializer):
@@ -116,6 +96,7 @@ class RealtimeTranscriptionConfigImportSerializer(BaseConfigImportSerializer):
     model_fk_field = "realtime_transcription_model"
     config_model = RealtimeTranscriptionConfig
 
+    realtime_transcription_model = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta(BaseConfigImportSerializer.Meta):
         model = RealtimeTranscriptionConfig
-        exclude = ["realtime_transcription_model"]
