@@ -27,6 +27,10 @@
             color: var(--color-input-text-placeholder);
         }
 
+        &:hover {
+            border-color: var(--accent-color, #685fff);
+        }
+
         &--default {
             height: 40px;
             padding: 0.5rem 2rem 0.5rem 1rem;

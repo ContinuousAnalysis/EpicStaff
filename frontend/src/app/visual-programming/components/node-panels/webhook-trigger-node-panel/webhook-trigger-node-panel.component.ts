@@ -41,10 +41,13 @@ export const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
 })
 export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTriggerNodeModel> implements OnInit, OnChanges {
     private readonly destroyRef = inject(DestroyRef);
-    private ngrokStorageService = inject(NgrokConfigStorageService);
+    private readonly ngrokStorageService = inject(NgrokConfigStorageService);
+    private readonly clipboard = inject(Clipboard);
+    private readonly toastService = inject(ToastService);
 
     public readonly isExpanded = input<boolean>(false);
 
+    public readonly isCodeEditorFullWidth = signal<boolean>(true);
     ngrokConfigsLoading = signal<boolean>(false);
     webhookPath = signal<string | null>(null);
     ngrokConfigUrl = signal<string | null>(null);
@@ -67,10 +70,7 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
         return this.ngrokStorageService.configs().map(c => ({ name: c.name, value: c.id }))
     });
 
-    constructor(
-        private clipboard: Clipboard,
-        private toastService: ToastService,
-    ) {
+    constructor() {
         super();
     }
 
@@ -217,5 +217,9 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
         if (!url) return;
 
         this.clipboard.copy(url);
+    }
+
+    toggleCodeEditorFullWidth(): void {
+        this.isCodeEditorFullWidth.update((value) => !value);
     }
 }

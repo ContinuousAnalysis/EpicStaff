@@ -10,6 +10,7 @@ from tables.models import (
 )
 
 from tables.serializers.base_serializers import WebhookTriggerNestedSerializer
+from tables.serializers.base_serializer import BaseGraphEntityMixin
 
 
 class TelegramTriggerNodeFieldSerializer(serializers.ModelSerializer):
@@ -27,7 +28,7 @@ class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
     webhook_trigger = WebhookTriggerNestedSerializer(required=False, allow_null=True)
     fields = TelegramTriggerNodeFieldSerializer(many=True)
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = TelegramTriggerNode
         fields = [
             "id",
@@ -36,7 +37,7 @@ class TelegramTriggerNodeSerializer(serializers.ModelSerializer):
             "graph",
             "fields",
             "webhook_trigger",
-        ]
+        ] + BaseGraphEntityMixin.Meta.common_fields
 
     def create(self, validated_data):
         fields_data = validated_data.pop("fields", [])

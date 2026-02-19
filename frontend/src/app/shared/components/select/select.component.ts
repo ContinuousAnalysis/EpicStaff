@@ -11,7 +11,7 @@ import {
 
 import { TemplatePortal } from '@angular/cdk/portal';
 import { NgClass } from "@angular/common";
-import { Overlay, OverlayPositionBuilder, OverlayRef } from "@angular/cdk/overlay";
+import { Overlay, OverlayPositionBuilder, OverlayRef, OverlayModule } from "@angular/cdk/overlay";
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
 import { TooltipComponent } from "../tooltip/tooltip.component";
 
@@ -24,7 +24,7 @@ export interface SelectItem {
 
 @Component({
     selector: 'app-select',
-    imports: [NgClass, TooltipComponent],
+    imports: [NgClass, TooltipComponent, OverlayModule],
     templateUrl: './select.component.html',
     styleUrls: ['./select.component.scss'],
     providers: [
@@ -42,7 +42,6 @@ export class SelectComponent implements ControlValueAccessor {
     required = input<boolean>(false);
     tooltipText = input<string>('');
     loading = input<boolean>(false);
-
     mod = input<'default' | 'small'>('default');
     items = input<SelectItem[]>([]);
     placeholder = input<string>('Select option');
