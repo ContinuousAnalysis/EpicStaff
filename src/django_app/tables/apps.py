@@ -34,6 +34,7 @@ class TablesConfig(AppConfig):
             graph,
             webhook,
             llm_models,
+            tags,
         )
 
         if "runserver" in sys.argv:
@@ -68,3 +69,9 @@ class TablesConfig(AppConfig):
         entity_registry.register(crew.CrewStrategy())
         entity_registry.register(graph.GraphStrategy())
         entity_registry.register(webhook.WebhookTriggerStrategy())
+        entity_registry.register(tags.AgentTagStrategy())
+        entity_registry.register(tags.CrewTagStrategy())
+        entity_registry.register(tags.GraphTagStrategy())
+        entity_registry.register(tags.LLMConfigTagStrategy())
+        entity_registry.register(tags.LLMModelTagStrategy())
+        entity_registry.register(tags.EmbeddingModelTagStrategy())

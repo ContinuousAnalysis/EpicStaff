@@ -5,6 +5,12 @@ MAIN_ENTITY_KEY = "main_entity"
 
 # Entities will be imported from top to bottom based on this list
 DEPENDENCY_ORDER = (
+    EntityType.AGENT_TAG,
+    EntityType.CREW_TAG,
+    EntityType.GRAPH_TAG,
+    EntityType.LLM_MODEL_TAG,
+    EntityType.LLM_CONFIG_TAG,
+    EntityType.EMBEDDING_MODEL_TAG,
     EntityType.LLM_MODEL,
     EntityType.LLM_CONFIG,
     EntityType.EMBEDDING_MODEL,

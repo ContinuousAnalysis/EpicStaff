@@ -18,6 +18,13 @@ class EntityType(str, Enum):
     CREW = "Project"
     GRAPH = "Flow"
 
+    AGENT_TAG = "AgentTag"
+    CREW_TAG = "CrewTag"
+    GRAPH_TAG = "GraphTag"
+    LLM_MODEL_TAG = "LLMModelTag"
+    LLM_CONFIG_TAG = "LLMConfigTag"
+    EMBEDDING_MODEL_TAG = "EmbeddingModelTag"
+
 
 class NodeType(str, Enum):
     START_NODE = "StartNode"
