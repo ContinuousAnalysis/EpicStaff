@@ -2,6 +2,7 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    signal,
     OnInit,
     OnDestroy,
     HostListener,
@@ -77,11 +78,13 @@ import { isEqual } from 'lodash';
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { ConfigService } from '../../../../services/config/config.service';
 import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
+import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
+import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
-    imports: [FlowHeaderComponent, FlowGraphComponent, SpinnerComponent],
+    imports: [FlowHeaderComponent, FlowGraphComponent, SpinnerComponent, ShortcutsModalComponent],
     templateUrl: './flow-visual-programming.component.html',
     styleUrl: './flow-visual-programming.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -557,5 +560,27 @@ export class FlowVisualProgrammingComponent
 
     private flushActiveSidePanelState(): void {
         this.flowGraphComponent?.flushOpenSidePanelState();
+    }
+
+    public isShortcutsOpen = signal(false);
+    public shortcutsPos = signal<{ top: number; left: number } | null>(null);
+    public readonly shortcutSections = FLOW_SHORTCUT_SECTIONS;
+
+    public openShortcutsModal(rect: DOMRect): void {
+        if (this.isShortcutsOpen()) {
+            this.closeShortcutsModal();
+            return;
+        }
+
+        const top = rect.top;
+        const left = rect.right - 30;
+
+        this.shortcutsPos.set({ top, left });
+        this.isShortcutsOpen.set(true);
+    }
+
+    public closeShortcutsModal(): void {
+        this.isShortcutsOpen.set(false);
+        this.shortcutsPos.set(null);
     }
 }
