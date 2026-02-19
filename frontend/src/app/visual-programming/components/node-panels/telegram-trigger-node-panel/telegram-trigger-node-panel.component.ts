@@ -101,7 +101,13 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
         this.ngrokStorageService.getConfigById(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: () => this.webhookStatus.set(WebhookStatus.SUCCESS),
+                next: (res) => {
+                    if (res.webhook_full_url) {
+                        this.webhookStatus.set(WebhookStatus.SUCCESS)
+                    } else {
+                        this.webhookStatus.set(WebhookStatus.FAIL)
+                    }
+                },
                 error: () => this.webhookStatus.set(WebhookStatus.FAIL)
             })
     }
@@ -140,7 +146,7 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
             webhook_trigger_path: [this.node().data.webhook_trigger?.path || null,
                 [Validators.required, Validators.pattern(WEBHOOK_NAME_PATTERN)]
             ],
-            ngrok_webhook_config: [this.node().data.webhook_trigger?.ngrok_webhook_config || null, Validators.required],
+            ngrok_webhook_config: [this.node().data.webhook_trigger?.ngrok_webhook_config || null],
             fields: [this.node().data.fields || []],
         });
 

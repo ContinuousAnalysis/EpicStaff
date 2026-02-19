@@ -1,5 +1,7 @@
 import { DIALOG_DATA, DialogRef } from "@angular/cdk/dialog";
-import { ChangeDetectionStrategy, Component, inject, OnInit } from "@angular/core";
+import { NgIf } from "@angular/common";
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
     ButtonComponent,
@@ -8,7 +10,8 @@ import {
     SelectItem,
     ValidationErrorsComponent
 } from "@shared/components";
-import { GetNgrokConfigResponse } from "../../../models/ngrok-config.model";
+import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from "../../../models/ngrok-config.model";
+import { NgrokConfigStorageService } from "../../../services/ngrok-config/ngrok-config-storage.service";
 
 @Component({
     selector: 'app-create-ngrok-config-dialog',
@@ -19,15 +22,20 @@ import { GetNgrokConfigResponse } from "../../../models/ngrok-config.model";
         CustomInputComponent,
         SelectComponent,
         ButtonComponent,
-        ValidationErrorsComponent
+        ValidationErrorsComponent,
+        NgIf
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AddNgrokConfigDialogComponent implements OnInit {
     private fb = inject(FormBuilder);
     private dialogRef = inject(DialogRef);
+    private ngrokStorageService = inject(NgrokConfigStorageService);
+    private destroyRef = inject(DestroyRef);
     data: { config: GetNgrokConfigResponse | null, action: 'create' | 'update' } = inject(DIALOG_DATA);
 
+    public isSubmitting = signal<boolean>(false);
+    public errorMessage = signal<string | null>(null);
 
     form!: FormGroup;
     regionSelectItems: SelectItem[] = [
@@ -63,8 +71,47 @@ export class AddNgrokConfigDialogComponent implements OnInit {
             this.form.markAllAsTouched();
             return;
         }
+        this.isSubmitting.set(true);
 
-        this.dialogRef.close(this.form.value);
+        const formValue = this.form.value;
+        const { config, action } = this.data;
+
+        if (action === 'create') {
+            this.createNgrokConfig(formValue);
+        } else {
+            this.updateNgrokConfig(config!.id, formValue);
+        }
+    }
+
+    private createNgrokConfig(value: CreateNgrokConfigRequest): void {
+        this.ngrokStorageService.createConfig(value)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.dialogRef.close(),
+                error: (e) => {
+                    this.errorMessage.set(
+                        'Failed to create configuration. Please try again.'
+                    );
+                    this.isSubmitting.set(false);
+                },
+            });
+    }
+
+    private updateNgrokConfig(
+        id: number,
+        value: CreateNgrokConfigRequest
+    ): void {
+        this.ngrokStorageService.updateConfigById(id, value)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.dialogRef.close(),
+                error: (e) => {
+                    this.errorMessage.set(
+                        'Failed to update configuration. Please try again.'
+                    );
+                    this.isSubmitting.set(false);
+                },
+            });
     }
 
     onCancel(): void {

@@ -5,7 +5,7 @@ import { ReactiveFormsModule } from "@angular/forms";
 import { ButtonComponent, ConfirmationDialogService, ConfirmationResult } from "@shared/components";
 import { LoadingState } from "../../../../core/enums/loading-state.enum";
 import { ToastService } from "../../../../services/notifications";
-import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from "../../models/ngrok-config.model";
+import { GetNgrokConfigResponse } from "../../models/ngrok-config.model";
 import { NgrokConfigStorageService } from "../../services/ngrok-config/ngrok-config-storage.service";
 import { AddNgrokConfigDialogComponent } from "./add-ngrok-config-dialog/add-ngrok-config-dialog.component";
 import { NgrokConfigItemComponent } from "./ngrok-config-item/ngrok-config-item.component";
@@ -71,23 +71,11 @@ export class NgrokConfigTabComponent implements OnInit {
         action: 'create' | 'update',
         config?: GetNgrokConfigResponse
     ): void {
-        const dialogRef = this.dialog.open(AddNgrokConfigDialogComponent, {
+        this.dialog.open(AddNgrokConfigDialogComponent, {
             width: '500px',
             disableClose: true,
-            data: { config, action }
+            data: { config, action },
         });
-
-        dialogRef.closed
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(result => {
-                if (!result) return;
-
-                if (action === 'create') {
-                    this.createNgrokConfig(result as CreateNgrokConfigRequest);
-                } else {
-                    this.updateNgrokConfig(config!.id, result as CreateNgrokConfigRequest);
-                }
-            });
     }
 
     onRemoveConfig(config: GetNgrokConfigResponse): void {
@@ -102,27 +90,6 @@ export class NgrokConfigTabComponent implements OnInit {
                             error: (e) => this.toastService.error(`Config deletion failed: ${e.message}`),
                         });
                 }
-            });
-    }
-
-    private createNgrokConfig(value: CreateNgrokConfigRequest): void {
-        this.ngrokStorageService.createConfig(value)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => this.toastService.success('Config created'),
-                error: (e) => this.toastService.error(`Config creation failed: ${e.message}`),
-            });
-    }
-
-    private updateNgrokConfig(
-        id: number,
-        value: CreateNgrokConfigRequest
-    ): void {
-        this.ngrokStorageService.updateConfigById(id, value)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => this.toastService.success('Config updated'),
-                error: (e) => this.toastService.error(`Config update failed: ${e.message}`),
             });
     }
 }

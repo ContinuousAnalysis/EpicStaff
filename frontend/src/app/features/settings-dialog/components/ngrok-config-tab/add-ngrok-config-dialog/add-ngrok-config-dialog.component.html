@@ -1,11 +1,14 @@
 <div class="dialog">
     <div class="dialog__header">
-        Add Ngrok Configuration
+        {{ data.action === 'create' ? 'Add Ngrok Configuration' : 'Update Ngrok Configuration' }}
     </div>
     <form
         class="dialog__form"
         [formGroup]="form"
     >
+        <div *ngIf="errorMessage()" class="dialog__error-message">
+            <p>{{ errorMessage() }}</p>
+        </div>
         <div>
             <app-custom-input
                 label="Name"
@@ -19,6 +22,7 @@
 
         <div>
             <app-custom-input
+                type="password"
                 label="Auth Token"
                 formControlName="auth_token"
                 [required]="true"
@@ -53,8 +57,13 @@
         <app-button
             type="primary"
             (click)="onSubmit()"
+            [disabled]="form.invalid || isSubmitting()"
         >
-            {{ data.action === 'create' ? 'Create Config' : 'Update config' }}
+            @if (isSubmitting()) {
+                {{ data.action === 'create' ? 'Creating...' : 'Updating...' }}
+            } @else {
+                {{ data.action === 'create' ? 'Create' : 'Update' }}
+            }
         </app-button>
     </div>
 </div>

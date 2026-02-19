@@ -11,6 +11,19 @@
         font-size: 1.25rem;
     }
 
+    &__error-message {
+        background-color: rgba(255, 77, 79, 0.1);
+        color: var(--color-error, #ff4d4f);
+        padding: 0.75rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+
+        p {
+            margin: 0;
+            font-size: 0.875rem;
+        }
+    }
+
     &__form {
         display: flex;
         flex-direction: column;

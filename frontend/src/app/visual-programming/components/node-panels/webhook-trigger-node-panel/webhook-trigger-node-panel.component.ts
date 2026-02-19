@@ -172,7 +172,7 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
 
         const webhook_trigger = webhookTriggerPath ? {
             path: webhookTriggerPath,
-            ngrok_webhook_config:  this.form.value.ngrok_webhook_config,
+            ngrok_webhook_config: this.form.value.ngrok_webhook_config,
         } : null;
 
         return {
