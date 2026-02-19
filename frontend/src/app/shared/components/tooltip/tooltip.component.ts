@@ -1,18 +1,14 @@
-import {
-    Component,
-    input,
-    ChangeDetectionStrategy,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { HelpTooltipComponent } from '../help-tooltip';
+import { ChangeDetectionStrategy, Component, input } from "@angular/core";
+import { MATERIAL_FORMS } from "@shared/material-forms";
 
 @Component({
     selector: 'app-tooltip',
-    standalone: true,
-    imports: [CommonModule, HelpTooltipComponent],
     templateUrl: './tooltip.component.html',
     styleUrls: ['./tooltip.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        MATERIAL_FORMS
+    ],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TooltipComponent {
     icon = input<string>('help_outline');
