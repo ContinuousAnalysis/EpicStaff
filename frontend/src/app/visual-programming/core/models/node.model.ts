@@ -12,7 +12,6 @@ import {
 import { NodeType } from '../enums/node-type';
 import { ConnectionModel } from './connection.model';
 import { ViewPort } from './port.model';
-import { GroupNodeModel } from './group.model';
 import { DecisionTableNode } from './decision-table.model';
 import {
     TelegramTriggerNodeField
@@ -21,6 +20,8 @@ import { GetGraphLightRequest } from '../../../features/flows/models/graph.model
 
 export interface BaseNodeModel {
     id: string;
+    /** Backend primary key — set on load, null for newly created nodes. */
+    backendId: number | null;
     category: 'web' | 'vscode';
     position: { x: number; y: number };
     ports: ViewPort[] | null;
@@ -144,7 +145,6 @@ export type NodeModel =
     | PythonNodeModel
     | EdgeNodeModel
     | StartNodeModel
-    | GroupNodeModel
     | DecisionTableNodeModel
     | NoteNodeModel
     | FileExtractorNodeModel

@@ -3,7 +3,6 @@ import { FlowService } from './flow.service';
 
 import { NodeModel } from '../core/models/node.model';
 import { ConnectionModel } from '../core/models/connection.model';
-import { GroupNodeModel } from '../core/models/group.model';
 
 import { v4 as uuidv4 } from 'uuid';
 import { FSelectionChangeEvent } from '@foblex/flow';
@@ -22,7 +21,6 @@ import {
 interface ClipboardData {
     nodes: NodeModel[];
     connections: ConnectionModel[];
-    groups: GroupNodeModel[];
     boundingBox: { minX: number; minY: number };
 }
 
@@ -47,17 +45,14 @@ export class ClipboardService {
     public copy(selection: FSelectionChangeEvent): void {
         if (
             !selection ||
-            (selection.fNodeIds.length === 0 &&
-                selection.fGroupIds.length === 0)
+            selection.fNodeIds.length === 0
         ) {
-            console.warn('No selected nodes or groups to copy.');
+            console.warn('No selected nodes to copy.');
             return;
         }
 
-        // 1) Get all nodes and groups from the current flow state
+        // 1) Get all nodes from the current flow state
         const allNodes: NodeModel[] = this.flowService.getFlowState().nodes;
-        const allGroups: GroupNodeModel[] =
-            this.flowService.getFlowState().groups;
 
         // Get selected nodes (excluding Start nodes)
         const selectedNodes: NodeModel[] = allNodes.filter(
@@ -66,62 +61,22 @@ export class ClipboardService {
                 node.type !== NodeType.START
         );
 
-        // Get selected groups and their descendants
-        const selectedGroups: GroupNodeModel[] = [];
-        const processedGroupIds = new Set<string>();
-
-        // Helper function to recursively collect groups and their descendants
-        const collectGroupAndDescendants = (groupId: string) => {
-            if (processedGroupIds.has(groupId)) return;
-
-            const group = allGroups.find((g) => g.id === groupId);
-            if (!group) return;
-
-            processedGroupIds.add(groupId);
-            selectedGroups.push(group);
-
-            // Add child groups recursively
-            allGroups.forEach((g) => {
-                if (g.parentId === groupId) {
-                    collectGroupAndDescendants(g.id);
-                }
-            });
-
-            // Add nodes that belong to this group
-            selectedNodes.push(
-                ...allNodes.filter(
-                    (node) =>
-                        node.parentId === groupId &&
-                        node.type !== NodeType.START
-                )
-            );
-        };
-
-        // Process all selected groups
-        selection.fGroupIds.forEach((groupId) => {
-            collectGroupAndDescendants(groupId);
-        });
-
-        if (selectedNodes.length === 0 && selectedGroups.length === 0) {
-            console.warn('No valid nodes or groups found for copying.');
+        if (selectedNodes.length === 0) {
+            console.warn('No valid nodes found for copying.');
             return;
         }
 
         // 2) Compute bounding box for all selected elements
-        const allElements = [...selectedNodes, ...selectedGroups];
         const minX: number = Math.min(
-            ...allElements.map((el) => el.position.x)
+            ...selectedNodes.map((el) => el.position.x)
         );
         const minY: number = Math.min(
-            ...allElements.map((el) => el.position.y)
+            ...selectedNodes.map((el) => el.position.y)
         );
 
         // 3) Build sets of selected element IDs
         const selectedNodeIdSet = new Set<string>(
             selectedNodes.map((n) => n.id)
-        );
-        const selectedGroupIdSet = new Set<string>(
-            selectedGroups.map((g) => g.id)
         );
 
         // 4) Get relevant connections
@@ -133,13 +88,11 @@ export class ClipboardService {
                 const targetParsed = parsePortId(conn.targetPortId);
                 if (!sourceParsed || !targetParsed) return false;
 
-                // Check if both ends of the connection are in selected nodes or groups
+                // Check if both ends of the connection are in selected nodes
                 const sourceInSelection =
-                    selectedNodeIdSet.has(sourceParsed.nodeId) ||
-                    selectedGroupIdSet.has(conn.sourceNodeId);
+                    selectedNodeIdSet.has(sourceParsed.nodeId);
                 const targetInSelection =
-                    selectedNodeIdSet.has(targetParsed.nodeId) ||
-                    selectedGroupIdSet.has(conn.targetNodeId);
+                    selectedNodeIdSet.has(targetParsed.nodeId);
 
                 return sourceInSelection && targetInSelection;
             }
@@ -156,64 +109,38 @@ export class ClipboardService {
                 ports: node.ports ? [...node.ports] : node.ports,
                 position: { ...node.position },
             })),
-            groups: selectedGroups.map((group) => ({
-                ...group,
-                position: { ...group.position },
-            })),
             connections: selectedConnections.map((conn) => ({ ...conn })),
             boundingBox: { minX, minY },
         };
 
-        console.log('Copied nodes, groups, and connections:', this.clipboard);
+        console.log('Copied nodes and connections:', this.clipboard);
     }
 
     public paste(mousePosition: { x: number; y: number }): {
         newNodes: NodeModel[];
-        newGroups: GroupNodeModel[];
         newConnections: ConnectionModel[];
     } {
         if (!this.clipboard) {
             console.warn('Clipboard is empty, nothing to paste.');
-            return { newNodes: [], newGroups: [], newConnections: [] };
+            return { newNodes: [], newConnections: [] };
         }
 
         const {
             nodes: clipboardNodes,
-            groups: clipboardGroups,
             connections: clipboardConnections,
             boundingBox,
         } = this.clipboard;
 
-        if (clipboardNodes.length === 0 && clipboardGroups.length === 0) {
-            console.warn('Clipboard has no nodes or groups.');
-            return { newNodes: [], newGroups: [], newConnections: [] };
+        if (clipboardNodes.length === 0) {
+            console.warn('Clipboard has no nodes.');
+            return { newNodes: [], newConnections: [] };
         }
 
         const offsetX = mousePosition.x - boundingBox.minX;
         const offsetY = mousePosition.y - boundingBox.minY;
 
-        // Map old IDs to new IDs for both nodes and groups
+        // Map old IDs to new IDs for nodes
         const oldToNewIdMap = new Map<string, string>();
-
-        // Create new groups first
-        const newGroups: GroupNodeModel[] = clipboardGroups.map((oldGroup) => {
-            const newGroupId = uuidv4();
-            oldToNewIdMap.set(oldGroup.id, newGroupId);
-
-            return {
-                ...oldGroup,
-                id: newGroupId,
-                position: {
-                    x: oldGroup.position.x + offsetX,
-                    y: oldGroup.position.y + offsetY,
-                },
-                // Update parentId if it exists and is in our selection
-                parentId:
-                    (oldGroup.parentId &&
-                        oldToNewIdMap.get(oldGroup.parentId)) ||
-                    null,
-            };
-        });
 
         // Generate display names for all nodes at once to ensure unique counts
         const currentNodes = this.flowService.getFlowState().nodes;
@@ -264,15 +191,13 @@ export class ClipboardService {
             return {
                 ...oldNode,
                 id: newNodeId,
+                backendId: null, // Pasted nodes are new — no backend counterpart yet
                 position: {
                     x: oldNode.position.x + offsetX,
                     y: oldNode.position.y + offsetY,
                 },
                 ports: newPorts,
-                // Update parentId if it exists and is in our selection
-                parentId:
-                    (oldNode.parentId && oldToNewIdMap.get(oldNode.parentId)) ||
-                    null,
+                parentId: null,
                 node_name: displayNames[index],
             };
         });
@@ -285,7 +210,7 @@ export class ClipboardService {
 
                 if (!newSourceNodeId || !newTargetNodeId) {
                     console.warn(
-                        'Skipping connection due to missing new node/group mapping:',
+                        'Skipping connection due to missing new node mapping:',
                         oldConn
                     );
                     return null;
@@ -322,7 +247,6 @@ export class ClipboardService {
         this.flowService.setFlow({
             ...currentFlow,
             nodes: [...currentFlow.nodes, ...newNodes],
-            groups: [...currentFlow.groups, ...newGroups],
             connections: [...currentFlow.connections, ...newConnections],
         });
 
@@ -342,6 +266,6 @@ export class ClipboardService {
         console.log('=== END PASTE COMPLETION DEBUG ===');
 
         // Return all new elements for selection
-        return { newNodes, newGroups, newConnections };
+        return { newNodes, newConnections };
     }
 }
