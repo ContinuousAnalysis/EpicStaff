@@ -10,7 +10,9 @@ import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visua
 import { Edge } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
+import { NoteNode } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
 import {
+    BaseNodeModel,
     ProjectNodeModel,
     PythonNodeModel,
     LLMNodeModel,
@@ -22,19 +24,33 @@ import {
     EndNodeModel,
     EdgeNodeModel,
     DecisionTableNodeModel,
+    NoteNodeModel,
     NodeModel,
 } from '../../core/models/node.model';
 
 // ---- UI metadata stored in each node's backend `metadata` JSON field ----
 
 export interface NodeUIMetadata {
-    client_id: string;                      // Frontend UUID
     position: { x: number; y: number };
     color: string;
     icon: string;
     size: { width: number; height: number };
-    parentId: string | null;                // UUID of the parent group (groups stay in graph.metadata)
-    parentGroupName?: string | null;        // node_name of the parent group (for stable resolution)
+    parentId: string | null;
+}
+
+/**
+ * Gets UI-specific metadata from a node model for comparison and storage
+ * in the backend's `metadata` JSONField. Shared between save-graph.diff and
+ * save-graph.comparators to avoid circular imports.
+ */
+export function getUIMetadataForComparison(node: BaseNodeModel): NodeUIMetadata {
+    return {
+        position: node.position,
+        color: node.color,
+        icon: node.icon,
+        size: node.size,
+        parentId: node.parentId,
+    };
 }
 
 // ---- Generic diff result ----
@@ -43,6 +59,18 @@ export interface NodeDiff<TBackend, TUI> {
     toDelete: TBackend[];
     toCreate: TUI[];
     toUpdate: Array<{ backend: TBackend; ui: TUI }>;
+}
+
+/** Mapping returned after a POST create — ties a UI node UUID to its new backend ID. */
+export interface CreatedNodeMapping {
+    uiNodeId: string;
+    backendId: number;
+}
+
+/** Result of executing a diff: raw HTTP results + mappings for created nodes. */
+export interface NodeDiffResult {
+    results: any[];
+    createdMappings: CreatedNodeMapping[];
 }
 
 // ---- Intermediate types ----
@@ -75,6 +103,7 @@ export interface GraphPreviousState {
     edges: Edge[];
     endNodes: EndNode[];
     decisionTableNodes: GetDecisionTableNodeRequest[];
+    noteNodes: NoteNode[];
 }
 
 // ---- New state (what the UI currently shows) ----
@@ -94,6 +123,7 @@ export interface GraphNewState {
     edges: UiEdge[];
     endNodes: EndNodeModel[];
     decisionTableNodes: DecisionTableNodeModel[];
+    noteNodes: NoteNodeModel[];
     /** All UI nodes — used to resolve node ID → node_name for decision tables. */
     allNodes: NodeModel[];
 }
@@ -116,5 +146,6 @@ export interface GraphDiff {
     /** Edges only support create/delete — no meaningful "update" exists. */
     edges: { toDelete: Edge[]; toCreate: UiEdge[] };
     endNodes: NodeDiff<EndNode, EndNodeModel>;
+    noteNodes: NodeDiff<NoteNode, NoteNodeModel>;
 }
 

@@ -4,9 +4,8 @@
  * Instead of blindly taking `graph.metadata` as the entire UI state,
  * these functions reconstruct the node list and connections from the
  * individual backend node/edge lists.  UI-only metadata (position,
- * color, icon, size, parentId) is read from each node's `metadata`
- * JSON field.  Groups, notes, and their connections still come from
- * `graph.metadata` because the backend has no dedicated tables for them.
+ * color, icon, size, backgroundColor) is read from each node's `metadata`
+ * JSON field.  All node types including notes are now backend-managed.
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -16,7 +15,6 @@ import { FlowModel } from '../../core/models/flow.model';
 import { NodeType } from '../../core/enums/node-type';
 import { NODE_COLORS, NODE_ICONS } from '../../core/enums/node-config';
 import { ConnectionModel } from '../../core/models/connection.model';
-import { GroupNodeModel } from '../../core/models/group.model';
 import { CustomPortId } from '../../core/models/port.model';
 import {
     NodeModel,
@@ -48,6 +46,7 @@ import { Edge } from '../../../pages/flows-page/components/flow-visual-programmi
 import { StartNode } from '../../../pages/flows-page/components/flow-visual-programming/models/start-node.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
+import { NoteNode } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
 
 import { NodeUIMetadata } from './save-graph.types';
 
@@ -63,13 +62,11 @@ function readUIMetadata(
 ): NodeUIMetadata {
     const m = metadata ?? {};
     return {
-        client_id: m['client_id'] ?? uuidv4(),
         position: m['position'] ?? { x: 100 + (fallbackIndex % 5) * 400, y: 100 + Math.floor(fallbackIndex / 5) * 200 },
         color: m['color'] ?? NODE_COLORS[nodeType] ?? '#685fff',
         icon: m['icon'] ?? NODE_ICONS[nodeType] ?? 'ti ti-code',
         size: m['size'] ?? getDefaultSize(nodeType),
-        parentId: m['parentId'] ?? null,
-        parentGroupName: m['parentGroupName'] ?? null,
+        parentId: null,
     };
 }
 
@@ -104,8 +101,8 @@ function makeConnection(
         targetPortId,
         startColor,
         endColor,
-        behavior: 'floating',
-        type: 'bezier',
+        behavior: 'fixed',
+        type: 'segment',
     };
 }
 
@@ -116,14 +113,15 @@ function makeConnection(
 function buildStartNode(sn: StartNode, idx: number): StartNodeModel {
     const ui = readUIMetadata(sn.metadata, NodeType.START, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: sn.id,
         category: 'web',
         type: NodeType.START,
         node_name: '__start__',
         data: { initialState: sn.variables ?? {} },
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: {},
@@ -135,14 +133,15 @@ function buildStartNode(sn: StartNode, idx: number): StartNodeModel {
 function buildCrewNode(cn: CrewNode, idx: number): ProjectNodeModel {
     const ui = readUIMetadata(cn.metadata, NodeType.PROJECT, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: cn.id,
         category: 'web',
         type: NodeType.PROJECT,
         node_name: cn.node_name,
         data: cn.crew,
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: cn.input_map ?? {},
@@ -154,7 +153,8 @@ function buildCrewNode(cn: CrewNode, idx: number): ProjectNodeModel {
 function buildPythonNode(pn: PythonNode, idx: number): PythonNodeModel {
     const ui = readUIMetadata(pn.metadata, NodeType.PYTHON, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: pn.id,
         category: 'web',
         type: NodeType.PYTHON,
         node_name: pn.node_name,
@@ -166,7 +166,7 @@ function buildPythonNode(pn: PythonNode, idx: number): PythonNodeModel {
         },
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: pn.input_map ?? {},
@@ -196,14 +196,15 @@ function buildLLMNode(ln: GetLLMNodeRequest, idx: number): LLMNodeModel {
         is_visible: true,
     };
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: ln.id,
         category: 'web',
         type: NodeType.LLM,
         node_name: ln.node_name,
         data: configDetail,
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: ln.input_map ?? {},
@@ -215,14 +216,15 @@ function buildLLMNode(ln: GetLLMNodeRequest, idx: number): LLMNodeModel {
 function buildFileExtractorNode(n: GetFileExtractorNodeRequest, idx: number): FileExtractorNodeModel {
     const ui = readUIMetadata(n.metadata, NodeType.FILE_EXTRACTOR, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: n.id,
         category: 'web',
         type: NodeType.FILE_EXTRACTOR,
         node_name: n.node_name,
         data: undefined,
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: n.input_map ?? {},
@@ -234,14 +236,15 @@ function buildFileExtractorNode(n: GetFileExtractorNodeRequest, idx: number): Fi
 function buildAudioToTextNode(n: GetAudioToTextNodeRequest, idx: number): AudioToTextNodeModel {
     const ui = readUIMetadata(n.metadata, NodeType.AUDIO_TO_TEXT, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: n.id,
         category: 'web',
         type: NodeType.AUDIO_TO_TEXT,
         node_name: n.node_name,
         data: undefined,
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: n.input_map ?? {},
@@ -260,27 +263,29 @@ function buildSubGraphNode(sn: SubGraphNode, idx: number): SubGraphNodeModel {
         tags: [],
     };
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: sn.id,
         category: 'web',
         type: NodeType.SUBGRAPH,
         node_name: sn.node_name,
         data: subgraphDetail,
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: sn.input_map ?? {},
         output_variable_path: sn.output_variable_path,
         size: ui.size,
-        isBlocked: (ui as any).isBlocked ?? false,
+        isBlocked: false,
     };
 }
 
 function buildWebhookTriggerNode(wn: GetWebhookTriggerNodeRequest, idx: number): WebhookTriggerNodeModel {
     const ui = readUIMetadata(wn.metadata, NodeType.WEBHOOK_TRIGGER, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: wn.id,
         category: 'web',
         type: NodeType.WEBHOOK_TRIGGER,
         node_name: wn.node_name,
@@ -295,7 +300,7 @@ function buildWebhookTriggerNode(wn: GetWebhookTriggerNodeRequest, idx: number):
         },
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: wn.input_map ?? {},
@@ -307,7 +312,8 @@ function buildWebhookTriggerNode(wn: GetWebhookTriggerNodeRequest, idx: number):
 function buildTelegramTriggerNode(tn: GetTelegramTriggerNodeRequest, idx: number): TelegramTriggerNodeModel {
     const ui = readUIMetadata(tn.metadata, NodeType.TELEGRAM_TRIGGER, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: tn.id,
         category: 'web',
         type: NodeType.TELEGRAM_TRIGGER,
         node_name: tn.node_name,
@@ -317,7 +323,7 @@ function buildTelegramTriggerNode(tn: GetTelegramTriggerNodeRequest, idx: number
         },
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: {} as Record<string, any>,
@@ -329,14 +335,38 @@ function buildTelegramTriggerNode(tn: GetTelegramTriggerNodeRequest, idx: number
 function buildEndNode(en: EndNode, idx: number): EndNodeModel {
     const ui = readUIMetadata(en.metadata, NodeType.END, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: en.id,
         category: 'web',
         type: NodeType.END,
         node_name: en.node_name ?? '__end_node__',
         data: { output_map: en.output_map ?? {} },
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
+        color: ui.color,
+        icon: ui.icon,
+        input_map: {},
+        output_variable_path: null,
+        size: ui.size,
+    };
+}
+
+function buildNoteNode(nn: NoteNode, idx: number): NoteNodeModel {
+    const ui = readUIMetadata(nn.metadata, NodeType.NOTE, idx);
+    return {
+        id: uuidv4(),
+        backendId: nn.id,
+        category: 'web',
+        type: NodeType.NOTE,
+        node_name: nn.node_name,
+        data: {
+            content: nn.content,
+            backgroundColor: nn.metadata?.['backgroundColor'] ?? undefined,
+        },
+        position: ui.position,
+        ports: null,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: {},
@@ -348,7 +378,8 @@ function buildEndNode(en: EndNode, idx: number): EndNodeModel {
 function buildDecisionTableNode(dn: GetDecisionTableNodeRequest, idx: number): DecisionTableNodeModel {
     const ui = readUIMetadata(dn.metadata, NodeType.TABLE, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: dn.id,
         category: 'web',
         type: NodeType.TABLE,
         node_name: dn.node_name,
@@ -374,7 +405,7 @@ function buildDecisionTableNode(dn: GetDecisionTableNodeRequest, idx: number): D
         },
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: {} as Record<string, any>,
@@ -386,7 +417,8 @@ function buildDecisionTableNode(dn: GetDecisionTableNodeRequest, idx: number): D
 function buildConditionalEdgeNode(ce: ConditionalEdge, idx: number): EdgeNodeModel {
     const ui = readUIMetadata(ce.metadata, NodeType.EDGE, idx);
     return {
-        id: ui.client_id,
+        id: uuidv4(),
+        backendId: ce.id,
         category: 'web',
         type: NodeType.EDGE,
         node_name: ce.source + '_edge',
@@ -403,7 +435,7 @@ function buildConditionalEdgeNode(ce: ConditionalEdge, idx: number): EdgeNodeMod
         },
         position: ui.position,
         ports: null,
-        parentId: ui.parentId,
+        parentId: null,
         color: ui.color,
         icon: ui.icon,
         input_map: ce.input_map ?? {},
@@ -478,7 +510,6 @@ function buildEdgeConnections(
         const sourceId = nameToId.get(edge.start_key);
         const targetId = nameToId.get(edge.end_key);
         if (!sourceId || !targetId) {
-            console.warn(`[loadGraph] Could not resolve edge: ${edge.start_key} -> ${edge.end_key}`);
             continue;
         }
         const sourceNode = nodeByName.get(edge.start_key);
@@ -631,8 +662,7 @@ function buildDecisionTableConnections(
  * Build a complete FlowModel from a GraphDto by reconstructing nodes from
  * the backend node lists instead of relying on `graph.metadata`.
  *
- * Groups, notes, and any connections involving them are still read from
- * `graph.metadata` because the backend has no dedicated tables for them.
+ * All node types (including notes) are now loaded from dedicated backend tables.
  */
 export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     let idx = 0;
@@ -645,14 +675,15 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     const fileExtractorNodes = (graph.file_extractor_node_list ?? []).map(n => buildFileExtractorNode(n, idx++));
     const audioToTextNodes = (graph.audio_transcription_node_list ?? []).map(n => buildAudioToTextNode(n, idx++));
     const subGraphNodes = (graph.subgraph_node_list ?? []).map(sn => buildSubGraphNode(sn, idx++));
+    const noteNodes = (graph.note_node_list ?? []).map(nn => buildNoteNode(nn, idx++));
     const webhookTriggerNodes = (graph.webhook_trigger_node_list ?? []).map(wn => buildWebhookTriggerNode(wn, idx++));
     const telegramTriggerNodes = (graph.telegram_trigger_node_list ?? []).map(tn => buildTelegramTriggerNode(tn, idx++));
     const endNodes = (graph.end_node_list ?? []).map(en => buildEndNode(en, idx++));
     const decisionTableNodes = (graph.decision_table_node_list ?? []).map(dn => buildDecisionTableNode(dn, idx++));
     const conditionalEdgeNodes = (graph.conditional_edge_list ?? []).map(ce => buildConditionalEdgeNode(ce, idx++));
 
-    // Collect all backend-driven nodes
-    const backendNodes: NodeModel[] = [
+    // ── 2. Combine all nodes ─────────────────────────────────────────────
+    const allNodes: NodeModel[] = [
         ...startNodes,
         ...crewNodes,
         ...pythonNodes,
@@ -660,6 +691,7 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
         ...fileExtractorNodes,
         ...audioToTextNodes,
         ...subGraphNodes,
+        ...noteNodes,
         ...webhookTriggerNodes,
         ...telegramTriggerNodes,
         ...endNodes,
@@ -667,60 +699,14 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
         ...conditionalEdgeNodes,
     ];
 
-    // ── 2. Groups, notes, and connections from graph.metadata ────────────
-    const metaGroups: GroupNodeModel[] = graph.metadata?.groups ?? [];
-    const metaNodes: NodeModel[] = graph.metadata?.nodes ?? [];
-    const metaConnections: ConnectionModel[] = graph.metadata?.connections ?? [];
-
-    // Keep notes from metadata (they're UI-only)
-    const noteNodes: NoteNodeModel[] = metaNodes.filter(
-        (n): n is NoteNodeModel => n.type === NodeType.NOTE
-    );
-
-    // Also keep group nodes from metadata
-    const groupNodes: GroupNodeModel[] = metaGroups;
-
-    // Collect IDs of notes and groups (for filtering connections)
-    const uiOnlyNodeIds = new Set<string>([
-        ...noteNodes.map(n => n.id),
-        ...groupNodes.map(g => g.id),
-    ]);
-
-    // Connections that involve notes or groups come from metadata
-    const uiOnlyConnections = metaConnections.filter(
-        c => uiOnlyNodeIds.has(c.sourceNodeId) || uiOnlyNodeIds.has(c.targetNodeId)
-    );
-
-    // ── 3. Resolve parentId for backend nodes whose parent is a group ────
-    // The metadata stores parentId as the group's UUID, which is stable in
-    // graph.metadata.  For backend nodes, readUIMetadata already reads
-    // parentId from the node's metadata field.  We also resolve
-    // parentGroupName → UUID if the group exists.
-    const groupNameToId = new Map<string, string>();
-    for (const g of groupNodes) {
-        groupNameToId.set(g.node_name, g.id);
-    }
-
-    for (const node of backendNodes) {
-        if (!(node as any).parentId && (node as any).__parentGroupName) {
-            const resolvedId = groupNameToId.get((node as any).__parentGroupName);
-            if (resolvedId) {
-                (node as any).parentId = resolvedId;
-            }
-        }
-    }
-
-    // ── 4. Combine all nodes ─────────────────────────────────────────────
-    const allNodes: NodeModel[] = [...backendNodes, ...noteNodes];
-
-    // ── 5. Build name→ID and name→node maps ─────────────────────────────
+    // ── 3. Build name→ID and name→node maps ─────────────────────────────
     const nameToId = buildNameToIdMap(allNodes);
     const nodeByName = new Map<string, NodeModel>();
     for (const n of allNodes) {
         nodeByName.set(n.node_name, n);
     }
 
-    // ── 6. Build connections from backend edge data ──────────────────────
+    // ── 4. Build connections from backend edge data ──────────────────────
     const edgeConnections = buildEdgeConnections(
         graph.edge_list ?? [],
         nameToId,
@@ -741,25 +727,15 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
         graph.decision_table_node_list ?? []
     );
 
-    // ── 7. Combine all connections ───────────────────────────────────────
+    // ── 5. Combine all connections ───────────────────────────────────────
     const allConnections: ConnectionModel[] = [
         ...edgeConnections,
         ...conditionalEdgeConnections,
         ...decisionTableConnections,
-        ...uiOnlyConnections,
     ];
-
-    console.log('[loadGraph] Built FlowModel from backend data:', {
-        nodes: allNodes.length,
-        connections: allConnections.length,
-        groups: groupNodes.length,
-        notes: noteNodes.length,
-    });
 
     return {
         nodes: allNodes,
         connections: allConnections,
-        groups: groupNodes,
     };
 }
-

@@ -61,13 +61,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { ToastService } from '../../../../services/notifications/toast.service';
 import { ConnectionModel } from '../../../../visual-programming/core/models/connection.model';
 import { FlowModel } from '../../../../visual-programming/core/models/flow.model';
-import { GroupNodeModel } from '../../../../visual-programming/core/models/group.model';
 import {
     NodeModel,
     StartNodeModel,
 } from '../../../../visual-programming/core/models/node.model';
 import { NodeType } from '../../../../visual-programming/core/enums/node-type';
 import { GraphUpdateService } from '../../../../visual-programming/services/graph/save-graph.service';
+import { CreatedNodeMapping } from '../../../../visual-programming/services/graph/save-graph.types';
 import { Dialog as CdkDialog } from '@angular/cdk/dialog';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
@@ -128,7 +128,6 @@ export class FlowVisualProgrammingComponent
     public ngOnInit(): void {
         const id = Number(this.route.snapshot.paramMap.get('id'));
         if (!id) {
-            console.warn('Invalid graph ID.');
             return;
         }
 
@@ -143,10 +142,6 @@ export class FlowVisualProgrammingComponent
                     this.flowApiService.getGraphsLight().pipe(
                         map((flows) => ({ graph, flows })),
                         catchError((err) => {
-                            console.error(
-                                'Error fetching flows for subgraph validation:',
-                                err
-                            );
                             return of({ graph, flows: [] as GraphDto[] });
                         })
                     )
@@ -156,8 +151,6 @@ export class FlowVisualProgrammingComponent
             )
             .subscribe({
                 next: ({ graph, flows }) => {
-                    console.log('view flow page fetched graph:', graph);
-
                     this.graph = graph;
 
                     // Build the FlowModel dynamically from backend node/edge lists
@@ -186,8 +179,7 @@ export class FlowVisualProgrammingComponent
                         );
                     }
                 },
-                error: (err) => {
-                    console.error('Error fetching graph:', err);
+                error: () => {
                     this.toastService.error('Failed to load graph');
                 },
             });
@@ -207,20 +199,14 @@ export class FlowVisualProgrammingComponent
             switchMap(() => new Promise((resolve) => setTimeout(resolve, 200))),
             switchMap(() => {
                 const flowState: FlowModel = this.flowService.getFlowState();
-                console.log(
-                    'flow state that i got from service on saveflow',
-                    flowState
-                );
 
                 const startNodeInFlow = flowState.nodes.find(
                     (node) => node.type === NodeType.START
                 ) as StartNodeModel | undefined;
 
                 if (!startNodeInFlow) {
-                    console.log('no start node in flow');
                     return this.saveGraphDirectly(flowState, showNotif);
                 }
-                console.log('save graph with start node');
                 return this.saveGraphWithStartNode(
                     flowState,
                     startNodeInFlow,
@@ -264,6 +250,7 @@ export class FlowVisualProgrammingComponent
             ),
             map((result) => {
                 this.graph = result.graph;
+                this.patchBackendIds(result.createdMappings);
                 this.initialState = flowState;
                 if (showNotif) {
                     this.toastService.success('Graph saved successfully');
@@ -294,6 +281,7 @@ export class FlowVisualProgrammingComponent
             takeUntil(this.destroy$),
             map((result) => {
                 this.graph = result.graph;
+                this.patchBackendIds(result.createdMappings);
                 this.initialState = flowState;
                 if (showNotif) {
                     this.toastService.success('Graph saved successfully');
@@ -306,7 +294,6 @@ export class FlowVisualProgrammingComponent
                         err?.error?.error || 'Unknown error'
                     }`
                 );
-                console.error('Error saving graph:', err);
                 return of(false);
             }),
             finalize(() => {
@@ -337,6 +324,7 @@ export class FlowVisualProgrammingComponent
                         .pipe(
                             tap((result) => {
                                 this.graph = result.graph;
+                                this.patchBackendIds(result.createdMappings);
                                 this.initialState = flowState;
                             })
                         );
@@ -370,11 +358,34 @@ export class FlowVisualProgrammingComponent
                     ),
                     tap((result) => {
                         this.graph = result.graph;
+                        this.patchBackendIds(result.createdMappings);
                         this.initialState = flowState;
                     })
                 );
             })
         );
+    }
+
+    /**
+     * After a save, newly created nodes get a backend ID from the POST response.
+     * This patches the UI nodes in the flow service so that the next save
+     * recognises them as existing (update) rather than new (delete + create).
+     */
+    private patchBackendIds(mappings: CreatedNodeMapping[]): void {
+        if (!mappings || mappings.length === 0) return;
+
+        const mappingMap = new Map(mappings.map(m => [m.uiNodeId, m.backendId]));
+
+        const updatedNodes = this.flowService.nodes()
+            .filter(node => mappingMap.has(node.id))
+            .map(node => ({
+                ...node,
+                backendId: mappingMap.get(node.id)!,
+            }));
+
+        if (updatedNodes.length > 0) {
+            this.flowService.updateNodesInBatch(updatedNodes as NodeModel[]);
+        }
     }
 
     public handleRunFlow(): void {
@@ -417,7 +428,6 @@ export class FlowVisualProgrammingComponent
                             error?.error?.error || 'Unknown error'
                         }`
                     );
-                    console.error('Failed to run graph:', error);
                 },
             });
     }
@@ -477,7 +487,6 @@ export class FlowVisualProgrammingComponent
         try {
             await navigator.clipboard.writeText(text);
         } catch (err) {
-            console.error('Failed to copy to clipboard:', err);
             // Fallback for older browsers
             const textArea = document.createElement('textarea');
             textArea.value = text;
@@ -517,7 +526,6 @@ export class FlowVisualProgrammingComponent
                             return of(false);
                         }
                         if (result === 'save') {
-                            console.log('save flow');
                             return of(true);
                         }
                         if (result === 'dont-save') {

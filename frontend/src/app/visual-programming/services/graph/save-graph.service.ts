@@ -19,9 +19,9 @@ import { TelegramTriggerNodeService } from '../../../pages/flows-page/components
 import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
 import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
 import { DecisionTableNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/decision-table-node.service';
+import { NoteNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/note-node.service';
 
-import { NodeType } from '../../core/enums/node-type';
-import { NodeDiff, GraphDiff } from './save-graph.types';
+import { NodeDiff, GraphDiff, NodeDiffResult, CreatedNodeMapping } from './save-graph.types';
 import {
     extractPreviousState,
     extractNewState,
@@ -38,6 +38,7 @@ import {
     buildEdgePayload,
     buildEndNodePayload,
     buildDecisionTablePayload,
+    buildNoteNodePayload,
 } from './save-graph.diff';
 
 @Injectable({
@@ -58,6 +59,7 @@ export class GraphUpdateService {
         private endNodeService: EndNodeService,
         private subGraphNodeService: SubGraphNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
+        private noteNodeService: NoteNodeService,
         private toastService: ToastService
     ) {}
 
@@ -67,25 +69,59 @@ export class GraphUpdateService {
 
     /**
      * Executes delete / create / update operations from a diff in parallel.
+     *
+     * Returns `NodeDiffResult` which includes `createdMappings` — a list of
+     * `{ uiNodeId, backendId }` pairs so callers can patch UI nodes with their
+     * newly-assigned backend IDs after a POST.
+     *
      * @param diff - The diff result containing nodes to delete, create, and update
      * @param deleteOperation - Function that performs HTTP DELETE for a backend node
      * @param createOperation - Function that performs HTTP POST for a UI node
      * @param updateOperation - Function that performs HTTP PUT for a UI node (takes backendId + UI node)
+     * @param getUINodeId - Extracts the UI node's UUID (`id`) from the generic TUI so we can
+     *                      map the POST response's backend `id` back to the correct UI node.
      */
     private executeNodeDiff<TBackend extends { id: number }, TUI>(
         diff: NodeDiff<TBackend, TUI>,
         deleteOperation: (node: TBackend) => Observable<any>,
         createOperation: (node: TUI) => Observable<any>,
-        updateOperation: (backendId: number, node: TUI) => Observable<any>
-    ): Observable<any[]> {
-        const operations: Observable<any>[] = [
-            ...diff.toDelete.map(n => deleteOperation(n).pipe(catchError(err => throwError(() => err)))),
-            ...diff.toCreate.map(n => createOperation(n).pipe(catchError(err => throwError(() => err)))),
+        updateOperation: (backendId: number, node: TUI) => Observable<any>,
+        getUINodeId: (node: TUI) => string
+    ): Observable<NodeDiffResult> {
+        const operations: Observable<{ type: string; uiNodeId?: string; result: any }>[] = [
+            ...diff.toDelete.map(n =>
+                deleteOperation(n).pipe(
+                    map(r => ({ type: 'delete', result: r })),
+                    catchError(err => throwError(() => err))
+                )
+            ),
+            ...diff.toCreate.map(n =>
+                createOperation(n).pipe(
+                    map(r => ({ type: 'create', uiNodeId: getUINodeId(n), result: r })),
+                    catchError(err => throwError(() => err))
+                )
+            ),
             ...diff.toUpdate.map(({ backend, ui }) =>
-                updateOperation(backend.id, ui).pipe(catchError(err => throwError(() => err)))
+                updateOperation(backend.id, ui).pipe(
+                    map(r => ({ type: 'update', result: r })),
+                    catchError(err => throwError(() => err))
+                )
             ),
         ];
-        return operations.length ? forkJoin(operations) : of([]);
+
+        if (!operations.length) {
+            return of({ results: [], createdMappings: [] });
+        }
+
+        return forkJoin(operations).pipe(
+            map(results => {
+                const createdMappings: CreatedNodeMapping[] = results
+                    .filter(r => r.type === 'create' && r.uiNodeId && r.result?.id != null)
+                    .map(r => ({ uiNodeId: r.uiNodeId!, backendId: r.result.id }));
+
+                return { results, createdMappings };
+            })
+        );
     }
 
     private applyEdgeDiff(
@@ -106,34 +142,12 @@ export class GraphUpdateService {
 
 
     /**
-     * Extracts only UI-only elements (groups, notes, and their connections)
-     * for storage in `graph.metadata`.  Backend-managed nodes and their
-     * connections are persisted in their own tables.
+     * Extracts only truly UI-only elements for storage in `graph.metadata`.
+     * Notes are now backend-managed, so metadata only stores an empty state
+     * (kept for backwards compatibility / future UI-only nodes).
      */
-    private buildGraphMetadata(flowState: FlowModel): FlowModel {
-        // Collect groups and notes (UI-only node types)
-        const noteNodes = flowState.nodes
-            .filter(n => n.type === NodeType.NOTE)
-            .map(n => ({ ...n, ports: null }));
-
-        const groups = flowState.groups.map(g => ({ ...g, ports: null }));
-
-        // IDs of UI-only nodes (notes + groups)
-        const uiOnlyIds = new Set<string>([
-            ...noteNodes.map(n => n.id),
-            ...groups.map(g => g.id),
-        ]);
-
-        // Only keep connections that involve at least one UI-only node
-        const uiOnlyConnections = flowState.connections.filter(
-            c => uiOnlyIds.has(c.sourceNodeId) || uiOnlyIds.has(c.targetNodeId)
-        );
-
-        return {
-            nodes: noteNodes,
-            connections: uiOnlyConnections,
-            groups,
-        };
+    private buildGraphMetadata(_flowState: FlowModel): Partial<FlowModel> {
+        return { nodes: [], connections: [] };
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -145,11 +159,9 @@ export class GraphUpdateService {
         graph: GraphDto
     ): Observable<{
         graph: GraphDto;
-        updatedNodes: Record<string, any[]>;
+        updatedNodes: Record<string, any>;
+        createdMappings: CreatedNodeMapping[];
     }> {
-        console.log('GraphUpdateService: Saving graph:', graph);
-        console.log('GraphUpdateService: Flow state:', flowState);
-
         // ── 1. Extract what is currently saved in the backend ────────────────
         const previousState = extractPreviousState(graph);
 
@@ -157,52 +169,7 @@ export class GraphUpdateService {
         const newState = extractNewState(flowState);
 
         // ── 3. Get the diff (pure, no side effects) ───────────────────────────
-        console.log('[GraphUpdateService] Computing diff...');
-        console.log('[GraphUpdateService] Previous state counts:', {
-            crew: previousState.crewNodes.length,
-            python: previousState.pythonNodes.length,
-            llm: previousState.llmNodes.length,
-            fileExtractor: previousState.fileExtractorNodes.length,
-            audioToText: previousState.audioToTextNodes.length,
-            subGraph: previousState.subGraphNodes.length,
-            webhook: previousState.webhookTriggerNodes.length,
-            telegram: previousState.telegramTriggerNodes.length,
-            conditionalEdges: previousState.conditionalEdges.length,
-            edges: previousState.edges.length,
-            endNodes: previousState.endNodes.length,
-            decisionTable: previousState.decisionTableNodes.length,
-        });
-        console.log('[GraphUpdateService] New state counts:', {
-            crew: newState.crewNodes.length,
-            python: newState.pythonNodes.length,
-            llm: newState.llmNodes.length,
-            fileExtractor: newState.fileExtractorNodes.length,
-            audioToText: newState.audioToTextNodes.length,
-            subGraph: newState.subGraphNodes.length,
-            webhook: newState.webhookTriggerNodes.length,
-            telegram: newState.telegramTriggerNodes.length,
-            conditionalEdges: newState.conditionalEdges.length,
-            edges: newState.edges.length,
-            endNodes: newState.endNodes.length,
-            decisionTable: newState.decisionTableNodes.length,
-        });
-
         const diff = getGraphDiff(previousState, newState);
-
-        console.log('[GraphUpdateService] Diff result:', {
-            crew: `${diff.crewNodes.toDelete.length}D/${diff.crewNodes.toCreate.length}C/${diff.crewNodes.toUpdate.length}U`,
-            python: `${diff.pythonNodes.toDelete.length}D/${diff.pythonNodes.toCreate.length}C/${diff.pythonNodes.toUpdate.length}U`,
-            llm: `${diff.llmNodes.toDelete.length}D/${diff.llmNodes.toCreate.length}C/${diff.llmNodes.toUpdate.length}U`,
-            fileExtractor: `${diff.fileExtractorNodes.toDelete.length}D/${diff.fileExtractorNodes.toCreate.length}C/${diff.fileExtractorNodes.toUpdate.length}U`,
-            audioToText: `${diff.audioToTextNodes.toDelete.length}D/${diff.audioToTextNodes.toCreate.length}C/${diff.audioToTextNodes.toUpdate.length}U`,
-            subGraph: `${diff.subGraphNodes.toDelete.length}D/${diff.subGraphNodes.toCreate.length}C/${diff.subGraphNodes.toUpdate.length}U`,
-            webhook: `${diff.webhookTriggerNodes.toDelete.length}D/${diff.webhookTriggerNodes.toCreate.length}C/${diff.webhookTriggerNodes.toUpdate.length}U`,
-            telegram: `${diff.telegramTriggerNodes.toDelete.length}D/${diff.telegramTriggerNodes.toCreate.length}C/${diff.telegramTriggerNodes.toUpdate.length}U`,
-            conditionalEdges: `${diff.conditionalEdges.toDelete.length}D/${diff.conditionalEdges.toCreate.length}C/${diff.conditionalEdges.toUpdate.length}U`,
-            edges: `${diff.edges.toDelete.length}D/${diff.edges.toCreate.length}C`,
-            endNodes: `${diff.endNodes.toDelete.length}D/${diff.endNodes.toCreate.length}C/${diff.endNodes.toUpdate.length}U`,
-            decisionTable: `${diff.decisionTableNodes.toDelete.length}D/${diff.decisionTableNodes.toCreate.length}C/${diff.decisionTableNodes.toUpdate.length}U`,
-        });
 
         const { id: graphId } = graph;
         const allNodes = newState.allNodes;
@@ -212,88 +179,124 @@ export class GraphUpdateService {
             crewNodes: this.executeNodeDiff(
                 diff.crewNodes,
                 n => this.crewNodeService.deleteCrewNode(n.id.toString()),
-                n => this.crewNodeService.createCrewNode(buildCrewPayload(n, graphId, allNodes)),
-                (id, n) => this.crewNodeService.updateCrewNode(id, buildCrewPayload(n, graphId, allNodes))
+                n => this.crewNodeService.createCrewNode(buildCrewPayload(n, graphId)),
+                (id, n) => this.crewNodeService.updateCrewNode(id, buildCrewPayload(n, graphId)),
+                n => n.id
             ),
             pythonNodes: this.executeNodeDiff(
                 diff.pythonNodes,
                 n => this.pythonNodeService.deletePythonNode(n.id.toString()),
-                n => this.pythonNodeService.createPythonNode(buildPythonPayload(n, graphId, allNodes)),
-                (id, n) => this.pythonNodeService.updatePythonNode(id, buildPythonPayload(n, graphId, allNodes))
+                n => this.pythonNodeService.createPythonNode(buildPythonPayload(n, graphId)),
+                (id, n) => this.pythonNodeService.updatePythonNode(id, buildPythonPayload(n, graphId)),
+                n => n.id
             ),
             llmNodes: this.executeNodeDiff(
                 diff.llmNodes,
                 n => this.llmNodeService.deleteLLMNode(n.id.toString()),
-                n => this.llmNodeService.createLLMNode(buildLLMPayload(n, graphId, allNodes)),
-                (id, n) => this.llmNodeService.updateLLMNode(id, buildLLMPayload(n, graphId, allNodes))
+                n => this.llmNodeService.createLLMNode(buildLLMPayload(n, graphId)),
+                (id, n) => this.llmNodeService.updateLLMNode(id, buildLLMPayload(n, graphId)),
+                n => n.id
             ),
             fileExtractorNodes: this.executeNodeDiff(
                 diff.fileExtractorNodes,
                 n => this.fileExtractorService.deleteFileExtractorNode(n.id.toString()),
-                n => this.fileExtractorService.createFileExtractorNode(buildFileExtractorPayload(n, graphId, allNodes)),
-                (id, n) => this.fileExtractorService.updateFileExtractorNode(id, buildFileExtractorPayload(n, graphId, allNodes))
+                n => this.fileExtractorService.createFileExtractorNode(buildFileExtractorPayload(n, graphId)),
+                (id, n) => this.fileExtractorService.updateFileExtractorNode(id, buildFileExtractorPayload(n, graphId)),
+                n => n.id
             ),
             audioToTextNodes: this.executeNodeDiff(
                 diff.audioToTextNodes,
                 n => this.audioToTextService.deleteAudioToTextNode(n.id.toString()),
-                n => this.audioToTextService.createAudioToTextNode(buildAudioToTextPayload(n, graphId, allNodes)),
-                (id, n) => this.audioToTextService.updateAudioToTextNode(id, buildAudioToTextPayload(n, graphId, allNodes))
+                n => this.audioToTextService.createAudioToTextNode(buildAudioToTextPayload(n, graphId)),
+                (id, n) => this.audioToTextService.updateAudioToTextNode(id, buildAudioToTextPayload(n, graphId)),
+                n => n.id
             ),
             subGraphNodes: this.executeNodeDiff(
                 diff.subGraphNodes,
                 n => this.subGraphNodeService.deleteSubGraphNode(n.id),
-                n => this.subGraphNodeService.createSubGraphNode(buildSubGraphPayload(n, graphId, allNodes)),
-                (id, n) => this.subGraphNodeService.updateSubGraphNode(id, buildSubGraphPayload(n, graphId, allNodes))
+                n => this.subGraphNodeService.createSubGraphNode(buildSubGraphPayload(n, graphId)),
+                (id, n) => this.subGraphNodeService.updateSubGraphNode(id, buildSubGraphPayload(n, graphId)),
+                n => n.id
             ),
             webhookTriggerNodes: this.executeNodeDiff(
                 diff.webhookTriggerNodes,
                 n => this.webhookTriggerService.deleteWebhookTriggerNode(n.id.toString()),
-                n => this.webhookTriggerService.createWebhookTriggerNode(buildWebhookPayload(n, graphId, allNodes)),
-                (id, n) => this.webhookTriggerService.updateWebhookTriggerNode(id, buildWebhookPayload(n, graphId, allNodes))
+                n => this.webhookTriggerService.createWebhookTriggerNode(buildWebhookPayload(n, graphId)),
+                (id, n) => this.webhookTriggerService.updateWebhookTriggerNode(id, buildWebhookPayload(n, graphId)),
+                n => n.id
             ),
             telegramTriggerNodes: this.executeNodeDiff(
                 diff.telegramTriggerNodes,
                 n => this.telegramTriggerService.deleteTelegramTriggerNode(n.id),
-                n => this.telegramTriggerService.createTelegramTriggerNode(buildTelegramPayload(n, graphId, allNodes)),
-                (id, n) => this.telegramTriggerService.updateTelegramTriggerNode(id, buildTelegramPayload(n, graphId, allNodes))
+                n => this.telegramTriggerService.createTelegramTriggerNode(buildTelegramPayload(n, graphId)),
+                (id, n) => this.telegramTriggerService.updateTelegramTriggerNode(id, buildTelegramPayload(n, graphId)),
+                n => n.id
             ),
             conditionalEdges: this.executeNodeDiff(
                 diff.conditionalEdges,
                 n => this.conditionalEdgeService.deleteConditionalEdge(n.id),
-                n => this.conditionalEdgeService.createConditionalEdge(buildCondEdgePayload(n, graphId, allNodes)),
-                (id, n) => this.conditionalEdgeService.updateConditionalEdge(id, buildCondEdgePayload(n, graphId, allNodes))
+                n => this.conditionalEdgeService.createConditionalEdge(buildCondEdgePayload(n, graphId)),
+                (id, n) => this.conditionalEdgeService.updateConditionalEdge(id, buildCondEdgePayload(n, graphId)),
+                n => n.edgeNode.id
             ),
             decisionTableNodes: this.executeNodeDiff(
                 diff.decisionTableNodes,
                 n => this.decisionTableNodeService.deleteDecisionTableNode(n.id.toString()),
                 n => this.decisionTableNodeService.createDecisionTableNode(buildDecisionTablePayload(n, graphId, allNodes)),
-                (id, n) => this.decisionTableNodeService.updateDecisionTableNode(id, buildDecisionTablePayload(n, graphId, allNodes))
+                (id, n) => this.decisionTableNodeService.updateDecisionTableNode(id, buildDecisionTablePayload(n, graphId, allNodes)),
+                n => n.id
             ),
             edges: this.applyEdgeDiff(diff.edges, graphId),
             endNodes: this.executeNodeDiff(
                 diff.endNodes,
                 n => this.endNodeService.deleteEndNode(n.id),
-                n => this.endNodeService.createEndNode(buildEndNodePayload(n, graphId, allNodes)),
-                (id, n) => this.endNodeService.updateEndNode(id, buildEndNodePayload(n, graphId, allNodes))
+                n => this.endNodeService.createEndNode(buildEndNodePayload(n, graphId)),
+                (id, n) => this.endNodeService.updateEndNode(id, buildEndNodePayload(n, graphId)),
+                n => n.id
+            ),
+            noteNodes: this.executeNodeDiff(
+                diff.noteNodes,
+                n => this.noteNodeService.deleteNoteNode(n.id.toString()),
+                n => this.noteNodeService.createNoteNode(buildNoteNodePayload(n, graphId)),
+                (id, n) => this.noteNodeService.updateNoteNode(id, buildNoteNodePayload(n, graphId)),
+                n => n.id
             ),
         }).pipe(
-            // ── 5. After all nodes are synced, update the graph metadata ──────
+            // ── 5. Collect all created node mappings (uiNodeId → backendId) ───
             switchMap(results => {
+                // Gather createdMappings from every node-type diff result
+                const allCreatedMappings: CreatedNodeMapping[] = [
+                    ...results.crewNodes.createdMappings,
+                    ...results.pythonNodes.createdMappings,
+                    ...results.llmNodes.createdMappings,
+                    ...results.fileExtractorNodes.createdMappings,
+                    ...results.audioToTextNodes.createdMappings,
+                    ...results.subGraphNodes.createdMappings,
+                    ...results.webhookTriggerNodes.createdMappings,
+                    ...results.telegramTriggerNodes.createdMappings,
+                    ...results.conditionalEdges.createdMappings,
+                    ...results.decisionTableNodes.createdMappings,
+                    ...results.endNodes.createdMappings,
+                    ...results.noteNodes.createdMappings,
+                ];
+
+                // ── 6. Update the graph metadata ──────────────────────────────
                 const updateRequest: UpdateGraphDtoRequest = {
-                    id: graph.id,
-                    name: graph.name,
-                    description: graph.description,
+                        id: graph.id,
+                        name: graph.name,
+                        description: graph.description,
                     metadata: this.buildGraphMetadata(flowState),
                 };
 
-                console.log('GraphUpdateService: Sending graph metadata update', updateRequest);
-
                 return this.graphService.updateGraph(graph.id, updateRequest).pipe(
                     map(updatedGraph => {
-                        console.log('GraphUpdateService: Graph saved successfully', updatedGraph);
-                        return { graph: updatedGraph, updatedNodes: results };
-                    })
-                );
+                                return {
+                                    graph: updatedGraph,
+                            updatedNodes: results,
+                            createdMappings: allCreatedMappings,
+                                };
+                            })
+                        );
             }),
             catchError(err => throwError(() => err))
         );

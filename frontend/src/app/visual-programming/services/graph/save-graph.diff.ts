@@ -27,6 +27,7 @@ import {
     EndNodeModel,
     EdgeNodeModel,
     DecisionTableNodeModel,
+    NoteNodeModel,
     NodeModel,
 } from '../../core/models/node.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
@@ -45,6 +46,7 @@ import {
     CreateConditionGroupRequest,
     CreateDecisionTableNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
+import { NoteNode, CreateNoteNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
 
 import {
     NodeDiff,
@@ -53,6 +55,7 @@ import {
     GraphDiff,
     ResolvedConditionalEdge,
     NodeUIMetadata,
+    getUIMetadataForComparison,
 } from './save-graph.types';
 import {
     getCrewNodeForComparisonFromBackend,
@@ -77,102 +80,80 @@ import {
     getDecisionTableNodeForComparisonFromUI,
     getEndNodeForComparisonFromBackend,
     getEndNodeForComparisonFromUI,
+    getNoteNodeForComparisonFromBackend,
+    getNoteNodeForComparisonFromUI,
 } from './save-graph.comparators';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// UI metadata extraction
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Extracts UI-specific metadata from a node model for storage in the backend's `metadata` JSONField.
- * Resolves `parentId` (UUID) to `parentGroupName` using the full node list.
- */
-export function extractUIMetadata(node: BaseNodeModel, allNodes: NodeModel[]): NodeUIMetadata {
-    let parentGroupName: string | null = null;
-    if (node.parentId) {
-        const parentGroup = allNodes.find(n => n.id === node.parentId);
-        parentGroupName = parentGroup ? parentGroup.node_name : null;
-    }
-
-    return {
-        client_id: node.id,
-        position: node.position,
-        color: node.color,
-        icon: node.icon,
-        size: node.size,
-        parentId: node.parentId,
-        parentGroupName,
-    };
-}
+// getUIMetadataForComparison is imported from save-graph.types.ts
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Generic diff utility
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Diffs two lists by a string key using deep equality (lodash isEqual).
- * Returns three buckets: nodes to delete, create, and update.
+ * Diffs two lists by matching UI nodes to backend nodes via `backendId`.
+ *
+ * - UI node with `backendId != null` that matches a backend `id` → compare for update
+ * - UI node with `backendId == null` → create (new node)
+ * - Backend node whose `id` wasn't claimed by any UI node → delete
+ *
+ * Uses deep equality (lodash isEqual) to decide whether a matched pair
+ * actually changed and needs an update request.
  */
 export function diffByKey<TBackend extends { id: number }, TUI>(
     backendNodes: TBackend[],
     uiNodes: TUI[],
-    getBackendKey: (node: TBackend) => string,
-    getUIKey: (node: TUI) => string,
+    /** Extract the backend integer ID from a UI node (typically `n.backendId`). Returns null for new nodes. */
+    getUIBackendId: (node: TUI) => number | null,
     toComparableFromBackend: (node: TBackend) => unknown,
     toComparableFromUI: (node: TUI) => unknown,
     nodeTypeName: string = 'Node'
 ): NodeDiff<TBackend, TUI> {
-    console.log(`[DIFF ${nodeTypeName}] Starting diff: ${backendNodes.length} backend, ${uiNodes.length} UI`);
-
-    const backendMap = new Map<string, TBackend>();
+    // Map backend nodes by their integer ID
+    const backendMap = new Map<number, TBackend>();
     for (const node of backendNodes) {
-        const key = getBackendKey(node);
-        backendMap.set(key, node);
-        console.log(`[DIFF ${nodeTypeName}] Backend key: "${key}" (id: ${node.id})`);
+        backendMap.set(node.id, node);
     }
 
     const toDelete: TBackend[] = [];
     const toCreate: TUI[] = [];
     const toUpdate: Array<{ backend: TBackend; ui: TUI }> = [];
-    const seenKeys = new Set<string>();
+    const matchedBackendIds = new Set<number>();
 
     for (const uiNode of uiNodes) {
-        const key = getUIKey(uiNode);
-        seenKeys.add(key);
-        const backendNode = backendMap.get(key);
-        
-        if (!backendNode) {
-            console.log(`[DIFF ${nodeTypeName}] CREATE: "${key}" (not in backend)`);
+        const bid = getUIBackendId(uiNode);
+
+        if (bid == null) {
+            // New node — no backend counterpart
             toCreate.push(uiNode);
-        } else {
-            const backendComparable = toComparableFromBackend(backendNode);
-            const uiComparable = toComparableFromUI(uiNode);
-            const backendStr = JSON.stringify(backendComparable);
-            const uiStr = JSON.stringify(uiComparable);
-            const areEqual = isEqual(backendComparable, uiComparable);
-            
-            console.log(`[DIFF ${nodeTypeName}] Key: "${key}" (backend id: ${backendNode.id})`);
-            console.log(`[DIFF ${nodeTypeName}]   Backend: ${backendStr}`);
-            console.log(`[DIFF ${nodeTypeName}]   UI:      ${uiStr}`);
-            console.log(`[DIFF ${nodeTypeName}]   Equal:   ${areEqual}`);
-            
-            if (!areEqual) {
-                console.log(`[DIFF ${nodeTypeName}] UPDATE: "${key}" (backend id: ${backendNode.id})`);
-                toUpdate.push({ backend: backendNode, ui: uiNode });
-            } else {
-                console.log(`[DIFF ${nodeTypeName}] NO CHANGE: "${key}"`);
-            }
+            continue;
+        }
+
+        const backendNode = backendMap.get(bid);
+        if (!backendNode) {
+            // backendId was set but the backend no longer has it — treat as create
+            toCreate.push(uiNode);
+            continue;
+        }
+
+        matchedBackendIds.add(bid);
+
+        const backendComparable = toComparableFromBackend(backendNode);
+        const uiComparable = toComparableFromUI(uiNode);
+        const areEqual = isEqual(backendComparable, uiComparable);
+
+        if (!areEqual) {
+            toUpdate.push({ backend: backendNode, ui: uiNode });
         }
     }
 
-    for (const [key, backendNode] of backendMap) {
-        if (!seenKeys.has(key)) {
-            console.log(`[DIFF ${nodeTypeName}] DELETE: "${key}" (backend id: ${backendNode.id})`);
+    // Backend nodes not matched by any UI node → delete
+    for (const [id, backendNode] of backendMap) {
+        if (!matchedBackendIds.has(id)) {
             toDelete.push(backendNode);
         }
     }
 
-    console.log(`[DIFF ${nodeTypeName}] Result: ${toDelete.length} delete, ${toCreate.length} create, ${toUpdate.length} update`);
     return { toDelete, toCreate, toUpdate };
 }
 
@@ -194,6 +175,7 @@ export function extractPreviousState(graph: GraphDto): GraphPreviousState {
         edges: graph.edge_list ?? [],
         endNodes: graph.end_node_list ?? [],
         decisionTableNodes: graph.decision_table_node_list ?? [],
+        noteNodes: graph.note_node_list ?? [],
     };
 }
 
@@ -280,6 +262,7 @@ export function extractNewState(flowState: FlowModel): GraphNewState {
         telegramTriggerNodes: nodes.filter(n => n.type === NodeType.TELEGRAM_TRIGGER) as TelegramTriggerNodeModel[],
         conditionalEdges: resolveConditionalEdges(edgeNodeModels, connections, nodes),
         edges: resolveEdges(connections, nodes),
+        noteNodes: nodes.filter(n => n.type === NodeType.NOTE) as NoteNodeModel[],
         endNodes: nodes.filter(n => n.type === NodeType.END) as EndNodeModel[],
         decisionTableNodes: nodes.filter(n => n.type === NodeType.TABLE) as DecisionTableNodeModel[],
         allNodes: nodes,
@@ -301,8 +284,7 @@ export function getGraphDiff(
     const crewNodes = diffByKey(
         previous.crewNodes,
         current.crewNodes,
-        n => n.node_name,
-        n => n.node_name,
+        n => n.backendId,
         getCrewNodeForComparisonFromBackend,
         getCrewNodeForComparisonFromUI,
         'CrewNode'
@@ -311,8 +293,7 @@ export function getGraphDiff(
     const pythonNodes = diffByKey(
         previous.pythonNodes,
         current.pythonNodes,
-        n => n.node_name,
-        n => n.node_name,
+        n => n.backendId,
         getPythonNodeForComparisonFromBackend,
         getPythonNodeForComparisonFromUI,
         'PythonNode'
@@ -321,8 +302,7 @@ export function getGraphDiff(
     const llmNodes = diffByKey(
         previous.llmNodes,
         current.llmNodes,
-        n => n.node_name,
-        n => n.node_name,
+        n => n.backendId,
         getLLMNodeForComparisonFromBackend,
         getLLMNodeForComparisonFromUI,
         'LLMNode'
@@ -331,8 +311,7 @@ export function getGraphDiff(
     const fileExtractorNodes = diffByKey(
         previous.fileExtractorNodes,
         current.fileExtractorNodes,
-        n => n.node_name,
-        n => n.node_name,
+        n => n.backendId,
         getFileExtractorNodeForComparisonFromBackend,
         getFileExtractorNodeForComparisonFromUI,
         'FileExtractorNode'
@@ -341,8 +320,7 @@ export function getGraphDiff(
     const audioToTextNodes = diffByKey(
         previous.audioToTextNodes,
         current.audioToTextNodes,
-        n => n.node_name,
-        n => n.node_name,
+        n => n.backendId,
         getAudioToTextNodeForComparisonFromBackend,
         getAudioToTextNodeForComparisonFromUI,
         'AudioToTextNode'
@@ -351,8 +329,7 @@ export function getGraphDiff(
     const subGraphNodes = diffByKey(
         previous.subGraphNodes,
         current.subGraphNodes,
-        n => n.node_name,
-        n => n.node_name,
+        n => n.backendId,
         getSubGraphNodeForComparisonFromBackend,
         getSubGraphNodeForComparisonFromUI,
         'SubGraphNode'
@@ -361,8 +338,7 @@ export function getGraphDiff(
     const webhookTriggerNodes = diffByKey(
         previous.webhookTriggerNodes,
         current.webhookTriggerNodes,
-        n => n.node_name,
-        n => n.node_name,
+        n => n.backendId,
         getWebhookTriggerNodeForComparisonFromBackend,
         getWebhookTriggerNodeForComparisonFromUI,
         'WebhookTriggerNode'
@@ -371,8 +347,7 @@ export function getGraphDiff(
     const telegramTriggerNodes = diffByKey(
         previous.telegramTriggerNodes,
         current.telegramTriggerNodes,
-        n => n.node_name,
-        n => n.node_name,
+        n => n.backendId,
         getTelegramTriggerNodeForComparisonFromBackend,
         getTelegramTriggerNodeForComparisonFromUI,
         'TelegramTriggerNode'
@@ -381,8 +356,7 @@ export function getGraphDiff(
     const conditionalEdges = diffByKey(
         previous.conditionalEdges,
         current.conditionalEdges,
-        n => n.source,
-        n => n.sourceName,
+        n => n.edgeNode.backendId,
         getConditionalEdgeForComparisonFromBackend,
         getConditionalEdgeForComparisonFromUI,
         'ConditionalEdge'
@@ -391,8 +365,7 @@ export function getGraphDiff(
     const decisionTableNodes = diffByKey(
         previous.decisionTableNodes,
         current.decisionTableNodes,
-        n => n.node_name,
-        n => n.node_name,
+        n => n.backendId,
         getDecisionTableNodeForComparisonFromBackend,
         n => getDecisionTableNodeForComparisonFromUI(n, allNodes),
         'DecisionTableNode'
@@ -407,11 +380,19 @@ export function getGraphDiff(
     const endNodes = diffByKey(
         previous.endNodes,
         current.endNodes,
-        n => n.node_name || '__end_node__', // Fallback to serializer value if missing
-        n => n.node_name,
+        n => n.backendId,
         getEndNodeForComparisonFromBackend,
         getEndNodeForComparisonFromUI,
         'EndNode'
+    );
+
+    const noteNodes = diffByKey(
+        previous.noteNodes,
+        current.noteNodes,
+        n => n.backendId,
+        getNoteNodeForComparisonFromBackend,
+        getNoteNodeForComparisonFromUI,
+        'NoteNode'
     );
 
     return {
@@ -427,6 +408,7 @@ export function getGraphDiff(
         decisionTableNodes,
         edges: { toDelete: edgesToDelete, toCreate: edgesToCreate },
         endNodes,
+        noteNodes,
     };
 }
 
@@ -434,71 +416,71 @@ export function getGraphDiff(
 // Step 4 — Payload builders (UI node → API request body)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function buildCrewPayload(n: ProjectNodeModel, graphId: number, allNodes: NodeModel[]): CreateCrewNodeRequest {
+export function buildCrewPayload(n: ProjectNodeModel, graphId: number): CreateCrewNodeRequest {
     return {
         node_name: n.node_name,
         graph: graphId,
         crew_id: (n.data as GetProjectRequest).id,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
-        metadata: extractUIMetadata(n, allNodes),
+        metadata: getUIMetadataForComparison(n),
     };
 }
 
-export function buildPythonPayload(n: PythonNodeModel, graphId: number, allNodes: NodeModel[]): CreatePythonNodeRequest {
+export function buildPythonPayload(n: PythonNodeModel, graphId: number): CreatePythonNodeRequest {
     return {
         node_name: n.node_name,
         graph: graphId,
         python_code: n.data,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
-        metadata: extractUIMetadata(n, allNodes),
+        metadata: getUIMetadataForComparison(n),
     };
 }
 
-export function buildLLMPayload(n: LLMNodeModel, graphId: number, allNodes: NodeModel[]): CreateLLMNodeRequest {
+export function buildLLMPayload(n: LLMNodeModel, graphId: number): CreateLLMNodeRequest {
     return {
         node_name: n.node_name,
         graph: graphId,
         llm_config: n.data.id,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
-        metadata: extractUIMetadata(n, allNodes),
+        metadata: getUIMetadataForComparison(n),
     };
 }
 
-export function buildFileExtractorPayload(n: FileExtractorNodeModel, graphId: number, allNodes: NodeModel[]): CreateFileExtractorNodeRequest {
+export function buildFileExtractorPayload(n: FileExtractorNodeModel, graphId: number): CreateFileExtractorNodeRequest {
     return {
         node_name: n.node_name,
         graph: graphId,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
-        metadata: extractUIMetadata(n, allNodes),
+        metadata: getUIMetadataForComparison(n),
     };
 }
 
-export function buildAudioToTextPayload(n: AudioToTextNodeModel, graphId: number, allNodes: NodeModel[]): CreateAudioToTextNodeRequest {
+export function buildAudioToTextPayload(n: AudioToTextNodeModel, graphId: number): CreateAudioToTextNodeRequest {
     return {
         node_name: n.node_name,
         graph: graphId,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
-        metadata: extractUIMetadata(n, allNodes),
+        metadata: getUIMetadataForComparison(n),
     };
 }
 
-export function buildSubGraphPayload(n: SubGraphNodeModel, graphId: number, allNodes: NodeModel[]): CreateSubGraphNodeRequest {
+export function buildSubGraphPayload(n: SubGraphNodeModel, graphId: number): CreateSubGraphNodeRequest {
     return {
         node_name: n.node_name,
         graph: graphId,
         subgraph: n.data.id,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
-        metadata: extractUIMetadata(n, allNodes),
+        metadata: getUIMetadataForComparison(n),
     };
 }
 
-export function buildWebhookPayload(n: WebhookTriggerNodeModel, graphId: number, allNodes: NodeModel[]): CreateWebhookTriggerNodeRequest {
+export function buildWebhookPayload(n: WebhookTriggerNodeModel, graphId: number): CreateWebhookTriggerNodeRequest {
     return {
         node_name: n.node_name,
         graph: graphId,
@@ -506,28 +488,28 @@ export function buildWebhookPayload(n: WebhookTriggerNodeModel, graphId: number,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
         webhook_trigger_path: n.data.webhook_trigger_path,
-        metadata: extractUIMetadata(n, allNodes),
+        metadata: getUIMetadataForComparison(n),
     };
 }
 
-export function buildTelegramPayload(n: TelegramTriggerNodeModel, graphId: number, allNodes: NodeModel[]): CreateTelegramTriggerNodeRequest {
+export function buildTelegramPayload(n: TelegramTriggerNodeModel, graphId: number): CreateTelegramTriggerNodeRequest {
     return {
         node_name: n.node_name,
         graph: graphId,
         telegram_bot_api_key: n.data.telegram_bot_api_key,
         fields: n.data.fields,
-        metadata: extractUIMetadata(n, allNodes),
+        metadata: getUIMetadataForComparison(n),
     };
 }
 
-export function buildCondEdgePayload(re: ResolvedConditionalEdge, graphId: number, allNodes: NodeModel[]): CreateConditionalEdgeRequest {
+export function buildCondEdgePayload(re: ResolvedConditionalEdge, graphId: number): CreateConditionalEdgeRequest {
     return {
         graph: graphId,
         source: re.sourceName,
         then: re.targetName,
         python_code: re.edgeNode.data.python_code,
         input_map: re.edgeNode.input_map || {},
-        metadata: extractUIMetadata(re.edgeNode, allNodes),
+        metadata: getUIMetadataForComparison(re.edgeNode),
     };
 }
 
@@ -535,11 +517,11 @@ export function buildEdgePayload(e: { start_key: string; end_key: string }, grap
     return { start_key: e.start_key, end_key: e.end_key, graph: graphId };
 }
 
-export function buildEndNodePayload(n: EndNodeModel, graphId: number, allNodes: NodeModel[]): CreateEndNodeRequest {
+export function buildEndNodePayload(n: EndNodeModel, graphId: number): CreateEndNodeRequest {
     return {
         graph: graphId,
         output_map: (n.data as any).output_map ?? { context: 'variables.context' },
-        metadata: extractUIMetadata(n, allNodes),
+        metadata: getUIMetadataForComparison(n),
     };
 }
 
@@ -572,7 +554,18 @@ export function buildDecisionTablePayload(
         condition_groups: conditionGroups,
         default_next_node: resolveNodeName(tableData?.default_next_node, allNodes),
         next_error_node: resolveNodeName(tableData?.next_error_node, allNodes),
-        metadata: extractUIMetadata(node, allNodes),
+        metadata: getUIMetadataForComparison(node),
     };
 }
 
+export function buildNoteNodePayload(n: NoteNodeModel, graphId: number): CreateNoteNodeRequest {
+    return {
+        node_name: n.node_name,
+        graph: graphId,
+        content: n.data.content,
+        metadata: {
+            ...getUIMetadataForComparison(n),
+            backgroundColor: n.data.backgroundColor ?? null,
+        },
+    };
+}

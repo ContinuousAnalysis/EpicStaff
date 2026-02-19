@@ -177,6 +177,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
                     const nodeId = uuidv4();
                     const node = {
                         id: nodeId,
+                        backendId: null,
                         category: 'web',
                         position: { x: 200, y: 200 },
                         ports: null,
