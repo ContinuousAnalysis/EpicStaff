@@ -2,6 +2,7 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    output,
     computed,
     EventEmitter,
     Input,
@@ -10,6 +11,8 @@ import {
     signal,
     ViewChild,
     OnDestroy,
+    ElementRef, 
+    HostListener,
     Type,
 } from '@angular/core';
 import {
@@ -92,6 +95,7 @@ import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util';
 import { ToastService } from '../../services/notifications/toast.service';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
+import { FlowShortcutsButtonComponent } from '../components/flow-shortcuts-button/flow-shortcuts-button.component';
 
 @Component({
     selector: 'app-flow-graph',
@@ -115,11 +119,13 @@ import { NodePanelShellComponent } from '../components/node-panels/node-panel-sh
         FlowNodePanelComponent,
         NodesSearchComponent,
         NodePanelShellComponent,
+        FlowShortcutsButtonComponent
     ],
 })
 export class FlowGraphComponent implements OnInit, OnDestroy {
     @Input() flowState!: FlowModel;
     @Input() nodesMode!: 'project-graph' | 'flow-graph';
+    @Input() currentFlowId: number | null = null;
 
     @Output() save = new EventEmitter<void>();
 
@@ -2284,5 +2290,11 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
+    }
+
+    openShortcuts = output<DOMRect>();
+
+    public onOpenShortcuts(anchorEl: HTMLElement): void {
+        this.openShortcuts.emit(anchorEl.getBoundingClientRect());
     }
 }
