@@ -22,6 +22,9 @@ class GraphStrategy(EntityImportExportStrategy):
     def get_instance(self, entity_id: int) -> Graph:
         return Graph.objects.filter(id=entity_id).first()
 
+    def get_preview_data(self, instance: Graph) -> dict:
+        return {"id": instance.id, "name": instance.name}
+
     def extract_dependencies_from_instance(
         self, instance: Graph
     ) -> dict[str, list[int]]:

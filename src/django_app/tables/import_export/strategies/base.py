@@ -34,14 +34,17 @@ class EntityImportExportStrategy(ABC):
         self, data: dict, id_mapper: "IDMapper", is_main: bool = False
     ) -> Any:
         """
-        Standard import flow - checks for existing first.
-        Return True as second parameter if entity was newly created, returns False otherwise
+        Standard import - checks for existing first.
         """
-        if is_main:
-            return self.create_entity(data, id_mapper)
+        old_id = data.get("id")
+
+        if old_id and id_mapper.has_mapping(self.entity_type, old_id):
+            existing_id = id_mapper.get(self.entity_type, old_id)
+            existing = self.get_instance(existing_id)
+            return existing
 
         existing = self.find_existing(data, id_mapper)
-        if existing:
+        if existing and not is_main:
             return existing
 
         return self.create_entity(data, id_mapper)
@@ -52,3 +55,10 @@ class EntityImportExportStrategy(ABC):
         Return existing instance or None.
         """
         return None
+
+    def get_preview_data(self, instance: Any) -> dict:
+        """
+        Return lightweight preview data for summary.
+        Override for custom preview fields.
+        """
+        return {"id": instance.id}
