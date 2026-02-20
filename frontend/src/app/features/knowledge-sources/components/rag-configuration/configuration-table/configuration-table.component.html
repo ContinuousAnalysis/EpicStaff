@@ -65,7 +65,7 @@
                 />
             </div>
 
-            @if (bulkChunkStrategy() === 'csv' || bulkChunkStrategy() === 'html') {
+            @if (bulkChunkStrategy() === 'csv') {
                 <!-- chunk size -->
                 <div class="table__col table__col--unavailable">
                     Unavailable
@@ -162,7 +162,7 @@
                             />
                         </div>
 
-                        @if (d.chunk_strategy === 'csv' || d.chunk_strategy === 'html') {
+                        @if (d.chunk_strategy === 'csv') {
                             <!-- chunk size -->
                             <div class="table__col table__col--unavailable">
                                 Unavailable

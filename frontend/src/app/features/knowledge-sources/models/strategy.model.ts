@@ -18,6 +18,8 @@ export interface CsvStrategyModel {
 }
 
 export interface HtmlStrategyModel {
+    chunk_size: number;
+    chunk_overlap: number;
     preserve_links: boolean;
     normalize_text: boolean;
     external_metadata: string;
