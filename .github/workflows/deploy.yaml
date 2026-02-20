@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Deploy main to test2
-        run: bash ./.github/scripts/deploy.sh main
+        run: bash .github/scripts/deploy.sh main
 
   deploy_test_3:
     name: Deploy to test_3 (manual branch)
@@ -32,4 +32,4 @@ jobs:
 
     steps:
       - name: Deploy selected branch to test3
-        run: bash ./.github/scripts/deploy.sh "${{ github.event.inputs.branch }}"
+        run: bash .github/scripts/deploy.sh "${{ github.event.inputs.branch }}"
