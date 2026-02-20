@@ -32,4 +32,4 @@ jobs:
 
     steps:
       - name: Deploy selected branch to test3
-        run: bash scripts/deploy.sh "${{ github.event.inputs.branch }}"
+        run: bash ./.github/scripts/deploy.sh "${{ github.event.inputs.branch }}"
