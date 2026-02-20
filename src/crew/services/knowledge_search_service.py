@@ -128,8 +128,6 @@ class KnowledgeSearchService:
         if timeout is None:
             timeout = RagSearchConfigFactory.get_timeout(rag_type)
 
-        print("timeout: ", timeout)
-
         search_config = RagSearchConfigFactory.build(rag_type, rag_search_config)
 
         execution_uuid = f"{sender}-{str(uuid4())}"
