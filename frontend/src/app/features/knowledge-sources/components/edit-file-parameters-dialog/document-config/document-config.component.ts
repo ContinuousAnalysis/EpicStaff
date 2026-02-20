@@ -63,6 +63,8 @@ export class DocumentConfigComponent implements OnChanges {
                 }
             case 'html':
                 return {
+                    chunk_size: document.chunk_size,
+                    chunk_overlap: document.chunk_overlap,
                     preserve_links: additionalParams['html']?.preserve_links,
                     normalize_text: additionalParams['html']?.normalize_text,
                     external_metadata: additionalParams['html']?.external_metadata,
