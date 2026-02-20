@@ -2,34 +2,21 @@
 set -euo pipefail
 
 APP_DIR="/home/developer/EpicStaff"
-BRANCH="${1:-main}"
+COMPOSE_DIR="$APP_DIR/src"
+COMPOSE_FILE="docker-compose.deploy.yaml"
 
-echo ">> deploy branch: $BRANCH"
+echo ">> deploy from current checkout"
+echo ">> repo dir: $APP_DIR"
 
-cd "$APP_DIR"
-
-echo ">> git status"
-git status --porcelain || true
-
-echo ">> git fetch"
-git fetch --prune
-
-echo ">> git checkout $BRANCH"
-git checkout "$BRANCH"
-
-echo ">> git pull --ff-only origin $BRANCH"
-git pull --ff-only origin "$BRANCH"
-
-echo ">> cd src"
-cd src
+cd "$COMPOSE_DIR"
 
 echo ">> docker compose down"
-docker compose down --remove-orphans
+docker compose -f "$COMPOSE_FILE" down --remove-orphans
 
 echo ">> docker volume rm crew_pgdata"
 docker volume rm crew_pgdata || true
 
-echo ">> volume create crew_pgdata"
+echo ">> docker volume create crew_pgdata"
 docker volume create crew_pgdata
 
 FAILED=0
@@ -38,28 +25,29 @@ echo ">> docker compose up"
 docker compose \
   --env-file .env \
   --env-file deploy.env \
-  -f docker-compose.deploy.yaml \
+  -f "$COMPOSE_FILE" \
   up --build -d --remove-orphans || FAILED=1
 
 echo ">> last logs"
 docker compose \
   --env-file .env \
   --env-file deploy.env \
-  -f docker-compose.deploy.yaml \
+  -f "$COMPOSE_FILE" \
   logs --tail=50 --no-color || true
 
 echo ">> docker compose ps"
 docker compose \
   --env-file .env \
   --env-file deploy.env \
-  -f docker-compose.deploy.yaml \
+  -f "$COMPOSE_FILE" \
   ps || true
 
 if [ "$FAILED" = "1" ]; then
   echo "Deploy failed"
-
   exit 1
 fi
+
 echo ">> docker image prune"
 docker image prune -f || true
+
 echo "Deploy succeeded"
