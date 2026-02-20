@@ -26,6 +26,11 @@
             <i class="ti ti-history"></i> Sessions
         </button>
         <button class="get-curl-button" (click)="onGetCurl()">Get CURL</button>
+        @if (isEpicChatEnabled) {
+        <button class="connect-chat-button" (click)="onConnectChat()">
+            Connect chat
+        </button>
+        }
         <button
             class="save-button"
             [disabled]="isSaving || isRunning"

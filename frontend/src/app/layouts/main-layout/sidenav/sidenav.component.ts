@@ -49,7 +49,7 @@ export class LeftSidebarComponent {
 
     constructor(
         private sanitizer: DomSanitizer,
-        private epicChatService: EpicChatService,
+        public epicChatService: EpicChatService,
         private settingsDialogService: SettingsDialogService,
         private configService: ConfigService
     ) {
@@ -125,6 +125,14 @@ export class LeftSidebarComponent {
 
     public toggleEpicChat(): void {
         this.epicChatService.toggleChat(this.epicChat?.nativeElement);
+    }
+
+    public onEpChatCommandResult(event: Event): void {
+        this.epicChatService.onEpChatCommandResult(event);
+    }
+
+    public onEpChatEvent(event: Event): void {
+        this.epicChatService.onEpChatEvent(event);
     }
 
     public handleItemClick(item: NavItem, event: MouseEvent): void {

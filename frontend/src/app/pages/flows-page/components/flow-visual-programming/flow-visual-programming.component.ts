@@ -80,6 +80,7 @@ import { ConfigService } from '../../../../services/config/config.service';
 import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
 import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
 import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
+import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
 
 @Component({
     selector: 'app-flow-visual-programming',
@@ -92,6 +93,7 @@ import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 export class FlowVisualProgrammingComponent
     implements OnInit, OnDestroy, CanComponentDeactivate
 {
+    public readonly isEpicChatEnabled: boolean;
     public isLoaded = false;
     public graph!: GraphDto;
 
@@ -119,8 +121,11 @@ export class FlowVisualProgrammingComponent
         private readonly dialog: CdkDialog,
         private readonly unsavedChangesDialogService: UnsavedChangesDialogService,
         private readonly configService: ConfigService,
-        private readonly sidePanelService: SidePanelService
-    ) {}
+        private readonly sidePanelService: SidePanelService,
+        private readonly epicChatService: EpicChatService
+    ) {
+        this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
+    }
 
     public ngOnInit(): void {
         const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -473,6 +478,28 @@ export class FlowVisualProgrammingComponent
         }
     }
 
+    public handleConnectChat(): void {
+        if (!this.graph?.id) {
+            this.toastService.error('Unable to connect chat: Missing flow ID');
+            return;
+        }
+
+        const flowUrl = this.normalizeApiUrl(this.configService.apiUrl);
+        if (!flowUrl) {
+            this.toastService.error('Unable to connect chat: Missing API URL');
+            return;
+        }
+
+        this.epicChatService.requestCreateAgent({
+            name: this.graph.name?.trim() || `Flow ${this.graph.id}`,
+            description: this.graph.description?.trim(),
+            flowId: this.graph.id,
+            flowUrl,
+            selectAfterCreate: true,
+        });
+        this.toastService.success('Flow connected to Epic Chat');
+    }
+
     private generateCurlCommand(
         flowId: number,
         variables: Record<string, unknown>,
@@ -509,6 +536,10 @@ export class FlowVisualProgrammingComponent
             document.execCommand('copy');
             document.body.removeChild(textArea);
         }
+    }
+
+    private normalizeApiUrl(apiUrl: string): string {
+        return (apiUrl || '').trim().replace(/\/+$/, '');
     }
 
     @HostListener('window:beforeunload', ['$event'])
