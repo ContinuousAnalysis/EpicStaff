@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "Branch to deploy to test_3"
+        description: "Branch to deploy to test3"
         required: true
         default: "main"
 
@@ -19,17 +19,17 @@ jobs:
   deploy_test_2:
     name: Deploy to test_2 (auto from main)
     if: ${{ github.event_name == 'push' }}
-    runs-on: [self-hosted, test_2]
+    runs-on: [self-hosted, test2]
 
     steps:
-      - name: Deploy main to test_2
+      - name: Deploy main to test2
         run: bash scripts/deploy.sh main
 
   deploy_test_3:
     name: Deploy to test_3 (manual branch)
     if: ${{ github.event_name == 'workflow_dispatch' }}
-    runs-on: [self-hosted, test_3]
+    runs-on: [self-hosted, test3]
 
     steps:
-      - name: Deploy selected branch to test_3
+      - name: Deploy selected branch to test3
         run: bash scripts/deploy.sh "${{ github.event.inputs.branch }}"
