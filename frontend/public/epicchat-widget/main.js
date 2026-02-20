@@ -36738,6 +36738,689 @@ var UserAction;
   UserAction2["SendAction"] = "sendAction";
 })(UserAction || (UserAction = {}));
 
+// src/app/constants/storage.constants.ts
+var STORAGE_KEYS = {
+  CHAT_SIZE: "epic_chat_size",
+  CHAT_MESSAGES: "epic_chat_messages",
+  EPICSTAFF_AGENT_ID: "epic_chat_epicstaff_agent_id",
+  EPICSTAFF_AGENTS: "epic_chat_epicstaff_agents",
+  RECENT_FILES: "epic_chat_recent_files",
+  USER_ID: "epic_chat_user_id"
+};
+
+// src/app/utils/message.utils.ts
+function generateMessageId() {
+  return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+}
+function getCurrentTimestamp() {
+  return Math.floor(Date.now() / 1e3);
+}
+function generateAgentId() {
+  return Math.floor(Date.now() / 1e3) * 1e3 + Math.floor(Math.random() * 1e3);
+}
+
+// src/app/services/storage.service.ts
+var _StorageService = class _StorageService {
+  constructor() {
+    this.INDEXED_DB_NAME = "EpicChatDB";
+    this.INDEXED_DB_VERSION = 1;
+    this.FILES_STORE_NAME = "files";
+    this.userId = null;
+  }
+  /**
+   * Set user ID for scoping storage keys
+   * @param userId - Unique user identifier
+   */
+  setUserId(userId) {
+    this.userId = userId;
+    if (userId) {
+      this.setItemRaw(STORAGE_KEYS.USER_ID, userId);
+    } else {
+      this.removeItemRaw(STORAGE_KEYS.USER_ID);
+    }
+  }
+  /**
+   * Get current user ID
+   * @returns Current user ID or null
+   */
+  getUserId() {
+    if (this.userId) {
+      return this.userId;
+    }
+    this.userId = this.getItemRaw(STORAGE_KEYS.USER_ID);
+    return this.userId;
+  }
+  /**
+   * Build storage key with userId prefix if userId is set
+   * @param key - Base storage key
+   * @param useUserId - Whether to prefix with userId (default: true)
+   * @returns Full storage key
+   */
+  buildKey(key, useUserId = true) {
+    if (!useUserId || !this.getUserId()) {
+      return key;
+    }
+    return `${this.getUserId()}/${key}`;
+  }
+  /**
+   * Get storage instance based on userId presence
+   * Returns sessionStorage if userId is not set, localStorage otherwise
+   * @returns Storage instance (localStorage or sessionStorage)
+   */
+  getStorage() {
+    return this.getUserId() ? localStorage : sessionStorage;
+  }
+  /**
+   * Get item from localStorage without userId prefix (for system keys)
+   * @param key - Key to retrieve
+   * @returns Item value or null if not found
+   */
+  getItemRaw(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.error(`Error getting item from localStorage with key "${key}":`, error);
+      return null;
+    }
+  }
+  /**
+   * Set item to localStorage without userId prefix (for system keys)
+   * @param key - Key to store
+   * @param value - Value to store
+   */
+  setItemRaw(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error(`Error setting item to localStorage with key "${key}":`, error);
+    }
+  }
+  /**
+   * Remove item from localStorage without userId prefix (for system keys)
+   * @param key - Key to remove
+   */
+  removeItemRaw(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error(`Error removing item from localStorage with key "${key}":`, error);
+    }
+  }
+  // ==================== IndexedDB Methods ====================
+  /**
+   * Get data from IndexedDB by key (with userId prefix if userId is set)
+   * @param key - Key to retrieve data
+   * @param useUserId - Whether to prefix with userId (default: true)
+   * @returns Promise with data or undefined if not found
+   */
+  getDataFromIndexedDb(key, useUserId = true) {
+    return __async(this, null, function* () {
+      const fullKey = this.buildKey(key, useUserId);
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.INDEXED_DB_NAME, this.INDEXED_DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const transaction = db.transaction([this.FILES_STORE_NAME], "readonly");
+          const store2 = transaction.objectStore(this.FILES_STORE_NAME);
+          const getRequest = store2.get(fullKey);
+          getRequest.onerror = () => reject(getRequest.error);
+          getRequest.onsuccess = () => resolve(getRequest.result);
+        };
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(this.FILES_STORE_NAME)) {
+            db.createObjectStore(this.FILES_STORE_NAME);
+          }
+        };
+      });
+    });
+  }
+  /**
+   * Save data to IndexedDB by key (with userId prefix if userId is set)
+   * @param key - Key to store data
+   * @param data - Data to store
+   * @param useUserId - Whether to prefix with userId (default: true)
+   * @returns Promise that resolves when data is saved
+   */
+  setDataToIndexedDb(key, data, useUserId = true) {
+    return __async(this, null, function* () {
+      const fullKey = this.buildKey(key, useUserId);
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.INDEXED_DB_NAME, this.INDEXED_DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const transaction = db.transaction([this.FILES_STORE_NAME], "readwrite");
+          const store2 = transaction.objectStore(this.FILES_STORE_NAME);
+          const putRequest = store2.put(data, fullKey);
+          putRequest.onerror = () => reject(putRequest.error);
+          putRequest.onsuccess = () => resolve();
+        };
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(this.FILES_STORE_NAME)) {
+            db.createObjectStore(this.FILES_STORE_NAME);
+          }
+        };
+      });
+    });
+  }
+  /**
+   * Remove data from IndexedDB by key (with userId prefix if userId is set)
+   * @param key - Key to remove
+   * @param useUserId - Whether to prefix with userId (default: true)
+   * @returns Promise that resolves when data is removed
+   */
+  removeDataFromIndexedDb(key, useUserId = true) {
+    return __async(this, null, function* () {
+      const fullKey = this.buildKey(key, useUserId);
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.INDEXED_DB_NAME, this.INDEXED_DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const transaction = db.transaction([this.FILES_STORE_NAME], "readwrite");
+          const store2 = transaction.objectStore(this.FILES_STORE_NAME);
+          const deleteRequest = store2.delete(fullKey);
+          deleteRequest.onerror = () => reject(deleteRequest.error);
+          deleteRequest.onsuccess = () => resolve();
+        };
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(this.FILES_STORE_NAME)) {
+            db.createObjectStore(this.FILES_STORE_NAME);
+          }
+        };
+      });
+    });
+  }
+  // ==================== localStorage/sessionStorage Methods ====================
+  /**
+   * Get item from storage (localStorage if userId is set, sessionStorage otherwise)
+   * @param key - Key to retrieve
+   * @param useUserId - Whether to prefix with userId (default: true)
+   * @returns Item value or null if not found
+   */
+  getItem(key, useUserId = true) {
+    const fullKey = this.buildKey(key, useUserId);
+    const storage = this.getStorage();
+    try {
+      return storage.getItem(fullKey);
+    } catch (error) {
+      console.error(`Error getting item from storage with key "${fullKey}":`, error);
+      return null;
+    }
+  }
+  /**
+   * Set item to storage (localStorage if userId is set, sessionStorage otherwise)
+   * @param key - Key to store
+   * @param value - Value to store
+   * @param useUserId - Whether to prefix with userId (default: true)
+   */
+  setItem(key, value, useUserId = true) {
+    const fullKey = this.buildKey(key, useUserId);
+    const storage = this.getStorage();
+    try {
+      storage.setItem(fullKey, value);
+    } catch (error) {
+      console.error(`Error setting item to storage with key "${fullKey}":`, error);
+    }
+  }
+  /**
+   * Remove item from storage (localStorage if userId is set, sessionStorage otherwise)
+   * @param key - Key to remove
+   * @param useUserId - Whether to prefix with userId (default: true)
+   */
+  removeItem(key, useUserId = true) {
+    const fullKey = this.buildKey(key, useUserId);
+    const storage = this.getStorage();
+    try {
+      storage.removeItem(fullKey);
+    } catch (error) {
+      console.error(`Error removing item from storage with key "${fullKey}":`, error);
+    }
+  }
+  /**
+   * Clear all items from localStorage
+   */
+  clear() {
+    try {
+      localStorage.clear();
+    } catch (error) {
+      console.error("Error clearing localStorage:", error);
+    }
+  }
+  /**
+   * Get item from localStorage and parse as JSON (with userId prefix if userId is set)
+   * @param key - Key to retrieve
+   * @param useUserId - Whether to prefix with userId (default: true)
+   * @returns Parsed JSON object or null if not found or invalid
+   */
+  getItemAsJSON(key, useUserId = true) {
+    try {
+      const item = this.getItem(key, useUserId);
+      if (!item) {
+        return null;
+      }
+      return JSON.parse(item);
+    } catch (error) {
+      console.error(`Error parsing JSON from localStorage with key "${key}":`, error);
+      return null;
+    }
+  }
+  /**
+   * Set item to localStorage as JSON (with userId prefix if userId is set)
+   * @param key - Key to store
+   * @param value - Value to store (will be stringified)
+   * @param useUserId - Whether to prefix with userId (default: true)
+   */
+  setItemAsJSON(key, value, useUserId = true) {
+    try {
+      const jsonString = JSON.stringify(value);
+      this.setItem(key, jsonString, useUserId);
+    } catch (error) {
+      console.error(`Error stringifying JSON to localStorage with key "${key}":`, error);
+    }
+  }
+  // ==================== File-specific Methods ====================
+  /**
+   * Serialize File object to store in IndexedDB
+   * @param file - File to serialize
+   * @returns Serialized file object
+   */
+  serializeFile(file) {
+    const blob = new Blob([file], { type: file.type });
+    return {
+      name: file.name,
+      type: file.type,
+      blob
+    };
+  }
+  /**
+   * Deserialize file data from IndexedDB to File object
+   * @param fileData - Serialized file data
+   * @returns File object
+   */
+  deserializeFile(fileData) {
+    return new File([fileData.blob], fileData.name, { type: fileData.type });
+  }
+  /**
+   * Save files to IndexedDB (with userId prefix if userId is set)
+   * @param key - Key to store files
+   * @param files - Array of File objects
+   * @param useUserId - Whether to prefix with userId (default: true)
+   * @returns Promise that resolves when files are saved
+   */
+  saveFilesToIndexedDB(key, files, useUserId = true) {
+    return __async(this, null, function* () {
+      try {
+        const serializedFiles = files.map((file) => this.serializeFile(file));
+        yield this.setDataToIndexedDb(key, serializedFiles, useUserId);
+      } catch (error) {
+        console.error("Error saving files to IndexedDB", error);
+        throw error;
+      }
+    });
+  }
+  /**
+   * Get files from IndexedDB (with userId prefix if userId is set)
+   * @param key - Key to retrieve files
+   * @param useUserId - Whether to prefix with userId (default: true)
+   * @returns Promise with array of File objects or empty array if not found
+   */
+  getFilesFromIndexedDB(key, useUserId = true) {
+    return __async(this, null, function* () {
+      try {
+        const serializedFiles = yield this.getDataFromIndexedDb(key, useUserId);
+        if (!serializedFiles) {
+          return [];
+        }
+        return serializedFiles.map((fileData) => this.deserializeFile(fileData));
+      } catch (error) {
+        console.error("Error fetching files from IndexedDB", error);
+        return [];
+      }
+    });
+  }
+};
+_StorageService.\u0275fac = function StorageService_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _StorageService)();
+};
+_StorageService.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _StorageService, factory: _StorageService.\u0275fac, providedIn: "root" });
+var StorageService = _StorageService;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(StorageService, [{
+    type: Injectable,
+    args: [{ providedIn: "root" }]
+  }], null, null);
+})();
+
+// src/app/services/epicstaff-agent.service.ts
+var _EpicstaffAgentService = class _EpicstaffAgentService {
+  constructor(storageService) {
+    this.storageService = storageService;
+    this.agentsSignal = signal([], ...ngDevMode ? [{ debugName: "agentsSignal" }] : []);
+    this.agents = this.agentsSignal.asReadonly();
+    this.currentAgentSignal = signal(null, ...ngDevMode ? [{ debugName: "currentAgentSignal" }] : []);
+    this.currentAgent = this.currentAgentSignal.asReadonly();
+    this.defaultImagePath = "";
+    this.loadAgents();
+  }
+  loadAgents() {
+    const storedAgents = this.loadAgentsFromStorage();
+    if (storedAgents.length > 0) {
+      this.agentsSignal.set(storedAgents);
+    }
+  }
+  initializeCurrentAgent() {
+    this.loadCurrentAgent();
+  }
+  getAgents() {
+    return of([]);
+  }
+  createAgent(agent) {
+    const agentId = agent.id ?? generateAgentId();
+    const assistantMode = {
+      mode: "epicstaff",
+      name: agent.agent_name,
+      description: agent.agent_description,
+      imagePath: agent.imagePath || this.defaultImagePath,
+      epicstaffAgentId: agentId,
+      epicstaffFlowId: agent.flow_id,
+      epicstaffFlowUrl: agent.url
+    };
+    this.agentsSignal.update((current) => [...current, assistantMode]);
+    this.saveAgentsToStorage();
+    return of(agent);
+  }
+  updateAgent(agent) {
+    const existingAgent = this.agents().find((a3) => a3.epicstaffAgentId === agent.id);
+    if (!existingAgent) {
+      console.warn("Agent not found for update:", agent.id);
+      return of(agent);
+    }
+    const updatedAgent = __spreadProps(__spreadValues({}, existingAgent), {
+      name: agent.agent_name,
+      description: agent.agent_description,
+      epicstaffAgentId: agent.id ?? existingAgent.epicstaffAgentId,
+      epicstaffFlowId: agent.flow_id,
+      epicstaffFlowUrl: agent.url,
+      imagePath: agent.imagePath || existingAgent.imagePath
+    });
+    this.agentsSignal.update((current) => {
+      const index = current.findIndex((a3) => a3.epicstaffAgentId === existingAgent.epicstaffAgentId);
+      if (index !== -1) {
+        const updated = [...current];
+        updated[index] = updatedAgent;
+        return updated;
+      }
+      return current;
+    });
+    if (this.currentAgent()?.epicstaffAgentId === existingAgent.epicstaffAgentId) {
+      this.setCurrentAgent(updatedAgent);
+    }
+    this.saveAgentsToStorage();
+    return of(agent);
+  }
+  deleteAgent(agentId) {
+    const numericId = typeof agentId === "string" ? Number(agentId) : agentId;
+    const agentToDelete = this.agents().find((a3) => a3.epicstaffAgentId === numericId);
+    if (!agentToDelete) {
+      console.warn("Agent not found for deletion:", agentId);
+      return of(void 0);
+    }
+    this.agentsSignal.update((current) => current.filter((a3) => a3.epicstaffAgentId !== agentToDelete.epicstaffAgentId));
+    if (this.currentAgent()?.epicstaffAgentId === agentToDelete.epicstaffAgentId) {
+      const newCurrent = this.agents()[0] || null;
+      this.setCurrentAgent(newCurrent);
+    }
+    this.saveAgentsToStorage();
+    return of(void 0);
+  }
+  setAgents(agents) {
+    this.agentsSignal.set(agents);
+    this.saveAgentsToStorage();
+  }
+  setCurrentAgent(agent) {
+    this.currentAgentSignal.set(agent);
+    if (agent) {
+      this.storageService.setItem(STORAGE_KEYS.EPICSTAFF_AGENT_ID, String(agent.epicstaffAgentId));
+    } else {
+      this.storageService.removeItem(STORAGE_KEYS.EPICSTAFF_AGENT_ID);
+    }
+  }
+  loadCurrentAgent() {
+    const savedAgentId = this.storageService.getItem(STORAGE_KEYS.EPICSTAFF_AGENT_ID);
+    if (savedAgentId) {
+      const agentId = Number(savedAgentId);
+      const agent = this.agents().find((a3) => a3.epicstaffAgentId === agentId);
+      if (agent) {
+        this.setCurrentAgent(agent);
+      }
+    }
+  }
+  saveAgentsToStorage() {
+    const agents = this.agents();
+    try {
+      this.storageService.setItemAsJSON(STORAGE_KEYS.EPICSTAFF_AGENTS, agents);
+    } catch (error) {
+      console.error("Failed to save agents to storage:", error);
+    }
+  }
+  loadAgentsFromStorage() {
+    try {
+      const stored = this.storageService.getItemAsJSON(STORAGE_KEYS.EPICSTAFF_AGENTS);
+      if (stored && Array.isArray(stored)) {
+        return stored.map((agent) => {
+          if (!agent.epicstaffAgentId) {
+            agent.epicstaffAgentId = generateAgentId();
+          }
+          return agent;
+        });
+      }
+      return [];
+    } catch (error) {
+      console.error("Failed to load agents from storage:", error);
+      return [];
+    }
+  }
+};
+_EpicstaffAgentService.\u0275fac = function EpicstaffAgentService_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _EpicstaffAgentService)(\u0275\u0275inject(StorageService));
+};
+_EpicstaffAgentService.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _EpicstaffAgentService, factory: _EpicstaffAgentService.\u0275fac, providedIn: "root" });
+var EpicstaffAgentService = _EpicstaffAgentService;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(EpicstaffAgentService, [{
+    type: Injectable,
+    args: [{
+      providedIn: "root"
+    }]
+  }], () => [{ type: StorageService }], null);
+})();
+
+// src/app/services/chat-parent-bridge.service.ts
+var EP_CHAT_ACTIONS = {
+  AGENT_CREATE: "agent.create",
+  AGENT_UPDATE: "agent.update",
+  AGENT_DELETE: "agent.delete",
+  AGENT_SELECT: "agent.select"
+};
+var _ChatParentBridgeService = class _ChatParentBridgeService {
+  constructor(agentService) {
+    this.agentService = agentService;
+    this.lastProcessedCommandRequestId = null;
+  }
+  handleCommand(command, context2) {
+    if (!command?.requestId || !command.action) {
+      return;
+    }
+    if (this.lastProcessedCommandRequestId === command.requestId) {
+      return;
+    }
+    this.lastProcessedCommandRequestId = command.requestId;
+    if (context2.isMonoAgent && (command.action === EP_CHAT_ACTIONS.AGENT_CREATE || command.action === EP_CHAT_ACTIONS.AGENT_UPDATE || command.action === EP_CHAT_ACTIONS.AGENT_DELETE)) {
+      this.emitCommandError(context2.onCommandResult, command, "Agent command is not available in mono-agent mode");
+      return;
+    }
+    switch (command.action) {
+      case EP_CHAT_ACTIONS.AGENT_CREATE:
+        this.handleCreateAgentCommand(command, context2.onCommandResult);
+        return;
+      case EP_CHAT_ACTIONS.AGENT_UPDATE:
+        this.handleUpdateAgentCommand(command, context2.onCommandResult);
+        return;
+      case EP_CHAT_ACTIONS.AGENT_DELETE:
+        this.handleDeleteAgentCommand(command, context2.onCommandResult);
+        return;
+      case EP_CHAT_ACTIONS.AGENT_SELECT:
+        this.handleSelectAgentCommand(command, context2.onCommandResult);
+        return;
+      default:
+        break;
+    }
+    this.emitCommandError(context2.onCommandResult, command, `Unsupported command: ${command.action}`);
+  }
+  createAgentsChangedEvent(agents) {
+    return {
+      type: "agents.changed",
+      payload: {
+        agents
+      }
+    };
+  }
+  handleCreateAgentCommand(command, onCommandResult) {
+    const payload = command.payload;
+    const flowId = this.toFlowId(payload?.flowId);
+    const name = (payload?.name || "").trim();
+    const flowUrl = (payload?.flowUrl || "").trim();
+    if (!name || !flowUrl || flowId === null) {
+      this.emitCommandError(onCommandResult, command, `Invalid payload for ${command.action}`);
+      return;
+    }
+    const agentId = payload.id ?? this.generateAgentId();
+    const requestPayload = {
+      id: agentId,
+      flow_id: flowId,
+      agent_name: name,
+      agent_description: (payload.description || "").trim(),
+      url: flowUrl,
+      imagePath: payload.imagePath,
+      config: {}
+    };
+    this.agentService.createAgent(requestPayload).subscribe({
+      next: () => {
+        this.agentService.loadAgents();
+        if (payload.selectAfterCreate !== false) {
+          const created = this.agentService.agents().find((agent) => agent.epicstaffAgentId === agentId);
+          if (created) {
+            this.agentService.setCurrentAgent(created);
+          }
+        }
+        this.emitCommandSuccess(onCommandResult, command, { agentId });
+      },
+      error: (error) => {
+        this.emitCommandError(onCommandResult, command, error instanceof Error ? error.message : "Failed to create agent");
+      }
+    });
+  }
+  handleUpdateAgentCommand(command, onCommandResult) {
+    const payload = command.payload;
+    const flowId = this.toFlowId(payload?.flowId);
+    const name = (payload?.name || "").trim();
+    const flowUrl = (payload?.flowUrl || "").trim();
+    if (!payload?.id || !name || !flowUrl || flowId === null) {
+      this.emitCommandError(onCommandResult, command, `Invalid payload for ${command.action}`);
+      return;
+    }
+    const requestPayload = {
+      id: payload.id,
+      flow_id: flowId,
+      agent_name: name,
+      agent_description: (payload.description || "").trim(),
+      url: flowUrl,
+      imagePath: payload.imagePath,
+      config: {}
+    };
+    this.agentService.updateAgent(requestPayload).subscribe({
+      next: () => {
+        this.agentService.loadAgents();
+        this.emitCommandSuccess(onCommandResult, command, { agentId: payload.id });
+      },
+      error: (error) => {
+        this.emitCommandError(onCommandResult, command, error instanceof Error ? error.message : "Failed to update agent");
+      }
+    });
+  }
+  handleDeleteAgentCommand(command, onCommandResult) {
+    const payload = command.payload;
+    if (!payload?.id) {
+      this.emitCommandError(onCommandResult, command, `Invalid payload for ${command.action}`);
+      return;
+    }
+    this.agentService.deleteAgent(payload.id).subscribe({
+      next: () => {
+        this.agentService.loadAgents();
+        this.emitCommandSuccess(onCommandResult, command, { agentId: payload.id });
+      },
+      error: (error) => {
+        this.emitCommandError(onCommandResult, command, error instanceof Error ? error.message : "Failed to delete agent");
+      }
+    });
+  }
+  handleSelectAgentCommand(command, onCommandResult) {
+    const payload = command.payload;
+    if (!payload?.id) {
+      this.emitCommandError(onCommandResult, command, `Invalid payload for ${command.action}`);
+      return;
+    }
+    const agent = this.agentService.agents().find((candidate) => candidate.epicstaffAgentId === payload.id);
+    if (!agent) {
+      this.emitCommandError(onCommandResult, command, `Agent with id=${payload.id} not found`);
+      return;
+    }
+    this.agentService.setCurrentAgent(agent);
+    this.emitCommandSuccess(onCommandResult, command, { agentId: payload.id });
+  }
+  emitCommandSuccess(onCommandResult, command, payload) {
+    onCommandResult({
+      requestId: command.requestId,
+      action: command.action,
+      success: true,
+      payload
+    });
+  }
+  emitCommandError(onCommandResult, command, message) {
+    onCommandResult({
+      requestId: command.requestId,
+      action: command.action,
+      success: false,
+      message
+    });
+  }
+  toFlowId(flowId) {
+    if (flowId === null || flowId === void 0 || flowId === "") {
+      return null;
+    }
+    const next = Number(flowId);
+    return Number.isFinite(next) ? next : null;
+  }
+  generateAgentId() {
+    return Date.now();
+  }
+};
+_ChatParentBridgeService.\u0275fac = function ChatParentBridgeService_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _ChatParentBridgeService)(\u0275\u0275inject(EpicstaffAgentService));
+};
+_ChatParentBridgeService.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _ChatParentBridgeService, factory: _ChatParentBridgeService.\u0275fac });
+var ChatParentBridgeService = _ChatParentBridgeService;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatParentBridgeService, [{
+    type: Injectable
+  }], () => [{ type: EpicstaffAgentService }], null);
+})();
+
 // src/app/utils/asset.utils.ts
 function getBasePath(basePath) {
   const globalBase = window?.__epicChatBasePath;
@@ -36754,17 +37437,6 @@ function getImagePath(path, basePath) {
   }
   const normalized = path.includes("/") ? path : `assets/images/shared/${path}`;
   return base + normalized;
-}
-
-// src/app/utils/message.utils.ts
-function generateMessageId() {
-  return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-}
-function getCurrentTimestamp() {
-  return Math.floor(Date.now() / 1e3);
-}
-function generateAgentId() {
-  return Math.floor(Date.now() / 1e3) * 1e3 + Math.floor(Math.random() * 1e3);
 }
 
 // src/app/directives/auto-scroll.directive.ts
@@ -70989,16 +71661,6 @@ var MicrophoneComponent = _MicrophoneComponent;
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MicrophoneComponent, { className: "MicrophoneComponent", filePath: "src/app/components/shared/microphone/microphone.component.ts", lineNumber: 67 });
 })();
 
-// src/app/constants/storage.constants.ts
-var STORAGE_KEYS = {
-  CHAT_SIZE: "epic_chat_size",
-  CHAT_MESSAGES: "epic_chat_messages",
-  EPICSTAFF_AGENT_ID: "epic_chat_epicstaff_agent_id",
-  EPICSTAFF_AGENTS: "epic_chat_epicstaff_agents",
-  RECENT_FILES: "epic_chat_recent_files",
-  USER_ID: "epic_chat_user_id"
-};
-
 // src/app/models/epicstaff-api.model.ts
 function isFinishMessageData(data) {
   return data.message_type === "finish";
@@ -71006,343 +71668,6 @@ function isFinishMessageData(data) {
 function extractOutputFromFinishMessage(messageData) {
   return messageData.output;
 }
-
-// src/app/services/storage.service.ts
-var _StorageService = class _StorageService {
-  constructor() {
-    this.INDEXED_DB_NAME = "EpicChatDB";
-    this.INDEXED_DB_VERSION = 1;
-    this.FILES_STORE_NAME = "files";
-    this.userId = null;
-  }
-  /**
-   * Set user ID for scoping storage keys
-   * @param userId - Unique user identifier
-   */
-  setUserId(userId) {
-    this.userId = userId;
-    if (userId) {
-      this.setItemRaw(STORAGE_KEYS.USER_ID, userId);
-    } else {
-      this.removeItemRaw(STORAGE_KEYS.USER_ID);
-    }
-  }
-  /**
-   * Get current user ID
-   * @returns Current user ID or null
-   */
-  getUserId() {
-    if (this.userId) {
-      return this.userId;
-    }
-    this.userId = this.getItemRaw(STORAGE_KEYS.USER_ID);
-    return this.userId;
-  }
-  /**
-   * Build storage key with userId prefix if userId is set
-   * @param key - Base storage key
-   * @param useUserId - Whether to prefix with userId (default: true)
-   * @returns Full storage key
-   */
-  buildKey(key, useUserId = true) {
-    if (!useUserId || !this.getUserId()) {
-      return key;
-    }
-    return `${this.getUserId()}/${key}`;
-  }
-  /**
-   * Get storage instance based on userId presence
-   * Returns sessionStorage if userId is not set, localStorage otherwise
-   * @returns Storage instance (localStorage or sessionStorage)
-   */
-  getStorage() {
-    return this.getUserId() ? localStorage : sessionStorage;
-  }
-  /**
-   * Get item from localStorage without userId prefix (for system keys)
-   * @param key - Key to retrieve
-   * @returns Item value or null if not found
-   */
-  getItemRaw(key) {
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      console.error(`Error getting item from localStorage with key "${key}":`, error);
-      return null;
-    }
-  }
-  /**
-   * Set item to localStorage without userId prefix (for system keys)
-   * @param key - Key to store
-   * @param value - Value to store
-   */
-  setItemRaw(key, value) {
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      console.error(`Error setting item to localStorage with key "${key}":`, error);
-    }
-  }
-  /**
-   * Remove item from localStorage without userId prefix (for system keys)
-   * @param key - Key to remove
-   */
-  removeItemRaw(key) {
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.error(`Error removing item from localStorage with key "${key}":`, error);
-    }
-  }
-  // ==================== IndexedDB Methods ====================
-  /**
-   * Get data from IndexedDB by key (with userId prefix if userId is set)
-   * @param key - Key to retrieve data
-   * @param useUserId - Whether to prefix with userId (default: true)
-   * @returns Promise with data or undefined if not found
-   */
-  getDataFromIndexedDb(key, useUserId = true) {
-    return __async(this, null, function* () {
-      const fullKey = this.buildKey(key, useUserId);
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(this.INDEXED_DB_NAME, this.INDEXED_DB_VERSION);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-          const db = request.result;
-          const transaction = db.transaction([this.FILES_STORE_NAME], "readonly");
-          const store2 = transaction.objectStore(this.FILES_STORE_NAME);
-          const getRequest = store2.get(fullKey);
-          getRequest.onerror = () => reject(getRequest.error);
-          getRequest.onsuccess = () => resolve(getRequest.result);
-        };
-        request.onupgradeneeded = (event) => {
-          const db = event.target.result;
-          if (!db.objectStoreNames.contains(this.FILES_STORE_NAME)) {
-            db.createObjectStore(this.FILES_STORE_NAME);
-          }
-        };
-      });
-    });
-  }
-  /**
-   * Save data to IndexedDB by key (with userId prefix if userId is set)
-   * @param key - Key to store data
-   * @param data - Data to store
-   * @param useUserId - Whether to prefix with userId (default: true)
-   * @returns Promise that resolves when data is saved
-   */
-  setDataToIndexedDb(key, data, useUserId = true) {
-    return __async(this, null, function* () {
-      const fullKey = this.buildKey(key, useUserId);
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(this.INDEXED_DB_NAME, this.INDEXED_DB_VERSION);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-          const db = request.result;
-          const transaction = db.transaction([this.FILES_STORE_NAME], "readwrite");
-          const store2 = transaction.objectStore(this.FILES_STORE_NAME);
-          const putRequest = store2.put(data, fullKey);
-          putRequest.onerror = () => reject(putRequest.error);
-          putRequest.onsuccess = () => resolve();
-        };
-        request.onupgradeneeded = (event) => {
-          const db = event.target.result;
-          if (!db.objectStoreNames.contains(this.FILES_STORE_NAME)) {
-            db.createObjectStore(this.FILES_STORE_NAME);
-          }
-        };
-      });
-    });
-  }
-  /**
-   * Remove data from IndexedDB by key (with userId prefix if userId is set)
-   * @param key - Key to remove
-   * @param useUserId - Whether to prefix with userId (default: true)
-   * @returns Promise that resolves when data is removed
-   */
-  removeDataFromIndexedDb(key, useUserId = true) {
-    return __async(this, null, function* () {
-      const fullKey = this.buildKey(key, useUserId);
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(this.INDEXED_DB_NAME, this.INDEXED_DB_VERSION);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-          const db = request.result;
-          const transaction = db.transaction([this.FILES_STORE_NAME], "readwrite");
-          const store2 = transaction.objectStore(this.FILES_STORE_NAME);
-          const deleteRequest = store2.delete(fullKey);
-          deleteRequest.onerror = () => reject(deleteRequest.error);
-          deleteRequest.onsuccess = () => resolve();
-        };
-        request.onupgradeneeded = (event) => {
-          const db = event.target.result;
-          if (!db.objectStoreNames.contains(this.FILES_STORE_NAME)) {
-            db.createObjectStore(this.FILES_STORE_NAME);
-          }
-        };
-      });
-    });
-  }
-  // ==================== localStorage/sessionStorage Methods ====================
-  /**
-   * Get item from storage (localStorage if userId is set, sessionStorage otherwise)
-   * @param key - Key to retrieve
-   * @param useUserId - Whether to prefix with userId (default: true)
-   * @returns Item value or null if not found
-   */
-  getItem(key, useUserId = true) {
-    const fullKey = this.buildKey(key, useUserId);
-    const storage = this.getStorage();
-    try {
-      return storage.getItem(fullKey);
-    } catch (error) {
-      console.error(`Error getting item from storage with key "${fullKey}":`, error);
-      return null;
-    }
-  }
-  /**
-   * Set item to storage (localStorage if userId is set, sessionStorage otherwise)
-   * @param key - Key to store
-   * @param value - Value to store
-   * @param useUserId - Whether to prefix with userId (default: true)
-   */
-  setItem(key, value, useUserId = true) {
-    const fullKey = this.buildKey(key, useUserId);
-    const storage = this.getStorage();
-    try {
-      storage.setItem(fullKey, value);
-    } catch (error) {
-      console.error(`Error setting item to storage with key "${fullKey}":`, error);
-    }
-  }
-  /**
-   * Remove item from storage (localStorage if userId is set, sessionStorage otherwise)
-   * @param key - Key to remove
-   * @param useUserId - Whether to prefix with userId (default: true)
-   */
-  removeItem(key, useUserId = true) {
-    const fullKey = this.buildKey(key, useUserId);
-    const storage = this.getStorage();
-    try {
-      storage.removeItem(fullKey);
-    } catch (error) {
-      console.error(`Error removing item from storage with key "${fullKey}":`, error);
-    }
-  }
-  /**
-   * Clear all items from localStorage
-   */
-  clear() {
-    try {
-      localStorage.clear();
-    } catch (error) {
-      console.error("Error clearing localStorage:", error);
-    }
-  }
-  /**
-   * Get item from localStorage and parse as JSON (with userId prefix if userId is set)
-   * @param key - Key to retrieve
-   * @param useUserId - Whether to prefix with userId (default: true)
-   * @returns Parsed JSON object or null if not found or invalid
-   */
-  getItemAsJSON(key, useUserId = true) {
-    try {
-      const item = this.getItem(key, useUserId);
-      if (!item) {
-        return null;
-      }
-      return JSON.parse(item);
-    } catch (error) {
-      console.error(`Error parsing JSON from localStorage with key "${key}":`, error);
-      return null;
-    }
-  }
-  /**
-   * Set item to localStorage as JSON (with userId prefix if userId is set)
-   * @param key - Key to store
-   * @param value - Value to store (will be stringified)
-   * @param useUserId - Whether to prefix with userId (default: true)
-   */
-  setItemAsJSON(key, value, useUserId = true) {
-    try {
-      const jsonString = JSON.stringify(value);
-      this.setItem(key, jsonString, useUserId);
-    } catch (error) {
-      console.error(`Error stringifying JSON to localStorage with key "${key}":`, error);
-    }
-  }
-  // ==================== File-specific Methods ====================
-  /**
-   * Serialize File object to store in IndexedDB
-   * @param file - File to serialize
-   * @returns Serialized file object
-   */
-  serializeFile(file) {
-    const blob = new Blob([file], { type: file.type });
-    return {
-      name: file.name,
-      type: file.type,
-      blob
-    };
-  }
-  /**
-   * Deserialize file data from IndexedDB to File object
-   * @param fileData - Serialized file data
-   * @returns File object
-   */
-  deserializeFile(fileData) {
-    return new File([fileData.blob], fileData.name, { type: fileData.type });
-  }
-  /**
-   * Save files to IndexedDB (with userId prefix if userId is set)
-   * @param key - Key to store files
-   * @param files - Array of File objects
-   * @param useUserId - Whether to prefix with userId (default: true)
-   * @returns Promise that resolves when files are saved
-   */
-  saveFilesToIndexedDB(key, files, useUserId = true) {
-    return __async(this, null, function* () {
-      try {
-        const serializedFiles = files.map((file) => this.serializeFile(file));
-        yield this.setDataToIndexedDb(key, serializedFiles, useUserId);
-      } catch (error) {
-        console.error("Error saving files to IndexedDB", error);
-        throw error;
-      }
-    });
-  }
-  /**
-   * Get files from IndexedDB (with userId prefix if userId is set)
-   * @param key - Key to retrieve files
-   * @param useUserId - Whether to prefix with userId (default: true)
-   * @returns Promise with array of File objects or empty array if not found
-   */
-  getFilesFromIndexedDB(key, useUserId = true) {
-    return __async(this, null, function* () {
-      try {
-        const serializedFiles = yield this.getDataFromIndexedDb(key, useUserId);
-        if (!serializedFiles) {
-          return [];
-        }
-        return serializedFiles.map((fileData) => this.deserializeFile(fileData));
-      } catch (error) {
-        console.error("Error fetching files from IndexedDB", error);
-        return [];
-      }
-    });
-  }
-};
-_StorageService.\u0275fac = function StorageService_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _StorageService)();
-};
-_StorageService.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _StorageService, factory: _StorageService.\u0275fac, providedIn: "root" });
-var StorageService = _StorageService;
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(StorageService, [{
-    type: Injectable,
-    args: [{ providedIn: "root" }]
-  }], null, null);
-})();
 
 // src/app/services/api.service.ts
 var _ApiService = class _ApiService {
@@ -73959,150 +74284,6 @@ var ModalComponent = _ModalComponent;
 })();
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ModalComponent, { className: "ModalComponent", filePath: "src/app/components/shared/modal/modal.component.ts", lineNumber: 22 });
-})();
-
-// src/app/services/epicstaff-agent.service.ts
-var _EpicstaffAgentService = class _EpicstaffAgentService {
-  constructor(storageService) {
-    this.storageService = storageService;
-    this.agentsSignal = signal([], ...ngDevMode ? [{ debugName: "agentsSignal" }] : []);
-    this.agents = this.agentsSignal.asReadonly();
-    this.currentAgentSignal = signal(null, ...ngDevMode ? [{ debugName: "currentAgentSignal" }] : []);
-    this.currentAgent = this.currentAgentSignal.asReadonly();
-    this.defaultImagePath = "";
-    this.loadAgents();
-  }
-  loadAgents() {
-    const storedAgents = this.loadAgentsFromStorage();
-    if (storedAgents.length > 0) {
-      this.agentsSignal.set(storedAgents);
-    }
-  }
-  initializeCurrentAgent() {
-    this.loadCurrentAgent();
-  }
-  getAgents() {
-    return of([]);
-  }
-  createAgent(agent) {
-    const agentId = agent.id ?? generateAgentId();
-    const assistantMode = {
-      mode: "epicstaff",
-      name: agent.agent_name,
-      description: agent.agent_description,
-      imagePath: agent.imagePath || this.defaultImagePath,
-      epicstaffAgentId: agentId,
-      epicstaffFlowId: agent.flow_id,
-      epicstaffFlowUrl: agent.url
-    };
-    this.agentsSignal.update((current) => [...current, assistantMode]);
-    this.saveAgentsToStorage();
-    return of(agent);
-  }
-  updateAgent(agent) {
-    const existingAgent = this.agents().find((a3) => a3.epicstaffAgentId === agent.id);
-    if (!existingAgent) {
-      console.warn("Agent not found for update:", agent.id);
-      return of(agent);
-    }
-    const updatedAgent = __spreadProps(__spreadValues({}, existingAgent), {
-      name: agent.agent_name,
-      description: agent.agent_description,
-      epicstaffAgentId: agent.id ?? existingAgent.epicstaffAgentId,
-      epicstaffFlowId: agent.flow_id,
-      epicstaffFlowUrl: agent.url,
-      imagePath: agent.imagePath || existingAgent.imagePath
-    });
-    this.agentsSignal.update((current) => {
-      const index = current.findIndex((a3) => a3.epicstaffAgentId === existingAgent.epicstaffAgentId);
-      if (index !== -1) {
-        const updated = [...current];
-        updated[index] = updatedAgent;
-        return updated;
-      }
-      return current;
-    });
-    if (this.currentAgent()?.epicstaffAgentId === existingAgent.epicstaffAgentId) {
-      this.setCurrentAgent(updatedAgent);
-    }
-    this.saveAgentsToStorage();
-    return of(agent);
-  }
-  deleteAgent(agentId) {
-    const numericId = typeof agentId === "string" ? Number(agentId) : agentId;
-    const agentToDelete = this.agents().find((a3) => a3.epicstaffAgentId === numericId);
-    if (!agentToDelete) {
-      console.warn("Agent not found for deletion:", agentId);
-      return of(void 0);
-    }
-    this.agentsSignal.update((current) => current.filter((a3) => a3.epicstaffAgentId !== agentToDelete.epicstaffAgentId));
-    if (this.currentAgent()?.epicstaffAgentId === agentToDelete.epicstaffAgentId) {
-      const newCurrent = this.agents()[0] || null;
-      this.setCurrentAgent(newCurrent);
-    }
-    this.saveAgentsToStorage();
-    return of(void 0);
-  }
-  setAgents(agents) {
-    this.agentsSignal.set(agents);
-    this.saveAgentsToStorage();
-  }
-  setCurrentAgent(agent) {
-    this.currentAgentSignal.set(agent);
-    if (agent) {
-      this.storageService.setItem(STORAGE_KEYS.EPICSTAFF_AGENT_ID, String(agent.epicstaffAgentId));
-    } else {
-      this.storageService.removeItem(STORAGE_KEYS.EPICSTAFF_AGENT_ID);
-    }
-  }
-  loadCurrentAgent() {
-    const savedAgentId = this.storageService.getItem(STORAGE_KEYS.EPICSTAFF_AGENT_ID);
-    if (savedAgentId) {
-      const agentId = Number(savedAgentId);
-      const agent = this.agents().find((a3) => a3.epicstaffAgentId === agentId);
-      if (agent) {
-        this.setCurrentAgent(agent);
-      }
-    }
-  }
-  saveAgentsToStorage() {
-    const agents = this.agents();
-    try {
-      this.storageService.setItemAsJSON(STORAGE_KEYS.EPICSTAFF_AGENTS, agents);
-    } catch (error) {
-      console.error("Failed to save agents to storage:", error);
-    }
-  }
-  loadAgentsFromStorage() {
-    try {
-      const stored = this.storageService.getItemAsJSON(STORAGE_KEYS.EPICSTAFF_AGENTS);
-      if (stored && Array.isArray(stored)) {
-        return stored.map((agent) => {
-          if (!agent.epicstaffAgentId) {
-            agent.epicstaffAgentId = generateAgentId();
-          }
-          return agent;
-        });
-      }
-      return [];
-    } catch (error) {
-      console.error("Failed to load agents from storage:", error);
-      return [];
-    }
-  }
-};
-_EpicstaffAgentService.\u0275fac = function EpicstaffAgentService_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _EpicstaffAgentService)(\u0275\u0275inject(StorageService));
-};
-_EpicstaffAgentService.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _EpicstaffAgentService, factory: _EpicstaffAgentService.\u0275fac, providedIn: "root" });
-var EpicstaffAgentService = _EpicstaffAgentService;
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(EpicstaffAgentService, [{
-    type: Injectable,
-    args: [{
-      providedIn: "root"
-    }]
-  }], () => [{ type: StorageService }], null);
 })();
 
 // src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.ts
@@ -95867,7 +96048,7 @@ function ChatComponent_Conditional_3_Template(rf, ctx) {
   }
 }
 var _ChatComponent = class _ChatComponent {
-  constructor(chatService, agentService, messageService, apiService, storageService, actionService, dateAdapter) {
+  constructor(chatService, agentService, messageService, apiService, storageService, actionService, dateAdapter, chatParentBridgeService) {
     this.chatService = chatService;
     this.agentService = agentService;
     this.messageService = messageService;
@@ -95875,6 +96056,7 @@ var _ChatComponent = class _ChatComponent {
     this.storageService = storageService;
     this.actionService = actionService;
     this.dateAdapter = dateAdapter;
+    this.chatParentBridgeService = chatParentBridgeService;
     this.title = "EpicChat Agent";
     this.basePath = "";
     this.chatWidth = CHAT_CONSTANTS.DEFAULT_WIDTH;
@@ -95895,7 +96077,10 @@ var _ChatComponent = class _ChatComponent {
     this.fileAttachmentDisabled = true;
     this.basicAuthLogin = "";
     this.basicAuthPassword = "";
+    this.epChatCommand = null;
     this.chatClosed = new EventEmitter();
+    this.epChatCommandResult = new EventEmitter();
+    this.epChatEvent = new EventEmitter();
     this.unreadMessagesCount = 0;
     this.isTyping = false;
     this.iconPath = "";
@@ -95910,7 +96095,6 @@ var _ChatComponent = class _ChatComponent {
       }
     });
     effect(() => {
-      const _msgs = this.chatService.messages();
       this.saveChatHistory();
     });
     effect(() => {
@@ -95923,6 +96107,11 @@ var _ChatComponent = class _ChatComponent {
       if (previousAgent !== agent) {
         this.loadChatHistory();
       }
+    });
+    effect(() => {
+      this.epChatEvent.emit(this.chatParentBridgeService.createAgentsChangedEvent([
+        ...this.agentService.agents()
+      ]));
     });
   }
   ngOnInit() {
@@ -95951,6 +96140,12 @@ var _ChatComponent = class _ChatComponent {
     }
     if (changes["chatIconPath"]) {
       this.iconPath = this.getIconPath();
+    }
+    if (changes["epChatCommand"]) {
+      this.chatParentBridgeService.handleCommand(changes["epChatCommand"].currentValue, {
+        isMonoAgent: this.isMonoAgent,
+        onCommandResult: (result) => this.epChatCommandResult.emit(result)
+      });
     }
     if (changes["chatWidth"] || changes["chatHeight"] || changes["chatTop"] || changes["chatLeft"] || changes["chatRight"] || changes["chatBottom"] || changes["chatPosition"]) {
       this.updateChatStyle();
@@ -96503,7 +96698,7 @@ var _ChatComponent = class _ChatComponent {
   }
 };
 _ChatComponent.\u0275fac = function ChatComponent_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _ChatComponent)(\u0275\u0275directiveInject(ChatService), \u0275\u0275directiveInject(EpicstaffAgentService), \u0275\u0275directiveInject(MessageService), \u0275\u0275directiveInject(ApiService), \u0275\u0275directiveInject(StorageService), \u0275\u0275directiveInject(ActionService), \u0275\u0275directiveInject(DateAdapter));
+  return new (__ngFactoryType__ || _ChatComponent)(\u0275\u0275directiveInject(ChatService), \u0275\u0275directiveInject(EpicstaffAgentService), \u0275\u0275directiveInject(MessageService), \u0275\u0275directiveInject(ApiService), \u0275\u0275directiveInject(StorageService), \u0275\u0275directiveInject(ActionService), \u0275\u0275directiveInject(DateAdapter), \u0275\u0275directiveInject(ChatParentBridgeService));
 };
 _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatComponent, selectors: [["epic-chat"]], viewQuery: function ChatComponent_Query(rf, ctx) {
   if (rf & 1) {
@@ -96515,7 +96710,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatFooter = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.resizableChat = _t.first);
   }
-}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword" }, outputs: { chatClosed: "chatClosed" }, features: [\u0275\u0275ProvidersFeature([]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], [3, "popupState", "currentAgent"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], ["role", "button", "tabindex", "0", "aria-label", "Close popup", 1, "ep-mat", 3, "click", "keydown.enter", "keydown.space"], [3, "closed", "popupState", "currentAgent"]], template: function ChatComponent_Template(rf, ctx) {
+}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand" }, outputs: { chatClosed: "chatClosed", epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], [3, "popupState", "currentAgent"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], ["role", "button", "tabindex", "0", "aria-label", "Close popup", 1, "ep-mat", 3, "click", "keydown.enter", "keydown.space"], [3, "closed", "popupState", "currentAgent"]], template: function ChatComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275listener("click", function ChatComponent_Template_div_click_0_listener() {
@@ -96562,8 +96757,8 @@ var ChatComponent = _ChatComponent;
       EpicstaffAgentConfigComponent,
       ClickOutsideDirective,
       ResizableChatDirective
-    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.agents()"\n      [isMonoAgent]="isMonoAgent"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n    />\n  </div>\n\n  <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div>\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-scrollbar: #d0d0d0;\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: #ffffff;\n  border: 1px solid #dcdcdc;\n  box-shadow: 0 2px 8px rgba(76, 82, 105, 0.2);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  margin-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
-  }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: DateAdapter }], { uniqueUserId: [{
+    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.agents()"\n      [isMonoAgent]="isMonoAgent"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n    />\n  </div>\n\n  <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div>\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-scrollbar: #d0d0d0;\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: #ffffff;\n  border: 1px solid #dcdcdc;\n  box-shadow: 0 2px 8px rgba(76, 82, 105, 0.2);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  margin-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
+  }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: DateAdapter }, { type: ChatParentBridgeService }], { uniqueUserId: [{
     type: Input
   }], userData: [{
     type: Input
@@ -96607,7 +96802,13 @@ var ChatComponent = _ChatComponent;
     type: Input
   }], basicAuthPassword: [{
     type: Input
+  }], epChatCommand: [{
+    type: Input
   }], chatClosed: [{
+    type: Output
+  }], epChatCommandResult: [{
+    type: Output
+  }], epChatEvent: [{
     type: Output
   }], chatFooter: [{
     type: ViewChild,
@@ -96618,7 +96819,7 @@ var ChatComponent = _ChatComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 58 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 65 });
 })();
 
 // src/app/config/markdown.config.ts

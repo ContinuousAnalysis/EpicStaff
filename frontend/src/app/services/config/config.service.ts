@@ -22,7 +22,7 @@ export class ConfigService {
         type: 'fallback',
         apiUrl: environment.apiUrl,
         realtimeApiUrl: environment.realtimeApiUrl,
-        isEpicChatEnabled: true,
+        isEpicChatEnabled: environment.isEpicChatEnabled ?? false,
       };
       return;
     }
@@ -37,7 +37,7 @@ export class ConfigService {
               apiUrl: environment.apiUrl,
 
               realtimeApiUrl: environment.realtimeApiUrl,
-              isEpicChatEnabled: environment.isEpicChatEnabled,
+              isEpicChatEnabled: environment.isEpicChatEnabled ?? false,
             } as AppConfig);
           })
         )
