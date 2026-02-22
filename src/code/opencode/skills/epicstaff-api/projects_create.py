@@ -16,6 +16,9 @@ def cmd_create_crew(args):
     result = api_post("/crews/", payload)
     cid = result.get("id")
     print(f"Created crew: [{cid}] {result.get('name')} (process={result.get('process')})")
+    print(f"  ⚠️  REMINDER: When adding this crew to a flow, the crew node needs:")
+    print(f"     - input_map: map node parameters to flow variables (e.g. {{\"topic\": \"variables.request.topic\"}})")
+    print(f"     - output_variable_path: set to 'variables' or 'variables.<domain>' to store crew output")
     return result
 
 
@@ -26,9 +29,18 @@ def cmd_create_agent(args):
         "goal": getattr(args, "goal", ""),
         "backstory": getattr(args, "backstory", ""),
     }
+    llm_config_id = getattr(args, "llm_config", None)
+    if llm_config_id:
+        payload["llm_config"] = int(llm_config_id)
+
     result = api_post("/agents/", payload)
     aid = result.get("id")
     print(f"Created agent: [{aid}] role={result.get('role')}")
+
+    if not llm_config_id:
+        print(f"  ⚠️  WARNING: No LLM config set. Agent will not work until an LLM config is assigned.")
+        print(f"     Fix: PATCH /agents/{aid}/ with {{\"llm_config\": <config_id>}}")
+        print(f"     Available configs: run 'epicstaff_tools.py -r llm-configs'")
 
     crew_id = getattr(args, "crew_id", None)
     if crew_id:

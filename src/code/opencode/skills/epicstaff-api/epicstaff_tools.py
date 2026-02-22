@@ -252,6 +252,7 @@ def main():
     p.add_argument("role", help="Agent role")
     p.add_argument("--goal", default="", help="Agent goal")
     p.add_argument("--backstory", default="", help="Agent backstory")
+    p.add_argument("--llm-config", type=int, default=None, help="LLM config ID (required for agent to work)")
     p.add_argument("--crew-id", type=int, help="Add agent to this crew")
     p = sub.add_parser("create-task", help="Create a new task")
     p.add_argument("name", help="Task name")
