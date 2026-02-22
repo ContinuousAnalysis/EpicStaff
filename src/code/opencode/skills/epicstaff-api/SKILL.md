@@ -1,7 +1,7 @@
 ---
 id: epicstaff
 name: EpicStaff Flow Management
-version: 1
+version: 1.1
 trigger: always_on
 triggers: [epicstaff, epic-staff, flows, sessions]
 scope: [api, cli, integration]
@@ -246,37 +246,43 @@ python3 epicstaff_tools.py -g <GRAPH_ID> sync-metadata
 python3 epicstaff_tools.py create-flow "My New Flow" --description "Description"
 
 # Create a Python node in a flow
-python3 epicstaff_tools.py -g <GRAPH_ID> create-node "My Node" --code-file code.py
+python3 epicstaff_tools.py -g <GRAPH_ID> create-node <node_name> --code-file code.py
 
 # Create a Code Agent node (OpenCode-powered)
-python3 epicstaff_tools.py -g <GRAPH_ID> create-code-agent-node "My Code Agent" \
+python3 epicstaff_tools.py -g <GRAPH_ID> create-code-agent-node <node_name> \
   --llm-config 2 --agent-mode build --system-prompt "You are helpful" \
   --code-file stream_handler.py --libraries "requests,httpx" \
   --output-variable-path code_reply --x 400 --y 100
 
 # Create a Webhook Trigger node
-python3 epicstaff_tools.py -g <GRAPH_ID> create-webhook "My Webhook" \
+python3 epicstaff_tools.py -g <GRAPH_ID> create-webhook <node_name> \
   --code-file webhook_handler.py --webhook-path "my_webhook" --x -400 --y 0
 
 # Create an edge between two nodes
 # Note: edges to __end__ are NOT mandatory — __end__ is implied for terminal nodes (no outgoing edges)
-python3 epicstaff_tools.py -g <GRAPH_ID> create-edge "__start__" "My Node"
+python3 epicstaff_tools.py -g <GRAPH_ID> create-edge <start_node> <end_node>
 
 # Generate metadata (positions + connections) from DB state
 python3 epicstaff_tools.py -g <GRAPH_ID> init-metadata
 
 # Create a tool
-python3 epicstaff_tools.py create-tool "My Tool" --description "What it does" --code-file tool.py
+python3 epicstaff_tools.py create-tool <tool_name> --description <description> --code-file tool.py
 
 # Create a crew
-python3 epicstaff_tools.py create-crew "My Crew" --process sequential
+python3 epicstaff_tools.py create-crew <crew_name> --process sequential
 
-# Create an agent and add to a crew
-python3 epicstaff_tools.py create-agent "Researcher" --goal "Find info" --crew-id <CREW_ID>
+# Create an agent and add to a crew (ALWAYS set --llm-config)
+python3 epicstaff_tools.py create-agent <role> --goal <goal> --llm-config <CONFIG_ID> --crew-id <CREW_ID>
 
 # Create a task and assign to agent + crew
-python3 epicstaff_tools.py create-task "Research Task" --instructions "Do research" --agent-id <AGENT_ID> --crew-id <CREW_ID>
+python3 epicstaff_tools.py create-task <task_name> --instructions <instructions> --agent-id <AGENT_ID> --crew-id <CREW_ID>
 ```
+
+> **⚠️ Agent LLM Config**: Every agent MUST have an `llm_config` set, otherwise it cannot run. Use `--llm-config <ID>` at creation time, or PATCH afterwards. List available configs with `epicstaff_tools.py -r llm-configs`.
+
+> **⚠️ Crew Node in Flow**: When adding a crew to a flow as a crew node, you MUST set:
+> - `input_map`: maps the node's parameters to flow variables (e.g. `{"topic": "variables.request.topic"}`)
+> - `output_variable_path`: set to `"variables"` or `"variables.<domain>"` so downstream nodes can read the crew's output
 
 ### Canvas Notes
 
