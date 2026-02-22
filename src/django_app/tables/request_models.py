@@ -326,6 +326,23 @@ class DecisionTableNodeData(BaseModel):
     next_error_node: str | None = None
 
 
+class CodeAgentNodeData(BaseModel):
+    node_name: str
+    llm_config_id: int | None = None
+    agent_mode: str = "build"
+    system_prompt: str = ""
+    stream_handler_code: str = ""
+    libraries: list[str] = []
+    polling_interval_ms: int = 1000
+    silence_indicator_s: int = 3
+    indicator_repeat_s: int = 5
+    chunk_timeout_s: int = 30
+    inactivity_timeout_s: int = 120
+    max_wait_s: int = 300
+    input_map: dict[str, Any] = {}
+    output_variable_path: str | None = None
+
+
 class EndNodeData(BaseModel):
     output_map: dict[str, Any]
 
@@ -367,6 +384,7 @@ class GraphData(BaseModel):
     subgraph_node_list: list["SubGraphNodeData"] = []
     audio_transcription_node_list: list[AudioTranscriptionNodeData] = []
     llm_node_list: list[LLMNodeData] = []
+    code_agent_node_list: list[CodeAgentNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []

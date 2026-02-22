@@ -16,6 +16,7 @@ from tables.views.model_view_sets import (
     PythonNodeViewSet,
     FileExtractorNodeViewSet,
     AudioTranscriptionNodeViewSet,
+    CodeAgentNodeViewSet,
     LLMNodeViewSet,
     StartNodeModelViewSet,
     RealtimeConfigModelViewSet,
@@ -134,6 +135,7 @@ router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
 router.register(r"subgraph-nodes", SubGraphNodeModelViewSet)
+router.register(r"code-agent-nodes", CodeAgentNodeViewSet)
 
 router.register(r"edges", EdgeViewSet)
 router.register(r"conditionaledges", ConditionalEdgeViewSet)

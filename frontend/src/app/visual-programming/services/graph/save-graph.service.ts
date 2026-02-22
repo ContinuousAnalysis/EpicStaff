@@ -87,6 +87,14 @@ import {
 import {
     TelegramTriggerNodeService
 } from "../../../pages/flows-page/components/flow-visual-programming/services/telegram-trigger-node.service";
+import {
+    CreateCodeAgentNodeRequest,
+    GetCodeAgentNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
+import {
+    CodeAgentNodeService
+} from '../../../pages/flows-page/components/flow-visual-programming/services/code-agent-node.service';
+import { CodeAgentNodeModel } from '../../core/models/node.model';
 
 @Injectable({
     providedIn: 'root',
@@ -106,6 +114,7 @@ export class GraphUpdateService {
         private endNodeService: EndNodeService,
         private subGraphNodeService: SubGraphNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
+        private codeAgentNodeService: CodeAgentNodeService,
         private toastService: ToastService
     ) { }
 
@@ -467,6 +476,49 @@ export class GraphUpdateService {
             })
         );
 
+        // ---- Handle Code Agent Nodes ----
+        let deleteCodeAgentNodes$: Observable<any> = of(null);
+        if (graph.code_agent_node_list && graph.code_agent_node_list.length > 0) {
+            const deleteCodeAgentReqs = graph.code_agent_node_list.map(
+                (caNode: GetCodeAgentNodeRequest) =>
+                    this.codeAgentNodeService
+                        .deleteCodeAgentNode(caNode.id.toString())
+                        .pipe(catchError((err: any) => throwError(err)))
+            );
+            deleteCodeAgentNodes$ = forkJoin(deleteCodeAgentReqs);
+        }
+
+        const codeAgentNodes$ = deleteCodeAgentNodes$.pipe(
+            switchMap(() => {
+                const codeAgentNodes = flowState.nodes.filter(
+                    (node) => node.type === NodeType.CODE_AGENT
+                ) as CodeAgentNodeModel[];
+                const requests = codeAgentNodes.map((node) => {
+                    const payload: CreateCodeAgentNodeRequest = {
+                        node_name: node.node_name,
+                        graph: graph.id,
+                        llm_config: node.data.llm_config_id,
+                        agent_mode: node.data.agent_mode || 'build',
+                        system_prompt: node.data.system_prompt || '',
+                        stream_handler_code: node.data.stream_handler_code || '',
+                        libraries: node.data.libraries || [],
+                        polling_interval_ms: node.data.polling_interval_ms || 1000,
+                        silence_indicator_s: node.data.silence_indicator_s || 3,
+                        indicator_repeat_s: node.data.indicator_repeat_s || 5,
+                        chunk_timeout_s: node.data.chunk_timeout_s || 30,
+                        inactivity_timeout_s: node.data.inactivity_timeout_s || 120,
+                        max_wait_s: node.data.max_wait_s || 300,
+                        input_map: node.input_map || {},
+                        output_variable_path: node.output_variable_path || null,
+                    };
+                    return this.codeAgentNodeService
+                        .createCodeAgentNode(payload)
+                        .pipe(catchError((err: any) => throwError(err)));
+                });
+                return requests.length ? forkJoin(requests) : of([]);
+            })
+        );
+
         let deleteDecisionTableNodes$: Observable<any> = of(null);
         if (
             graph.decision_table_node_list &&
@@ -680,6 +732,7 @@ export class GraphUpdateService {
             fileExtractorNodes: fileExtractorNodes$,
             webhookTriggerNodes: webhookTriggerNodes$,
             telegramTriggerNodes: telegramTriggerNodes$,
+            codeAgentNodes: codeAgentNodes$,
             conditionalEdges: conditionalEdges$,
             endNodes: endNodes$,
             subGraphNodes: subGraphNodes$,

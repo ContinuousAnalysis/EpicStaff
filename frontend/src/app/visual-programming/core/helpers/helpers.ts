@@ -19,6 +19,7 @@ import { DEFAULT_SUBGRAPH_NODE_PORTS } from '../rules/subgraph-ports/subgraph-no
 import { DEFAULT_AUDIO_TO_TEXT_NODE_PORTS } from '../rules/audio-to-text-node-ports/audio-to-text-node-ports';
 import { DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS } from '../rules/webhook-trigger-ports/webhook-trigger-default-ports';
 import {DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS} from "../rules/telegram-trigger-ports/telegram-trigger-default-ports";
+import { DEFAULT_CODE_AGENT_NODE_PORTS } from '../rules/code-agent-ports/code-agent-node-default-ports';
 
 export const isDecisionPortRole = (role: string) =>
     role.startsWith('decision-out-') ||
@@ -75,6 +76,8 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
             return DEFAULT_END_NODE_PORTS;
         case NodeType.SUBGRAPH:
             return DEFAULT_SUBGRAPH_NODE_PORTS;
+        case NodeType.CODE_AGENT:
+            return DEFAULT_CODE_AGENT_NODE_PORTS;
         default:
             console.warn(`Unsupported node type: ${nodeType}`);
             return [];

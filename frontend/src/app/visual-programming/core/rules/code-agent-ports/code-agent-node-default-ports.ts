@@ -1,9 +1,9 @@
 import { BasePort } from '../../models/port.model';
 
-export const DEFAULT_PROJECT_NODE_PORTS: BasePort[] = [
+export const DEFAULT_CODE_AGENT_NODE_PORTS: BasePort[] = [
     {
         port_type: 'input',
-        role: 'project-in',
+        role: 'code-agent-in',
         multiple: true,
         label: 'In',
         allowedConnections: [
@@ -12,8 +12,8 @@ export const DEFAULT_PROJECT_NODE_PORTS: BasePort[] = [
             'edge-out',
             'start-start',
             'table-out',
-            'file-extractor-out',
             'llm-out-right',
+            'file-extractor-out',
             'subgraph-out',
             'audio-to-text-out',
             'webhook-trigger-out',
@@ -21,29 +21,28 @@ export const DEFAULT_PROJECT_NODE_PORTS: BasePort[] = [
             'code-agent-out',
         ],
         position: 'left',
-        color: '#5672cd',
+        color: '#00e676',
     },
     {
         port_type: 'output',
-        role: 'project-out',
+        role: 'code-agent-out',
         multiple: false,
         label: 'Out',
         allowedConnections: [
             'project-in',
             'python-in',
             'edge-in',
-            'llm-out-left',
             'table-in',
+            'llm-out-left',
             'file-extractor-in',
             'end-in',
             'subgraph-in',
-            'webhook-trigger-in',
             'audio-to-text-in',
             'webhook-trigger-in',
             'telegram-trigger-in',
             'code-agent-in',
         ],
         position: 'right',
-        color: '#5672cd',
+        color: '#00e676',
     },
 ];

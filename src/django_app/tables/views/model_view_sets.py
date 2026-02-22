@@ -136,6 +136,7 @@ from tables.models import (
     FileExtractorNode,
     SubGraphNode,
     AudioTranscriptionNode,
+    CodeAgentNode,
     RealtimeModel,
     StartNode,
     ToolConfigField,
@@ -151,6 +152,7 @@ from tables.serializers.model_serializers import (
     GraphSerializer,
     GraphSessionMessageSerializer,
     LLMNodeSerializer,
+    CodeAgentNodeSerializer,
     MemorySerializer,
     PythonCodeResultSerializer,
     PythonCodeSerializer,
@@ -672,6 +674,10 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
                 Prefetch("subgraph_node_list", queryset=SubGraphNode.objects.all()),
+                Prefetch(
+                    "code_agent_node_list",
+                    queryset=CodeAgentNode.objects.select_related("llm_config"),
+                ),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
                 Prefetch(
                     "telegram_trigger_node_list",
@@ -736,6 +742,11 @@ class AudioTranscriptionNodeViewSet(viewsets.ModelViewSet):
 class LLMNodeViewSet(viewsets.ModelViewSet):
     queryset = LLMNode.objects.all()
     serializer_class = LLMNodeSerializer
+
+
+class CodeAgentNodeViewSet(viewsets.ModelViewSet):
+    queryset = CodeAgentNode.objects.all()
+    serializer_class = CodeAgentNodeSerializer
 
 
 class EdgeViewSet(viewsets.ModelViewSet):

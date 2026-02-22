@@ -58,6 +58,7 @@ from tables.models.crew_models import (
 )
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.graph_models import (
+    CodeAgentNode,
     Condition,
     ConditionGroup,
     DecisionTableNode,
@@ -1279,6 +1280,12 @@ class LLMNodeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class CodeAgentNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CodeAgentNode
+        fields = "__all__"
+
+
 class EdgeSerializer(serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
         model = Edge
@@ -1584,6 +1591,7 @@ class GraphSerializer(serializers.ModelSerializer):
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
     subgraph_node_list = SubGraphNodeSerializer(many=True, read_only=True)
+    code_agent_node_list = CodeAgentNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
@@ -1606,6 +1614,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "webhook_trigger_node_list",
             "decision_table_node_list",
             "subgraph_node_list",
+            "code_agent_node_list",
             "start_node_list",
             "end_node_list",
             "time_to_live",

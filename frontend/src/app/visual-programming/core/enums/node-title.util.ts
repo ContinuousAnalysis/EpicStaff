@@ -33,6 +33,8 @@ export function getNodeTitle(node: NodeModel): string {
             return (node as any).node_name || '';
         case NodeType.END:
             return 'End';
+        case NodeType.CODE_AGENT:
+            return (node as any).node_name || 'Code Agent';
         case NodeType.SUBGRAPH:
             const subgraphNode = node as SubGraphNodeModel;
             if (subgraphNode.isBlocked || !subgraphNode.data?.name) {

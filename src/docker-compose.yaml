@@ -312,6 +312,31 @@ services:
     stdin_open: true
     depends_on:
       - redis
+  code:
+    image: code
+    build:
+      context: .
+      dockerfile: ./code/Dockerfile.code
+    container_name: code
+    environment:
+      - DJANGO_API_URL=${DJANGO_API_URL}
+      - CODE_MANAGER_PORT=${CODE_MANAGER_PORT}
+      - CODE_BASE_PORT=${CODE_BASE_PORT}
+      - CODE_MAX_INSTANCES=${CODE_MAX_INSTANCES}
+      - CODE_IDLE_TIMEOUT=${CODE_IDLE_TIMEOUT}
+      - CODE_REAP_INTERVAL=${CODE_REAP_INTERVAL}
+      - CODE_INSTANCES_DIR=${CODE_INSTANCES_DIR}
+      - CONTAINER_SAVEFILES_PATH=${CONTAINER_SAVEFILES_PATH}
+    volumes:
+      - ${CREW_SAVEFILES_PATH}:${CONTAINER_SAVEFILES_PATH}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - backend-network
+    tty: true
+    stdin_open: true
+    depends_on:
+      - redis
   knowledge:
     image: knowledge
     build:
