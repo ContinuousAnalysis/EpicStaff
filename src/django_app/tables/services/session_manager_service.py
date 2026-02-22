@@ -19,6 +19,7 @@ from tables.services.redis_service import RedisService
 from tables.validators.file_node_validator import FileNodeValidator
 
 from tables.request_models import (
+    CodeAgentNodeData,
     ConditionalEdgeData,
     CrewNodeData,
     DecisionTableNodeData,
@@ -35,6 +36,7 @@ from tables.request_models import (
     TelegramTriggerNodeData,
 )
 from tables.models import (
+    CodeAgentNode,
     CrewNode,
     Session,
     Edge,
@@ -256,6 +258,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         subgraph_node_list = SubGraphNode.objects.filter(graph=graph.pk)
         webhook_trigger_node_list = WebhookTriggerNode.objects.filter(graph=graph.pk)
         telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
+        code_agent_node_list = CodeAgentNode.objects.filter(graph=graph.pk)
 
         if file_extractor_node_list:
             self.file_node_validator.validate_file_nodes(file_extractor_node_list)
@@ -314,6 +317,27 @@ class SessionManagerService(metaclass=SingletonMeta):
         for item in llm_node_list:
             llm_node_data_list.append(
                 self.converter_service.convert_llm_node_to_pydantic(llm_node=item)
+            )
+
+        code_agent_node_data_list: list[CodeAgentNodeData] = []
+        for item in code_agent_node_list:
+            code_agent_node_data_list.append(
+                CodeAgentNodeData(
+                    node_name=item.node_name,
+                    llm_config_id=item.llm_config_id,
+                    agent_mode=item.agent_mode,
+                    system_prompt=item.system_prompt,
+                    stream_handler_code=item.stream_handler_code,
+                    libraries=item.libraries or [],
+                    polling_interval_ms=item.polling_interval_ms,
+                    silence_indicator_s=item.silence_indicator_s,
+                    indicator_repeat_s=item.indicator_repeat_s,
+                    chunk_timeout_s=item.chunk_timeout_s,
+                    inactivity_timeout_s=item.inactivity_timeout_s,
+                    max_wait_s=item.max_wait_s,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                )
             )
 
         edge_data_list: list[EdgeData] = []
@@ -394,6 +418,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             end_node_data = None
 
         return GraphData(
+            graph_id=graph.pk,
             name=graph.name,
             crew_node_list=crew_node_data_list,
             webhook_trigger_node_data_list=webhook_trigger_node_data_list,
@@ -401,6 +426,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             file_extractor_node_list=file_extractor_node_data_list,
             audio_transcription_node_list=audio_transcription_node_data_list,
             llm_node_list=llm_node_data_list,
+            code_agent_node_list=code_agent_node_data_list,
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,
             decision_table_node_list=decision_table_node_data_list,

@@ -17,6 +17,7 @@ from tables.models import (
     RealtimeTranscriptionConfig,
 )
 from tables.serializers.model_serializers import (
+    CodeAgentNodeSerializer,
     GraphSerializer,
     CrewNodeSerializer,
     PythonNodeSerializer,
@@ -403,11 +404,17 @@ class ConditionalEdgeExportSerializer(ConditionalEdgeSerializer):
     python_code = PythonCodeExportSerializer()
 
 
+class CodeAgentNodeExportSerializer(CodeAgentNodeSerializer):
+    class Meta(CodeAgentNodeSerializer.Meta):
+        pass
+
+
 class GraphExportSerializer(GraphSerializer):
     crew_node_list = CrewNodeExportSerializer(many=True)
     python_node_list = PythonNodeExportSerializer(many=True)
     conditional_edge_list = ConditionalEdgeExportSerializer(many=True)
     file_extractor_node_list = FileExtractorNodeSerializer(many=True)
+    code_agent_node_list = CodeAgentNodeExportSerializer(many=True)
     end_node_list = EndNodeSerializer(many=True, source="end_node")
     crews = serializers.SerializerMethodField()
     agents = serializers.SerializerMethodField()

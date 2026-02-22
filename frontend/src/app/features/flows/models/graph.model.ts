@@ -27,6 +27,9 @@ import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/componen
 import {
     GetTelegramTriggerNodeRequest
 } from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
+import {
+    GetCodeAgentNodeRequest
+} from "../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model";
 
 export interface GraphDto {
     id: number;
@@ -47,6 +50,7 @@ export interface GraphDto {
     metadata: FlowModel;
     tags?: [];
     audio_transcription_node_list: GetAudioToTextNodeRequest[];
+    code_agent_node_list: GetCodeAgentNodeRequest[];
 }
 
 export interface GetGraphLightRequest {
@@ -74,6 +78,7 @@ export interface CreateGraphDtoRequest {
     end_node_list?: EndNode[];
     subgraph_node_list?: SubGraphNode[];
     decision_table_node_list?: GetDecisionTableNodeRequest[];
+    code_agent_node_list?: GetCodeAgentNodeRequest[];
 }
 
 export interface UpdateGraphDtoRequest {

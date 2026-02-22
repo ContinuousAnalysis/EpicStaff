@@ -14,6 +14,7 @@ from src.crew.services.graph.nodes import (
     EndNode,
 )
 
+from src.crew.services.graph.nodes.code_agent_node import CodeAgentNode
 from src.crew.services.graph.nodes.llm_node import LLMNode
 from src.crew.services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
 from src.crew.services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
@@ -292,6 +293,29 @@ class SessionGraphBuilder:
                 stop_event=self.stop_event,
             )
             self.add_node(llm_node)
+
+        for ca_data in schema.code_agent_node_list:
+            code_agent_node = CodeAgentNode(
+                session_id=self.session_id,
+                graph_id=schema.graph_id,
+                node_name=ca_data.node_name,
+                stop_event=self.stop_event,
+                input_map=ca_data.input_map,
+                output_variable_path=ca_data.output_variable_path,
+                python_code_executor_service=self.python_code_executor_service,
+                llm_config_id=ca_data.llm_config_id,
+                agent_mode=ca_data.agent_mode,
+                system_prompt=ca_data.system_prompt,
+                stream_handler_code=ca_data.stream_handler_code,
+                libraries=ca_data.libraries,
+                polling_interval_ms=ca_data.polling_interval_ms,
+                silence_indicator_s=ca_data.silence_indicator_s,
+                indicator_repeat_s=ca_data.indicator_repeat_s,
+                chunk_timeout_s=ca_data.chunk_timeout_s,
+                inactivity_timeout_s=ca_data.inactivity_timeout_s,
+                max_wait_s=ca_data.max_wait_s,
+            )
+            self.add_node(code_agent_node)
 
         for edge in schema.edge_list:
             self.add_edge(edge.start_key, edge.end_key)
