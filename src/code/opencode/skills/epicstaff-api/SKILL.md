@@ -1,7 +1,7 @@
 ---
 id: epicstaff
 name: EpicStaff Flow Management
-version: 1.1
+version: 1.2
 trigger: always_on
 triggers: [epicstaff, epic-staff, flows, sessions]
 scope: [api, cli, integration]
@@ -562,21 +562,23 @@ Every `create-node`, `create-webhook`, and `create-code-agent-node` command must
 
 #### 4. Input Maps and Output Paths
 
-- **Python nodes**: `init-metadata` auto-parses `main()` parameters to generate `input_map` mapping each param to `variables.<param>`. This works for simple cases but may need manual adjustment for DDD-style nested paths.
-- **Code Agent nodes**: `input_map` is NOT auto-generated. You must set it manually after `init-metadata`. The Code Agent runtime passes all input_map values as the stream handler `context` dict.
-- **output_variable_path**: For Python nodes, defaults to `"variables"` (merges returned dict into graph state). For Code Agent nodes, set explicitly if downstream nodes need to read its output (e.g. `"variables"`).
+- **All node types**: `init-metadata` reads `input_map` and `output_variable_path` from the DB. If the DB values are empty, Python nodes fall back to auto-parsing `main()` parameters → `variables.<param>`.
+- **Python nodes**: Auto-parsed `input_map` works for simple cases but may need manual adjustment for DDD-style nested paths. `output_variable_path` defaults to `"variables"`.
+- **Project (crew) nodes**: `input_map` and `output_variable_path` must be set on the DB crew node (via API or UI) before running `init-metadata`. The metadata `data.id` is populated from the crew ID.
+- **Code Agent nodes**: The Code Agent runtime passes all `input_map` values as the stream handler `context` dict.
 
 #### 5. `init-metadata` Limitations
 
 `init-metadata` rebuilds the metadata JSON from DB state. It handles:
 - ✅ Node positions (auto-layout from edges)
 - ✅ Connections (from DB edges)
-- ✅ Python node `input_map` (from `main()` signature)
-- ✅ Python node `output_variable_path` (defaults to `"variables"`)
+- ✅ `input_map` and `output_variable_path` from DB for all node types
+- ✅ Python node `input_map` fallback (auto-parsed from `main()` signature)
+- ✅ Python node `output_variable_path` fallback (defaults to `"variables"`)
+- ✅ Project node `data.id` (crew ID for frontend dialog)
 
 It does **NOT** handle:
 - ❌ Start node variables (must be set separately via Domain dialog or API)
-- ❌ Code Agent node `input_map` (must be set manually)
 - ❌ DDD-style nested input_map paths (auto-generates flat `variables.X`)
 - ❌ Libraries on webhook/code-agent nodes (come from DB, must be set at creation time)
 
