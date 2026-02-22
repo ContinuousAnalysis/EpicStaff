@@ -499,7 +499,9 @@ def _build_node_data(db_node, meta_type):
     elif meta_type == "classification-decision-table":
         return {"name": db_node.get("node_name", "")}
     elif meta_type == "project":
-        return {"name": db_node.get("node_name", "")}
+        crew = db_node.get("crew") or {}
+        crew_id = crew.get("id") if isinstance(crew, dict) else crew
+        return {"id": crew_id, "name": db_node.get("node_name", "")}
     elif meta_type == "code-agent":
         return {
             "llm_config_id": db_node.get("llm_config"),
@@ -605,11 +607,16 @@ def cmd_init_metadata(args):
         defaults = _NODE_DEFAULTS.get(info["type"], _NODE_DEFAULTS["python"])
         data = _build_node_data(info["db_node"], info["type"])
 
-        # Auto-generate input_map for Python nodes from main() signature
-        input_map = {}
-        if info["type"] == "python":
+        # input_map: prefer DB value, fall back to auto-parse for Python nodes
+        db_input_map = info["db_node"].get("input_map") or {}
+        if not db_input_map and info["type"] == "python":
             code = info["db_node"].get("python_code", {}).get("code", "")
-            input_map = _parse_input_map(code)
+            db_input_map = _parse_input_map(code)
+
+        # output_variable_path: prefer DB value, default to "variables" for Python nodes
+        db_ovp = info["db_node"].get("output_variable_path")
+        if db_ovp is None and info["type"] == "python":
+            db_ovp = "variables"
 
         meta_nodes.append({
             "id": info["uuid"],
@@ -622,9 +629,9 @@ def cmd_init_metadata(args):
             "category": "web",
             "parentId": None,
             "position": pos,
-            "input_map": input_map,
+            "input_map": db_input_map,
             "node_name": name,
-            "output_variable_path": "variables" if info["type"] == "python" else None,
+            "output_variable_path": db_ovp,
         })
 
     # Build metadata connections from edges
