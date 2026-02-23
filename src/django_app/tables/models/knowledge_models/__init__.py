@@ -12,6 +12,7 @@ from .naive_rag_models import (
     NaiveRagEmbedding,
     AgentNaiveRag,
     NaiveRagSearchConfig,
+    NaiveRagPreviewChunk,
 )
 
 from .graphrag_models import (
