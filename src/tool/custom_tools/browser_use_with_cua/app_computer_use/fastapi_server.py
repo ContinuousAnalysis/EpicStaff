@@ -1,4 +1,5 @@
-import sys, asyncio
+import sys
+import asyncio
 
 if sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -6,7 +7,6 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from test_computer_use import main as computer_main
-from browser_use_test import amain as browser_main
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")

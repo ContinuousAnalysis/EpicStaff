@@ -5,7 +5,6 @@ from tables.models import EmbedderTask
 
 
 class EmbeddingModel(models.Model):
-
     name = models.TextField()
     predefined = models.BooleanField(default=False)
     embedding_provider = models.ForeignKey(
@@ -28,8 +27,8 @@ class EmbeddingModel(models.Model):
         )
 
 
-class EmbeddingConfig(models.Model):
 
+class EmbeddingConfig(models.Model):
     model = models.ForeignKey("EmbeddingModel", on_delete=models.SET_NULL, null=True)
     custom_name = models.TextField(unique=True)
     task_type = models.CharField(
@@ -51,7 +50,6 @@ class EmbeddingConfig(models.Model):
 
 
 class DefaultEmbeddingConfig(DefaultBaseModel):
-
     model = models.ForeignKey("EmbeddingModel", on_delete=models.SET_NULL, null=True)
     task_type = models.CharField(
         max_length=255, choices=EmbedderTask.choices, default=EmbedderTask.RETRIEVAL_DOC

@@ -1,9 +1,11 @@
+import hashlib
+import json
 import uuid
 from django.db import models
-from django.utils import timezone
 from loguru import logger
-import json
-from pathlib import Path
+from django.utils import timezone
+
+from tables.models.base_models import BaseGraphEntity, BaseGlobalNode
 
 
 class Graph(models.Model):
@@ -20,7 +22,7 @@ class Graph(models.Model):
     )
 
 
-class BaseNode(models.Model):
+class BaseNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
     node_name = models.CharField(max_length=255, blank=True)
     input_map = models.JSONField(default=dict)
@@ -113,7 +115,7 @@ class LLMNode(BaseNode):
         ]
 
 
-class EndNode(models.Model):
+class EndNode(BaseGraphEntity, BaseGlobalNode):
     # TODO: can be OneToOne field
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="end_node"
@@ -138,8 +140,25 @@ class EndNode(models.Model):
         super().save(*args, **kwargs)
 
 
-class Edge(models.Model):
+class SubGraphNode(BaseNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="subgraph_node_list"
+    )
+    subgraph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="as_subgraph"
+    )
+    # TODO: maybe SET_NULL on delete?
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "node_name"],
+                name="unique_graph_node_name_for_subgraph_node",
+            )
+        ]
+
+
+class Edge(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="edge_list"
     )
@@ -154,8 +173,7 @@ class Edge(models.Model):
         ]
 
 
-class ConditionalEdge(models.Model):
-
+class ConditionalEdge(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="conditional_edge_list"
     )
@@ -181,7 +199,7 @@ class GraphSessionMessage(models.Model):
     uuid = models.UUIDField(null=False, editable=False, unique=True)
 
 
-class StartNode(models.Model):
+class StartNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="start_node_list"
     )
@@ -193,7 +211,7 @@ class StartNode(models.Model):
         ]
 
 
-class DecisionTableNode(models.Model):
+class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="decision_table_node_list"
     )
@@ -251,7 +269,6 @@ class Condition(models.Model):
 
 
 class GraphFile(models.Model):
-
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="uploaded_files"
     )
@@ -280,12 +297,10 @@ class GraphFile(models.Model):
 
 
 class Organization(models.Model):
-
     name = models.CharField(max_length=256, blank=False, unique=True)
 
 
 class OrganizationUser(models.Model):
-
     name = models.CharField(max_length=256, blank=False)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
 
@@ -299,7 +314,6 @@ class OrganizationUser(models.Model):
 
 
 class BasePersistentEntity(models.Model):
-
     graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
     persistent_variables = models.JSONField(
         default=dict,
@@ -311,7 +325,6 @@ class BasePersistentEntity(models.Model):
 
 
 class GraphOrganization(BasePersistentEntity):
-
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="graph"
     )
@@ -330,7 +343,6 @@ class GraphOrganization(BasePersistentEntity):
 
 
 class GraphOrganizationUser(BasePersistentEntity):
-
     user = models.ForeignKey(
         OrganizationUser, on_delete=models.CASCADE, related_name="graph"
     )
@@ -344,7 +356,7 @@ class GraphOrganizationUser(BasePersistentEntity):
         ]
 
 
-class WebhookTriggerNode(models.Model):
+class WebhookTriggerNode(BaseGraphEntity, BaseGlobalNode):
     node_name = models.CharField(max_length=255, blank=False)
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="webhook_trigger_node_list"
@@ -366,8 +378,7 @@ class WebhookTriggerNode(models.Model):
         ]
 
 
-class TelegramTriggerNode(models.Model):
-
+class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
     node_name = models.CharField(max_length=255, blank=False)
     telegram_bot_api_key = models.CharField(
         max_length=255, blank=True, null=True, default=None

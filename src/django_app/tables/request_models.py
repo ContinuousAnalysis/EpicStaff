@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Annotated, Any, List, Literal, Optional, Union
-from pydantic import AnyUrl, BaseModel, Field, HttpUrl, model_validator, root_validator
-from decimal import Decimal
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class LLMConfigData(BaseModel):
@@ -141,7 +140,7 @@ class BaseKnowledgeSearchMessage(BaseModel):
 
     collection_id: int
     rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
-    rag_type: str  # Type of RAG ("naive", "graph", etc.)
+    rag_type: Literal["naive", "graph"]
     uuid: str
     query: str
     rag_search_config: (
@@ -195,6 +194,7 @@ class RealtimeAgentChatData(BaseModel):
     input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
     output_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
 
+
 class CrewData(BaseModel):
     class Process(str, Enum):
         sequential = "sequential"
@@ -237,6 +237,7 @@ class TaskData(BaseModel):
 class SessionData(BaseModel):
     id: int
     graph: "GraphData"
+    unique_subgraph_list: list["SubGraphData"] = []
     initial_state: dict[str, Any] = {}
 
 
@@ -363,6 +364,7 @@ class GraphData(BaseModel):
     webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
+    subgraph_node_list: list["SubGraphNodeData"] = []
     audio_transcription_node_list: list[AudioTranscriptionNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
@@ -371,6 +373,19 @@ class GraphData(BaseModel):
     entrypoint: str
     end_node: EndNodeData | None
     telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
+
+
+class SubGraphNodeData(BaseModel):
+    node_name: str
+    subgraph_id: int
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+
+class SubGraphData(BaseModel):
+    id: int
+    data: GraphData
+    initial_state: dict[str, Any] = {}
 
 
 class GraphSessionMessageData(BaseModel):
@@ -391,14 +406,19 @@ class KnowledgeSearchMessage(BaseModel):
 
 
 class ChunkDocumentMessage(BaseModel):
-    naive_rag_document_id: int
-
+    chunking_job_id: str  # UUID
+    rag_type: Literal["naive", "graph"]
+    document_config_id: int
 
 
 class ChunkDocumentMessageResponse(BaseModel):
-    naive_rag_document_id: int
-    success: bool
-    message: str | None
+    chunking_job_id: str  # UUID
+    rag_type: Literal["naive", "graph"]
+    document_config_id: int
+    status: str  # "completed", "failed", "cancelled"
+    chunk_count: int | None = None
+    message: str | None = None
+    elapsed_time: float | None = None
 
 
 class StopSessionMessage(BaseModel):
@@ -411,7 +431,6 @@ class WebhookEventData(BaseModel):
 
 
 class ProcessRagIndexingMessage(BaseModel):
-
     rag_id: int
-    rag_type: str  # "naive" or "graph"
+    rag_type: Literal["naive", "graph"]
     collection_id: int

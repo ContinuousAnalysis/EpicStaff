@@ -2,13 +2,12 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from tables.views.model_view_sets import (
-    ConditionGroupModelViewSet,
-    ConditionModelViewSet,
     ConditionalEdgeViewSet,
     CrewNodeViewSet,
     DecisionTableNodeModelViewSet,
     EdgeViewSet,
     EndNodeModelViewSet,
+    SubGraphNodeModelViewSet,
     GraphLightViewSet,
     GraphViewSet,
     McpToolViewSet,
@@ -97,6 +96,7 @@ from tables.views.knowledge_views.naive_rag_views import (
     NaiveRagDocumentConfigViewSet,
     ProcessNaiveRagDocumentChunkingView,
     NaiveRagChunkViewSet,
+    NaiveRagChunkPreviewView,
 )
 
 
@@ -134,6 +134,7 @@ router.register(r"audio-transcription-nodes", AudioTranscriptionNodeViewSet)
 router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
+router.register(r"subgraph-nodes", SubGraphNodeModelViewSet)
 
 router.register(r"edges", EdgeViewSet)
 router.register(r"conditionaledges", ConditionalEdgeViewSet)
@@ -252,10 +253,16 @@ urlpatterns = [
         RunSessionSSEViewSwagger.as_view(),
         name="run-session-subscribe-swagger",
     ),
+    # Chunking preview endpoints
     path(
-        "process-document-chunking/",
+        "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/process-chunking/",
         ProcessNaiveRagDocumentChunkingView.as_view(),
         name="process-document-chunking",
+    ),
+    path(
+        "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/chunks/",
+        NaiveRagChunkPreviewView.as_view(),
+        name="naive-rag-chunks-preview",
     ),
     path(
         "process-rag-indexing/",

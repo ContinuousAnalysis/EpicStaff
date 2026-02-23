@@ -1,8 +1,7 @@
 import ast
 import os
-from datetime import datetime
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image
 from gradio_client import Client, handle_file
 from os_computer_use.logging import logger
 

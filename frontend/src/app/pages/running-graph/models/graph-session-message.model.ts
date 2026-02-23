@@ -26,9 +26,11 @@ export enum MessageType {
   TASK = 'task',
   UPDATE_SESSION_STATUS = 'update_session_status',
   EXTRACTED_CHUNKS = 'extracted_chunks',
+  SUBGRAPH_START = 'subgraph_start',
+  SUBGRAPH_FINISH = 'subgraph_finish',
+  GRAPH_END = 'graph_end',
 }
 
-// Message data interfaces - these match the camelCase structure used in your code
 export interface FinishMessageData {
   output: any;
   state: Record<string, any>;
@@ -134,6 +136,38 @@ export interface ExtractedChunksMessageData {
   rag_search_config: RagSearchConfig;
 }
 
+// State history item interface for subflow messages
+export interface StateHistoryItem {
+  name: string;
+  type: string;
+  input: Record<string, any>;
+  output: Record<string, any>;
+  variables: Record<string, any>;
+  additional_data: Record<string, any>;
+}
+
+// Subflow state interface
+export interface SubflowState {
+  variables: Record<string, any>;
+  state_history: StateHistoryItem[];
+}
+
+export interface StartSubflowMessageData {
+  input: Record<string, any>;
+  state: SubflowState;
+  message_type: MessageType.SUBGRAPH_START;
+}
+
+export interface FinishSubflowMessageData {
+  output: any;
+  state: SubflowState;
+  message_type: MessageType.SUBGRAPH_FINISH;
+}
+
+export interface GraphEndMessageData {
+  message_type: MessageType.GRAPH_END;
+}
+
 // Type union for all message data types
 export type MessageData =
   | FinishMessageData
@@ -146,4 +180,7 @@ export type MessageData =
   | UserMessageData
   | TaskMessageData
   | UpdateSessionStatusMessageData
-  | ExtractedChunksMessageData;
+  | ExtractedChunksMessageData
+  | StartSubflowMessageData
+  | FinishSubflowMessageData
+  | GraphEndMessageData;

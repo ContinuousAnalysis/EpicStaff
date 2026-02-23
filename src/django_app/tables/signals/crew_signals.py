@@ -11,7 +11,6 @@ def handle_crew_agents_change(sender, instance, action, pk_set, **kwargs):
     When agents are removed from a crew, set their assigned tasks' agent field to None.
     """
     if action == "post_remove":
-
         # pk_set of agents that were removed
         removed_agent_ids = pk_set
 

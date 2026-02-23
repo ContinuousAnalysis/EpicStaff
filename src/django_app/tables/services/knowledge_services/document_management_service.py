@@ -250,7 +250,6 @@ class DocumentManagementService:
 
         try:
             for validated_file in validated_files:
-
                 # Create content
                 document_content = DocumentManagementService.create_document_content(
                     uploaded_file=validated_file["uploaded_file"],

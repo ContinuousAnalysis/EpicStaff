@@ -1,7 +1,5 @@
-from typing import Any, Union
-import typing
+from typing import Any
 from pydantic import BaseModel, HttpUrl
-
 
 
 class ClassDataResponseModel(BaseModel):

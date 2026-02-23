@@ -2,6 +2,7 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    signal,
     OnInit,
     OnDestroy,
     HostListener,
@@ -77,11 +78,13 @@ import { isEqual } from 'lodash';
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { ConfigService } from '../../../../services/config/config.service';
 import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
+import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
+import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
-    imports: [FlowHeaderComponent, FlowGraphComponent, SpinnerComponent],
+    imports: [FlowHeaderComponent, FlowGraphComponent, SpinnerComponent, ShortcutsModalComponent],
     templateUrl: './flow-visual-programming.component.html',
     styleUrl: './flow-visual-programming.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -133,6 +136,20 @@ export class FlowVisualProgrammingComponent
         this.flowApiService
             .getGraphById(graphId)
             .pipe(
+                switchMap((graph: GraphDto) =>
+                    this.flowApiService.getGraphsLight().pipe(
+                        map((flows) =>
+                            this.applySubgraphNodeValidation(graph, flows)
+                        ),
+                        catchError((err) => {
+                            console.error(
+                                'Error fetching flows for subgraph validation:',
+                                err
+                            );
+                            return of(graph);
+                        })
+                    )
+                ),
                 takeUntil(this.destroy$),
                 finalize(() => this.cdr.markForCheck())
             )
@@ -144,12 +161,59 @@ export class FlowVisualProgrammingComponent
 
                     this.isLoaded = true;
                     this.initialState = graph.metadata;
+
+                    const blockedCount =
+                        graph.metadata?.nodes?.filter(
+                            (node) =>
+                                node.type === NodeType.SUBGRAPH &&
+                                node.isBlocked
+                        ).length || 0;
+
+                    if (blockedCount > 0) {
+                        this.toastService.warning(
+                            `${blockedCount} subgraph node(s) reference missing flows and were blocked.`,
+                            6000,
+                            'bottom-right'
+                        );
+                    }
                 },
                 error: (err) => {
                     console.error('Error fetching graph:', err);
                     this.toastService.error('Failed to load graph');
                 },
             });
+    }
+
+    private applySubgraphNodeValidation(
+        graph: GraphDto,
+        availableFlows: GraphDto[]
+    ): GraphDto {
+        if (!graph.metadata || !Array.isArray(graph.metadata.nodes)) {
+            return graph;
+        }
+
+        const availableIds = new Set(availableFlows.map((flow) => flow.id));
+        const updatedNodes = graph.metadata.nodes.map((node) => {
+            if (node.type !== NodeType.SUBGRAPH) {
+                return node;
+            }
+
+            const subgraphId = Number((node as any)?.data?.id);
+            const isMissing = !subgraphId || !availableIds.has(subgraphId);
+
+            return {
+                ...node,
+                isBlocked: isMissing,
+            };
+        });
+
+        return {
+            ...graph,
+            metadata: {
+                ...graph.metadata,
+                nodes: updatedNodes,
+            },
+        };
     }
 
     public handleSaveFlow(showNotif: boolean): Observable<boolean> {
@@ -496,5 +560,27 @@ export class FlowVisualProgrammingComponent
 
     private flushActiveSidePanelState(): void {
         this.flowGraphComponent?.flushOpenSidePanelState();
+    }
+
+    public isShortcutsOpen = signal(false);
+    public shortcutsPos = signal<{ top: number; left: number } | null>(null);
+    public readonly shortcutSections = FLOW_SHORTCUT_SECTIONS;
+
+    public openShortcutsModal(rect: DOMRect): void {
+        if (this.isShortcutsOpen()) {
+            this.closeShortcutsModal();
+            return;
+        }
+
+        const top = rect.top;
+        const left = rect.right - 30;
+
+        this.shortcutsPos.set({ top, left });
+        this.isShortcutsOpen.set(true);
+    }
+
+    public closeShortcutsModal(): void {
+        this.isShortcutsOpen.set(false);
+        this.shortcutsPos.set(null);
     }
 }

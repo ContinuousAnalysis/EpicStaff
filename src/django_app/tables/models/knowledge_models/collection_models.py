@@ -1,5 +1,4 @@
 from django.db import models
-import uuid
 
 from loguru import logger
 
@@ -55,7 +54,6 @@ class SourceCollection(models.Model):
         return self.collection_name
 
     def _generate_unique_collection_name(self, base_name):
-
         existing_names = SourceCollection.objects.filter(
             user_id=self.user_id, collection_name__startswith=base_name
         ).values_list("collection_name", flat=True)

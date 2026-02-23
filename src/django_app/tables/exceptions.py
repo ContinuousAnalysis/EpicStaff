@@ -1,6 +1,5 @@
 from rest_framework.exceptions import APIException
 from tables.constants.knowledge_constants import (
-    MAX_FILE_SIZE,
     ALLOWED_FILE_TYPES,
 )
 
@@ -72,6 +71,13 @@ class InvalidTaskOrderError(CustomAPIExeption):
     default_code = "invalid_context_task_order"
 
 
+class SubGraphValidationError(CustomAPIExeption):
+    status_code = 400
+    default_detail = (
+        "ValidationError occured in SubGraphValidator during subgraph validation"
+    )
+
+
 class BuiltInToolModificationError(CustomAPIExeption):
     """
     Exception raised when someone tries to modify a built-in PythonCodeTool.
@@ -80,9 +86,11 @@ class BuiltInToolModificationError(CustomAPIExeption):
     def __init__(self, detail="Unable to remove built-in tools", code=None):
         super().__init__(detail=detail, code=code, status_code=400)
 
+
 class RegisterTelegramTriggerError(CustomAPIExeption):
     status_code = 400
     default_detail = "Error occurred while registering Telegram trigger"
+
 
 class PythonCodeToolConfigSerializerError(CustomAPIExeption):
     """
@@ -95,7 +103,6 @@ class PythonCodeToolConfigSerializerError(CustomAPIExeption):
         code=None,
     ):
         super().__init__(detail=detail, code=code, status_code=400)
-
 
 
 class DocumentUploadException(CustomAPIExeption):
@@ -217,7 +224,9 @@ class EmbedderNotFoundException(RagException):
 class InvalidChunkParametersException(RagException):
     """Raised when chunk parameters are invalid."""
 
-    pass
+    def __init__(self, detail=None, errors=None):
+        self.errors = errors or []
+        super().__init__(detail=detail)
 
 
 class DocumentsNotFoundException(RagException):

@@ -1,7 +1,7 @@
-from typing import Any, Literal
-from decimal import Decimal
+from typing import Literal
 from itertools import chain
 
+from tables.serializers.base_serializer import BaseGraphEntityMixin
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
 )
@@ -36,6 +36,7 @@ from tables.models import (
     GraphSessionMessage,
     PythonNode,
     FileExtractorNode,
+    SubGraphNode,
     AudioTranscriptionNode,
     GraphFile,
 )
@@ -281,7 +282,6 @@ class DefaultEmbeddingConfigSerializer(serializers.ModelSerializer):
 
 
 class ToolConfigFieldSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ToolConfigField
         fields = ["name", "description", "data_type", "required"]
@@ -334,7 +334,6 @@ class PythonCodeSerializer(serializers.ModelSerializer):
 
 
 class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = PythonCodeToolConfigField
         fields = [
@@ -445,7 +444,6 @@ class McpToolSerializer(serializers.ModelSerializer):
 
 
 class RealtimeAgentSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = RealtimeAgent
         exclude = ["agent"]
@@ -1002,7 +1000,6 @@ class TaskWriteSerializer(serializers.ModelSerializer):
         configured_tool_list = []
         mcp_tool_list = []
         for tool_id in tool_ids:
-
             prefix, id_ = tool_id.split(":")
             if prefix == "python-code-tool":
                 python_code_tool = PythonCodeTool.objects.get(pk=id_)
@@ -1088,7 +1085,6 @@ class CrewSerializer(serializers.ModelSerializer):
 
 
 class ToolConfigSerializer(serializers.ModelSerializer):
-
     def __init__(
         self, *args, tool_config_validator: ToolConfigValidator | None = None, **kwargs
     ):
@@ -1102,7 +1098,6 @@ class ToolConfigSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def validate(self, data: dict):
-
         name: str = data.get("name")
         tool: Tool = data.get("tool")
         configuration: dict = data.get("configuration", dict())
@@ -1129,14 +1124,12 @@ class ToolConfigSerializer(serializers.ModelSerializer):
     def to_representation(
         self, instance: ToolConfig, format: Literal["rest", "pydantic"] = "rest"
     ) -> dict:
-
         data = super().to_representation(instance)
         configuration: dict = data["configuration"]
 
         for key, value in configuration.items():
             tool_config_field: ToolConfigField = instance.get_tool_config_field(key)
             if tool_config_field.data_type == ToolConfigField.FieldType.ANY:
-
                 # Get rid of ternar operator. Use only value["decoded_value"] (as pydantic)
                 value = (
                     value["user_input"] if format == "rest" else value["decoded_value"]
@@ -1150,12 +1143,11 @@ class ToolConfigSerializer(serializers.ModelSerializer):
         return data
 
     def to_internal_value(self, data: dict) -> dict:
-
         try:
             tool: Tool = Tool.objects.get(pk=data.get("tool"))
         except Tool.DoesNotExist:
             raise ToolConfigSerializerError(
-                f"Tool with id: '{data.get("tool")}' does not exist", status_code=404
+                f"Tool with id: '{data.get('tool')}' does not exist", status_code=404
             )
         configuration: dict = data.get("configuration", dict())
 
@@ -1187,7 +1179,6 @@ class ToolConfigSerializer(serializers.ModelSerializer):
 
 
 class UserSessionMessageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserSessionMessage
 
@@ -1195,7 +1186,6 @@ class UserSessionMessageSerializer(serializers.ModelSerializer):
 
 
 class TaskSessionMessageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = TaskSessionMessage
 
@@ -1203,7 +1193,6 @@ class TaskSessionMessageSerializer(serializers.ModelSerializer):
 
 
 class AgentSessionMessageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = AgentSessionMessage
         fields = "__all__"
@@ -1291,15 +1280,30 @@ class LLMNodeSerializer(serializers.ModelSerializer):
 
 
 class EdgeSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = Edge
         fields = "__all__"
+
+
+class SubGraphNodeSerializer(serializers.ModelSerializer):
+    class Meta(BaseGraphEntityMixin.Meta):
+        model = SubGraphNode
+        fields = "__all__"
+
+    def validate(self, attrs):
+        graph = attrs.get("graph") or getattr(self.instance, "graph", None)
+        subgraph = attrs.get("subgraph") or getattr(self.instance, "subgraph", None)
+
+        if graph and subgraph and graph == subgraph:
+            raise serializers.ValidationError("Graph and subgraph cannot be the same.")
+
+        return attrs
 
 
 class ConditionalEdgeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = ConditionalEdge
         fields = "__all__"
 
@@ -1336,9 +1340,14 @@ class ConditionalEdgeSerializer(serializers.ModelSerializer):
 class StartNodeSerializer(serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = StartNode
-        fields = ["id", "graph", "variables", "node_name"]
+        fields = [
+            "id",
+            "graph",
+            "variables",
+            "node_name",
+        ] + BaseGraphEntityMixin.Meta.common_fields
         read_only_fields = ["node_name"]
 
     def get_node_name(self, obj):
@@ -1348,9 +1357,14 @@ class StartNodeSerializer(serializers.ModelSerializer):
 class EndNodeSerializer(serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = EndNode
-        fields = ["id", "graph", "output_map", "node_name"]
+        fields = [
+            "id",
+            "graph",
+            "output_map",
+            "node_name",
+        ] + BaseGraphEntityMixin.Meta.common_fields
         read_only_fields = ["node_name"]
 
     def get_node_name(self, obj):
@@ -1358,7 +1372,6 @@ class EndNodeSerializer(serializers.ModelSerializer):
 
 
 class SessionSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Session
         fields = "__all__"
@@ -1431,7 +1444,6 @@ class GraphLightSerializer(serializers.ModelSerializer):
 
 
 class RealtimeModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = RealtimeModel
         fields = "__all__"
@@ -1444,7 +1456,6 @@ class RealtimeConfigSerializer(serializers.ModelSerializer):
 
 
 class RealtimeTranscriptionModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = RealtimeTranscriptionModel
         fields = "__all__"
@@ -1572,6 +1583,7 @@ class GraphSerializer(serializers.ModelSerializer):
     webhook_trigger_node_list = WebhookTriggerNodeSerializer(many=True, read_only=True)
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
+    subgraph_node_list = SubGraphNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
@@ -1593,6 +1605,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "llm_node_list",
             "webhook_trigger_node_list",
             "decision_table_node_list",
+            "subgraph_node_list",
             "start_node_list",
             "end_node_list",
             "time_to_live",
@@ -1602,7 +1615,6 @@ class GraphSerializer(serializers.ModelSerializer):
 
 
 class GraphFileReadSerializer(serializers.ModelSerializer):
-
     file = serializers.FileField(use_url=True)
 
     class Meta:
@@ -1622,21 +1634,18 @@ class GraphFileReadSerializer(serializers.ModelSerializer):
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Organization
         fields = ["id", "name"]
 
 
 class OrganizationUserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = OrganizationUser
         fields = ["id", "organization", "name"]
 
 
 class GraphOrganizationSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = GraphOrganization
         fields = [
@@ -1688,7 +1697,6 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
 
 
 class GraphOrganizationUserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]

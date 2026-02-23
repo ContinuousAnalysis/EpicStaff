@@ -1,8 +1,6 @@
-import asyncio
 import websockets
 import json
 import base64
-import io
 from typing import Optional, Callable, Dict, Any
 from enum import Enum
 

@@ -6,7 +6,6 @@ from utils.singleton_meta import SingletonMeta
 
 
 class YamlConfigService(metaclass=SingletonMeta):
-
     _CONFIG_PATH = Path("/home/user/root/app/env_config/config.yaml").resolve()
 
     def get(self, key: str) -> str:
@@ -26,7 +25,7 @@ class YamlConfigService(metaclass=SingletonMeta):
         config_dict = self.get_all()
 
         to_delete_key = config_dict.pop(key, None)
-        
+
         if to_delete_key is not None:
             self.rewrite_yaml_config(self._CONFIG_PATH, config_dict)
             return True

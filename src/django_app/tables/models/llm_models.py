@@ -9,7 +9,6 @@ from tables.models.tag_models import LLMModelTag
 
 
 class LLMModel(models.Model):
-
     name = models.TextField()
     predefined = models.BooleanField(default=False)
     description = models.TextField(null=True, blank=True)
@@ -34,7 +33,6 @@ class LLMModel(models.Model):
 
 
 class DefaultLLMConfig(DefaultBaseModel):
-
     model = models.ForeignKey(LLMModel, on_delete=models.SET_NULL, null=True)
     temperature = models.FloatField(default=0.7, null=True, blank=True)
     top_p = models.FloatField(null=True, blank=True)

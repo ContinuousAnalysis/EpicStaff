@@ -11,6 +11,7 @@ from orchestrator.supervisor import Supervisor as IfSupervisor
 from orchestrator.crew_supervisor import CrewSupervisor
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 
@@ -33,7 +34,7 @@ async def amain(full_prompt: str) -> dict:
             print(f"  - {error}")
         return {"error": "Configuration validation failed", "details": errors}
 
-    print(f"[main] Starting task with config:")
+    print("[main] Starting task with config:")
     print(f"  - Model: {config.deepseek_model}")
     print(f"  - Start tool: {config.start_tool}")
     print(f"  - MCP URL: {config.mcp_url}")
@@ -51,13 +52,17 @@ async def amain(full_prompt: str) -> dict:
         try:
             supervisor_engine = os.getenv("SUPERVISOR_ENGINE", "if").lower()
             if supervisor_engine == "crew":
-                supervisor = CrewSupervisor(hub, steps, config, user_context=full_prompt)
+                supervisor = CrewSupervisor(
+                    hub, steps, config, user_context=full_prompt
+                )
             else:
                 supervisor = IfSupervisor(hub, steps, config, user_context=full_prompt)
 
             result = await supervisor.run()
 
-            print(f"[main] Execution completed: {result['done']}/{result['total']} steps")
+            print(
+                f"[main] Execution completed: {result['done']}/{result['total']} steps"
+            )
             return result
 
         finally:
@@ -65,12 +70,7 @@ async def amain(full_prompt: str) -> dict:
 
     except Exception as e:
         print(f"[main] Fatal error: {e}")
-        return {
-            "error": str(e),
-            "total": 0,
-            "done": 0,
-            "results": []
-        }
+        return {"error": str(e), "total": 0, "done": 0, "results": []}
 
 
 def run_from_env():
@@ -90,14 +90,16 @@ def run_interactive():
     while True:
         try:
             prompt = input("\n> ").strip()
-            if prompt.lower() in ('quit', 'exit', 'q'):
+            if prompt.lower() in ("quit", "exit", "q"):
                 break
             if not prompt:
                 continue
 
             print(f"\n[main] Executing: {prompt}")
             result = asyncio.run(amain(prompt))
-            print(f"\n[result] {json.dumps(to_jsonable(result), ensure_ascii=False, indent=2)}")
+            print(
+                f"\n[result] {json.dumps(to_jsonable(result), ensure_ascii=False, indent=2)}"
+            )
 
         except KeyboardInterrupt:
             print("\n[main] Interrupted by user")
@@ -121,6 +123,7 @@ if __name__ == "__main__":
         else:
             try:
                 from orchestrator.prompt import PROMPT
+
                 print("Found orchestrator/prompt.py - executing default prompt")
                 result = asyncio.run(amain(PROMPT))
                 print(json.dumps(to_jsonable(result), ensure_ascii=False, indent=2))

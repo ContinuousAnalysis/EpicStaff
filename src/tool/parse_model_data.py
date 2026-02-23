@@ -5,8 +5,8 @@ from base_models import Callable
 from langchain_core.tools import BaseTool
 from loguru import logger
 
-class CallableParser:
 
+class CallableParser:
     def import_callable(self, class_name: str, module_path: str) -> typing.Callable:
         module = importlib.import_module(module_path)
         return getattr(module, class_name)
@@ -33,15 +33,17 @@ class CallableParser:
                             class_name=class_name, package_name=module_info.name
                         )
 
-                except (ImportError, AttributeError, ModuleNotFoundError) as e:
+                except (ImportError, AttributeError, ModuleNotFoundError):
                     continue
-        except ImportError as e:
+        except ImportError:
             # TODO: Need to log this error case here
             pass
 
         return None
 
-    def eval_callable(self, callable: Callable, eval=True) -> (
+    def eval_callable(
+        self, callable: Callable, eval=True
+    ) -> (
         BaseTool
         | tuple[
             BaseTool,
@@ -68,12 +70,11 @@ class CallableParser:
         else:
             logger.critical("package or module path not provided")
             raise Exception("package or module path not provided")
-        
+
         if eval:
             return class_(*args, **kwargs)
-        
-        return class_, args, kwargs
 
+        return class_, args, kwargs
 
     def parse_entity(self, entity: str | Callable | typing.Sequence | typing.Dict):
         if isinstance(entity, str):
