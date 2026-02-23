@@ -36726,16 +36726,14 @@ var UserAction;
   UserAction2["EpicstaffSwitchAgent"] = "switchAgent";
   UserAction2["EpicstaffProcessTables"] = "processTables";
   UserAction2["EpicstaffResetTable"] = "resetTable";
-  UserAction2["EpicstaffExportResourcePool"] = "exportResourcePool";
-  UserAction2["EpicstaffSingleProjectImport"] = "singleProjectImport";
   UserAction2["Link"] = "link";
-  UserAction2["ChangeTab"] = "changeTab";
   UserAction2["AddTokens"] = "addTokens";
   UserAction2["Continue"] = "continue";
   UserAction2["Cancel"] = "cancel";
   UserAction2["DownloadEpTableCsv"] = "downloadEpTableCsv";
   UserAction2["DownloadEpTableExcel"] = "downloadEpTableExcel";
   UserAction2["SendAction"] = "sendAction";
+  UserAction2["SendButtonTextWithParams"] = "sendButtonTextWithParams";
 })(UserAction || (UserAction = {}));
 
 // src/app/models/ep-chat-bridge.model.ts
@@ -57680,6 +57678,20 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
       this.storageService.removeItem(STORAGE_KEYS.EPICSTAFF_AGENT_ID);
     }
   }
+  switchAgentByFlow(flowId, flowUrl) {
+    const normalizedFlowIdRaw = flowId === null || flowId === void 0 || flowId === "" ? null : Number(flowId);
+    const normalizedFlowId = normalizedFlowIdRaw !== null && Number.isFinite(normalizedFlowIdRaw) ? normalizedFlowIdRaw : null;
+    const normalizedUrl = (flowUrl || "").trim();
+    const targetAgent = this.agents().find((agent) => {
+      const matchesFlowId = normalizedFlowId === null || agent.epicstaffFlowId === normalizedFlowId;
+      const matchesUrl = !normalizedUrl || agent.epicstaffFlowUrl === normalizedUrl;
+      return matchesFlowId && matchesUrl;
+    }) || null;
+    if (targetAgent) {
+      this.setCurrentAgent(targetAgent);
+    }
+    return targetAgent;
+  }
   loadCurrentAgent() {
     const savedAgentId = this.storageService.getItem(STORAGE_KEYS.EPICSTAFF_AGENT_ID);
     if (savedAgentId) {
@@ -57835,6 +57847,7 @@ var _ActionService = class _ActionService {
     this.agentService = agentService;
     this.chatService = chatService;
     this.dropdownSelectionPrefix = "__va_selected__";
+    this.openAgentConfig$ = new EventEmitter();
   }
   handleParentCommand(command, runtimeContext, onCommandSuccess, onCommandError) {
     if (!command?.requestId || !command.action) {
@@ -57915,8 +57928,55 @@ var _ActionService = class _ActionService {
   generateAgentId() {
     return Date.now();
   }
+  isActionHandled(action) {
+    if (!action)
+      return false;
+    if (action.type === UserActionType.Prompt)
+      return true;
+    return !!action.action && Object.values(UserAction).includes(action.action);
+  }
   /**
-   * Perform action based on action type and identifier
+   * High-level handler for UI action click from chat component
+   */
+  handleUiActionClick(action, message, helpers) {
+    return __async(this, null, function* () {
+      if (action.action === UserAction.EpicstaffProcessTables) {
+        const processTablesContext = this.buildProcessTablesContext(message);
+        if (!processTablesContext) {
+          return;
+        }
+        helpers.lockTablesInMessage(message);
+        yield helpers.sendAction({
+          actionText: "",
+          contextExtras: processTablesContext,
+          addUserMessage: false,
+          useUserAction: false
+        });
+        return;
+      }
+      if (action.action === UserAction.SendButtonTextWithParams && action.text) {
+        const actionParamsContext = this.buildActionParamsContext(action) || void 0;
+        yield helpers.sendAction({
+          actionText: action.text,
+          contextExtras: actionParamsContext,
+          addUserMessage: true,
+          useUserAction: true
+        });
+        return;
+      }
+      if (action.action === UserAction.SendAction && action.text) {
+        yield helpers.sendAction({
+          actionText: action.text,
+          addUserMessage: true,
+          useUserAction: true
+        });
+        return;
+      }
+      yield this.performAction(action, message);
+    });
+  }
+  /**
+   * Perform action based on action type and identifier (local effects only, no API)
    */
   performAction(action, message) {
     return __async(this, null, function* () {
@@ -57933,9 +57993,6 @@ var _ActionService = class _ActionService {
           break;
         case UserAction.EpicstaffSwitchAgent:
           yield this.handleSwitchAgent(action);
-          break;
-        case UserAction.EpicstaffProcessTables:
-          yield this.handleProcessTables(action, message);
           break;
         case UserAction.EpicstaffResetTable:
           this.handleResetTable(action, message);
@@ -57958,6 +58015,36 @@ var _ActionService = class _ActionService {
       }
     });
   }
+  buildProcessTablesContext(message) {
+    const tables = message.response?._tables || [];
+    if (!Array.isArray(tables) || tables.length === 0) {
+      return null;
+    }
+    const backendTables = tables.map((table) => this.getBackendTableFromEpTable(table));
+    return {
+      domain: {
+        tables: backendTables
+      }
+    };
+  }
+  buildActionParamsContext(action) {
+    if (!action?.params || Object.keys(action.params).length === 0) {
+      return null;
+    }
+    return {
+      action_params: action.params
+    };
+  }
+  makeTablesReadOnly(tables) {
+    const input2 = Array.isArray(tables) ? tables : [];
+    return input2.map((table) => {
+      const nextActions = Array.isArray(table.tableActions) ? table.tableActions.filter((a3) => a3?.action !== UserAction.EpicstaffResetTable) : table.tableActions;
+      return __spreadProps(__spreadValues({}, table), {
+        isEditable: false,
+        tableActions: nextActions
+      });
+    });
+  }
   /**
    * Handle link action - open URL in new tab
    */
@@ -57974,43 +58061,88 @@ var _ActionService = class _ActionService {
    */
   handleSwitchAgent(action) {
     return __async(this, null, function* () {
-      const flowId = action.params?.["flow_id"];
-      const url = action.params?.["url"];
-      if (flowId && url) {
-        const agents = this.agentService.agents();
-        const targetAgent = agents.find((agent) => agent.epicstaffFlowId === Number(flowId) && agent.epicstaffFlowUrl === url);
-        if (targetAgent) {
-          this.agentService.setCurrentAgent(targetAgent);
-          this.chatService.clearMessages();
-        } else {
-          console.warn("Agent not found for flow_id:", flowId, "url:", url);
+      const rawFlowId = action.params?.["flow_id"] ?? action.params?.["flowId"];
+      const rawUrl = action.params?.["url"] ?? action.params?.["flowUrl"] ?? "";
+      if (!rawFlowId && !rawUrl) {
+        console.warn("Switch agent action missing flow identifier:", action);
+        return;
+      }
+      const url = rawUrl.trim();
+      let normalizedFlowId = null;
+      if (typeof rawFlowId === "number" && Number.isFinite(rawFlowId)) {
+        normalizedFlowId = rawFlowId;
+      } else if (typeof rawFlowId === "string" && rawFlowId.trim() !== "") {
+        const parsed = Number(rawFlowId);
+        if (Number.isFinite(parsed)) {
+          normalizedFlowId = parsed;
         }
+      }
+      const targetAgent = this.agentService.switchAgentByFlow(normalizedFlowId ?? rawFlowId ?? null, url);
+      if (targetAgent) {
+        this.chatService.clearMessages();
       } else {
-        console.warn("Switch agent action missing flow_id or url:", action);
+        console.warn("Agent not found for switchAgent action:", {
+          flowId: rawFlowId,
+          url
+        });
+        if (normalizedFlowId !== null && url) {
+          this.openAgentConfig$.emit({ flowId: normalizedFlowId, url });
+        }
       }
     });
   }
-  /**
-   * Handle process tables action - send changed tables to backend
-   */
-  handleProcessTables(action, message) {
-    return __async(this, null, function* () {
-      const currentAgent = this.agentService.currentAgent();
-      if (!currentAgent?.epicstaffAgentId) {
-        console.warn("Cannot process tables: no agent selected");
+  getBackendTableFromEpTable(table) {
+    const backendTable = {};
+    const rows = Array.isArray(table?.rows) ? table.rows : [];
+    const columns = this.getTableColumns(table, rows);
+    const rowsToSend = this.getRowsForExport(table, rows);
+    columns.forEach((column) => {
+      if (!column?.key)
         return;
-      }
-      const tables = message.response?.["_tables"];
-      if (!tables || tables.length === 0) {
-        console.warn("No tables found in message to process");
-        return;
-      }
-      try {
-        console.log("Processing tables:", tables);
-      } catch (error) {
-        console.error("Error processing tables:", error);
-      }
+      const columnLabel = (column.title || column.key || "").trim() || column.key;
+      backendTable[columnLabel] = rowsToSend.map((row) => this.getTableCellValue(row, column));
     });
+    return backendTable;
+  }
+  getRowsForExport(table, rows) {
+    if (table?.rowsSelectionType && (table.rowsSelectionType === "select" || table.rowsSelectionType === "multiSelect") && Array.isArray(table.selectedRowIndices) && table.selectedRowIndices.length > 0) {
+      return table.selectedRowIndices.filter((index) => index >= 0 && index < rows.length).map((index) => rows[index]);
+    }
+    return rows;
+  }
+  getTableColumns(table, rows) {
+    if (Array.isArray(table?.columns) && table.columns.length > 0) {
+      return table.columns.filter((column) => !!column?.key);
+    }
+    const firstRow = rows[0] || {};
+    return Object.keys(firstRow).map((key) => ({ key }));
+  }
+  getTableCellValue(row, column) {
+    if (column.type === "select" || column.type === "multiSelect") {
+      const selectionKey = this.getDropdownSelectionKey(column.key);
+      const selectedValue = row[selectionKey];
+      if (column.type === "multiSelect") {
+        return Array.isArray(selectedValue) ? selectedValue : [];
+      }
+      if (Array.isArray(selectedValue)) {
+        return selectedValue[0] ?? null;
+      }
+      return selectedValue ?? null;
+    }
+    const value = row[column.key];
+    if (column.type === "date" && value instanceof Date) {
+      return this.formatDateForBackend(value);
+    }
+    return value;
+  }
+  formatDateForBackend(date) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return "";
+    }
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
   /**
    * Handle reset table action
@@ -91669,21 +91801,29 @@ var _MessageItemComponent = class _MessageItemComponent {
     return actions.filter((action) => action.type === "button");
   }
   /**
-   * Group button actions by sequence into rows
-   * Actions with the same sequence value are placed in the same row
+   * Group button actions by sequence into rows.
+   * Only actions with exactly the same sequence value (string or number) are in one row.
    */
   get groupedButtonActionRows() {
     const buttonActions = this.buttonActions;
     const grouped = {};
     for (const action of buttonActions) {
-      const sequence = typeof action.sequence === "number" ? action.sequence : typeof action.sequence === "string" ? parseInt(action.sequence, 10) : 1;
-      const normalizedSequence = isNaN(sequence) ? 1 : sequence;
-      if (!grouped[normalizedSequence]) {
-        grouped[normalizedSequence] = [];
+      const raw = action.sequence !== void 0 && action.sequence !== null ? action.sequence : 1;
+      const key = String(raw);
+      if (!grouped[key]) {
+        grouped[key] = [];
       }
-      grouped[normalizedSequence].push(action);
+      grouped[key].push(action);
     }
-    return Object.keys(grouped).map(Number).sort((a3, b2) => a3 - b2).map((seq) => grouped[seq]);
+    const keys2 = Object.keys(grouped);
+    keys2.sort((a3, b2) => {
+      const na = Number(a3);
+      const nb = Number(b2);
+      if (!Number.isNaN(na) && !Number.isNaN(nb))
+        return na - nb;
+      return a3.localeCompare(b2);
+    });
+    return keys2.map((k2) => grouped[k2]);
   }
   onActionClick(action) {
     if (!action.disabled) {
@@ -92469,8 +92609,9 @@ function extractOutputFromFinishMessage(messageData) {
 
 // src/app/services/api.service.ts
 var _ApiService = class _ApiService {
-  constructor(http, storageService) {
+  constructor(http, actionService, storageService) {
     this.http = http;
+    this.actionService = actionService;
     this.storageService = storageService;
   }
   /**
@@ -92482,52 +92623,73 @@ var _ApiService = class _ApiService {
       Authorization: `Basic ${credentials}`
     });
   }
-  sendMessage(message, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth) {
+  sendMessage(message, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras) {
     return __async(this, null, function* () {
       if (agentUrl && flowId !== null && flowId !== void 0) {
-        return yield this.sendEpicstaffMessage(message, agentUrl, flowId, attachedFiles || [], chatHistory, userParams, basicAuth);
+        return yield this.sendEpicstaffRequest({
+          agentUrl,
+          flowId,
+          attachedFiles: attachedFiles || [],
+          chatHistory,
+          userParams,
+          basicAuth,
+          contextExtras,
+          userInput: message
+        });
       }
-      const botMessage = {
-        id: `msg_${Date.now()}`,
-        response: {
-          message: "Please create an agent with a valid URL and flow ID."
-        },
-        time: getCurrentTimestamp()
-      };
-      return yield botMessage;
+      return this.createMissingAgentMessage();
     });
   }
   /**
    * Send action message with user_action instead of user_input
    */
-  sendActionMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth) {
+  sendActionMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras) {
     return __async(this, null, function* () {
       if (agentUrl && flowId !== null && flowId !== void 0) {
-        return yield this.sendEpicstaffActionMessage(actionText, agentUrl, flowId, attachedFiles || [], chatHistory, userParams, basicAuth);
+        return yield this.sendEpicstaffRequest({
+          agentUrl,
+          flowId,
+          attachedFiles: attachedFiles || [],
+          chatHistory,
+          userParams,
+          basicAuth,
+          contextExtras,
+          userAction: actionText
+        });
       }
-      return yield this.sendMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth);
+      return this.createMissingAgentMessage();
     });
   }
-  /**
-   * Отправка сообщения через новый API Epicstaff
-   * 1. POST на /api/run-session/ с graph_id и initial_state
-   * 2. Получаем session_id
-   * 3. Подписываемся на SSE /api/run-session/subscribe/{session_id}/
-   * 4. Обрабатываем SSE сообщения и ждем статус "end"
-   * 5. Возвращаем финальные данные из message_data
-   */
-  sendEpicstaffMessage(message, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth) {
+  createMissingAgentMessage() {
+    return {
+      id: `msg_${Date.now()}`,
+      response: {
+        message: "Please create an agent with a valid URL and flow ID."
+      },
+      time: getCurrentTimestamp()
+    };
+  }
+  sendEpicstaffRequest(params) {
     return __async(this, null, function* () {
       try {
+        const { agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras, userInput, userAction } = params;
         const formData = new FormData();
         formData.append("graph_id", String(flowId));
         const chatHistoryFormatted = this.formatChatHistory(chatHistory || []);
         const context2 = {
-          user_input: message,
           chat_history: chatHistoryFormatted
         };
+        if (typeof userInput === "string") {
+          context2["user_input"] = userInput;
+        }
+        if (typeof userAction === "string") {
+          context2["user_action"] = userAction;
+        }
         if (userParams && Object.keys(userParams).length > 0) {
           context2["user_params"] = userParams;
+        }
+        if (contextExtras && Object.keys(contextExtras).length > 0) {
+          Object.assign(context2, contextExtras);
         }
         const initialState = {
           context: context2
@@ -92541,40 +92703,7 @@ var _ApiService = class _ApiService {
         const sessionId = sessionResponse.session_id;
         return yield this.subscribeToEpicstaffSseSession(agentUrl, sessionId);
       } catch (error) {
-        console.error("Error sending Epicstaff message:", error);
-        throw error;
-      }
-    });
-  }
-  /**
-   * Send Epicstaff action message with user_action instead of user_input
-   */
-  sendEpicstaffActionMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth) {
-    return __async(this, null, function* () {
-      try {
-        const formData = new FormData();
-        formData.append("graph_id", String(flowId));
-        const chatHistoryFormatted = this.formatChatHistory(chatHistory || []);
-        const context2 = {
-          user_action: actionText,
-          chat_history: chatHistoryFormatted
-        };
-        if (userParams && Object.keys(userParams).length > 0) {
-          context2["user_params"] = userParams;
-        }
-        const initialState = {
-          context: context2
-        };
-        formData.append("variables", JSON.stringify(initialState));
-        attachedFiles.forEach((file) => {
-          formData.append("files", file);
-        });
-        const headers = basicAuth ? this.createAuthHeaders(basicAuth) : void 0;
-        const sessionResponse = yield firstValueFrom(this.http.post(`${agentUrl}/run-session/`, formData, headers ? { headers } : void 0));
-        const sessionId = sessionResponse.session_id;
-        return yield this.subscribeToEpicstaffSseSession(agentUrl, sessionId);
-      } catch (error) {
-        console.error("Error sending Epicstaff action message:", error);
+        console.error("Error sending Epicstaff request:", error);
         throw error;
       }
     });
@@ -92708,6 +92837,10 @@ var _ApiService = class _ApiService {
     if (convertedTables.length > 0) {
       epResponse._tables = convertedTables;
     }
+    const actions = epResponse.action_message;
+    if (Array.isArray(actions) && actions.length > 0) {
+      epResponse.action_message = actions.map((a3) => this.actionService.isActionHandled(a3) ? a3 : __spreadProps(__spreadValues({}, a3), { disabled: true }));
+    }
     return epResponse;
   }
   /**
@@ -92718,40 +92851,24 @@ var _ApiService = class _ApiService {
       return [];
     }
     return tables.map((table) => {
-      if (table && typeof table === "object" && "columns" in table && Array.isArray(table.columns) && "rows" in table && Array.isArray(table.rows)) {
-        const tableObj2 = table;
-        return __spreadProps(__spreadValues({}, tableObj2), {
-          id: ("id" in tableObj2 && typeof tableObj2["id"] === "string" ? tableObj2["id"] : null) || this.generateTableId(),
-          isEditable: ("isEditable" in tableObj2 ? tableObj2["isEditable"] : true) ?? true,
-          isSortable: ("isSortable" in tableObj2 ? tableObj2["isSortable"] : true) ?? true,
-          defaultSortField: ("defaultSortField" in tableObj2 && typeof tableObj2["defaultSortField"] === "string" ? tableObj2["defaultSortField"] : null) || null
+      const tableObj = table;
+      const hasRows = tableObj && "rows" in tableObj && Array.isArray(tableObj["rows"]) && tableObj["rows"].length > 0;
+      const hasColumns = tableObj && "columns" in tableObj && Array.isArray(tableObj.columns);
+      if (hasRows && hasColumns) {
+        return __spreadProps(__spreadValues({}, tableObj), {
+          id: ("id" in tableObj && typeof tableObj["id"] === "string" ? tableObj["id"] : null) || this.generateTableId(),
+          isEditable: ("isEditable" in tableObj ? tableObj["isEditable"] : true) ?? true,
+          isSortable: ("isSortable" in tableObj ? tableObj["isSortable"] : true) ?? true,
+          defaultSortField: ("defaultSortField" in tableObj && typeof tableObj["defaultSortField"] === "string" ? tableObj["defaultSortField"] : null) || null
         });
       }
-      const tableObj = table;
-      let rows = [];
-      let columnKeys = [];
-      if ("rows" in tableObj && Array.isArray(tableObj["rows"]) && tableObj["rows"].length > 0) {
-        rows = tableObj["rows"];
-        const firstRow = rows[0] || {};
-        columnKeys = Object.keys(firstRow);
-      } else {
-        columnKeys = Object.keys(tableObj).filter((key) => Array.isArray(tableObj[key]));
-        if (columnKeys.length > 0) {
-          const firstColumn = tableObj[columnKeys[0]];
-          const rowCount = Array.isArray(firstColumn) ? firstColumn.length : 0;
-          for (let i = 0; i < rowCount; i++) {
-            const row = {};
-            columnKeys.forEach((key) => {
-              const column = tableObj[key];
-              if (Array.isArray(column)) {
-                row[key] = column[i];
-              }
-            });
-            rows.push(row);
-          }
-        }
+      if (!hasRows) {
+        return tableObj;
       }
-      const nonEditableColumnKeys = ["id", "TaskUID", "UniqueIDPredecessors"];
+      const rows = tableObj["rows"];
+      const firstRow = rows[0] || {};
+      const columnKeys = Object.keys(firstRow);
+      const nonEditableColumnKeys = ["id", "Id", "ID", "Index", "index"];
       const columns = columnKeys.map((key) => ({
         key,
         title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([a-z0-9])([A-Z])/g, "$1 $2").trim(),
@@ -92858,7 +92975,7 @@ var _ApiService = class _ApiService {
   }
 };
 _ApiService.\u0275fac = function ApiService_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient), \u0275\u0275inject(StorageService));
+  return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient), \u0275\u0275inject(ActionService), \u0275\u0275inject(StorageService));
 };
 _ApiService.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _ApiService, factory: _ApiService.\u0275fac, providedIn: "root" });
 var ApiService = _ApiService;
@@ -92866,7 +92983,7 @@ var ApiService = _ApiService;
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ApiService, [{
     type: Injectable,
     args: [{ providedIn: "root" }]
-  }], () => [{ type: HttpClient }, { type: StorageService }], null);
+  }], () => [{ type: HttpClient }, { type: ActionService }, { type: StorageService }], null);
 })();
 
 // src/app/components/shared/recent-files-menu/recent-files-menu.component.ts
@@ -94163,19 +94280,19 @@ function ChatHeaderComponent_Conditional_19_Template(rf, ctx) {
     \u0275\u0275repeater(ctx_r0.agents);
   }
 }
-function ChatHeaderComponent_Conditional_20_Conditional_5_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_20_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 30);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_5_Template_div_click_0_listener() {
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_0_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_5_Template_div_keydown_enter_0_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_0_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_5_Template_div_keydown_space_0_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_0_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
@@ -94183,15 +94300,15 @@ function ChatHeaderComponent_Conditional_20_Conditional_5_Template(rf, ctx) {
     \u0275\u0275text(1, " Create new Epicstaff agent ");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(2, "div", 31);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_5_Template_div_click_2_listener() {
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_2_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_5_Template_div_keydown_enter_2_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_2_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_5_Template_div_keydown_space_2_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_2_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
@@ -94199,15 +94316,15 @@ function ChatHeaderComponent_Conditional_20_Conditional_5_Template(rf, ctx) {
     \u0275\u0275text(3, " Edit Epicstaff agent ");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(4, "div", 32);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_5_Template_div_click_4_listener() {
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_4_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_5_Template_div_keydown_enter_4_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_4_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_5_Template_div_keydown_space_4_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_4_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
@@ -94223,41 +94340,40 @@ function ChatHeaderComponent_Conditional_20_Template(rf, ctx) {
     \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_div_click_1_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
+      return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
     })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_div_keydown_enter_1_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
+      return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
     })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_div_keydown_space_1_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
+    });
+    \u0275\u0275text(2, " Clear chat history ");
+    \u0275\u0275elementEnd();
+    \u0275\u0275conditionalCreate(3, ChatHeaderComponent_Conditional_20_Conditional_3_Template, 6, 0);
+    \u0275\u0275elementStart(4, "div", 29);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_div_click_4_listener() {
+      \u0275\u0275restoreView(_r4);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_div_keydown_enter_4_listener() {
+      \u0275\u0275restoreView(_r4);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_div_keydown_space_4_listener() {
+      \u0275\u0275restoreView(_r4);
+      const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
     });
-    \u0275\u0275text(2, " Set default position ");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 29);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_div_click_3_listener() {
-      \u0275\u0275restoreView(_r4);
-      const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_div_keydown_enter_3_listener() {
-      \u0275\u0275restoreView(_r4);
-      const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_div_keydown_space_3_listener() {
-      \u0275\u0275restoreView(_r4);
-      const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    });
-    \u0275\u0275text(4, " Clear chat history ");
-    \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(5, ChatHeaderComponent_Conditional_20_Conditional_5_Template, 6, 0);
-    \u0275\u0275elementEnd();
+    \u0275\u0275text(5, " Set default position ");
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
-    \u0275\u0275advance(5);
-    \u0275\u0275conditional(!ctx_r0.isMonoAgent ? 5 : -1);
+    \u0275\u0275advance(3);
+    \u0275\u0275conditional(!ctx_r0.isMonoAgent ? 3 : -1);
   }
 }
 var _ChatHeaderComponent = class _ChatHeaderComponent {
@@ -94367,7 +94483,7 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return ctx.onDocumentClick($event);
     }, \u0275\u0275resolveDocument);
   }
-}, inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition" }, decls: 21, vars: 14, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click", "keydown.enter", "keydown.space"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__agent-menu"], [1, "chat-header__actions-menu"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "chat-header__agent-menu-item--active"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-menu-item-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-menu-item-text"], [1, "chat-header__agent-menu-item-name"], [1, "chat-header__agent-menu-item-description"], ["role", "button", "tabindex", "0", "aria-label", "Set default position", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Clear chat history", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Create new Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Edit Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Remove agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
+}, inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition" }, decls: 21, vars: 14, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click", "keydown.enter", "keydown.space"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__agent-menu"], [1, "chat-header__actions-menu"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "chat-header__agent-menu-item--active"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-menu-item-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-menu-item-text"], [1, "chat-header__agent-menu-item-name"], [1, "chat-header__agent-menu-item-description"], ["role", "button", "tabindex", "0", "aria-label", "Clear chat history", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Set default position", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Create new Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Edit Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Remove agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "div", 2);
     \u0275\u0275element(3, "img", 3);
@@ -94591,17 +94707,6 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       class="chat-header__actions-menu-item"
       role="button"
       tabindex="0"
-      aria-label="Set default position"
-      (click)="onSetDefaultPosition()"
-      (keydown.enter)="onSetDefaultPosition()"
-      (keydown.space)="onSetDefaultPosition()"
-    >
-      Set default position
-    </div>
-    <div
-      class="chat-header__actions-menu-item"
-      role="button"
-      tabindex="0"
       aria-label="Clear chat history"
       (click)="onClearChatHistory()"
       (keydown.enter)="onClearChatHistory()"
@@ -94644,6 +94749,17 @@ var ChatHeaderComponent = _ChatHeaderComponent;
         Remove agent
       </div>
     }
+    <div
+      class="chat-header__actions-menu-item"
+      role="button"
+      tabindex="0"
+      aria-label="Set default position"
+      (click)="onSetDefaultPosition()"
+      (keydown.enter)="onSetDefaultPosition()"
+      (keydown.space)="onSetDefaultPosition()"
+    >
+      Set default position
+    </div>
   </div>
 }
 `, styles: ["/* src/app/components/chat-header/chat-header.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon img {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  min-width: 0;\n}\n.chat-header__title--clickable {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__dropdown-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated {\n  transform: rotate(180deg);\n}\n.chat-header__controls {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  flex-shrink: 0;\n}\n.chat-header__control-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots {\n  margin-left: auto;\n}\n.chat-header__control-btn svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-menu {\n  position: absolute;\n  top: 32px;\n  left: 12px;\n  display: flex;\n  gap: 4px;\n  flex-direction: column;\n  z-index: 1005;\n  max-width: 70%;\n  padding: 12px 0px;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__agent-menu-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-menu-item--active:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-menu-item-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-menu-item-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-menu-item-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-menu-item-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.chat-header__actions-menu {\n  position: absolute;\n  top: 32px;\n  right: 12px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 180px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__actions-menu-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n}\n.chat-header__actions-menu-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-header__actions-menu-item:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n/*# sourceMappingURL=chat-header.component.css.map */\n"] }]
@@ -94995,6 +95111,14 @@ var _EpicstaffAgentConfigComponent = class _EpicstaffAgentConfigComponent {
     this.closed = new EventEmitter();
   }
   ngOnInit() {
+    this.buildForm();
+  }
+  ngOnChanges(changes) {
+    if (this.form && changes["newAgentParams"] && this.popupState === "create") {
+      this.patchFormFromNewAgentParams();
+    }
+  }
+  buildForm() {
     let name = "";
     let description = "";
     let flowId = "";
@@ -95013,6 +95137,15 @@ var _EpicstaffAgentConfigComponent = class _EpicstaffAgentConfigComponent {
       description: [description, [Validators.maxLength(200)]],
       flowId: [flowId, [Validators.required]],
       flowUrl: [flowUrl, [Validators.required]]
+    });
+  }
+  patchFormFromNewAgentParams() {
+    const p = this.newAgentParams;
+    if (!p || !this.form)
+      return;
+    this.form.patchValue({
+      flowId: p.flowId != null ? String(p.flowId) : "",
+      flowUrl: p.url ?? ""
     });
   }
   get isEdit() {
@@ -95100,7 +95233,7 @@ _EpicstaffAgentConfigComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCom
       return ctx.onKeyPress($event);
     }, \u0275\u0275resolveWindow);
   }
-}, inputs: { popupState: "popupState", currentAgent: "currentAgent", newAgentParams: "newAgentParams" }, outputs: { closed: "closed" }, decls: 28, vars: 6, consts: [["styleClass", "ep-agent-config", 3, "closed", "closable", "closableOverlay"], ["type", "button", "modal-actions", "", 1, "import-btn", 3, "click"], [1, "agent-config-header"], [1, "agent-config-title"], [1, "agent-config-content", 3, "formGroup"], [1, "agent-config-field"], [1, "agent-config-label"], ["type", "text", "formControlName", "name", "placeholder", "Enter agent name", 1, "agent-config-input"], ["rows", "3", "formControlName", "description", 1, "agent-config-input"], ["type", "text", "formControlName", "flowUrl", "placeholder", "Enter flow url", 1, "agent-config-input"], ["type", "number", "formControlName", "flowId", "placeholder", "Enter flow id", 1, "agent-config-input"], [1, "agent-config-footer"], [3, "buttonClick"], [3, "buttonClick", "disabled"]], template: function EpicstaffAgentConfigComponent_Template(rf, ctx) {
+}, inputs: { popupState: "popupState", currentAgent: "currentAgent", newAgentParams: "newAgentParams" }, outputs: { closed: "closed" }, features: [\u0275\u0275NgOnChangesFeature], decls: 28, vars: 6, consts: [["styleClass", "ep-agent-config", 3, "closed", "closable", "closableOverlay"], ["type", "button", "modal-actions", "", 1, "import-btn", 3, "click"], [1, "agent-config-header"], [1, "agent-config-title"], [1, "agent-config-content", 3, "formGroup"], [1, "agent-config-field"], [1, "agent-config-label"], ["type", "text", "formControlName", "name", "placeholder", "Enter agent name", 1, "agent-config-input"], ["rows", "3", "formControlName", "description", 1, "agent-config-input"], ["type", "text", "formControlName", "flowUrl", "placeholder", "Enter flow url", 1, "agent-config-input"], ["type", "number", "formControlName", "flowId", "placeholder", "Enter flow id", 1, "agent-config-input"], [1, "agent-config-footer"], [3, "buttonClick"], [3, "buttonClick", "disabled"]], template: function EpicstaffAgentConfigComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "ep-modal", 0);
     \u0275\u0275listener("closed", function EpicstaffAgentConfigComponent_Template_ep_modal_closed_0_listener() {
@@ -95179,7 +95312,7 @@ var EpicstaffAgentConfigComponent = _EpicstaffAgentConfigComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(EpicstaffAgentConfigComponent, { className: "EpicstaffAgentConfigComponent", filePath: "src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.ts", lineNumber: 17 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(EpicstaffAgentConfigComponent, { className: "EpicstaffAgentConfigComponent", filePath: "src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.ts", lineNumber: 26 });
 })();
 
 // src/app/directives/click-outside.directive.ts
@@ -95995,7 +96128,7 @@ function ChatComponent_Conditional_3_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext();
-    \u0275\u0275property("popupState", ctx_r1.agentConfigState)("currentAgent", ctx_r1.currentAgent);
+    \u0275\u0275property("popupState", ctx_r1.agentConfigState)("currentAgent", ctx_r1.currentAgent)("newAgentParams", ctx_r1.newAgentParamsForConfig);
   }
 }
 var _ChatComponent = class _ChatComponent {
@@ -96039,6 +96172,7 @@ var _ChatComponent = class _ChatComponent {
     this.currentAgent = null;
     this.isAgentConfigOpen = false;
     this.agentConfigState = null;
+    this.newAgentParamsForConfig = null;
     effect(() => {
       if (this.chatService.isOpen() && this.chatFooter) {
         setTimeout(() => this.chatFooter?.focus(), 100);
@@ -96057,6 +96191,16 @@ var _ChatComponent = class _ChatComponent {
       if (previousAgent !== agent) {
         this.loadChatHistory();
       }
+    });
+    this.actionService.openAgentConfig$.subscribe(({ flowId, url }) => {
+      if (this.isMonoAgent) {
+        return;
+      }
+      this.newAgentParamsForConfig = { flowId, url };
+      setTimeout(() => {
+        this.agentConfigState = "create";
+        this.isAgentConfigOpen = true;
+      }, 0);
     });
   }
   ngOnInit() {
@@ -96171,6 +96315,7 @@ var _ChatComponent = class _ChatComponent {
   onCloseAgentConfig() {
     this.isAgentConfigOpen = false;
     this.agentConfigState = null;
+    this.newAgentParamsForConfig = null;
   }
   onSendMessage(event) {
     return __async(this, null, function* () {
@@ -96234,9 +96379,12 @@ var _ChatComponent = class _ChatComponent {
   /**
    * Send action message with user_action instead of user_input
    */
-  onSendAction(actionText) {
+  onSendAction(actionText, contextExtras, addUserMessage = true, useUserAction = true) {
     return __async(this, null, function* () {
-      if (!actionText.trim() || this.isTyping) {
+      if (this.isTyping) {
+        return;
+      }
+      if (!actionText.trim() && !contextExtras) {
         return;
       }
       const userParams = this.getUserParams();
@@ -96249,15 +96397,17 @@ var _ChatComponent = class _ChatComponent {
       };
       const chatHistory = this.chatService.getMessagesValue();
       const basicAuth = this.getEpicstaffBasicAuth();
-      this.chatService.addMessage(userMessage);
-      this.lockPreviousTables();
+      if (addUserMessage) {
+        this.chatService.addMessage(userMessage);
+        this.lockPreviousTables();
+      }
       this.scrollMode = "user-message";
       this.isTyping = true;
       try {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = yield this.apiService.sendActionMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0);
+        const botMessage = useUserAction ? yield this.apiService.sendActionMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, contextExtras) : yield this.apiService.sendMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, contextExtras);
         if (!botMessage.id) {
           botMessage.id = generateMessageId();
         }
@@ -96325,14 +96475,25 @@ var _ChatComponent = class _ChatComponent {
         this.saveChatHistory();
       }
       if (action.type === UserActionType.Prompt && action.text) {
-        this.onSendMessage({ text: action.text, isVoice: false });
+        yield this.onSendMessage({ text: action.text, isVoice: false });
         return;
       }
-      if (action.action === UserAction.SendAction && action.text) {
-        yield this.onSendAction(action.text);
-        return;
-      }
-      yield this.actionService.performAction(action, message);
+      yield this.actionService.handleUiActionClick(action, message, {
+        sendAction: (options) => this.onSendAction(options.actionText, options.contextExtras, options.addUserMessage, options.useUserAction),
+        lockTablesInMessage: (msg) => this.lockTablesInMessage(msg)
+      });
+    });
+  }
+  lockTablesInMessage(message) {
+    if (!message?.id)
+      return;
+    this.chatService.updateMessage(message.id, (msg) => {
+      const tables = msg.response?._tables || [];
+      return __spreadProps(__spreadValues({}, msg), {
+        response: __spreadProps(__spreadValues({}, msg.response), {
+          _tables: this.actionService.makeTablesReadOnly(tables)
+        })
+      });
     });
   }
   initializeMessages() {
@@ -96654,7 +96815,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatFooter = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.resizableChat = _t.first);
   }
-}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], [3, "popupState", "currentAgent"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], ["role", "button", "tabindex", "0", "aria-label", "Close popup", 1, "ep-mat", 3, "click", "keydown.enter", "keydown.space"], [3, "closed", "popupState", "currentAgent"]], template: function ChatComponent_Template(rf, ctx) {
+}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], [3, "popupState", "currentAgent", "newAgentParams"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], ["role", "button", "tabindex", "0", "aria-label", "Close popup", 1, "ep-mat", 3, "click", "keydown.enter", "keydown.space"], [3, "closed", "popupState", "currentAgent", "newAgentParams"]], template: function ChatComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275listener("click", function ChatComponent_Template_div_click_0_listener() {
@@ -96667,7 +96828,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
     });
     \u0275\u0275elementEnd();
     \u0275\u0275conditionalCreate(2, ChatComponent_Conditional_2_Template, 5, 12);
-    \u0275\u0275conditionalCreate(3, ChatComponent_Conditional_3_Template, 1, 2, "ep-epicstaff-agent-config", 2);
+    \u0275\u0275conditionalCreate(3, ChatComponent_Conditional_3_Template, 1, 3, "ep-epicstaff-agent-config", 2);
   }
   if (rf & 2) {
     \u0275\u0275advance();
@@ -96701,7 +96862,7 @@ var ChatComponent = _ChatComponent;
       EpicstaffAgentConfigComponent,
       ClickOutsideDirective,
       ResizableChatDirective
-    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.agents()"\n      [isMonoAgent]="isMonoAgent"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n    />\n  </div>\n\n  <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div>\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-scrollbar: #d0d0d0;\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: #ffffff;\n  border: 1px solid #dcdcdc;\n  box-shadow: 0 2px 8px rgba(76, 82, 105, 0.2);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  margin-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
+    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.agents()"\n      [isMonoAgent]="isMonoAgent"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n    />\n  </div>\n\n  <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div>\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    [newAgentParams]="newAgentParamsForConfig"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-scrollbar: #d0d0d0;\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: #ffffff;\n  border: 1px solid #dcdcdc;\n  box-shadow: 0 2px 8px rgba(76, 82, 105, 0.2);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  margin-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
   }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: ChatParentBridgeService }, { type: DateAdapter }], { uniqueUserId: [{
     type: Input
   }], userData: [{
