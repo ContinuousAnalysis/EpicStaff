@@ -44,7 +44,6 @@ class LLMNode(BaseNode):
             "presence_penalty": llm_config.presence_penalty,
             "frequency_penalty": llm_config.frequency_penalty,
             "logit_bias": llm_config.logit_bias,
-            "response_format": llm_config.response_format,
             "seed": llm_config.seed,
             "logprobs": llm_config.logprobs,
             "top_logprobs": llm_config.top_logprobs,

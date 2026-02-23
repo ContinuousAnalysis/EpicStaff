@@ -13,7 +13,6 @@ class LLMConfigData(BaseModel):
     presence_penalty: float | None = None
     frequency_penalty: float | None = None
     logit_bias: dict[int, float] | None = None
-    response_format: dict[str, Any] | None = None
     seed: int | None = None
     base_url: str | None = None
     api_version: str | None = None
@@ -21,7 +20,6 @@ class LLMConfigData(BaseModel):
     deployment_id: str | None = None
     headers: dict[str, str] | None = None
     extra_headers: dict[str, str] | None = None
-    
 
 
 class EmbedderConfigData(BaseModel):

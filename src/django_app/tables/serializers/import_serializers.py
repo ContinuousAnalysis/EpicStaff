@@ -260,17 +260,12 @@ class LLMConfigImportSerializer(BaseConfigImportSerializer):
         # Special case for JSON fields when they are None
         stop = validated_data.pop("stop", None)
         logit_bias = validated_data.pop("logit_bias", None)
-        response_format = validated_data.pop("response_format", None)
 
         stop_filter = self.make_json_filter("stop", stop)
         logit_bias_filter = self.make_json_filter("logit_bias", logit_bias)
-        response_format_filter = self.make_json_filter(
-            "response_format", response_format
-        )
 
         existing_config = self.Meta.model.objects.filter(
             stop_filter,
-            response_format_filter,
             logit_bias_filter,
             model__name=model_name,
             custom_name=custom_name,
