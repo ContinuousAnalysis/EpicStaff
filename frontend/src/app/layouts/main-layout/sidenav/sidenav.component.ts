@@ -100,15 +100,15 @@ export class LeftSidebarComponent {
         ];
 
         this.bottomNavItems = [];
-        if (this.isEpicChatEnabled) {
-            this.bottomNavItems.push({
-                id: 'epic-chat',
-                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.chats),
-                label: 'Epic Chat',
-                showTooltip: false,
-                action: () => this.toggleEpicChat(),
-            });
-        }
+        // if (this.isEpicChatEnabled) {
+        //     this.bottomNavItems.push({
+        //         id: 'epic-chat',
+        //         svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.chats),
+        //         label: 'Epic Chat',
+        //         showTooltip: false,
+        //         action: () => this.toggleEpicChat(),
+        //     });
+        // }
         this.bottomNavItems.push({
             id: 'settings',
             svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.settings),
