@@ -31,7 +31,8 @@ class LLMModel(Base):
     description = Column(Text, nullable=True)
     llm_provider_id = Column(Integer, ForeignKey("tables_provider.id"), nullable=True)
     base_url = Column(Text, nullable=True)
-    deployment = Column(Text, nullable=True)
+    deployment_id = Column(Text, nullable=True)
+    api_version = Column(Text, nullable=True)
     is_visible = Column(Boolean, default=True)
     is_custom = Column(Boolean, default=False)
 
@@ -56,24 +57,20 @@ class LLMConfig(Base):
     model_id = Column(Integer, ForeignKey("tables_llmmodel.id"), nullable=True)
 
     # Generation parameters
-    temperature = Column(Float, default=0.7, nullable=True)
-    top_p = Column(Float, nullable=True)
-    n = Column(Integer, nullable=True)
+    temperature = Column(Float, default=0.5, nullable=True)
+    top_p = Column(Float, default=1.0, nullable=True)
     stop = Column(JSON, nullable=True)
-    max_completion_tokens = Column(Integer, nullable=True)
     max_tokens = Column(Integer, nullable=True)
     presence_penalty = Column(Float, nullable=True)
     frequency_penalty = Column(Float, nullable=True)
     logit_bias = Column(JSON, nullable=True)
     response_format = Column(JSON, nullable=True)
     seed = Column(Integer, nullable=True)
-    logprobs = Column(Boolean, nullable=True)
-    top_logprobs = Column(Integer, nullable=True)
 
     # API settings
-    base_url = Column(Text, nullable=True)
-    api_version = Column(Text, nullable=True)
     api_key = Column(Text, nullable=True)
+    headers = Column(JSON, nullable=True, default=dict)
+    extra_headers = Column(JSON, nullable=True, default=dict)
     timeout = Column(Float, nullable=True)
 
     is_visible = Column(Boolean, default=True)

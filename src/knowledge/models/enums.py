@@ -7,7 +7,9 @@ class Status(StrEnum):
     """
 
     NEW = "new"
+    CHUNKING = "chunking"
     CHUNKED = "chunked"
+    INDEXING = "indexing"
     PROCESSING = "processing"
     COMPLETED = "completed"
     WARNING = "warning"
@@ -49,7 +51,9 @@ class DocumentStatus(StrEnum):
     """Status of document in SourceCollection"""
 
     NEW = "new"
+    CHUNKING = "chunking"
     CHUNKED = "chunked"
+    INDEXING = "indexing"
     PROCESSING = "processing"
     COMPLETED = "completed"
     WARNING = "warning"
