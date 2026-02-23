@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Any, List, Literal, Optional, Union
-from pydantic import BaseModel, Field, HttpUrl, model_validator
+from pydantic import BaseModel, Field, HttpUrl, model_validator, ConfigDict
 
 
 class LLMConfigData(BaseModel):
@@ -9,20 +9,21 @@ class LLMConfigData(BaseModel):
     timeout: float | int | None = None
     temperature: float | None = None
     top_p: float | None = None
-    n: int | None = None
     stop: str | list[str] | None = None
-    max_completion_tokens: int | None = None
     max_tokens: int | None = None
     presence_penalty: float | None = None
     frequency_penalty: float | None = None
     logit_bias: dict[int, float] | None = None
     response_format: dict[str, Any] | None = None
     seed: int | None = None
-    logprobs: bool | None = None
-    top_logprobs: int | None = None
     base_url: str | None = None
     api_version: str | None = None
     api_key: str | None = None
+    deployment_id: str | None = None
+    headers: dict[str, str] | None = None
+    extra_headers: dict[str, str] | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EmbedderConfigData(BaseModel):
@@ -31,15 +32,21 @@ class EmbedderConfigData(BaseModel):
     base_url: HttpUrl | None = None
     api_key: str | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class LLMData(BaseModel):
     provider: str
     config: LLMConfigData
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class EmbedderData(BaseModel):
     provider: str
     config: EmbedderConfigData
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ToolConfigData(BaseModel):
@@ -48,10 +55,14 @@ class ToolConfigData(BaseModel):
     embedder: EmbedderData | None = None
     tool_init_configuration: dict[str, Any] | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ConfiguredToolData(BaseModel):
     name_alias: str
     tool_config: ToolConfigData
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class McpToolData(BaseModel):
@@ -72,8 +83,10 @@ class McpToolData(BaseModel):
     init_timeout: Optional[float] = 10
     """Timeout for session initialization. Optional, default is 10 seconds."""
 
-    class Config:
-        extra = "ignore"
+    model_config = ConfigDict(
+        from_attributes=True,
+        extra="ignore",
+    )
 
 
 class PythonCodeData(BaseModel):
@@ -83,6 +96,8 @@ class PythonCodeData(BaseModel):
     libraries: list[str]
     global_kwargs: dict[str, Any] | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class PythonCodeToolData(BaseModel):
     id: int
@@ -90,6 +105,8 @@ class PythonCodeToolData(BaseModel):
     description: str
     args_schema: dict
     python_code: PythonCodeData
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BaseToolData(BaseModel):
@@ -121,6 +138,8 @@ class BaseToolData(BaseModel):
 
         return values
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class RunToolParamsModel(BaseModel):
     tool_config: ToolConfigData | None = None
@@ -133,6 +152,8 @@ class BaseRagSearchConfig(BaseModel):
     """Base class for RAG-specific search parameters."""
 
     rag_type: str  # Discriminator field for polymorphism
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NaiveRagSearchConfig(BaseRagSearchConfig):
@@ -197,12 +218,16 @@ class BaseKnowledgeSearchMessage(BaseModel):
         RagSearchConfig  # Discriminated union automatically handles subtypes
     )
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class KnowledgeChunkResponse(BaseModel):
     chunk_order: int
     chunk_similarity: float
     chunk_text: str
     chunk_source: str = ""
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BaseKnowledgeSearchMessageResponse(BaseModel):
@@ -217,6 +242,8 @@ class BaseKnowledgeSearchMessageResponse(BaseModel):
     # Support backwards compatibility
     results: List[str] = []  # deprecated, use chunks instead
     token_usage: dict = {}
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AgentData(BaseModel):
@@ -240,6 +267,8 @@ class AgentData(BaseModel):
     rag_type_id: str | None = None
     rag_search_config: RagSearchConfig | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class RealtimeAgentData(BaseModel):
     role: str
@@ -251,6 +280,8 @@ class RealtimeAgentData(BaseModel):
     tools: list[ConfiguredToolData] = []
     python_code_tools: list[PythonCodeToolData] = []
     connection_key: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CrewData(BaseModel):
@@ -275,6 +306,8 @@ class CrewData(BaseModel):
     planning_llm: LLMData | None
     tools: List[BaseToolData] = []
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class TaskData(BaseModel):
     id: int
@@ -291,12 +324,17 @@ class TaskData(BaseModel):
     tool_unique_name_list: list[str] = []
     task_context_id_list: list[int] = []
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class SessionData(BaseModel):
     id: int
     graph: "GraphData"
+    unique_subgraph_list: list[SubGraphData] = []
     initial_state: dict[str, Any] = {}
     output_state: dict[str, Any] = {}
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TaskMessageData(BaseModel):
@@ -308,9 +346,13 @@ class TaskMessageData(BaseModel):
     expected_output: str
     agent: str
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ToolInitConfigurationModel(BaseModel):
     tool_init_configuration: dict[str, Any] | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CodeResultData(BaseModel):
@@ -319,6 +361,8 @@ class CodeResultData(BaseModel):
     stderr: str
     stdout: str
     returncode: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CodeTaskData(BaseModel):
@@ -330,12 +374,16 @@ class CodeTaskData(BaseModel):
     func_kwargs: dict | None = None
     global_kwargs: dict[str, Any] | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class CrewNodeData(BaseModel):
     node_name: str
     crew: CrewData
     input_map: dict[str, Any]
     output_variable_path: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PythonNodeData(BaseModel):
@@ -344,17 +392,23 @@ class PythonNodeData(BaseModel):
     input_map: dict[str, Any]
     output_variable_path: str | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class FileExtractorNodeData(BaseModel):
     node_name: str
     input_map: dict[str, Any]
     output_variable_path: str | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class AudioTranscriptionNodeData(BaseModel):
     node_name: str
     input_map: dict[str, Any]
     output_variable_path: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LLMNodeData(BaseModel):
@@ -363,9 +417,13 @@ class LLMNodeData(BaseModel):
     input_map: dict[str, Any]
     output_variable_path: str | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ConditionData(BaseModel):
     condition: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ConditionGroupData(BaseModel):
@@ -376,6 +434,8 @@ class ConditionGroupData(BaseModel):
     condition_list: list[ConditionData] = []
     next_node: str | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class DecisionTableNodeData(BaseModel):
     node_name: str
@@ -383,14 +443,20 @@ class DecisionTableNodeData(BaseModel):
     default_next_node: str | None = None
     next_error_node: str | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class EndNodeData(BaseModel):
     output_map: dict[str, Any]
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EdgeData(BaseModel):
     start_key: str
     end_key: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ConditionalEdgeData(BaseModel):
@@ -399,10 +465,14 @@ class ConditionalEdgeData(BaseModel):
     then: str | None
     input_map: dict[str, Any]
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class WebhookTriggerNodeData(BaseModel):
     node_name: str
     python_code: PythonCodeData
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TelegramTriggerNodeFieldData(BaseModel):
@@ -410,10 +480,14 @@ class TelegramTriggerNodeFieldData(BaseModel):
     field_name: str
     variable_path: str
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class TelegramTriggerNodeData(BaseModel):
     node_name: str
     field_list: list[TelegramTriggerNodeFieldData] = []
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GraphData(BaseModel):
@@ -423,6 +497,7 @@ class GraphData(BaseModel):
     python_node_list: list[PythonNodeData] = []
     file_extractor_node_list: list[FileExtractorNodeData] = []
     audio_transcription_node_list: list[AudioTranscriptionNodeData] = []
+    subgraph_node_list: list[SubGraphNodeData] = []
     llm_node_list: list[LLMNodeData] = []
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
@@ -430,6 +505,25 @@ class GraphData(BaseModel):
     entrypoint: str
     end_node: EndNodeData | None
     telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SubGraphNodeData(BaseModel):
+    node_name: str
+    subgraph_id: int
+    input_map: dict[str, Any]
+    output_variable_path: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SubGraphData(BaseModel):
+    id: int
+    data: GraphData
+    initial_state: dict[str, Any] = {}
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GraphSessionMessageData(BaseModel):
@@ -439,6 +533,10 @@ class GraphSessionMessageData(BaseModel):
     timestamp: str
     message_data: dict
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class StopSessionMessage(BaseModel):
     session_id: int
+
+    model_config = ConfigDict(from_attributes=True)

@@ -38,6 +38,7 @@ __all__ = [
     "NaiveRagEmbedding",
     "AgentNaiveRag",
     "NaiveRagSearchConfig",
+    "NaiveRagPreviewChunk",
     # Graph RAG models
     "GraphRag",
     "AgentGraphRag",
