@@ -175,13 +175,13 @@ class Edge(BaseGraphEntity, models.Model):
 
     def clean(self):
         # Using the unified class method to find any node type by ID
-        start_node = BaseGlobalNode.objects.find_globally(self.start_node_id)
+        start_node = BaseGlobalNode.find_globally(self.start_node_id)
         if not start_node:
             raise ObjectDoesNotExist(
                 f"Start node with ID {self.start_node_id} not found."
             )
 
-        end_node = BaseGlobalNode.objects.find_globally(self.end_node_id)
+        end_node = BaseGlobalNode.find_globally(self.end_node_id)
         if not end_node:
             raise ObjectDoesNotExist(f"End node with ID {self.end_node_id} not found.")
 
@@ -204,7 +204,7 @@ class ConditionalEdge(BaseGraphEntity, models.Model):
         ]
 
     def clean(self):
-        if not BaseGlobalNode.objects.find_globally(self.source_node_id):
+        if not BaseGlobalNode.find_globally(self.source_node_id):
             raise ValidationError(
                 {
                     "source_node_id": f"Node with ID {self.source_node_id} does not exist."
@@ -227,6 +227,10 @@ class StartNode(BaseGraphEntity, BaseGlobalNode):
     )
     variables = models.JSONField(default=dict)
 
+    @property
+    def node_name(self):
+        return "__start__"
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["graph"], name="unique_graph_start_node")
@@ -238,8 +242,13 @@ class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
         "Graph", on_delete=models.CASCADE, related_name="decision_table_node_list"
     )
     node_name = models.CharField(max_length=255, blank=True)
-    default_next_node = models.CharField(max_length=255, null=True, default=None)
-    next_error_node = models.CharField(max_length=255, null=True, default=None)
+
+    default_next_node_id = models.CharField(
+        max_length=255, null=True, blank=True, default=None
+    )
+    next_error_node_id = models.CharField(
+        max_length=255, null=True, blank=True, default=None
+    )
 
     class Meta:
         constraints = [
@@ -249,18 +258,39 @@ class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
             )
         ]
 
+    def clean(self):
+        super().clean()
+
+        if self.default_next_node_id:
+            default_next_node = BaseGlobalNode.find_globally(self.default_next_node_id)
+            if not default_next_node:
+                raise ValidationError(
+                    {
+                        "default_next_node_id": f"Default next node with ID '{self.default_next_node_id}' not found."
+                    }
+                )
+
+        if self.next_error_node_id:
+            next_error_node = BaseGlobalNode.find_globally(self.next_error_node_id)
+            if not next_error_node:
+                raise ValidationError(
+                    {
+                        "next_error_node_id": f"Error node with ID '{self.next_error_node_id}' not found."
+                    }
+                )
+
 
 class ConditionGroup(models.Model):
     decision_table_node = models.ForeignKey(
         "DecisionTableNode", on_delete=models.CASCADE, related_name="condition_groups"
     )
     group_name = models.CharField(max_length=255, blank=False)
-
     group_type = models.CharField(max_length=255, blank=False)  # simple, complex
     order = models.PositiveIntegerField(blank=False, default=0)
-    expression = models.CharField(max_length=255, null=True, default=None)
-    manipulation = models.CharField(max_length=255, null=True, default=None)
-    next_node = models.CharField(max_length=255, null=True, default=None)
+    expression = models.CharField(max_length=255, null=True, blank=True, default=None)
+    manipulation = models.CharField(max_length=255, null=True, blank=True, default=None)
+
+    next_node_id = models.CharField(max_length=255, null=True, blank=True, default=None)
 
     class Meta:
         constraints = [
@@ -270,6 +300,18 @@ class ConditionGroup(models.Model):
             ),
         ]
         ordering = ["order"]
+
+    def clean(self):
+        super().clean()
+
+        if self.next_node_id:
+            next_node = BaseGlobalNode.find_globally(self.next_node_id)
+            if not next_node:
+                raise ValidationError(
+                    {
+                        "next_node_id": f"Next node with ID '{self.next_node_id}' not found."
+                    }
+                )
 
 
 class Condition(models.Model):

@@ -324,15 +324,14 @@ class SessionManagerService(metaclass=SingletonMeta):
         start_node_id = start_node_obj.id if start_node_obj else None
 
         for item in edge_list:
+            edge_data = self.converter_service.convert_edge_to_pytdantic(edge=item)
             if start_node_id and item.start_node_id == start_node_id:
                 if entrypoint is None:
-                    entrypoint = str(item.end_node_id)
+                    entrypoint = edge_data.end_key
                 continue
 
             edge_data_list.append(
-                EdgeData(
-                    start_key=str(item.start_node_id), end_key=str(item.end_node_id)
-                )
+                self.converter_service.convert_edge_to_pytdantic(edge=item)
             )
 
         if entrypoint is None:

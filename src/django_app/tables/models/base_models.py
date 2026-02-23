@@ -1,6 +1,8 @@
 from enum import Enum
 import hashlib
 import json
+from typing import Self
+from django.apps import apps
 from django.db import connection, models
 from django.db.models import Func, Value
 
@@ -238,8 +240,49 @@ class BaseGlobalNode(models.Model):
         db_default=NextVal(Value("tables_global_node_seq")),
         editable=False,
     )
-    # Attach the custom manager
-    objects = GlobalNodeManager()
+
+    # node_name = models.CharField(max_length=255, blank=True)
 
     class Meta:
         abstract = True
+
+    @classmethod
+    def _get_all_node_models(cls):
+        """
+        Safely finds all non-abstract Django models inheriting from BaseGlobalNode.
+        """
+        node_models = []
+        for model in apps.get_models():
+            if issubclass(model, cls) and not model._meta.abstract:
+                node_models.append(model)
+        return node_models
+
+    @classmethod
+    def find_globally(cls, node_id) -> Self:
+        """
+        Executes a single SQL UNION query to find which table contains the given ID
+        and returns the actual model instance.
+        """
+        node_models = cls._get_all_node_models()
+        if not node_models:
+            return None
+
+        # Map table names to model classes for quick reverse lookup
+        table_to_model = {m._meta.db_table: m for m in node_models}
+        tables = list(table_to_model.keys())
+
+        # Build UNION ALL query: SELECT 'table_name' as tbl FROM table_name WHERE id = %s
+        union_parts = [f"SELECT '{t}' as tbl FROM {t} WHERE id = %s" for t in tables]
+        query = " UNION ALL ".join(union_parts)
+        params = [node_id] * len(tables)
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, params)
+            row = cursor.fetchone()
+
+        if row:
+            table_name = row[0]
+            target_model = table_to_model[table_name]
+            return target_model.objects.get(id=node_id)
+
+        return None
