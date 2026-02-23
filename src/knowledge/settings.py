@@ -79,7 +79,6 @@ class UnitOfWork:
 
     def __init__(self):
         self.session: Session | None = None
-        self.document_storage = None
         self.naive_rag_storage: ORMNaiveRagStorage | None = None
         self.graph_rag_storage: ORMGraphRagStorage | None = None
 
