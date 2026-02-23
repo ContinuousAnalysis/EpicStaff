@@ -69,7 +69,7 @@ sed -i "s|CREW_SAVEFILES_PATH=/c/savefiles|CREW_SAVEFILES_PATH=$savefiles|" src/
 ### 4. Run the Project
 Assuming [Docker](https://www.docker.com/products/docker-desktop/) is already installed and running use next command
 ```bash
-docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config &&  docker volume create media_data && docker network create mcp-network &&
+docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create graph_data && docker volume create crew_config &&  docker volume create media_data && docker network create mcp-network &&
 cd src && docker-compose up --build
 ```
 If build was already completed, project can be started by running following command
@@ -97,7 +97,7 @@ $file = "src/.env"
 ### 4. Run the Project
 Assuming [Docker](https://www.docker.com/products/docker-desktop/) is already installed and running use next command
 ```powershell
-docker volume create sandbox_venvs; docker volume create sandbox_executions; docker volume create crew_pgdata; docker volume create crew_config;  docker volume create media_data; docker network create mcp-network; 
+docker volume create sandbox_venvs; docker volume create sandbox_executions; docker volume create crew_pgdata; docker volume create graph_data; docker volume create crew_config;  docker volume create media_data; docker network create mcp-network; 
 cd src; docker-compose up --build
 ```
 If build was already completed, project can be started by running following command
