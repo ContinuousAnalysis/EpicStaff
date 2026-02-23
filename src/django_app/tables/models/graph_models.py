@@ -242,13 +242,8 @@ class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
         "Graph", on_delete=models.CASCADE, related_name="decision_table_node_list"
     )
     node_name = models.CharField(max_length=255, blank=True)
-
-    default_next_node_id = models.CharField(
-        max_length=255, null=True, blank=True, default=None
-    )
-    next_error_node_id = models.CharField(
-        max_length=255, null=True, blank=True, default=None
-    )
+    default_next_node_id = models.BigIntegerField(null=True, default=None)
+    next_error_node_id = models.BigIntegerField(null=True, default=None)
 
     class Meta:
         constraints = [
@@ -290,7 +285,7 @@ class ConditionGroup(models.Model):
     expression = models.CharField(max_length=255, null=True, blank=True, default=None)
     manipulation = models.CharField(max_length=255, null=True, blank=True, default=None)
 
-    next_node_id = models.CharField(max_length=255, null=True, blank=True, default=None)
+    next_node_id = models.BigIntegerField(null=True, default=None)
 
     class Meta:
         constraints = [

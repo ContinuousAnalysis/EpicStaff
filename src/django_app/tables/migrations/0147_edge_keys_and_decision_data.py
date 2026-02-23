@@ -4,17 +4,13 @@
 from django.db import migrations, models
 
 def migrate_edges_data(apps, schema_editor):
-    """
-    Переносит данные из строковых ключей (start_key/end_key/source/next_node)
-    в новые числовые или строковые поля ID.
-    """
+
     Graph = apps.get_model('tables', 'Graph')
     Edge = apps.get_model('tables', 'Edge')
     ConditionalEdge = apps.get_model('tables', 'ConditionalEdge')
     DecisionTableNode = apps.get_model('tables', 'DecisionTableNode')
     ConditionGroup = apps.get_model('tables', 'ConditionGroup')
 
-    # Список всех моделей, которые являются нодами
     node_models = [
         apps.get_model('tables', 'CrewNode'),
         apps.get_model('tables', 'PythonNode'),
@@ -30,11 +26,9 @@ def migrate_edges_data(apps, schema_editor):
     ]
 
     for graph in Graph.objects.all():
-        # 1. Строим карту { "node_name": id } для ТЕКУЩЕГО графа
         name_to_id_map = {}
 
         for model in node_models:
-            # Надежная проверка наличия поля 'node_name' у модели
             has_node_name = any(f.name == 'node_name' for f in model._meta.fields)
             
             if has_node_name:
@@ -44,59 +38,50 @@ def migrate_edges_data(apps, schema_editor):
             
             for node in nodes:
                 node_id = node['id']
-                name_to_id_map[str(node_id)] = node_id  # Map "105" -> 105
+                name_to_id_map[str(node_id)] = node_id  
                 
                 if 'node_name' in node and node['node_name']:
                     name_to_id_map[node['node_name']] = node_id
 
-        # Особый случай: StartNode
         StartNode = apps.get_model('tables', 'StartNode')
         start_node = StartNode.objects.filter(graph_id=graph.id).first()
         if start_node:
             name_to_id_map['__start__'] = start_node.id
 
-        # 2. Обновляем Edges
         edges_to_update = []
         for edge in Edge.objects.filter(graph_id=graph.id):
             start_id = name_to_id_map.get(edge.start_key)
             end_id = name_to_id_map.get(edge.end_key)
-
             if start_id and end_id:
                 edge.start_node_id = start_id
                 edge.end_node_id = end_id
                 edges_to_update.append(edge)
-            else:
-                print(f"Warning: Could not map Edge in Graph {graph.id}: {edge.start_key} -> {edge.end_key}")
 
         if edges_to_update:
             Edge.objects.bulk_update(edges_to_update, ['start_node_id', 'end_node_id'])
 
-        # 3. Обновляем Conditional Edges
         cond_edges_to_update = []
         for c_edge in ConditionalEdge.objects.filter(graph_id=graph.id):
             source_id = name_to_id_map.get(c_edge.source)
             if source_id:
                 c_edge.source_node_id = source_id
                 cond_edges_to_update.append(c_edge)
-            else:
-                print(f"Warning: Could not map ConditionalEdge in Graph {graph.id}: source {c_edge.source}")
 
         if cond_edges_to_update:
             ConditionalEdge.objects.bulk_update(cond_edges_to_update, ['source_node_id'])
 
-        # 4. Обновляем DecisionTableNode
         dt_nodes_to_update = []
         for dt_node in DecisionTableNode.objects.filter(graph_id=graph.id):
             updated = False
             if dt_node.default_next_node:
                 new_id = name_to_id_map.get(dt_node.default_next_node)
                 if new_id:
-                    dt_node.default_next_node_id = str(new_id)
+                    dt_node.default_next_node_id = new_id 
                     updated = True
             if dt_node.next_error_node:
                 new_id = name_to_id_map.get(dt_node.next_error_node)
                 if new_id:
-                    dt_node.next_error_node_id = str(new_id)
+                    dt_node.next_error_node_id = new_id 
                     updated = True
             if updated:
                 dt_nodes_to_update.append(dt_node)
@@ -104,13 +89,12 @@ def migrate_edges_data(apps, schema_editor):
         if dt_nodes_to_update:
             DecisionTableNode.objects.bulk_update(dt_nodes_to_update, ['default_next_node_id', 'next_error_node_id'])
 
-        # 5. Обновляем ConditionGroup
         cg_to_update = []
         for cg in ConditionGroup.objects.filter(decision_table_node__graph_id=graph.id):
             if cg.next_node:
                 new_id = name_to_id_map.get(cg.next_node)
                 if new_id:
-                    cg.next_node_id = str(new_id)
+                    cg.next_node_id = new_id  
                     cg_to_update.append(cg)
                     
         if cg_to_update:
@@ -146,17 +130,17 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='decisiontablenode',
             name='default_next_node_id',
-            field=models.CharField(max_length=255, null=True, blank=True, default=None),
+            field=models.BigIntegerField(null=True, default=None),
         ),
         migrations.AddField(
             model_name='decisiontablenode',
             name='next_error_node_id',
-            field=models.CharField(max_length=255, null=True, blank=True, default=None),
+            field=models.BigIntegerField(null=True, default=None),
         ),
         migrations.AddField(
             model_name='conditiongroup',
             name='next_node_id',
-            field=models.CharField(max_length=255, null=True, blank=True, default=None),
+            field=models.BigIntegerField(null=True, default=None),
         ),
 
         migrations.RemoveField(
