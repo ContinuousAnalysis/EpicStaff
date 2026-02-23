@@ -3,6 +3,7 @@ from tables.models import (
     CrewNode,
     Graph,
     WebhookTriggerNode,
+    TelegramTriggerNode,
     EndNode,
     WebhookTrigger,
     DecisionTableNode,
@@ -21,6 +22,7 @@ from tables.import_export.serializers.graph import (
     AudioTranscriptionNodeImportSerializer,
     DecisionTableNodeImportSerializer,
     TelegramTriggerNodeImportSerializer,
+    TelegramTriggerNodeFieldImportSerializer,
     EndNodeImportSerializer,
     ConditionGroupImportSerializer,
     ConditionImportSerializer,
@@ -108,6 +110,24 @@ def import_decision_table_node(
     return decision_table_node
 
 
+def import_telegram_trigger_node(
+    graph: Graph, node_data: dict, id_mapper: IDMapper
+) -> TelegramTriggerNode:
+    fields_data = node_data.pop("fields", [])
+
+    serializer = TelegramTriggerNodeImportSerializer(
+        data={**node_data, "graph": graph.id}
+    )
+    serializer.is_valid(raise_exception=True)
+    telegram_trigger_node = serializer.save()
+
+    serializer = TelegramTriggerNodeFieldImportSerializer(data=fields_data, many=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save(telegram_trigger_node=telegram_trigger_node)
+
+    return telegram_trigger_node
+
+
 def import_subgraph_node(
     graph: Graph, node_data: dict, id_mapper: IDMapper
 ) -> SubGraphNode:
@@ -165,6 +185,7 @@ NODE_HANDLERS = {
     NodeType.TELEGRAM_TRIGGER_NODE: {
         "serializer": TelegramTriggerNodeImportSerializer,
         "relation": "telegram_trigger_node_list",
+        "import_hook": import_telegram_trigger_node,
     },
     NodeType.END_NODE: {
         "serializer": EndNodeImportSerializer,

@@ -11,6 +11,7 @@ from tables.models import (
     FileExtractorNode,
     WebhookTriggerNode,
     TelegramTriggerNode,
+    TelegramTriggerNodeField,
     AudioTranscriptionNode,
     Edge,
     PythonCode,
@@ -89,10 +90,18 @@ class DecisionTableNodeImportSerializer(BaseNodeImportSerializer):
         fields = "__all__"
 
 
+class TelegramTriggerNodeFieldImportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TelegramTriggerNodeField
+        exclude = ["telegram_trigger_node"]
+
+
 class TelegramTriggerNodeImportSerializer(BaseNodeImportSerializer):
-    class Meta(BaseNodeImportSerializer.Meta):
+    fields = TelegramTriggerNodeFieldImportSerializer(many=True, read_only=True)
+
+    class Meta:
         model = TelegramTriggerNode
-        fields = "__all__"
+        exclude = ["telegram_bot_api_key"]
 
 
 class PythonNodeImportSerializer(BaseNodeImportSerializer):
