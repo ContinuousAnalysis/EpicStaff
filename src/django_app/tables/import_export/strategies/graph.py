@@ -142,5 +142,7 @@ class GraphStrategy(EntityImportExportStrategy):
                 node["data"]["id"] = new_id
                 node["data"]["name"] = subgraph.name
                 node["data"]["description"] = subgraph.description
+            if node["type"] == "telegram-trigger":
+                node["data"]["telegram_bot_api_key"] = None
 
         return metadata_copy
