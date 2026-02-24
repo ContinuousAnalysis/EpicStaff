@@ -499,6 +499,7 @@ export class GraphUpdateService {
                         graph: graph.id,
                         llm_config: node.data.llm_config_id,
                         agent_mode: node.data.agent_mode || 'build',
+                        session_id: node.data.session_id || '',
                         system_prompt: node.data.system_prompt || '',
                         stream_handler_code: node.data.stream_handler_code || '',
                         libraries: node.data.libraries || [],

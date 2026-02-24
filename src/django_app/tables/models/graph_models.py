@@ -166,6 +166,7 @@ class CodeAgentNode(BaseNode):
         "LLMConfig", on_delete=models.SET_NULL, null=True, blank=True
     )
     agent_mode = models.CharField(max_length=10, default="build")
+    session_id = models.CharField(max_length=255, blank=True, default="")
     system_prompt = models.TextField(blank=True, default="")
     stream_handler_code = models.TextField(blank=True, default="")
     libraries = models.JSONField(default=list, blank=True)

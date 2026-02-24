@@ -40,6 +40,7 @@ class CodeAgentNode(BaseNode):
         graph_id: int | None = None,
         llm_config_id: int | None = None,
         agent_mode: str = "build",
+        code_session_id: str = "",
         system_prompt: str = "",
         stream_handler_code: str = "",
         libraries: list[str] | None = None,
@@ -61,6 +62,7 @@ class CodeAgentNode(BaseNode):
         self.graph_id = graph_id
         self.llm_config_id = llm_config_id
         self.agent_mode = agent_mode
+        self.code_session_id = code_session_id
         self.system_prompt = system_prompt
         self.stream_handler_code = stream_handler_code
         self.libraries = libraries or []
@@ -107,6 +109,23 @@ class CodeAgentNode(BaseNode):
             error_body = e.read().decode("utf-8", errors="replace")
             logger.error(f"[CodeAgentNode] POST {url} → {e.code}: {error_body[:500]}")
             raise
+
+    # ------------------------------------------------------------------
+    # Variable resolution
+    # ------------------------------------------------------------------
+
+    def _resolve_code_session_id(self, state: State) -> str | None:
+        """Resolve the configured code_session_id from state variables.
+        Supports dot-notated paths like 'variables.chat_id'.
+        If the path doesn't resolve, the raw string is used as a literal session ID."""
+        if not self.code_session_id:
+            return None
+        obj = state
+        for part in self.code_session_id.split("."):
+            obj = getattr(obj, part, None)
+            if obj is None:
+                return self.code_session_id
+        return str(obj) if obj is not None else self.code_session_id
 
     # ------------------------------------------------------------------
     # Session management
@@ -219,11 +238,12 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                     if t:
                         final_answer = t
                 elif pt == "tool":
+                    state_data = part.get("state", {}) or {}
                     tool_calls.append({
-                        "name": part.get("name", "tool"),
-                        "input": part.get("input", ""),
-                        "output": part.get("output", ""),
-                        "state": part.get("state", ""),
+                        "name": part.get("tool", "") or part.get("name", "tool"),
+                        "input": json.dumps(state_data.get("input", "")) if isinstance(state_data.get("input"), dict) else str(state_data.get("input", "")),
+                        "output": str(state_data.get("output", ""))[:500],
+                        "state": state_data.get("status", ""),
                     })
         return reasoning, final_answer, tool_calls
 
@@ -262,7 +282,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         if not prompt:
             raise ValueError("CodeAgentNode requires a 'prompt' in input_map")
 
-        chat_id = input_.get("chat_id") or input_.get("session_id") or f"session_{self.session_id}"
+        chat_id = self._resolve_code_session_id(state) or input_.get("chat_id") or input_.get("session_id") or f"session_{self.session_id}"
 
         # Get OpenCode instance
         port = self._get_instance_port()

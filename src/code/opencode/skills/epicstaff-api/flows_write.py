@@ -319,10 +319,9 @@ def cmd_patch_webhook(args):
 
 
 def cmd_patch_code_agent(args):
-    """Patch Code Agent node stream handler code (DB + metadata)."""
+    """Patch Code Agent node fields (DB + metadata)."""
     graph_id = args.graph_id
     node_name = args.node_name
-    value = _read_value(args)
     graph = _get_graph(graph_id)
     ca_nodes = graph.get("code_agent_node_list", [])
     db_node = None
@@ -334,13 +333,125 @@ def cmd_patch_code_agent(args):
         print(f"Code Agent node '{node_name}' not found in flow {graph_id}", file=sys.stderr)
         sys.exit(1)
     node_id = db_node["id"]
+
+    # Build DB payload from provided flags
+    db_payload = {}
+    meta_updates = {}
+    if getattr(args, "value", None) or getattr(args, "value_file", None):
+        value = _read_value(args)
+        db_payload["stream_handler_code"] = value
+        meta_updates["stream_handler_code"] = value
+    if getattr(args, "llm_config", None):
+        db_payload["llm_config"] = int(args.llm_config)
+        meta_updates["llm_config_id"] = int(args.llm_config)
+    if getattr(args, "system_prompt", None):
+        db_payload["system_prompt"] = args.system_prompt
+        meta_updates["system_prompt"] = args.system_prompt
+    if getattr(args, "system_prompt_file", None):
+        with open(args.system_prompt_file) as f:
+            sp = f.read()
+        db_payload["system_prompt"] = sp
+        meta_updates["system_prompt"] = sp
+    if getattr(args, "input_map", None):
+        parsed = json.loads(args.input_map)
+        db_payload["input_map"] = parsed
+    if getattr(args, "output_variable_path", None):
+        db_payload["output_variable_path"] = args.output_variable_path
+    if getattr(args, "libraries", None):
+        libs = [l.strip() for l in args.libraries.split(",") if l.strip()]
+        db_payload["libraries"] = libs
+        meta_updates["libraries"] = libs
+    if getattr(args, "session_id", None) is not None:
+        db_payload["session_id"] = args.session_id
+        meta_updates["session_id"] = args.session_id
+
+    if not db_payload:
+        print("No fields to patch. Use --value, --llm-config, --system-prompt, --input-map, --output-variable-path, or --libraries.", file=sys.stderr)
+        sys.exit(1)
+
     print(f"PATCHing Code Agent node '{node_name}' (id={node_id})")
-    api_patch(f"/code-agent-nodes/{node_id}/", {"stream_handler_code": value})
+    for k, v in db_payload.items():
+        label = repr(v) if not isinstance(v, str) or len(v) < 80 else repr(v[:77] + "...")
+        print(f"  {k} = {label}")
+    api_patch(f"/code-agent-nodes/{node_id}/", db_payload)
     print(f"  DB updated.")
+
+    # Sync metadata
+    if meta_updates or "input_map" in db_payload or "output_variable_path" in db_payload:
+        metadata = graph.get("metadata", {})
+        for n in metadata.get("nodes", []):
+            if n.get("node_name") == node_name:
+                data = n.setdefault("data", {})
+                data.update(meta_updates)
+                if "input_map" in db_payload:
+                    n["input_map"] = db_payload["input_map"]
+                if "output_variable_path" in db_payload:
+                    n["output_variable_path"] = db_payload["output_variable_path"]
+                api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
+                print(f"  Metadata synced.")
+                return
+        print(f"  Warning: '{node_name}' not found in metadata.")
+
+
+def cmd_patch_dt(args):
+    """Patch Decision Table node fields (DB + metadata)."""
+    graph_id = args.graph_id
+    node_name = args.node_name
+    graph = _get_graph(graph_id)
+    dt_nodes = graph.get("decision_table_node_list", [])
+    db_node = None
+    for dn in dt_nodes:
+        if dn.get("node_name") == node_name:
+            db_node = dn
+            break
+    if not db_node:
+        print(f"Decision Table node '{node_name}' not found in flow {graph_id}", file=sys.stderr)
+        sys.exit(1)
+    node_id = db_node["id"]
+
+    db_payload = {}
+    if getattr(args, "groups", None):
+        db_payload["condition_groups"] = json.loads(args.groups)
+    elif getattr(args, "groups_file", None):
+        with open(args.groups_file) as f:
+            db_payload["condition_groups"] = json.loads(f.read())
+    if "condition_groups" in db_payload:
+        for g in db_payload["condition_groups"]:
+            g.setdefault("conditions", [])
+    if getattr(args, "default_next_node", None):
+        db_payload["default_next_node"] = args.default_next_node
+    if getattr(args, "error_node", None):
+        db_payload["next_error_node"] = args.error_node
+
+    if not db_payload:
+        print("No fields to patch. Use --groups, --default-next-node, or --error-node.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"PATCHing Decision Table '{node_name}' (id={node_id})")
+    if "condition_groups" in db_payload:
+        print(f"  condition_groups: {len(db_payload['condition_groups'])} groups")
+        for g in db_payload["condition_groups"]:
+            print(f"    [{g.get('order','-')}] {g.get('group_name','?')} → {g.get('next_node','default')} | expr: {g.get('expression','')}")
+    if "default_next_node" in db_payload:
+        print(f"  default_next_node: {db_payload['default_next_node']}")
+    if "next_error_node" in db_payload:
+        print(f"  next_error_node: {db_payload['next_error_node']}")
+
+    api_patch(f"/decision-table-node/{node_id}/", db_payload)
+    print(f"  DB updated.")
+
+    # Sync metadata — update table data in metadata node
     metadata = graph.get("metadata", {})
     for n in metadata.get("nodes", []):
         if n.get("node_name") == node_name:
-            n.get("data", {})["stream_handler_code"] = value
+            data = n.setdefault("data", {})
+            tbl = data.setdefault("table", {})
+            if "condition_groups" in db_payload:
+                tbl["condition_groups"] = db_payload["condition_groups"]
+            if "default_next_node" in db_payload:
+                tbl["default_next_node"] = db_payload["default_next_node"]
+            if "next_error_node" in db_payload:
+                tbl["next_error_node"] = db_payload["next_error_node"]
             api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
             print(f"  Metadata synced.")
             return
@@ -377,7 +488,8 @@ def cmd_patch_libraries(args):
 
 
 def cmd_patch_node_meta(args):
-    """Patch metadata fields on a node (input_map, output_variable_path)."""
+    """Patch metadata fields on a node (input_map, output_variable_path).
+    Updates BOTH the DB node and the graph metadata."""
     graph_id = args.graph_id
     node_name = args.node_name
     graph = _get_graph(graph_id)
@@ -390,12 +502,40 @@ def cmd_patch_node_meta(args):
     if not target:
         print(f"Node '{node_name}' not found in metadata for flow {graph_id}", file=sys.stderr)
         sys.exit(1)
+
+    # Build DB patch payload and find the DB node + endpoint
+    db_payload = {}
     if getattr(args, "input_map", None):
-        target["input_map"] = json.loads(args.input_map)
-        print(f"  input_map set: {target['input_map']}")
+        parsed = json.loads(args.input_map)
+        target["input_map"] = parsed
+        db_payload["input_map"] = parsed
+        print(f"  input_map set: {parsed}")
     if getattr(args, "output_variable_path", None):
         target["output_variable_path"] = args.output_variable_path
+        db_payload["output_variable_path"] = args.output_variable_path
         print(f"  output_variable_path set: {args.output_variable_path}")
+
+    # Patch DB node — detect type from graph node lists
+    node_type_endpoints = {
+        "python_node_list": "/pythonnodes/",
+        "crew_node_list": "/crew-nodes/",
+        "code_agent_node_list": "/code-agent-nodes/",
+    }
+    if db_payload:
+        db_patched = False
+        for list_key, endpoint in node_type_endpoints.items():
+            for db_node in graph.get(list_key, []):
+                if db_node.get("node_name") == node_name:
+                    node_id = db_node["id"]
+                    api_patch(f"{endpoint}{node_id}/", db_payload)
+                    print(f"  DB updated ({list_key.replace('_list','')}, id={node_id}).")
+                    db_patched = True
+                    break
+            if db_patched:
+                break
+        if not db_patched:
+            print(f"  Warning: '{node_name}' not found in DB node lists (metadata-only patch).")
+
     api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
     print(f"Metadata updated for '{node_name}'.")
 

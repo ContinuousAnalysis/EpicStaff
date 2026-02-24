@@ -4,6 +4,7 @@ export interface GetCodeAgentNodeRequest {
     graph: number;
     llm_config: number | null;
     agent_mode: string;
+    session_id: string;
     system_prompt: string;
     stream_handler_code: string;
     libraries: string[];
@@ -22,6 +23,7 @@ export interface CreateCodeAgentNodeRequest {
     graph: number;
     llm_config: number | null;
     agent_mode: string;
+    session_id: string;
     system_prompt: string;
     stream_handler_code: string;
     libraries: string[];
@@ -38,6 +40,7 @@ export interface CreateCodeAgentNodeRequest {
 export interface CodeAgentNodeData {
     llm_config_id: number | null;
     agent_mode: string;
+    session_id: string;
     system_prompt: string;
     stream_handler_code: string;
     libraries: string[];

@@ -326,6 +326,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                     node_name=item.node_name,
                     llm_config_id=item.llm_config_id,
                     agent_mode=item.agent_mode,
+                    session_id=item.session_id,
                     system_prompt=item.system_prompt,
                     stream_handler_code=item.stream_handler_code,
                     libraries=item.libraries or [],

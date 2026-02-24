@@ -44,13 +44,13 @@ from flows_read import (
 )
 from flows_write import (
     cmd_push, cmd_pull,
-    cmd_patch_cdt, cmd_patch_python, cmd_patch_webhook, cmd_patch_code_agent, cmd_patch_libraries,
+    cmd_patch_cdt, cmd_patch_python, cmd_patch_webhook, cmd_patch_code_agent, cmd_patch_dt, cmd_patch_libraries,
     cmd_patch_node_meta, cmd_patch_start_vars,
     cmd_rename_node, cmd_sync_metadata,
     cmd_oc_abort,
     cmd_run_session,
 )
-from flows_create import cmd_create_flow, cmd_create_start_node, cmd_create_node, cmd_create_code_agent_node, cmd_create_webhook, cmd_create_edge, cmd_create_note, cmd_init_metadata
+from flows_create import cmd_create_flow, cmd_create_start_node, cmd_create_node, cmd_create_code_agent_node, cmd_create_webhook, cmd_create_edge, cmd_delete_edge, cmd_create_note, cmd_init_metadata
 from tools_read import cmd_tools, cmd_tool
 from tools_write import cmd_pull_tools, cmd_push_tools
 from tools_create import cmd_create_tool
@@ -167,13 +167,26 @@ def main():
     p.add_argument("node_name", help="Webhook node name")
     p.add_argument("--value", help="New code")
     p.add_argument("--value-file", help="Read code from file")
-    p = sub.add_parser("patch-code-agent", help="Patch Code Agent stream handler code")
+    p = sub.add_parser("patch-code-agent", help="Patch Code Agent node fields")
     p.add_argument("node_name", help="Code Agent node name")
-    p.add_argument("--value", help="New code")
-    p.add_argument("--value-file", help="Read code from file")
+    p.add_argument("--value", help="New stream_handler_code")
+    p.add_argument("--value-file", help="Read stream_handler_code from file")
+    p.add_argument("--llm-config", help="LLM config ID")
+    p.add_argument("--system-prompt", help="System prompt text")
+    p.add_argument("--system-prompt-file", help="Read system prompt from file")
+    p.add_argument("--input-map", help="Input map JSON")
+    p.add_argument("--output-variable-path", help="Output variable path")
+    p.add_argument("--libraries", help="Comma-separated libraries")
+    p.add_argument("--session-id", help="Session ID (variable path or literal)")
     p = sub.add_parser("patch-libraries", help="Set libraries on a Python node")
     p.add_argument("node_name", help="Python node name")
     p.add_argument("libraries", help="Comma-separated libraries")
+    p = sub.add_parser("patch-dt", help="Patch Decision Table node")
+    p.add_argument("node_name", help="Decision Table node name")
+    p.add_argument("--groups", help="JSON condition_groups array")
+    p.add_argument("--groups-file", help="Read condition_groups from JSON file")
+    p.add_argument("--default-next-node", help="Default next node name")
+    p.add_argument("--error-node", help="Error next node name")
     p = sub.add_parser("patch-node-meta", help="Patch metadata fields on a node")
     p.add_argument("node_name", help="Node name")
     p.add_argument("--input-map", help="JSON input_map")
@@ -230,6 +243,9 @@ def main():
     p = sub.add_parser("create-edge", help="Create an edge between two nodes")
     p.add_argument("start_node", help="Source node name")
     p.add_argument("end_node", help="Target node name")
+    p = sub.add_parser("delete-edge", help="Delete an edge by start/end node names")
+    p.add_argument("start_node", help="Source node name")
+    p.add_argument("end_node", help="Target node name")
     p = sub.add_parser("create-note", help="Add a note to the flow canvas")
     p.add_argument("text", help="Note text")
     p.add_argument("--near", help="Place near this node name")
@@ -277,11 +293,11 @@ def main():
         "get", "nodes", "edges", "connections", "route-map",
         "cdt", "cdt-prompts", "sessions", "vars", "history",
         "push", "pull", "verify", "export-compare",
-        "patch-cdt", "patch-python", "patch-webhook", "patch-code-agent", "patch-libraries",
+        "patch-cdt", "patch-python", "patch-webhook", "patch-code-agent", "patch-dt", "patch-libraries",
         "patch-node-meta", "patch-start-vars", "sync-metadata", "rename-node",
         "pull-project", "create-start-node", "create-node", "create-code-agent-node", "create-webhook",
         "test-flow", "run-session",
-        "create-edge", "create-note", "init-metadata",
+        "create-edge", "delete-edge", "create-note", "init-metadata",
     }
     if args.command == "cdt-code" and not getattr(args, "cdt_id", None):
         needs_graph.add("cdt-code")
@@ -304,7 +320,7 @@ def main():
         # flows — write
         "push": cmd_push, "pull": cmd_pull,
         "patch-cdt": cmd_patch_cdt, "patch-python": cmd_patch_python, "patch-webhook": cmd_patch_webhook,
-        "patch-libraries": cmd_patch_libraries, "patch-code-agent": cmd_patch_code_agent,
+        "patch-libraries": cmd_patch_libraries, "patch-code-agent": cmd_patch_code_agent, "patch-dt": cmd_patch_dt,
         "patch-node-meta": cmd_patch_node_meta,
         "patch-start-vars": cmd_patch_start_vars,
         "rename-node": cmd_rename_node, "sync-metadata": cmd_sync_metadata,
@@ -314,7 +330,7 @@ def main():
         "create-flow": cmd_create_flow, "create-start-node": cmd_create_start_node, "create-node": cmd_create_node,
         "create-code-agent-node": cmd_create_code_agent_node,
         "create-webhook": cmd_create_webhook,
-        "create-edge": cmd_create_edge, "create-note": cmd_create_note,
+        "create-edge": cmd_create_edge, "delete-edge": cmd_delete_edge, "create-note": cmd_create_note,
         "init-metadata": cmd_init_metadata,
         # tools — read
         "tools": cmd_tools, "tool": cmd_tool,

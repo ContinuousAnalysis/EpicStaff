@@ -330,6 +330,7 @@ class CodeAgentNodeData(BaseModel):
     node_name: str
     llm_config_id: int | None = None
     agent_mode: str = "build"
+    session_id: str = ""
     system_prompt: str = ""
     stream_handler_code: str = ""
     libraries: list[str] = []

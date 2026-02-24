@@ -379,6 +379,21 @@ def cmd_create_note(args):
     print(f"  Text: {text[:80]}{'...' if len(text) > 80 else ''}")
 
 
+def cmd_delete_edge(args):
+    """Delete an edge between two nodes in a flow."""
+    graph_id = args.graph_id
+    graph = _get_graph(graph_id)
+    edges = graph.get("edge_list", [])
+    for e in edges:
+        if e.get("start_key") == args.start_node and e.get("end_key") == args.end_node:
+            from common import api_delete
+            api_delete(f"/edges/{e['id']}/")
+            print(f"Deleted edge {e['id']}: {args.start_node} → {args.end_node}")
+            return
+    print(f"Edge {args.start_node} → {args.end_node} not found in flow {graph_id}", file=sys.stderr)
+    sys.exit(1)
+
+
 def cmd_create_edge(args):
     """Create an edge between two nodes in a flow."""
     graph_id = args.graph_id
@@ -399,6 +414,7 @@ _PORT_MAP = {
     "webhook-trigger": ("webhook-trigger-out", None),
     "telegram-trigger": ("telegram-trigger-out", None),
     "classification-decision-table": ("cdt-out", "cdt-in"),
+    "table": ("table-out", "table-in"),
     "project": ("project-out", "project-in"),
     "code-agent": ("code-agent-out", "code-agent-in"),
 }
@@ -429,6 +445,11 @@ _NODE_DEFAULTS = {
         "icon": "ti ti-table",
         "size": {"width": 330, "height": 60},
         "color": "#a78bfa",
+    },
+    "table": {
+        "icon": "ti ti-table",
+        "size": {"width": 330, "height": 60},
+        "color": "#00aaff",
     },
     "project": {
         "icon": "ti ti-users",
@@ -498,6 +519,17 @@ def _build_node_data(db_node, meta_type):
         return {"name": db_node.get("node_name", "")}
     elif meta_type == "classification-decision-table":
         return {"name": db_node.get("node_name", "")}
+    elif meta_type == "table":
+        return {
+            "name": db_node.get("node_name", ""),
+            "table": {
+                "graph": db_node.get("graph"),
+                "condition_groups": db_node.get("condition_groups", []),
+                "node_name": db_node.get("node_name", ""),
+                "default_next_node": db_node.get("default_next_node"),
+                "next_error_node": db_node.get("next_error_node"),
+            },
+        }
     elif meta_type == "project":
         crew = db_node.get("crew") or {}
         crew_id = crew.get("id") if isinstance(crew, dict) else crew
@@ -537,6 +569,7 @@ def cmd_init_metadata(args):
         ("webhook_trigger_node_list", "webhook-trigger"),
         ("telegram_trigger_node_list", "telegram-trigger"),
         ("classification_decision_table_node_list", "classification-decision-table"),
+        ("decision_table_node_list", "table"),
         ("crew_node_list", "project"),
         ("code_agent_node_list", "code-agent"),
     ]
@@ -657,6 +690,51 @@ def cmd_init_metadata(args):
             "targetNodeId": tgt_info["uuid"],
             "targetPortId": tgt_port,
         })
+
+    # Build connections from Decision Table condition groups
+    dt_types = {"table", "classification-decision-table"}
+    for name, info in node_info.items():
+        if info["type"] not in dt_types:
+            continue
+        db_node = info["db_node"]
+        # Condition group outputs
+        for cg in db_node.get("condition_groups", []):
+            next_node = cg.get("next_node")
+            group_name = cg.get("group_name", "")
+            if not next_node or next_node == "__end__" or next_node not in node_info:
+                continue
+            tgt_info = node_info[next_node]
+            safe_group = group_name.lower().replace(" ", "-")
+            src_port = f"{info['uuid']}_decision-out-{safe_group}"
+            tgt_port_suffix = _PORT_MAP.get(tgt_info["type"], ("out", "in"))[1] or "in"
+            tgt_port = f"{tgt_info['uuid']}_{tgt_port_suffix}"
+            connections.append({
+                "id": f"{src_port}+{tgt_port}",
+                "type": "segment",
+                "behavior": "fixed",
+                "category": "default",
+                "sourceNodeId": info["uuid"],
+                "sourcePortId": src_port,
+                "targetNodeId": tgt_info["uuid"],
+                "targetPortId": tgt_port,
+            })
+        # Default next node
+        default_next = db_node.get("default_next_node")
+        if default_next and default_next != "__end__" and default_next in node_info:
+            tgt_info = node_info[default_next]
+            src_port = f"{info['uuid']}_decision-default"
+            tgt_port_suffix = _PORT_MAP.get(tgt_info["type"], ("out", "in"))[1] or "in"
+            tgt_port = f"{tgt_info['uuid']}_{tgt_port_suffix}"
+            connections.append({
+                "id": f"{src_port}+{tgt_port}",
+                "type": "segment",
+                "behavior": "fixed",
+                "category": "default",
+                "sourceNodeId": info["uuid"],
+                "sourcePortId": src_port,
+                "targetNodeId": tgt_info["uuid"],
+                "targetPortId": tgt_port,
+            })
 
     metadata = {"nodes": meta_nodes, "connections": connections, "edges": [], "groups": []}
     api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
