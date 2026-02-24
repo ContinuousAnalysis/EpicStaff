@@ -821,6 +821,7 @@ class FileExtractorNodeImportSerializer(FileExtractorNodeSerializer):
 
 class CodeAgentNodeImportSerializer(CodeAgentNodeSerializer):
     graph = None
+    llm_config = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta(CodeAgentNodeSerializer.Meta):
         fields = None
@@ -828,6 +829,7 @@ class CodeAgentNodeImportSerializer(CodeAgentNodeSerializer):
         validators = []
 
     def create(self, validated_data):
+        validated_data.pop("llm_config", None)
         data = {"graph": self.context.get("graph"), **validated_data}
         return super().create(data)
 
@@ -1081,13 +1083,18 @@ class GraphImportSerializer(serializers.ModelSerializer):
             serializer.save()
 
         for node_data in code_agent_node_list_data:
+            ca_llm_config_id = node_data.pop("llm_config", None)
             data = self._prepare_node_data(node_data, mapped_node_names)
 
             serializer = CodeAgentNodeImportSerializer(
                 data=data, context={"graph": graph}
             )
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            ca_node = serializer.save()
+
+            if ca_llm_config_id and llm_configs_service:
+                ca_node.llm_config = llm_configs_service.get_config(ca_llm_config_id)
+                ca_node.save()
 
         for edge_data in edge_list_data:
             start_key = edge_data.pop("start_key", None)
