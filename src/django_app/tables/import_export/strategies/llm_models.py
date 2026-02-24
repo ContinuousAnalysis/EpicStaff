@@ -31,7 +31,7 @@ class BaseProviderModelStrategy(EntityImportExportStrategy):
 
     def extract_dependencies_from_instance(self, instance):
         deps = {}
-        if getattr(instance, "tags"):
+        if getattr(instance, "tags", None):
             deps[self.tag_entity] = set(instance.tags.values_list("id", flat=True))
         return deps
 
