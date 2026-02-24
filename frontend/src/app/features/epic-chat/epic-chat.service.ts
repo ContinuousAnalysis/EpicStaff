@@ -1,24 +1,32 @@
 import { Injectable, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import {
     EpChatCommand,
     EpChatCommandResult,
     EpChatEvent,
     EpicChatCreateAgentPayload,
-    EP_CHAT_ACTIONS,
+    EP_CHAT_COMMANDS,
+    EP_CHAT_EVENT_TYPES,
 } from './models/epic-chat-command.model';
+import { FlowUnsavedStateService } from 'src/app/pages/flows-page/services/flow-unsaved-state.service';
 
 @Injectable({
-  providedIn: 'root',
+    providedIn: 'root',
 })
 export class EpicChatService {
     private readonly epChatCommandSignal = signal<EpChatCommand | null>(null);
 
     public readonly epChatCommand = this.epChatCommandSignal.asReadonly();
 
+    constructor(
+        private readonly router: Router,
+        private readonly flowUnsavedStateService: FlowUnsavedStateService,
+    ) {}
+
     public requestCreateAgent(payload: EpicChatCreateAgentPayload): void {
         this.epChatCommandSignal.set({
             requestId: this.generateRequestId(),
-            action: EP_CHAT_ACTIONS.AGENT_CREATE,
+            action: EP_CHAT_COMMANDS.AGENT_CREATE,
             payload,
         });
     }
@@ -30,19 +38,62 @@ export class EpicChatService {
         }
         if (!result.success) {
             console.error(
-                `[EpicChat command failed] ${result.action}, requestId=${result.requestId}: ${result.message || 'Unknown error'}`
+                `[EpicChat command failed] ${result.action}, requestId=${result.requestId}: ${result.message || 'Unknown error'}`,
             );
             return;
         }
-        console.log(`[EpicChat command success] ${result.action}, requestId=${result.requestId}`);
+        console.log(
+            `[EpicChat command success] ${result.action}, requestId=${result.requestId}`,
+        );
     }
 
     public onEpChatEvent(event: Event): void {
+        console.log({ event });
+
         const data = (event as CustomEvent<EpChatEvent>).detail;
-        if (!data || data.type === 'agents.changed') {
+        if (!data) {
             return;
         }
-        console.log('[EpicChat event]', data.type, data.payload || {});
+        if (data.type === 'agents.changed') {
+            return;
+        }
+        switch (data.type) {
+            case EP_CHAT_EVENT_TYPES.APP_OPEN_FLOW: {
+                const flowId = this.toNumber(data.payload?.['flowId']);
+                if (flowId != null) {
+                    this.router.navigate(['flows', flowId]);
+                }
+                return;
+            }
+            case EP_CHAT_EVENT_TYPES.APP_OPEN_NODE: {
+                const flowId = this.toNumber(data.payload?.['flowId']);
+                const nodeId =
+                    data.payload?.['nodeId'] != null
+                        ? String(data.payload['nodeId'])
+                        : null;
+                if (flowId != null) {
+                    this.router.navigate(
+                        ['flows', flowId],
+                        nodeId ? { queryParams: { nodeId } } : {},
+                    );
+                }
+                return;
+            }
+            case EP_CHAT_EVENT_TYPES.APP_REFRESH_CACHE: {
+                this.flowUnsavedStateService
+                    .confirmAndRefreshFlow()
+                    .subscribe();
+                return;
+            }
+            default:
+                console.log('[EpicChat event]', data.type, data.payload || {});
+        }
+    }
+
+    private toNumber(v: unknown): number | null {
+        if (v == null || v === '') return null;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
     }
 
     public toggleChat(host: HTMLElement | null | undefined): void {

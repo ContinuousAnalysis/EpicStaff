@@ -1,11 +1,17 @@
-export const EP_CHAT_ACTIONS = {
+export const EP_CHAT_COMMANDS = {
     AGENT_CREATE: 'agent.create',
-    AGENT_UPDATE: 'agent.update',
-    AGENT_DELETE: 'agent.delete',
     AGENT_SELECT: 'agent.select',
 } as const;
 
-export type EpChatAction = (typeof EP_CHAT_ACTIONS)[keyof typeof EP_CHAT_ACTIONS];
+export type EpChatAction = (typeof EP_CHAT_COMMANDS)[keyof typeof EP_CHAT_COMMANDS];
+
+export const EP_CHAT_EVENT_TYPES = {
+    APP_OPEN_FLOW: 'app.openFlow',
+    APP_OPEN_NODE: 'app.openNode',
+    APP_REFRESH_CACHE: 'app.refreshCache',
+} as const;
+
+export type EpChatEventType = (typeof EP_CHAT_EVENT_TYPES)[keyof typeof EP_CHAT_EVENT_TYPES];
 
 export interface EpicChatCreateAgentPayload {
     name: string;
