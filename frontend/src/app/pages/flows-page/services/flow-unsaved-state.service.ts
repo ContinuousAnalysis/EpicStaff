@@ -32,9 +32,11 @@ export class FlowUnsavedStateService {
     public confirmAndRefreshFlow(): Observable<void> {
         const comp = this.flowComponent;
         if (!comp?.canDeactivate) {
+            this.reloadPage();
             return of(void 0);
         }
         if (!comp.refreshCurrentFlow) {
+            this.reloadPage();
             return of(void 0);
         }
 
@@ -49,6 +51,10 @@ export class FlowUnsavedStateService {
                 return of(void 0);
             })
         );
+    }
+
+    private reloadPage(): void {
+        window.location.reload();
     }
 }
 
