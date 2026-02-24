@@ -16,6 +16,7 @@ from tables.models import (
     RealtimeConfig,
     RealtimeTranscriptionConfig,
 )
+from tables.models.graph_models import CodeAgentNode
 from tables.serializers.model_serializers import (
     CodeAgentNodeSerializer,
     GraphSerializer,
@@ -506,6 +507,16 @@ class GraphExportSerializer(GraphSerializer):
                 unique_ids.add(llm_id)
             if fcm_id:
                 unique_ids.add(fcm_id)
+
+        # Code agent node LLM configs
+        ca_config_ids = (
+            CodeAgentNode.objects.filter(graph=graph)
+            .exclude(llm_config__isnull=True)
+            .values_list("llm_config", flat=True)
+            .distinct()
+        )
+        for config_id in ca_config_ids:
+            unique_ids.add(config_id)
 
         llm_configs = LLMConfig.objects.filter(id__in=unique_ids)
         serializer = LLMConfigExportSerializer(instance=llm_configs, many=True)
