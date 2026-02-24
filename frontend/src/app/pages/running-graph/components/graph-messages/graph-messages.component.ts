@@ -51,6 +51,7 @@ import { AnswerToLLMService } from '../../../../services/answerToLLMService.serv
 import { UserMessageComponent } from './components/user-message/user-message.component';
 import { SubgraphStartMessageComponent } from './components/subgraph-start-message/subgraph-start-message.component';
 import { SubgraphFinishMessageComponent } from './components/subgraph-finish-message/subgraph-finish-message.component';
+import { CodeAgentStreamMessageComponent } from './components/code-agent-stream-message/code-agent-stream-message.component';
 import { isMessageType } from './helper_functions/message-helper';
 import { RunGraphPageService } from '../../run-graph-page.service';
 import { RunSessionSSEService } from '../../../run-graph-page/run-graph-page-body/graph-session-sse.service';
@@ -116,6 +117,7 @@ interface RootDrilldownView {
     WarningMessagesComponent,
     SubgraphStartMessageComponent,
     SubgraphFinishMessageComponent,
+    CodeAgentStreamMessageComponent,
   ],
   templateUrl: './graph-messages.component.html',
   styleUrls: ['./graph-messages.component.scss'],
@@ -955,8 +957,36 @@ export class GraphMessagesComponent
   }
 
   private updateVisibleMessages(): void {
+    // Build a set of message indices to show for code_agent_stream:
+    // One card per node name — prefer final, fall back to latest non-final.
+    const caShowIndex = new Map<string, number>(); // node_name -> message index to show
+
+    for (const context of this.messageContexts) {
+      if (context.path.length !== 0) continue;
+      const msg = this.messages[context.index];
+      if (msg?.message_data?.message_type !== 'code_agent_stream') continue;
+
+      const isFinal = (msg.message_data as any).is_final === true;
+      const existing = caShowIndex.get(msg.name);
+
+      if (isFinal) {
+        // Final always wins
+        caShowIndex.set(msg.name, context.index);
+      } else if (existing === undefined || !(this.messages[existing]?.message_data as any)?.is_final) {
+        // No entry yet, or existing is also non-final → keep latest
+        caShowIndex.set(msg.name, context.index);
+      }
+    }
+
+    const caShowSet = new Set(caShowIndex.values());
+
     this.visibleMessageEntries = this.messageContexts
       .filter((context) => context.path.length === 0)
+      .filter((context) => {
+        const msg = this.messages[context.index];
+        if (msg?.message_data?.message_type !== 'code_agent_stream') return true;
+        return caShowSet.has(context.index);
+      })
       .map((context) =>
         this.buildMessageEntry(this.messages[context.index], context)
       );
@@ -1084,6 +1114,10 @@ export class GraphMessagesComponent
   }
 
   private getMessageKey(message: GraphMessage): string {
+    // Stable key for code_agent_stream: one component per node name
+    if (message.message_data?.message_type === 'code_agent_stream') {
+      return `ca_stream_${message.name}`;
+    }
     return message.uuid ?? `${message.id}-${message.execution_order}-${message.created_at}`;
   }
 

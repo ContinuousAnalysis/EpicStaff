@@ -19,13 +19,21 @@ endif
 # Creates a .tar archive of the volume, named after the current branch.
 backup:
 	@echo "--- Creating Volume Backup ---"
+ifeq ($(OS),Windows_NT)
 	@.\\make_scripts\\backup.bat
+else
+	@./make_scripts/backup.sh
+endif
 
 # Usage: make apply-backup
 # Stops services and restores volume data from the branch's backup file.
 apply-backup:
 	@echo "--- Applying Volume Backup ---"
+ifeq ($(OS),Windows_NT)
 	@.\\make_scripts\\apply_backup.bat
+else
+	@./make_scripts/apply_backup.sh
+endif
 
 # --- Docker Image Tagging ---
 
@@ -33,13 +41,21 @@ apply-backup:
 # Tags images (e.g., 'crew') with the branch name (e.g., 'crew:my-branch').
 stash-tags:
 	@echo "--- Stashing Image Tags ---"
+ifeq ($(OS),Windows_NT)
 	@.\\make_scripts\\stash_tag_images.bat
+else
+	@./make_scripts/stash_tag_images.sh
+endif
 
 # Usage: make apply-tags
 # Re-tags images from the branch tag (e.g., 'crew:my-branch') back to the original (e.g., 'crew').
 apply-tags:
 	@echo "--- Applying Stashed Image Tags ---"
+ifeq ($(OS),Windows_NT)
 	@.\\make_scripts\\apply_tag_images.bat
+else
+	@./make_scripts/apply_tag_images.sh
+endif
 
 # --- Full Environment Switching ---
 
@@ -47,7 +63,11 @@ apply-tags:
 # Stashes, backs up, checks out, and applies the new branch's state.
 switch:
 	@echo "--- Switching Full Branch Environment ---"
+ifeq ($(OS),Windows_NT)
 	@.\\make_scripts\\switch_branch.bat $(b)
+else
+	@./make_scripts/switch_branch.sh $(b)
+endif
 
 
 start-prod:

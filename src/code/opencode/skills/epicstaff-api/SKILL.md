@@ -1,7 +1,7 @@
 ---
 id: epicstaff
 name: EpicStaff Flow Management
-version: 1.2
+version: 1.31
 trigger: always_on
 triggers: [epicstaff, epic-staff, flows, sessions]
 scope: [api, cli, integration]
@@ -650,3 +650,14 @@ Key endpoints:
 - `POST /api/process-rag-indexing/` — trigger indexing (body: `{"rag_id": N, "rag_type": "graph"}`)
 
 Gotchas: one GraphRAG per collection, LLM field is read-only (use Django shell), indexing runs async in knowledge container.
+
+---
+
+## Lessons Learned
+
+> **Self-improving skill:** When you encounter a problem running a command or make a mistake due to missing knowledge about the system, **add a note here** so the same mistake is never repeated and commands are succeful on first run. Where possible add hints to returns of commands to make them more useful and not clutter SKILL.md.
+
+- **Decision Table nodes have NO edges — only metadata connections.** DT outputs (condition group `next_node`, `default_next_node`, `next_error_node`) are wired via metadata connections, not via the `edge_list` DB table. The `edges` command won't show DT routing. Use `connections` to see DT wiring. When rewiring DT outputs, use `patch-dt` to update condition groups — do NOT try to create/delete edges for DT outputs.
+- **Python node API endpoint is `/pythonnodes/`** (no hyphen), not `/python-nodes/`. Other endpoints: `/code-agent-nodes/`, `/crewnodes/`, `/llmnodes/`.
+- **`init-metadata` regenerates all connections** from both DB edges AND DT condition groups. Always run it after structural flow changes.
+- **DT `condition_groups` PATCH requires `conditions: []` in each group.** The viewset's `_create_condition_groups` calls `pop("conditions")` on each group dict — if the key is missing, it raises `KeyError` and the entire PATCH silently rolls back. The `patch-dt` command now auto-adds this field.

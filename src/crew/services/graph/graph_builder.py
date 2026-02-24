@@ -305,6 +305,7 @@ class SessionGraphBuilder:
                 python_code_executor_service=self.python_code_executor_service,
                 llm_config_id=ca_data.llm_config_id,
                 agent_mode=ca_data.agent_mode,
+                code_session_id=ca_data.session_id,
                 system_prompt=ca_data.system_prompt,
                 stream_handler_code=ca_data.stream_handler_code,
                 libraries=ca_data.libraries,

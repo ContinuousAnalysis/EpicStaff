@@ -98,6 +98,14 @@ interface InputMapPair {
                                     </div>
 
                                     <app-custom-input
+                                        label="Session ID"
+                                        tooltipText="Variable path for the OpenCode session ID (e.g. variables.chat_id). Each unique value gets its own session with its own system prompt."
+                                        formControlName="session_id"
+                                        placeholder="e.g. variables.chat_id"
+                                        [activeColor]="activeColor"
+                                    ></app-custom-input>
+
+                                    <app-custom-input
                                         label="System Prompt"
                                         tooltipText="System prompt sent to the Code Agent before the user message."
                                         formControlName="system_prompt"
@@ -219,6 +227,14 @@ interface InputMapPair {
                                     }
                                 </select>
                             </div>
+
+                            <app-custom-input
+                                label="Session ID"
+                                tooltipText="Variable path for the OpenCode session ID."
+                                formControlName="session_id"
+                                placeholder="e.g. variables.chat_id"
+                                [activeColor]="activeColor"
+                            ></app-custom-input>
 
                             <app-custom-input
                                 label="System Prompt"
@@ -511,6 +527,7 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
             output_variable_path: [this.node().output_variable_path || ''],
             agent_mode: [data.agent_mode || 'build'],
             llm_config: [data.llm_config_id ?? null],
+            session_id: [data.session_id || ''],
             system_prompt: [data.system_prompt || ''],
             libraries: [data.libraries?.join(', ') || ''],
             polling_interval_ms: [data.polling_interval_ms || 1000],
@@ -545,6 +562,7 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
                 ...this.node().data,
                 agent_mode: this.form.value.agent_mode || 'build',
                 llm_config_id: this.form.value.llm_config ?? null,
+                session_id: this.form.value.session_id || '',
                 system_prompt: this.form.value.system_prompt || '',
                 stream_handler_code: this.streamHandlerCode,
                 libraries: librariesArray,
