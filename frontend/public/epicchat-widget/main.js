@@ -36727,22 +36727,28 @@ var UserAction;
   UserAction2["EpicstaffProcessTables"] = "processTables";
   UserAction2["EpicstaffResetTable"] = "resetTable";
   UserAction2["Link"] = "link";
-  UserAction2["AddTokens"] = "addTokens";
-  UserAction2["Continue"] = "continue";
   UserAction2["Cancel"] = "cancel";
   UserAction2["DownloadEpTableCsv"] = "downloadEpTableCsv";
   UserAction2["DownloadEpTableExcel"] = "downloadEpTableExcel";
   UserAction2["SendAction"] = "sendAction";
   UserAction2["SendButtonTextWithParams"] = "sendButtonTextWithParams";
+  UserAction2["AddTokens"] = "addTokens";
+  UserAction2["Continue"] = "continue";
+  UserAction2["OpenFlow"] = "openFlow";
+  UserAction2["OpenNode"] = "openNode";
+  UserAction2["RefreshCache"] = "refreshCache";
 })(UserAction || (UserAction = {}));
 
 // src/app/models/ep-chat-bridge.model.ts
-var EP_CHAT_ACTIONS = {
+var EP_CHAT_COMMANDS = {
   AGENT_CREATE: "agent.create",
   AGENT_SELECT: "agent.select"
 };
 var EP_CHAT_EVENTS = {
-  CHAT_CLOSED: "chat.closed"
+  CHAT_CLOSED: "chat.closed",
+  APP_OPEN_FLOW: "app.openFlow",
+  APP_OPEN_NODE: "app.openNode",
+  APP_REFRESH_CACHE: "app.refreshCache"
 };
 
 // node_modules/xlsx/xlsx.mjs
@@ -57853,15 +57859,15 @@ var _ActionService = class _ActionService {
     if (!command?.requestId || !command.action) {
       return;
     }
-    if (runtimeContext.isMonoAgent && (command.action === EP_CHAT_ACTIONS.AGENT_CREATE || command.action === EP_CHAT_ACTIONS.AGENT_SELECT)) {
+    if (runtimeContext.isMonoAgent && (command.action === EP_CHAT_COMMANDS.AGENT_CREATE || command.action === EP_CHAT_COMMANDS.AGENT_SELECT)) {
       onCommandError(command, "Agent command is not available in mono-agent mode");
       return;
     }
     switch (command.action) {
-      case EP_CHAT_ACTIONS.AGENT_CREATE:
+      case EP_CHAT_COMMANDS.AGENT_CREATE:
         this.handleCreateAgentCommand(command.payload, command, onCommandSuccess, onCommandError);
         return;
-      case EP_CHAT_ACTIONS.AGENT_SELECT:
+      case EP_CHAT_COMMANDS.AGENT_SELECT:
         this.handleSelectAgentCommand(command.payload, command, onCommandSuccess, onCommandError);
         return;
       default:
@@ -57940,6 +57946,25 @@ var _ActionService = class _ActionService {
    */
   handleUiActionClick(action, message, helpers) {
     return __async(this, null, function* () {
+      if (action.action === UserAction.OpenFlow && helpers.emitAppEvent) {
+        const flowId = action.params?.["flowId"] ?? action.params?.["flow_id"];
+        if (flowId != null) {
+          helpers.emitAppEvent(EP_CHAT_EVENTS.APP_OPEN_FLOW, { flowId });
+        }
+        return;
+      }
+      if (action.action === UserAction.OpenNode && helpers.emitAppEvent) {
+        const flowId = action.params?.["flowId"] ?? action.params?.["flow_id"];
+        const nodeId = action.params?.["nodeId"] ?? action.params?.["node_id"];
+        if (flowId != null && nodeId != null) {
+          helpers.emitAppEvent(EP_CHAT_EVENTS.APP_OPEN_NODE, { flowId, nodeId });
+        }
+        return;
+      }
+      if (action.action === UserAction.RefreshCache && helpers.emitAppEvent) {
+        helpers.emitAppEvent(EP_CHAT_EVENTS.APP_REFRESH_CACHE, {});
+        return;
+      }
       if (action.action === UserAction.EpicstaffProcessTables) {
         const processTablesContext = this.buildProcessTablesContext(message);
         if (!processTablesContext) {
@@ -96480,7 +96505,8 @@ var _ChatComponent = class _ChatComponent {
       }
       yield this.actionService.handleUiActionClick(action, message, {
         sendAction: (options) => this.onSendAction(options.actionText, options.contextExtras, options.addUserMessage, options.useUserAction),
-        lockTablesInMessage: (msg) => this.lockTablesInMessage(msg)
+        lockTablesInMessage: (msg) => this.lockTablesInMessage(msg),
+        emitAppEvent: (type, payload) => this.epChatEvent.emit({ type, payload })
       });
     });
   }

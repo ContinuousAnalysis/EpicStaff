@@ -3,17 +3,15 @@ import {
     ChangeDetectorRef,
     Component,
     output,
-    computed,
     EventEmitter,
     Input,
+    OnChanges,
     OnInit,
     Output,
+    SimpleChanges,
     signal,
     ViewChild,
     OnDestroy,
-    ElementRef, 
-    HostListener,
-    Type,
 } from '@angular/core';
 import {
     FCreateNodeEvent,
@@ -28,8 +26,6 @@ import {
     EFResizeHandleType,
     ICurrentSelection,
     FDropToGroupEvent,
-    FCanvasChangeEvent,
-    IFFlowState,
     FDragStartedEvent,
     EFZoomDirection,
 } from '@foblex/flow';
@@ -42,9 +38,8 @@ import { ShortcutListenerDirective } from '../core/directives/shortcut-listener.
 import { UndoRedoService } from '../services/undo-redo.service';
 import { ClipboardService } from '../services/clipboard.service';
 import { MouseTrackerDirective } from '../core/directives/mouse-tracker.directive';
-import { Subject, Observable } from 'rxjs';
+import { Subject } from 'rxjs';
 import {
-    DecisionTableNodeModel,
     NodeModel,
     ProjectNodeModel,
     StartNodeModel,
@@ -60,7 +55,6 @@ import {
     generatePortsForDecisionTableNode,
 } from '../core/helpers/helpers';
 
-import { NgClass, NgIf } from '@angular/common';
 import { NodeType } from '../core/enums/node-type';
 import { v4 as uuidv4 } from 'uuid';
 import { FlowGraphContextMenuComponent } from '../components/flow-graph-context-menu/flow-graph-context-menu.component';
@@ -70,17 +64,13 @@ import { FlowBaseNodeComponent } from '../components/flow-base-node/flow-base-no
 import { NODE_COLORS, NODE_ICONS } from '../core/enums/node-config';
 
 import { FormsModule } from '@angular/forms';
-import { NODE_TYPE_PREFIXES } from '../core/enums/node-type-prefixes';
 import { FlowModel } from '../core/models/flow.model';
 
-import { FlowStateData } from '../core/models/flow-state-data.model';
 import { GroupNodeComponent } from '../components/group-node/group-node.component';
 import { GroupNodeModel } from '../core/models/group.model';
-import { size } from 'lodash';
 
 import { GroupCollapserService } from '../services/group/group-collapse.service';
 import { FlowActionPanelComponent } from '../components/flow-action-panel/flow-action-panel.component';
-import { FlowZoomControlsComponent } from '../components/flow-zoom-control-panel/flow-zoom-controls.component';
 import { calculateGroupCollapsedPosition } from '../core/helpers/calculate-group-collapsed-position.util';
 import { calculateGroupExpandedPosition } from '../core/helpers/calculate-group-expanded-position.util';
 import { convertJsonToMap } from '../core/helpers/convert-json-to-map.util';
@@ -89,7 +79,6 @@ import { NodesSearchComponent } from '../components/nodes-search/nodes-search.co
 import { generateNodeDisplayName } from '../core/helpers/generate-node-display-name.util';
 import { Dialog } from '@angular/cdk/dialog';
 import { ProjectDialogComponent } from '../components/project-dialog/project-dialog.component';
-import { NoteNodeComponent } from '../components/nodes-components/note-node/note-node.component';
 import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edit-dialog.component';
 import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util'; // Adjust path
 import { ToastService } from '../../services/notifications/toast.service';
@@ -122,10 +111,11 @@ import { FlowShortcutsButtonComponent } from '../components/flow-shortcuts-butto
         FlowShortcutsButtonComponent
     ],
 })
-export class FlowGraphComponent implements OnInit, OnDestroy {
+export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     @Input() flowState!: FlowModel;
     @Input() nodesMode!: 'project-graph' | 'flow-graph';
     @Input() currentFlowId: number | null = null;
+    @Input() initialNodeId: string | null = null;
 
     @Output() save = new EventEmitter<void>();
 
@@ -172,6 +162,26 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     ) { }
 
     public ngOnInit(): void {
+        this.applyIncomingFlowState();
+        if (this.initialNodeId) {
+            setTimeout(() => {
+                this.sidePanelService.setSelectedNodeId(this.initialNodeId);
+                this.nodePanelShell?.expandPanel();
+            }, 0);
+        }
+    }
+
+    public ngOnChanges(changes: SimpleChanges): void {
+        if (changes['flowState'] && !changes['flowState'].firstChange) {
+            this.applyIncomingFlowState();
+        }
+        if (changes['initialNodeId'] && changes['initialNodeId'].currentValue) {
+            this.sidePanelService.setSelectedNodeId(changes['initialNodeId'].currentValue);
+            setTimeout(() => this.nodePanelShell?.expandPanel(), 0);
+        }
+    }
+
+    private applyIncomingFlowState(): void {
         this.initializeFlowStateIfEmpty();
         this.addStartNodeIfNeeded();
         this.generatePortsForNodesIfNeeded();

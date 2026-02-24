@@ -81,6 +81,7 @@ import { SidePanelService } from '../../../../visual-programming/services/side-p
 import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
 import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
+import { FlowUnsavedStateService } from 'src/app/pages/flows-page/services/flow-unsaved-state.service';
 
 @Component({
     selector: 'app-flow-visual-programming',
@@ -96,6 +97,7 @@ export class FlowVisualProgrammingComponent
     public readonly isEpicChatEnabled: boolean;
     public isLoaded = false;
     public graph!: GraphDto;
+    public initialNodeId: string | null = null;
 
     public isSaving = false;
     public isRunning = false;
@@ -122,24 +124,45 @@ export class FlowVisualProgrammingComponent
         private readonly unsavedChangesDialogService: UnsavedChangesDialogService,
         private readonly configService: ConfigService,
         private readonly sidePanelService: SidePanelService,
+        private readonly flowUnsavedStateService: FlowUnsavedStateService,
         private readonly epicChatService: EpicChatService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
     }
 
     public ngOnInit(): void {
-        const id = Number(this.route.snapshot.paramMap.get('id'));
-        if (!id) {
-            console.warn('Invalid graph ID.');
-            return;
-        }
-
-        this.fetchGraph(id);
+        this.flowUnsavedStateService.register(this);
+        this.route.queryParamMap
+            .pipe(takeUntil(this.destroy$))
+            .subscribe((queryParams) => {
+                this.initialNodeId = queryParams.get('nodeId');
+            });
+        this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+            const id = Number(params.get('id'));
+            if (!id) {
+                console.warn('Invalid graph ID.');
+                return;
+            }
+            this.fetchGraph(id);
+        });
     }
 
-    private fetchGraph(graphId: number): void {
+    public refreshCurrentFlow(): void {
+        const graphId = Number(this.route.snapshot.paramMap.get('id'));
+        if (!graphId) {
+            console.warn('Invalid graph ID for refresh.');
+            return;
+        }
+        this.fetchGraph(graphId, true, true);
+    }
+
+    private fetchGraph(
+        graphId: number,
+        forceRefresh = false,
+        showRefreshToast = false
+    ): void {
         this.flowApiService
-            .getGraphById(graphId)
+            .getGraphById(graphId, forceRefresh)
             .pipe(
                 switchMap((graph: GraphDto) =>
                     this.flowApiService.getGraphsLight().pipe(
@@ -180,6 +203,9 @@ export class FlowVisualProgrammingComponent
                             6000,
                             'bottom-right'
                         );
+                    }
+                    if (showRefreshToast) {
+                        this.toastService.success('Flow refreshed');
                     }
                 },
                 error: (err) => {
@@ -585,6 +611,7 @@ export class FlowVisualProgrammingComponent
     }
 
     public ngOnDestroy(): void {
+        this.flowUnsavedStateService.unregister();
         // this.destroy$.next();
         // this.destroy$.complete();
     }

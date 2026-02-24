@@ -18,6 +18,7 @@
         [flowState]="graph.metadata"
         [nodesMode]="'flow-graph'"
         [currentFlowId]="graph.id"
+        [initialNodeId]="initialNodeId"
         (save)="handleSaveFlow(true).subscribe()"
         (openShortcuts)="openShortcutsModal($event)"
     ></app-flow-graph>
