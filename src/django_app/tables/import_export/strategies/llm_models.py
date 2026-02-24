@@ -44,7 +44,8 @@ class BaseProviderModelStrategy(EntityImportExportStrategy):
             )
 
         tags = self._get_tags(data, id_mapper)
-        provider = Provider.objects.get(name=data["provider_name"])
+        provider_name = data.pop("provider_name")
+        provider = Provider.objects.get(name=provider_name)
         serializer = self.serializer_class(
             data={**data, "provider_id": provider.id, "tags": tags}
         )

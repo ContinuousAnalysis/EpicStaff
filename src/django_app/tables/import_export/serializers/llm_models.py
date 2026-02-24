@@ -31,7 +31,7 @@ class LLMModelImportSerializer(BaseModelImportSerializer):
     provider_field = "llm_provider"
     provider_id = serializers.PrimaryKeyRelatedField(
         queryset=Provider.objects.all(),
-        source="provider",
+        source="llm_provider",
         write_only=True,
     )
 
