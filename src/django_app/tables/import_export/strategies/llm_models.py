@@ -69,7 +69,7 @@ class BaseProviderModelStrategy(EntityImportExportStrategy):
         ).first()
 
     def _get_tags(self, data: dict, id_mapper: IDMapper) -> list[int]:
-        old_tag_ids = data.pop("tags")
+        old_tag_ids = data.pop("tags", [])
         new_tag_ids = []
 
         for old_id in old_tag_ids:
