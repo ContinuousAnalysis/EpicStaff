@@ -249,6 +249,9 @@ executions
 openai-realtime-console
 src/django_app/staticfiles/*
 
+# EpicStaff CLI local state
+.my_epicstaff/
+
 # Cursor AI rules
 .cursorrules
 

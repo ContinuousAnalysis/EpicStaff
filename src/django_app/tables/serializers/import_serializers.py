@@ -23,6 +23,7 @@ from tables.models import (
     CrewNode,
 )
 from tables.serializers.model_serializers import (
+    CodeAgentNodeSerializer,
     PythonNodeSerializer,
     EdgeSerializer,
     ConditionalEdgeSerializer,
@@ -818,6 +819,21 @@ class FileExtractorNodeImportSerializer(FileExtractorNodeSerializer):
         return super().create(data)
 
 
+class CodeAgentNodeImportSerializer(CodeAgentNodeSerializer):
+    graph = None
+    llm_config = serializers.IntegerField(required=False, allow_null=True)
+
+    class Meta(CodeAgentNodeSerializer.Meta):
+        fields = None
+        exclude = ["graph"]
+        validators = []
+
+    def create(self, validated_data):
+        validated_data.pop("llm_config", None)
+        data = {"graph": self.context.get("graph"), **validated_data}
+        return super().create(data)
+
+
 class EdgeImportSerializer(EdgeSerializer):
     graph = None
 
@@ -938,6 +954,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
         many=True, required=False
     )
     end_node_list = EndNodeImportSerializer(many=True, required=False)
+    code_agent_node_list = CodeAgentNodeImportSerializer(
+        many=True, required=False
+    )
     # llm_node_list = LLMNodeSerializer(many=True)
     # decision_table_node_list = DecisionTableNodeSerializer(many=True)
 
@@ -965,6 +984,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
         end_node_list_data = validated_data.pop("end_node_list", [])
         file_extractor_node_list_data = validated_data.pop(
             "file_extractor_node_list", []
+        )
+        code_agent_node_list_data = validated_data.pop(
+            "code_agent_node_list", []
         )
         # llm_node_list_data = validated_data.pop("llm_node_list", [])
         # decision_table_node_list_data = validated_data.pop(
@@ -1059,6 +1081,20 @@ class GraphImportSerializer(serializers.ModelSerializer):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
+
+        for node_data in code_agent_node_list_data:
+            ca_llm_config_id = node_data.pop("llm_config", None)
+            data = self._prepare_node_data(node_data, mapped_node_names)
+
+            serializer = CodeAgentNodeImportSerializer(
+                data=data, context={"graph": graph}
+            )
+            serializer.is_valid(raise_exception=True)
+            ca_node = serializer.save()
+
+            if ca_llm_config_id and llm_configs_service:
+                ca_node.llm_config = llm_configs_service.get_config(ca_llm_config_id)
+                ca_node.save()
 
         for edge_data in edge_list_data:
             start_key = edge_data.pop("start_key", None)
