@@ -30,6 +30,7 @@ class CrewNode(BaseNode):
         input_map: dict,
         output_variable_path: str,
         knowledge_search_service: KnowledgeSearchService,
+        stream_config: dict | None = None,
     ):
         super().__init__(
             session_id=session_id,
@@ -43,6 +44,7 @@ class CrewNode(BaseNode):
         self.crewai_output_channel = crewai_output_channel
         self.crew_parser_service = crew_parser_service
         self.knowledge_search_service = knowledge_search_service
+        self.stream_config = stream_config or {}
 
     async def execute(
         self, state: State, writer: StreamWriter, execution_order: int, input_: Any
@@ -95,6 +97,8 @@ class CrewNode(BaseNode):
             if crew_output.pydantic
             else {"raw": crew_output.raw}
         )
+        if "message" not in output:
+            output["message"] = crew_output.raw
         if token_usage:
             output["token_usage"] = token_usage
 

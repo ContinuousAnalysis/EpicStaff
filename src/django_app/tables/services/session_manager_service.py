@@ -338,6 +338,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                     max_wait_s=item.max_wait_s,
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
+                    stream_config=item.stream_config or {},
                 )
             )
 

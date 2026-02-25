@@ -50,6 +50,7 @@ class CodeAgentNode(BaseNode):
         chunk_timeout_s: int = 30,
         inactivity_timeout_s: int = 120,
         max_wait_s: int = 300,
+        stream_config: dict | None = None,
     ):
         super().__init__(
             session_id=session_id,
@@ -74,6 +75,7 @@ class CodeAgentNode(BaseNode):
         self.chunk_timeout_s = chunk_timeout_s
         self.inactivity_timeout_s = inactivity_timeout_s
         self.max_wait_s = max_wait_s
+        self.stream_config = stream_config or {}
 
     # ------------------------------------------------------------------
     # OpenCode HTTP helpers
@@ -461,6 +463,9 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                         "text": thinking_text,
                         "tool_calls": tool_calls,
                         "is_final": False,
+                        "sse_visible": not self.stream_config
+                            or self.stream_config.get("reasoning", True)
+                            or self.stream_config.get("tool_calls", True),
                     },
                 )
 
@@ -517,6 +522,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         await self._call_handler("complete", input_context, full_reply=reply_text)
 
         return {
+            "message": reply_text,
             "reply": reply_text,
             "session_id": oc_session_id,
         }

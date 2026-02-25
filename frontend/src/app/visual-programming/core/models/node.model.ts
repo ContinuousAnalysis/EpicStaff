@@ -38,6 +38,7 @@ export interface BaseNodeModel {
     // New fields
     input_map: Record<string, any>;
     output_variable_path: string | null;
+    stream_config?: Record<string, boolean>;
 }
 export interface StartNodeData {
     initialState: Record<string, unknown>;

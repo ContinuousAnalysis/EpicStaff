@@ -188,6 +188,7 @@ export class GraphUpdateService {
                             input_map: node.input_map || {},
                             output_variable_path:
                                 node.output_variable_path || null,
+                            stream_config: node.stream_config || {},
                         };
                         return this.crewNodeService
                             .createCrewNode(payload)
@@ -226,6 +227,7 @@ export class GraphUpdateService {
                             input_map: node.input_map || {},
                             output_variable_path:
                                 node.output_variable_path || null,
+                            stream_config: node.stream_config || {},
                         };
                         return this.pythonNodeService
                             .createPythonNode(payload)
@@ -511,6 +513,7 @@ export class GraphUpdateService {
                         max_wait_s: node.data.max_wait_s || 300,
                         input_map: node.input_map || {},
                         output_variable_path: node.output_variable_path || null,
+                        stream_config: node.stream_config || {},
                     };
                     return this.codeAgentNodeService
                         .createCodeAgentNode(payload)
