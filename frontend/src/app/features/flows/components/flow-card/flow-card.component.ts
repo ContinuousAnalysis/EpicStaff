@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
 import { GraphDto } from '../../models/graph.model';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { FlowMenuComponent } from './flow-menu/flow-menu.component';
-import { CheckboxComponent } from '../../../../shared/components/form-controls/checkbox/checkbox.component';
+import { CheckboxComponent } from '../../../../shared/components/checkbox/checkbox.component';
 
 export type FlowAction =
     | 'viewSessions'
