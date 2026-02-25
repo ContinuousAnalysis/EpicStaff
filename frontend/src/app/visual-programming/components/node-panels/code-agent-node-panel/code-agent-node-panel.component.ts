@@ -162,6 +162,10 @@ interface InputMapPair {
                                                 <input type="checkbox" formControlName="tool_results" [style.accent-color]="activeColor" />
                                                 <span>Tool results</span>
                                             </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" formControlName="final_reply" [style.accent-color]="activeColor" />
+                                                <span>Final reply</span>
+                                            </label>
                                         </div>
                                     </div>
                                 </div>
@@ -282,6 +286,10 @@ interface InputMapPair {
                                     <label class="checkbox-item">
                                         <input type="checkbox" formControlName="tool_results" [style.accent-color]="activeColor" />
                                         <span>Tool results</span>
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" formControlName="final_reply" [style.accent-color]="activeColor" />
+                                        <span>Final reply</span>
                                     </label>
                                 </div>
                             </div>
@@ -601,6 +609,7 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
                 reasoning: [this.node().stream_config?.['reasoning'] ?? true],
                 tool_calls: [this.node().stream_config?.['tool_calls'] ?? true],
                 tool_results: [this.node().stream_config?.['tool_results'] ?? true],
+                final_reply: [this.node().stream_config?.['final_reply'] ?? true],
             }),
         });
 

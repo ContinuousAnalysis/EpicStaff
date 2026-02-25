@@ -78,6 +78,10 @@ interface InputMapPair {
                                 <input type="checkbox" formControlName="tool_calls" [style.accent-color]="activeColor" />
                                 <span>Tool calls</span>
                             </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" formControlName="final_reply" [style.accent-color]="activeColor" />
+                                <span>Final reply</span>
+                            </label>
                         </div>
                     </div>
                 </form>
@@ -177,6 +181,7 @@ export class ProjectNodePanelComponent extends BaseSidePanel<ProjectNodeModel> {
                 agent_activity: [sc?.['agent_activity'] ?? true],
                 task_progress: [sc?.['task_progress'] ?? true],
                 agent_reasoning: [sc?.['agent_reasoning'] ?? true],
+                final_reply: [sc?.['final_reply'] ?? true],
                 tool_calls: [sc?.['tool_calls'] ?? true],
             }),
         });
