@@ -78,6 +78,7 @@ import { isEqual } from 'lodash';
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { ConfigService } from '../../../../services/config/config.service';
 import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
+import { buildFlowModelFromGraph } from '../../../../visual-programming/services/graph/load-graph.service';
 import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
 import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 
@@ -94,6 +95,8 @@ export class FlowVisualProgrammingComponent
 {
     public isLoaded = false;
     public graph!: GraphDto;
+    /** The flow model built from backend data — used as [flowState] input for the graph component. */
+    public loadedFlowState!: FlowModel;
 
     public isSaving = false;
     public isRunning = false;
@@ -137,10 +140,8 @@ export class FlowVisualProgrammingComponent
             .pipe(
                 switchMap((graph: GraphDto) =>
                     this.flowApiService.getGraphsLight().pipe(
-                        map((flows) =>
-                            this.applySubgraphNodeValidation(graph, flows)
-                        ),
-                        catchError(() => {
+                        map((flows) => ({ graph, flows })),
+                        catchError((err) => {
                             return of({ graph, flows: [] as GraphDto[] });
                         })
                     )
@@ -152,15 +153,23 @@ export class FlowVisualProgrammingComponent
                 next: ({ graph, flows }) => {
                     this.graph = graph;
 
-                    this.isLoaded = true;
-                    this.initialState = graph.metadata;
+                    // Build the FlowModel dynamically from backend node/edge lists
+                    const flowModel = buildFlowModelFromGraph(graph);
 
-                    const blockedCount =
-                        graph.metadata?.nodes?.filter(
-                            (node) =>
-                                node.type === NodeType.SUBGRAPH &&
-                                node.isBlocked
-                        ).length || 0;
+                    // Validate subgraph nodes against available flows
+                    const availableIds = new Set(flows.map((f) => f.id));
+                    let blockedCount = 0;
+                    flowModel.nodes = flowModel.nodes.map((node) => {
+                        if (node.type !== NodeType.SUBGRAPH) return node;
+                        const subgraphId = Number((node as any)?.data?.id);
+                        const isMissing = !subgraphId || !availableIds.has(subgraphId);
+                        if (isMissing) blockedCount++;
+                        return { ...node, isBlocked: isMissing };
+                    });
+
+                    this.loadedFlowState = flowModel;
+                    this.initialState = flowModel;
+                    this.isLoaded = true;
 
                     if (blockedCount > 0) {
                         this.toastService.warning(
@@ -174,38 +183,6 @@ export class FlowVisualProgrammingComponent
                     this.toastService.error('Failed to load graph');
                 },
             });
-    }
-
-    private applySubgraphNodeValidation(
-        graph: GraphDto,
-        availableFlows: GraphDto[]
-    ): GraphDto {
-        if (!graph.metadata || !Array.isArray(graph.metadata.nodes)) {
-            return graph;
-        }
-
-        const availableIds = new Set(availableFlows.map((flow) => flow.id));
-        const updatedNodes = graph.metadata.nodes.map((node) => {
-            if (node.type !== NodeType.SUBGRAPH) {
-                return node;
-            }
-
-            const subgraphId = Number((node as any)?.data?.id);
-            const isMissing = !subgraphId || !availableIds.has(subgraphId);
-
-            return {
-                ...node,
-                isBlocked: isMissing,
-            };
-        });
-
-        return {
-            ...graph,
-            metadata: {
-                ...graph.metadata,
-                nodes: updatedNodes,
-            },
-        };
     }
 
     public handleSaveFlow(showNotif: boolean): Observable<boolean> {
@@ -254,7 +231,7 @@ export class FlowVisualProgrammingComponent
                 );
 
                 if (matchingStartNode) {
-                    return this.startNodeService.updateStartNode(
+                    return this.startNodeService.partialUpdateStartNode(
                         matchingStartNode.id,
                         {
                             graph: this.graph.id,
@@ -268,9 +245,18 @@ export class FlowVisualProgrammingComponent
                     variables: initialStateData,
                 });
             }),
-            switchMap(() =>
-                this.graphUpdateService.saveGraph(flowState, this.graph)
-            ),
+            switchMap((startNodeResult) => {
+                if (startNodeResult?.id != null) {
+                    const sn = flowState.nodes.find(n => n.type === NodeType.START);
+                    if (sn) sn.backendId = startNodeResult.id;
+
+                    const snInService = this.flowService.nodes()?.find(
+                        (n: any) => n.type === NodeType.START
+                    );
+                    if (snInService) snInService.backendId = startNodeResult.id;
+                }
+                return this.graphUpdateService.saveGraph(flowState, this.graph);
+            }),
             map((result) => {
                 this.graph = result.graph;
                 this.patchBackendIds(result.createdMappings);
@@ -362,7 +348,7 @@ export class FlowVisualProgrammingComponent
                         );
 
                         if (matchingStartNode) {
-                            return this.startNodeService.updateStartNode(
+                            return this.startNodeService.partialUpdateStartNode(
                                 matchingStartNode.id,
                                 {
                                     graph: this.graph.id,
