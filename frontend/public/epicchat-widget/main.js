@@ -96423,6 +96423,7 @@ var _ChatComponent = class _ChatComponent {
     this.isAgentConfigOpen = false;
     this.agentConfigState = null;
     this.newAgentParamsForConfig = null;
+    this.chatSessionId = Date.now();
     effect(() => {
       if (this.chatService.isOpen() && this.chatFooter) {
         setTimeout(() => this.chatFooter?.focus(), 100);
@@ -96456,6 +96457,7 @@ var _ChatComponent = class _ChatComponent {
   ngOnInit() {
     this.applyDateLocale();
     this.setGlobalBasePath();
+    this.chatSessionId = Date.now();
     const userId = this.uniqueUserId?.trim() || null;
     this.storageService.setUserId(userId);
     if (this.isMonoAgent) {
@@ -96530,6 +96532,7 @@ var _ChatComponent = class _ChatComponent {
     }
   }
   onClearChatHistory() {
+    this.chatSessionId = Date.now();
     const chatId = this.messageService.getChatId(this.currentAgent, this.isMonoAgent);
     this.messageService.clearMessages(chatId);
     this.chatService.setMessages([]);
@@ -96593,7 +96596,7 @@ var _ChatComponent = class _ChatComponent {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = yield this.apiService.sendMessage(text, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, void 0, (update) => this.applyStreamUpdateToMessage(interimMessage.id, update));
+        const botMessage = yield this.apiService.sendMessage(text, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext(), (update) => this.applyStreamUpdateToMessage(interimMessage.id, update));
         this.finalizeInterimMessage(interimMessage.id, botMessage);
         this.scrollMode = "question-answer";
         this.chatService.setAttachedFiles([]);
@@ -96643,7 +96646,7 @@ var _ChatComponent = class _ChatComponent {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = useUserAction ? yield this.apiService.sendActionMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, contextExtras, (update) => this.applyStreamUpdateToMessage(interimMessage.id, update)) : yield this.apiService.sendMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, contextExtras, (update) => this.applyStreamUpdateToMessage(interimMessage.id, update));
+        const botMessage = useUserAction ? yield this.apiService.sendActionMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext(contextExtras), (update) => this.applyStreamUpdateToMessage(interimMessage.id, update)) : yield this.apiService.sendMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext(contextExtras), (update) => this.applyStreamUpdateToMessage(interimMessage.id, update));
         this.finalizeInterimMessage(interimMessage.id, botMessage);
         this.scrollMode = "question-answer";
         this.chatService.setAttachedFiles([]);
@@ -96725,6 +96728,11 @@ var _ChatComponent = class _ChatComponent {
       return toolCallText;
     }
     return text;
+  }
+  withChatSessionContext(contextExtras) {
+    return __spreadProps(__spreadValues({}, contextExtras || {}), {
+      chat_session_id: this.chatSessionId
+    });
   }
   lockPreviousTables() {
     const messages = this.chatService.getMessagesValue();
@@ -96959,7 +96967,7 @@ var _ChatComponent = class _ChatComponent {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = yield this.apiService.sendMessage("Hi!", agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0);
+        const botMessage = yield this.apiService.sendMessage("Hi!", agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext());
         if (!botMessage.id) {
           botMessage.id = generateMessageId();
         }
