@@ -251,7 +251,7 @@ export class FlowVisualProgrammingComponent
             map((result) => {
                 this.graph = result.graph;
                 this.patchBackendIds(result.createdMappings);
-                this.initialState = flowState;
+                this.initialState = this.flowService.getFlowState();
                 if (showNotif) {
                     this.toastService.success('Graph saved successfully');
                 }
@@ -282,7 +282,7 @@ export class FlowVisualProgrammingComponent
             map((result) => {
                 this.graph = result.graph;
                 this.patchBackendIds(result.createdMappings);
-                this.initialState = flowState;
+                this.initialState = this.flowService.getFlowState();
                 if (showNotif) {
                     this.toastService.success('Graph saved successfully');
                 }
@@ -325,7 +325,7 @@ export class FlowVisualProgrammingComponent
                             tap((result) => {
                                 this.graph = result.graph;
                                 this.patchBackendIds(result.createdMappings);
-                                this.initialState = flowState;
+                                this.initialState = this.flowService.getFlowState();
                             })
                         );
                 }
@@ -359,7 +359,7 @@ export class FlowVisualProgrammingComponent
                     tap((result) => {
                         this.graph = result.graph;
                         this.patchBackendIds(result.createdMappings);
-                        this.initialState = flowState;
+                        this.initialState = this.flowService.getFlowState();
                     })
                 );
             })

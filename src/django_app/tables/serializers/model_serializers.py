@@ -1713,7 +1713,7 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "persistent_variables"]
 
 
-class NoteNodeSerializer(BaseGraphEntityMixin):
+class NoteNodeSerializer(serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
         model = NoteNode
         fields = "__all__"

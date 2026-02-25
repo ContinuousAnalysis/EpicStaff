@@ -78,7 +78,7 @@ export interface NodeDiffResult {
 /** An EdgeNodeModel paired with its resolved source and target node names. */
 export interface ResolvedConditionalEdge {
     edgeNode: EdgeNodeModel;
-    sourceName: string;
+    sourceName: string | null;
     targetName: string | null;
 }
 
