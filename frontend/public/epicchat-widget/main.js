@@ -91533,6 +91533,162 @@ var MessageTableComponent = _MessageTableComponent;
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageTableComponent, { className: "MessageTableComponent", filePath: "src/app/components/message-table/message-table.component.ts", lineNumber: 56 });
 })();
 
+// src/app/components/thinking-expander/thinking-expander.component.ts
+function ThinkingExpanderComponent_Conditional_0_Conditional_6_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275text(0);
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext(2);
+    \u0275\u0275textInterpolate1(" (", ctx_r1.elapsedSeconds, "s) ");
+  }
+}
+function ThinkingExpanderComponent_Conditional_0_Conditional_9_For_2_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275domElementStart(0, "div", 7);
+    \u0275\u0275text(1);
+    \u0275\u0275domElementEnd();
+  }
+  if (rf & 2) {
+    const entry_r3 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(entry_r3);
+  }
+}
+function ThinkingExpanderComponent_Conditional_0_Conditional_9_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275domElementStart(0, "div", 6);
+    \u0275\u0275repeaterCreate(1, ThinkingExpanderComponent_Conditional_0_Conditional_9_For_2_Template, 2, 1, "div", 7, \u0275\u0275repeaterTrackByIndex);
+    \u0275\u0275domElementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275repeater(ctx_r1.entries);
+  }
+}
+function ThinkingExpanderComponent_Conditional_0_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r1 = \u0275\u0275getCurrentView();
+    \u0275\u0275domElementStart(0, "div", 1)(1, "button", 2);
+    \u0275\u0275domListener("click", function ThinkingExpanderComponent_Conditional_0_Template_button_click_1_listener() {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.toggleExpanded());
+    });
+    \u0275\u0275domElementStart(2, "span", 3);
+    \u0275\u0275text(3);
+    \u0275\u0275domElementEnd();
+    \u0275\u0275domElementStart(4, "span", 4);
+    \u0275\u0275text(5, " Thinking... ");
+    \u0275\u0275conditionalCreate(6, ThinkingExpanderComponent_Conditional_0_Conditional_6_Template, 1, 1);
+    \u0275\u0275domElementEnd()();
+    \u0275\u0275domElementStart(7, "div", 5);
+    \u0275\u0275text(8);
+    \u0275\u0275domElementEnd();
+    \u0275\u0275conditionalCreate(9, ThinkingExpanderComponent_Conditional_0_Conditional_9_Template, 3, 0, "div", 6);
+    \u0275\u0275domElementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275classProp("ep-thinking--expanded", ctx_r1.expanded);
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(ctx_r1.expanded ? "\u25BE" : "\u25B8");
+    \u0275\u0275advance(3);
+    \u0275\u0275conditional(ctx_r1.isActive ? 6 : -1);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(ctx_r1.latestEntry);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx_r1.expanded ? 9 : -1);
+  }
+}
+var _ThinkingExpanderComponent = class _ThinkingExpanderComponent {
+  constructor() {
+    this.entries = [];
+    this.isActive = false;
+    this.expanded = false;
+    this.elapsedSeconds = 0;
+    this.startedAtMs = null;
+    this.tickTimerId = null;
+  }
+  get hasEntries() {
+    return this.entries.length > 0;
+  }
+  get latestEntry() {
+    if (!this.hasEntries)
+      return "";
+    return this.entries[this.entries.length - 1];
+  }
+  toggleExpanded() {
+    this.expanded = !this.expanded;
+  }
+  ngOnChanges(changes) {
+    if (changes["startedAtUnixSeconds"]) {
+      this.startedAtMs = this.startedAtUnixSeconds != null ? this.startedAtUnixSeconds * 1e3 : null;
+    }
+    if (changes["isActive"]) {
+      if (this.isActive) {
+        this.expanded = true;
+        this.startTimer();
+      } else {
+        this.stopTimer();
+        this.expanded = false;
+      }
+    }
+  }
+  ngOnDestroy() {
+    this.stopTimer();
+  }
+  startTimer() {
+    this.stopTimer();
+    this.updateElapsed();
+    this.tickTimerId = setInterval(() => this.updateElapsed(), 1e3);
+  }
+  stopTimer() {
+    if (this.tickTimerId) {
+      clearInterval(this.tickTimerId);
+      this.tickTimerId = null;
+    }
+  }
+  updateElapsed() {
+    if (!this.isActive)
+      return;
+    if (this.startedAtMs == null) {
+      this.elapsedSeconds += 1;
+      return;
+    }
+    const delta = Math.floor((Date.now() - this.startedAtMs) / 1e3);
+    this.elapsedSeconds = Math.max(0, delta);
+  }
+};
+_ThinkingExpanderComponent.\u0275fac = function ThinkingExpanderComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _ThinkingExpanderComponent)();
+};
+_ThinkingExpanderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ThinkingExpanderComponent, selectors: [["ep-thinking-expander"]], inputs: { entries: "entries", isActive: "isActive", startedAtUnixSeconds: "startedAtUnixSeconds" }, features: [\u0275\u0275NgOnChangesFeature], decls: 1, vars: 1, consts: [[1, "ep-thinking", 3, "ep-thinking--expanded"], [1, "ep-thinking"], ["type", "button", 1, "ep-thinking__header", 3, "click"], [1, "ep-thinking__chevron"], [1, "ep-thinking__title"], [1, "ep-thinking__current"], [1, "ep-thinking__history"], [1, "ep-thinking__row"]], template: function ThinkingExpanderComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275conditionalCreate(0, ThinkingExpanderComponent_Conditional_0_Template, 10, 6, "div", 0);
+  }
+  if (rf & 2) {
+    \u0275\u0275conditional(ctx.hasEntries ? 0 : -1);
+  }
+}, dependencies: [CommonModule], styles: ["\n\n.ep-thinking[_ngcontent-%COMP%] {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n}\n.ep-thinking__header[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron[_ngcontent-%COMP%] {\n  width: 12px;\n  text-align: center;\n}\n.ep-thinking__title[_ngcontent-%COMP%] {\n  font-weight: 600;\n}\n.ep-thinking__current[_ngcontent-%COMP%] {\n  margin-top: 6px;\n  font-size: 13px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: pre-wrap;\n  word-break: break-word;\n}\n.ep-thinking__history[_ngcontent-%COMP%] {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__row[_ngcontent-%COMP%] {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text-muted);\n  white-space: pre-wrap;\n  word-break: break-word;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */"], changeDetection: 0 });
+var ThinkingExpanderComponent = _ThinkingExpanderComponent;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ThinkingExpanderComponent, [{
+    type: Component,
+    args: [{ selector: "ep-thinking-expander", standalone: true, imports: [CommonModule], changeDetection: ChangeDetectionStrategy.OnPush, template: '@if (hasEntries) {\r\n  <div class="ep-thinking" [class.ep-thinking--expanded]="expanded">\r\n    <button type="button" class="ep-thinking__header" (click)="toggleExpanded()">\r\n      <span class="ep-thinking__chevron">{{ expanded ? "\u25BE" : "\u25B8" }}</span>\r\n      <span class="ep-thinking__title">\r\n        Thinking...\r\n        @if (isActive) {\r\n          ({{ elapsedSeconds }}s)\r\n        }\r\n      </span>\r\n    </button>\r\n\r\n    <div class="ep-thinking__current">{{ latestEntry }}</div>\r\n\r\n    @if (expanded) {\r\n      <div class="ep-thinking__history">\r\n        @for (entry of entries; track $index) {\r\n          <div class="ep-thinking__row">{{ entry }}</div>\r\n        }\r\n      </div>\r\n    }\r\n  </div>\r\n}\r\n', styles: ["/* src/app/components/thinking-expander/thinking-expander.component.scss */\n.ep-thinking {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n}\n.ep-thinking__header {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron {\n  width: 12px;\n  text-align: center;\n}\n.ep-thinking__title {\n  font-weight: 600;\n}\n.ep-thinking__current {\n  margin-top: 6px;\n  font-size: 13px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: pre-wrap;\n  word-break: break-word;\n}\n.ep-thinking__history {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__row {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text-muted);\n  white-space: pre-wrap;\n  word-break: break-word;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */\n"] }]
+  }], null, { entries: [{
+    type: Input
+  }], isActive: [{
+    type: Input
+  }], startedAtUnixSeconds: [{
+    type: Input
+  }] });
+})();
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ThinkingExpanderComponent, { className: "ThinkingExpanderComponent", filePath: "src/app/components/thinking-expander/thinking-expander.component.ts", lineNumber: 19 });
+})();
+
 // src/app/components/message-item/message-item.component.ts
 var _c012 = () => [];
 function MessageItemComponent_Conditional_1_Template(rf, ctx) {
@@ -91594,14 +91750,11 @@ function MessageItemComponent_Conditional_2_Template(rf, ctx) {
 }
 function MessageItemComponent_Conditional_3_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 9);
-    \u0275\u0275text(1);
-    \u0275\u0275elementEnd();
+    \u0275\u0275element(0, "ep-thinking-expander", 9);
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate(ctx_r0.message._epicaIsThinkingAbout);
+    \u0275\u0275property("entries", ctx_r0.thinkingEntries)("isActive", ctx_r0.isThinkingActive)("startedAtUnixSeconds", ctx_r0.message._epicaThinkingStartedAt ?? ctx_r0.message.time ?? null);
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_4_Template(rf, ctx) {
@@ -91702,7 +91855,7 @@ function MessageItemComponent_Conditional_3_Template(rf, ctx) {
     \u0275\u0275elementStart(0, "div", 2)(1, "div", 5);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(3, MessageItemComponent_Conditional_3_Conditional_3_Template, 2, 1, "div", 9);
+    \u0275\u0275conditionalCreate(3, MessageItemComponent_Conditional_3_Conditional_3_Template, 1, 3, "ep-thinking-expander", 9);
     \u0275\u0275conditionalCreate(4, MessageItemComponent_Conditional_3_Conditional_4_Template, 2, 1, "div", 6);
     \u0275\u0275conditionalCreate(5, MessageItemComponent_Conditional_3_Conditional_5_Template, 2, 0);
     \u0275\u0275conditionalCreate(6, MessageItemComponent_Conditional_3_Conditional_6_Template, 2, 1, "div", 6);
@@ -91714,7 +91867,7 @@ function MessageItemComponent_Conditional_3_Template(rf, ctx) {
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate(ctx_r0.displayTimestamp);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r0.message._epicaIsThinkingAbout ? 3 : -1);
+    \u0275\u0275conditional(ctx_r0.hasThinkingEntries ? 3 : -1);
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx_r0.message.response.message ? 4 : -1);
     \u0275\u0275advance();
@@ -91793,6 +91946,22 @@ var _MessageItemComponent = class _MessageItemComponent {
   }
   get hasError() {
     return !!this.message._epicaError;
+  }
+  get thinkingEntries() {
+    if (Array.isArray(this.message._epicaThinkingTrail) && this.message._epicaThinkingTrail.length) {
+      return this.message._epicaThinkingTrail;
+    }
+    const current = (this.message._epicaIsThinkingAbout || "").trim();
+    return current ? [current] : [];
+  }
+  get hasThinkingEntries() {
+    return this.thinkingEntries.length > 0;
+  }
+  get isThinkingActive() {
+    if (typeof this.message._epicaThinkingActive === "boolean") {
+      return this.message._epicaThinkingActive;
+    }
+    return !this.message.response?.message && this.hasThinkingEntries;
   }
   get messageDate() {
     return this.message.time ? new Date(this.message.time * 1e3) : /* @__PURE__ */ new Date();
@@ -91878,7 +92047,7 @@ var _MessageItemComponent = class _MessageItemComponent {
 _MessageItemComponent.\u0275fac = function MessageItemComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _MessageItemComponent)();
 };
-_MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageItemComponent, selectors: [["ep-message-item"]], inputs: { message: "message" }, outputs: { actionClick: "actionClick" }, decls: 6, vars: 8, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [1, "ep-message__thinking"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], [3, "disabled"], [3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], ["height", "80", "width", "80", "alt", "Epica sleeping", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
+_MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageItemComponent, selectors: [["ep-message-item"]], inputs: { message: "message" }, outputs: { actionClick: "actionClick" }, decls: 6, vars: 8, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [3, "entries", "isActive", "startedAtUnixSeconds"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], [3, "disabled"], [3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], ["height", "80", "width", "80", "alt", "Epica sleeping", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275conditionalCreate(1, MessageItemComponent_Conditional_1_Template, 2, 1, "div", 1);
@@ -91902,12 +92071,24 @@ _MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ 
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.hasError ? 5 : -1);
   }
-}, dependencies: [CommonModule, MarkdownComponent, MessageTableComponent, ButtonComponent], styles: ['@charset "UTF-8";\n\n\n\n.ep-message[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message[_ngcontent-%COMP%]:hover   .ep-message__time[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message[_ngcontent-%COMP%]   .ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto 8px auto;\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 12px;\n  align-self: center;\n}\n.ep-message__text[_ngcontent-%COMP%] {\n  display: block;\n  padding: 8px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     markdown {\n  display: block;\n}\n.ep-message__text[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]     p:last-child, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text[_ngcontent-%COMP%]     em, \n.ep-message__text[_ngcontent-%COMP%]     i, \n.ep-message__text[_ngcontent-%COMP%]   em[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   i[_ngcontent-%COMP%] {\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]     a, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text[_ngcontent-%COMP%]     a:hover, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:first-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:last-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul   li p, \n.ep-message__text[_ngcontent-%COMP%]     ul li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 24px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li, \n.ep-message__text[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol   li p, \n.ep-message__text[_ngcontent-%COMP%]     ol li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     code, \n.ep-message__text[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family: monospace;\n  font-size: 13px;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre code, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: none;\n  padding: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  font-size: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 18px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%] {\n  font-size: 16px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  font-size: 14px;\n}\n.ep-message__text[_ngcontent-%COMP%]   hr[_ngcontent-%COMP%] {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   blockquote[_ngcontent-%COMP%] {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message[_ngcontent-%COMP%]:not(.ep-message--user)   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-color-accent-soft);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user[_ngcontent-%COMP%] {\n  align-items: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__content[_ngcontent-%COMP%] {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px 4px 0 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__time[_ngcontent-%COMP%] {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 8px;\n}\n.ep-message__link[_ngcontent-%COMP%] {\n  font-size: 13px;\n  text-align: left;\n  text-decoration: none;\n  cursor: pointer;\n  transition: text-decoration 0.2s;\n}\n.ep-message__link[_ngcontent-%COMP%]:hover:not(.ep-message__link--disabled) {\n  text-decoration: underline;\n}\n.ep-message__link.ep-message__link--disabled[_ngcontent-%COMP%] {\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.epica-error[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 16px 20px;\n  max-width: 380px;\n  align-items: center;\n  gap: 20px;\n  border-radius: 4px;\n  border: 2px solid var(--ep-color-danger-border);\n  background: var(--ep-color-danger-soft);\n}\n.epica-error__text[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n/*# sourceMappingURL=message-item.component.css.map */'] });
+}, dependencies: [
+  CommonModule,
+  MarkdownComponent,
+  MessageTableComponent,
+  ButtonComponent,
+  ThinkingExpanderComponent
+], styles: ['@charset "UTF-8";\n\n\n\n.ep-message[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message[_ngcontent-%COMP%]:hover   .ep-message__time[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message[_ngcontent-%COMP%]   .ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto 8px auto;\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 12px;\n  align-self: center;\n}\n.ep-message__text[_ngcontent-%COMP%] {\n  display: block;\n  padding: 8px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     markdown {\n  display: block;\n}\n.ep-message__text[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]     p:last-child, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text[_ngcontent-%COMP%]     em, \n.ep-message__text[_ngcontent-%COMP%]     i, \n.ep-message__text[_ngcontent-%COMP%]   em[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   i[_ngcontent-%COMP%] {\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]     a, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text[_ngcontent-%COMP%]     a:hover, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:first-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:last-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul   li p, \n.ep-message__text[_ngcontent-%COMP%]     ul li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 24px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li, \n.ep-message__text[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol   li p, \n.ep-message__text[_ngcontent-%COMP%]     ol li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     code, \n.ep-message__text[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family: monospace;\n  font-size: 13px;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre code, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: none;\n  padding: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  font-size: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 18px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%] {\n  font-size: 16px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  font-size: 14px;\n}\n.ep-message__text[_ngcontent-%COMP%]   hr[_ngcontent-%COMP%] {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   blockquote[_ngcontent-%COMP%] {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message[_ngcontent-%COMP%]:not(.ep-message--user)   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-color-accent-soft);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user[_ngcontent-%COMP%] {\n  align-items: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__content[_ngcontent-%COMP%] {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px 4px 0 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__time[_ngcontent-%COMP%] {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 8px;\n}\n.ep-message__link[_ngcontent-%COMP%] {\n  font-size: 13px;\n  text-align: left;\n  text-decoration: none;\n  cursor: pointer;\n  transition: text-decoration 0.2s;\n}\n.ep-message__link[_ngcontent-%COMP%]:hover:not(.ep-message__link--disabled) {\n  text-decoration: underline;\n}\n.ep-message__link.ep-message__link--disabled[_ngcontent-%COMP%] {\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.epica-error[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 16px 20px;\n  max-width: 380px;\n  align-items: center;\n  gap: 20px;\n  border-radius: 4px;\n  border: 2px solid var(--ep-color-danger-border);\n  background: var(--ep-color-danger-soft);\n}\n.epica-error__text[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n/*# sourceMappingURL=message-item.component.css.map */'] });
 var MessageItemComponent = _MessageItemComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MessageItemComponent, [{
     type: Component,
-    args: [{ selector: "ep-message-item", imports: [CommonModule, MarkdownComponent, MessageTableComponent, ButtonComponent], template: `<div
+    args: [{ selector: "ep-message-item", imports: [
+      CommonModule,
+      MarkdownComponent,
+      MessageTableComponent,
+      ButtonComponent,
+      ThinkingExpanderComponent
+    ], template: `<div
   class="ep-message"
   [class.ep-message--user]="isUserMessage"
   [id]="'message_' + (message.id || message.time)"
@@ -91934,8 +92115,12 @@ var MessageItemComponent = _MessageItemComponent;
     <div class="ep-message__content">
       <div class="ep-message__time">{{ displayTimestamp }}</div>
 
-      @if (message._epicaIsThinkingAbout) {
-        <div class="ep-message__thinking">{{ message._epicaIsThinkingAbout }}</div>
+      @if (hasThinkingEntries) {
+        <ep-thinking-expander
+          [entries]="thinkingEntries"
+          [isActive]="isThinkingActive"
+          [startedAtUnixSeconds]="message._epicaThinkingStartedAt ?? message.time ?? null"
+        />
       }
 
       @if (message.response.message) {
@@ -92026,7 +92211,7 @@ var MessageItemComponent = _MessageItemComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageItemComponent, { className: "MessageItemComponent", filePath: "src/app/components/message-item/message-item.component.ts", lineNumber: 17 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageItemComponent, { className: "MessageItemComponent", filePath: "src/app/components/message-item/message-item.component.ts", lineNumber: 24 });
 })();
 
 // src/app/components/shared/typing-indicator/typing-indicator.component.ts
@@ -92628,6 +92813,9 @@ var MicrophoneComponent = _MicrophoneComponent;
 function isFinishMessageData(data) {
   return data.message_type === "finish";
 }
+function isStreamMessageData(data) {
+  return data.message_type === "code_agent_stream" || data.message_type === "crewai_output" || data.message_type === "python_stream";
+}
 function extractOutputFromFinishMessage(messageData) {
   return messageData.output;
 }
@@ -92648,7 +92836,7 @@ var _ApiService = class _ApiService {
       Authorization: `Basic ${credentials}`
     });
   }
-  sendMessage(message, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras) {
+  sendMessage(message, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras, onStreamUpdate) {
     return __async(this, null, function* () {
       if (agentUrl && flowId !== null && flowId !== void 0) {
         return yield this.sendEpicstaffRequest({
@@ -92659,7 +92847,8 @@ var _ApiService = class _ApiService {
           userParams,
           basicAuth,
           contextExtras,
-          userInput: message
+          userInput: message,
+          onStreamUpdate
         });
       }
       return this.createMissingAgentMessage();
@@ -92668,7 +92857,7 @@ var _ApiService = class _ApiService {
   /**
    * Send action message with user_action instead of user_input
    */
-  sendActionMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras) {
+  sendActionMessage(actionText, agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras, onStreamUpdate) {
     return __async(this, null, function* () {
       if (agentUrl && flowId !== null && flowId !== void 0) {
         return yield this.sendEpicstaffRequest({
@@ -92679,7 +92868,8 @@ var _ApiService = class _ApiService {
           userParams,
           basicAuth,
           contextExtras,
-          userAction: actionText
+          userAction: actionText,
+          onStreamUpdate
         });
       }
       return this.createMissingAgentMessage();
@@ -92697,7 +92887,7 @@ var _ApiService = class _ApiService {
   sendEpicstaffRequest(params) {
     return __async(this, null, function* () {
       try {
-        const { agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras, userInput, userAction } = params;
+        const { agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras, userInput, userAction, onStreamUpdate } = params;
         const formData = new FormData();
         formData.append("graph_id", String(flowId));
         const chatHistoryFormatted = this.formatChatHistory(chatHistory || []);
@@ -92726,21 +92916,21 @@ var _ApiService = class _ApiService {
         const headers = basicAuth ? this.createAuthHeaders(basicAuth) : void 0;
         const sessionResponse = yield firstValueFrom(this.http.post(`${agentUrl}/run-session/`, formData, headers ? { headers } : void 0));
         const sessionId = sessionResponse.session_id;
-        return yield this.subscribeToEpicstaffSseSession(agentUrl, sessionId);
+        return yield this.subscribeToEpicstaffSseSession(agentUrl, sessionId, onStreamUpdate);
       } catch (error) {
         console.error("Error sending Epicstaff request:", error);
         throw error;
       }
     });
   }
-  subscribeToEpicstaffSseSession(agentUrl, sessionId) {
+  subscribeToEpicstaffSseSession(agentUrl, sessionId, onStreamUpdate) {
     return new Promise((resolve, reject) => {
-      const subscribeUrl = `${agentUrl}/run-session/subscribe/${sessionId}/filtered/`;
-      const eventSource = new EventSource(subscribeUrl, { withCredentials: true });
       let finalStatusData = null;
       let parsedFinalOutput = null;
       let isEndReceived = false;
       let timeoutId = null;
+      let eventSource = null;
+      let fallbackTried = false;
       const buildResponseMessage = (responseData) => {
         if (responseData) {
           return {
@@ -92761,12 +92951,17 @@ var _ApiService = class _ApiService {
         resolve(buildResponseMessage(responseData));
       };
       const scheduleTimeout = () => {
+        if (isEndReceived) {
+          return;
+        }
         if (timeoutId) {
           clearTimeout(timeoutId);
         }
         timeoutId = setTimeout(() => {
           if (!isEndReceived) {
-            eventSource.close();
+            if (eventSource) {
+              eventSource.close();
+            }
             const responseData = parsedFinalOutput ?? finalStatusData;
             if (responseData) {
               resolveWithResponseData(responseData);
@@ -92776,59 +92971,89 @@ var _ApiService = class _ApiService {
           }
         }, 12e4);
       };
-      eventSource.addEventListener("status", (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log({ status: data });
-          scheduleTimeout();
-          if (data.status === "end") {
-            finalStatusData = data.status_data;
-            isEndReceived = true;
+      const attachListeners = (source, useFiltered) => {
+        source.addEventListener("status", (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log({ status: data });
+            scheduleTimeout();
+            if (data.status === "end") {
+              finalStatusData = data.status_data;
+              isEndReceived = true;
+              if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+              }
+              source.close();
+              const rawFinalResult = data.status_data?.variables?.final_result ?? null;
+              const parsedFinalResult = this.parseOutputIfString(rawFinalResult);
+              if (parsedFinalResult) {
+                console.log({ final_result: parsedFinalResult });
+              }
+              const responseData = parsedFinalResult ?? parsedFinalOutput ?? finalStatusData;
+              resolveWithResponseData(responseData);
+            }
+          } catch (error) {
+            console.warn("Failed to parse SSE status message:", error);
+          }
+        });
+        source.addEventListener("messages", (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log({ message: data });
+            scheduleTimeout();
+            if (data.message_data) {
+              const messageData = data.message_data;
+              if (isStreamMessageData(messageData)) {
+                onStreamUpdate?.({
+                  messageType: messageData.message_type,
+                  text: typeof messageData.text === "string" ? messageData.text : "",
+                  toolCalls: Array.isArray(messageData.tool_calls) ? messageData.tool_calls : [],
+                  isFinal: !!messageData.is_final,
+                  nodeName: data.name
+                });
+              }
+              if (isFinishMessageData(messageData)) {
+                const output = extractOutputFromFinishMessage(messageData);
+                parsedFinalOutput = this.parseOutputIfString(output);
+              }
+            }
+          } catch (error) {
+            console.warn("Failed to parse SSE messages:", error);
+          }
+        });
+        source.onerror = (error) => {
+          console.error("SSE error:", error);
+          if (isEndReceived) {
+            source.close();
+            return;
+          }
+          if (useFiltered && !fallbackTried) {
+            fallbackTried = true;
+            source.close();
             if (timeoutId) {
               clearTimeout(timeoutId);
               timeoutId = null;
             }
-            eventSource.close();
-            const rawFinalResult = data.status_data?.variables?.final_result ?? null;
-            const parsedFinalResult = this.parseOutputIfString(rawFinalResult);
-            if (parsedFinalResult) {
-              console.log({ final_result: parsedFinalResult });
-            }
-            const responseData = parsedFinalResult ?? parsedFinalOutput ?? finalStatusData;
-            resolveWithResponseData(responseData);
+            openEventSource(false);
+            return;
           }
-        } catch (error) {
-          console.warn("Failed to parse SSE status message:", error);
-        }
-      });
-      eventSource.addEventListener("messages", (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log({ message: data });
-          scheduleTimeout();
-          if (data.message_data) {
-            const messageData = data.message_data;
-            if (isFinishMessageData(messageData)) {
-              const output = extractOutputFromFinishMessage(messageData);
-              parsedFinalOutput = this.parseOutputIfString(output);
-            }
+          source.close();
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
           }
-        } catch (error) {
-          console.warn("Failed to parse SSE messages:", error);
-        }
-      });
-      eventSource.onerror = (error) => {
-        console.error("SSE error:", error);
-        eventSource.close();
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
-        if (!isEndReceived) {
           reject(new Error("SSE connection error"));
-        }
+        };
       };
-      scheduleTimeout();
+      const openEventSource = (useFiltered) => {
+        const filteredSuffix = useFiltered ? "filtered/" : "";
+        const subscribeUrl = `${agentUrl}/run-session/subscribe/${sessionId}/${filteredSuffix}`;
+        eventSource = new EventSource(subscribeUrl, { withCredentials: true });
+        attachListeners(eventSource, useFiltered);
+        scheduleTimeout();
+      };
+      openEventSource(true);
     });
   }
   /**
@@ -96362,36 +96587,20 @@ var _ChatComponent = class _ChatComponent {
       this.lockPreviousTables();
       this.scrollMode = "user-message";
       this.isTyping = true;
+      const interimMessage = this.createInterimThinkingMessage();
+      this.chatService.addMessage(interimMessage);
       try {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = yield this.apiService.sendMessage(text, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0);
-        if (!botMessage.id) {
-          botMessage.id = generateMessageId();
-        }
-        if (!botMessage.time) {
-          botMessage.time = getCurrentTimestamp();
-        }
-        const botTime = botMessage.time || getCurrentTimestamp();
-        if (!botMessage._isFirstMessageOfDay) {
-          botMessage._isFirstMessageOfDay = this.isFirstMessageOfDay(botTime);
-        }
-        this.chatService.addMessage(botMessage);
+        const botMessage = yield this.apiService.sendMessage(text, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, void 0, (update) => this.applyStreamUpdateToMessage(interimMessage.id, update));
+        this.finalizeInterimMessage(interimMessage.id, botMessage);
         this.scrollMode = "question-answer";
         this.chatService.setAttachedFiles([]);
         this.chatService.setAttachedFile(null);
       } catch (error) {
         console.error("Error sending message:", error);
-        const errorMessage = {
-          id: generateMessageId(),
-          response: {
-            message: error instanceof Error ? error.message : "Failed to send message"
-          },
-          time: getCurrentTimestamp(),
-          _epicaError: true
-        };
-        this.chatService.addMessage(errorMessage);
+        this.failInterimMessage(interimMessage.id, error instanceof Error ? error.message : "Failed to send message");
         this.scrollMode = "question-answer";
       } finally {
         this.isTyping = false;
@@ -96428,36 +96637,20 @@ var _ChatComponent = class _ChatComponent {
       }
       this.scrollMode = "user-message";
       this.isTyping = true;
+      const interimMessage = this.createInterimThinkingMessage();
+      this.chatService.addMessage(interimMessage);
       try {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = useUserAction ? yield this.apiService.sendActionMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, contextExtras) : yield this.apiService.sendMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, contextExtras);
-        if (!botMessage.id) {
-          botMessage.id = generateMessageId();
-        }
-        if (!botMessage.time) {
-          botMessage.time = getCurrentTimestamp();
-        }
-        const botTime = botMessage.time || getCurrentTimestamp();
-        if (!botMessage._isFirstMessageOfDay) {
-          botMessage._isFirstMessageOfDay = this.isFirstMessageOfDay(botTime);
-        }
-        this.chatService.addMessage(botMessage);
+        const botMessage = useUserAction ? yield this.apiService.sendActionMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, contextExtras, (update) => this.applyStreamUpdateToMessage(interimMessage.id, update)) : yield this.apiService.sendMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, contextExtras, (update) => this.applyStreamUpdateToMessage(interimMessage.id, update));
+        this.finalizeInterimMessage(interimMessage.id, botMessage);
         this.scrollMode = "question-answer";
         this.chatService.setAttachedFiles([]);
         this.chatService.setAttachedFile(null);
       } catch (error) {
         console.error("Error sending action message:", error);
-        const errorMessage = {
-          id: generateMessageId(),
-          response: {
-            message: error instanceof Error ? error.message : "Failed to send action message"
-          },
-          time: getCurrentTimestamp(),
-          _epicaError: true
-        };
-        this.chatService.addMessage(errorMessage);
+        this.failInterimMessage(interimMessage.id, error instanceof Error ? error.message : "Failed to send action message");
         this.scrollMode = "question-answer";
       } finally {
         this.isTyping = false;
@@ -96466,6 +96659,72 @@ var _ChatComponent = class _ChatComponent {
         }, 500);
       }
     });
+  }
+  createInterimThinkingMessage() {
+    const now = getCurrentTimestamp();
+    return {
+      id: generateMessageId(),
+      response: {},
+      time: now,
+      _isFirstMessageOfDay: this.isFirstMessageOfDay(now),
+      _epicaThinkingTrail: [],
+      _epicaThinkingStartedAt: now,
+      _epicaThinkingActive: true,
+      _interim: true
+    };
+  }
+  applyStreamUpdateToMessage(messageId, update) {
+    this.chatService.updateMessage(messageId, (msg) => {
+      const trail = Array.isArray(msg._epicaThinkingTrail) ? [...msg._epicaThinkingTrail] : [];
+      const nextChunk = this.formatThinkingChunk(update);
+      if (nextChunk) {
+        trail.push(nextChunk);
+      }
+      return __spreadProps(__spreadValues({}, msg), {
+        _epicaIsThinkingAbout: nextChunk || msg._epicaIsThinkingAbout,
+        _epicaThinkingTrail: trail,
+        _epicaThinkingActive: !update.isFinal
+      });
+    });
+  }
+  finalizeInterimMessage(interimId, finalMessage) {
+    this.chatService.updateMessage(interimId, (prev) => {
+      const finalTime = finalMessage.time || getCurrentTimestamp();
+      return __spreadProps(__spreadValues({}, finalMessage), {
+        id: interimId,
+        time: finalTime,
+        _isFirstMessageOfDay: finalMessage._isFirstMessageOfDay ?? this.isFirstMessageOfDay(finalTime),
+        _epicaThinkingTrail: prev._epicaThinkingTrail,
+        _epicaThinkingStartedAt: prev._epicaThinkingStartedAt ?? prev.time,
+        _epicaThinkingActive: false,
+        _epicaIsThinkingAbout: prev._epicaIsThinkingAbout,
+        _interim: false
+      });
+    });
+  }
+  failInterimMessage(interimId, errorText) {
+    this.chatService.updateMessage(interimId, (prev) => __spreadProps(__spreadValues({}, prev), {
+      response: __spreadProps(__spreadValues({}, prev.response || {}), {
+        message: errorText
+      }),
+      _epicaError: true,
+      _epicaThinkingActive: false,
+      _interim: false
+    }));
+  }
+  formatThinkingChunk(update) {
+    const text = (update.text || "").trim();
+    const toolCallText = update.toolCalls.map((tool) => {
+      const name = typeof tool["name"] === "string" ? tool["name"] : "tool";
+      return `[${name}]`;
+    }).join(" ");
+    if (text && toolCallText) {
+      return `${toolCallText} ${text}`;
+    }
+    if (toolCallText) {
+      return toolCallText;
+    }
+    return text;
   }
   lockPreviousTables() {
     const messages = this.chatService.getMessagesValue();
