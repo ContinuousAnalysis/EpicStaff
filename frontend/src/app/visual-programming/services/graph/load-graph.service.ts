@@ -421,7 +421,7 @@ function buildConditionalEdgeNode(ce: ConditionalEdge, idx: number): EdgeNodeMod
         backendId: ce.id,
         category: 'web',
         type: NodeType.EDGE,
-        node_name: ce.source + '_edge',
+        node_name: (ce.metadata as any)?.['node_name'] || (ce.source + '_edge'),
         data: {
             source: ce.source,
             then: ce.then,

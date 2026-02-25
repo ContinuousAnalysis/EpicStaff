@@ -276,6 +276,7 @@ export function getTelegramTriggerNodeForComparisonFromUI(node: TelegramTriggerN
 export function getConditionalEdgeForComparisonFromBackend(node: ConditionalEdge) {
     return {
         source: node.source,
+        node_name: (node.metadata as any)?.['node_name'] ?? '',
         libraries: node.python_code.libraries,
         code: (node.python_code.code || '').trimEnd(),
         entrypoint: node.python_code.entrypoint,
@@ -288,6 +289,7 @@ export function getConditionalEdgeForComparisonFromBackend(node: ConditionalEdge
 export function getConditionalEdgeForComparisonFromUI(node: ResolvedConditionalEdge) {
     return {
         source: node.sourceName,
+        node_name: node.edgeNode.node_name,
         libraries: node.edgeNode.data.python_code.libraries,
         code: (node.edgeNode.data.python_code.code || '').trimEnd(),
         entrypoint: node.edgeNode.data.python_code.entrypoint,

@@ -200,27 +200,23 @@ function resolveConditionalEdges(
     connections: ConnectionModel[],
     allNodes: NodeModel[]
 ): ResolvedConditionalEdge[] {
-    return edgeNodes
-        .map(edgeNode => {
-            // Find connection where edge node is the TARGET → get source node name
-            const incomingConnection = connections.find(c => c.targetNodeId === edgeNode.id);
-            if (!incomingConnection) return null;
-            const sourceNode = allNodes.find(n => n.id === incomingConnection.sourceNodeId);
-            if (!sourceNode) return null;
+    return edgeNodes.map(edgeNode => {
+        const incomingConnection = connections.find(c => c.targetNodeId === edgeNode.id);
+        const sourceNode = incomingConnection
+            ? allNodes.find(n => n.id === incomingConnection.sourceNodeId)
+            : null;
 
-            // Find connection where edge node is the SOURCE → get target node name (for "then" field)
-            const outgoingConnection = connections.find(c => c.sourceNodeId === edgeNode.id);
-            const targetNode = outgoingConnection
-                ? allNodes.find(n => n.id === outgoingConnection.targetNodeId)
-                : null;
+        const outgoingConnection = connections.find(c => c.sourceNodeId === edgeNode.id);
+        const targetNode = outgoingConnection
+            ? allNodes.find(n => n.id === outgoingConnection.targetNodeId)
+            : null;
 
-            return {
-                edgeNode,
-                sourceName: sourceNode.node_name,
-                targetName: targetNode?.node_name ?? null,
-            };
-        })
-        .filter((re): re is ResolvedConditionalEdge => re !== null);
+        return {
+            edgeNode,
+            sourceName: sourceNode?.node_name ?? null,
+            targetName: targetNode?.node_name ?? null,
+        };
+    });
 }
 
 /**
@@ -353,7 +349,7 @@ export function getGraphDiff(
         'TelegramTriggerNode'
     );
 
-    const conditionalEdges = diffByKey(
+    const conditionalEdgesRaw = diffByKey(
         previous.conditionalEdges,
         current.conditionalEdges,
         n => n.edgeNode.backendId,
@@ -361,6 +357,13 @@ export function getGraphDiff(
         getConditionalEdgeForComparisonFromUI,
         'ConditionalEdge'
     );
+    // Backend requires source to be non-blank — skip create/update for unconnected edge nodes.
+    // Deletions still work because they come from the backend list, not the UI list.
+    const conditionalEdges = {
+        ...conditionalEdgesRaw,
+        toCreate: conditionalEdgesRaw.toCreate.filter(re => !!re.sourceName),
+        toUpdate: conditionalEdgesRaw.toUpdate.filter(({ ui }) => !!ui.sourceName),
+    };
 
     const decisionTableNodes = diffByKey(
         previous.decisionTableNodes,
@@ -505,11 +508,14 @@ export function buildTelegramPayload(n: TelegramTriggerNodeModel, graphId: numbe
 export function buildCondEdgePayload(re: ResolvedConditionalEdge, graphId: number): CreateConditionalEdgeRequest {
     return {
         graph: graphId,
-        source: re.sourceName,
+        source: re.sourceName!,
         then: re.targetName,
         python_code: re.edgeNode.data.python_code,
         input_map: re.edgeNode.input_map || {},
-        metadata: getUIMetadataForComparison(re.edgeNode),
+        metadata: {
+            ...getUIMetadataForComparison(re.edgeNode),
+            node_name: re.edgeNode.node_name,
+        },
     };
 }
 
