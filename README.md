@@ -87,7 +87,7 @@ git clone -b main [https://github.com/EpicStaff/EpicStaff.git](https://github.co
 git clone -b main [https://github.com/EpicStaff/EpicStaff.git](https://github.com/EpicStaff/EpicStaff.git) && cd EpicStaff && savefiles="$HOME/savefiles" && sed -i "s|CREW_SAVEFILES_PATH=/c/savefiles|CREW_SAVEFILES_PATH=$savefiles|" src/.env && docker volume create sandbox_venvs && docker volume create sandbox_executions && docker volume create crew_pgdata && docker volume create crew_config && docker volume create media_data && docker network create mcp-network && cd src && docker-compose up --build
 ```
 
-Once running, open http://localhost:4200 to start building.
+Once running, open http://localhost to start building.
 
 <details>
 <summary>Alternative Setup Options</summary>
