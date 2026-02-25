@@ -92735,7 +92735,7 @@ var _ApiService = class _ApiService {
   }
   subscribeToEpicstaffSseSession(agentUrl, sessionId) {
     return new Promise((resolve, reject) => {
-      const subscribeUrl = `${agentUrl}/run-session/subscribe/${sessionId}/`;
+      const subscribeUrl = `${agentUrl}/run-session/subscribe/${sessionId}/filtered/`;
       const eventSource = new EventSource(subscribeUrl, { withCredentials: true });
       let finalStatusData = null;
       let parsedFinalOutput = null;

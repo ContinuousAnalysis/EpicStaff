@@ -362,6 +362,7 @@ class CrewNodeData(BaseModel):
     crew: CrewData
     input_map: dict[str, Any]
     output_variable_path: str | None = None
+    stream_config: dict[str, Any] = {}
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -371,6 +372,7 @@ class PythonNodeData(BaseModel):
     python_code: PythonCodeData
     input_map: dict[str, Any]
     output_variable_path: str | None = None
+    stream_config: dict[str, Any] = {}
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -486,6 +488,7 @@ class CodeAgentNodeData(BaseModel):
     max_wait_s: int = 300
     input_map: dict[str, Any] = {}
     output_variable_path: str | None = None
+    stream_config: dict[str, Any] = {}
 
     model_config = ConfigDict(from_attributes=True)
 

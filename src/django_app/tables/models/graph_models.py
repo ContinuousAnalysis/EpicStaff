@@ -47,6 +47,7 @@ class CrewNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="crew_node_list"
     )
     crew = models.ForeignKey("Crew", on_delete=models.CASCADE)
+    stream_config = models.JSONField(default=dict, blank=True)
 
     class Meta:
         constraints = [
@@ -62,6 +63,7 @@ class PythonNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="python_node_list"
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
+    stream_config = models.JSONField(default=dict, blank=True)
 
     class Meta:
         constraints = [
@@ -176,6 +178,7 @@ class CodeAgentNode(BaseNode):
     chunk_timeout_s = models.IntegerField(default=30)
     inactivity_timeout_s = models.IntegerField(default=120)
     max_wait_s = models.IntegerField(default=300)
+    stream_config = models.JSONField(default=dict, blank=True)
 
     class Meta:
         constraints = [

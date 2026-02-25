@@ -4,7 +4,7 @@ import time
 from typing import Type
 import redis
 from collections import defaultdict, deque
-from django.db import transaction, IntegrityError, models
+from django.db import close_old_connections, transaction, IntegrityError, models
 from tables.services.telegram_trigger_service import TelegramTriggerService
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.models import GraphSessionMessage
@@ -61,6 +61,7 @@ class RedisPubSub:
         try:
             logger.debug(f"Received message from session_status_handler: {message}")
             data = json.loads(message["data"])
+            close_old_connections()
             with transaction.atomic():
                 session = Session.objects.get(id=data["session_id"])
                 if data[
@@ -89,6 +90,7 @@ class RedisPubSub:
             logger.debug(f"Received message from code_result_handler: {message}")
             data = json.loads(message["data"])
             CodeResultData.model_validate(data)
+            close_old_connections()
             PythonCodeResult.objects.create(**data)
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
@@ -138,6 +140,7 @@ class RedisPubSub:
 
     def _buffer_save(self, data, model: Type[models.Model]):
         try:
+            close_old_connections()
             with transaction.atomic():
                 created_objects = model.objects.bulk_create(data, ignore_conflicts=True)
                 logger.debug(
@@ -194,6 +197,7 @@ class RedisPubSub:
             graph_session_message_data = GraphSessionMessageData.model_validate(data)
             message_uuid = graph_session_message_data.uuid
             session_id = graph_session_message_data.session_id
+            close_old_connections()
             if not Session.objects.filter(pk=session_id).exists():
                 logger.warning(f"Session {session_id} was deleted")
                 return

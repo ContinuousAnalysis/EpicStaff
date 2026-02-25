@@ -101,7 +101,7 @@ from tables.views.knowledge_views.naive_rag_views import (
 )
 
 
-from tables.views.sse_views import RunSessionSSEView, RunSessionSSEViewSwagger
+from tables.views.sse_views import RunSessionSSEView, RunSessionSSEViewSwagger, FilteredRunSessionSSEView
 
 router = DefaultRouter()
 router.register(r"template-agents", TemplateAgentReadWriteViewSet)
@@ -249,6 +249,11 @@ urlpatterns = [
         "run-session/subscribe/<int:session_id>/",
         RunSessionSSEView.as_view(),
         name="run-session-subscribe",
+    ),
+    path(
+        "run-session/subscribe/<int:session_id>/filtered/",
+        FilteredRunSessionSSEView.as_view(),
+        name="run-session-subscribe-filtered",
     ),
     path(
         "run-session/subscribe/<int:session_id>/swagger/",

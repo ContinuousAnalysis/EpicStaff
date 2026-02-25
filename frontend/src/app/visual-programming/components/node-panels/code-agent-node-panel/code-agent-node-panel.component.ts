@@ -146,6 +146,24 @@ interface InputMapPair {
                                             ></app-custom-input>
                                         </div>
                                     </div>
+
+                                    <div class="stream-config-section" formGroupName="stream_config">
+                                        <span class="section-label">Streaming to EpicChat</span>
+                                        <div class="checkbox-list">
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" formControlName="reasoning" [style.accent-color]="activeColor" />
+                                                <span>Reasoning</span>
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" formControlName="tool_calls" [style.accent-color]="activeColor" />
+                                                <span>Tool calls</span>
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" formControlName="tool_results" [style.accent-color]="activeColor" />
+                                                <span>Tool results</span>
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             }
 
@@ -249,6 +267,24 @@ interface InputMapPair {
                                 placeholder="e.g. requests, httpx"
                                 [activeColor]="activeColor"
                             ></app-custom-input>
+
+                            <div class="stream-config-section" formGroupName="stream_config">
+                                <span class="section-label">Streaming to EpicChat</span>
+                                <div class="checkbox-list">
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" formControlName="reasoning" [style.accent-color]="activeColor" />
+                                        <span>Reasoning</span>
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" formControlName="tool_calls" [style.accent-color]="activeColor" />
+                                        <span>Tool calls</span>
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" formControlName="tool_results" [style.accent-color]="activeColor" />
+                                        <span>Tool results</span>
+                                    </label>
+                                </div>
+                            </div>
 
                             <div class="code-editor-section">
                                 <app-code-editor
@@ -359,6 +395,33 @@ interface InputMapPair {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 0.5rem;
+            }
+
+            .stream-config-section {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .checkbox-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.35rem;
+            }
+
+            .checkbox-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.85rem;
+                color: #d4d4d4;
+                cursor: pointer;
+
+                input[type='checkbox'] {
+                    width: 16px;
+                    height: 16px;
+                    cursor: pointer;
+                }
             }
 
             .select-field {
@@ -534,6 +597,11 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
             chunk_timeout_s: [data.chunk_timeout_s || 30],
             inactivity_timeout_s: [data.inactivity_timeout_s || 120],
             max_wait_s: [data.max_wait_s || 300],
+            stream_config: this.fb.group({
+                reasoning: [this.node().stream_config?.['reasoning'] ?? true],
+                tool_calls: [this.node().stream_config?.['tool_calls'] ?? true],
+                tool_results: [this.node().stream_config?.['tool_results'] ?? true],
+            }),
         });
 
         this.initializeInputMap(form);
@@ -573,6 +641,7 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
                 inactivity_timeout_s: Number(this.form.value.inactivity_timeout_s) || 120,
                 max_wait_s: Number(this.form.value.max_wait_s) || 300,
             },
+            stream_config: this.form.value.stream_config || {},
         };
     }
 
