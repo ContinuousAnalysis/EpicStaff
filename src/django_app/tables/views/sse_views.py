@@ -139,8 +139,10 @@ class RunSessionSSEView(SSEMixin):
         if not isinstance(message_data, dict):
             return False
         msg_type = message_data.get("message_type", "")
-        if msg_type in ("start", "finish", "error"):
+        if msg_type in ("start", "error"):
             return False
+        if msg_type == "finish":
+            return message_data.get("sse_visible") is False
         return message_data.get("sse_visible") is False
 
     async def _handle_graph_session_messages(self, data):
