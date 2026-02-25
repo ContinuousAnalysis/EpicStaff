@@ -118,7 +118,7 @@ class CodeAgentNode(BaseNode):
 
     def _resolve_code_session_id(self, state: State) -> str | None:
         """Resolve the configured code_session_id from state variables.
-        Supports dot-notated paths like 'variables.chat_id'.
+        Supports dot-notated paths like 'variables.code_session_id'.
         If the path doesn't resolve, the raw string is used as a literal session ID."""
         if not self.code_session_id:
             return None
@@ -133,10 +133,10 @@ class CodeAgentNode(BaseNode):
     # Session management
     # ------------------------------------------------------------------
 
-    def _get_or_create_session(self, port: int, chat_id: str) -> tuple[str, bool]:
-        """Find or create an OpenCode session keyed by chat_id.
+    def _get_or_create_session(self, port: int, code_session_id: str) -> tuple[str, bool]:
+        """Find or create an OpenCode session keyed by code_session_id.
         Returns (session_id, is_new)."""
-        title = f"epicstaff_ca_{chat_id}"
+        title = f"epicstaff_ca_{code_session_id}"
         sessions = self._oc_get(port, "/session") or []
         for s in sessions:
             if s.get("title") == title:
@@ -280,15 +280,15 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         if not self.llm_config_id:
             raise ValueError("CodeAgentNode requires an LLM config")
 
-        prompt = input_.get("prompt") or input_.get("message") or ""
+        prompt = input_.get("prompt") or ""
         if not prompt:
             raise ValueError("CodeAgentNode requires a 'prompt' in input_map")
 
-        chat_id = self._resolve_code_session_id(state) or input_.get("chat_id") or input_.get("session_id") or f"session_{self.session_id}"
+        code_sid = self._resolve_code_session_id(state) or f"session_{self.session_id}"
 
         # Get OpenCode instance
         port = self._get_instance_port()
-        oc_session_id, is_new_session = self._get_or_create_session(port, chat_id)
+        oc_session_id, is_new_session = self._get_or_create_session(port, code_sid)
 
         # Extract model info from instance manager response
         instance_info = self._oc_get(int(CODE_CONTAINER_URL.split(":")[-1]), f"/instance/{self.llm_config_id}")
@@ -311,7 +311,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             raise
 
     async def _cleanup_on_stop(self, input_context: dict, port: int, oc_session_id: str):
-        """Abort OpenCode task, cancel handler tasks, update GChat bubble, stop instance if last user."""
+        """Abort OpenCode task, cancel handler tasks, notify via stream handler (e.g. update a GChat bubble), stop instance if last user."""
         # Abort the OpenCode agent task so it stops generating
         try:
             self._oc_post(port, f"/session/{oc_session_id}/abort", {}, timeout=5)
@@ -327,7 +327,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             except (asyncio.CancelledError, Exception):
                 pass
 
-        # Update the GChat bubble (or create one) with a stopped message
+        # Notify via stream handler (e.g. update a chat bubble) with a stopped message
         try:
             self._pending_handler_task = None
             await self._call_handler(
