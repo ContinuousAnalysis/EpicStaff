@@ -287,24 +287,79 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                     })
         return reasoning, final_answer, tool_calls
 
+    # Tool name → human-readable label for the thinking expander
+    _TOOL_LABELS = {
+        "skill": "Loading skill",
+        "bash": "Running command",
+        "read": "Reading file", "readFile": "Reading file",
+        "write": "Writing file", "writeFile": "Writing file",
+        "apply_patch": "Applying patch", "patch": "Applying patch",
+        "glob": "Searching files", "list": "Listing files",
+        "grep": "Searching code", "search": "Searching code",
+        "StructuredOutput": "Formatting response",
+    }
+
+    def _humanize_tool_calls(self, tool_calls: list) -> list:
+        """Return a copy of tool_calls with human-readable names.
+        The EpicChat widget renders each tool call as a [name] badge,
+        so these labels must be clean and descriptive."""
+        out = []
+        for tc in tool_calls:
+            raw = tc.get("name", "tool")
+            label = self._TOOL_LABELS.get(raw, raw)
+            out.append({**tc, "name": label})
+        return out
+
     def _format_thinking_text(self, reasoning: str, tool_calls: list) -> str:
-        """Combine reasoning and tool call summaries into a single text
-        suitable for the thinking bubble."""
+        """Build the text field for the thinking bubble.
+        NOTE: The EpicChat widget prepends [toolName] badges from the
+        tool_calls array, so this text must NOT repeat tool labels.
+        It should contain only reasoning and/or detail snippets."""
         parts = []
         if reasoning:
-            parts.append(reasoning)
+            first_line = reasoning.split("\n")[0].strip()
+            if first_line:
+                parts.append(first_line)
+
+        # Add meaningful detail snippets from tool inputs
         for tc in tool_calls:
-            name = tc.get("name", "tool")
+            raw_name = tc.get("name", "tool")
             inp = tc.get("input", "")
-            state = tc.get("state", "")
-            label = f"[{name}]" if not state or state == "completed" else f"[{name} ({state})]"
-            if inp:
-                # Truncate long inputs for the thinking bubble
-                inp_preview = inp if len(inp) <= 200 else inp[:200] + "..."
-                parts.append(f"{label} {inp_preview}")
-            else:
-                parts.append(label)
+            detail = self._extract_tool_detail(raw_name, inp)
+            if detail:
+                parts.append(detail)
+
         return "\n".join(parts)
+
+    @staticmethod
+    def _extract_tool_detail(tool_name: str, raw_input: str) -> str:
+        """Extract a short, meaningful snippet from tool input."""
+        if not raw_input:
+            return ""
+        try:
+            parsed = json.loads(raw_input)
+            if isinstance(parsed, dict):
+                # Skill → skill name
+                if tool_name == "skill" and parsed.get("name"):
+                    return parsed["name"]
+                # File ops → filename
+                for key in ("filePath", "path", "file"):
+                    if parsed.get(key):
+                        parts = str(parsed[key]).split("/")
+                        return "/".join(parts[-2:]) if len(parts) > 1 else parts[0]
+                # Bash → command
+                if parsed.get("command"):
+                    cmd = str(parsed["command"])
+                    return cmd if len(cmd) <= 60 else cmd[:57] + "..."
+                # Search → pattern
+                if parsed.get("pattern"):
+                    return str(parsed["pattern"])[:60]
+            elif isinstance(parsed, str) and len(parsed) <= 60:
+                return parsed
+        except (json.JSONDecodeError, TypeError):
+            if len(raw_input) <= 60:
+                return raw_input
+        return ""
 
     # ------------------------------------------------------------------
     # Main execute
@@ -475,6 +530,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         silence_indicator_sent = 0
         logged_first = False
         prev_msg_count = 0
+        prev_tool_count = 0
 
         fast_poll_s = poll_s / 10
         while True:
@@ -523,17 +579,23 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             reasoning, answer, tool_calls = self._parse_response(new_msgs)
 
             # Tool activity resets the content timer
-            if tool_calls:
+            if len(tool_calls) > prev_tool_count:
                 last_content_time = time.time()
 
-            # Build thinking text: reasoning + tool call summaries
-            thinking_text = self._format_thinking_text(reasoning, tool_calls)
+            # Only send NEW tool calls (delta since last stream update)
+            # The widget renders each tool call as a [name] badge,
+            # so sending the full history would repeat all badges.
+            delta_tools = tool_calls[prev_tool_count:]
+
+            # Build thinking text from reasoning + only new tool details
+            thinking_text = self._format_thinking_text(reasoning, delta_tools)
 
             # Stream progress when content changes
             if thinking_text and thinking_text != last_reasoning:
                 last_reasoning = thinking_text
                 last_content_time = time.time()
                 silence_indicator_sent = 0
+                prev_tool_count = len(tool_calls)
 
                 self.custom_session_message_writer.add_custom_message(
                     session_id=self.session_id,
@@ -543,7 +605,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                     message_data={
                         "message_type": "code_agent_stream",
                         "text": thinking_text,
-                        "tool_calls": tool_calls,
+                        "tool_calls": self._humanize_tool_calls(delta_tools),
                         "is_final": False,
                         "sse_visible": not self.stream_config
                             or self.stream_config.get("reasoning", True)
