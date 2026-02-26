@@ -204,6 +204,8 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
                     width: 100%;
 
                     &.code-editor-fullwidth {
+                        overflow: visible;
+
                         .form-fields {
                             display: none;
                         }
@@ -307,7 +309,7 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
             .code-editor-section {
                 border: 1px solid
                     var(--color-divider-subtle, rgba(255, 255, 255, 0.1));
-                overflow: hidden;
+                overflow: visible;
                 display: flex;
                 flex-direction: column;
 
@@ -334,6 +336,7 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
                 .form-layout.expanded.code-editor-fullwidth & {
                     transform: scaleX(1) translateX(0);
                     opacity: 1;
+                    overflow: visible;
                 }
             }
 
