@@ -932,23 +932,49 @@ def cmd_test_flow(args):
     if do_verify:
         flow_dir = FLOWS_DIR / str(gid)
         if flow_dir.is_dir():
-            files = list(flow_dir.glob("*"))
-            mismatches = 0
-            for f in files:
-                if f.suffix in (".py", ".json") and not f.name.startswith("."):
-                    file_content = f.read_text()
-                    db_content = _read_from_db(gid, f.name, graph)
-                    meta_content = _read_from_metadata(gid, f.name, graph)
-                    if file_content and db_content and file_content.strip() != db_content.strip():
+            specs = _discover_files(str(flow_dir))
+            if specs:
+                mismatches = 0
+                for spec in specs:
+                    try:
+                        file_data = _read_from_file(spec)
+                        db_data, node_name = _read_from_db(spec, gid)
+                        if db_data is None:
+                            mismatches += 1
+                            if verbose:
+                                print(f"      NOT IN DB: {Path(spec.path).name}")
+                            continue
+                        meta_data = _read_from_metadata(spec, gid, node_name)
+                        if isinstance(file_data, str):
+                            if file_data.strip() != (db_data or "").strip():
+                                mismatches += 1
+                                if verbose:
+                                    print(f"      MISMATCH (file vs DB): {Path(spec.path).name}")
+                            if meta_data and file_data.strip() != meta_data.strip():
+                                mismatches += 1
+                                if verbose:
+                                    print(f"      MISMATCH (file vs metadata): {Path(spec.path).name}")
+                        else:
+                            fj = _canonical_json(file_data)
+                            dj = _canonical_json(db_data)
+                            if fj != dj:
+                                mismatches += 1
+                                if verbose:
+                                    print(f"      MISMATCH (file vs DB): {Path(spec.path).name}")
+                            if meta_data:
+                                mj = _canonical_json(meta_data)
+                                if fj != mj:
+                                    mismatches += 1
+                                    if verbose:
+                                        print(f"      MISMATCH (file vs metadata): {Path(spec.path).name}")
+                    except Exception as e:
                         mismatches += 1
                         if verbose:
-                            print(f"      MISMATCH (file vs DB): {f.name}")
-                    if file_content and meta_content and file_content.strip() != meta_content.strip():
-                        mismatches += 1
-                        if verbose:
-                            print(f"      MISMATCH (file vs metadata): {f.name}")
-            _check("Local files match DB + metadata", mismatches == 0,
-                   f"{mismatches} mismatches" if mismatches else f"{len(files)} files checked")
+                            print(f"      ERROR: {Path(spec.path).name}: {e}")
+                _check("Local files match DB + metadata", mismatches == 0,
+                       f"{mismatches} mismatches" if mismatches else f"{len(specs)} files checked")
+            else:
+                _check("Local files exist", False, f"no recognized files at {flow_dir}")
         else:
             _check("Local files exist", False, f"no files at {flow_dir}")
 
