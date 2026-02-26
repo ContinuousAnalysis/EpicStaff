@@ -51,6 +51,7 @@ class CodeAgentNode(BaseNode):
         inactivity_timeout_s: int = 120,
         max_wait_s: int = 300,
         stream_config: dict | None = None,
+        output_schema: dict | None = None,
     ):
         super().__init__(
             session_id=session_id,
@@ -76,6 +77,21 @@ class CodeAgentNode(BaseNode):
         self.inactivity_timeout_s = inactivity_timeout_s
         self.max_wait_s = max_wait_s
         self.stream_config = stream_config or {}
+        self.output_schema = output_schema or {}
+
+    # ------------------------------------------------------------------
+    # Input normalisation
+    # ------------------------------------------------------------------
+
+    BUILD_TRIGGERS = frozenset({"allow build mode"})
+
+    def get_input(self, state):
+        if self.input_map == "__all__":
+            return state["variables"]
+        from src.crew.utils import map_variables_to_input
+        return map_variables_to_input(
+            state["variables"], self.input_map, set_missing_variables=True
+        )
 
     # ------------------------------------------------------------------
     # OpenCode HTTP helpers
@@ -225,6 +241,11 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         tool_calls = []
         for msg in messages:
             role = msg.get("role") or msg.get("info", {}).get("role")
+            # Check for structured output (from OpenCode's StructuredOutput tool)
+            structured = msg.get("structured") or (msg.get("info", {}) or {}).get("structured")
+            if structured is not None and role == "assistant":
+                final_answer = json.dumps(structured)
+                continue
             if role == "user":
                 continue
             if role != "assistant":
@@ -280,9 +301,26 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         if not self.llm_config_id:
             raise ValueError("CodeAgentNode requires an LLM config")
 
+        _nf = "not found"
         prompt = input_.get("prompt") or ""
+        if prompt == _nf:
+            prompt = ""
+        action = input_.get("action") or ""
+        if action == _nf:
+            action = ""
+
+        # Resolve effective mode — build triggers override the configured mode
+        effective_mode = self.agent_mode
+        if action and action.strip().lower() in self.BUILD_TRIGGERS:
+            effective_mode = "build"
+            if not prompt:
+                prompt = "I have given you build permissions. Proceed with the plan."
+            logger.info(f"[CodeAgentNode] Build mode triggered by action: {action!r}")
+        elif action and not prompt:
+            prompt = action
+
         if not prompt:
-            raise ValueError("CodeAgentNode requires a 'prompt' in input_map")
+            raise ValueError("CodeAgentNode requires a 'prompt' or 'action' in input_map")
 
         code_sid = self._resolve_code_session_id(state) or f"session_{self.session_id}"
 
@@ -304,6 +342,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             return await self._run_agent_loop(
                 state, writer, execution_order, input_, input_context,
                 port, oc_session_id, is_new_session, provider, model, prompt,
+                effective_mode,
             )
         except StopSession:
             logger.info("[CodeAgentNode] Session stopped — running cleanup")
@@ -346,8 +385,11 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
     async def _run_agent_loop(
         self, state, writer, execution_order, input_, input_context,
         port, oc_session_id, is_new_session, provider, model, prompt,
+        effective_mode=None,
     ):
         """Core agent loop — extracted so execute() can wrap it with stop cleanup."""
+        agent_mode = effective_mode or self.agent_mode
+
         # Call on_stream_start
         await self._call_handler("start", input_context)
 
@@ -373,11 +415,18 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         post_error = [None]
         def _bg_post():
             try:
-                self._oc_post(port, f"/session/{oc_session_id}/message", {
-                    "agent": self.agent_mode,
+                msg_payload = {
+                    "agent": agent_mode,
                     "model": {"providerID": provider, "modelID": model},
                     "parts": [{"type": "text", "text": full_prompt}],
-                })
+                }
+                if self.output_schema:
+                    msg_payload["format"] = {
+                        "type": "json_schema",
+                        "schema": self.output_schema,
+                        "retryCount": 2,
+                    }
+                self._oc_post(port, f"/session/{oc_session_id}/message", msg_payload)
             except Exception as e:
                 post_error[0] = e
                 logger.error(f"[CodeAgentNode] Failed to send message: {e}")
@@ -505,6 +554,18 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         # Use final_answer if available, else fall back to last reasoning
         reply_text = final_answer or last_reasoning or ""
 
+        # Try to parse structured JSON output
+        structured_output = None
+        if reply_text:
+            try:
+                parsed = json.loads(reply_text)
+                if isinstance(parsed, dict):
+                    structured_output = parsed
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        display_text = structured_output.get("message", reply_text) if structured_output else reply_text
+
         # Stream final message
         self.custom_session_message_writer.add_custom_message(
             session_id=self.session_id,
@@ -513,13 +574,18 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             execution_order=execution_order,
             message_data={
                 "message_type": "code_agent_stream",
-                "text": reply_text,
+                "text": display_text,
                 "is_final": True,
             },
         )
 
         # Call on_complete
-        await self._call_handler("complete", input_context, full_reply=reply_text)
+        await self._call_handler("complete", input_context, full_reply=display_text)
+
+        if structured_output:
+            structured_output.setdefault("message", display_text)
+            structured_output["session_id"] = oc_session_id
+            return structured_output
 
         return {
             "message": reply_text,

@@ -1,7 +1,7 @@
 ---
 id: epicstaff
 name: EpicStaff Flow Management
-version: 1.31
+version: 1.32
 trigger: always_on
 triggers: [epicstaff, epic-staff, flows, sessions]
 scope: [api, cli, integration]
@@ -495,16 +495,112 @@ Use `session_id=` (NOT `session=`). Wrong param silently returns ALL rows.
 
 `WebhookTriggerNode` and `TelegramTriggerNode` constructors hardcode `output_variable_path="variables"` and `input_map="__all__"`. The metadata `output_variable_path` is **ignored by the runtime**. To write into a DDD domain (e.g. `variables.request`), the webhook code itself must return a nested dict: `{"request": {"space_name": "...", ...}}`. The flat merge at `variables` level then creates/replaces `variables.request`.
 
-### Code Agent Node (New Approach)
+### Code Agent Node
 
 The Code Agent node replaces manual OpenCode management (session creation, polling, streaming) with a single configurable node. The "code" container runs an Instance Manager (port 4080) that spawns OpenCode instances on demand per LLM config.
 
 - **API endpoint**: `code-agent-nodes/` — standard CRUD
-- **Key fields**: `llm_config` (FK, nullable), `agent_mode` (build/plan), `system_prompt`, `stream_handler_code`, `libraries`, timeout settings, `input_map`, `output_variable_path`
+- **Key fields**: `llm_config` (FK, nullable), `agent_mode` (build/plan), `system_prompt`, `stream_handler_code`, `libraries`, timeout settings, `input_map`, `output_variable_path`, `output_schema`
 - **Runtime**: The crew `CodeAgentNode` handles instance allocation, prompt submission, streaming, and cleanup
 - **Stream handler**: User-provided Python callbacks (`on_stream_start`, `on_chunk`, `on_complete`) executed via sandbox
 - **Session streaming**: Emits `GraphMessage` via `StreamWriter` → Redis → frontend + `run_session` callers
 - **CLI**: `create-code-agent-node` — creates DB record + metadata entry in one command
+
+#### EpicChat Integration (Structured Output)
+
+Code Agent nodes can return **structured JSON** to the EpicChat widget instead of plain text. This enables rich responses with markdown, tables, action buttons, links, and suggestion chips.
+
+**How it works:**
+1. Set `output_schema` on the Code Agent node (JSON schema that describes the response format)
+2. The runtime sends the schema to OpenCode as `format: {type: "json_schema", schema: ...}`
+3. OpenCode returns validated JSON in the `structured` field of the assistant message
+4. The Code Agent node parses the structured output and returns it as the node result
+5. EpicChat renders the response using the schema's structure (message, tables, buttons, etc.)
+
+**Reference schema:** `docs/epicchat-response.schema.json` — comprehensive schema for EpicChat responses. The frontend UI pre-populates new Code Agent nodes with this schema by default.
+
+**Key schema fields:**
+- `message` (string) — Main response text (supports full markdown)
+- `ep_table` (array of objects) — Structured data tables with column definitions and rows
+- `action_message` (array of actions) — Interactive elements: buttons, links, prompt suggestions
+
+#### EpicChat Actions (user_input vs user_action)
+
+EpicChat sends two different context fields depending on how the user interacts:
+
+| Field | When | Semantics |
+|---|---|---|
+| `context.user_input` | User types a message or clicks a `prompt` suggestion | Conversational input — "the user said this" |
+| `context.user_action` | User clicks a `button` with `action: "sendAction"` | Programmatic command — "the user clicked this button" |
+
+**⚠️ CRITICAL:** For Code Agent nodes that receive EpicChat messages, the `input_map` MUST include BOTH:
+```json
+{
+  "prompt": "variables.context.user_input",
+  "action": "variables.context.user_action"
+}
+```
+
+If only `prompt` is mapped, button clicks will crash with `AttributeError: 'DotDict' object has no attribute 'user_input'`.
+
+The Code Agent's `get_input()` uses `set_missing_variables=True` so whichever field is absent gets `"not found"` (treated as empty) instead of crashing.
+
+**Runtime resolution in `execute()`:**
+- If `prompt` has text → used as the agent prompt (normal message)
+- If only `action` has text → action text becomes the prompt
+- If `action` matches a build trigger → mode switches to `build` (see below)
+
+#### Build Mode Pattern
+
+Code Agent nodes run in their configured `agent_mode` (usually `plan` — read-only reasoning). To allow file creation/editing, the agent needs `build` mode. Instead of hardcoding `agent_mode=build`, use the **build permission pattern**:
+
+1. Configure the node with `agent_mode=plan` (safe default)
+2. The agent proposes a plan, then returns a structured response with an action button:
+   ```json
+   {
+     "message": "Here's my plan: ...",
+     "action_message": [
+       {"type": "button", "text": "Allow build mode", "action": "sendAction"}
+     ]
+   }
+   ```
+3. User clicks **"Allow build mode"** → EpicChat sends `user_action: "Allow build mode"`
+4. The Code Agent node detects this trigger and:
+   - Overrides `agent_mode` to `"build"` for this turn only
+   - Sends the canned prompt: *"I have given you build permissions. Proceed with the plan."*
+5. The agent executes in build mode, then returns to plan mode on the next regular message
+
+**The ONLY recognized trigger text is `"Allow build mode"`** (case-insensitive). Any other action text is passed as a regular prompt.
+
+#### Example: Minimal EpicChat Code Agent Flow
+
+```bash
+# 1. Create flow
+python3 epicstaff_tools.py create-flow "My EpicChat Bot" --description "EpicChat widget → Code Agent"
+
+# 2. Create Code Agent node with stream handler for EpicChat
+python3 epicstaff_tools.py -g <ID> create-code-agent-node "Code Agent" \
+  --llm-config 4 --agent-mode plan \
+  --system-prompt "You are a helpful coding assistant." \
+  --code-file stream_handler.py \
+  --libraries "google-auth,google-api-python-client" \
+  --output-variable-path variables.result \
+  --x 400 --y 100
+
+# 3. Wire start → agent
+python3 epicstaff_tools.py -g <ID> create-edge "__start__" "Code Agent"
+python3 epicstaff_tools.py -g <ID> init-metadata
+
+# 4. PATCH input_map to include both prompt and action
+#    (via UI or API — MUST include both for EpicChat)
+
+# 5. Set output_schema on the node (via UI Output Schema tab, or API PATCH)
+#    Default: docs/epicchat-response.schema.json
+
+# 6. Configure start node variables:
+#    - context: {} (populated by EpicChat at runtime)
+#    - result: {} (written by Code Agent output)
+```
 
 ### OpenCode Session Management (Legacy)
 

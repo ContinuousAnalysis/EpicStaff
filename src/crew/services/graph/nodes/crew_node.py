@@ -58,6 +58,7 @@ class CrewNode(BaseNode):
             crewai_output_channel=self.crewai_output_channel,
             stream_writer=writer,
             knowledge_search_service=self.knowledge_search_service,
+            stream_config=self.stream_config,
         )
 
         gloabl_kwargs = {

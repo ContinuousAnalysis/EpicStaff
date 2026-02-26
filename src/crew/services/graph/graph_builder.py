@@ -318,6 +318,7 @@ class SessionGraphBuilder:
                 inactivity_timeout_s=ca_data.inactivity_timeout_s,
                 max_wait_s=ca_data.max_wait_s,
                 stream_config=ca_data.stream_config,
+                output_schema=ca_data.output_schema,
             )
             self.add_node(code_agent_node)
 

@@ -345,6 +345,7 @@ class CodeAgentNodeData(BaseModel):
     input_map: dict[str, Any] = {}
     output_variable_path: str | None = None
     stream_config: dict[str, Any] = {}
+    output_schema: dict[str, Any] = {}
 
 
 class EndNodeData(BaseModel):

@@ -339,6 +339,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                     input_map=item.input_map,
                     output_variable_path=item.output_variable_path,
                     stream_config=item.stream_config or {},
+                    output_schema=item.output_schema or {},
                 )
             )
 

@@ -179,6 +179,7 @@ class CodeAgentNode(BaseNode):
     inactivity_timeout_s = models.IntegerField(default=120)
     max_wait_s = models.IntegerField(default=300)
     stream_config = models.JSONField(default=dict, blank=True)
+    output_schema = models.JSONField(default=dict, blank=True)
 
     class Meta:
         constraints = [

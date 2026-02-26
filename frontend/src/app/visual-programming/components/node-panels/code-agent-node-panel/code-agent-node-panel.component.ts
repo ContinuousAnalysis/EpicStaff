@@ -24,6 +24,8 @@ import { debounceTime } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
 import { FullLLMConfigService, FullLLMConfig } from '../../../../services/full-llm-config.service';
+import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
+import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
 
 interface InputMapPair {
     key: string;
@@ -39,6 +41,7 @@ interface InputMapPair {
         InputMapComponent,
         CodeEditorComponent,
         CommonModule,
+        JsonEditorComponent,
     ],
     animations: [expandCollapseAnimation],
     template: `
@@ -113,14 +116,6 @@ interface InputMapPair {
                                         [activeColor]="activeColor"
                                     ></app-custom-input>
 
-                                    <app-custom-input
-                                        label="Libraries"
-                                        tooltipText="Python libraries for stream handler callbacks (comma-separated)."
-                                        formControlName="libraries"
-                                        placeholder="e.g. requests, httpx"
-                                        [activeColor]="activeColor"
-                                    ></app-custom-input>
-
                                     <div class="timeout-section">
                                         <span class="section-label">Timeouts</span>
                                         <div class="timeout-grid">
@@ -168,10 +163,18 @@ interface InputMapPair {
                                             </label>
                                         </div>
                                     </div>
+
+                                    <app-custom-input
+                                        label="Libraries"
+                                        tooltipText="Python libraries for event hook callbacks (comma-separated)."
+                                        formControlName="libraries"
+                                        placeholder="e.g. requests, httpx"
+                                        [activeColor]="activeColor"
+                                    ></app-custom-input>
                                 </div>
                             }
 
-                            <div class="code-editor-wrapper">
+                            <div class="editor-panel-wrapper">
                                 <button
                                     type="button"
                                     class="toggle-icon-button"
@@ -198,14 +201,47 @@ interface InputMapPair {
                                     </svg>
                                 </button>
 
-                                <app-code-editor
-                                    class="code-editor-section"
-                                    [pythonCode]="streamHandlerCode"
-                                    (pythonCodeChange)="
-                                        onStreamHandlerCodeChange($event)
-                                    "
-                                    (errorChange)="onCodeErrorChange($event)"
-                                ></app-code-editor>
+                                <div class="editor-panel">
+                                    <div class="editor-tabs">
+                                        <button
+                                            type="button"
+                                            class="editor-tab"
+                                            [class.active]="activeEditorTab() === 'hooks'"
+                                            [style.--accent-color]="activeColor"
+                                            (click)="activeEditorTab.set('hooks')"
+                                        >Event Hooks</button>
+                                        <button
+                                            type="button"
+                                            class="editor-tab"
+                                            [class.active]="activeEditorTab() === 'schema'"
+                                            [style.--accent-color]="activeColor"
+                                            (click)="activeEditorTab.set('schema')"
+                                        >Output Schema</button>
+                                    </div>
+                                    <div class="editor-tab-content">
+                                        @switch (activeEditorTab()) {
+                                            @case ('hooks') {
+                                                <app-code-editor
+                                                    class="code-editor-section"
+                                                    [pythonCode]="streamHandlerCode"
+                                                    (pythonCodeChange)="onStreamHandlerCodeChange($event)"
+                                                    (errorChange)="onCodeErrorChange($event)"
+                                                ></app-code-editor>
+                                            }
+                                            @case ('schema') {
+                                                <div class="schema-editor-container">
+                                                    <app-json-editor
+                                                        [jsonData]="outputSchemaText"
+                                                        (jsonChange)="onSchemaEditorChange($event)"
+                                                        (validationChange)="onSchemaValidChange($event)"
+                                                        [fullHeight]="true"
+                                                        [showHeader]="false"
+                                                    ></app-json-editor>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     } @else {
@@ -265,13 +301,6 @@ interface InputMapPair {
                                 [activeColor]="activeColor"
                             ></app-custom-input>
 
-                            <app-custom-input
-                                label="Libraries"
-                                formControlName="libraries"
-                                placeholder="e.g. requests, httpx"
-                                [activeColor]="activeColor"
-                            ></app-custom-input>
-
                             <div class="stream-config-section" formGroupName="stream_config">
                                 <span class="section-label">Streaming to EpicChat</span>
                                 <div class="checkbox-list">
@@ -292,16 +321,6 @@ interface InputMapPair {
                                         <span>Final reply</span>
                                     </label>
                                 </div>
-                            </div>
-
-                            <div class="code-editor-section">
-                                <app-code-editor
-                                    [pythonCode]="streamHandlerCode"
-                                    (pythonCodeChange)="
-                                        onStreamHandlerCodeChange($event)
-                                    "
-                                    (errorChange)="onCodeErrorChange($event)"
-                                ></app-code-editor>
                             </div>
                         </div>
                     }
@@ -353,7 +372,7 @@ interface InputMapPair {
                             display: none;
                         }
 
-                        .code-editor-wrapper {
+                        .editor-panel-wrapper {
                             width: 100%;
                         }
 
@@ -467,7 +486,40 @@ interface InputMapPair {
                 }
             }
 
-            .code-editor-wrapper {
+            .output-schema-section {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .output-schema-textarea {
+                background: var(--color-nodes-background, #1e1e1e);
+                color: #d4d4d4;
+                border: 1px solid var(--color-divider-subtle, rgba(255, 255, 255, 0.1));
+                border-radius: 8px;
+                padding: 0.5rem 0.75rem;
+                font-family: 'Fira Code', 'Consolas', monospace;
+                font-size: 0.8rem;
+                resize: vertical;
+                outline: none;
+                transition: border-color 0.2s ease;
+                min-height: 80px;
+
+                &:focus {
+                    border-color: var(--active-color, #685fff);
+                }
+
+                &::placeholder {
+                    color: #d9d9d944;
+                }
+            }
+
+            .schema-error {
+                font-size: 0.75rem;
+                color: #ff6b6b;
+            }
+
+            .editor-panel-wrapper {
                 display: flex;
                 align-items: center;
                 gap: 0;
@@ -504,31 +556,23 @@ interface InputMapPair {
                         background: #2c2c2e;
                     }
                 }
-
-                app-code-editor {
-                    min-width: 0;
-                }
             }
 
-            .code-editor-section {
-                border: 1px solid
-                    var(--color-divider-subtle, rgba(255, 255, 255, 0.1));
-                border-radius: 0 8px 8px 0;
-                overflow: hidden;
+            .editor-panel {
                 display: flex;
                 flex-direction: column;
+                flex: 1;
+                height: 100%;
+                min-height: 0;
+                min-width: 0;
+                border: 1px solid var(--color-divider-subtle, rgba(255, 255, 255, 0.1));
+                border-radius: 0 8px 8px 0;
+                overflow: hidden;
+                transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 
                 .expanded & {
-                    flex: 1;
-                    height: 100%;
-                    min-height: 0;
-                    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
                     transform: scaleX(0.3) translateX(-50px);
                     opacity: 0;
-                }
-
-                .collapsed & {
-                    height: 300px;
                 }
 
                 .form-layout.expanded:not(.code-editor-fullwidth) & {
@@ -541,6 +585,63 @@ interface InputMapPair {
                     opacity: 1;
                 }
             }
+
+            .editor-tabs {
+                display: flex;
+                border-bottom: 1px solid var(--color-divider-subtle, rgba(255, 255, 255, 0.1));
+                flex-shrink: 0;
+            }
+
+            .editor-tab {
+                background: none;
+                border: none;
+                color: var(--color-text-secondary, #d9d9d999);
+                font-size: 0.8rem;
+                padding: 0.6rem 1.2rem;
+                cursor: pointer;
+                border-bottom: 2px solid transparent;
+                transition: color 0.2s, border-bottom 0.2s;
+
+                &:hover {
+                    color: #ffffff;
+                }
+
+                &.active {
+                    color: var(--color-text-primary, #d4d4d4);
+                    border-bottom-color: var(--accent-color, #685fff);
+                }
+            }
+
+            .editor-tab-content {
+                flex: 1;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .code-editor-section {
+                flex: 1;
+                height: 100%;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+
+                app-code-editor {
+                    min-width: 0;
+                }
+            }
+
+            .schema-editor-container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+
+                app-json-editor {
+                    flex: 1;
+                    height: 100%;
+                }
+            }
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -548,8 +649,11 @@ interface InputMapPair {
 export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeModel> {
     public readonly isExpanded = input<boolean>(false);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
+    public readonly activeEditorTab = signal<'hooks' | 'schema'>('hooks');
 
     streamHandlerCode: string = '';
+    outputSchemaText: string = '';
+    outputSchemaError: string = '';
     codeEditorHasError: boolean = false;
     llmConfigs: FullLLMConfig[] = [];
     private readonly codeChange$ = new Subject<string>();
@@ -590,6 +694,15 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
         this.codeEditorHasError = hasError;
     }
 
+    onSchemaEditorChange(json: string): void {
+        this.outputSchemaText = json;
+        this.sidePanelService.triggerAutosave();
+    }
+
+    onSchemaValidChange(isValid: boolean): void {
+        this.outputSchemaError = isValid ? '' : 'Invalid JSON';
+    }
+
     initializeForm(): FormGroup {
         const data = this.node().data;
         const form = this.fb.group({
@@ -615,6 +728,10 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
 
         this.initializeInputMap(form);
         this.streamHandlerCode = data.stream_handler_code || '';
+        const schema = data.output_schema;
+        this.outputSchemaText = schema && Object.keys(schema).length > 0
+            ? JSON.stringify(schema, null, 2)
+            : JSON.stringify(DEFAULT_OUTPUT_SCHEMA, null, 2);
 
         return form;
     }
@@ -649,6 +766,7 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
                 chunk_timeout_s: Number(this.form.value.chunk_timeout_s) || 30,
                 inactivity_timeout_s: Number(this.form.value.inactivity_timeout_s) || 120,
                 max_wait_s: Number(this.form.value.max_wait_s) || 300,
+                output_schema: this.parsedOutputSchema(),
             },
             stream_config: this.form.value.stream_config || {},
         };
@@ -698,5 +816,14 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
 
     toggleCodeEditorFullWidth(): void {
         this.isCodeEditorFullWidth.update((value) => !value);
+    }
+
+    private parsedOutputSchema(): Record<string, any> {
+        if (!this.outputSchemaText.trim()) return {};
+        try {
+            return JSON.parse(this.outputSchemaText);
+        } catch {
+            return this.node().data.output_schema || {};
+        }
     }
 }
