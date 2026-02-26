@@ -1,17 +1,15 @@
 import asyncio
-import logging
+from loguru import logger
 from pyngrok import ngrok
 from pyngrok.conf import PyngrokConfig
 from app.providers.base import AbstractTunnelProvider
 from typing import Optional
 
-# Setting up basic logging to track reconnection events
-logger = logging.getLogger(__name__)
-
 
 class NgrokTunnel(AbstractTunnelProvider):
     """
-    The ngrok-specific implementation of abstract tunnel with auto-reconnect logic.
+    The ngrok-specific implementation of abstract tunnel with auto-reconnect logic
+    and protection against race conditions.
     """
 
     def __init__(
@@ -27,9 +25,10 @@ class NgrokTunnel(AbstractTunnelProvider):
         self._region = region
         self._reconnect_timeout = reconnect_timeout
 
-        # State management flags
         self._is_running = False
         self._monitor_task: Optional[asyncio.Task] = None
+
+        self._lock = asyncio.Lock()
 
         if not self._auth_token:
             raise ValueError("NgrokTunnel requires an auth_token.")
@@ -51,47 +50,78 @@ class NgrokTunnel(AbstractTunnelProvider):
         """
         Internal method to perform the actual socket/ngrok connection.
         """
+        async with self._lock:
+            if not self._is_running or self._tunnel is not None:
+                return
+
         print(
-            f"Attempting to connect ngrok tunnel on port {self._port} (Region: {self._region or 'us'})..."
+            f"Attempting to connect ngrok tunnel on port {self._port} "
+            f"(Region: {self._region or 'us'})..."
         )
 
-        # Use instance-specific config to avoid global state conflicts
         config = PyngrokConfig(
             auth_token=self._auth_token, region=self._region if self._region else "us"
         )
 
         def _start():
-            # Standard pyngrok connection call
-
             return ngrok.connect(
                 self._port, "http", domain=self._domain, pyngrok_config=config
             )
 
         try:
-            # Offload blocking pyngrok call to a separate thread
-            self._tunnel = await asyncio.to_thread(_start)
-            self._public_url = self._tunnel.public_url
-            print(f"Tunnel established: {self._public_url}")
+            new_tunnel = await asyncio.to_thread(_start)
+
+            async with self._lock:
+                if not self._is_running:
+                    # RACE CONDITION PREVENTED:
+
+                    print(
+                        "Disconnect called during connection! Rolling back new tunnel..."
+                    )
+
+                    def _rollback():
+                        ngrok.disconnect(new_tunnel.public_url)
+
+                    await asyncio.to_thread(_rollback)
+                    return
+
+                self._tunnel = new_tunnel
+                self._public_url = self._tunnel.public_url
+                print(f"Tunnel established: {self._public_url}")
+
         except Exception as e:
             logger.error(f"Failed to establish ngrok connection: {e}")
-            self._tunnel = None
             raise
 
     async def _monitor_connection(self):
         """
-        Infinite loop that checks tunnel health and triggers reconnection.
+        Infinite loop that checks tunnel health and triggers reconnection safely.
         """
-        while self._is_running:
-            await asyncio.sleep(self._reconnect_timeout)
+        try:
+            while self._is_running:
+                await asyncio.sleep(self._reconnect_timeout)
 
-            # Simple check: if _tunnel is None but service should be running -> reconnect
-            if self._is_running and self._tunnel is None:
-                try:
-                    await self._establish_connection()
-                except Exception as e:
-                    logger.warning(
-                        f"Reconnection attempt failed: {e}. Next try in {self._reconnect_timeout}s"
-                    )
+                if not self._is_running:
+                    break
+
+                async with self._lock:
+                    needs_reconnect = self._tunnel is None
+
+                if needs_reconnect:
+                    try:
+                        await self._establish_connection()
+                    except asyncio.CancelledError:
+                        raise
+                    except Exception as e:
+                        logger.warning(
+                            f"Reconnection attempt failed: {e}. "
+                            f"Next try in {self._reconnect_timeout}s"
+                        )
+        except asyncio.CancelledError:
+            logger.debug("Monitor task received cancellation.")
+            raise
+        finally:
+            self._is_running = False
 
     async def disconnect(self):
         """
@@ -99,25 +129,30 @@ class NgrokTunnel(AbstractTunnelProvider):
         """
         print(f"Disconnecting ngrok tunnel on port {self._port}...")
         self._is_running = False
-
-        # Cancel the background monitor task
         if self._monitor_task:
             self._monitor_task.cancel()
             try:
-                await self._monitor_task
-            except asyncio.CancelledError:
+                await asyncio.wait_for(self._monitor_task, timeout=1.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
                 pass
             self._monitor_task = None
 
-        # Close the actual ngrok tunnel
-        if self._tunnel:
-            url_to_disconnect = self._tunnel.public_url
+        async with self._lock:
+            logger.debug(f"self._tunnel={self._tunnel}")
+            if self._tunnel:
+                url_to_disconnect = self._tunnel.public_url
 
-            def _close():
-                ngrok.disconnect(url_to_disconnect)
+                def _close():
+                    ngrok.disconnect(url_to_disconnect)
+                    ngrok.kill()
 
-            await asyncio.to_thread(_close)
-            self._tunnel = None
-            logger.info(f"Ngrok tunnel {self._tunnel.public_url} closed successfully.")
-
-        self._public_url = None
+                try:
+                    await asyncio.to_thread(_close)
+                    logger.info(
+                        f"Ngrok tunnel {url_to_disconnect} closed successfully."
+                    )
+                except Exception:
+                    logger.exception(f"Failed to disconnect tunnel {url_to_disconnect}")
+                finally:
+                    self._tunnel = None
+                    self._public_url = None

@@ -1,5 +1,4 @@
 import sys
-from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional, Dict, Any
 
@@ -24,6 +23,7 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = "redis_password"
     REDIS_TUNNEL_CONFIG_CHANNEL: str = "REDIS_TUNNEL_CONFIG_CHANNEL"
+    REQUEST_WEBHOOK_UPDATE_CHANNEL: str = "REQUEST_WEBHOOK_UPDATE_CHANNEL"
     WEBHOOK_TUNNEL_RECONNECT_TIMEOUT: int = 10
     LOG_LEVEL: str = "INFO"
 

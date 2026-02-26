@@ -13,8 +13,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 import sys
 from pathlib import Path
+
 from django.core.management.utils import get_random_secret_key
-from dotenv import load_dotenv, find_dotenv
+from dotenv import find_dotenv, load_dotenv
 from loguru import logger
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -221,5 +222,21 @@ if WEBHOOK_USE_TUNNEL:
     WEBHOOK_TUNNEL = os.getenv("WEBHOOK_TUNNEL", None)
 else:
     WEBHOOK_TUNNEL = None
+
+REQUEST_WEBHOOK_UPDATE_CHANNEL = os.getenv(
+    "REQUEST_WEBHOOK_UPDATE_CHANNEL", "REQUEST_WEBHOOK_UPDATE_CHANNEL"
+)
+SESSION_STATUS_CHANNEL = os.environ.get(
+    "SESSION_STATUS_CHANNEL", "sessions:session_status"
+)
+CODE_RESULT_CHANNEL = os.environ.get("CODE_RESULT_CHANNEL", "code_results")
+GRAPH_MESSAGES_CHANNEL = os.environ.get("GRAPH_MESSAGES_CHANNEL", "graph:messages")
+GRAPH_MESSAGE_UPDATE_CHANNEL = os.environ.get(
+    "GRAPH_MESSAGE_UPDATE_CHANNEL", "graph:message:update"
+)
+WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
+TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
+
+
 WEBHOOK_HOST_NAME = os.getenv("WEBHOOK_HOST_NAME", "localhost")
 WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", 8009))
