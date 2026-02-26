@@ -1,6 +1,10 @@
 FROM python:3.12.10
 
-WORKDIR /home/user/root/app
+WORKDIR /app/src/
+
+COPY ./shared ./shared
+
+WORKDIR /app/src/sandbox
 
 RUN apt-get update && \
     apt-get install -y ffmpeg && \
@@ -19,6 +23,5 @@ RUN poetry install --no-root
 RUN rm -rf /root/.cache
 
 COPY ./sandbox .
-COPY shared/ shared/
 
 CMD python main.py
