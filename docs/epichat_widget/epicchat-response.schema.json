@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EpicChatResponse",
+  "description": "Response object for the EpicChat widget. The widget renders a chat bubble from the 'message' field (Markdown supported), and optionally displays interactive tables, action buttons, link buttons, and prompt suggestions. Return ONLY the fields you need — all fields except 'message' are optional.",
+  "type": "object",
+  "required": ["message"],
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "The main chat reply displayed to the user. Supports full Markdown: headings, bold, italic, code blocks, lists, links, etc. This is the ONLY required field."
+    },
+    "ef_tables": {
+      "type": "array",
+      "description": "Interactive data tables displayed below the message. Each table is rendered with sortable columns, optional inline editing, row selection, and CSV/XLSX download buttons. You can provide just 'rows' (columns are auto-detected from keys), or explicitly define 'columns' for full control.",
+      "items": {
+        "type": "object",
+        "required": ["rows"],
+        "properties": {
+          "rows": {
+            "type": "array",
+            "description": "Array of data rows. Each row is an object with column keys as properties. Example: [{\"name\": \"Alice\", \"score\": 95}, {\"name\": \"Bob\", \"score\": 72}]",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "columns": {
+            "type": "array",
+            "description": "Explicit column definitions. If omitted, columns are auto-detected from the first row's keys. Column types are auto-detected as 'text', 'number', 'boolean', or 'date'.",
+            "items": {
+              "type": "object",
+              "required": ["key", "title"],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "Property name in row objects that this column displays."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Human-readable column header."
+                },
+                "visible": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether this column is visible. Hidden columns still exist in the data."
+                },
+                "editable": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether cells in this column can be edited inline by the user."
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["text", "number", "boolean", "date", "default"],
+                  "default": "default",
+                  "description": "Data type hint for rendering and sorting. Auto-detected if omitted."
+                }
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique table identifier. Auto-generated if omitted. Useful when you have multiple tables and need to reference a specific one."
+          },
+          "isEditable": {
+            "type": "boolean",
+            "default": true,
+            "description": "If true, the user can click cells to edit values inline. Set to false for read-only tables."
+          },
+          "isSortable": {
+            "type": "boolean",
+            "default": true,
+            "description": "If true, clicking column headers sorts the table by that column."
+          },
+          "defaultSortField": {
+            "type": "string",
+            "description": "Column key to sort by initially. Defaults to first column."
+          },
+          "rowsSelectionType": {
+            "type": "string",
+            "enum": ["edit", "select", "multiSelect"],
+            "default": "edit",
+            "description": "Row interaction mode. 'edit' = click to edit cells. 'select' = click to select one row (radio). 'multiSelect' = click to select multiple rows (checkbox). Selected rows are sent back to the flow when the user clicks a 'processTables' action button."
+          },
+          "preselectedRows": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "Zero-based row indices to pre-select when the table first renders."
+          },
+          "unions": {
+            "type": "array",
+            "description": "Column grouping headers. Groups multiple columns under a shared header row.",
+            "items": {
+              "type": "object",
+              "required": ["title", "keys"],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Group header text."
+                },
+                "keys": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Column keys belonging to this group."
+                }
+              }
+            }
+          },
+          "tableActions": {
+            "type": "array",
+            "description": "Custom action buttons displayed above the table. By default, CSV and XLSX download buttons are added automatically.",
+            "items": { "$ref": "#/$defs/action" }
+          }
+        }
+      }
+    },
+    "action_message": {
+      "type": "array",
+      "description": "Interactive elements displayed with the message. Buttons appear below the message and are removed after the user clicks one. Links open URLs. Prompts appear as suggestion chips in the input footer — clicking one sends that text as a new user message.",
+      "items": { "$ref": "#/$defs/action" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "action": {
+      "type": "object",
+      "required": ["type"],
+      "description": "An interactive element: button, link, or prompt suggestion.\n\n## Build Mode Pattern\nThe Code Agent runs in 'plan' mode by default (read-only — reasoning without file changes). To create or edit files, the agent needs 'build' mode. Use the sendAction button to request build permission from the user:\n1. Return a button with text 'Allow build mode'.\n2. When the user clicks it, the flow automatically grants build permissions and sends a confirmation to the agent.\n3. The agent then executes in build mode for that turn.\nThis ensures the user explicitly approves any file-modifying actions.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["button", "link", "prompt"],
+          "description": "'button' = clickable button below message (removed after click). 'link' = clickable hyperlink. 'prompt' = suggestion chip in input footer that sends its text as a new user message when clicked."
+        },
+        "text": {
+          "type": "string",
+          "description": "Display label for the button/link/prompt. For 'prompt' type, this is also the text sent as the next user message. For 'button' with action 'sendAction' or 'sendButtonTextWithParams', this is sent as 'user_action' to the flow. To request build mode, use text 'Allow build mode'."
+        },
+        "action": {
+          "type": "string",
+          "description": "Action identifier. Common values: 'sendAction' = sends text as user_action to the flow. 'sendButtonTextWithParams' = sends text + params as user_action + context. 'link' = opens params.url in browser. 'processTables' = sends edited/selected table data back to the flow. 'switchAgent' = switches to another flow (params.flow_id). For 'prompt' type, action is not needed — clicking sends the text automatically."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Extra parameters for the action. For 'link': {\"url\": \"https://...\"}. For 'switchAgent': {\"flow_id\": 55}. For 'sendButtonTextWithParams': arbitrary key-value pairs sent as context extras to the flow."
+        }
+      }
+    }
+  }
+}

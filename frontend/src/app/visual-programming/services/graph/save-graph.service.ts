@@ -514,6 +514,7 @@ export class GraphUpdateService {
                         input_map: node.input_map || {},
                         output_variable_path: node.output_variable_path || null,
                         stream_config: node.stream_config || {},
+                        output_schema: node.data.output_schema || {},
                     };
                     return this.codeAgentNodeService
                         .createCodeAgentNode(payload)
