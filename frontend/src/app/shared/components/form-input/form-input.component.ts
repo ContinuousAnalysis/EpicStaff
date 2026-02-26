@@ -62,6 +62,10 @@ import { MatIconModule } from '@angular/material/icon';
     `,
     styles: [
         `
+            :host {
+                width: 100%;
+            }
+
             .form-group {
                 .label-container {
                     display: flex;

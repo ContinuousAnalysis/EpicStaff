@@ -15,10 +15,10 @@ import { Overlay, OverlayPositionBuilder, OverlayRef, OverlayModule } from "@ang
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
 import { TooltipComponent } from "../tooltip/tooltip.component";
 
-export interface SelectItem {
+export interface SelectItem<T = unknown> {
     name: string;
     tip?: string;
-    value: unknown;
+    value: T;
     group?: string;
 }
 

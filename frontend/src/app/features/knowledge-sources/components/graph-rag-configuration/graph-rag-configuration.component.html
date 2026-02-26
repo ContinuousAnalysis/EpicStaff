@@ -1,0 +1,32 @@
+<div class="configure">
+    <div class="files-section">
+        <div class="format-selector">
+            Convert to Format
+            <mat-icon
+                class="tooltip-icon"
+                matTooltip="Select format"
+                matTooltipPosition="above"
+            >
+                help_outline
+            </mat-icon>
+            <app-radio-button
+                [(value)]="selectedFormat"
+                [options]="formatOptions"
+            />
+        </div>
+
+        <div class="files-content">
+            <app-graph-rag-files-list
+                [documents]="graphRag().documents"
+            />
+        </div>
+    </div>
+
+    <div class="params-section">
+        <app-graph-rag-index-parameters
+            #indexParameters
+            [selectedFormat]="selectedFormat()"
+            [indexConfig]="graphRag().index_config"
+        />
+    </div>
+</div>

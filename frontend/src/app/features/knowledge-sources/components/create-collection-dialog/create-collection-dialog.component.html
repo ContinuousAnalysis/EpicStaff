@@ -23,10 +23,10 @@
             <app-button
                 type="primary"
                 [rightIcon]="currentStepIndex() < 2 ? 'ui/arrow-right' : ''"
-                [disabled]="nextStepDisabled()"
+                [disabled]="nextDisabled()"
                 (click)="nextStep()"
             >
-                {{ nextButtonText() }}
+                {{ nextText() }}
             </app-button>
             <app-icon
                 [icon]="'ui/close'"
@@ -49,14 +49,16 @@
             <app-step-select-rag
                 [(selectedRag)]="selectedRagType"
                 [(selectedEmbedder)]="selectedEmbedder"
+                [(selectedLLM)]="selectedLLM"
             />
         }
         @case (CreateCollectionStep.CONFIGURE) {
-            <app-rag-configuration
-                class="dialog__content"
-                [naiveRagId]="naiveRagId()!"
-                [collection]="collection()"
-            />
+            <div class="dialog__content">
+                @if (configurationComponent()) {
+                    <ng-container *ngComponentOutlet="configurationComponent(); inputs: configurationInputs()"
+                    ></ng-container>
+                }
+            </div>
         }
     }
 </div>

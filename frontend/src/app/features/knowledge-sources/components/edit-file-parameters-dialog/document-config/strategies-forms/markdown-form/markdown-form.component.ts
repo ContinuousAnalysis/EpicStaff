@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from "@angular/core";
 import { StrategyForm } from "../strategy-config-form.abstract";
 import { FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
-    ChipsInputComponent,
+    ChipsSelectComponent,
     InputNumberComponent,
     SelectItem,
     ToggleSwitchComponent,
@@ -17,7 +17,7 @@ import { MarkdownStrategyModel } from "../../../../../models/strategy.model";
     styleUrls: ['../../document-config.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        ChipsInputComponent,
+        ChipsSelectComponent,
         ToggleSwitchComponent,
         MATERIAL_FORMS,
         InputNumberComponent,

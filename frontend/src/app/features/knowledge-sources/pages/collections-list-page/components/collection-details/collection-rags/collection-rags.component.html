@@ -11,14 +11,11 @@
             icon="ui/arrow-right"
             size="1rem"
             class="rags__nav"
-            (click)="onConfigureNaiveRag()"
+            (click)="onConfigureNaiveRag('naive')"
         />
     </li>
 
-    <li
-        class="rags__item"
-        style="cursor: not-allowed"
-    >
+    <li class="rags__item">
         <app-icon
             icon="ui/web"
             size="0.75rem"
@@ -26,9 +23,11 @@
         <span class="rags__name">Graph RAG</span>
         <span class="rags__model">gpt-4o-mini</span>
         <app-icon
+            [isAction]="true"
             icon="ui/arrow-right"
             size="1rem"
             class="rags__nav"
+            (click)="onConfigureNaiveRag('graph')"
         />
     </li>
     <li

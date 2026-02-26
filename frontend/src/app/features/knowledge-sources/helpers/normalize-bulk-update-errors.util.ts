@@ -1,6 +1,6 @@
 import {
     NormalizedDocumentErrors
-} from "../components/rag-configuration/configuration-table/configuration-table.interface";
+} from "../components/naive-rag-configuration/configuration-table/configuration-table.interface";
 import { UpdateNaiveRagDocumentConfigError } from "../models/naive-rag-document.model";
 
 export function normalizeBulkUpdateErrors(

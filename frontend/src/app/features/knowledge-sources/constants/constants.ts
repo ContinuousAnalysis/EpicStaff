@@ -1,5 +1,5 @@
 import { RagName, RagTypeLevel } from "../enums/rag";
-import { Rag } from "../models/naive-rag.model";
+import { Rag } from "../models/base-rag.model";
 import { SelectItem } from "@shared/components";
 
 export const FILE_TYPES = ['pdf', 'csv', 'md', 'docx', 'txt', 'json', 'html'];
@@ -27,10 +27,9 @@ export const RAG_TYPES: Rag[] = [
         value: "graph",
         description: "A graph of entities and their relationships is created, which allows for a better understanding of the context and connections.",
         tip: "For more complex queries and a broader context.",
-        icon: "ui/tab-group",
+        icon: "ui/web",
         level: RagTypeLevel.ADVANCED,
         stars: 2,
-        disabled: true,
     },
     {
         name: RagName.HYBRID_RAG,

@@ -1,18 +1,26 @@
-import {ChangeDetectionStrategy, Component, DestroyRef, inject, input} from "@angular/core";
-import {AppIconComponent} from "@shared/components";
-import {Dialog} from "@angular/cdk/dialog";
+import { ComponentType } from "@angular/cdk/overlay";
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input } from "@angular/core";
+import { AppIconComponent } from "@shared/components";
+import { Dialog } from "@angular/cdk/dialog";
+import {
+    GraphRagConfigurationDialog
+} from "../../../../../components/rag-configuration-dialog/graph-rag-configuration-dialog/graph-rag-configuration-dialog.component";
 import {
     NaiveRagConfigurationDialog
-} from "../../../../../components/naive-rag-configuration-dialog/naive-rag-configuration-dialog.component";
-import {CreateCollectionDtoResponse} from "../../../../../models/collection.model";
+} from "../../../../../components/rag-configuration-dialog/naive-rag-configuration-dialog/naive-rag-configuration-dialog.component";
+import {
+    RagConfigurationDialogComponent
+} from "../../../../../components/rag-configuration-dialog/rag-configuration-dialog.component";
+import { RagType } from "../../../../../models/base-rag.model";
+import { CreateCollectionDtoResponse } from "../../../../../models/collection.model";
 import {
     CreateCollectionDialogComponent
 } from "../../../../../components/create-collection-dialog/create-collection-dialog.component";
-import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {CollectionsStorageService} from "../../../../../services/collections-storage.service";
-import {catchError, switchMap} from "rxjs/operators";
-import {ToastService} from "../../../../../../../services/notifications";
-import {throwError} from "rxjs";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { CollectionsStorageService } from "../../../../../services/collections-storage.service";
+import { catchError, switchMap } from "rxjs/operators";
+import { ToastService } from "../../../../../../../services/notifications";
+import { throwError } from "rxjs";
 
 @Component({
     selector: 'app-collection-details-rags',
@@ -31,31 +39,24 @@ export class CollectionRagsComponent {
 
     collection = input.required<CreateCollectionDtoResponse>();
 
-    onConfigureNaiveRag() {
-        if (!this.collection().rag_configurations.length) {
+    onConfigureNaiveRag(type: RagType): void {
+        const ragConfigurations = this.collection().rag_configurations;
+        const ragConfig = ragConfigurations.find(i => i.rag_type === type);
+
+        if (!ragConfigurations.length || !ragConfig) {
             this.openCollectionModal();
             return;
         }
 
-        const naiveRag = this.collection().rag_configurations.find(i => i.rag_type === 'naive');
+        if (type === 'naive') {
+            this.openRagConfigurationDialog(ragConfig.rag_id, NaiveRagConfigurationDialog);
+            return;
+        }
 
-        if (!naiveRag) return;
-
-        const dialog = this.dialog.open(NaiveRagConfigurationDialog, {
-            width: 'calc(100vw - 2rem)',
-            height: 'calc(100vh - 2rem)',
-            data: {
-                collection: this.collection(),
-                ragId: naiveRag.rag_id
-            },
-            disableClose: true
-        });
-
-        dialog.closed
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-            )
-            .subscribe()
+        if (type === 'graph') {
+            this.openRagConfigurationDialog(ragConfig.rag_id, GraphRagConfigurationDialog);
+            return;
+        }
     }
 
     private openCollectionModal(): void {
@@ -78,5 +79,23 @@ export class CollectionRagsComponent {
                 })
             )
             .subscribe();
+    }
+
+    private openRagConfigurationDialog(
+        ragId: number,
+        dialogComponent: ComponentType<RagConfigurationDialogComponent>
+    ): void {
+        const dialog = this.dialog.open(dialogComponent, {
+            width: 'calc(100vw - 2rem)',
+            height: 'calc(100vh - 2rem)',
+            data: { ragId },
+            disableClose: true
+        });
+
+        dialog.closed
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+            )
+            .subscribe()
     }
 }

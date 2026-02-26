@@ -1,5 +1,5 @@
 import { NaiveRagChunkStrategy } from "../enums/naive-rag-chunk-strategy";
-import { RagType } from "./naive-rag.model";
+import { RagType } from "./base-rag.model";
 
 export type NaiveRagDocumentStatus =
     | 'new'

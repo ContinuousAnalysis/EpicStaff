@@ -15,9 +15,7 @@ import {
     UpdateNaiveRagDocumentDtoRequest,
     UpdateNaiveRagDocumentResponse
 } from "../models/naive-rag-document.model";
-import {
-    CreateRagForCollectionResponse
-} from "../models/naive-rag.model";
+import { CreateNaiveRagForCollectionResponse } from "../models/naive-rag.model";
 
 @Injectable({
     providedIn: 'root'
@@ -37,10 +35,10 @@ export class NaiveRagService {
     createRagForCollection(
         collectionId: number,
         embedderId: number
-    ): Observable<CreateRagForCollectionResponse> {
+    ): Observable<CreateNaiveRagForCollectionResponse> {
         const body = { embedder_id: embedderId };
 
-        return this.http.post<CreateRagForCollectionResponse>(
+        return this.http.post<CreateNaiveRagForCollectionResponse>(
             `${this.apiUrl}collections/${collectionId}/naive-rag/`,
             body
         )

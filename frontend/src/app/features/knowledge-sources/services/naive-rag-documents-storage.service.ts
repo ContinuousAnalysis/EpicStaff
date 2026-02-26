@@ -4,7 +4,7 @@ import { EMPTY, filter, Observable, throwError } from "rxjs";
 import { catchError, map, tap } from "rxjs/operators";
 import {
     DocFieldChange, TableDocument,
-} from "../components/rag-configuration/configuration-table/configuration-table.interface";
+} from "../components/naive-rag-configuration/configuration-table/configuration-table.interface";
 import { calcLimit } from "../helpers/calculate-chunks-fetch-limit.util";
 import { normalizeBulkUpdateErrors } from "../helpers/normalize-bulk-update-errors.util";
 import { transformToTableDocuments } from "../helpers/transform-to-table-document.util";

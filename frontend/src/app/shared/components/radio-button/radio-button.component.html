@@ -1,0 +1,25 @@
+@if (label()) {
+    <app-tooltip
+        [required]="required()"
+        [tooltipText]="tooltipText()"
+        [label]="label()"
+        [icon]="icon()"
+    />
+}
+
+<div
+    class="radio"
+    [class.small]="mod() === 'small'"
+    [class.default]="mod() === 'default'"
+>
+    @for (option of options(); track option.value; let count = $count) {
+        <div
+            class="item"
+            [style.width]="`calc(100% / ${count})`"
+            [class.active]="option.value === value()"
+            (click)="select(option)"
+        >
+            {{ option.name }}
+        </div>
+    }
+</div>
