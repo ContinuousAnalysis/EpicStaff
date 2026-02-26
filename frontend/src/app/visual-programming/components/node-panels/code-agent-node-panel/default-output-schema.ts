@@ -72,12 +72,12 @@ export const DEFAULT_OUTPUT_SCHEMA: Record<string, any> = {
     "action": {
       "type": "object",
       "required": ["type"],
-      "description": "An interactive element: button, link, or prompt suggestion. Build Mode Pattern: The Code Agent runs in 'plan' mode by default (read-only). To create or edit files, it needs 'build' mode. Return a sendAction button with text 'Allow build mode'. When the user clicks it, build permissions are granted automatically for that turn.",
+      "description": "An interactive element: button, link, or prompt suggestion. Build Mode Pattern: The Code Agent runs in 'plan' mode by default (read-only). To create or edit files, it needs 'build' mode. Return a sendAction button with text 'Allow build mode'. When the user clicks it, build permissions are granted automatically for that turn. Navigation Actions: 'openFlow' navigates to a flow in the visual editor (params.flowId). 'openNode' opens a specific node panel (params.flowId + params.nodeId). 'refreshCache' reloads the page — ALWAYS offer after modifying flows/nodes to avoid stale metadata conflicts.",
       "properties": {
         "type": { "type": "string", "enum": ["button", "link", "prompt"], "description": "'button' = clickable button. 'link' = hyperlink. 'prompt' = suggestion chip." },
         "text": { "type": "string", "description": "Display label. For 'prompt', also the text sent as next user message. To request build mode, use text 'Allow build mode'." },
-        "action": { "type": "string", "description": "Action identifier: 'sendAction', 'link', 'processTables', 'switchAgent', etc." },
-        "params": { "type": "object", "additionalProperties": true, "description": "Extra params. For 'link': {url: '...'}. For 'switchAgent': {flow_id: N}." }
+        "action": { "type": "string", "description": "Action identifier: 'sendAction', 'link', 'processTables', 'switchAgent', 'openFlow', 'openNode', 'refreshCache'." },
+        "params": { "type": "object", "additionalProperties": true, "description": "Extra params. For 'link': {url: '...'}. For 'switchAgent': {flow_id: N}. For 'openFlow': {flowId: N}. For 'openNode': {flowId: N, nodeId: '<uuid>'}." }
       }
     }
   }
