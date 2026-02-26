@@ -11,6 +11,7 @@ from tables.models import (
     FileExtractorNode,
     WebhookTriggerNode,
     TelegramTriggerNode,
+    TelegramTriggerNodeField,
     AudioTranscriptionNode,
     Edge,
     PythonCode,
@@ -30,13 +31,13 @@ class BaseNodeImportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = None
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class StartNodeImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
         model = StartNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class WebhookTriggerNodeImportSerializer(BaseNodeImportSerializer):
@@ -54,7 +55,7 @@ class WebhookTriggerNodeImportSerializer(BaseNodeImportSerializer):
 
     class Meta(BaseNodeImportSerializer.Meta):
         model = WebhookTriggerNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class ConditionImportSerializer(serializers.ModelSerializer):
@@ -86,13 +87,21 @@ class DecisionTableNodeImportSerializer(BaseNodeImportSerializer):
 
     class Meta(BaseNodeImportSerializer.Meta):
         model = DecisionTableNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
+
+
+class TelegramTriggerNodeFieldImportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TelegramTriggerNodeField
+        exclude = ["telegram_trigger_node"]
 
 
 class TelegramTriggerNodeImportSerializer(BaseNodeImportSerializer):
-    class Meta(BaseNodeImportSerializer.Meta):
+    fields = TelegramTriggerNodeFieldImportSerializer(many=True, read_only=True)
+
+    class Meta:
         model = TelegramTriggerNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash", "telegram_bot_api_key"]
 
 
 class PythonNodeImportSerializer(BaseNodeImportSerializer):
@@ -105,49 +114,49 @@ class PythonNodeImportSerializer(BaseNodeImportSerializer):
 
     class Meta(BaseNodeImportSerializer.Meta):
         model = PythonNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class EndNodeImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
         model = EndNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class FileExtractorNodeImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
         model = FileExtractorNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class AudioTranscriptionNodeImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
         model = AudioTranscriptionNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class LLMNodeImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
         model = LLMNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class CrewNodeImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
         model = CrewNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class SubgraphNodeImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
         model = SubGraphNode
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class EdgeImportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Edge
-        fields = "__all__"
+        exclude = ["created_at", "updated_at", "content_hash"]
 
 
 class GraphImportSerializer(serializers.ModelSerializer):
