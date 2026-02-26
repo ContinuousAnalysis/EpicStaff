@@ -125,7 +125,7 @@
     "action": {
       "type": "object",
       "required": ["type"],
-      "description": "An interactive element: button, link, or prompt suggestion.\n\n## Build Mode Pattern\nThe Code Agent runs in 'plan' mode by default (read-only — reasoning without file changes). To create or edit files, the agent needs 'build' mode. Use the sendAction button to request build permission from the user:\n1. Return a button with text 'Allow build mode'.\n2. When the user clicks it, the flow automatically grants build permissions and sends a confirmation to the agent.\n3. The agent then executes in build mode for that turn.\nThis ensures the user explicitly approves any file-modifying actions.",
+      "description": "An interactive element: button, link, or prompt suggestion.\n\n## Build Mode Pattern\nThe Code Agent runs in 'plan' mode by default (read-only — reasoning without file changes). To create or edit files, the agent needs 'build' mode. Use the sendAction button to request build permission from the user:\n1. Return a button with text 'Allow build mode'.\n2. When the user clicks it, the flow automatically grants build permissions and sends a confirmation to the agent.\n3. The agent then executes in build mode for that turn.\nThis ensures the user explicitly approves any file-modifying actions.\n\n## Navigation Actions\nThe widget supports navigating the user to flows and nodes in the EpicStaff UI:\n- **openFlow**: Opens a flow by ID in the visual programming editor. Offer this after creating or modifying a flow so the user can inspect it.\n- **openNode**: Opens a specific node within a flow (expands the node panel). Offer this when discussing a specific node or after modifying one.\n- **refreshCache**: Reloads the page to pick up metadata changes. IMPORTANT: After any flow or node modifications (create, update, delete), the browser cache may hold stale metadata. Always offer a refreshCache button and explain that a page refresh is needed to avoid conflicts between the cached and actual flow state.",
       "properties": {
         "type": {
           "type": "string",
@@ -138,12 +138,12 @@
         },
         "action": {
           "type": "string",
-          "description": "Action identifier. Common values: 'sendAction' = sends text as user_action to the flow. 'sendButtonTextWithParams' = sends text + params as user_action + context. 'link' = opens params.url in browser. 'processTables' = sends edited/selected table data back to the flow. 'switchAgent' = switches to another flow (params.flow_id). For 'prompt' type, action is not needed — clicking sends the text automatically."
+          "description": "Action identifier. Common values: 'sendAction' = sends text as user_action to the flow. 'sendButtonTextWithParams' = sends text + params as user_action + context. 'link' = opens params.url in browser. 'processTables' = sends edited/selected table data back to the flow. 'switchAgent' = switches to another flow (params.flow_id). 'openFlow' = navigates to a flow in the visual editor (params.flowId required). 'openNode' = opens a specific node panel in a flow (params.flowId + params.nodeId required). 'refreshCache' = reloads the page to pick up flow/node changes — always offer after modifying flows. For 'prompt' type, action is not needed — clicking sends the text automatically."
         },
         "params": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Extra parameters for the action. For 'link': {\"url\": \"https://...\"}. For 'switchAgent': {\"flow_id\": 55}. For 'sendButtonTextWithParams': arbitrary key-value pairs sent as context extras to the flow."
+          "description": "Extra parameters for the action. For 'link': {\"url\": \"https://...\"}. For 'switchAgent': {\"flow_id\": 55}. For 'openFlow': {\"flowId\": 29}. For 'openNode': {\"flowId\": 29, \"nodeId\": \"<metadata-uuid>\"}. For 'sendButtonTextWithParams': arbitrary key-value pairs sent as context extras to the flow."
         }
       }
     }

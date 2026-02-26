@@ -134,14 +134,23 @@ class CodeAgentNode(BaseNode):
 
     def _resolve_code_session_id(self, state: State) -> str | None:
         """Resolve the configured code_session_id from state variables.
-        Supports dot-notated paths like 'variables.code_session_id'.
+        Supports dot-notated paths like 'variables.context.chat_session_id'.
+        State is a TypedDict (dict) at the top level, with DotDict for variables.
         If the path doesn't resolve, the raw string is used as a literal session ID."""
         if not self.code_session_id:
             return None
+        parts = self.code_session_id.split(".")
         obj = state
-        for part in self.code_session_id.split("."):
-            obj = getattr(obj, part, None)
+        for i, part in enumerate(parts):
+            if isinstance(obj, dict):
+                obj = obj.get(part)
+            else:
+                obj = getattr(obj, part, None)
             if obj is None:
+                logger.warning(
+                    f"[CodeAgentNode] code_session_id path '{self.code_session_id}' "
+                    f"failed at segment '{part}' (index {i}), using literal"
+                )
                 return self.code_session_id
         return str(obj) if obj is not None else self.code_session_id
 
