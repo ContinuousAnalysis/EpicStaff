@@ -79,20 +79,23 @@
     @if (isEpicChatEnabled) {
         <epic-chat
             #epicChat
-            class="epic-chat-host my-app-light"
+            class="epic-chat-host"
             style="
-                --ep-color-surface: var(--color-modals-background);
-                --ep-color-surface-alt: var(--color-input-background);
+                --ep-color-surface: var(--color-background-body);
+                --ep-color-surface-alt: var(--color-nodes-background);
+                --ep-chat-bg-question: var(--color-input-background);
+                --ep-chat-bg-answer: var(--color-nodes-background);
                 --ep-color-text: var(--color-text-primary);
                 --ep-color-text-muted: var(--color-text-secondary);
                 --ep-color-border: var(--color-divider-regular);
-                --ep-color-border-muted: var(--color-text-secondary);
-                --ep-color-accent: rgba(51, 51, 51, 0.85);
-                --ep-color-accent-contrast: #ffffff;
+                --ep-color-border-muted: var(--color-divider-subtle);
+                --ep-color-accent: var(--gray-700);
+                --ep-color-accent-contrast: var(--color-text-primary);
                 --ep-color-accent-soft: var(--color-ghost-btn-hover);
                 --ep-color-danger: var(--color-ks-status-failed);
-                --ep-color-shadow: rgba(0, 0, 0, 0.35);
+                --ep-color-shadow: rgba(0, 0, 0, 0.6);
                 --ep-color-scrollbar: var(--color-scrollbar-thumb);
+                --ep-color-disabled-bg: var(--gray-600);
             "
             base-path="/epicchat-widget/"
             chat-left="68px"
