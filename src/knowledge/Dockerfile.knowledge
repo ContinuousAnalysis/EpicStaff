@@ -1,18 +1,22 @@
 FROM python:3.12.10
 
-WORKDIR /home/user/root/app
+WORKDIR /app/src/
+
+COPY ./shared ./shared
+
+WORKDIR /app/src/knowledge
 
 RUN pip install --upgrade --no-cache-dir pip setuptools wheel
 
 RUN pip install poetry
 
-COPY ./pyproject.toml .
-COPY ./poetry.lock .
+COPY ./knowledge/pyproject.toml .
+COPY ./knowledge/poetry.lock .
 
-RUN poetry config virtualenvs.create false 
+RUN poetry config virtualenvs.create false
 RUN poetry install --no-root
 RUN rm -rf /root/.cache
 
-COPY . .
+COPY ./knowledge .
 
 CMD python main.py

@@ -315,8 +315,8 @@ services:
   knowledge:
     image: knowledge
     build:
-      context: ./knowledge
-      dockerfile: Dockerfile.knowledge
+      context: .
+      dockerfile: ./knowledge/Dockerfile.knowledge
     container_name: knowledge
     environment:
       - KNOWLEDGE_SOURCES_CHANNEL=knowledge_sources
