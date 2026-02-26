@@ -1,7 +1,7 @@
 ---
 id: epicstaff
 name: EpicStaff Flow Management
-version: 1.32
+version: 1.33
 trigger: always_on
 triggers: [epicstaff, epic-staff, flows, sessions]
 scope: [api, cli, integration]

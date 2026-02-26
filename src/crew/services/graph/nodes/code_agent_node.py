@@ -83,7 +83,15 @@ class CodeAgentNode(BaseNode):
     # Input normalisation
     # ------------------------------------------------------------------
 
-    BUILD_TRIGGERS = frozenset({"allow build mode"})
+    BUILD_TRIGGER = "allow build mode"
+
+    @staticmethod
+    def _parse_build_turns(action_text: str) -> int:
+        """Parse turn count from action like 'Allow build mode' (1) or
+        'Allow build mode (3 turns)' (3)."""
+        import re
+        m = re.search(r'\((\d+)\s*turns?\)', action_text, re.IGNORECASE)
+        return int(m.group(1)) if m else 1
 
     def get_input(self, state):
         if self.input_map == "__all__":
@@ -320,11 +328,27 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
 
         # Resolve effective mode — build triggers override the configured mode
         effective_mode = self.agent_mode
-        if action and action.strip().lower() in self.BUILD_TRIGGERS:
+        build_turns_remaining = 0
+
+        # Read carry-over build turns from previous turn's output
+        raw_bt = input_.get("build_turns") or 0
+        if raw_bt == "not found":
+            raw_bt = 0
+        carry_over_turns = int(raw_bt) if str(raw_bt).isdigit() else 0
+
+        if action and self.BUILD_TRIGGER in action.strip().lower():
+            granted = self._parse_build_turns(action)
             effective_mode = "build"
+            build_turns_remaining = granted - 1  # this turn uses one
             if not prompt:
-                prompt = "I have given you build permissions. Proceed with the plan."
-            logger.info(f"[CodeAgentNode] Build mode triggered by action: {action!r}")
+                prompt = f"I have given you build permissions for {granted} turn(s). Proceed with the plan."
+            logger.info(f"[CodeAgentNode] Build mode granted for {granted} turn(s) by action: {action!r}")
+        elif carry_over_turns > 0:
+            effective_mode = "build"
+            build_turns_remaining = carry_over_turns - 1
+            if not prompt and not action:
+                prompt = f"Build mode continues ({carry_over_turns} turn(s) remaining including this one). Continue with the plan."
+            logger.info(f"[CodeAgentNode] Build mode continued, {carry_over_turns} turns remaining")
         elif action and not prompt:
             prompt = action
 
@@ -351,7 +375,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             return await self._run_agent_loop(
                 state, writer, execution_order, input_, input_context,
                 port, oc_session_id, is_new_session, provider, model, prompt,
-                effective_mode,
+                effective_mode, build_turns_remaining,
             )
         except StopSession:
             logger.info("[CodeAgentNode] Session stopped — running cleanup")
@@ -394,7 +418,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
     async def _run_agent_loop(
         self, state, writer, execution_order, input_, input_context,
         port, oc_session_id, is_new_session, provider, model, prompt,
-        effective_mode=None,
+        effective_mode=None, build_turns_remaining=0,
     ):
         """Core agent loop — extracted so execute() can wrap it with stop cleanup."""
         agent_mode = effective_mode or self.agent_mode
@@ -594,10 +618,12 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         if structured_output:
             structured_output.setdefault("message", display_text)
             structured_output["session_id"] = oc_session_id
+            structured_output["build_turns_remaining"] = build_turns_remaining
             return structured_output
 
         return {
             "message": reply_text,
             "reply": reply_text,
             "session_id": oc_session_id,
+            "build_turns_remaining": build_turns_remaining,
         }
