@@ -47,6 +47,11 @@ def migrate_edges_data(apps, schema_editor):
         start_node = StartNode.objects.filter(graph_id=graph.id).first()
         if start_node:
             name_to_id_map['__start__'] = start_node.id
+            
+        EndNode = apps.get_model('tables', 'EndNode')
+        end_node = EndNode.objects.filter(graph_id=graph.id).first()
+        if end_node:
+            name_to_id_map['__end_node__'] = end_node.id
 
         edges_to_update = []
         for edge in Edge.objects.filter(graph_id=graph.id):
@@ -63,9 +68,9 @@ def migrate_edges_data(apps, schema_editor):
         cond_edges_to_update = []
         for c_edge in ConditionalEdge.objects.filter(graph_id=graph.id):
             source_id = name_to_id_map.get(c_edge.source)
-            if source_id:
-                c_edge.source_node_id = source_id
-                cond_edges_to_update.append(c_edge)
+            # if source_id:
+            c_edge.source_node_id = source_id
+            cond_edges_to_update.append(c_edge)
 
         if cond_edges_to_update:
             ConditionalEdge.objects.bulk_update(cond_edges_to_update, ['source_node_id'])
@@ -124,7 +129,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='conditionaledge',
             name='source_node_id',
-            field=models.BigIntegerField(null=True),
+            field=models.BigIntegerField(null=True, default=None),
         ),
         
         migrations.AddField(
@@ -163,6 +168,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='conditionaledge',
             name='source_node_id',
-            field=models.BigIntegerField(null=False, default=0),
+            field=models.BigIntegerField(null=True, default=None),
         ),
     ]

@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Annotated, Any, List, Literal, Optional, Union
+
 from pydantic import BaseModel, Field, HttpUrl
 
 
@@ -326,6 +327,7 @@ class DecisionTableNodeData(BaseModel):
 
 
 class EndNodeData(BaseModel):
+    node_name: str
     output_map: dict[str, Any]
 
 

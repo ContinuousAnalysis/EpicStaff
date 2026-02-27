@@ -22,7 +22,6 @@ class LLMConfigData(BaseModel):
     deployment_id: str | None = None
     headers: dict[str, str] | None = None
     extra_headers: dict[str, str] | None = None
-    
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -427,6 +426,7 @@ class DecisionTableNodeData(BaseModel):
 
 
 class EndNodeData(BaseModel):
+    node_name: str
     output_map: dict[str, Any]
 
     model_config = ConfigDict(from_attributes=True)

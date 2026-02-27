@@ -1,11 +1,13 @@
 import hashlib
 import json
 import uuid
+
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
-from loguru import logger
 from django.utils import timezone
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from tables.models.base_models import BaseGraphEntity, BaseGlobalNode
+from loguru import logger
+
+from tables.models.base_models import BaseGlobalNode, BaseGraphEntity
 
 
 class Graph(models.Model):
@@ -122,6 +124,10 @@ class EndNode(BaseGraphEntity, BaseGlobalNode):
     )
     output_map = models.JSONField()
 
+    @property
+    def node_name(self):
+        return "__end_node__"
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["graph"], name="unique_graph_end_node")
@@ -191,7 +197,7 @@ class ConditionalEdge(BaseGraphEntity, models.Model):
         "Graph", on_delete=models.CASCADE, related_name="conditional_edge_list"
     )
 
-    source_node_id = models.BigIntegerField(null=False, default=0)
+    source_node_id = models.BigIntegerField(null=True, default=None)
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
     input_map = models.JSONField(default=dict)
 

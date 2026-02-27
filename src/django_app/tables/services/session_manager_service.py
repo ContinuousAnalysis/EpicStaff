@@ -1,6 +1,14 @@
-from tables.validators.end_node_validator import EndNodeValidator
-from tables.validators.subgraph_validator import SubGraphValidator
 from tables.exceptions import GraphEntryPointException
+from tables.models import (
+    AudioTranscriptionNode,
+    CrewNode,
+    Edge,
+    FileExtractorNode,
+    Graph,
+    GraphOrganizationUser,
+    PythonNode,
+    Session,
+)
 from tables.models.graph_models import (
     ConditionalEdge,
     DecisionTableNode,
@@ -11,39 +19,29 @@ from tables.models.graph_models import (
     TelegramTriggerNode,
     WebhookTriggerNode,
 )
-
-from utils.singleton_meta import SingletonMeta
-from utils.logger import logger
-from tables.services.converter_service import ConverterService
-from tables.services.redis_service import RedisService
-from tables.validators.file_node_validator import FileNodeValidator
-
 from tables.request_models import (
+    AudioTranscriptionNodeData,
     ConditionalEdgeData,
     CrewNodeData,
     DecisionTableNodeData,
     EdgeData,
+    FileExtractorNodeData,
     GraphData,
     GraphSessionMessageData,
     LLMNodeData,
     PythonNodeData,
-    FileExtractorNodeData,
-    AudioTranscriptionNodeData,
     SessionData,
-    SubGraphNodeData,
     SubGraphData,
+    SubGraphNodeData,
     TelegramTriggerNodeData,
 )
-from tables.models import (
-    CrewNode,
-    Session,
-    Edge,
-    Graph,
-    PythonNode,
-    FileExtractorNode,
-    AudioTranscriptionNode,
-    GraphOrganizationUser,
-)
+from tables.services.converter_service import ConverterService
+from tables.services.redis_service import RedisService
+from tables.validators.end_node_validator import EndNodeValidator
+from tables.validators.file_node_validator import FileNodeValidator
+from tables.validators.subgraph_validator import SubGraphValidator
+from utils.logger import logger
+from utils.singleton_meta import SingletonMeta
 
 
 class SessionManagerService(metaclass=SingletonMeta):
@@ -293,20 +291,16 @@ class SessionManagerService(metaclass=SingletonMeta):
         file_extractor_node_data_list: list[FileExtractorNodeData] = []
         for item in file_extractor_node_list:
             file_extractor_node_data_list.append(
-                FileExtractorNodeData(
-                    node_name=str(item.id),  # Используем ID как имя ноды
-                    input_map=item.input_map,
-                    output_variable_path=item.output_variable_path,
+                self.converter_service.convert_file_extractor_node_to_pydantic(
+                    file_extractor_node=item
                 )
             )
 
         audio_transcription_node_data_list: list[AudioTranscriptionNode] = []
         for item in audio_transcription_node_list:
             audio_transcription_node_data_list.append(
-                AudioTranscriptionNodeData(
-                    node_name=str(item.id),  # Используем ID как имя ноды
-                    input_map=item.input_map,
-                    output_variable_path=item.output_variable_path,
+                self.converter_service.convert_audio_transcription_node_to_pydantic(
+                    audio_transcription_node=item
                 )
             )
 
@@ -339,6 +333,11 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         conditional_edge_data_list: list[ConditionalEdgeData] = []
         for item in conditional_edge_list:
+            if item.source_node_id is None:
+                logger.warning(
+                    f"Conditional edge {item.pk} has no source_node_id, skipping."
+                )
+                continue
             conditional_edge_data_list.append(
                 self.converter_service.convert_conditional_edge_to_pydantic(item)
             )
@@ -378,11 +377,8 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
 
             subgraph_node_data_list.append(
-                SubGraphNodeData(
-                    node_name=str(item.id),
-                    subgraph_id=subgraph.id,
-                    input_map=item.input_map,
-                    output_variable_path=item.output_variable_path,
+                self.converter_service.convert_subgraph_node_to_pydantic(
+                    subgraph_node=item, subgraph=subgraph
                 )
             )
 
