@@ -24,8 +24,6 @@ python manage.py fix_sequences
 echo "Uploading models..."
 python manage.py upload_models
 
-echo "Registering webhooks..."
-python manage.py register_webhooks
 
 # Collect static files for production server
 echo "Collects static"
