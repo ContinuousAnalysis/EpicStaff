@@ -1,22 +1,29 @@
+# Use base image with Python 3.12.10
 FROM python:3.12.10
 
-WORKDIR /app/src/
-
-COPY ./shared ./shared
-
+# Set working directory
 WORKDIR /app/src/knowledge
 
-RUN pip install --upgrade --no-cache-dir pip setuptools wheel
+# Run update and clean installation garbage
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN pip install poetry
+# Run installing python dependencies
+RUN pip install --upgrade --no-cache-dir pip setuptools wheel poetry
 
-COPY ./knowledge/pyproject.toml .
-COPY ./knowledge/poetry.lock .
+# Install python poetry dependencies
+COPY ./knowledge/pyproject.toml ./knowledge/poetry.lock .
+RUN poetry config virtualenvs.create false && \
+    poetry install --no-root && \
+    rm -rf /root/.cache
 
-RUN poetry config virtualenvs.create false
-RUN poetry install --no-root
-RUN rm -rf /root/.cache
-
+# Copy knowledge module
 COPY ./knowledge .
 
+# Copy shared module
+COPY ./shared /app/src/shared
+
+# Run module
 CMD python main.py
