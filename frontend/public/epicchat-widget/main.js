@@ -36759,7 +36759,8 @@ var EP_CHAT_EVENTS = {
   CHAT_CLOSED: "chat.closed",
   APP_OPEN_FLOW: "app.openFlow",
   APP_OPEN_NODE: "app.openNode",
-  APP_REFRESH_CACHE: "app.refreshCache"
+  APP_REFRESH_CACHE: "app.refreshCache",
+  APP_TOGGLE_DOCK: "app.toggleDock"
 };
 
 // node_modules/xlsx/xlsx.mjs
@@ -57614,7 +57615,7 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
   getAgents() {
     return of([]);
   }
-  createAgent(agent) {
+  createAgent(agent, options) {
     const agentId = agent.id ?? generateAgentId();
     const assistantMode = {
       mode: "epicstaff",
@@ -57627,6 +57628,9 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
     };
     this.agentsSignal.update((current) => [...current, assistantMode]);
     this.saveAgentsToStorage();
+    if (options?.selectAfterCreate) {
+      this.setCurrentAgent(assistantMode);
+    }
     return of(agent);
   }
   updateAgent(agent) {
@@ -57895,15 +57899,9 @@ var _ActionService = class _ActionService {
       imagePath: data.imagePath,
       config: {}
     };
-    this.agentService.createAgent(requestPayload).subscribe({
+    this.agentService.createAgent(requestPayload, { selectAfterCreate: data.selectAfterCreate !== false }).subscribe({
       next: () => {
         this.agentService.loadAgents();
-        if (data.selectAfterCreate !== false) {
-          const created = this.agentService.agents().find((agent) => agent.epicstaffAgentId === agentId);
-          if (created) {
-            this.agentService.setCurrentAgent(created);
-          }
-        }
         onCommandSuccess(command, { agentId });
       },
       error: (error) => {
@@ -83911,6 +83909,10 @@ var _MessageTableCellComponent = class _MessageTableCellComponent {
     this.editorInput.emit(event);
   }
   onEditorKeydownInternal(event) {
+    if ((event.ctrlKey || event.metaKey) && event.code === "KeyZ") {
+      event.stopPropagation();
+      return;
+    }
     this.editorKeydown.emit(event);
   }
   onEditorBlurInternal() {
@@ -93993,7 +93995,6 @@ var _ChatFooterComponent = class _ChatFooterComponent {
         break;
       case "ArrowUp":
       case "ArrowDown":
-        this.handleArrowKeys(event);
         break;
       default:
         this.handleDefaultKey(event);
@@ -94001,6 +94002,9 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     }
   }
   handleEnterKey(ev) {
+    if (ev.shiftKey) {
+      return;
+    }
     if (!this.isSendButtonEnabled() || this.isTyping)
       return;
     ev.preventDefault();
@@ -94043,6 +94047,10 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     }
   }
   handleDefaultKey(ev) {
+    if ((ev.ctrlKey || ev.metaKey) && ev.code === "KeyZ") {
+      ev.stopPropagation();
+      return;
+    }
     const currentInputValue = this.messageInputControl.value || "";
     if (currentInputValue.length >= CHAT_CONSTANTS.MAX_INPUT_LENGTH && ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey) {
       ev.preventDefault();
@@ -94726,6 +94734,7 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
     this.editAgent = new EventEmitter();
     this.removeAgent = new EventEmitter();
     this.setDefaultPosition = new EventEmitter();
+    this.dockClicked = new EventEmitter();
     this.isAgentMenuShown = false;
     this.isActionsMenuShown = false;
     this.getImagePath = getImagePath;
@@ -94799,6 +94808,9 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
   onToggleFullHeightClick() {
     this.toggleFullHeightClicked.emit();
   }
+  onDockClick() {
+    this.dockClicked.emit();
+  }
   onDocumentClick(event) {
     const path = event.composedPath?.() ?? [];
     const hasMatchInPath = (selector) => path.some((node) => node instanceof Element && (node.matches(selector) || node.closest(selector) !== null));
@@ -94817,7 +94829,7 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return ctx.onDocumentClick($event);
     }, \u0275\u0275resolveDocument);
   }
-}, inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition" }, decls: 21, vars: 14, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click", "keydown.enter", "keydown.space"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__agent-menu"], [1, "chat-header__actions-menu"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "chat-header__agent-menu-item--active"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-menu-item-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-menu-item-text"], [1, "chat-header__agent-menu-item-name"], [1, "chat-header__agent-menu-item-description"], ["role", "button", "tabindex", "0", "aria-label", "Clear chat history", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Set default position", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Create new Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Edit Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Remove agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
+}, inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 21, vars: 14, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click", "keydown.enter", "keydown.space"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__agent-menu"], [1, "chat-header__actions-menu"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "chat-header__agent-menu-item--active"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-menu-item-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-menu-item-text"], [1, "chat-header__agent-menu-item-name"], [1, "chat-header__agent-menu-item-description"], ["role", "button", "tabindex", "0", "aria-label", "Clear chat history", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Set default position", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Create new Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Edit Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Remove agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "div", 2);
     \u0275\u0275element(3, "img", 3);
@@ -94959,6 +94971,28 @@ var ChatHeaderComponent = _ChatHeaderComponent;
         <circle cx="8" cy="12" r="1.5" fill="white" />
       </svg>
     </button>
+
+    <!-- <button
+      type="button"
+      class="chat-header__control-btn"
+      (click)="onDockClick()"
+      (keydown.enter)="onDockClick()"
+      (keydown.space)="onDockClick()"
+      aria-label="Dock in parent"
+      epTooltip="Dock in parent"
+      [tooltipOptions]="{ delay: 500 }"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect x="2" y="2" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
+        <rect x="7" y="7" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
+      </svg>
+    </button> -->
 
     <button
       type="button"
@@ -95124,6 +95158,8 @@ var ChatHeaderComponent = _ChatHeaderComponent;
   }], removeAgent: [{
     type: Output
   }], setDefaultPosition: [{
+    type: Output
+  }], dockClicked: [{
     type: Output
   }], onDocumentClick: [{
     type: HostListener,
@@ -95506,7 +95542,7 @@ var _EpicstaffAgentConfigComponent = class _EpicstaffAgentConfigComponent {
       payload.id = this.currentAgent?.epicstaffAgentId;
     }
     this.closed.emit();
-    const request$ = this.isEdit ? this.agentService.updateAgent(payload) : this.agentService.createAgent(payload);
+    const request$ = this.isEdit ? this.agentService.updateAgent(payload) : this.agentService.createAgent(payload, { selectAfterCreate: true });
     request$.subscribe({
       next: () => {
         this.agentService.loadAgents();
@@ -96351,13 +96387,13 @@ var MessageService = _MessageService;
 function ChatComponent_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 3);
+    \u0275\u0275elementStart(0, "div", 4);
     \u0275\u0275listener("epClickOutside", function ChatComponent_Conditional_2_Template_div_epClickOutside_0_listener() {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onClickOutside());
     });
-    \u0275\u0275elementStart(1, "ep-chat-header", 4);
+    \u0275\u0275elementStart(1, "ep-chat-header", 5);
     \u0275\u0275listener("closed", function ChatComponent_Conditional_2_Template_ep_chat_header_closed_1_listener() {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -96378,6 +96414,10 @@ function ChatComponent_Conditional_2_Template(rf, ctx) {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onToggleFullHeight());
+    })("dockClicked", function ChatComponent_Conditional_2_Template_ep_chat_header_dockClicked_1_listener() {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.onDockClick());
     })("agentSelected", function ChatComponent_Conditional_2_Template_ep_chat_header_agentSelected_1_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -96404,14 +96444,14 @@ function ChatComponent_Conditional_2_Template(rf, ctx) {
       return \u0275\u0275resetView(ctx_r1.onSetDefaultPosition());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "ep-chat-body", 5);
+    \u0275\u0275elementStart(2, "ep-chat-body", 6);
     \u0275\u0275listener("actionClick", function ChatComponent_Conditional_2_Template_ep_chat_body_actionClick_2_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onActionClick($event));
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "ep-chat-footer", 6);
+    \u0275\u0275elementStart(3, "ep-chat-footer", 7);
     \u0275\u0275listener("sendMessage", function ChatComponent_Conditional_2_Template_ep_chat_footer_sendMessage_3_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -96426,21 +96466,6 @@ function ChatComponent_Conditional_2_Template(rf, ctx) {
       return \u0275\u0275resetView(ctx_r1.onStopGenerating());
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(4, "div", 7);
-    \u0275\u0275listener("click", function ChatComponent_Conditional_2_Template_div_click_4_listener() {
-      \u0275\u0275restoreView(_r1);
-      const ctx_r1 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r1.closeChat());
-    })("keydown.enter", function ChatComponent_Conditional_2_Template_div_keydown_enter_4_listener() {
-      \u0275\u0275restoreView(_r1);
-      const ctx_r1 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r1.closeChat());
-    })("keydown.space", function ChatComponent_Conditional_2_Template_div_keydown_space_4_listener() {
-      \u0275\u0275restoreView(_r1);
-      const ctx_r1 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r1.closeChat());
-    });
-    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext();
@@ -96611,6 +96636,9 @@ var _ChatComponent = class _ChatComponent {
   }
   toggleChat() {
     this.chatService.toggleChat();
+  }
+  onDockClick() {
+    this.epChatEvent.emit({ type: EP_CHAT_EVENTS.APP_TOGGLE_DOCK });
   }
   onClickOutside() {
   }
@@ -97235,7 +97263,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatFooter = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.resizableChat = _t.first);
   }
-}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], [3, "popupState", "currentAgent", "newAgentParams"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "stop", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], ["role", "button", "tabindex", "0", "aria-label", "Close popup", 1, "ep-mat", 3, "click", "keydown.enter", "keydown.space"], [3, "closed", "popupState", "currentAgent", "newAgentParams"]], template: function ChatComponent_Template(rf, ctx) {
+}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "ngStyle", "config"], [3, "popupState", "currentAgent", "newAgentParams"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "dockClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "stop", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], [3, "closed", "popupState", "currentAgent", "newAgentParams"]], template: function ChatComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275listener("click", function ChatComponent_Template_div_click_0_listener() {
@@ -97247,8 +97275,8 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
       return ctx.toggleChat();
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(2, ChatComponent_Conditional_2_Template, 5, 12);
-    \u0275\u0275conditionalCreate(3, ChatComponent_Conditional_3_Template, 1, 3, "ep-epicstaff-agent-config", 2);
+    \u0275\u0275conditionalCreate(2, ChatComponent_Conditional_2_Template, 4, 12, "div", 2);
+    \u0275\u0275conditionalCreate(3, ChatComponent_Conditional_3_Template, 1, 3, "ep-epicstaff-agent-config", 3);
   }
   if (rf & 2) {
     \u0275\u0275advance();
@@ -97282,7 +97310,7 @@ var ChatComponent = _ChatComponent;
       EpicstaffAgentConfigComponent,
       ClickOutsideDirective,
       ResizableChatDirective
-    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.agents()"\n      [isMonoAgent]="isMonoAgent"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n      (stop)="onStopGenerating()"\n    />\n  </div>\n\n  <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div>\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    [newAgentParams]="newAgentParamsForConfig"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow: 0 2px 8px var(--ep-color-popup-shadow);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
+    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.agents()"\n      [isMonoAgent]="isMonoAgent"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (dockClicked)="onDockClick()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n      (stop)="onStopGenerating()"\n    />\n  </div>\n\n  <!-- <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div> -->\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    [newAgentParams]="newAgentParamsForConfig"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow: 0 2px 8px var(--ep-color-popup-shadow);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
   }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: ChatParentBridgeService }, { type: DateAdapter }], { uniqueUserId: [{
     type: Input
   }], userData: [{
