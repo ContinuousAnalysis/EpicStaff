@@ -88,8 +88,8 @@ services:
     image: realtime
     container_name: realtime
     build:
-      context: ./realtime
-      dockerfile: Dockerfile.realtime
+      context: .
+      dockerfile: ./realtime/Dockerfile.realtime
 
     environment:
       - KNOWLEDGE_SEARCH_GET_CHANNEL=knowledge:search:get
