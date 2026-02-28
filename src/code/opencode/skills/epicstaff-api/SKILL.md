@@ -1,7 +1,7 @@
 ---
 id: epicstaff
 name: EpicStaff Flow Management
-version: 1.33
+version: 2.33
 trigger: always_on
 triggers: [epicstaff, epic-staff, flows, sessions]
 scope: [api, cli, integration]
@@ -310,23 +310,10 @@ Every new node **must** have coordinates (`--x` and `--y`). If omitted, auto-pla
 **Rules (apply unless the user specifies otherwise):**
 
 1. **Every node must have explicit coordinates.** Check existing node positions first (`nodes` command or metadata) to determine proper placement.
-2. **Non-essential nodes stack vertically** — nodes that form one logical step, or auxiliary nodes that should not occupy their own step, are placed at the same X with incrementing Y (e.g. `Send reply (Telegram)` y=502, `Send reply to google chat` y=562, `Stream crew reply to GChat` y=647 — all at x=733).
+2. **Non-essential nodes stack vertically** — nodes that form one logical step, or auxiliary nodes that should not occupy their own step, are placed at the same X with incrementing Y.
 3. **Each new step starts at the same Y level as the main flow.** The primary Y baseline in flow 42 is around y=100–200. New steps advance in X.
-4. **Backward-connection nodes go up.** If a node connects back to an earlier step, place it at the Y level of the highest node it connects to (e.g. `Create a good reply (#1)` at y=-138 connects back up to the crew/orchestrator level).
+4. **Backward-connection nodes go up.** If a node connects back to an earlier step, place it at the Y level of the highest node it connects to.
 5. **Never move existing nodes without user permission.**
-
-**Example — flow 42 layout (sorted by X):**
-```
-x=  -566  Triggers (GChat, Telegram)        — stacked vertically
-x=  -148  Message Intake, Prepare Context    — stacked vertically
-x=   200  Orchestrator CDT                   — main routing step
-x=   733  Send reply nodes (3)               — stacked vertically
-x=  1229  Post-Send Router CDT
-x=  1634  Create a good reply (crew)         — y=-138 (backward connection, placed high)
-x=  1752  Coding Router CDT
-x=  2169  Stream Coding nodes + Manage Hist  — stacked vertically
-x=  2647  update message history
-```
 
 ### File Naming Convention (for push/pull/verify)
 - `cdt_<slug>_pre.py` — CDT pre_computation_code
@@ -335,63 +322,6 @@ x=  2647  update message history
 - `cdt_<slug>_prompts.json` — CDT prompts (dict keyed by prompt_id)
 - `node_<slug>.py` — Python node code
 - `webhook_<slug>.py` — Webhook trigger node code
-
----
-
-## Troubleshooting Checklist
-
-**IMPORTANT:** When investigating sessions, ALWAYS first check all recent sessions (`sessions -n 5`) to understand the full picture — concurrent sessions, routes taken, completion status. Never jump to conclusions from a single session.
-
-When a flow session fails or returns nothing, follow this order:
-
-### 1. Check the session messages
-```bash
-python3 epicstaff_tools.py -r -g <GRAPH_ID> sessions -n 3
-```
-Look for: `[error]` messages, premature `[graph_end]`, missing nodes in the trace.
-
-### 2. Verify CDT route maps
-```bash
-python3 epicstaff_tools.py -r -g <GRAPH_ID> route-map
-```
-If any CDT shows "NOT FOUND in metadata" or empty route_map with dock_visible groups, the **DB node_name doesn't match metadata node_name**.
-
-### 3. Check DB edges (non-CDT routing)
-```bash
-python3 epicstaff_tools.py -r -g <GRAPH_ID> edges
-```
-If 0 edges, the backend can't route between non-CDT nodes. DB edges are only for non-CDT routing.
-
-### 4. Check CDT prompts exist
-```bash
-python3 epicstaff_tools.py -r -g <GRAPH_ID> cdt-prompts
-```
-If a condition group references a `prompt_id` that doesn't exist, the expression will fail with "name 'X' is not defined".
-
-### 5. Check input maps
-```bash
-python3 epicstaff_tools.py -r -g <GRAPH_ID> cdt-code
-```
-If `pre_input_map` is empty or missing expected parameters, the pre-computation `main()` function won't receive its arguments (they'll default to None, or cause NameError if referenced outside the function).
-
-### 6. Compare with a known-good export
-```bash
-python3 epicstaff_tools.py -r -g <GRAPH_ID> export-compare <EXPORT_FILE>
-```
-Spot missing prompts, changed input maps, missing groups, or code drift.
-
-### 7. Three-way verify local files
-```bash
-python3 epicstaff_tools.py -r -g <GRAPH_ID> verify .my_epicstaff/flows/<GRAPH_ID>/
-```
-Ensures file, DB, and metadata are all in sync.
-
-### 8. Check OpenCode session state (for coding routes)
-```bash
-python3 epicstaff_tools.py -r oc-sessions
-python3 epicstaff_tools.py -r oc-status
-```
-If a coding session shows "Request queued", check if another flow session or manual OpenCode usage was holding the session busy. `oc-sessions` marks stale sessions (not updated in >5 min).
 
 ---
 
@@ -456,46 +386,21 @@ This updates all three in one shot: DB node name, metadata label/name, and all e
 
 Missing any of the three causes: `"Found edge starting at unknown node 'Old Name'"` at session start.
 
-### CDT Node IDs Change on Every UI Save
+### Gotchas
 
-Frontend deletes all CDT nodes and recreates them. **Never hardcode CDT DB IDs.**
+- **All node IDs change on every UI save.** Frontend deletes and recreates nodes. Never hardcode DB IDs — always query first.
+- **Non-CDT node ports must be `null`, not `[]`.** Frontend only auto-generates ports when `ports === null`. Empty array silently breaks connections.
+- **CDT ports are always regenerated** from condition groups. Port IDs: `{nodeId}_decision-route-{routeCode.toLowerCase()}`
+- **Prompts must be dict, not list.** `converter_service.py` calls `.items()` — lists crash.
+- **PATCH python_code without `libraries` wipes them.** Always include libraries in the payload.
+- **Agent `tool_ids` PATCH is destructive replace.** Always include ALL existing tool_ids.
+- **UI session viewer shows ALL state variables**, not the node's filtered input. Use `session-inspect <SESSION_ID>` to see actual node input.
+- **Session messages filter:** use `session_id=` (not `session=`). Wrong param silently returns ALL rows.
+- **Webhook/Telegram triggers hardcode `output_variable_path="variables"`** and `input_map="__all__"`. Metadata `output_variable_path` is ignored. To write into a DDD domain, return a nested dict: `{"request": {...}}`.
 
-### Non-CDT Node Ports Must Be `null`, NOT `[]`
+---
 
-Frontend only auto-generates ports when `node.ports === null`. Empty array `[]` silently breaks connections.
-
-### CDT Ports Are Always Regenerated
-
-Frontend unconditionally regenerates CDT ports from condition groups. Port IDs: `{nodeId}_decision-route-{routeCode.toLowerCase()}`
-
-### Prompts Must Be Dict, Not List
-
-`converter_service.py` calls `.items()` on prompts. Lists cause runtime crash.
-
-### Python Node Libraries Are Nested and Easy to Wipe
-
-PATCH `{"python_code": {"code": "..."}}` without `libraries` wipes them. Always include libraries.
-
-### Agent PATCH Wipes Tools
-
-`tool_ids` is a destructive replace. Always include ALL existing tool_ids when PATCHing an agent.
-
-### UI Session Viewer Shows ALL State Variables
-
-The frontend session viewer's "variables" section for a node shows **all** `state["variables"]` at that execution point — NOT the node's filtered `input`. This includes every other variable in state. To see what a node **actually received** as input, use `session-inspect`:
-```bash
-python3 epicstaff_tools.py -r session-inspect <SESSION_ID>
-```
-
-### Session Messages Filter
-
-Use `session_id=` (NOT `session=`). Wrong param silently returns ALL rows.
-
-### Webhook/Telegram Trigger Nodes Hardcode `output_variable_path`
-
-`WebhookTriggerNode` and `TelegramTriggerNode` constructors hardcode `output_variable_path="variables"` and `input_map="__all__"`. The metadata `output_variable_path` is **ignored by the runtime**. To write into a DDD domain (e.g. `variables.request`), the webhook code itself must return a nested dict: `{"request": {"space_name": "...", ...}}`. The flat merge at `variables` level then creates/replaces `variables.request`.
-
-### Code Agent Node
+## Code Agent & EpicChat
 
 The Code Agent node replaces manual OpenCode management (session creation, polling, streaming) with a single configurable node. The "code" container runs an Instance Manager (port 4080) that spawns OpenCode instances on demand per LLM config.
 
@@ -506,7 +411,7 @@ The Code Agent node replaces manual OpenCode management (session creation, polli
 - **Session streaming**: Emits `GraphMessage` via `StreamWriter` → Redis → frontend + `run_session` callers
 - **CLI**: `create-code-agent-node` — creates DB record + metadata entry in one command
 
-#### EpicChat Integration (Structured Output)
+### EpicChat Integration (Structured Output)
 
 Code Agent nodes can return **structured JSON** to the EpicChat widget instead of plain text. This enables rich responses with markdown, tables, action buttons, links, and suggestion chips.
 
@@ -524,7 +429,7 @@ Code Agent nodes can return **structured JSON** to the EpicChat widget instead o
 - `ep_table` (array of objects) — Structured data tables with column definitions and rows
 - `action_message` (array of actions) — Interactive elements: buttons, links, prompt suggestions
 
-#### EpicChat Actions (user_input vs user_action)
+### EpicChat Actions (user_input vs user_action)
 
 EpicChat sends two different context fields depending on how the user interacts:
 
@@ -550,7 +455,7 @@ The Code Agent's `get_input()` uses `set_missing_variables=True` so whichever fi
 - If only `action` has text → action text becomes the prompt
 - If `action` matches a build trigger → mode switches to `build` (see below)
 
-#### Build Mode Pattern
+### Build Mode Pattern
 
 Code Agent nodes run in their configured `agent_mode` (usually `plan` — read-only reasoning). To allow file creation/editing, the agent needs `build` mode. Instead of hardcoding `agent_mode=build`, use the **build permission pattern**:
 
@@ -560,71 +465,47 @@ Code Agent nodes run in their configured `agent_mode` (usually `plan` — read-o
    {
      "message": "Here's my plan: ...",
      "action_message": [
-       {"type": "button", "text": "Allow build mode", "action": "sendAction"}
+       {"type": "button", "text": "Allow build mode (3 turns)", "action": "sendAction"}
      ]
    }
    ```
-3. User clicks **"Allow build mode"** → EpicChat sends `user_action: "Allow build mode"`
-4. The Code Agent node detects this trigger and:
-   - Overrides `agent_mode` to `"build"` for this turn only
-   - Sends the canned prompt: *"I have given you build permissions. Proceed with the plan."*
-5. The agent executes in build mode, then returns to plan mode on the next regular message
+3. User clicks → EpicChat sends `user_action: "Allow build mode (3 turns)"`
+4. The Code Agent node detects the trigger, overrides `agent_mode` to `"build"`, and sends the prompt
+5. The agent executes in build mode; remaining turns carry over automatically
 
-**The ONLY recognized trigger text is `"Allow build mode"`** (case-insensitive). Any other action text is passed as a regular prompt.
-
-#### Example: Minimal EpicChat Code Agent Flow
-
-```bash
-# 1. Create flow
-python3 epicstaff_tools.py create-flow "My EpicChat Bot" --description "EpicChat widget → Code Agent"
-
-# 2. Create Code Agent node with stream handler for EpicChat
-python3 epicstaff_tools.py -g <ID> create-code-agent-node "Code Agent" \
-  --llm-config 4 --agent-mode plan \
-  --system-prompt "You are a helpful coding assistant." \
-  --code-file stream_handler.py \
-  --libraries "google-auth,google-api-python-client" \
-  --output-variable-path variables.result \
-  --x 400 --y 100
-
-# 3. Wire start → agent
-python3 epicstaff_tools.py -g <ID> create-edge "__start__" "Code Agent"
-python3 epicstaff_tools.py -g <ID> init-metadata
-
-# 4. PATCH input_map to include both prompt and action
-#    (via UI or API — MUST include both for EpicChat)
-
-# 5. Set output_schema on the node (via UI Output Schema tab, or API PATCH)
-#    Default: docs/epicchat-response.schema.json
-
-# 6. Configure start node variables:
-#    - context: {} (populated by EpicChat at runtime)
-#    - result: {} (written by Code Agent output)
+**Option buttons** — when proposing multiple approaches, append ` - <label>` to the trigger:
+```json
+{
+  "action_message": [
+    {"type": "button", "text": "Allow build mode (3 turns) - Fix existing code", "action": "sendAction"},
+    {"type": "button", "text": "Allow build mode (3 turns) - Rewrite from scratch", "action": "sendAction"}
+  ]
+}
 ```
+The backend extracts the label and forwards it: *"The user selected: Fix existing code. Proceed."*
 
-### OpenCode Session Management (Legacy)
+**Trigger format:** `"Allow build mode"` (1 turn), `"Allow build mode (N turns)"`, or `"Allow build mode (N turns) - <option>"`. Case-insensitive. Any action text that doesn't match is passed as a regular prompt.
 
-- OpenCode runs inside the `sandbox` container on port 4096
-- Sessions are reused per chat_id (title=`epicstaff_{chat_id}`)
-- The Coding Router pre-computation (`cdt_coding_router_pre.py`) finds/creates the session
-- The streaming node (`node_stream_coding_gchat.py`) calls `_wait_for_idle` before posting
-- **Active-busy** (concurrent flow session running) → streaming node shows "Request queued" and waits — this is correct behavior
-- **Stale-busy** (abandoned from manual use, >5 min old) → pre-computation detects and aborts automatically
-- The OpenCode session is shared between flow usage and manual usage — stale state from manual use can cause "Request queued" delays
-- `oc-abort` can manually clear a stuck session
+### EpicChat-Specific Steps
 
-### Flow Creation Checklist
+1. PATCH `input_map` to include both `prompt` and `action` (MUST include both — see EpicChat Actions above)
+2. Set `output_schema` on the node (UI Output Schema tab or API PATCH; default: `docs/epicchat-response.schema.json`)
+3. Configure start node variables: `context: {}` (populated by EpicChat at runtime), `result: {}` (written by Code Agent output)
+
+---
+
+## Creating Flows
 
 **Every new flow must satisfy ALL of the following before it is considered complete:**
 
-#### 1. Start Node Variables — Declare Everything
+### 1. Start Node Variables — Declare Everything
 
 The `__start__` node's `variables` dict is the initial state for the entire flow. **Every variable that any node reads via `input_map` must be declared here**, even if its initial value is `null`. If a variable is missing from start, the flow will silently receive `None` at runtime.
 
 - Use the **Domain dialog** (click the start node) or PATCH the start node via API to set variables.
 - Review every node's `input_map` and trace each `variables.X` path back to start.
 
-#### 2. DDD-Style Dict Variables
+### 2. DDD-Style Dict Variables
 
 Prefer **grouped dict variables** that resemble Domain-Driven Design objects. This keeps the variable namespace clean and lets nodes access related data via dot notation.
 
@@ -652,18 +533,43 @@ Prefer **grouped dict variables** that resemble Domain-Driven Design objects. Th
 
 Then `input_map` references: `"service_account_info": "variables.gchat.service_account_info"`.
 
-#### 3. Node Libraries
+### 3. Node Libraries
 
 Every `create-node`, `create-webhook`, and `create-code-agent-node` command must include `--libraries` if the node code imports anything outside stdlib. `init-metadata` does NOT auto-detect or carry over libraries — they come solely from the DB node's `python_code.libraries` or `libraries` field.
 
-#### 4. Input Maps and Output Paths
+### 4. Input Maps and Output Paths
 
 - **All node types**: `init-metadata` reads `input_map` and `output_variable_path` from the DB. If the DB values are empty, Python nodes fall back to auto-parsing `main()` parameters → `variables.<param>`.
 - **Python nodes**: Auto-parsed `input_map` works for simple cases but may need manual adjustment for DDD-style nested paths. `output_variable_path` defaults to `"variables"`.
 - **Project (crew) nodes**: `input_map` and `output_variable_path` must be set on the DB crew node (via API or UI) before running `init-metadata`. The metadata `data.id` is populated from the crew ID.
 - **Code Agent nodes**: The Code Agent runtime passes all `input_map` values as the stream handler `context` dict.
 
-#### 5. `init-metadata` Limitations
+### 4a. Python Node `main()` Signature Rules (CRITICAL)
+
+The runtime auto-generates `input_map` from the `main()` parameter names: each param `foo` maps to `variables.foo`. This means the parameter names **are** the input map keys.
+
+**Rules:**
+1. `main()` must accept **individual, granular parameters** — NEVER a broad `variables` or `**kwargs` dict.
+2. Each parameter should map to the **smallest piece of state** the node actually needs.
+3. Parameter names must match the DDD-style variable paths in the start node.
+4. Use plain types (`str`, `dict`, `list`, `int`) — not `Dict[str, Any]` catch-alls.
+
+**BAD — broad mapping (causes `variables = variables.variables`):**
+```python
+def main(variables: Dict[str, Any]) -> Dict[str, Any]:
+    config = variables["jira"]  # deeply coupled to state structure
+```
+
+**GOOD — granular parameters (auto-maps to `jira = variables.jira`):**
+```python
+def main(jira: dict) -> dict:
+    base_url = jira["base_url"]
+    email = jira["email"]
+    # ...
+```
+
+
+### 5. `init-metadata` Limitations
 
 `init-metadata` rebuilds the metadata JSON from DB state. It handles:
 - ✅ Node positions (auto-layout from edges)
@@ -683,45 +589,41 @@ It does **NOT** handle:
 ### End-to-End Mini Recipe
 
 ```bash
-# 1. Create flow + start node (automatic)
+# 1. Create flow
 python3 epicstaff_tools.py create-flow "My Flow" --description "..."
 
 # 2. Create nodes (always include --libraries if needed)
-python3 epicstaff_tools.py -r -g <ID> nodes
-python3 epicstaff_tools.py -g <ID> create-webhook "My Webhook" --code-file wh.py --webhook-path "my_wh"
 python3 epicstaff_tools.py -g <ID> create-node "Process" --code-file process.py --libraries "requests,httpx"
 python3 epicstaff_tools.py -g <ID> create-code-agent-node "Agent" --llm-config 2 \
   --code-file handler.py --libraries "google-auth,google-api-python-client"
 
-# 3. Wire edges
+# 3. Wire edges + generate metadata
 python3 epicstaff_tools.py -g <ID> create-edge "__start__" "Process"
-python3 epicstaff_tools.py -g <ID> create-edge "My Webhook" "Process"
 python3 epicstaff_tools.py -g <ID> create-edge "Process" "Agent"
 python3 epicstaff_tools.py -g <ID> init-metadata
 
-# 4. Set start node variables (DDD-style dicts)
-#    Use Domain dialog or PATCH /startnodes/<start_id>/
-
-# 5. Verify input_maps, adjust Code Agent input_map manually
-python3 epicstaff_tools.py -r -g <ID> get --json | python3 -c "..."
-
+# 4. Set start node variables (DDD-style dicts) via Domain dialog or API
+# 5. For EpicChat: PATCH input_map + output_schema (see EpicChat-Specific Steps)
 # 6. Verify + test
-python3 epicstaff_tools.py -r -g <ID> route-map
-python3 epicstaff_tools.py -g <ID> pull
-python3 epicstaff_tools.py -r -g <ID> verify .my_epicstaff/flows/<ID>/
 python3 epicstaff_tools.py -r -g <ID> test-flow --verify
 ```
 
 ---
 
-## Updating This Skill
+## Troubleshooting
 
-If you discover new information about how EpicStaff flows, sessions, or APIs work that is NOT covered here, **ask the user for permission to update this skill file**. Include:
-- What you learned
-- Where in the codebase you found it
-- Proposed addition to this file
+**Always check recent sessions first** (`sessions -n 5`) — understand concurrent sessions, routes taken, completion status before diving in.
 
-This keeps the skill accurate and saves debugging time in future sessions.
+When a flow fails or returns nothing, follow this order:
+
+1. **`sessions -n 3`** — look for `[error]`, premature `[graph_end]`, missing nodes in trace
+2. **`route-map`** — CDT shows "NOT FOUND in metadata" → DB node_name ≠ metadata name
+3. **`edges`** — 0 edges = no non-CDT routing possible
+4. **`cdt-prompts`** — missing prompt_id → "name 'X' is not defined" error
+5. **`cdt-code`** — empty `pre_input_map` → main() won't receive arguments (None/NameError)
+6. **`export-compare <FILE>`** — spot missing prompts, changed input maps, code drift
+7. **`verify .my_epicstaff/flows/<ID>/`** — ensures file ↔ DB ↔ metadata are in sync
+8. **`oc-sessions` / `oc-status`** — stuck/stale OpenCode sessions ("Request queued")
 
 ---
 
@@ -751,7 +653,7 @@ Gotchas: one GraphRAG per collection, LLM field is read-only (use Django shell),
 
 ## Lessons Learned
 
-> **Self-improving skill:** When you encounter a problem running a command or make a mistake due to missing knowledge about the system, **add a note here** so the same mistake is never repeated and commands are succeful on first run. Where possible add hints to returns of commands to make them more useful and not clutter SKILL.md.
+> **Self-improving skill:** When you encounter a problem or discover new information about the system, **add a note here** so the same mistake is never repeated. If the discovery is significant, **ask the user for permission to update the relevant section above**. Where possible, add hints to command returns to keep SKILL.md lean.
 
 - **Decision Table nodes have NO edges — only metadata connections.** DT outputs (condition group `next_node`, `default_next_node`, `next_error_node`) are wired via metadata connections, not via the `edge_list` DB table. The `edges` command won't show DT routing. Use `connections` to see DT wiring. When rewiring DT outputs, use `patch-dt` to update condition groups — do NOT try to create/delete edges for DT outputs.
 - **Python node API endpoint is `/pythonnodes/`** (no hyphen), not `/python-nodes/`. Other endpoints: `/code-agent-nodes/`, `/crewnodes/`, `/llmnodes/`.
