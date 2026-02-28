@@ -290,6 +290,7 @@ services:
       context: .
       dockerfile: ./sandbox/Dockerfile.sandbox
     container_name: sandbox
+    init: true
     environment:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -318,6 +319,7 @@ services:
       context: .
       dockerfile: ./code/Dockerfile.code
     container_name: code
+    init: true
     environment:
       - DJANGO_API_URL=${DJANGO_API_URL}
       - CODE_MANAGER_PORT=${CODE_MANAGER_PORT}
@@ -329,6 +331,7 @@ services:
       - CONTAINER_SAVEFILES_PATH=${CONTAINER_SAVEFILES_PATH}
     volumes:
       - ${CREW_SAVEFILES_PATH}:${CONTAINER_SAVEFILES_PATH}
+      - code_instances:${CODE_INSTANCES_DIR}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -418,6 +421,8 @@ volumes:
   
   media_data:
     external: true
+
+  code_instances:
 
 networks:
   backend-network:

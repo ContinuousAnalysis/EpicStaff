@@ -93,6 +93,17 @@ class CodeAgentNode(BaseNode):
         m = re.search(r'\((\d+)\s*turns?\)', action_text, re.IGNORECASE)
         return int(m.group(1)) if m else 1
 
+    @staticmethod
+    def _parse_build_option(action_text: str) -> str:
+        """Extract option suffix from action like 'Allow build mode (3 turns) - Fix code'.
+        Returns the option text (e.g. 'Fix code') or empty string."""
+        import re
+        m = re.search(
+            r'allow\s+build\s+mode(?:\s*\(\d+\s*turns?\))?\s*-\s*(.+)',
+            action_text, re.IGNORECASE,
+        )
+        return m.group(1).strip() if m else ""
+
     def get_input(self, state):
         if self.input_map == "__all__":
             return state["variables"]
@@ -396,7 +407,11 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             effective_mode = "build"
             build_turns_remaining = granted - 1  # this turn uses one
             if not prompt:
-                prompt = f"I have given you build permissions for {granted} turn(s). Proceed with the plan."
+                option = self._parse_build_option(action)
+                if option:
+                    prompt = f"I have given you build permissions for {granted} turn(s). The user selected: {option}. Proceed."
+                else:
+                    prompt = f"I have given you build permissions for {granted} turn(s). Proceed with the plan."
             logger.info(f"[CodeAgentNode] Build mode granted for {granted} turn(s) by action: {action!r}")
         elif carry_over_turns > 0:
             effective_mode = "build"

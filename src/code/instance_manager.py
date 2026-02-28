@@ -240,6 +240,7 @@ def spawn_instance(config_id: int) -> Instance:
 
     if not healthy:
         proc.kill()
+        proc.wait()
         raise RuntimeError(f"OpenCode instance on port {port} failed to start")
 
     now = time.time()
@@ -268,13 +269,50 @@ def stop_instance(config_id: int) -> bool:
         print(f"[InstanceManager] Stopped instance config={config_id} port={inst.port} pid={inst.pid}")
     except ProcessLookupError:
         print(f"[InstanceManager] Instance config={config_id} pid={inst.pid} already dead")
+    # Reap the child to prevent zombies
+    try:
+        os.waitpid(inst.pid, 0)
+    except ChildProcessError:
+        pass
     return True
 
 
+def _is_alive(inst: Instance) -> bool:
+    """Check if an instance process exists and responds to health check."""
+    try:
+        os.kill(inst.pid, 0)
+    except ProcessLookupError:
+        return False
+    try:
+        req = urllib.request.Request(f"http://localhost:{inst.port}/global/health")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read())
+            return data.get("healthy", False)
+    except Exception:
+        return False
+
+
+def _reap_zombies():
+    """Reap any zombie child processes."""
+    while True:
+        try:
+            pid, _ = os.waitpid(-1, os.WNOHANG)
+            if pid == 0:
+                break
+            print(f"[InstanceManager] Reaped zombie pid={pid}")
+        except ChildProcessError:
+            break
+
+
 def reap_idle():
-    """Kill instances that have been idle too long."""
+    """Kill idle instances and remove dead ones."""
+    _reap_zombies()
     now = time.time()
     for inst in pool.all():
+        if not _is_alive(inst):
+            print(f"[InstanceManager] Removing dead instance config={inst.llm_config_id} pid={inst.pid}")
+            pool.remove(inst.llm_config_id)
+            continue
         if (now - inst.last_used) > IDLE_TIMEOUT:
             print(f"[InstanceManager] Reaping idle instance config={inst.llm_config_id}")
             stop_instance(inst.llm_config_id)
@@ -304,8 +342,11 @@ class ManagerHandler(BaseHTTPRequestHandler):
 
             inst = pool.get(config_id)
             if inst:
-                self._json_response({"port": inst.port, "status": "ready", **asdict(inst)})
-                return
+                if _is_alive(inst):
+                    self._json_response({"port": inst.port, "status": "ready", **asdict(inst)})
+                    return
+                print(f"[InstanceManager] Cached instance config={config_id} is dead, respawning")
+                pool.remove(config_id)
 
             # Spawn new instance
             try:

@@ -124,15 +124,15 @@ When the user clicks **"Process tables"** (`processTables` action), the widget s
 |---|---|
 | `"sendAction"` | Sends `text` as `user_action` to the flow |
 | `"sendButtonTextWithParams"` | Sends `text` as `user_action` + `params` as context extras |
-| `"switchAgent"` | Switches to another flow. `params: {"flow_id": 55, "url": "..."}` |
+| `"switchAgent"` | Switches to another flow. `params: {"flow_id": <flow_id>, "url": "..."}` |
 | `"processTables"` | Sends edited table data back to the flow |
 | `"link"` | Opens `params.url` in browser |
 | `"downloadEpTableCsv"` | Downloads table as CSV |
 | `"downloadEpTableExcel"` | Downloads table as XLSX |
 | `"resetTable"` | Reverts table edits to original |
 | `"addTokens"` | Placeholder for token purchase (not implemented) |
-| `"openFlow"` | Emits app event to open flow designer. `params: {"flowId": 42}` |
-| `"openNode"` | Emits app event to open a specific node. `params: {"flowId": 42, "nodeId": 123}` |
+| `"openFlow"` | Emits app event to open flow designer. `params: {"flowId": <flow_id>}` |
+| `"openNode"` | Emits app event to open a specific node. `params: {"flowId": <flow_id>, "nodeId": "<node_uuid>"}` |
 | `"refreshCache"` | Emits app event to refresh frontend cache |
 
 ### Button sequencing
@@ -210,3 +210,35 @@ Set `sse_visible: false` (via `stream_config` checkboxes) to hide specific messa
 ### `final_reply` stream_config option
 
 When `stream_config.final_reply` is `false`, the finish message is tagged `sse_visible=false` and suppressed on the filtered endpoint — preventing duplicate display when the Thinking expander already showed the response.
+
+---
+
+## 7. Widget Input Behavior
+
+| Feature | Behavior |
+|---|---|
+| **Shift-Enter** | Inserts a newline in the input field |
+| **Ctrl-Z** | Undo in the input field |
+| **Up arrow** | Does NOT recall previous message (disabled) |
+| **Click outside** | Does NOT hide the chat panel |
+
+---
+
+## 8. CSS Custom Properties
+
+The widget exposes CSS custom properties for theming. Set them on the `<epicstaff-chat>` element.
+
+| Property | Description |
+|---|---|
+| `--ep-color-surface` | Main background |
+| `--ep-color-surface-alt` | Alternate background (e.g. answer bubbles) |
+| `--ep-chat-bg-question` | User message bubble background |
+| `--ep-chat-bg-answer` | Agent message bubble background |
+| `--ep-color-text` | Primary text color |
+| `--ep-color-text-muted` | Secondary text color |
+| `--ep-color-border` | Border color |
+| `--ep-color-accent` | Accent / link color |
+| `--ep-color-shadow` | Shadow color |
+| `--ep-color-scrollbar` | Scrollbar thumb color |
+| `--ep-color-disabled-bg` | Disabled element background |
+| `--ep-color-danger-soft` | Soft danger/accent color |
