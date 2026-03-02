@@ -260,6 +260,8 @@ interface InputMapPair {
                     display: flex;
                     flex-direction: column;
                     gap: 1rem;
+                    overflow: visible;
+
                 }
             }
 
@@ -426,9 +428,9 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
         const librariesArray = this.form.value.libraries
             ? this.form.value.libraries
-                  .split(',')
-                  .map((lib: string) => lib.trim())
-                  .filter((lib: string) => lib.length > 0)
+                .split(',')
+                .map((lib: string) => lib.trim())
+                .filter((lib: string) => lib.length > 0)
             : [];
 
         return {

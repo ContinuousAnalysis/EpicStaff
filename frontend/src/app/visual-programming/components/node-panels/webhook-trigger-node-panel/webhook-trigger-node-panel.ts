@@ -177,6 +177,7 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
                 min-height: 0;
                 display: flex;
                 flex-direction: column;
+                overflow: visible;
             }
 
             .section-header {
