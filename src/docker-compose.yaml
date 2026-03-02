@@ -66,8 +66,7 @@ services:
       - DJANGO_HOST=${DJANGO_HOST:-localhost}
       - DJANGO_PORT=${DJANGO_PORT:-8000}
     volumes:
-      - crew_config:/home/user/root/app/env_config
-      - media_data:/app/media
+      - media_data:/app/src/django_app/media
 
     networks:
       - backend-network
@@ -271,7 +270,6 @@ services:
     volumes:
       - ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH}
       - ${DOCKER_BIN_PATH}:${DOCKER_BIN_PATH}
-      - crew_config:/home/user/root/app/env_config/
     networks:
       - backend-network
     tty: true
@@ -386,9 +384,6 @@ volumes:
     external: true
 
   crew_pgdata:
-    external: true
-      
-  crew_config:
     external: true
   
   media_data:

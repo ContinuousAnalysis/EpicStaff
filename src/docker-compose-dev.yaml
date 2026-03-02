@@ -61,7 +61,6 @@ services:
     volumes:
       - ./django_app:/home/user/root/app/django_app:cached
       - ./shared:/home/user/root/app/shared:cached
-      - crew_config:/home/user/root/app/env_config
       - media_data:/app/media
 
     networks:
@@ -256,7 +255,6 @@ services:
     volumes:
       - ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH}
       - ${DOCKER_BIN_PATH}:${DOCKER_BIN_PATH}
-      - crew_config:/home/user/root/app/env_config/
       - ./crew/callbacks:/home/user/root/app/src/crew/callbacks:cached
       - ./crew/config:/home/user/root/app/src/crew/config:cached
 
@@ -370,9 +368,6 @@ volumes:
     external: true
 
   crew_pgdata:
-    external: true
-      
-  crew_config:
     external: true
   
   media_data:
