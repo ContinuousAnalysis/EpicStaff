@@ -1,9 +1,11 @@
 import asyncio
+from typing import Optional
+
 from loguru import logger
 from pyngrok import ngrok
 from pyngrok.conf import PyngrokConfig
+
 from app.providers.base import AbstractTunnelProvider
-from typing import Optional
 
 
 class NgrokTunnel(AbstractTunnelProvider):
@@ -47,9 +49,6 @@ class NgrokTunnel(AbstractTunnelProvider):
             self._monitor_task = asyncio.create_task(self._monitor_connection())
 
     async def _establish_connection(self):
-        """
-        Internal method to perform the actual socket/ngrok connection.
-        """
         async with self._lock:
             if not self._is_running or self._tunnel is not None:
                 return
@@ -59,13 +58,13 @@ class NgrokTunnel(AbstractTunnelProvider):
             f"(Region: {self._region or 'us'})..."
         )
 
-        config = PyngrokConfig(
+        self._config = PyngrokConfig(
             auth_token=self._auth_token, region=self._region if self._region else "us"
         )
 
         def _start():
             return ngrok.connect(
-                self._port, "http", domain=self._domain, pyngrok_config=config
+                self._port, "http", domain=self._domain, pyngrok_config=self._config
             )
 
         try:
@@ -73,14 +72,14 @@ class NgrokTunnel(AbstractTunnelProvider):
 
             async with self._lock:
                 if not self._is_running:
-                    # RACE CONDITION PREVENTED:
-
                     print(
                         "Disconnect called during connection! Rolling back new tunnel..."
                     )
 
                     def _rollback():
-                        ngrok.disconnect(new_tunnel.public_url)
+                        ngrok.disconnect(
+                            new_tunnel.public_url, pyngrok_config=self._config
+                        )
 
                     await asyncio.to_thread(_rollback)
                     return
@@ -124,9 +123,6 @@ class NgrokTunnel(AbstractTunnelProvider):
             self._is_running = False
 
     async def disconnect(self):
-        """
-        Gracefully shut down the tunnel and stop the monitoring background task.
-        """
         print(f"Disconnecting ngrok tunnel on port {self._port}...")
         self._is_running = False
         if self._monitor_task:
@@ -143,8 +139,7 @@ class NgrokTunnel(AbstractTunnelProvider):
                 url_to_disconnect = self._tunnel.public_url
 
                 def _close():
-                    ngrok.disconnect(url_to_disconnect)
-                    ngrok.kill()
+                    ngrok.disconnect(url_to_disconnect, pyngrok_config=self._config)
 
                 try:
                     await asyncio.to_thread(_close)
