@@ -43,6 +43,7 @@
                             tooltipText="Select the ngrok config. Full URL is shown below."
                             formControlName="ngrok_webhook_config"
                             [items]="ngrokConfigSelectItems()"
+                            (changed)="ngrokConfigId.set($event)"
                         />
                     </div>
 
@@ -60,26 +61,7 @@
                         </div>
 
                         <div class="webhook-status__container">
-                            @switch (webhookStatus()) {
-                                @case ('pending') {
-                                    <div class="webhook-status__main">
-                                        <app-icon
-                                            icon="ui/status-idle"
-                                            size="0.75rem"
-                                        />
-                                        <span>Pending launch</span>
-                                    </div>
-                                }
-                                @case ('registering') {
-                                    <div class="webhook-status__main">
-                                        <app-icon
-                                            class="webhook-status__icon--registering"
-                                            icon="ui/status-pending"
-                                            size="0.75rem"
-                                        />
-                                        <span>Registering</span>
-                                    </div>
-                                }
+                            @switch (webhookStatusDisplay()) {
                                 @case (WebhookStatus.FAIL) {
                                     <div class="webhook-status__main">
                                         <app-icon

@@ -50,7 +50,7 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
     ngrokConfigsLoading = signal<boolean>(false);
     webhookPath = signal<string | null>(null);
-    ngrokConfigUrl = signal<string | null>(null);
+    ngrokConfigId = signal<number | null | undefined>(null);
     loadingTunnel = signal<boolean>(false);
     ngrokConfigs = this.ngrokStorageService.configs;
 
@@ -58,8 +58,15 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
     initialPythonCode: string = '';
     codeEditorHasError: boolean = false;
 
+    selectedNgrokConfigUrl = computed<string | null>(() => {
+        const config = this.ngrokConfigs().find(c => c.id === this.ngrokConfigId());
+
+        if (!config || !config.webhook_full_url) return null;
+
+        return this.normalizeWebhookBase(config.webhook_full_url);
+    });
     webhookUrlDisplay = computed<string | null>(() => {
-        const configUrl = this.ngrokConfigUrl();
+        const configUrl = this.selectedNgrokConfigUrl();
         const path = this.webhookPath();
 
         if (!configUrl || !path) return null;
@@ -79,8 +86,8 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
     }
 
     ngOnChanges(changes: SimpleChanges) {
-        this.ngrokConfigUrl.set(null);
-        this.getTunnel();
+        const id = this.node().data.webhook_trigger?.ngrok_webhook_config;
+        this.ngrokConfigId.set(id);
     }
 
     private getNgrokConfigs(): void {
@@ -92,29 +99,6 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
                 error: () => this.toastService.error('Failed to load Ngrok configs.'),
                 complete: () => this.ngrokConfigsLoading.set(false),
             })
-    }
-
-    private getTunnel() {
-        const id = this.node().data.webhook_trigger?.ngrok_webhook_config;
-        const path = this.node().data.webhook_trigger?.path;
-        if (!id || !path) return;
-        this.loadingTunnel.set(true);
-
-        this.ngrokStorageService.getConfigById(id)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response) => {
-                    if (response.webhook_full_url) {
-                        this.ngrokConfigUrl.set(this.normalizeWebhookBase(response.webhook_full_url));
-                    } else {
-                        this.ngrokConfigUrl.set(null);
-                    }
-                },
-                error: () => {
-                    this.ngrokConfigUrl.set(null);
-                },
-                complete: () => this.loadingTunnel.set(false),
-            });
     }
 
     get activeColor(): string {
@@ -150,14 +134,6 @@ export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTrigg
         this.pythonCode = this.node().data.python_code.code || '';
         this.initialPythonCode = this.pythonCode;
         return form;
-    }
-
-    onNgrokConfigChange(id: number): void {
-        const config = this.ngrokConfigs().find(c => c.id === id);
-
-        if (!config || !config.webhook_full_url) return;
-
-        this.ngrokConfigUrl.set(this.normalizeWebhookBase(config.webhook_full_url))
     }
 
     createUpdatedNode(): WebhookTriggerNodeModel {

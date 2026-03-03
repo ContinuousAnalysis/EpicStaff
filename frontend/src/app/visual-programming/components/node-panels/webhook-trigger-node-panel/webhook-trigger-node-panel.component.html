@@ -34,7 +34,7 @@
                             tooltipText="Select the ngrok config. Full URL is shown below."
                             formControlName="ngrok_webhook_config"
                             [items]="ngrokConfigSelectItems()"
-                            (changed)="onNgrokConfigChange($event)"
+                            (changed)="ngrokConfigId.set($event)"
                         />
                         <div class="webhook-url-display">
                             @if (webhookUrlDisplay(); as url) {

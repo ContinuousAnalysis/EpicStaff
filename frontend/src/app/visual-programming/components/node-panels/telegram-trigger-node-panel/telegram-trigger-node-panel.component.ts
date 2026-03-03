@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, signal } from "@angular/core";
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    inject,
+    input,
+    OnChanges,
+    OnInit,
+    signal, SimpleChanges
+} from "@angular/core";
 import {
     SelectComponent,
     SelectItem,
@@ -7,6 +17,7 @@ import {
     AppIconComponent,
     JsonEditorComponent,
 } from "@shared/components";
+import { startWith } from "rxjs";
 import { NgrokConfigStorageService } from "../../../../features/settings-dialog/services/ngrok-config/ngrok-config-storage.service";
 import { ToastService } from "../../../../services/notifications";
 import { BaseSidePanel } from "../../../core/models/node-panel.abstract";
@@ -43,7 +54,7 @@ import { WEBHOOK_NAME_PATTERN } from "../webhook-trigger-node-panel/webhook-trig
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTriggerNodeModel> implements OnInit {
+export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTriggerNodeModel> implements OnInit, OnChanges {
     public readonly isExpanded = input<boolean>(false);
 
     private dialog = inject(Dialog);
@@ -51,9 +62,25 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
     private toastService = inject(ToastService);
     private ngrokStorageService = inject(NgrokConfigStorageService);
 
-    webhookStatus = signal<WebhookStatus | 'pending' | 'registering'>('pending');
+    ngrokConfigs = this.ngrokStorageService.configs;
     ngrokConfigsLoading = signal<boolean>(false);
+    ngrokConfigId = signal<number | null | undefined>(null);
     selectedFields = signal<DisplayedTelegramField[]>([]);
+    webhookPath = signal<string | null>(null);
+
+    selectedNgrokConfigValid = computed<boolean>(() => {
+        const config = this.ngrokConfigs().find(c => c.id === this.ngrokConfigId());
+
+        if (!config || !config.webhook_full_url) return false;
+
+        return true;
+    });
+    webhookStatusDisplay = computed<WebhookStatus>(() => {
+        const configValid = this.selectedNgrokConfigValid();
+        const path = this.webhookPath();
+        if (!configValid || !path) return WebhookStatus.FAIL;
+        return WebhookStatus.SUCCESS;
+    });
 
     jsonValues = computed(() => {
         const checkedItemsObj = this.selectedFields().reduce<Record<string, any>>((acc, field) => {
@@ -88,28 +115,11 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
 
     ngOnInit() {
         this.getNgrokConfigs();
-        this.getTunnelStatus();
     }
 
-    private getTunnelStatus(): void {
+    ngOnChanges(changes: SimpleChanges) {
         const id = this.node().data.webhook_trigger?.ngrok_webhook_config;
-        if (!id) {
-            this.webhookStatus.set(WebhookStatus.FAIL);
-            return;
-        }
-
-        this.ngrokStorageService.getConfigById(id)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (res) => {
-                    if (res.webhook_full_url) {
-                        this.webhookStatus.set(WebhookStatus.SUCCESS)
-                    } else {
-                        this.webhookStatus.set(WebhookStatus.FAIL)
-                    }
-                },
-                error: () => this.webhookStatus.set(WebhookStatus.FAIL)
-            })
+        this.ngrokConfigId.set(id);
     }
 
     private getNgrokConfigs(): void {
@@ -149,6 +159,15 @@ export class TelegramTriggerNodePanelComponent extends BaseSidePanel<TelegramTri
             ngrok_webhook_config: [this.node().data.webhook_trigger?.ngrok_webhook_config || null],
             fields: [this.node().data.fields || []],
         });
+        form
+            .get('webhook_trigger_path')
+            ?.valueChanges.pipe(
+            startWith(form.get('webhook_trigger_path')?.value ?? ''),
+            takeUntilDestroyed(this.destroyRef)
+        )
+            .subscribe((value: string | null) => {
+                this.webhookPath.set(value);
+            });
 
         return form;
     }
