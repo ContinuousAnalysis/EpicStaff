@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Optional
+import sys
 from app.request_models import WebhookConfigData
 from app.services.tunnel_registry import TunnelRegistry, get_tunnel_registry
 from fastapi import Depends, FastAPI
@@ -17,7 +17,6 @@ from loguru import logger
 
 
 async def listen_redis(redis_service: RedisService, tunnel_registry: TunnelRegistry):
-
     logger.info(
         f"Subscribed to channel '{settings.REDIS_TUNNEL_CONFIG_CHANNEL}' for registering webhook tunnels."
     )
@@ -28,7 +27,7 @@ async def listen_redis(redis_service: RedisService, tunnel_registry: TunnelRegis
         async for message in pubsub.listen():
             if message["type"] == "message":
                 try:
-                    logger.debug(f"Received message: {message['data']}")
+                    logger.debug("Received webhook message")
                     data = json.loads(message["data"])
                     webhook_config_data = WebhookConfigData(**data)
 
@@ -44,7 +43,6 @@ async def listen_redis(redis_service: RedisService, tunnel_registry: TunnelRegis
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
     # --- STARTUP ---
     logger.info("Application starting up...")
 
@@ -54,7 +52,12 @@ async def lifespan(app: FastAPI):
     redis_listener_task = asyncio.create_task(
         listen_redis(redis_service, tunnel_registry)
     )
-
+    n_received = await redis_service.client.publish(
+        settings.REQUEST_WEBHOOK_UPDATE_CHANNEL, ""
+    )
+    if n_received < 1:
+        logger.error("CRITICAL: No django running, stopping instance...")
+        sys.exit(1)
     yield
 
     logger.info("Application shutting down...")

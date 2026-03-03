@@ -2,11 +2,10 @@ from loguru import logger
 
 from app.providers.base import AbstractTunnelProvider
 from app.providers.provider_factory import get_provider
-from app.request_models import WebhookConfigData, BaseTunnelConfigData, NgrokConfigData
+from app.request_models import BaseTunnelConfigData, WebhookConfigData
 
 
 class TunnelRegistry:
-
     def __init__(self):
         self._tunnel_pool: dict[str, AbstractTunnelProvider] = dict()
 
@@ -22,7 +21,10 @@ class TunnelRegistry:
             )
             return
         tunnel = self._tunnel_pool.pop(unique_id)
-        await tunnel.disconnect()
+        try:
+            await tunnel.disconnect()
+        except Exception as e:
+            logger.error(f"Error disconnecting from tunnel {unique_id}, {e}")
 
     async def flush(self):
         for unique_id in list(self._tunnel_pool.keys()):
@@ -31,7 +33,15 @@ class TunnelRegistry:
     async def register_many(self, webhook_config_data: WebhookConfigData):
         await self.flush()
         for ngrok_config in webhook_config_data.ngrok_configs:
-            await self.register(ngrok_config)
+            try:
+                await self.register(ngrok_config)
+            except Exception as e:
+                logger.error(f"Error registering {ngrok_config.unique_id}, {e}")
+                await self.unregister(ngrok_config.unique_id)
+            else:
+                logger.info(f"Successfully added {ngrok_config.unique_id}")
+
+        logger.debug(f"Current pool: {self._tunnel_pool.keys()}")
 
     async def get_tunnel(self, unique_id: str) -> AbstractTunnelProvider | None:
         return self._tunnel_pool.get(unique_id)

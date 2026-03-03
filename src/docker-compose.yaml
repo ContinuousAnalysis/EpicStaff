@@ -76,8 +76,7 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
-      webhook:
-        condition: service_started
+
   
     healthcheck:
       test: >
@@ -385,6 +384,8 @@ services:
       
     depends_on:
       redis:
+        condition: service_healthy
+      django_app:
         condition: service_healthy
     networks:
       - backend-network
