@@ -178,6 +178,7 @@ def main():
     p.add_argument("--output-variable-path", help="Output variable path")
     p.add_argument("--libraries", help="Comma-separated libraries")
     p.add_argument("--session-id", help="Session ID (variable path or literal)")
+    p.add_argument("--output-schema-file", help="Read output_schema from JSON file")
     p = sub.add_parser("patch-libraries", help="Set libraries on a Python node")
     p.add_argument("node_name", help="Python node name")
     p.add_argument("libraries", help="Comma-separated libraries")

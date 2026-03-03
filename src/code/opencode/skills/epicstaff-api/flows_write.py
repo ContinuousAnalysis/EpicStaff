@@ -364,6 +364,11 @@ def cmd_patch_code_agent(args):
     if getattr(args, "session_id", None) is not None:
         db_payload["session_id"] = args.session_id
         meta_updates["session_id"] = args.session_id
+    if getattr(args, "output_schema_file", None):
+        with open(args.output_schema_file) as f:
+            schema = json.load(f)
+        db_payload["output_schema"] = schema
+        meta_updates["output_schema"] = schema
 
     if not db_payload:
         print("No fields to patch. Use --value, --llm-config, --system-prompt, --input-map, --output-variable-path, or --libraries.", file=sys.stderr)
