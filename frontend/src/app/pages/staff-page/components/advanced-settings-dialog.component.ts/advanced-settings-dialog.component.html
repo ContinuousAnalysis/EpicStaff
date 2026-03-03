@@ -4,7 +4,7 @@
         <div class="icon-and-title">
             <i class="ti ti-settings"></i>
             <h2 class="dialog-title">
-                Advanced Settings for {{ agentData.agentRole }}
+                Advanced Settings for {{ data.agentRole }}
             </h2>
         </div>
         <app-icon-button
@@ -15,384 +15,60 @@
         >
         </app-icon-button>
     </div>
+    <div class="tabs">
+        @for (tab of tabs; track tab.id) {
+            <app-tab-button
+                [mod]="'sm'"
+                [active]="tab.id === activeTab()"
+                (click)="activeTab.set(tab.id)"
+            >
+                {{ tab.label }}
+            </app-tab-button>
+            @if (!$last) {
+                <div class="divider">/</div>
+            }
+        }
+    </div>
 
     <!-- Scrollable Content -->
     <div class="scrollable-content">
-        <!-- Function Calling LLM Section -->
-        <div class="form-section">
-            <div class="form-group">
-                <div class="label-row">
-                    <label class="settings-label">Function Calling LLM</label>
-                    <mat-icon
-                        class="help-icon"
-                        matTooltip="Select a language model specifically for function calling. This can be different from the main agent LLM."
-                        matTooltipPosition="above"
-                        matTooltipClass="tooltip"
-                    >
-                        help_outline
-                    </mat-icon>
-                </div>
-                <!-- Replace with new LLM selector component -->
-                <app-llm-model-selector
-                    [llmConfigs]="combinedLLMs"
-                    [ngModel]="selectedLlmId"
-                    (ngModelChange)="onLlmChange($event)"
-                    placeholder="Select function LLM"
-                ></app-llm-model-selector>
-            </div>
-        </div>
-
-        <!-- Knowledge Source Section -->
-        <div class="form-section">
-            <div class="form-group">
-                <div class="label-row">
-                    <label class="settings-label"
-                        >Select Knowledge Source</label
-                    >
-                    <mat-icon
-                        class="help-icon"
-                        matTooltip="Choose a knowledge source to provide additional context and information for this agent."
-                        matTooltipPosition="above"
-                        matTooltipClass="tooltip"
-                    >
-                        help_outline
-                    </mat-icon>
-                </div>
-                <!-- Knowledge source selector component -->
-                <app-knowledge-selector
-                    [collections]="allKnowledgeSources"
-                    [selectedCollectionId]="
-                        agentData.knowledge_collection || null
-                    "
-                    [loading]="isLoadingKnowledgeSources"
-                    (collectionChange)="onKnowledgeSourceChange($event)"
-                ></app-knowledge-selector>
-            </div>
-        </div>
-
-        <!-- Agent Rags Section -->
-        <div class="form-section">
-            <div class="form-group">
-                <div class="label-row">
-                    <label class="settings-label"
-                    >Select Agent Rags</label
-                    >
-                    <mat-icon
-                        class="help-icon"
-                        matTooltip="Choose a agent rag to provide additional context and information for this agent."
-                        matTooltipPosition="above"
-                        matTooltipClass="tooltip"
-                    >
-                        help_outline
-                    </mat-icon>
-                </div>
-                <!-- Agent rag selector component -->
-                <app-select
-                    placeholder="Select Rag"
-                    [invalid]="!!agentData.knowledge_collection && !this.agentData.rag"
-                    [selectedValue]="agentData.rag?.rag_id || null"
-                    (changed)="onAgentRagChange($event)"
-                    [items]="agentRagsSelectItems"
+        @switch (activeTab()) {
+            @case (TabId.GENERAL) {
+                <app-general-tab
+                    [form]="form"
+                    [combinedLLMs]="combinedLLMs"
                 />
-            </div>
-        </div>
-
-        <!-- Execution Settings -->
-        <div class="form-section">
-            <h3 class="section-title">Execution Settings</h3>
-
-            <div class="form-group">
-                <div class="setting-header">
-                    <div class="setting-label">
-                        Maximum Iterations
-                        <mat-icon
-                            class="help-icon"
-                            matTooltip="The maximum number of iterations the agent will perform before stopping."
-                            matTooltipPosition="above"
-                            matTooltipClass="tooltip"
-                        >
-                            help_outline
-                        </mat-icon>
-                    </div>
-                    <div class="setting-value">
-                        {{ maxIterControl.value || 10 }}
-                    </div>
-                </div>
-                <div class="slider-container">
-                    <mat-slider
-                        min="1"
-                        max="30"
-                        step="1"
-                        discrete
-                        [displayWith]="formatIterationLabel"
-                    >
-                        <input
-                            matSliderThumb
-                            [(ngModel)]="maxIterControl.value"
-                            (ngModelChange)="maxIterControl.setValue($event)"
-                        />
-                    </mat-slider>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <div class="setting-header">
-                    <div class="setting-label">
-                        Maximum Requests Per Minute
-                        <mat-icon
-                            class="help-icon"
-                            matTooltip="Set the maximum number of API requests the agent can make per minute. Higher values allow more throughput but may increase costs."
-                            matTooltipPosition="above"
-                            matTooltipClass="tooltip"
-                        >
-                            help_outline
-                        </mat-icon>
-                    </div>
-                    <div class="setting-value">
-                        {{ maxRpmControl.value || 10 }} RPM
-                    </div>
-                </div>
-                <div class="slider-container">
-                    <mat-slider
-                        min="1"
-                        max="30"
-                        step="1"
-                        discrete
-                        [displayWith]="formatRpmLabel"
-                    >
-                        <input
-                            matSliderThumb
-                            [(ngModel)]="maxRpmControl.value"
-                            (ngModelChange)="maxRpmControl.setValue($event)"
-                        />
-                    </mat-slider>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <div class="setting-header">
-                    <div class="setting-label">
-                        Maximum Execution Time (seconds)
-                        <mat-icon
-                            class="help-icon"
-                            matTooltip="The maximum time in seconds the agent will run before timing out."
-                            matTooltipPosition="above"
-                            matTooltipClass="tooltip"
-                        >
-                            help_outline
-                        </mat-icon>
-                    </div>
-                    <div class="setting-value">
-                        {{ maxExecutionTimeControl.value || 60 }}s
-                    </div>
-                </div>
-                <div class="slider-container">
-                    <mat-slider
-                        min="1"
-                        max="300"
-                        step="1"
-                        discrete
-                        [displayWith]="formatExecutionTimeLabel"
-                    >
-                        <input
-                            matSliderThumb
-                            [(ngModel)]="maxExecutionTimeControl.value"
-                            (ngModelChange)="
-                                maxExecutionTimeControl.setValue($event)
-                            "
-                        />
-                    </mat-slider>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <div class="setting-header">
-                    <div class="setting-label">
-                        Maximum Retry Limit
-                        <mat-icon
-                            class="help-icon"
-                            matTooltip="The maximum number of times the agent will retry failed operations."
-                            matTooltipPosition="above"
-                            matTooltipClass="tooltip"
-                        >
-                            help_outline
-                        </mat-icon>
-                    </div>
-                    <div class="setting-value">
-                        {{ maxRetryLimitControl.value ?? 3 }}
-                    </div>
-                </div>
-                <div class="slider-container">
-                    <mat-slider
-                        min="0"
-                        max="10"
-                        step="1"
-                        discrete
-                        [displayWith]="formatRetryLimitLabel"
-                    >
-                        <input
-                            matSliderThumb
-                            [(ngModel)]="maxRetryLimitControl.value"
-                            (ngModelChange)="
-                                maxRetryLimitControl.setValue($event)
-                            "
-                        />
-                    </mat-slider>
-                </div>
-            </div>
-        </div>
-
-        <!-- Advanced Options -->
-        <div class="form-section">
-            <h3 class="section-title">Advanced Options</h3>
-
-            <!-- Boolean Toggle Settings -->
-            <div class="toggle-settings">
-                <!-- <div class="form-group">
-                    <div class="setting-label">
-                        Memory
-                        <mat-icon
-                            class="help-icon"
-                            matTooltip="Enable to give the agent memory of past interactions and results."
-                            matTooltipPosition="above"
-                            matTooltipClass="tooltip"
-                        >
-                            help_outline
-                        </mat-icon>
-                    </div>
-                    <mat-slide-toggle
-                        [(ngModel)]="memoryControl.value"
-                        (ngModelChange)="memoryControl.setValue($event)"
-                    >
-                    </mat-slide-toggle>
-                </div> -->
-
-                <div class="form-group">
-                    <div class="setting-label">
-                        Cache
-                        <mat-icon
-                            class="help-icon"
-                            matTooltip="Enable caching to store and reuse previous responses for better performance and cost efficiency."
-                            matTooltipPosition="above"
-                            matTooltipClass="tooltip"
-                        >
-                            help_outline
-                        </mat-icon>
-                    </div>
-                    <mat-slide-toggle
-                        [(ngModel)]="cacheControl.value"
-                        (ngModelChange)="cacheControl.setValue($event)"
-                    >
-                    </mat-slide-toggle>
-                </div>
-
-                <div class="form-group">
-                    <div class="setting-label">
-                        Respect Context Window
-                        <mat-icon
-                            class="help-icon"
-                            matTooltip="Enable to respect the LLM's context window limits and manage conversation length automatically."
-                            matTooltipPosition="above"
-                            matTooltipClass="tooltip"
-                        >
-                            help_outline
-                        </mat-icon>
-                    </div>
-                    <mat-slide-toggle
-                        [(ngModel)]="respectContextWindowControl.value"
-                        (ngModelChange)="
-                            respectContextWindowControl.setValue($event)
-                        "
-                    >
-                    </mat-slide-toggle>
-                </div>
-            </div>
-
-            <div class="configurations-settings">
-                <!-- Threshold Slider -->
-                <div class="form-group">
-                    <div class="setting-header">
-                        <div class="setting-label">
-                            Similarity Threshold
-                            <mat-icon
-                                class="help-icon"
-                                matTooltip="Sets the similarity threshold for knowledge retrieval. Lower values return more results but may be less relevant. Higher values are more precise but may miss useful information."
-                                matTooltipPosition="above"
-                                matTooltipClass="tooltip"
-                            >
-                                help_outline
-                            </mat-icon>
-                        </div>
-                        <div class="setting-value">
-                            {{ similarityThresholdControl.value ?? 0.7 }}
-                        </div>
-                    </div>
-                    <div class="slider-container">
-                        <mat-slider
-                            min="0.0"
-                            max="1.0"
-                            step="0.01"
-                            discrete
-                            [displayWith]="formatThresholdLabel"
-                            (input)="onThresholdChange($event)"
-                        >
-                            <input
-                                matSliderThumb
-                                [(ngModel)]="similarityThresholdControl.value"
-                                (ngModelChange)="
-                                    similarityThresholdControl.setValue($event)
-                                "
-                            />
-                        </mat-slider>
-                    </div>
-                </div>
-
-                <!-- Search Limit Slider -->
-                <div class="form-group">
-                    <div class="setting-header">
-                        <div class="setting-label">
-                            Search Limit
-                            <mat-icon
-                                class="help-icon"
-                                matTooltip="The maximum number of items to retrieve when searching for relevant information. Higher values provide more context but may slow down responses."
-                                matTooltipPosition="above"
-                                matTooltipClass="tooltip"
-                            >
-                                help_outline
-                            </mat-icon>
-                        </div>
-                        <div class="setting-value">
-                            {{ searchLimitControl.value || 10 }}
-                        </div>
-                    </div>
-                    <div class="slider-container">
-                        <mat-slider
-                            min="1"
-                            max="1000"
-                            step="1"
-                            discrete
-                            [displayWith]="formatSearchLimitLabel"
-                            (input)="onSearchLimitChange($event)"
-                        >
-                            <input
-                                matSliderThumb
-                                [(ngModel)]="searchLimitControl.value"
-                                (ngModelChange)="
-                                    searchLimitControl.setValue($event)
-                                "
-                            />
-                        </mat-slider>
-                    </div>
-                </div>
-            </div>
-        </div>
+            }
+            @case (TabId.RAG) {
+                <app-rag-tab
+                    [form]="form"
+                    [allKnowledgeSources]="allKnowledgeSources"
+                    [agentRags]="agentRags"
+                    [searchConfigs]="data.search_configs"
+                />
+            }
+<!--            @case (TabId.LLM_PARAMS) {-->
+<!--                <app-llm-params-tab-->
+<!--                    [form]="form"-->
+<!--                />-->
+<!--            }-->
+            @case (TabId.EXECUTION) {
+                <app-execution-tab
+                    [form]="form"
+                />
+            }
+            @case (TabId.ADVANCED) {
+                <app-advanced-tab
+                    [form]="form"
+                />
+            }
+        }
     </div>
 
     <!-- Action Buttons -->
     <div class="actions">
         <button class="btn-cancel" (click)="dialogRef.close()">Cancel</button>
-        <button class="btn-save" [disabled]="!!agentData.knowledge_collection && !this.agentData.rag" (click)="save()">Save Changes</button>
+        <button class="btn-save" [disabled]="form.invalid" (click)="save()">Save Changes</button>
     </div>
-
 </div>
 

@@ -1,9 +1,11 @@
 <div class="slider-stepper">
     <div class="slider-stepper__header">
         @if (label()) {
-            <app-form-field-label
-                [label]="label()"
+            <app-tooltip
+                [required]="required()"
                 [tooltipText]="tooltipText()"
+                [label]="label()"
+                [icon]="icon()"
             />
         }
 

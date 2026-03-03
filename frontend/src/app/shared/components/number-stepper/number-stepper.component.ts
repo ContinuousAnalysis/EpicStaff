@@ -29,6 +29,8 @@ export type StepperSize = 'sm' | 'md' | 'lg';
         },
     ],
 })
+
+//TODO can be replaced with app-input-number
 export class NumberStepperComponent implements ControlValueAccessor {
     label = input<string>('');
     tooltipText = input<string>('');
@@ -51,40 +53,40 @@ export class NumberStepperComponent implements ControlValueAccessor {
         const val = this.value();
         const minVal = this.min();
         const maxVal = this.max();
-        
+
         if (val !== null) {
             if (minVal !== null && val < minVal) return true;
             if (maxVal !== null && val > maxVal) return true;
         }
-        
+
         const ctrl = this.control();
         if (!ctrl) return false;
-        
+
         if (ctrl.hasError('required')) return true;
-        
+
         return false;
     });
 
     errorMessage = computed(() => {
         if (!this.hasError()) return '';
-        
+
         const val = this.value();
         const minVal = this.min();
         const maxVal = this.max();
-        
+
         if (val !== null && minVal !== null && val < minVal) {
             return `Minimum value is ${minVal}`;
         }
         if (val !== null && maxVal !== null && val > maxVal) {
             return `Maximum value is ${maxVal}`;
         }
-        
+
         const ctrl = this.control();
         if (!ctrl) return 'Invalid value';
-        
+
         const errors = ctrl.errors;
         if (!errors) return 'Invalid value';
-        
+
         if (errors['required']) return 'This field is required';
         if (errors['min']) {
             const min = errors['min'].min;
@@ -120,31 +122,31 @@ export class NumberStepperComponent implements ControlValueAccessor {
     });
 
     onKeyDown(event: KeyboardEvent) {
-        const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'Home', 'End', 
+        const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'Home', 'End',
                              'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-        
+
         if (allowedKeys.includes(event.key)) {
             return;
         }
-        
+
         if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x', 'z'].includes(event.key.toLowerCase())) {
             return;
         }
-        
+
         const minVal = this.min();
         const allowNegative = minVal === null || minVal < 0;
         const target = event.target as HTMLInputElement;
         const currentValue = target.value;
         const cursorPos = target.selectionStart || 0;
-        
+
         if (event.key === '-' && allowNegative && cursorPos === 0 && !currentValue.includes('-')) {
             return;
         }
-        
+
         if (event.key === '.' && !currentValue.includes('.')) {
             return;
         }
-        
+
         const isDigit = /^[0-9]$/.test(event.key);
         if (!isDigit) {
             event.preventDefault();
@@ -154,7 +156,7 @@ export class NumberStepperComponent implements ControlValueAccessor {
     onInputChange(event: Event) {
         const target = event.target as HTMLInputElement;
         const newValue: number | null = target.value === '' ? null : parseFloat(target.value);
-        
+
         this.updateValue(newValue);
     }
 

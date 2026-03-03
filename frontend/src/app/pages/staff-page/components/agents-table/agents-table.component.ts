@@ -2,22 +2,16 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
-    Inject,
     Input,
     Renderer2,
     signal,
     SimpleChanges,
-    ViewChild,
 } from '@angular/core';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
+import { AgGridModule } from 'ag-grid-angular';
 import {
     CellClickedEvent,
     CellContextMenuEvent,
-    CellEditingStartedEvent,
     CellKeyDownEvent,
-    CellMouseOutEvent,
-    CellMouseOverEvent,
-    CellValueChangedEvent,
     ColDef,
     GridApi,
     GridOptions,
@@ -39,9 +33,10 @@ import {
     FullAgent,
     FullAgentService,
     TableFullAgent,
-} from '../../../../services/full-agent.service';
+    AgentsService,
+    RealtimeAgentService,
+} from '@services';
 import { IndexCellRendererComponent } from '../cell-renderers/index-row-cell-renderer/custom-row-height.component';
-import { MemoryHeaderComponent } from '../header-renderers/memory-header.component';
 import { DelegationHeaderComponent } from '../header-renderers/delegation-header.component';
 import {
     AdvancedSettingsData,
@@ -49,27 +44,21 @@ import {
 } from '../advanced-settings-dialog.component.ts/advanced-settings-dialog.component';
 import {
     Dialog,
-    DIALOG_DATA,
     DialogModule,
-    DialogRef,
 } from '@angular/cdk/dialog';
-import { AgentsService } from '../../../../services/staff.service';
 import {
     CreateAgentRequest,
     ToolUniqueName,
     UpdateAgentRequest,
-} from '../../../../shared/models/agent.model';
-import { NgClass, NgIf, NgStyle } from '@angular/common';
+} from '@shared/models';
+import { NgIf } from '@angular/common';
 import { PreventContextMenuDirective } from '../directives/prevent-context-menu.directive';
 import { AgGridContextMenuComponent } from '../context-menu/ag-grid-context-menu.component';
-import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
-import { ToastService } from '../../../../services/notifications/toast.service';
-import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
-import { buildToolIdsArray } from '../../../../shared/utils/tool-ids-builder.util';
+import { ClickOutsideDirective } from '@shared/directives';
+import { ToastService } from '../../../../services/notifications';
+import { SpinnerComponent } from '@shared/components';
+import { buildToolIdsArray } from '@shared/utils';
 import { ConfigCellRendererComponent } from '../cell-renderers/llm-cell-renderer/realtime-config-cell-renderer.component';
-import { map, switchMap } from 'rxjs';
-import { CreateRealtimeAgentRequest } from '../../../../shared/models/realtime-agent.model';
-import { RealtimeAgentService } from '../../../../services/realtime-agent.service';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -808,7 +797,7 @@ export class AgentsTableComponent {
             data: {
                 id: agentData.id,
                 agentRole: agentData.role,
-                fullFcmLlmConfig: agentData.fullFcmLlmConfig,
+                fcm_llm_config: agentData.fcm_llm_config,
                 max_iter: agentData.max_iter ?? 20,
                 max_rpm: agentData.max_rpm ?? null,
                 max_execution_time: agentData.max_execution_time ?? null,
@@ -818,16 +807,12 @@ export class AgentsTableComponent {
                 respect_context_window:
                     agentData.respect_context_window ?? false,
                 default_temperature: null,
-                knowledge_collection: agentData.knowledge_collection ?? null, // Changed parameter name
+                knowledge_collection: agentData.knowledge_collection ?? null,
                 rag: agentData.rag ?? null,
-                search_configs: {
-                    naive: {
-                        similarity_threshold: agentData.search_configs.naive.similarity_threshold ?? null,
-                        search_limit: agentData.search_configs.naive.search_limit ?? null,
-                    }
-                },
+                search_configs: agentData.search_configs ?? null,
                 memory: agentData.memory ?? true,
             },
+            height: '80vh',
         });
 
         dialogRef.closed.subscribe((updatedData: unknown) => {

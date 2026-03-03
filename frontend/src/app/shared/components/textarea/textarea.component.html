@@ -1,0 +1,21 @@
+<div class="textarea-wrapper">
+    @if (label()) {
+        <app-tooltip
+            [required]="required()"
+            [tooltipText]="tooltipText()"
+            [label]="label()"
+            [icon]="icon()"
+        />
+    }
+
+    <textarea
+        class="textarea"
+        [class.invalid]="invalid()"
+        [attr.rows]="rows()"
+        [placeholder]="placeholder()"
+        [disabled]="disabled()"
+        [value]="value()"
+        (input)="handleInput($event)"
+        (blur)="handleBlur()"
+    ></textarea>
+</div>

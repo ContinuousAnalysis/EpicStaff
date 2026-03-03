@@ -17,58 +17,45 @@
         <div class="create-agent__body">
             <!-- Left Side - Basic Information -->
             <div class="create-agent__content">
-                <mat-form-field
-                    appearance="outline"
-                    class="create-agent__field create-agent__field--full-width"
-                >
-                    <mat-label>Agent Role</mat-label>
-                    <input
-                        matInput
+                <div>
+                    <app-custom-input
                         formControlName="role"
+                        label="Agent Role"
                         placeholder="Enter agent role"
-                        required
+                        tooltipText="Agent role"
+                        [required]="true"
                     />
-                    @if (agentForm.get('role')?.hasError('required') &&
-                    agentForm.get('role')?.touched) {
-                    <mat-error>Agent role is required</mat-error>
-                    }
-                </mat-form-field>
+                    <app-validation-errors
+                        [control]="agentForm.get('role')!"
+                    />
+                </div>
 
-                <mat-form-field
-                    appearance="outline"
-                    class="create-agent__field create-agent__field--full-width"
-                >
-                    <mat-label>Goal</mat-label>
-                    <textarea
-                        matInput
+                <div>
+                    <app-textarea
                         formControlName="goal"
+                        label="Goal"
                         placeholder="Enter agent goal"
-                        rows="3"
-                        required
-                    ></textarea>
-                    @if (agentForm.get('goal')?.hasError('required') &&
-                    agentForm.get('goal')?.touched) {
-                    <mat-error>Goal is required</mat-error>
-                    }
-                </mat-form-field>
+                        tooltipText="Goal"
+                        [required]="true"
+                    />
+                    <app-validation-errors
+                        [control]="agentForm.get('goal')!"
+                    />
+                </div>
 
-                <mat-form-field
-                    appearance="outline"
-                    class="create-agent__field create-agent__field--full-width"
-                >
-                    <mat-label>Backstory</mat-label>
-                    <textarea
-                        matInput
+                <div>
+                    <app-textarea
                         formControlName="backstory"
+                        label="Backstory"
                         placeholder="Enter agent backstory"
-                        rows="4"
-                        required
-                    ></textarea>
-                    @if (agentForm.get('backstory')?.hasError('required') &&
-                    agentForm.get('backstory')?.touched) {
-                    <mat-error>Backstory is required</mat-error>
-                    }
-                </mat-form-field>
+                        tooltipText="Backstory"
+                        [required]="true"
+                    />
+                    <app-validation-errors
+                        [control]="agentForm.get('backstory')!"
+                    />
+                </div>
+
 
                 <!-- LLM Selector -->
                 <div

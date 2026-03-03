@@ -5,34 +5,38 @@ import {
     Component,
     Inject,
     OnInit,
-    OnDestroy,
+    signal, inject, DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import {
     FormsModule,
     ReactiveFormsModule,
-    FormControl,
-    Validators,
+    Validators, FormGroup, FormBuilder,
 } from '@angular/forms';
-import { MATERIAL_FORMS } from '../../../../shared/material-forms';
+import { AgentRag, AgentSearchConfigs } from "@shared/models";
 
-
-import {forkJoin, of, Subject, takeUntil} from 'rxjs';
-import { LLM_Config_Service } from '../../../../features/settings-dialog/services/llms/LLM_config.service';
-import { LLM_Models_Service } from '../../../../features/settings-dialog/services/llms/LLM_models.service';
-import { KnowledgeSelectorComponent } from '../../../../shared/components/knowledge-selector/knowledge-selector.component';
-import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
+import { forkJoin, of } from 'rxjs';
+import {
+    AdvancedTabComponent,
+    ExecutionTabComponent,
+    GeneralTabComponent,
+    IconButtonComponent, RagTabComponent,
+    TabButtonComponent,
+} from '@shared/components';
 import {
     FullLLMConfig,
     FullLLMConfigService,
 } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
-import {CollectionsApiService} from "../../../../features/knowledge-sources/services/collections-api.service";
-import {GetCollectionRequest} from "../../../../features/knowledge-sources/models/collection.model";
-import {SelectComponent, SelectItem} from "../../../../shared/components/select/select.component";
+import { CollectionsApiService } from "../../../../features/knowledge-sources/services/collections-api.service";
+import {
+    GetCollectionRagsResponse,
+    GetCollectionRequest
+} from "../../../../features/knowledge-sources/models/collection.model";
+
+import { Tab, TabId } from "./tab.interface";
 
 export interface AdvancedSettingsData {
     id: number;
-    fullFcmLlmConfig?: FullLLMConfig;
     agentRole: string;
     max_iter: number;
     max_rpm: number | null;
@@ -40,18 +44,9 @@ export interface AdvancedSettingsData {
     max_retry_limit: number | null;
     default_temperature: number | null;
     knowledge_collection?: number | null;
-    rag: {
-        rag_id: number;
-        rag_type: string;
-        rag_status?: string;
-    } | null
-    search_configs: {
-        naive: {
-            similarity_threshold: string | null;
-            search_limit: number | null;
-        }
-    }
-    selected_knowledge_source?: GetCollectionRequest | null; // For display purposes only
+    fcm_llm_config: number | null;
+    rag: AgentRag | null
+    search_configs: AgentSearchConfigs;
     memory: boolean;
     cache: boolean;
     respect_context_window: boolean;
@@ -62,361 +57,132 @@ export interface AdvancedSettingsData {
     imports: [
         FormsModule,
         ReactiveFormsModule,
-        ...MATERIAL_FORMS,
-        KnowledgeSelectorComponent,
         IconButtonComponent,
-        LlmModelSelectorComponent,
-        SelectComponent,
+        AdvancedTabComponent,
+        ExecutionTabComponent,
+        RagTabComponent,
+        GeneralTabComponent,
+        TabButtonComponent,
+        GeneralTabComponent,
+        RagTabComponent,
+        ExecutionTabComponent,
+        AdvancedTabComponent,
+
     ],
     standalone: true,
     templateUrl: './advanced-settings-dialog.component.html',
     styleUrls: ['./advanced-settings-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
-    public agentData: AdvancedSettingsData;
+export class AdvancedSettingsDialogComponent implements OnInit {
+    private fb = inject(FormBuilder);
+    private destroyRef = inject(DestroyRef);
+
+    activeTab = signal<TabId>(TabId.GENERAL);
+
     public combinedLLMs: FullLLMConfig[] = [];
-    public selectedLlmId: number | null = null;
-    public isLoadingLLMs = false;
-
-    // Knowledge sources
+    public form!: FormGroup;
     public allKnowledgeSources: GetCollectionRequest[] = [];
-    public agentRagsSelectItems: SelectItem[] = [];
-    public isLoadingKnowledgeSources = false;
-    public knowledgeSourcesError: string | null = null;
-
-    private readonly _destroyed$ = new Subject<void>();
-    public floatedThreshold: any;
-    public search_limit: any;
-
-    // Form controls for sliders
-    public maxIterControl = new FormControl(10, [
-        Validators.min(1),
-        Validators.max(30),
-    ]);
-    public maxRpmControl = new FormControl(10, [
-        Validators.min(1),
-        Validators.max(30),
-    ]);
-    public maxExecutionTimeControl = new FormControl(60, [
-        Validators.min(1),
-        Validators.max(300),
-    ]);
-    public maxRetryLimitControl = new FormControl(3, [
-        Validators.min(0),
-        Validators.max(10),
-    ]);
-    public searchLimitControl = new FormControl(3, [
-        Validators.min(1),
-        Validators.max(1000),
-    ]);
-    public similarityThresholdControl = new FormControl(0.2, [
-        Validators.min(0.0),
-        Validators.max(1.0),
-    ]);
-    public memoryControl = new FormControl(false);
-    public cacheControl = new FormControl(true);
-    public respectContextWindowControl = new FormControl(true);
+    public agentRags: GetCollectionRagsResponse[] = [];
+    public tabs: Tab[] = [
+        { id: TabId.GENERAL, label: 'General' },
+        { id: TabId.RAG, label: 'RAG' },
+        // { id: TabId.LLM_PARAMS, label: 'LLM Params' },
+        { id: TabId.EXECUTION, label: 'Execution' },
+        { id: TabId.ADVANCED, label: 'Advanced' },
+    ];
 
     constructor(
         public dialogRef: DialogRef<AdvancedSettingsData>,
         @Inject(DIALOG_DATA) public data: AdvancedSettingsData,
-        private llmConfigService: LLM_Config_Service,
-        private llmModelsService: LLM_Models_Service,
         private fullLLMConfigService: FullLLMConfigService,
         private collectionsService: CollectionsApiService,
         private cdr: ChangeDetectorRef
-    ) {
-        // Initialize your local data from the injected data
-        this.agentData = { ...data };
-
-        // Initialize form controls with data
-        this.maxIterControl.setValue(data.max_iter || 10);
-        this.maxRpmControl.setValue(data.max_rpm || 10);
-        this.maxExecutionTimeControl.setValue(data.max_execution_time || 60);
-        this.maxRetryLimitControl.setValue(data.max_retry_limit ?? 3);
-        this.searchLimitControl.setValue(data.search_configs?.naive?.search_limit || 3);
-
-        if (data.search_configs.naive.similarity_threshold !== null) {
-            this.floatedThreshold = parseFloat(data.search_configs.naive.similarity_threshold);
-            this.similarityThresholdControl.setValue(
-                parseFloat(data.search_configs?.naive?.similarity_threshold)
-            );
-        } else {
-            this.floatedThreshold = 0.2;
-            this.similarityThresholdControl.setValue(0.2);
-        }
-        this.search_limit =
-            this.agentData.search_configs.naive.search_limit !== null
-                ? this.agentData.search_configs.naive.search_limit
-                : 3;
-
-        // Set default_temperature to null as requested
-        this.agentData.default_temperature = null;
-
-        // Initialize boolean controls with data or defaults
-        this.memoryControl.setValue(data.memory ?? false);
-        this.cacheControl.setValue(data.cache ?? true);
-        this.respectContextWindowControl.setValue(
-            data.respect_context_window ?? true
-        );
-
-        // Initialize selected LLM ID from fullFcmLlmConfig if present
-        if (this.agentData.fullFcmLlmConfig) {
-            this.selectedLlmId = this.agentData.fullFcmLlmConfig.id;
-        } else {
-            this.selectedLlmId = null; // "Same as LLM" option
-        }
-
-        // Log the value of knowledge_collection specifically
-        console.log(
-            'Constructor - knowledge_collection value:',
-            this.agentData.knowledge_collection
-        );
-    }
+    ) {}
 
     // In ngOnInit
     public ngOnInit(): void {
-        console.log('ngOnInit - Starting initialization');
-        // Fetch LLM configs, models, and knowledge sources
-        const collectionId = this.agentData.knowledge_collection;
-        this.isLoadingKnowledgeSources = true;
-        this.isLoadingLLMs = true;
+        this.initForm();
 
+        // Fetch LLM configs, models, and knowledge sources
+        const collectionId = this.data.knowledge_collection;
         forkJoin({
             llmConfigs: this.fullLLMConfigService.getFullLLMConfigs(),
             knowledgeSources:
                 this.collectionsService.getCollections(),
             rags: collectionId ? this.collectionsService.getRagsByCollectionId(collectionId) : of([]),
         })
-            .pipe(takeUntil(this._destroyed$))
+            .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: ({ llmConfigs, knowledgeSources, rags }) => {
-                    console.log(
-                        'API response - Knowledge sources:',
-                        knowledgeSources
-                    );
-
-                    this.agentRagsSelectItems = rags.map(rag => ({name: rag.rag_type, value: rag.rag_id}));
-
-                    // Process LLM configs
+                    this.agentRags = rags;
                     this.combinedLLMs = llmConfigs;
-
-                    // Make sure the selected LLM ID is set correctly
-                    if (this.agentData.fullFcmLlmConfig) {
-                        console.log(
-                            'Setting selected LLM ID from fullFcmLlmConfig:',
-                            this.agentData.fullFcmLlmConfig
-                        );
-
-                        // Find the matching LLM config in our loaded configs
-                        const matchingConfig = llmConfigs.find(
-                            (config) =>
-                                config.id ===
-                                this.agentData.fullFcmLlmConfig?.id
-                        );
-
-                        if (matchingConfig) {
-                            console.log(
-                                'Found matching LLM config:',
-                                matchingConfig
-                            );
-                            this.selectedLlmId = matchingConfig.id;
-                            // Force UI update with setTimeout
-                            setTimeout(() => {
-                                this.selectedLlmId = matchingConfig.id;
-                                this.cdr.markForCheck();
-                            });
-                        } else {
-                            console.log('No matching LLM config found');
-                        }
-                    }
-
-                    // Process knowledge sources
                     this.allKnowledgeSources = knowledgeSources;
-                    console.log(
-                        'Loaded knowledge sources count:',
-                        this.allKnowledgeSources.length
-                    );
 
-                    // Set selected knowledge source based on the ID
-                    if (this.agentData.knowledge_collection) {
-                        console.log(
-                            'Attempting to find knowledge source with ID:',
-                            this.agentData.knowledge_collection
-                        );
-
-                        const foundSource = this.allKnowledgeSources.find(
-                            (source) =>
-                                source.collection_id ===
-                                this.agentData.knowledge_collection
-                        );
-
-                        console.log('Found source:', foundSource);
-
-                        this.agentData.selected_knowledge_source =
-                            foundSource || null;
-
-                        console.log(
-                            'Selected knowledge source after initialization:',
-                            this.agentData.selected_knowledge_source
-                                ? `${this.agentData.selected_knowledge_source.collection_name} (ID: ${this.agentData.selected_knowledge_source.collection_id})`
-                                : 'None'
-                        );
-                    } else {
-                        console.log(
-                            'No knowledge_collection ID provided in initial data'
-                        );
-                    }
-
-                    this.isLoadingKnowledgeSources = false;
-                    this.isLoadingLLMs = false;
                     this.cdr.markForCheck();
                 },
                 error: (err) => {
                     console.error('Error fetching data:', err);
-                    this.knowledgeSourcesError =
-                        'Failed to load knowledge sources';
-                    this.isLoadingKnowledgeSources = false;
-                    this.isLoadingLLMs = false;
                     this.cdr.markForCheck();
                 },
             });
+
+        this.form.get('knowledge_collection')?.valueChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(id => this.onKnowledgeSourceChange(id));
     }
 
-    public onLlmChange(llmId: number | null): void {
-        console.log('LLM changed to:', llmId);
-        this.selectedLlmId = llmId;
-
-        if (llmId === null) {
-            // "Default to LLM" option selected
-            this.agentData.fullFcmLlmConfig = undefined;
-        } else {
-            // Find the selected LLM config
-            const selectedLlm = this.combinedLLMs.find(
-                (llm) => llm.id === llmId
-            );
-            if (selectedLlm) {
-                this.agentData.fullFcmLlmConfig = selectedLlm;
-                console.log(
-                    'Selected LLM config:',
-                    this.agentData.fullFcmLlmConfig
-                );
-            }
-        }
-        this.cdr.markForCheck();
-    }
-
-    public onAgentRagChange(value: number): void {
-        this.agentData.rag = {
-            rag_id: value,
-            rag_type: 'naive'
-        }
+    private initForm(): void {
+        const data = this.data;
+        this.form = this.fb.group({
+            agentRole: [data.agentRole],
+            max_iter: [data.max_iter || 10, [Validators.min(1), Validators.max(30)]],
+            max_rpm: [data.max_rpm || 10, [Validators.min(1), Validators.max(30)]],
+            max_execution_time: [data.max_execution_time || 60, [Validators.min(1), Validators.max(300)]],
+            max_retry_limit: [data.max_retry_limit || 3, [Validators.min(0), Validators.max(10)]],
+            cache: [data.cache ?? false],
+            respect_context_window: [data.respect_context_window ?? false],
+            fcm_llm_config: [data.fcm_llm_config || null, [Validators.required]],
+            knowledge_collection: [data.knowledge_collection || null, [Validators.required]],
+            rag: [{
+                rag_id: data.rag?.rag_id || null,
+                rag_type: data.rag?.rag_type || null,
+            }, [Validators.required]],
+            search_configs: [data.search_configs || null, [Validators.required]],
+        });
     }
 
     public onKnowledgeSourceChange(collectionId: number | null): void {
-        console.log('Knowledge source changed to:', collectionId);
-        this.agentData.knowledge_collection = collectionId;
-
         if (collectionId === null) {
-            this.agentData.selected_knowledge_source = null;
-            this.agentRagsSelectItems = [];
+            this.agentRags = [];
         } else {
-            const selectedCollection = this.allKnowledgeSources.find(
-                (source) => source.collection_id === collectionId
-            );
-            this.agentData.selected_knowledge_source = selectedCollection || null;
-
             this.getRagsByCollectionId(collectionId);
         }
-        this.agentData.rag = null;
-        this.cdr.markForCheck();
+        this.form.get('rag')?.patchValue(null);
     }
 
     private getRagsByCollectionId(id: number): void {
         this.collectionsService.getRagsByCollectionId(id)
-            .pipe(takeUntil(this._destroyed$))
-            .subscribe(rags => {
-                this.agentRagsSelectItems = rags.map(rag => ({
-                    name: rag.rag_type,
-                    value: rag.rag_id
-                }));
-            })
-    }
-
-    public onThresholdChange(event: any): void {
-        const value = event.value;
-        this.agentData.search_configs.naive.similarity_threshold = JSON.stringify(value);
-    }
-
-    public onSearchLimitChange(event: any): void {
-        const value = event.value;
-        this.agentData.search_configs.naive.search_limit = value ?? null;
-    }
-
-    // Formatting methods for sliders
-    formatIterationLabel(value: number): string {
-        return `${value}`;
-    }
-
-    formatExecutionTimeLabel(value: number): string {
-        return `${value}s`;
-    }
-
-    formatRetryLimitLabel(value: number): string {
-        return `${value}`;
-    }
-
-    formatRpmLabel(value: number): string {
-        return `${value}`;
-    }
-
-    formatSearchLimitLabel(value: number): string {
-        return `${value}`;
-    }
-
-    formatThresholdLabel(value: number): string {
-        return `${value}`;
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(rags => this.agentRags = rags);
     }
 
     // In save method
     public save(): void {
-        // Update agentData with current form control values
-        this.agentData.max_iter = this.maxIterControl.value || 10;
-        this.agentData.max_rpm = this.maxRpmControl.value || 10;
-        this.agentData.max_execution_time =
-            this.maxExecutionTimeControl.value || 60;
-        this.agentData.max_retry_limit = this.maxRetryLimitControl.value ?? 3;
-        this.agentData.search_configs = {
-            naive: {
-                search_limit: this.searchLimitControl.value || 3,
-                similarity_threshold: this.similarityThresholdControl.value?.toString() || '0.2',
+        if (this.form.invalid) return;
+
+        const { search_configs, rag, ...rest } = this.form.value;
+        const result = {
+            ...rest,
+            rag,
+            search_configs: {
+                [rag.rag_type]: search_configs,
             }
         };
 
-        this.agentData.memory = this.memoryControl.value ?? false;
-        this.agentData.cache = this.cacheControl.value ?? true;
-        this.agentData.respect_context_window =
-            this.respectContextWindowControl.value ?? true;
-
-        console.log(
-            'save called - Final agentData:',
-            JSON.stringify(this.agentData)
-        );
-        console.log(
-            'knowledge_collection value before dialog close:',
-            this.agentData.knowledge_collection
-        );
-
-        // Create a deep copy to prevent any unintended references
-        const result = JSON.parse(JSON.stringify(this.agentData));
-
-        console.log('Final data being returned:', JSON.stringify(result));
+        // Update agentData with current form control values
         this.dialogRef.close(result);
     }
 
-    public ngOnDestroy(): void {
-        this._destroyed$.next();
-        this._destroyed$.complete();
-    }
+    protected readonly TabId = TabId;
 }

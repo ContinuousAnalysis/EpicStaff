@@ -16,14 +16,13 @@ import {
     ReactiveFormsModule,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import {Subscription, switchMap, takeUntil, of} from 'rxjs';
+import { Subscription, switchMap, takeUntil, of } from 'rxjs';
 import { Subject } from 'rxjs';
 import { MATERIAL_FORMS } from '../../material-forms';
 
-import { RealtimeAgentService } from '../../../services/realtime-agent.service';
-import { AgentsService } from '../../../services/staff.service';
-import { ToastService } from '../../../services/notifications/toast.service';
-import { ToolsSelectorComponent } from '../../components/tools-selector/tools-selector.component';
+import { RealtimeAgentService, AgentsService } from '@services';
+import { ToastService } from '../../../services/notifications';
+import { ToolsSelectorComponent } from '../tools-selector/tools-selector.component';
 import {
     FullLLMConfigService,
     FullLLMConfig,
@@ -33,18 +32,19 @@ import {
     GetAgentRequest,
     ToolUniqueName,
 } from '../../models/agent.model';
-import { buildToolIdsArray } from '../../utils/tool-ids-builder.util';
-import { CustomErrorStateMatcher } from '../../error-state-matcher/custom-error-state-matcher';
+import { buildToolIdsArray } from '@shared/utils';
+import { CustomErrorStateMatcher } from '../../error-state-matcher';
 import { ErrorStateMatcher } from '@angular/material/core';
 import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
 import { AppIconComponent } from '../app-icon/app-icon.component';
-import {CollectionsApiService} from "../../../features/knowledge-sources/services/collections-api.service";
+import { CollectionsApiService } from "../../../features/knowledge-sources/services/collections-api.service";
 import {
     GetCollectionRagsResponse,
     GetCollectionRequest
 } from "../../../features/knowledge-sources/models/collection.model";
-import {tap} from "rxjs/operators";
-import {ValidationErrorsComponent} from "../app-validation-errors/validation-errors.component";
+import { tap } from "rxjs/operators";
+import { ValidationErrorsComponent } from "../app-validation-errors/validation-errors.component";
+import { CustomInputComponent, TextareaComponent } from "@shared/components";
 
 interface AgentFormData {
     role: string;
@@ -83,6 +83,8 @@ interface AgentFormData {
         ToolsSelectorComponent,
         AppIconComponent,
         ValidationErrorsComponent,
+        CustomInputComponent,
+        TextareaComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [
@@ -249,11 +251,11 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     agent.mcp_tools || []
                 ),
                 search_limit: new FormControl<number>(
-                    agent.search_configs.naive.search_limit || 3,
+                    agent.search_configs.naive?.search_limit || 3,
                     [Validators.min(1), Validators.max(1000)]
                 ),
                 similarity_threshold: new FormControl<number>(
-                    Number(agent.search_configs.naive.similarity_threshold ?? 0.2),
+                    Number(agent.search_configs.naive?.similarity_threshold ?? 0.2),
                     [Validators.min(0), Validators.max(1.0)]
                 ),
                 cache: new FormControl<boolean>(agent.cache ?? true),

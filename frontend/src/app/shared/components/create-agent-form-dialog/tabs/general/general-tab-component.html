@@ -1,0 +1,19 @@
+<div
+    class="form-section"
+    [formGroup]="form()"
+>
+    <h3 class="section-title">
+        BASE CONFIGURATION
+    </h3>
+
+        <app-tooltip
+            tooltipText="Select a language model specifically for function calling. This can be different from the main agent LLM."
+            label="Function Calling LLM"
+        />
+
+        <app-llm-model-selector
+            formControlName="fcm_llm_config"
+            placeholder="Select function LLM"
+            [llmConfigs]="combinedLLMs()"
+        ></app-llm-model-selector>
+</div>

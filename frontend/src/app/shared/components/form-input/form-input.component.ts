@@ -22,6 +22,9 @@ import { MatIconModule } from '@angular/material/icon';
         <div class="form-group">
             <div class="label-container" *ngIf="label">
                 <label [for]="id">{{ label }}</label>
+                @if (required) {
+                    <span class="required">*</span>
+                }
                 <ng-container *ngIf="tooltipText">
                     <mat-icon
                         *ngIf="!isClassIcon"
@@ -30,7 +33,7 @@ import { MatIconModule } from '@angular/material/icon';
                         matTooltipClass="custom-tooltip"
                         class="help-icon"
                     >
-                        {{ icon || 'help' }}
+                        {{ icon || 'help_outline' }}
                     </mat-icon>
                     <i
                         *ngIf="isClassIcon"
@@ -72,6 +75,11 @@ import { MatIconModule } from '@angular/material/icon';
                     align-items: center;
                     gap: 0.5rem;
                     margin-bottom: 8px;
+
+                    .required {
+                        color: #9c2e2e;
+                        line-height: 1.3;
+                    }
                 }
 
                 label {
@@ -85,12 +93,12 @@ import { MatIconModule } from '@angular/material/icon';
                     font-size: 18px;
                     width: 18px;
                     height: 18px;
-                    color: rgba(255, 255, 255, 0.6);
+                    color: var(--accent-color);
                     cursor: help;
                     transition: color 0.2s ease;
 
                     &:hover {
-                        color: rgba(255, 255, 255, 0.9);
+                        opacity: 0.7;
                     }
 
                     &.class-icon {
@@ -153,8 +161,9 @@ export class CustomInputComponent implements ControlValueAccessor {
     @Input() id: string = '';
     @Input() name: string = '';
     @Input() autofocus: boolean = false;
+    @Input() required: boolean = false;
     @Input() tooltipText: string = '';
-    @Input() icon: string = 'help';
+    @Input() icon: string = 'help_outline';
     @Input() activeColor: string = '#685fff';
     @Input() errorMessage: string = '';
 

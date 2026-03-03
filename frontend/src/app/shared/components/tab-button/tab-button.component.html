@@ -1,11 +1,12 @@
 <button
-  class="tab-btn"
-  [class.active]="active"
-  [class.disabled]="disabled"
-  [disabled]="disabled"
-  (click)="onAction($event)"
-  (keydown.enter)="onAction($event)"
-  type="button"
+    class="tab-btn"
+    [class.active]="active"
+    [class.disabled]="disabled"
+    [ngClass]="mod"
+    [disabled]="disabled"
+    (click)="onAction($event)"
+    (keydown.enter)="onAction($event)"
+    type="button"
 >
-  <ng-content></ng-content>
+    <ng-content></ng-content>
 </button>

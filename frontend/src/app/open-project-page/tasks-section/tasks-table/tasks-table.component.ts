@@ -2,24 +2,17 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
-    EventEmitter,
-    Inject,
     Input,
     OnChanges,
-    Output,
     Renderer2,
     signal,
     SimpleChanges,
-    ViewChild,
 } from '@angular/core';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
+import { AgGridModule } from 'ag-grid-angular';
 import {
     CellClickedEvent,
     CellContextMenuEvent,
-    CellEditingStartedEvent,
     CellKeyDownEvent,
-    CellMouseOutEvent,
-    CellMouseOverEvent,
     CellValueChangedEvent,
     ColDef,
     GridApi,
@@ -39,51 +32,31 @@ import {
 } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { DialogModule, Dialog } from '@angular/cdk/dialog';
-import {
-    AdvancedSettingsDialogComponent,
-    AdvancedSettingsData,
-} from '../../../pages/staff-page/components/advanced-settings-dialog.component.ts/advanced-settings-dialog.component';
-import { LLMPopupComponent } from '../../../pages/staff-page/components/cell-popups-and-modals/llm-selector-popup/llm-popup.component';
-import { TagsPopupComponent } from '../../../pages/staff-page/components/cell-popups-and-modals/tags-popup/tags-popup.component';
 import { IndexCellRendererComponent } from '../../../pages/staff-page/components/cell-renderers/index-row-cell-renderer/custom-row-height.component';
 import { ToolsPopupComponent } from '../../../pages/staff-page/components/cell-popups-and-modals/tools-selector-popup/tools-popup.component';
 import { AgGridContextMenuComponent } from '../../../pages/staff-page/components/context-menu/ag-grid-context-menu.component';
 import { PreventContextMenuDirective } from '../../../pages/staff-page/components/directives/prevent-context-menu.directive';
-import { DelegationHeaderComponent } from '../../../pages/staff-page/components/header-renderers/delegation-header.component';
-import { MemoryHeaderComponent } from '../../../pages/staff-page/components/header-renderers/memory-header.component';
-import {
-    TableFullAgent,
-    FullAgentService,
-    FullAgent,
-} from '../../../services/full-agent.service';
-import { AgentsService } from '../../../services/staff.service';
-import { ClickOutsideDirective } from '../../../shared/directives/click-outside.directive';
-import {
-    CreateAgentRequest,
-    UpdateAgentRequest,
-} from '../../../shared/models/agent.model';
-import { FullTask } from '../../../shared/models/full-task.model';
+import { FullAgent, FullTaskService, TasksService } from '@services';
+import { ClickOutsideDirective } from '@shared/directives';
 import {
     CreateTaskRequest,
     GetTaskRequest,
     TableFullTask,
     UpdateTaskRequest,
-} from '../../../shared/models/task.model';
-import { FullTaskService } from '../../../services/full-task.service';
-import { buildToolIdsArray } from '../../../shared/utils/tool-ids-builder.util';
+    FullTask
+} from '@shared/models';
+import { buildToolIdsArray } from '@shared/utils';
 import { AgentSelectionPopupComponent } from './popups/agent-select-popup/agent-selection-popup.component';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { TasksService } from '../../../services/tasks.service';
 import { ProjectStateService } from '../../services/project-state.service';
 import {
     AdvancedTaskSettingsData,
     AdvancedTaskSettingsDialogComponent,
 } from './advanced-task-settings-dialog/advanced-task-settings-dialog.component';
-import { AsyncHeaderComponent } from './header-renderers/async-exec-header/async-header.component';
 import { HumanInputHeaderComponent } from './header-renderers/human-input-header/human-input.component';
 import { KnowledgeQueryHeaderComponent } from './header-renderers/knowledge-query-header/knowledge-query-header.component';
 import { forkJoin, Observable } from 'rxjs';
-import { ToastService } from '../../../services/notifications/toast.service';
+import { ToastService } from '../../../services/notifications';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -528,7 +501,7 @@ export class TasksTableComponent implements OnChanges {
             // When drag leaves the grid area (e.g., into header), set flag and wait for mouseup
             this.isDragOutsideRows = true;
             this.draggedTaskData = event.node?.data as TableFullTask;
-            
+
             // Add mouseup listener to detect when user releases the mouse outside rows
             this.addDragMouseUpListener();
         },
@@ -539,7 +512,7 @@ export class TasksTableComponent implements OnChanges {
         this.isDragOutsideRows = false;
         this.draggedTaskData = null;
         this.removeDragMouseUpListener();
-        
+
         // Get the moved data
         const movedData = event.node.data as TableFullTask;
 
@@ -703,7 +676,7 @@ export class TasksTableComponent implements OnChanges {
     // Add mouseup listener to detect drop outside rows
     private addDragMouseUpListener(): void {
         if (this.dragMouseUpListener) return; // Already listening
-        
+
         this.dragMouseUpListener = this.renderer.listen('document', 'mouseup', () => {
             if (this.isDragOutsideRows && this.draggedTaskData) {
                 // User released mouse while outside row area - handle as drop to first position
@@ -728,7 +701,7 @@ export class TasksTableComponent implements OnChanges {
     private handleDragToFirstPosition(): void {
         // Show warning that task cannot be dropped outside the table area
         this.toastService.error('Cannot drop task outside the table area. Please drop it on a valid row.');
-        
+
         // Revert the visual state
         if (this.gridApi) {
             this.gridApi.setGridOption('rowData', [...this.rowData]);
@@ -913,17 +886,17 @@ export class TasksTableComponent implements OnChanges {
             next: (updatedResponse) => {
                 console.log('Task updated successfully:', updatedResponse);
                 this.toastService.success('Task updated successfully');
-                
+
                 // Preserve mergedTools from the original task in state or from event.data
                 // First try to get it from the current tasks array (from state service)
                 const originalTask = this.tasks.find(
                     (t) => t.id === parsedUpdateData.id
                 );
-                const preservedMergedTools = 
-                    originalTask?.mergedTools || 
-                    (event.data as any).mergedTools || 
+                const preservedMergedTools =
+                    originalTask?.mergedTools ||
+                    (event.data as any).mergedTools ||
                     [];
-                
+
                 const taskForState: FullTask = {
                     ...parsedUpdateData,
                     mergedTools: preservedMergedTools,
@@ -1078,23 +1051,23 @@ export class TasksTableComponent implements OnChanges {
             next: (updatedResponse) => {
                 console.log('Task updated successfully:', updatedResponse);
 
-             
+
                 const originalTask = this.tasks.find(
                     (t) => t.id === +updatedTask.id
                 );
-                const preservedMergedTools = 
-                    originalTask?.mergedTools || 
-                    (updatedTask as any).mergedTools || 
+                const preservedMergedTools =
+                    originalTask?.mergedTools ||
+                    (updatedTask as any).mergedTools ||
                     [];
 
-               
+
                 const taskForState: FullTask = {
                     ...updatedTask,
                     id: +updatedTask.id,
                     mergedTools: preservedMergedTools,
                 };
 
-             
+
                 this.projectStateService.updateTask(taskForState);
 
                 this.toastService.success('Task updated successfully');
@@ -1733,7 +1706,7 @@ export class TasksTableComponent implements OnChanges {
                                 'mergedTools',
                                 updatedMergedTools
                             );
-                            
+
                             // Also update the rowData array to keep it in sync
                             const rowDataIndex = this.rowData.findIndex(
                                 (row) => row === taskData
@@ -1744,7 +1717,7 @@ export class TasksTableComponent implements OnChanges {
                                     mergedTools: updatedMergedTools,
                                 };
                             }
-                            
+
                             // Update the state service if this is a real task (not temp)
                             if (taskData.id && !(typeof taskData.id === 'string' && taskData.id.startsWith('temp_'))) {
                                 const taskId = typeof taskData.id === 'string' ? +taskData.id : taskData.id;

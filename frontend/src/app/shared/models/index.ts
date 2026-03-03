@@ -18,3 +18,4 @@ export * from './tool.model';
 export * from './tool_config.model';
 export * from './transcription-config.model';
 export * from './user-message.model';
+export * from './agent-search-config.model';

@@ -8,6 +8,7 @@ import {
     input,
     model, output, computed, inject
 } from '@angular/core';
+import { isEqual } from 'lodash';
 
 import { TemplatePortal } from '@angular/cdk/portal';
 import { NgClass } from "@angular/common";
@@ -52,9 +53,9 @@ export class SelectComponent implements ControlValueAccessor {
     selectedValue = model<unknown | null>(null);
     selectedItem = computed(() => {
         const value = this.selectedValue();
-        if (value === undefined || value === null) return null;
+        if (value == null) return null;
 
-        return this.items().find(i => i.value === value) ?? null;
+        return this.items().find(i => isEqual(i.value, value)) ?? null;
     });
 
     changed = output<any>();

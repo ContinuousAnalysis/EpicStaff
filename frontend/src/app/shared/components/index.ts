@@ -37,3 +37,6 @@ export * from './number-stepper/number-stepper.component';
 export * from './tooltip/tooltip.component';
 export * from './radio-button/radio-button.component';
 export * from './chips-input/chips-input.component';
+export * from './textarea/textarea.component';
+export * from './dual-slider/dual-slider.component';
+export * from './create-agent-form-dialog/tabs';

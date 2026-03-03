@@ -34,7 +34,7 @@ import { take, fromEvent, filter } from 'rxjs';
                 (focus)="showTooltip()"
                 (blur)="hideTooltip()"
             >
-                <app-icon icon="ui/help" [size]="'1.2rem'"></app-icon>
+                <app-icon icon="ui/help" [size]="'20px'"></app-icon>
             </span>
         </div>
     `,
@@ -52,16 +52,14 @@ import { take, fromEvent, filter } from 'rxjs';
                 justify-content: center;
                 outline: none;
                 position: relative;
-                color: rgba(255, 255, 255, 0.8);
+                color: var(--accent-color);
                 transition: color 0.2s ease;
                 width: 20px;
                 height: 20px;
                 border-radius: 50%;
-                background: rgba(255, 255, 255, 0.1);
 
                 &:hover {
-                    color: rgba(255, 255, 255, 1);
-                    background: rgba(255, 255, 255, 0.2);
+                    opacity: 0.8;
                 }
             }
 

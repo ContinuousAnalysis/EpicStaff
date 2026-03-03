@@ -130,6 +130,9 @@ import { DropdownManagerService } from '../../services/dropdown-manager.service'
     `,
     styles: [
         `
+            :host {
+                width: 100%
+            }
             .llm-selector-container {
                 position: relative;
                 width: 100%;
