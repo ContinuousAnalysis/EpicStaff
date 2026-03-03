@@ -16,7 +16,12 @@ import {
     AutocompleteOverlayComponent,
     AutocompleteItem,
 } from '../node-panels/decision-table-node-panel/decision-table-grid/cell-editors/expression-editor/autocomplete-overlay/autocomplete-overlay.component';
-import { parseTree, findNodeAtOffset, Node as JsonNode } from 'jsonc-parser';
+import {
+    parseTree,
+    parse as parseJsonc,
+    findNodeAtOffset,
+    Node as JsonNode,
+} from 'jsonc-parser';
 
 declare const monaco: any;
 
@@ -74,6 +79,26 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                         }
                     </div>
                 }
+                @if (crossArrayDuplicatePaths().length > 0) {
+                    <div class="path-validation-errors">
+                        @for (path of crossArrayDuplicatePaths(); track path) {
+                            <div class="path-error">
+                                <i class="ti ti-alert-circle"></i>
+                                <span>Path {{ path }} cannot be in both user and organization</span>
+                            </div>
+                        }
+                    </div>
+                }
+                @if (withinArrayDuplicatePaths().length > 0) {
+                    <div class="path-validation-errors">
+                        @for (item of withinArrayDuplicatePaths(); track item.path + item.array) {
+                            <div class="path-error">
+                                <i class="ti ti-alert-circle"></i>
+                                <span>Path {{ item.path }} is duplicated in {{ item.array }} array</span>
+                            </div>
+                        }
+                    </div>
+                }
                 <div class="json-editor-section">
                     <app-json-editor
                         class="json-editor"
@@ -90,7 +115,7 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                 <button class="btn-secondary" (click)="onClose()">Close</button>
                 <button
                     class="btn-primary"
-                    [disabled]="!isJsonValid || pathValidationErrors().length > 0"
+                    [disabled]="!isJsonValid || pathValidationErrors().length > 0 || crossArrayDuplicatePaths().length > 0 || withinArrayDuplicatePaths().length > 0"
                     (click)="onSave()"
                 >
                     Save
@@ -302,6 +327,10 @@ export class DomainDialogComponent implements OnDestroy {
     public initialStateJson: string = '{}';
     public isJsonValid: boolean = true;
     public pathValidationErrors = signal<string[]>([]);
+    public crossArrayDuplicatePaths = signal<string[]>([]);
+    public withinArrayDuplicatePaths = signal<
+        { path: string; array: 'user' | 'organization' }[]
+    >([]);
 
     private monacoEditor: any = null;
     private overlayService = inject(Overlay);
@@ -309,6 +338,7 @@ export class DomainDialogComponent implements OnDestroy {
     private overlayRef: OverlayRef | null = null;
     private autocompleteInstance: AutocompleteOverlayComponent | null = null;
     private currentPath: string[] = [];
+    private currentTargetArray: 'user' | 'organization' | null = null;
     private contextObject: any = null;
     private keyDownDisposable: any = null;
     private cursorDisposable: any = null;
@@ -358,22 +388,40 @@ export class DomainDialogComponent implements OnDestroy {
 
     private validatePathsInPersistentVariables(json: string): void {
         const errors: string[] = [];
+        const crossDuplicates: string[] = [];
+        const withinDuplicates: { path: string; array: 'user' | 'organization' }[] = [];
         try {
             const parsed = JSON.parse(json);
             const context = parsed?.variables?.context;
             const pv = parsed?.persistent_variables;
-            if (!pv || typeof pv !== 'object') return;
+            if (!pv || typeof pv !== 'object') {
+                this.pathValidationErrors.set(errors);
+                this.crossArrayDuplicatePaths.set(crossDuplicates);
+                this.withinArrayDuplicatePaths.set(withinDuplicates);
+                return;
+            }
 
-            const arrays = [
-                { arr: pv.user, name: 'user' },
-                { arr: pv.organization, name: 'organization' },
-            ];
-            for (const { arr } of arrays) {
-                if (!Array.isArray(arr)) continue;
-                for (const item of arr) {
-                    const path = typeof item === 'string' ? item.trim() : null;
-                    if (!path || !path.startsWith('context.')) continue;
+            const userPaths = this.extractPathsFromArray(pv.user);
+            const orgPaths = this.extractPathsFromArray(pv.organization);
+            const userWithinDupes = this.findDuplicatesWithinArray(pv.user);
+            const orgWithinDupes = this.findDuplicatesWithinArray(pv.organization);
 
+            withinDuplicates.push(
+                ...userWithinDupes.map((p) => ({ path: p, array: 'user' as const })),
+                ...orgWithinDupes.map((p) => ({ path: p, array: 'organization' as const }))
+            );
+
+            for (const path of userPaths) {
+                if (orgPaths.has(path)) {
+                    crossDuplicates.push(path);
+                }
+                const pathParts = path.slice('context.'.length).split('.');
+                if (!this.pathExistsInObject(context, pathParts)) {
+                    errors.push(path);
+                }
+            }
+            for (const path of orgPaths) {
+                if (!userPaths.has(path)) {
                     const pathParts = path.slice('context.'.length).split('.');
                     if (!this.pathExistsInObject(context, pathParts)) {
                         errors.push(path);
@@ -381,9 +429,41 @@ export class DomainDialogComponent implements OnDestroy {
                 }
             }
         } catch {
-            return;
+            // no-op
         }
         this.pathValidationErrors.set(errors);
+        this.crossArrayDuplicatePaths.set(crossDuplicates);
+        this.withinArrayDuplicatePaths.set(withinDuplicates);
+    }
+
+    /** Returns paths that appear more than once in the array. */
+    private findDuplicatesWithinArray(arr: unknown): string[] {
+        if (!Array.isArray(arr)) return [];
+        const seen = new Set<string>();
+        const duplicates = new Set<string>();
+        for (const item of arr) {
+            const path = typeof item === 'string' ? item.trim() : null;
+            if (path && path.startsWith('context.')) {
+                if (seen.has(path)) {
+                    duplicates.add(path);
+                } else {
+                    seen.add(path);
+                }
+            }
+        }
+        return Array.from(duplicates);
+    }
+
+    private extractPathsFromArray(arr: unknown): Set<string> {
+        if (!Array.isArray(arr)) return new Set();
+        const set = new Set<string>();
+        for (const item of arr) {
+            const path = typeof item === 'string' ? item.trim() : null;
+            if (path && path.startsWith('context.')) {
+                set.add(path);
+            }
+        }
+        return set;
     }
 
     private pathExistsInObject(obj: any, pathParts: string[]): boolean {
@@ -412,7 +492,12 @@ export class DomainDialogComponent implements OnDestroy {
     }
 
     public onSave(): void {
-        if (!this.isJsonValid || this.pathValidationErrors().length > 0) {
+        if (
+            !this.isJsonValid ||
+            this.pathValidationErrors().length > 0 ||
+            this.crossArrayDuplicatePaths().length > 0 ||
+            this.withinArrayDuplicatePaths().length > 0
+        ) {
             return;
         }
 
@@ -515,7 +600,9 @@ export class DomainDialogComponent implements OnDestroy {
         const offset = model.getOffsetAt(position);
         const text = model.getValue();
 
-        if (this.isCursorInTargetArray(text, offset)) {
+        const targetArray = this.getCursorTargetArray(text, offset);
+        if (targetArray) {
+            this.currentTargetArray = targetArray;
             const contextObj = this.extractContextObject(text);
             if (contextObj && typeof contextObj === 'object' && Object.keys(contextObj).length > 0) {
                 this.contextObject = contextObj;
@@ -529,18 +616,24 @@ export class DomainDialogComponent implements OnDestroy {
                 );
             }
         } else {
+            this.currentTargetArray = null;
             this.monacoEditor.trigger('keyboard', 'editor.action.triggerSuggest', {});
         }
     }
 
     // --- Cursor position detection via jsonc-parser ---
 
-    private isCursorInTargetArray(text: string, offset: number): boolean {
-        const root = parseTree(text);
-        if (!root) return false;
+    private readonly parseOptions = { allowTrailingComma: true } as const;
+
+    private getCursorTargetArray(
+        text: string,
+        offset: number
+    ): 'user' | 'organization' | null {
+        const root = parseTree(text, [], this.parseOptions);
+        if (!root) return null;
 
         const node = findNodeAtOffset(root, offset, true);
-        if (!node) return false;
+        if (!node) return null;
 
         let current: JsonNode | undefined = node;
         while (current) {
@@ -552,18 +645,27 @@ export class DomainDialogComponent implements OnDestroy {
                     prop.children.length > 0
                 ) {
                     const keyNode = prop.children[0];
-                    if (
-                        keyNode.type === 'string' &&
-                        (keyNode.value === 'user' || keyNode.value === 'organization')
-                    ) {
-                        const grandParent = prop.parent;
-                        if (grandParent?.type === 'object' && grandParent.parent) {
-                            const pvProp = grandParent.parent;
+                    if (keyNode.type === 'string') {
+                        const arrName = keyNode.value;
+                        if (
+                            arrName === 'user' ||
+                            arrName === 'organization'
+                        ) {
+                            const grandParent = prop.parent;
                             if (
-                                pvProp.type === 'property' &&
-                                pvProp.children?.[0]?.value === 'persistent_variables'
+                                grandParent?.type === 'object' &&
+                                grandParent.parent
                             ) {
-                                return true;
+                                const pvProp = grandParent.parent;
+                                if (
+                                    pvProp.type === 'property' &&
+                                    pvProp.children?.[0]?.value ===
+                                        'persistent_variables'
+                                ) {
+                                    return arrName as
+                                        | 'user'
+                                        | 'organization';
+                                }
                             }
                         }
                     }
@@ -571,15 +673,60 @@ export class DomainDialogComponent implements OnDestroy {
             }
             current = current.parent;
         }
-        return false;
+        return null;
+    }
+
+    private isCursorInTargetArray(text: string, offset: number): boolean {
+        return this.getCursorTargetArray(text, offset) !== null;
+    }
+
+    private parseJsonLenient(text: string): Record<string, unknown> | null {
+        try {
+            return JSON.parse(text) as Record<string, unknown>;
+        } catch {
+            try {
+                return parseJsonc(text, [], this.parseOptions) as Record<string, unknown>;
+            } catch {
+                return null;
+            }
+        }
     }
 
     private extractContextObject(text: string): any {
+        const parsed = this.parseJsonLenient(text);
+        const variables = parsed?.['variables'] as Record<string, unknown> | undefined;
+        return variables && typeof variables === 'object' ? variables['context'] : null;
+    }
+
+    private getPathsFromOppositeArray(): Set<string> {
+        if (!this.currentTargetArray) return new Set();
         try {
-            const parsed = JSON.parse(text);
-            return parsed?.variables?.context ?? null;
+            const parsed = this.parseJsonLenient(this.initialStateJson);
+            if (!parsed) return new Set();
+            const pv = parsed['persistent_variables'];
+            if (!pv || typeof pv !== 'object') return new Set();
+            const oppositeKey =
+                this.currentTargetArray === 'user' ? 'organization' : 'user';
+            return this.extractPathsFromArray(
+                (pv as Record<string, unknown>)[oppositeKey]
+            );
         } catch {
-            return null;
+            return new Set();
+        }
+    }
+
+    private getPathsFromCurrentArray(): Set<string> {
+        if (!this.currentTargetArray) return new Set();
+        try {
+            const parsed = this.parseJsonLenient(this.initialStateJson);
+            if (!parsed) return new Set();
+            const pv = parsed['persistent_variables'];
+            if (!pv || typeof pv !== 'object') return new Set();
+            return this.extractPathsFromArray(
+                (pv as Record<string, unknown>)[this.currentTargetArray]
+            );
+        } catch {
+            return new Set();
         }
     }
 
@@ -599,15 +746,29 @@ export class DomainDialogComponent implements OnDestroy {
 
         if (!current || typeof current !== 'object') return [];
 
-        return Object.keys(current).map((key) => ({
-            key,
-            path: [...this.currentPath, key].join('.'),
-            type:
-                typeof current[key] === 'object' && current[key] !== null
-                    ? ('group' as const)
-                    : ('value' as const),
-            value: current[key],
-        }));
+        const oppositePaths = this.getPathsFromOppositeArray();
+        const currentArrayPaths = this.getPathsFromCurrentArray();
+
+        return Object.keys(current)
+            .map((key) => ({
+                key,
+                path: [...this.currentPath, key].join('.'),
+                type:
+                    typeof current[key] === 'object' && current[key] !== null
+                        ? ('group' as const)
+                        : ('value' as const),
+                value: current[key],
+            }))
+            .filter((item) => {
+                if (item.type === 'value') {
+                    const fullPath = `context.${item.path}`;
+                    return (
+                        !oppositePaths.has(fullPath) &&
+                        !currentArrayPaths.has(fullPath)
+                    );
+                }
+                return true;
+            });
     }
 
     // --- CDK Overlay management ---
@@ -704,7 +865,7 @@ export class DomainDialogComponent implements OnDestroy {
 
         const insertValue = `context.${item.path}`;
 
-        const root = parseTree(text);
+        const root = parseTree(text, [], this.parseOptions);
         const nodeAtCursor = root ? findNodeAtOffset(root, offset, true) : undefined;
         const stringNode = this.findEnclosingStringNode(nodeAtCursor);
 
@@ -725,6 +886,9 @@ export class DomainDialogComponent implements OnDestroy {
                 },
             ]);
         } else {
+            const prefix = this.needsCommaBeforeInsert(text, offset)
+                ? ', '
+                : '';
             this.monacoEditor.executeEdits('autocomplete', [
                 {
                     range: new monaco.Range(
@@ -733,13 +897,23 @@ export class DomainDialogComponent implements OnDestroy {
                         position.lineNumber,
                         position.column
                     ),
-                    text: `"${insertValue}"`,
+                    text: `${prefix}"${insertValue}"`,
                 },
             ]);
         }
 
         this.closeOverlay();
         this.monacoEditor.focus();
+    }
+
+    /** True if the character immediately before offset is end of a value (we need comma before new element). */
+    private needsCommaBeforeInsert(text: string, offset: number): boolean {
+        if (offset <= 0) return false;
+        let i = offset - 1;
+        while (i >= 0 && /\s/.test(text[i])) i--;
+        if (i < 0) return false;
+        const last = text[i];
+        return last === '"' || last === ']' || last === '}' || /\d/.test(last);
     }
 
     private findEnclosingStringNode(
