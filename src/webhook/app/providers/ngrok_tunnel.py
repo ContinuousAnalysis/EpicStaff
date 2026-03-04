@@ -1,19 +1,15 @@
+import os
+import tempfile
 import asyncio
-from typing import Optional
-
 from loguru import logger
-from pyngrok import ngrok
+from pyngrok import ngrok, installer, conf
 from pyngrok.conf import PyngrokConfig
-
+import pyngrok.process
 from app.providers.base import AbstractTunnelProvider
+from typing import Optional
 
 
 class NgrokTunnel(AbstractTunnelProvider):
-    """
-    The ngrok-specific implementation of abstract tunnel with auto-reconnect logic
-    and protection against race conditions.
-    """
-
     def __init__(
         self,
         port: int,
@@ -29,22 +25,21 @@ class NgrokTunnel(AbstractTunnelProvider):
 
         self._is_running = False
         self._monitor_task: Optional[asyncio.Task] = None
-
         self._lock = asyncio.Lock()
 
         if not self._auth_token:
             raise ValueError("NgrokTunnel requires an auth_token.")
 
+        self._config_path = os.path.join(
+            tempfile.gettempdir(), f"ngrok_config_{id(self)}.yml"
+        )
+
+        self._ngrok_path = os.path.join(tempfile.gettempdir(), f"ngrok_bin_{id(self)}")
+        self._config = None
+
     async def connect(self):
-        """
-        Entry point to start the tunnel and the background monitoring task.
-        """
         self._is_running = True
-
-        # Initial connection attempt
         await self._establish_connection()
-
-        # Start background monitor if not already running
         if self._monitor_task is None or self._monitor_task.done():
             self._monitor_task = asyncio.create_task(self._monitor_connection())
 
@@ -55,11 +50,26 @@ class NgrokTunnel(AbstractTunnelProvider):
 
         print(
             f"Attempting to connect ngrok tunnel on port {self._port} "
-            f"(Region: {self._region or 'us'})..."
+            f"(Region: {self._region or 'eu'})..."
         )
 
+        default_conf = conf.get_default()
+        if not os.path.exists(default_conf.ngrok_path):
+            installer.install_ngrok(default_conf.ngrok_path)
+
+        if not os.path.exists(self._ngrok_path):
+            try:
+                os.symlink(default_conf.ngrok_path, self._ngrok_path)
+            except OSError:
+                import shutil
+
+                shutil.copy2(default_conf.ngrok_path, self._ngrok_path)
+
         self._config = PyngrokConfig(
-            auth_token=self._auth_token, region=self._region if self._region else "us"
+            auth_token=self._auth_token,
+            region=self._region if self._region else "eu",
+            config_path=self._config_path,
+            ngrok_path=self._ngrok_path,
         )
 
         def _start():
@@ -80,6 +90,7 @@ class NgrokTunnel(AbstractTunnelProvider):
                         ngrok.disconnect(
                             new_tunnel.public_url, pyngrok_config=self._config
                         )
+                        pyngrok.process.kill_process(self._config.ngrok_path)
 
                     await asyncio.to_thread(_rollback)
                     return
@@ -93,19 +104,13 @@ class NgrokTunnel(AbstractTunnelProvider):
             raise
 
     async def _monitor_connection(self):
-        """
-        Infinite loop that checks tunnel health and triggers reconnection safely.
-        """
         try:
             while self._is_running:
                 await asyncio.sleep(self._reconnect_timeout)
-
                 if not self._is_running:
                     break
-
                 async with self._lock:
                     needs_reconnect = self._tunnel is None
-
                 if needs_reconnect:
                     try:
                         await self._establish_connection()
@@ -125,6 +130,7 @@ class NgrokTunnel(AbstractTunnelProvider):
     async def disconnect(self):
         print(f"Disconnecting ngrok tunnel on port {self._port}...")
         self._is_running = False
+
         if self._monitor_task:
             self._monitor_task.cancel()
             try:
@@ -134,12 +140,23 @@ class NgrokTunnel(AbstractTunnelProvider):
             self._monitor_task = None
 
         async with self._lock:
-            logger.debug(f"self._tunnel={self._tunnel}")
-            if self._tunnel:
+            if self._tunnel and self._config:
                 url_to_disconnect = self._tunnel.public_url
 
                 def _close():
-                    ngrok.disconnect(url_to_disconnect, pyngrok_config=self._config)
+                    try:
+                        ngrok.disconnect(url_to_disconnect, pyngrok_config=self._config)
+                    except Exception as e:
+                        logger.debug(f"Disconnect warning: {e}")
+
+                    pyngrok.process.kill_process(self._config.ngrok_path)
+
+                    for path_to_remove in [self._config_path, self._ngrok_path]:
+                        if os.path.exists(path_to_remove):
+                            try:
+                                os.remove(path_to_remove)
+                            except OSError:
+                                pass
 
                 try:
                     await asyncio.to_thread(_close)
