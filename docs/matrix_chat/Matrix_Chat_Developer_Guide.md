@@ -1,8 +1,4 @@
-# Matrix Chat Integration
-
-EpicStaff flows (AI agent pipelines) can be exposed as Matrix chat bots. Real users open
-Element Web at `/chat`, send a message to a flow's bot user, the flow runs as a new session,
-and the bot replies with the output.
+# Matrix Chat Developer Guide
 
 ## Architecture
 
@@ -34,6 +30,8 @@ Bot user IDs follow the pattern: `@_epicstaff_flow_{slug}_{flow_id}:{DOMAIN_NAME
 
 For example, a flow named "My Awesome Flow" with id=3 becomes:
 `@_epicstaff_flow_my_awesome_flow_3:localhost`
+
+---
 
 ## Quick Start
 
@@ -84,23 +82,9 @@ open http://localhost/chat
 # Register a test user in Element Web, then start chatting with a flow bot
 ```
 
-## Enabling a Flow as a Matrix Bot
+---
 
-### Via the UI
-
-1. Open **EpicStaff** at `http://localhost`
-2. Navigate to **Flows**
-3. Hover over a flow card → click the **⋮** (three dots) action menu
-4. Select **Matrix Bot**
-5. The dialog shows:
-   - **Input Variable** — the flow variable that receives the incoming message (default: `message`)
-   - **Output Variable** — the flow variable whose value is sent back as the reply (default: `context`)
-   - **Enabled** toggle
-6. Click **Enable** to activate the bot
-
-After enabling, the dialog displays the bot's **Matrix User ID** (e.g. `@_epicstaff_flow_my_flow_1:localhost`).
-
-### Via the API
+## Enabling via the API
 
 ```bash
 # Enable a flow (id=1) as a Matrix bot
@@ -120,27 +104,7 @@ curl -X POST http://localhost/api/matrix-bots/ \
 }
 ```
 
-## Starting a Conversation
-
-1. Open Element Web at `http://localhost/chat`
-2. Register a new user (registration is open by default)
-3. Start a **Direct Message** with the bot user ID, e.g. `@_epicstaff_flow_my_flow_1:localhost`
-4. The bot will automatically accept the invite and join the room
-5. Send a message — the flow starts executing with your message as the input variable
-6. When the flow finishes (status = "end"), the bot replies with the output variable value
-
-## Variable Mapping
-
-Each flow bot has two configurable variables:
-
-| Setting | Description | Default |
-|---|---|---|
-| `input_variable` | The flow variable set to the incoming chat message text | `message` |
-| `output_variable` | The flow variable read from when composing the reply | `context` |
-
-**Example**: If your flow has a Start node that seeds `message` and an End node that stores the result in `context`, the defaults work out of the box.
-
-**Customizing**: If your flow uses different variable names (e.g. `user_input` → `answer`), update the bot's input/output variable names to match via the Matrix Bot dialog or API.
+---
 
 ## Configuration Reference
 
@@ -155,6 +119,8 @@ All Matrix-related env vars (add to `src/.env`):
 | `MATRIX_BRIDGE_PORT` | Internal port for the bridge FastAPI service | `8060` |
 
 `MATRIX_AS_TOKEN` and `MATRIX_HS_TOKEN` must be random, secret, and different from each other.
+
+---
 
 ## Production Notes
 
@@ -192,18 +158,7 @@ to manage users, rooms, and media via the Synapse Admin panel.
 - Synapse stores media files in the `synapse_data` Docker volume.
 - For production, move Synapse media storage to S3 or a dedicated NFS mount.
 
-## License Notice
-
-This feature uses open-source components unmodified via Docker:
-
-| Component | Image | License |
-|---|---|---|
-| Synapse homeserver | `matrixdotorg/synapse:latest` | [AGPL-3.0](https://github.com/element-hq/synapse/blob/develop/LICENSE) |
-| Element Web | `vectorim/element-web:latest` | [AGPL-3.0](https://github.com/vector-im/element-web/blob/develop/LICENSE) |
-| Synapse Admin | `awesometechnologies/synapse-admin:latest` | [MIT](https://github.com/Awesome-Technologies/synapse-admin/blob/master/LICENSE) |
-
-Running unmodified AGPL-licensed software as a Docker container in an open-source project
-does not trigger AGPL copyleft obligations for the host project.
+---
 
 ## Troubleshooting
 
@@ -257,3 +212,18 @@ cd frontend && npm run build
 # or for development:
 cd src && docker-compose build frontend && docker-compose up -d frontend
 ```
+
+---
+
+## License Notice
+
+This feature uses open-source components unmodified via Docker:
+
+| Component | Image | License |
+|---|---|---|
+| Synapse homeserver | `matrixdotorg/synapse:latest` | [AGPL-3.0](https://github.com/element-hq/synapse/blob/develop/LICENSE) |
+| Element Web | `vectorim/element-web:latest` | [AGPL-3.0](https://github.com/vector-im/element-web/blob/develop/LICENSE) |
+| Synapse Admin | `awesometechnologies/synapse-admin:latest` | [MIT](https://github.com/Awesome-Technologies/synapse-admin/blob/master/LICENSE) |
+
+Running unmodified AGPL-licensed software as a Docker container in an open-source project
+does not trigger AGPL copyleft obligations for the host project.
