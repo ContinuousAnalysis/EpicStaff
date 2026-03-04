@@ -1,0 +1,17 @@
+{
+    "default_server_config": {
+        "m.homeserver": {
+            "base_url": "http://${DOMAIN_NAME}",
+            "server_name": "${DOMAIN_NAME}"
+        }
+    },
+    "disable_custom_urls": false,
+    "disable_guests": true,
+    "brand": "EpicStaff Chat",
+    "integrations_ui_url": "",
+    "integrations_rest_url": "",
+    "integrations_widgets_urls": [],
+    "bug_report_endpoint_url": "",
+    "show_labs_settings": false,
+    "default_theme": "dark"
+}

@@ -1,0 +1,12 @@
+id: epicstaff_bridge
+url: "http://epicstaff-matrix-bridge:8060"
+as_token: "${MATRIX_AS_TOKEN}"
+hs_token: "${MATRIX_HS_TOKEN}"
+sender_localpart: _epicstaff_bridge_bot
+rate_limited: false
+namespaces:
+  users:
+    - exclusive: true
+      regex: "@_epicstaff_flow_.*"
+  rooms: []
+  aliases: []

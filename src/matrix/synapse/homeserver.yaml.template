@@ -1,0 +1,38 @@
+server_name: "${DOMAIN_NAME}"
+public_baseurl: "http://${DOMAIN_NAME}/"
+
+pid_file: /data/homeserver.pid
+signing_key_path: "/data/${DOMAIN_NAME}.signing.key"
+log_config: "/data/log.config"
+media_store_path: /data/media_store
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: "${MATRIX_DB_PASSWORD}"
+    database: synapse
+    host: epicstaff-matrix-db
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+
+app_service_config_files:
+  - /data/epicstaff_bridge.yaml
+
+enable_registration: true
+enable_registration_without_verification: true
+
+report_stats: false
+
+trusted_key_servers:
+  - server_name: "matrix.org"

@@ -29,6 +29,8 @@ import { RunGraphService } from '../../../../../../services/run-graph-session.se
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
 import { ImportExportService } from '../../../../../../core/services/import-export.service';
+import { MatrixBotStorageService } from '../../../../services/matrix-bot-storage.service';
+import { MatrixBotDialogComponent } from '../../../../components/matrix-bot-dialog/matrix-bot-dialog.component';
 
 @Component({
     selector: 'app-my-flows',
@@ -55,6 +57,7 @@ export class MyFlowsComponent implements OnInit {
         ConfirmationDialogService
     );
     private readonly importExportService = inject(ImportExportService);
+    private readonly matrixBotStorage = inject(MatrixBotStorageService);
 
     public readonly error = signal<string | null>(null);
     public readonly filteredFlows = this.flowsService.filteredFlows;
@@ -121,6 +124,10 @@ export class MyFlowsComponent implements OnInit {
 
             case 'export':
                 this.exportFlow(flow);
+                break;
+
+            case 'matrixBot':
+                this.openMatrixBotDialog(flow);
                 break;
 
             default:
@@ -271,6 +278,24 @@ export class MyFlowsComponent implements OnInit {
             error: (error) => {
                 console.error('Export failed:', error);
                 this.toastService.error(`Failed to export flow "${flow.name}"`);
+            },
+        });
+    }
+
+    private openMatrixBotDialog(flow: GraphDto): void {
+        this.matrixBotStorage.getBotForFlow(flow.id).subscribe({
+            next: (bot) => {
+                this.dialog.open(MatrixBotDialogComponent, {
+                    data: { flow, bot },
+                    panelClass: 'custom-dialog-panel',
+                });
+            },
+            error: (err) => {
+                console.error('Error loading matrix bot for flow', err);
+                this.dialog.open(MatrixBotDialogComponent, {
+                    data: { flow, bot: null },
+                    panelClass: 'custom-dialog-panel',
+                });
             },
         });
     }

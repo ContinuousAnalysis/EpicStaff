@@ -20,7 +20,8 @@ export type FlowAction =
     | 'rename'
     | 'run'
     | 'copy'
-    | 'export';
+    | 'export'
+    | 'matrixBot';
 
 export interface FlowCardAction {
     action: FlowAction;

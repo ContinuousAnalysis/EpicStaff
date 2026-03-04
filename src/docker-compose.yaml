@@ -21,7 +21,11 @@ services:
         condition: service_healthy
       frontend:
         condition: service_started
-      realtime: 
+      realtime:
+        condition: service_started
+      epicstaff-synapse:
+        condition: service_healthy
+      epicstaff-element:
         condition: service_started
 
     restart: always
@@ -70,7 +74,9 @@ services:
       - media_data:/app/media
 
     networks:
-      - backend-network
+      backend-network:
+        aliases:
+          - django-api
     depends_on:
       crewdb:
         condition: service_started
@@ -378,6 +384,112 @@ services:
       - redis
     networks:
       - backend-network
+
+  epicstaff-matrix-db:
+    image: postgres:16-alpine
+    container_name: epicstaff-matrix-db
+    environment:
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: ${MATRIX_DB_PASSWORD:-matrix_db_password}
+      POSTGRES_DB: synapse
+      POSTGRES_INITDB_ARGS: "--lc-collate=C --lc-ctype=C --encoding=UTF8"
+    volumes:
+      - matrix_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  epicstaff-synapse:
+    build:
+      context: ./matrix/synapse
+      dockerfile: Dockerfile
+    container_name: epicstaff-synapse
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:-localhost}
+      MATRIX_DB_PASSWORD: ${MATRIX_DB_PASSWORD:-matrix_db_password}
+      MATRIX_AS_TOKEN: ${MATRIX_AS_TOKEN}
+      MATRIX_HS_TOKEN: ${MATRIX_HS_TOKEN}
+    volumes:
+      - synapse_data:/data
+      - ./matrix/synapse/homeserver.yaml.template:/templates/homeserver.yaml.template:ro
+      - ./matrix/synapse/epicstaff_bridge.yaml.template:/templates/epicstaff_bridge.yaml.template:ro
+    networks:
+      - backend-network
+    depends_on:
+      epicstaff-matrix-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8008/_matrix/client/versions || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  epicstaff-element:
+    image: vectorim/element-web:latest
+    container_name: epicstaff-element
+    user: root
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "envsubst < /tmp/config.json.template > /app/config.json && nginx -g 'daemon off;'"
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:-localhost}
+      ELEMENT_WEB_PORT: "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/config.json || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./matrix/element/config.json.template:/tmp/config.json.template:ro
+    networks:
+      - frontend-network
+    restart: unless-stopped
+
+  epicstaff-matrix-bridge:
+    build:
+      context: ./matrix_bridge
+      dockerfile: Dockerfile
+    container_name: epicstaff-matrix-bridge
+    environment:
+      MATRIX_BRIDGE_PORT: ${MATRIX_BRIDGE_PORT:-8060}
+      MATRIX_HOMESERVER_URL: "http://epicstaff-synapse:8008"
+      MATRIX_DOMAIN: ${DOMAIN_NAME:-localhost}
+      MATRIX_AS_TOKEN: ${MATRIX_AS_TOKEN}
+      MATRIX_HS_TOKEN: ${MATRIX_HS_TOKEN}
+      DJANGO_API_URL: "http://django-api:8000/api"
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      SESSION_STATUS_CHANNEL: "sessions:session_status"
+      MATRIX_BOTS_UPDATE_CHANNEL: "matrix:bots:update"
+    networks:
+      - backend-network
+    depends_on:
+      epicstaff-synapse:
+        condition: service_healthy
+      django_app:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  epicstaff-matrix-admin:
+    image: awesometechnologies/synapse-admin:latest
+    container_name: epicstaff-matrix-admin
+    networks:
+      - frontend-network
+    depends_on:
+      - epicstaff-synapse
+    restart: unless-stopped
+
 volumes:
   sandbox_venvs:
     external: true
@@ -393,6 +505,10 @@ volumes:
   
   media_data:
     external: true
+
+  matrix_db_data:
+
+  synapse_data:
 
 networks:
   backend-network:

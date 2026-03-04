@@ -97,6 +97,8 @@ from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
     TelegramTriggerNodeFieldSerializer,
 )
+from tables.serializers.matrix_bot_serializers import MatrixBotSerializer
+from tables.models.matrix_bot_models import MatrixBot
 from tables.serializers.serializers import (
     UploadGraphFileSerializer,
     GraphFileUpdateSerializer,
@@ -1164,3 +1166,10 @@ class TelegramTriggerNodeViewSet(ModelViewSet):
 class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     queryset = TelegramTriggerNodeField.objects.select_related("telegram_trigger_node")
     serializer_class = TelegramTriggerNodeFieldSerializer
+
+
+class MatrixBotViewSet(viewsets.ModelViewSet):
+    queryset = MatrixBot.objects.select_related("flow").all()
+    serializer_class = MatrixBotSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["flow", "enabled"]

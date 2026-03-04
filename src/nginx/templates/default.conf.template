@@ -15,6 +15,16 @@ upstream realtime_server {
     server realtime:8050;
 }
 
+upstream epicstaff_synapse {
+    server epicstaff-synapse:8008;
+}
+upstream epicstaff_element {
+    server epicstaff-element:8080;
+}
+upstream epicstaff_matrix_admin {
+    server epicstaff-matrix-admin:80;
+}
+
 server {
     listen 80;
     ${SSL_ENABLE} listen 443 ssl;
@@ -78,5 +88,37 @@ server {
     location /media/ {
         proxy_pass http://backend_server/media/;
         proxy_set_header Host $host;
+    }
+
+    # Matrix homeserver API (federation + client API)
+    location /_matrix/ {
+        proxy_pass http://epicstaff_synapse;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 50M;
+    }
+
+    # Matrix well-known for client auto-discovery
+    location /.well-known/matrix/ {
+        proxy_pass http://epicstaff_synapse;
+        proxy_set_header Host $host;
+    }
+
+    # Element Web chat client
+    location /chat/ {
+        proxy_pass http://epicstaff_element/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Synapse Admin panel
+    location /matrix-admin/ {
+        proxy_pass http://epicstaff_matrix_admin/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
     }
 }

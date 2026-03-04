@@ -25,6 +25,7 @@ COPY crew/poetry.lock ./poetry.lock
 COPY crew/libraries/ ./libraries/
 
 ENV PEP517_BUILD_BACKEND=setuptools.build_meta
+ENV POETRY_HTTP_TIMEOUT=600
 
 # Install deps (project root)
 RUN poetry install --no-root --without dotdict,crew -v

@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "matrix-bridge"
+version = "0.1.0"
+description = "EpicStaff Matrix Chat Bridge"
+authors = ["EpicStaff Team"]
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = ">=0.120"
+uvicorn = {version = ">=0.38", extras = ["standard"]}
+httpx = ">=0.28"
+redis = {version = ">=5.2", extras = ["hiredis"]}
+pydantic = ">=2.10"
+pydantic-settings = ">=2.11"
+loguru = ">=0.7"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

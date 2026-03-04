@@ -1,0 +1,64 @@
+<div class="dialog-container">
+    <h2 class="dialog-title">Matrix Bot — {{ flow.name }}</h2>
+
+    <div class="bot-id" *ngIf="existingBot">
+        <label>Matrix User ID</label>
+        <code class="matrix-user-id">{{ existingBot.matrix_user_id }}</code>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-field">
+            <label for="input_variable">Input Variable</label>
+            <input
+                id="input_variable"
+                type="text"
+                formControlName="input_variable"
+                placeholder="message"
+            />
+            <small>Flow variable that receives the incoming chat message.</small>
+        </div>
+
+        <div class="form-field">
+            <label for="output_variable">Output Variable</label>
+            <input
+                id="output_variable"
+                type="text"
+                formControlName="output_variable"
+                placeholder="context"
+            />
+            <small>Flow variable whose value is sent back as the reply.</small>
+        </div>
+
+        <div class="form-field form-field--checkbox">
+            <label>
+                <input type="checkbox" formControlName="enabled" />
+                Enabled
+            </label>
+        </div>
+
+        <div class="error-message" *ngIf="errorMessage()">
+            {{ errorMessage() }}
+        </div>
+
+        <div class="dialog-actions">
+            <app-button
+                *ngIf="isEditMode"
+                type="outline-secondary"
+                [disabled]="isDeleting()"
+                (click)="onDisable()"
+            >
+                {{ isDeleting() ? 'Disabling...' : 'Disable' }}
+            </app-button>
+            <app-button type="secondary" (click)="onCancel()">
+                Cancel
+            </app-button>
+            <app-button
+                type="primary"
+                [disabled]="form.invalid || isSubmitting()"
+                (click)="onSubmit()"
+            >
+                {{ isSubmitting() ? 'Saving...' : (isEditMode ? 'Save' : 'Enable') }}
+            </app-button>
+        </div>
+    </form>
+</div>
