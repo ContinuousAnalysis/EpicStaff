@@ -154,12 +154,15 @@ services:
       - backend-network
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     command: >
       sh -c "redis-server --port $${REDIS_PORT:-6379}
       $${REDIS_PASSWORD:+--requirepass \"$${REDIS_PASSWORD}\"}"
     healthcheck:
       test: >
-        sh -c "redis-cli -p ${REDIS_PORT:-6379} ping || exit 1"
+        sh -c "redis-cli -p $${REDIS_PORT:-6379} $${REDIS_PASSWORD:+-a \"$${REDIS_PASSWORD}\"} ping || exit 1"
       interval: 5s
       timeout: 2s
       retries: 5
