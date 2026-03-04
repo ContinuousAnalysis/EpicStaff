@@ -326,7 +326,7 @@ urlpatterns = [
     path(
         "graph-rag/collections/<str:collection_id>/graph-rag/",
         GraphRagViewSet.as_view(
-            {"post": "create_graph_rag", "get": "get_by_collection"}
+            {"post": "create_or_update", "get": "get_by_collection"}
         ),
         name="graph-rag-collection",
     ),

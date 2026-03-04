@@ -16,7 +16,6 @@ from tables.models.embedding_models import EmbeddingConfig
 from tables.models.llm_models import LLMConfig
 from tables.exceptions import (
     GraphRagNotFoundException,
-    GraphRagAlreadyExistsException,
     EmbedderNotFoundException,
     LLMConfigNotFoundException,
     CollectionNotFoundException,
@@ -128,14 +127,15 @@ class GraphRagService:
 
     @staticmethod
     @transaction.atomic
-    def create_graph_rag(
+    def create_or_update_graph_rag(
         collection_id: int,
         embedder_id: int,
         llm_id: int,
     ) -> GraphRag:
         """
-        Create new GraphRag with default index configuration.
-        Automatically adds ALL documents from collection.
+        Create new GraphRag or update existing one.
+        On create: sets up default index config and auto-adds all documents from collection.
+        On update: only updates embedder and llm; index config and documents are left untouched.
 
         Args:
             collection_id: ID of source collection
@@ -143,13 +143,12 @@ class GraphRagService:
             llm_id: ID of LLM config to use (for entity extraction)
 
         Returns:
-            GraphRag instance
+            GraphRag instance (new or updated)
 
         Raises:
             CollectionNotFoundException: If collection not found
             EmbedderNotFoundException: If embedder not found
             LLMConfigNotFoundException: If LLM config not found
-            GraphRagAlreadyExistsException: If GraphRag already exists for collection
         """
         # Validate collection exists
         collection = GraphRagService._get_collection(collection_id)
@@ -166,7 +165,17 @@ class GraphRagService:
         )
 
         if existing_graph_rag:
-            raise GraphRagAlreadyExistsException(collection_id)
+            # Update existing GraphRag
+            existing_graph_rag.embedder = embedder
+            existing_graph_rag.llm = llm_config
+            existing_graph_rag.save(update_fields=["embedder", "llm"])
+
+            logger.info(
+                f"Updated GraphRag {existing_graph_rag.graph_rag_id} "
+                f"for collection {collection_id}"
+            )
+
+            return existing_graph_rag
 
         # Create default index config
         index_config = GraphRagService._create_default_index_config()

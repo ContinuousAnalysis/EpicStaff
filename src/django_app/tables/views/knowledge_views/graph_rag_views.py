@@ -16,7 +16,6 @@ from tables.services.knowledge_services.graph_rag_service import GraphRagService
 from tables.exceptions import (
     RagException,
     GraphRagNotFoundException,
-    GraphRagAlreadyExistsException,
     EmbedderNotFoundException,
     LLMConfigNotFoundException,
     CollectionNotFoundException,
@@ -49,7 +48,7 @@ class GraphRagViewSet(viewsets.GenericViewSet):
         return super().get_queryset()
 
     def get_serializer_class(self):
-        if self.action == "create_graph_rag":
+        if self.action == "create_or_update":
             return GraphRagCreateSerializer
         elif self.action == "retrieve":
             return GraphRagDetailSerializer
@@ -64,9 +63,9 @@ class GraphRagViewSet(viewsets.GenericViewSet):
         methods=["post"],
         url_path="collections/(?P<collection_id>[^/.]+)/graph-rag",
     )
-    def create_graph_rag(self, request, collection_id=None):
+    def create_or_update(self, request, collection_id=None):
         """
-        Create new GraphRag for a collection with default index configuration.
+        Create new GraphRag or update existing one for a collection.
 
         URL: POST /graph-rag/collections/{collection_id}/graph-rag/
 
@@ -88,7 +87,7 @@ class GraphRagViewSet(viewsets.GenericViewSet):
         llm_id = serializer.validated_data["llm_id"]
 
         try:
-            graph_rag = GraphRagService.create_graph_rag(
+            graph_rag = GraphRagService.create_or_update_graph_rag(
                 collection_id=collection_id,
                 embedder_id=embedder_id,
                 llm_id=llm_id,
@@ -98,10 +97,10 @@ class GraphRagViewSet(viewsets.GenericViewSet):
 
             return Response(
                 {
-                    "message": "GraphRag created successfully",
+                    "message": "GraphRag configured successfully",
                     "graph_rag": response_serializer.data,
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK,
             )
 
         except CollectionNotFoundException as e:
@@ -110,8 +109,6 @@ class GraphRagViewSet(viewsets.GenericViewSet):
             return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
         except LLMConfigNotFoundException as e:
             return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
-        except GraphRagAlreadyExistsException as e:
-            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)
         except RagException as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:

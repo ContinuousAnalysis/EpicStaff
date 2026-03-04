@@ -262,16 +262,6 @@ class GraphRagNotFoundException(RagException):
         super().__init__(f"GraphRag with id {graph_rag_id} not found")
 
 
-class GraphRagAlreadyExistsException(RagException):
-    """Raised when trying to create GraphRag but it already exists."""
-
-    def __init__(self, collection_id):
-        self.collection_id = collection_id
-        super().__init__(
-            f"GraphRag already exists for collection {collection_id}. Use update endpoint instead."
-        )
-
-
 class LLMConfigNotFoundException(RagException):
     """Raised when LLM config is not found."""
 
