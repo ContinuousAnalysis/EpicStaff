@@ -796,7 +796,7 @@ export class AgentsTableComponent {
         const dialogRef = this.dialog.open(AdvancedSettingsDialogComponent, {
             data: {
                 id: agentData.id,
-                agentRole: agentData.role,
+                role: agentData.role,
                 fcm_llm_config: agentData.fcm_llm_config,
                 max_iter: agentData.max_iter ?? 20,
                 max_rpm: agentData.max_rpm ?? null,

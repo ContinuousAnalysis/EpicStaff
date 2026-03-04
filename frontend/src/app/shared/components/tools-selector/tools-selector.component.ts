@@ -348,6 +348,9 @@ import { AppIconComponent } from '../app-icon/app-icon.component';
     `,
     styles: [
         `
+            :host {
+                width: 100%;
+            }
             // Tools selector
             .tools-selector {
                 width: 100%;
@@ -972,8 +975,8 @@ export class ToolsSelectorComponent implements OnInit, OnDestroy {
 
     public get totalSelectedTools(): number {
         return (
-            this.selectedToolConfigIds.size + 
-            this.selectedPythonToolIds.size + 
+            this.selectedToolConfigIds.size +
+            this.selectedPythonToolIds.size +
             this.selectedMcpToolIds.size
         );
     }

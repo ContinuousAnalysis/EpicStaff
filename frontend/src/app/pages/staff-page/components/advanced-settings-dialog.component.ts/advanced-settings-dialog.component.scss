@@ -64,6 +64,17 @@
     overflow-y: auto;
     padding: 1.5rem;
     min-height: 250px;
+
+    .tab-content {
+        display: block;
+        height: 0;
+        overflow: hidden;
+    }
+
+    .visible-tab {
+        height: auto;
+        overflow: auto;
+    }
 }
 
 /* Actions Section */

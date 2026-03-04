@@ -21,7 +21,7 @@ import {
     ExecutionTabComponent,
     GeneralTabComponent,
     IconButtonComponent, RagTabComponent,
-    TabButtonComponent,
+    TabButtonComponent, Tab, TabId
 } from '@shared/components';
 import {
     FullLLMConfig,
@@ -33,11 +33,9 @@ import {
     GetCollectionRequest
 } from "../../../../features/knowledge-sources/models/collection.model";
 
-import { Tab, TabId } from "./tab.interface";
-
 export interface AdvancedSettingsData {
     id: number;
-    agentRole: string;
+    role: string;
     max_iter: number;
     max_rpm: number | null;
     max_execution_time: number | null;
@@ -135,7 +133,7 @@ export class AdvancedSettingsDialogComponent implements OnInit {
     private initForm(): void {
         const data = this.data;
         this.form = this.fb.group({
-            agentRole: [data.agentRole],
+            role: [data.role],
             max_iter: [data.max_iter || 10, [Validators.min(1), Validators.max(30)]],
             max_rpm: [data.max_rpm || 10, [Validators.min(1), Validators.max(30)]],
             max_execution_time: [data.max_execution_time || 60, [Validators.min(1), Validators.max(300)]],
@@ -152,7 +150,7 @@ export class AdvancedSettingsDialogComponent implements OnInit {
         });
     }
 
-    public onKnowledgeSourceChange(collectionId: number | null): void {
+    private onKnowledgeSourceChange(collectionId: number | null): void {
         if (collectionId === null) {
             this.agentRags = [];
         } else {

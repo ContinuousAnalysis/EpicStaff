@@ -55,7 +55,7 @@
                         <app-radio-button
                             formControlName="search_method"
                             label="Search Type"
-                            tooltipText="Search Type"
+                            tooltipText="Basic Search - uses vector-based RAG to find relevant information and generate accurate responses. Local search generates answers by combining relevant data from the AI-extracted knowledge-graph with text chunks of the raw documents. This method is suitable for questions that require an understanding of specific entities mentioned in the documents"
                             [options]="searchTypes"
                         />
                     </div>
@@ -76,7 +76,7 @@
                                         <app-input-number
                                             formControlName="k"
                                             label="K"
-                                            tooltipText="K"
+                                            tooltipText="Number of text units to retrieve from the vector store for context building"
                                             [alwaysShowSteps]="true"
                                         />
                                     </div>
@@ -84,7 +84,7 @@
                                         <app-input-number
                                             formControlName="max_context_tokens"
                                             label="Max Context Tokens"
-                                            tooltipText="Max context tokens"
+                                            tooltipText="The maximum context size to create, in tokens"
                                             [alwaysShowSteps]="true"
                                         />
                                     </div>
@@ -106,9 +106,9 @@
                                     <div class="form-group">
                                         <app-dual-slider
                                             firstLabel="Text Unit Proportion"
-                                            firstTooltipText="Text Unit Proportion"
+                                            firstTooltipText="The text unit proportion"
                                             secondLabel="Community Proportion"
-                                            secondTooltipText="Community Proportion"
+                                            secondTooltipText="The community proportion"
                                             [firstValue]="textUnitProportionControl.value"
                                             [secondValue]="communityProportionControl.value"
                                             (firstValueChange)="onTextUnitPropUpdate($event)"
@@ -125,7 +125,7 @@
                                         <app-input-number
                                             formControlName="conversation_history_max_turns"
                                             label="Conversation History max Turns"
-                                            tooltipText="Conversation History max Turns"
+                                            tooltipText="The conversation history maximum turns"
                                             [alwaysShowSteps]="true"
                                         />
                                     </div>
@@ -133,7 +133,7 @@
                                         <app-input-number
                                             formControlName="max_context_tokens"
                                             label="Max Context Tokens"
-                                            tooltipText="Max context tokens"
+                                            tooltipText="The maximum tokens to use building the request context"
                                             [alwaysShowSteps]="true"
                                         />
                                     </div>
@@ -144,7 +144,7 @@
                                         <app-input-number
                                             formControlName="top_k_entities"
                                             label="Top K Entities"
-                                            tooltipText="Top K Entities"
+                                            tooltipText="The top k mapped entities"
                                             [alwaysShowSteps]="true"
                                         />
                                     </div>
@@ -152,7 +152,7 @@
                                         <app-input-number
                                             formControlName="top_k_relationships"
                                             label="Top K Relationships"
-                                            tooltipText="Top K Relationships"
+                                            tooltipText="The top k mapped relations"
                                             [alwaysShowSteps]="true"
                                         />
                                     </div>

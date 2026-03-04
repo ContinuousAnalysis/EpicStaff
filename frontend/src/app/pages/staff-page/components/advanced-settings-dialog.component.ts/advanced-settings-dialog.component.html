@@ -4,7 +4,7 @@
         <div class="icon-and-title">
             <i class="ti ti-settings"></i>
             <h2 class="dialog-title">
-                Advanced Settings for {{ data.agentRole }}
+                Advanced Settings for {{ data.role }}
             </h2>
         </div>
         <app-icon-button
@@ -30,39 +30,37 @@
         }
     </div>
 
-    <!-- Scrollable Content -->
     <div class="scrollable-content">
-        @switch (activeTab()) {
-            @case (TabId.GENERAL) {
-                <app-general-tab
-                    [form]="form"
-                    [combinedLLMs]="combinedLLMs"
-                />
-            }
-            @case (TabId.RAG) {
-                <app-rag-tab
-                    [form]="form"
-                    [allKnowledgeSources]="allKnowledgeSources"
-                    [agentRags]="agentRags"
-                    [searchConfigs]="data.search_configs"
-                />
-            }
-<!--            @case (TabId.LLM_PARAMS) {-->
-<!--                <app-llm-params-tab-->
-<!--                    [form]="form"-->
-<!--                />-->
-<!--            }-->
-            @case (TabId.EXECUTION) {
-                <app-execution-tab
-                    [form]="form"
-                />
-            }
-            @case (TabId.ADVANCED) {
-                <app-advanced-tab
-                    [form]="form"
-                />
-            }
-        }
+        <app-general-tab
+            class="tab-content"
+            [class.visible-tab]="activeTab() === TabId.GENERAL"
+            [form]="form"
+            [combinedLLMs]="combinedLLMs"
+        />
+        <app-rag-tab
+            class="tab-content"
+            [class.visible-tab]="activeTab() === TabId.RAG"
+            [form]="form"
+            [allKnowledgeSources]="allKnowledgeSources"
+            [agentRags]="agentRags"
+            [searchConfigs]="data.search_configs"
+        />
+        <!--    Might be used in the future-->
+        <!--    <app-llm-params-tab-->
+        <!--        class="tab-content"-->
+        <!--        [class.visible-tab]="activeTab() === TabId.LLM_PARAMS"-->
+        <!--        [form]="form"-->
+        <!--    />-->
+        <app-execution-tab
+            class="tab-content"
+            [class.visible-tab]="activeTab() === TabId.EXECUTION"
+            [form]="form"
+        />
+        <app-advanced-tab
+            class="tab-content"
+            [class.visible-tab]="activeTab() === TabId.ADVANCED"
+            [form]="form"
+        />
     </div>
 
     <!-- Action Buttons -->
