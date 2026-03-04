@@ -1,19 +1,21 @@
 import asyncio
 import json
 import sys
-from app.request_models import WebhookConfigData
-from app.services.tunnel_registry import TunnelRegistry, get_tunnel_registry
+
 from fastapi import Depends, FastAPI
+from fastapi.concurrency import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
+
 from app.controllers import webhook_routes
+from app.core.settings import settings
+from app.request_models import WebhookConfigData
 from app.services.redis_service import (
     RedisService,
     close_redis_connection,
     get_redis_service,
 )
-from app.core.settings import settings
-from fastapi.concurrency import asynccontextmanager
-from fastapi.middleware.cors import CORSMiddleware
-from loguru import logger
+from app.services.tunnel_registry import TunnelRegistry, get_tunnel_registry
 
 
 async def listen_redis(redis_service: RedisService, tunnel_registry: TunnelRegistry):
