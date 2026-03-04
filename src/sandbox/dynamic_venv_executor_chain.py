@@ -62,7 +62,7 @@ class CreateVenvHandler(AbstractHandler):
 
         context["libraries"] = set(context["libraries"])
         # Install libraries
-        predefined_libraries = {"/home/user/root/app/shared/dotdict"}
+        predefined_libraries = {"/app/src/shared/dotdict"}  # TODO: deal with hard coded path
         context["libraries"].update(predefined_libraries)
 
         context["libraries"] = sorted(context["libraries"])

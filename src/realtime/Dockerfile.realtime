@@ -4,6 +4,9 @@ FROM python:3.12.10
 # Set work directory
 WORKDIR /app/src/realtime
 
+# Set Poetry env variables
+ENV PYTHONPATH=/app
+
 # Run system update and clean garbage
 RUN apt-get update && apt-get install -y portaudio19-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
