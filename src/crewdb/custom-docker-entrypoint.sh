@@ -7,7 +7,6 @@ USERS_CREATED_FLAG="/tmp/users_created"
 # HEALTH CHECK ENTRY POINT
 # Only checks if postgres is ready + flag is set.
 # Called by Docker healthcheck — must be fast.
-
 if [[ "$1" = "healthcheck-users" ]]; then
     pg_isready -U "${POSTGRES_USER:-postgres}" -p "${DB_PORT:-5432}" || exit 1
     if [[ -f "$USERS_CREATED_FLAG" ]]; then
@@ -332,28 +331,33 @@ all_tables_exist() {
 # BACKGROUND WORKER
 # Phase 1: Wait for postgres → create roles immediately.
 # Phase 2: Wait for tables (created by Django migrations) → grant permissions.
+# No dependency on Django health endpoint at all.
 
 background_setup() {
     (
         export TARGET_DB="${POSTGRES_DB:-postgres}"
 
-        echo "=== [setup] Phase 1: Waiting for PostgreSQL to accept connections ==="
-        until pg_isready -U "${POSTGRES_USER:-postgres}" -p "${DB_PORT:-5432}" -q; do
+        echo "=== [setup] Phase 1: Waiting for PostgreSQL and target database to be ready ==="
+        # pg_isready only checks if postgres accepts connections — it returns true
+        # even during the initdb temp-server phase, before POSTGRES_DB is created.
+        # We must wait until we can actually connect to the target database.
+        until psql -U "${POSTGRES_USER:-postgres}" -p "${DB_PORT:-5432}" -d "$TARGET_DB" -c "SELECT 1" > /dev/null 2>&1; do
+            echo "[setup] Waiting for database '${TARGET_DB}' to exist..."
             sleep 2
         done
-        echo "=== [setup] PostgreSQL is up ==="
+        echo "=== [setup] PostgreSQL is up and database '${TARGET_DB}' exists ==="
 
-        # Create roles
+        # Phase 1 — create roles (no tables needed)
         create_manager_user
         create_knowledge_user
         create_realtime_user
         create_crew_user
         echo "=== [setup] Phase 1 complete: all roles created ==="
 
-        # Wait for Django to run migrations, then grant permissions
+        # Phase 2 — wait for Django to run migrations, then grant permissions
         echo "=== [setup] Phase 2: Waiting for Django to create tables via migrations ==="
         local attempt=0
-        local max_attempts=120
+        local max_attempts=120   # 120 × 10s = 20 minutes max
 
         while [[ $attempt -lt $max_attempts ]]; do
             if all_tables_exist; then
