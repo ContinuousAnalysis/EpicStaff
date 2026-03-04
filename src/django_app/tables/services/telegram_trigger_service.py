@@ -1,17 +1,17 @@
 import requests
-from tables.services.webhook_trigger_service import WebhookTriggerService
-from tables.models.webhook_models import WebhookTrigger
+from loguru import logger
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
-
 
 from tables.exceptions import RegisterTelegramTriggerError
 from tables.models.graph_models import TelegramTriggerNode
+from tables.models.webhook_models import WebhookTrigger
 from tables.services.session_manager_service import SessionManagerService
+from tables.services.webhook_trigger_service import WebhookTriggerService
 from utils.singleton_meta import SingletonMeta
 
 
@@ -87,10 +87,14 @@ class TelegramTriggerService(metaclass=SingletonMeta):
         except Exception:
             return {"ok": False, "description": "Unregistration failed"}
 
-    def handle_telegram_trigger(self, url_path: str, payload: dict) -> None:
-        telegram_trigger_node_list = TelegramTriggerNode.objects.filter(
-            webhook_trigger__path=url_path
+    def handle_telegram_trigger(
+        self, url_path: str, payload: dict, config_id: str | None = None
+    ) -> None:
+        filters = self.webhook_trigger_service.get_trigger_filters(
+            path=url_path, config_id=config_id
         )
+
+        telegram_trigger_node_list = TelegramTriggerNode.objects.filter(**filters)
 
         for telegram_trigger_node in telegram_trigger_node_list:
             self.session_manager_service.run_session(

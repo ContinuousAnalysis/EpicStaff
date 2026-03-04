@@ -103,10 +103,13 @@ class RedisPubSub:
                 TelegramTriggerService().handle_telegram_trigger(
                     url_path=data.path[len(TELEGRAM_TRIGGER_PREFIX) : -1],
                     payload=data.payload,
+                    config_id=data.config_id,
                 )
             else:
                 WebhookTriggerService().handle_webhook_trigger(
-                    path=data.path, payload=data.payload
+                    path=data.path,
+                    payload=data.payload,
+                    config_id=data.config_id,
                 )
         except Exception as e:
             logger.error(f"Error handling webhook_events_handler message: {e}")

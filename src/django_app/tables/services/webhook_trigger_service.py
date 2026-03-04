@@ -1,4 +1,5 @@
 import requests
+from loguru import logger
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -31,10 +32,30 @@ class WebhookTriggerService(metaclass=SingletonMeta):
         self.redis_service = redis_service
         self.session_manager_service = session_manager_service
 
-    def handle_webhook_trigger(self, path: str, payload: dict) -> None:
-        webhook_trigger_node_list = WebhookTriggerNode.objects.filter(
-            webhook_trigger__path=path
-        )
+    def get_trigger_filters(self, path: str, config_id: str | None = None) -> dict:
+        filters = {"webhook_trigger__path": path}
+
+        if config_id:
+            if ":" in config_id:
+                provider, config_name = config_id.split(":", 1)
+            else:
+                provider, config_name = "ngrok", config_id
+
+            if provider == "ngrok":
+                filters["webhook_trigger__ngrok_webhook_config__name"] = config_name
+            else:
+                logger.warning(
+                    f"Unknown tunnel provider '{provider}' for config '{config_name}'"
+                )
+
+        return filters
+
+    def handle_webhook_trigger(
+        self, path: str, payload: dict, config_id: str | None = None
+    ) -> None:
+        filters = self.get_trigger_filters(path, config_id)
+
+        webhook_trigger_node_list = WebhookTriggerNode.objects.filter(**filters)
 
         for webhook_trigger_node in webhook_trigger_node_list:
             graph_organization = GraphOrganization.objects.filter(
@@ -43,6 +64,7 @@ class WebhookTriggerService(metaclass=SingletonMeta):
             variables: dict = {"trigger_payload": payload}
             if graph_organization:
                 variables.update(graph_organization.persistent_variables)
+
             self.session_manager_service.run_session(
                 graph_id=webhook_trigger_node.graph.pk,
                 variables=variables,

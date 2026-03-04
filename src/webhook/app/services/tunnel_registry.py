@@ -85,6 +85,18 @@ class TunnelRegistry:
             data = self._tunnel_pool.get(unique_id)
             return data[0] if data else None
 
+    async def get_unique_id_by_domain(self, domain: str) -> str | None:
+        if not domain:
+            return None
+
+        # NOTE: yeah, it's O(n), but N is almost always equals to 1 or 2
+        async with self._lock:
+            for unique_id, (tunnel, config) in self._tunnel_pool.items():
+                if tunnel._public_url and domain in tunnel._public_url:
+                    return unique_id
+
+        return None
+
 
 _tunnel_registry = None
 

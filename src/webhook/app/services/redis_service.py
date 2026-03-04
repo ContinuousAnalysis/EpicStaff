@@ -21,11 +21,13 @@ class RedisService:
         self.webhook_channel = webhook_channel
         logger.info(f"RedisService initialized for {self.redis_url}")
 
-    async def publish_webhook(self, path: str, payload: Dict[str, Any]):
+    async def publish_webhook(
+        self, path: str, payload: Dict[str, Any], config_id: str | None = None
+    ):
         """
         Modifies the data and publishes it to a Redis channel.
         """
-        message_data = WebhookEventData(path=path, payload=payload)
+        message_data = WebhookEventData(path=path, payload=payload, config_id=config_id)
 
         logger.debug(f"Publishing to Redis channel '{self.webhook_channel}'")
         await self.client.publish(self.webhook_channel, message_data.model_dump_json())
@@ -56,7 +58,7 @@ async def get_redis_service() -> RedisService:
             webhook_channel=WEBHOOK_MESSAGE_CHANNEL,
         )
         _redis_service
-        
+
     return _redis_service
 
 

@@ -21,7 +21,6 @@ class LLMConfigData(BaseModel):
     deployment_id: str | None = None
     headers: dict[str, str] | None = None
     extra_headers: dict[str, str] | None = None
-    
 
 
 class EmbedderConfigData(BaseModel):
@@ -422,6 +421,7 @@ class StopSessionMessage(BaseModel):
 class WebhookEventData(BaseModel):
     path: str
     payload: dict
+    config_id: str | None = None
 
 
 class ProcessRagIndexingMessage(BaseModel):
@@ -443,7 +443,6 @@ class BaseTunnelConfigData(BaseModel):
 
 
 class NgrokConfigData(BaseTunnelConfigData):
-
     auth_token: str
     domain: str | None = None
     region: Literal["us", "eu", "ap"] | None = None

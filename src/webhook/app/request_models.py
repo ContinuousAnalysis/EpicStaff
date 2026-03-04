@@ -1,10 +1,11 @@
-from typing import Literal, override
+from typing import Literal
 from pydantic import BaseModel
 
 
 class WebhookEventData(BaseModel):
     path: str
     payload: dict
+    config_id: str | None = None
 
 
 class BaseTunnelConfigData(BaseModel):
@@ -20,7 +21,6 @@ class BaseTunnelConfigData(BaseModel):
 
 
 class NgrokConfigData(BaseTunnelConfigData):
-
     auth_token: str
     domain: str | None = None
     region: Literal["us", "eu", "ap"] | None = None
