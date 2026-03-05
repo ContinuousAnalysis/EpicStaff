@@ -87,6 +87,7 @@ class WebhookTriggerService(metaclass=SingletonMeta):
         delivered_n = redis_client.publish(
             channel=REDIS_TUNNEL_CONFIG_CHANNEL, message=data.model_dump_json()
         )
+        self._tunnel_url_cache.clear()
         return delivered_n > 0
 
     @retry(
