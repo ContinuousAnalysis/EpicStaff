@@ -1533,7 +1533,7 @@ class NgrokWebhookConfigModelSerializer(serializers.ModelSerializer):
         try:
             return WebhookTriggerService().get_tunnel_url(ngrok_webhook_config=instance)
         except Exception as e:
-            logger.exception(e)
+            logger.error(f"Failed to read tunnel URL for '{instance.name}': {e}")
         return None
 
 

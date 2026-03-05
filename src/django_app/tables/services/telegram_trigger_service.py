@@ -6,6 +6,7 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
+from requests.exceptions import ConnectionError, Timeout
 
 from tables.exceptions import RegisterTelegramTriggerError
 from tables.models.graph_models import TelegramTriggerNode
@@ -29,7 +30,7 @@ class TelegramTriggerService(metaclass=SingletonMeta):
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type((requests.RequestException, ValueError)),
+        retry=retry_if_exception_type((ConnectionError, Timeout)),
         reraise=True,
     )
     def _call_telegram_api(
@@ -60,7 +61,13 @@ class TelegramTriggerService(metaclass=SingletonMeta):
             )
         except Exception as e:
             raise RegisterTelegramTriggerError(
-                f"Failed to fetch tunnel URL after retries: {str(e)}", status_code=503
+                f"Failed to fetch tunnel URL: {str(e)}", status_code=503
+            )
+
+        if not webhook_tunnel_url:
+            raise RegisterTelegramTriggerError(
+                "Tunnel URL is not yet available, try again once the tunnel is established.",
+                status_code=503,
             )
 
         telegram_webhook_url = (

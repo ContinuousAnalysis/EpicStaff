@@ -1,5 +1,6 @@
 import asyncio
 from loguru import logger
+from typing import Optional
 
 from app.providers.base import AbstractTunnelProvider
 from app.providers.provider_factory import get_provider
@@ -7,14 +8,23 @@ from app.request_models import BaseTunnelConfigData, WebhookConfigData
 
 
 class TunnelRegistry:
-    def __init__(self):
+    def __init__(self, redis_service=None):
         self._tunnel_pool: dict[
             str, tuple[AbstractTunnelProvider, BaseTunnelConfigData]
         ] = dict()
         self._lock = asyncio.Lock()
+        self._redis_service = redis_service
 
     async def register(self, config: BaseTunnelConfigData):
         tunnel = get_provider(config)
+
+        if self._redis_service:
+
+            async def _on_url_set(url: str):
+                await self._redis_service.set_tunnel_url(config.unique_id, url)
+
+            tunnel._on_url_set = _on_url_set
+
         await tunnel.connect()
 
         async with self._lock:
@@ -40,6 +50,14 @@ class TunnelRegistry:
             await tunnel.disconnect()
         except Exception as e:
             logger.error(f"Error disconnecting from tunnel {unique_id}: {e}")
+
+        if self._redis_service:
+            try:
+                await self._redis_service.delete_tunnel_url(unique_id)
+            except Exception as e:
+                logger.error(
+                    f"Error deleting tunnel URL from Redis for {unique_id}: {e}"
+                )
 
     async def register_many(self, webhook_config_data: WebhookConfigData):
         expected_configs = {
@@ -98,11 +116,11 @@ class TunnelRegistry:
         return None
 
 
-_tunnel_registry = None
+_tunnel_registry: Optional[TunnelRegistry] = None
 
 
-def get_tunnel_registry() -> TunnelRegistry:
+def get_tunnel_registry(redis_service=None) -> TunnelRegistry:
     global _tunnel_registry
     if _tunnel_registry is None:
-        _tunnel_registry = TunnelRegistry()
+        _tunnel_registry = TunnelRegistry(redis_service=redis_service)
     return _tunnel_registry

@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     REQUEST_WEBHOOK_UPDATE_CHANNEL: str = "REQUEST_WEBHOOK_UPDATE_CHANNEL"
     WEBHOOK_TUNNEL_RECONNECT_TIMEOUT: int = 10
     LOG_LEVEL: str = "INFO"
+    TUNNEL_URLS_HASH_KEY: str = "tunnel_urls"
 
     model_config = SettingsConfigDict(**config_dict)
 

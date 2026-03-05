@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     logger.info("Application starting up...")
 
     redis_service = await get_redis_service()
-    tunnel_registry = get_tunnel_registry()
+    tunnel_registry = get_tunnel_registry(redis_service=redis_service)
 
     redis_listener_task = asyncio.create_task(
         listen_redis(redis_service, tunnel_registry)

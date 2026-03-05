@@ -1,5 +1,5 @@
 import abc
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 
 class AbstractTunnelProvider(abc.ABC):
@@ -8,10 +8,7 @@ class AbstractTunnelProvider(abc.ABC):
     """
 
     def __init__(
-        self, 
-        port: int, 
-        auth_token: Optional[str] = None, 
-        domain: Optional[str] = None
+        self, port: int, auth_token: Optional[str] = None, domain: Optional[str] = None
     ):
         """
         Initialize the provider with the target port and optional credentials.
@@ -20,14 +17,15 @@ class AbstractTunnelProvider(abc.ABC):
         self._auth_token = auth_token
         self._domain = domain
         self._public_url: Optional[str] = None
-        
+        self._on_url_set: Optional[Callable[[str], Awaitable[None]]] = None
+
         # New common state flag
         self._is_running: bool = False
 
     @abc.abstractmethod
     async def connect(self):
         """
-        Entry point to start the tunnel service. 
+        Entry point to start the tunnel service.
         Implementation should set self._is_running to True.
         """
         raise NotImplementedError
@@ -35,7 +33,7 @@ class AbstractTunnelProvider(abc.ABC):
     @abc.abstractmethod
     async def disconnect(self):
         """
-        Shutdown the tunnel service. 
+        Shutdown the tunnel service.
         Implementation should set self._is_running to False.
         """
         raise NotImplementedError

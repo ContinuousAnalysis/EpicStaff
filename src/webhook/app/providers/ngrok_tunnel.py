@@ -99,6 +99,9 @@ class NgrokTunnel(AbstractTunnelProvider):
                 self._public_url = self._tunnel.public_url
                 print(f"Tunnel established: {self._public_url}")
 
+            if self._public_url and self._on_url_set:
+                await self._on_url_set(self._public_url)
+
         except Exception as e:
             logger.error(f"Failed to establish ngrok connection: {e}")
             raise

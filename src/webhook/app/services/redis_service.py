@@ -32,6 +32,14 @@ class RedisService:
         logger.debug(f"Publishing to Redis channel '{self.webhook_channel}'")
         await self.client.publish(self.webhook_channel, message_data.model_dump_json())
 
+    async def set_tunnel_url(self, unique_id: str, url: str) -> None:
+        await self.client.hset(settings.TUNNEL_URLS_HASH_KEY, unique_id, url)
+        logger.debug(f"Stored tunnel URL for '{unique_id}': {url}")
+
+    async def delete_tunnel_url(self, unique_id: str) -> None:
+        await self.client.hdel(settings.TUNNEL_URLS_HASH_KEY, unique_id)
+        logger.debug(f"Removed tunnel URL for '{unique_id}'")
+
     async def close(self):
         """Closes the Redis connection."""
         logger.info("Closing Redis connection...")
