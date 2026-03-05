@@ -17,7 +17,6 @@ services:
       GUNICORN_RELOAD: 1
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
-      # Добавляем локальные папки к тем, что уже описаны в base.yaml
       - ./django_app:/home/user/root/app/django_app:cached
       - ./shared:/home/user/root/app/shared:cached
 
@@ -74,6 +73,10 @@ services:
     env_file:
       - ./.env
       - ../dev/dev.env
+    
+    environment:
+      - API_URL=http://127.0.0.1:8000/api/
+      - REALTIME_API_URL=http://127.0.0.1:8050/api/realtime/
 
   webhook:
     command: >
