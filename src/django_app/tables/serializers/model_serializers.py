@@ -1579,6 +1579,12 @@ class WebhookTriggerSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class NoteNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+    class Meta(BaseGraphEntityMixin.Meta):
+        model = NoteNode
+        fields = "__all__"
+
+
 class GraphSerializer(serializers.ModelSerializer):
     # Reverse relationships
     crew_node_list = CrewNodeSerializer(many=True, read_only=True)
@@ -1598,6 +1604,7 @@ class GraphSerializer(serializers.ModelSerializer):
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
     )
+    note_node_list = NoteNodeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Graph
@@ -1621,6 +1628,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "time_to_live",
             "persistent_variables",
             "telegram_trigger_node_list",
+            "note_node_list",
         ]
 
 
