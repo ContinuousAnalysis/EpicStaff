@@ -50,8 +50,15 @@ from tables.models.realtime_models import (
     RealtimeAgent,
     RealtimeAgentChat,
 )
-from tables.filters import EmbeddingModelFilter, LLMModelFilter, ProviderFilter
+from tables.filters import (
+    EmbeddingModelFilter,
+    LabelFilterBackend,
+    LLMModelFilter,
+    ProviderFilter,
+)
+from tables.utils.helpers import natural_sort_key
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
+from tables.models.labels import Label
 from tables.models.vector_models import MemoryDatabase
 from tables.models.mcp_models import McpTool
 from utils.logger import logger
@@ -62,6 +69,7 @@ from tables.serializers.model_serializers import (
     AgentWriteSerializer,
     CrewTagSerializer,
     AgentTagSerializer,
+    LabelSerializer,
     DecisionTableNodeSerializer,
     EndNodeSerializer,
     SubGraphNodeSerializer,
@@ -184,10 +192,9 @@ class BasePredefinedRestrictedViewSet(ModelViewSet):
     """
 
     def get_queryset(self):
-
         if self.action == "destroy":
             return self.queryset.filter(predefined=False)
-        
+
         return self.queryset
 
     def perform_create(self, serializer):
@@ -202,15 +209,14 @@ class BasePredefinedRestrictedViewSet(ModelViewSet):
         validated_data = serializer.validated_data
 
         if instance.predefined:
-            
             # Should not be able to change name
-            if 'name' in validated_data and validated_data['name'] != instance.name:
+            if "name" in validated_data and validated_data["name"] != instance.name:
                 e = f"Cannot change the name of a predefined {self.queryset.model.__name__.lower()}"
                 logger.warning(e)
                 raise ValidationError({"name": e})
 
             # Should not be able to remove predefined
-            if 'predefined' in validated_data and validated_data['predefined'] is False:
+            if "predefined" in validated_data and validated_data["predefined"] is False:
                 e = "Cannot unset predefined status for this object"
                 logger.warning(e)
                 raise ValidationError({"predefined": e})
@@ -229,6 +235,7 @@ class BasePredefinedRestrictedViewSet(ModelViewSet):
             logger.error(e)
             raise PermissionDenied(e)
         instance.delete()
+
 
 class TemplateAgentReadWriteViewSet(ModelViewSet):
     queryset = TemplateAgent.objects.all()
@@ -276,6 +283,7 @@ class EmbeddingModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
     serializer_class = EmbeddingModelSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = EmbeddingModelFilter
+
 
 class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     class EmbeddingConfigFilter(filters.FilterSet):
@@ -646,6 +654,7 @@ class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
 
 class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
     serializer_class = GraphSerializer
+    filter_backends = [DjangoFilterBackend, LabelFilterBackend]
 
     copy_serializer_class = GraphCopySerializer
     copy_deserializer_class = GraphCopyDeserializer
@@ -661,7 +670,7 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
         )
 
     def get_queryset(self):
-        return (
+        qs = (
             Graph.objects.defer("metadata", "tags")
             .prefetch_related(
                 Prefetch(
@@ -703,6 +712,7 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
             )
             .all()
         )
+        return qs
 
     def perform_create(self, serializer):
         created_graph = serializer.save()
@@ -717,6 +727,52 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
             instance=files, many=True, context={"request": request}
         )
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get", "post"], url_path="labels")
+    def labels(self, request, pk=None):
+        graph = self.get_object()
+
+        if request.method == "GET":
+            serializer = LabelSerializer(graph.labels.all(), many=True)
+            return Response(serializer.data)
+
+        # POST: attach one or more labels to the graph
+        label_ids = request.data.get("label_ids")
+        if not label_ids:
+            return Response(
+                {"label_ids": "This field is required and must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not isinstance(label_ids, list):
+            return Response(
+                {"label_ids": "Must be a list of label IDs."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        labels = Label.objects.filter(pk__in=label_ids)
+        found_ids = set(labels.values_list("id", flat=True))
+        missing = set(label_ids) - found_ids
+        if missing:
+            return Response(
+                {"label_ids": f"Labels not found: {sorted(missing)}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        graph.labels.add(*labels)
+        return Response(
+            LabelSerializer(labels, many=True).data, status=status.HTTP_201_CREATED
+        )
+
+    @action(detail=True, methods=["delete"], url_path=r"labels/(?P<label_id>\d+)")
+    def label_detail(self, request, pk=None, label_id=None):
+        graph = self.get_object()
+        try:
+            label = graph.labels.get(pk=label_id)
+        except Label.DoesNotExist:
+            return Response(
+                {"detail": "Label not found on this graph."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        graph.labels.remove(label)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["get"])
     def export(self, request, pk: int):
@@ -752,12 +808,16 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphLightSerializer
-    filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        drf_filters.SearchFilter,
+        LabelFilterBackend,
+    ]
     # filterset_fields = ['tags']  TODO: Uncomment when tags logic implemented
     search_fields = ["name", "description"]
 
     def get_queryset(self):
-        return Graph.objects.prefetch_related("tags")
+        return Graph.objects.prefetch_related("tags", "labels")
 
 
 class CrewNodeViewSet(viewsets.ModelViewSet):
@@ -1164,3 +1224,40 @@ class TelegramTriggerNodeViewSet(ModelViewSet):
 class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     queryset = TelegramTriggerNodeField.objects.select_related("telegram_trigger_node")
     serializer_class = TelegramTriggerNodeFieldSerializer
+
+
+class LabelViewSet(viewsets.ModelViewSet):
+    queryset = Label.objects.all()
+    serializer_class = LabelSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["name", "parent"]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        labels = list(queryset)
+
+        # Build paths in memory (one extra lightweight query) to avoid N+1
+        # and to correctly resolve parents that may be filtered out.
+        id_to_row = {
+            row["id"]: row for row in Label.objects.values("id", "parent_id", "name")
+        }
+
+        def full_path_key(label):
+            parts = []
+            current_id = label.id
+            while current_id is not None:
+                row = id_to_row.get(current_id)
+                if row is None:
+                    break
+                parts.append(row["name"])
+                current_id = row["parent_id"]
+            return "/".join(reversed(parts))
+
+        labels.sort(key=lambda label: natural_sort_key(full_path_key(label)))
+
+        page = self.paginate_queryset(labels)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        return Response(self.get_serializer(labels, many=True).data)

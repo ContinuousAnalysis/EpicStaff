@@ -6,10 +6,12 @@ from loguru import logger
 from django.utils import timezone
 
 from tables.models.base_models import BaseGraphEntity, BaseGlobalNode
+from tables.models.labels import Label
 
 
 class Graph(models.Model):
     tags = models.ManyToManyField(to="GraphTag", blank=True, default=[])
+    labels = models.ManyToManyField(Label, blank=True, related_name="flows")
 
     name = models.CharField(max_length=255, blank=False)
     description = models.TextField(blank=True)
