@@ -13,3 +13,4 @@ class WebhookTriggerNestedSerializer(serializers.ModelSerializer):
         model = WebhookTrigger
         fields = ["path", "ngrok_webhook_config"]
         extra_kwargs = {"path": {"validators": []}}
+        validators = []
