@@ -38,8 +38,7 @@ from tables.models.graph_models import (
     TelegramTriggerNode,
     WebhookTriggerNode,
 )
-from tables.request_models import *
-from tables.request_models import CrewData, EndNodeData
+from src.shared.models import *
 from utils.singleton_meta import SingletonMeta
 
 from tables.serializers.model_serializers import ToolConfigSerializer

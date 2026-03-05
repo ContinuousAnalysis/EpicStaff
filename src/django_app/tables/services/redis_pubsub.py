@@ -10,10 +10,7 @@ from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.models import GraphSessionMessage
 from tables.models import PythonCodeResult
 from tables.models import GraphOrganization
-from tables.request_models import CodeResultData, GraphSessionMessageData
-from tables.request_models import (
-    WebhookEventData,
-)
+from src.shared.models import CodeResultData, GraphSessionMessageData, WebhookEventData
 from tables.models import Session
 from loguru import logger
 

@@ -18,7 +18,7 @@ from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
 from tables.validators.file_node_validator import FileNodeValidator
 
-from tables.request_models import (
+from src.shared.models import (
     ConditionalEdgeData,
     CrewNodeData,
     DecisionTableNodeData,
