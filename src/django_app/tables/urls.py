@@ -326,7 +326,7 @@ urlpatterns = [
     path(
         "graph-rag/collections/<str:collection_id>/graph-rag/",
         GraphRagViewSet.as_view(
-            {"post": "create_graph_rag", "get": "get_by_collection"}
+            {"post": "create_or_update", "get": "get_by_collection"}
         ),
         name="graph-rag-collection",
     ),
@@ -344,6 +344,11 @@ urlpatterns = [
         "graph-rag/<int:pk>/documents/bulk-delete/",
         GraphRagViewSet.as_view({"post": "remove_documents"}),
         name="graph-rag-documents-bulk-delete",
+    ),
+    path(
+        "graph-rag/<int:pk>/documents/<int:document_id>/",
+        GraphRagViewSet.as_view({"delete": "delete_document"}),
+        name="graph-rag-document-delete",
     ),
     path(
         "graph-rag/<int:pk>/documents/list/",

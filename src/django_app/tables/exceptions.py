@@ -262,16 +262,6 @@ class GraphRagNotFoundException(RagException):
         super().__init__(f"GraphRag with id {graph_rag_id} not found")
 
 
-class GraphRagAlreadyExistsException(RagException):
-    """Raised when trying to create GraphRag but it already exists."""
-
-    def __init__(self, collection_id):
-        self.collection_id = collection_id
-        super().__init__(
-            f"GraphRag already exists for collection {collection_id}. Use update endpoint instead."
-        )
-
-
 class LLMConfigNotFoundException(RagException):
     """Raised when LLM config is not found."""
 
@@ -292,6 +282,17 @@ class InvalidGraphRagParametersException(RagException):
     """Raised when GraphRag parameters are invalid."""
 
     pass
+
+
+class GraphRagDocumentNotFoundException(RagException):
+    """Raised when a document is not linked to the specified GraphRag."""
+
+    def __init__(self, document_id, graph_rag_id):
+        self.document_id = document_id
+        self.graph_rag_id = graph_rag_id
+        super().__init__(
+            f"Document {document_id} is not linked to GraphRag {graph_rag_id}"
+        )
 
 
 class AgentMissingCollectionException(RagException):
