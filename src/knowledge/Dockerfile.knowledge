@@ -10,7 +10,8 @@ COPY ./pyproject.toml .
 COPY ./poetry.lock .
 COPY ./libraries/ ./libraries
 
-RUN poetry config virtualenvs.create false 
+RUN poetry config virtualenvs.create false
+RUN poetry lock
 RUN poetry install --no-root
 RUN rm -rf /root/.cache
 
