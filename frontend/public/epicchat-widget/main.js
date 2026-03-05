@@ -93993,9 +93993,10 @@ var _ChatFooterComponent = class _ChatFooterComponent {
       case "Enter":
         this.handleEnterKey(event);
         break;
-      case "ArrowUp":
-      case "ArrowDown":
-        break;
+      // case "ArrowUp":
+      // case "ArrowDown":
+      //     this.handleArrowKeys(event);
+      //     break;
       default:
         this.handleDefaultKey(event);
         break;
@@ -94010,42 +94011,51 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     ev.preventDefault();
     this.transmitMessageFromInput();
   }
-  handleArrowKeys(ev) {
-    ev.preventDefault();
-    const onlyUserMessages = this.messages.filter((msg) => msg.request).map((msg) => msg.request || "").filter((text) => text.length > 0).reverse();
-    this.indexOfUserMessageShownInInput = this.indexOfUserMessageShownInInput ?? onlyUserMessages.length;
-    if (ev.key === "ArrowUp") {
-      this.handleArrowUp(onlyUserMessages);
-    } else if (ev.key === "ArrowDown") {
-      this.handleArrowDown(onlyUserMessages);
-    }
-  }
-  handleArrowUp(onlyUserMessages) {
-    if (this.messageInputControl.value?.trim() === "" && this.manuallyEnteredText) {
-      this.indexOfUserMessageShownInInput = onlyUserMessages.length;
-      this.messageInputControl.setValue(this.manuallyEnteredText);
-      return;
-    }
-    this.indexOfUserMessageShownInInput = Math.max((this.indexOfUserMessageShownInInput || 0) - 1, 0);
-    const currentSuggestedUserMessage = onlyUserMessages[this.indexOfUserMessageShownInInput];
-    if (currentSuggestedUserMessage) {
-      this.messageInputControl.setValue(currentSuggestedUserMessage);
-    }
-  }
-  handleArrowDown(onlyUserMessages) {
-    this.indexOfUserMessageShownInInput = (this.indexOfUserMessageShownInInput || 0) + 1;
-    if (this.messageInputControl.value?.trim() === this.manuallyEnteredText) {
-      this.indexOfUserMessageShownInInput = onlyUserMessages.length;
-    } else if ((this.indexOfUserMessageShownInInput || 0) >= onlyUserMessages.length) {
-      this.indexOfUserMessageShownInInput = onlyUserMessages.length;
-      this.messageInputControl.setValue(this.manuallyEnteredText);
-    } else {
-      const currentSuggestedUserMessage = onlyUserMessages[this.indexOfUserMessageShownInInput || 0];
-      if (currentSuggestedUserMessage) {
-        this.messageInputControl.setValue(currentSuggestedUserMessage);
-      }
-    }
-  }
+  // private handleArrowKeys(ev: KeyboardEvent): void {
+  //     ev.preventDefault();
+  //     const onlyUserMessages = this.messages
+  //         .filter((msg) => msg.request)
+  //         .map((msg) => msg.request || "")
+  //         .filter((text) => text.length > 0)
+  //         .reverse();
+  //     this.indexOfUserMessageShownInInput =
+  //         this.indexOfUserMessageShownInInput ?? onlyUserMessages.length;
+  //     if (ev.key === "ArrowUp") {
+  //         this.handleArrowUp(onlyUserMessages);
+  //     } else if (ev.key === "ArrowDown") {
+  //         this.handleArrowDown(onlyUserMessages);
+  //     }
+  // }
+  // private handleArrowUp(onlyUserMessages: string[]): void {
+  //     if (this.messageInputControl.value?.trim() === "" && this.manuallyEnteredText) {
+  //         this.indexOfUserMessageShownInInput = onlyUserMessages.length;
+  //         this.messageInputControl.setValue(this.manuallyEnteredText);
+  //         return;
+  //     }
+  //     this.indexOfUserMessageShownInInput = Math.max(
+  //         (this.indexOfUserMessageShownInInput || 0) - 1,
+  //         0
+  //     );
+  //     const currentSuggestedUserMessage = onlyUserMessages[this.indexOfUserMessageShownInInput];
+  //     if (currentSuggestedUserMessage) {
+  //         this.messageInputControl.setValue(currentSuggestedUserMessage);
+  //     }
+  // }
+  // private handleArrowDown(onlyUserMessages: string[]): void {
+  //     this.indexOfUserMessageShownInInput = (this.indexOfUserMessageShownInInput || 0) + 1;
+  //     if (this.messageInputControl.value?.trim() === this.manuallyEnteredText) {
+  //         this.indexOfUserMessageShownInInput = onlyUserMessages.length;
+  //     } else if ((this.indexOfUserMessageShownInInput || 0) >= onlyUserMessages.length) {
+  //         this.indexOfUserMessageShownInInput = onlyUserMessages.length;
+  //         this.messageInputControl.setValue(this.manuallyEnteredText);
+  //     } else {
+  //         const currentSuggestedUserMessage =
+  //             onlyUserMessages[this.indexOfUserMessageShownInInput || 0];
+  //         if (currentSuggestedUserMessage) {
+  //             this.messageInputControl.setValue(currentSuggestedUserMessage);
+  //         }
+  //     }
+  // }
   handleDefaultKey(ev) {
     if ((ev.ctrlKey || ev.metaKey) && ev.code === "KeyZ") {
       ev.stopPropagation();
@@ -94559,10 +94569,10 @@ var _c016 = () => ({ delay: 500 });
 var _forTrack07 = ($index, $item) => $item.epicstaffAgentId;
 function ChatHeaderComponent_Conditional_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 18);
+    \u0275\u0275elementStart(0, "div", 21);
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 19);
-    \u0275\u0275element(2, "path", 20);
+    \u0275\u0275elementStart(1, "svg", 22);
+    \u0275\u0275element(2, "path", 23);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -94570,30 +94580,30 @@ function ChatHeaderComponent_Conditional_6_Template(rf, ctx) {
     \u0275\u0275classProp("chat-header__dropdown-icon--rotated", ctx_r0.isAgentMenuShown);
   }
 }
-function ChatHeaderComponent_Conditional_19_For_2_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_23_For_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 22);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_19_For_2_Template_div_click_0_listener() {
+    \u0275\u0275elementStart(0, "div", 25);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_23_For_2_Template_div_click_0_listener() {
       const agent_r3 = \u0275\u0275restoreView(_r2).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r3));
-    })("keydown.enter", function ChatHeaderComponent_Conditional_19_For_2_Template_div_keydown_enter_0_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_23_For_2_Template_div_keydown_enter_0_listener() {
       const agent_r3 = \u0275\u0275restoreView(_r2).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r3));
-    })("keydown.space", function ChatHeaderComponent_Conditional_19_For_2_Template_div_keydown_space_0_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_23_For_2_Template_div_keydown_space_0_listener() {
       const agent_r3 = \u0275\u0275restoreView(_r2).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r3));
     });
-    \u0275\u0275elementStart(1, "div", 23);
-    \u0275\u0275element(2, "img", 24);
+    \u0275\u0275elementStart(1, "div", 26);
+    \u0275\u0275element(2, "img", 27);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 25)(4, "div", 26);
+    \u0275\u0275elementStart(3, "div", 28)(4, "div", 29);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "div", 27);
+    \u0275\u0275elementStart(6, "div", 30);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()()();
   }
@@ -94610,10 +94620,10 @@ function ChatHeaderComponent_Conditional_19_For_2_Template(rf, ctx) {
     \u0275\u0275textInterpolate(agent_r3.description);
   }
 }
-function ChatHeaderComponent_Conditional_19_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_23_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 16);
-    \u0275\u0275repeaterCreate(1, ChatHeaderComponent_Conditional_19_For_2_Template, 8, 6, "div", 21, _forTrack07);
+    \u0275\u0275elementStart(0, "div", 19);
+    \u0275\u0275repeaterCreate(1, ChatHeaderComponent_Conditional_23_For_2_Template, 8, 6, "div", 24, _forTrack07);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -94622,51 +94632,51 @@ function ChatHeaderComponent_Conditional_19_Template(rf, ctx) {
     \u0275\u0275repeater(ctx_r0.agents);
   }
 }
-function ChatHeaderComponent_Conditional_20_Conditional_3_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_24_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 30);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_0_listener() {
+    \u0275\u0275elementStart(0, "div", 33);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_click_0_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_0_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_enter_0_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_0_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_space_0_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
     });
     \u0275\u0275text(1, " Create new Epicstaff agent ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 31);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_2_listener() {
+    \u0275\u0275elementStart(2, "div", 34);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_click_2_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_2_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_enter_2_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_2_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_space_2_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
     });
     \u0275\u0275text(3, " Edit Epicstaff agent ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 32);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_4_listener() {
+    \u0275\u0275elementStart(4, "div", 35);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_click_4_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_4_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_enter_4_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_4_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_space_4_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
@@ -94675,36 +94685,36 @@ function ChatHeaderComponent_Conditional_20_Conditional_3_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-function ChatHeaderComponent_Conditional_20_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_24_Template(rf, ctx) {
   if (rf & 1) {
     const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 17)(1, "div", 28);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_div_click_1_listener() {
+    \u0275\u0275elementStart(0, "div", 20)(1, "div", 31);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Template_div_click_1_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_div_keydown_enter_1_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Template_div_keydown_enter_1_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_div_keydown_space_1_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_24_Template_div_keydown_space_1_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
     });
     \u0275\u0275text(2, " Clear chat history ");
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(3, ChatHeaderComponent_Conditional_20_Conditional_3_Template, 6, 0);
-    \u0275\u0275elementStart(4, "div", 29);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_div_click_4_listener() {
+    \u0275\u0275conditionalCreate(3, ChatHeaderComponent_Conditional_24_Conditional_3_Template, 6, 0);
+    \u0275\u0275elementStart(4, "div", 32);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Template_div_click_4_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_div_keydown_enter_4_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Template_div_keydown_enter_4_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_div_keydown_space_4_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_24_Template_div_keydown_space_4_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
@@ -94829,7 +94839,7 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return ctx.onDocumentClick($event);
     }, \u0275\u0275resolveDocument);
   }
-}, inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 21, vars: 14, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click", "keydown.enter", "keydown.space"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__agent-menu"], [1, "chat-header__actions-menu"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "chat-header__agent-menu-item--active"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-menu-item-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-menu-item-text"], [1, "chat-header__agent-menu-item-name"], [1, "chat-header__agent-menu-item-description"], ["role", "button", "tabindex", "0", "aria-label", "Clear chat history", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Set default position", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Create new Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Edit Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Remove agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
+}, inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 25, vars: 16, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click", "keydown.enter", "keydown.space"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "2", "y", "2", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["x", "7", "y", "7", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__agent-menu"], [1, "chat-header__actions-menu"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "chat-header__agent-menu-item--active"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-menu-item-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-menu-item-text"], [1, "chat-header__agent-menu-item-name"], [1, "chat-header__agent-menu-item-description"], ["role", "button", "tabindex", "0", "aria-label", "Clear chat history", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Set default position", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Create new Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Edit Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Remove agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "div", 2);
     \u0275\u0275element(3, "img", 3);
@@ -94860,31 +94870,44 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275namespaceHTML();
     \u0275\u0275elementStart(13, "button", 12);
     \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_13_listener() {
-      return ctx.onToggleFullHeightClick();
+      return ctx.onDockClick();
     })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_13_listener() {
-      return ctx.onToggleFullHeightClick();
+      return ctx.onDockClick();
     })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_13_listener() {
-      return ctx.onToggleFullHeightClick();
+      return ctx.onDockClick();
     });
     \u0275\u0275namespaceSVG();
     \u0275\u0275elementStart(14, "svg", 8);
-    \u0275\u0275element(15, "path", 13);
+    \u0275\u0275element(15, "rect", 13)(16, "rect", 14);
     \u0275\u0275elementEnd()();
     \u0275\u0275namespaceHTML();
-    \u0275\u0275elementStart(16, "button", 14);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_16_listener() {
+    \u0275\u0275elementStart(17, "button", 15);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_17_listener() {
+      return ctx.onToggleFullHeightClick();
+    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_17_listener() {
+      return ctx.onToggleFullHeightClick();
+    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_17_listener() {
+      return ctx.onToggleFullHeightClick();
+    });
+    \u0275\u0275namespaceSVG();
+    \u0275\u0275elementStart(18, "svg", 8);
+    \u0275\u0275element(19, "path", 16);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275namespaceHTML();
+    \u0275\u0275elementStart(20, "button", 17);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_20_listener() {
       return ctx.onCollapseClick();
-    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_16_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_20_listener() {
       return ctx.onCollapseClick();
-    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_16_listener() {
+    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_20_listener() {
       return ctx.onCollapseClick();
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(17, "svg", 8);
-    \u0275\u0275element(18, "path", 15);
+    \u0275\u0275elementStart(21, "svg", 8);
+    \u0275\u0275element(22, "path", 18);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275conditionalCreate(19, ChatHeaderComponent_Conditional_19_Template, 3, 0, "div", 16);
-    \u0275\u0275conditionalCreate(20, ChatHeaderComponent_Conditional_20_Template, 6, 1, "div", 17);
+    \u0275\u0275conditionalCreate(23, ChatHeaderComponent_Conditional_23_Template, 3, 0, "div", 19);
+    \u0275\u0275conditionalCreate(24, ChatHeaderComponent_Conditional_24_Template, 6, 1, "div", 20);
   }
   if (rf & 2) {
     \u0275\u0275advance(3);
@@ -94897,13 +94920,15 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.hasMultipleAgents ? 6 : -1);
     \u0275\u0275advance(7);
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(12, _c016));
-    \u0275\u0275advance(3);
     \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(13, _c016));
+    \u0275\u0275advance(4);
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(14, _c016));
     \u0275\u0275advance(3);
-    \u0275\u0275conditional(ctx.isAgentMenuShown && ctx.hasMultipleAgents ? 19 : -1);
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(15, _c016));
+    \u0275\u0275advance(3);
+    \u0275\u0275conditional(ctx.isAgentMenuShown && ctx.hasMultipleAgents ? 23 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.isActionsMenuShown ? 20 : -1);
+    \u0275\u0275conditional(ctx.isActionsMenuShown ? 24 : -1);
   }
 }, dependencies: [TooltipDirective], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  min-width: 0;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%] {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__dropdown-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-header__controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots[_ngcontent-%COMP%] {\n  margin-left: auto;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 32px;\n  left: 12px;\n  display: flex;\n  gap: 4px;\n  flex-direction: column;\n  z-index: 1005;\n  max-width: 70%;\n  padding: 12px 0px;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__agent-menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-menu-item--active[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-menu-item-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-menu-item-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-menu-item-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-menu-item-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.chat-header__actions-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 32px;\n  right: 12px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 180px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n/*# sourceMappingURL=chat-header.component.css.map */"] });
 var ChatHeaderComponent = _ChatHeaderComponent;
@@ -94972,7 +94997,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       </svg>
     </button>
 
-    <!-- <button
+    <button
       type="button"
       class="chat-header__control-btn"
       (click)="onDockClick()"
@@ -94992,7 +95017,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
         <rect x="2" y="2" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
         <rect x="7" y="7" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
       </svg>
-    </button> -->
+    </button>
 
     <button
       type="button"
