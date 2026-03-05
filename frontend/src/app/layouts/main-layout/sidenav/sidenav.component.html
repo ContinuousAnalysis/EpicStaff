@@ -99,8 +99,11 @@
                 --ep-color-danger-soft: var(--agent-node-accent-color);
             "
             base-path="/epicchat-widget/"
-            chat-left="68px"
-            chat-bottom="10px"
+            [attr.chat-left]="epicChatService.isDocked() ? epicChatService.dockLeftPx() + 'px' : '68px'"
+            [attr.chat-bottom]="epicChatService.isDocked() ? '0px' : '10px'"
+            [attr.chat-top]="epicChatService.isDocked() ? '0px' : null"
+            [attr.chat-width]="epicChatService.isDocked() ? epicChatService.dockWidth() + 'px' : null"
+            [attr.chat-height]="epicChatService.isDocked() ? '100vh' : null"
             chat-icon-path=""            
             [epChatCommand]="epicChatService.epChatCommand()"
             (epChatCommandResult)="onEpChatCommandResult($event)"

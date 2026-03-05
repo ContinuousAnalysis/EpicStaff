@@ -9,6 +9,7 @@ export const EP_CHAT_EVENT_TYPES = {
     APP_OPEN_FLOW: 'app.openFlow',
     APP_OPEN_NODE: 'app.openNode',
     APP_REFRESH_CACHE: 'app.refreshCache',
+    APP_TOGGLE_DOCK: 'app.toggleDock',
 } as const;
 
 export type EpChatEventType = (typeof EP_CHAT_EVENT_TYPES)[keyof typeof EP_CHAT_EVENT_TYPES];

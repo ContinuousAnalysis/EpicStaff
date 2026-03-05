@@ -15,8 +15,12 @@ import { FlowUnsavedStateService } from 'src/app/pages/flows-page/services/flow-
 })
 export class EpicChatService {
     private readonly epChatCommandSignal = signal<EpChatCommand | null>(null);
+    private readonly isDockedSignal = signal(false);
+    private readonly dockWidthSignal = signal(420);
 
     public readonly epChatCommand = this.epChatCommandSignal.asReadonly();
+    public readonly isDocked = this.isDockedSignal.asReadonly();
+    public readonly dockWidth = this.dockWidthSignal.asReadonly();
 
     constructor(
         private readonly router: Router,
@@ -48,8 +52,6 @@ export class EpicChatService {
     }
 
     public onEpChatEvent(event: Event): void {
-        console.log({ event });
-
         const data = (event as CustomEvent<EpChatEvent>).detail;
         if (!data) {
             return;
@@ -85,9 +87,28 @@ export class EpicChatService {
                     .subscribe();
                 return;
             }
+            case EP_CHAT_EVENT_TYPES.APP_TOGGLE_DOCK: {
+                this.toggleDock();
+                return;
+            }
             default:
                 console.log('[EpicChat event]', data.type, data.payload || {});
         }
+    }
+
+    public toggleDock(): void {
+        this.isDockedSignal.update((v) => !v);
+    }
+
+    public setDockWidth(width: number): void {
+        const minWidth = 320;
+        const maxWidth = Math.max(minWidth, Math.floor(window.innerWidth * 0.7));
+        const next = Math.min(maxWidth, Math.max(minWidth, Math.round(width)));
+        this.dockWidthSignal.set(next);
+    }
+
+    public dockLeftPx(): number {
+        return 60;
     }
 
     private toNumber(v: unknown): number | null {
