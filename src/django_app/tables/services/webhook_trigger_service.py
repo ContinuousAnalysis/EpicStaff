@@ -1,10 +1,11 @@
+import time
 import requests
 from loguru import logger
 from tenacity import (
     retry,
     retry_if_exception_type,
     stop_after_attempt,
-    wait_exponential,
+    wait_none,
 )
 
 from django_app.settings import (
@@ -22,6 +23,9 @@ from utils.singleton_meta import SingletonMeta
 
 
 class WebhookTriggerService(metaclass=SingletonMeta):
+    _tunnel_url_cache: dict[str, tuple[str, float]] = {}
+    _TUNNEL_URL_TTL = 30.0
+
     def __init__(
         self,
         session_manager_service: SessionManagerService,
@@ -87,7 +91,7 @@ class WebhookTriggerService(metaclass=SingletonMeta):
 
     @retry(
         stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=5),
+        wait=wait_none(),
         retry=retry_if_exception_type((requests.RequestException, ValueError)),
         reraise=True,
     )
@@ -96,12 +100,24 @@ class WebhookTriggerService(metaclass=SingletonMeta):
 
         unique_id = f"ngrok:{ngrok_webhook_config.name}"
 
+        cached = self._tunnel_url_cache.get(unique_id)
+        if cached:
+            url, expires_at = cached
+            if time.monotonic() < expires_at:
+                return url
+            del self._tunnel_url_cache[unique_id]
+
         response = requests.get(
             f"http://{WEBHOOK_HOST_NAME}:{WEBHOOK_PORT}/api/tunnel-url/{unique_id}",
-            timeout=5,
+            timeout=2,
         )
         response.raise_for_status()
         url = response.json().get("tunnel_url")
         if not url:
             raise ValueError("Tunnel service returned an empty URL")
+
+        self._tunnel_url_cache[unique_id] = (
+            url,
+            time.monotonic() + self._TUNNEL_URL_TTL,
+        )
         return url
