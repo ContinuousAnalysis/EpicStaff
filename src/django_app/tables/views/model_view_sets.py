@@ -728,52 +728,6 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
         )
         return Response(serializer.data)
 
-    @action(detail=True, methods=["get", "post"], url_path="labels")
-    def labels(self, request, pk=None):
-        graph = self.get_object()
-
-        if request.method == "GET":
-            serializer = LabelSerializer(graph.labels.all(), many=True)
-            return Response(serializer.data)
-
-        # POST: attach one or more labels to the graph
-        label_ids = request.data.get("label_ids")
-        if not label_ids:
-            return Response(
-                {"label_ids": "This field is required and must be a non-empty list."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if not isinstance(label_ids, list):
-            return Response(
-                {"label_ids": "Must be a list of label IDs."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        labels = Label.objects.filter(pk__in=label_ids)
-        found_ids = set(labels.values_list("id", flat=True))
-        missing = set(label_ids) - found_ids
-        if missing:
-            return Response(
-                {"label_ids": f"Labels not found: {sorted(missing)}"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        graph.labels.add(*labels)
-        return Response(
-            LabelSerializer(labels, many=True).data, status=status.HTTP_201_CREATED
-        )
-
-    @action(detail=True, methods=["delete"], url_path=r"labels/(?P<label_id>\d+)")
-    def label_detail(self, request, pk=None, label_id=None):
-        graph = self.get_object()
-        try:
-            label = graph.labels.get(pk=label_id)
-        except Label.DoesNotExist:
-            return Response(
-                {"detail": "Label not found on this graph."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        graph.labels.remove(label)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
     @action(detail=True, methods=["get"])
     def export(self, request, pk: int):
         return self.import_export_service.export_entity(self.get_object())

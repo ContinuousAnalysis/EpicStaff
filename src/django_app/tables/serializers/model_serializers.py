@@ -1594,7 +1594,7 @@ class GraphSerializer(serializers.ModelSerializer):
         many=True, read_only=True
     )
     label_ids = serializers.PrimaryKeyRelatedField(
-        many=True, read_only=True, source="labels"
+        many=True, source="labels", queryset=Label.objects.all(), required=False
     )
 
     class Meta:
@@ -1621,6 +1621,19 @@ class GraphSerializer(serializers.ModelSerializer):
             "telegram_trigger_node_list",
             "label_ids",
         ]
+
+    def create(self, validated_data):
+        labels = validated_data.pop("labels", [])
+        instance = super().create(validated_data)
+        instance.labels.set(labels)
+        return instance
+
+    def update(self, instance, validated_data):
+        labels = validated_data.pop("labels", None)
+        instance = super().update(instance, validated_data)
+        if labels is not None:
+            instance.labels.set(labels)
+        return instance
 
 
 class GraphFileReadSerializer(serializers.ModelSerializer):
