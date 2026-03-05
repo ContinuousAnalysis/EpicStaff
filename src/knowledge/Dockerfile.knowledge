@@ -4,6 +4,9 @@ FROM python:3.12.10
 # Set working directory
 WORKDIR /app/src/knowledge
 
+# Set Poetry env variables
+ENV PYTHONPATH=/app
+
 # Run update and clean installation garbage
 RUN apt-get update && \
     apt-get install -y ffmpeg && \
