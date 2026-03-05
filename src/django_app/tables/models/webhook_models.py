@@ -1,7 +1,7 @@
 from django.core.validators import RegexValidator
 from django.db import models
 
-    
+
 class NgrokWebhookConfig(models.Model):
     class Region(models.TextChoices):
         US = ("us",)
@@ -38,7 +38,6 @@ class WebhookTrigger(models.Model):
                 message="Path may only contain letters, numbers, hyphens, and underscores, and must start with a letter or number.",
             )
         ],
-        unique=True,
     )
     ngrok_webhook_config = models.ForeignKey(
         NgrokWebhookConfig,
@@ -46,6 +45,9 @@ class WebhookTrigger(models.Model):
         default=None,
         null=True,
     )
+
+    class Meta:
+        unique_together = [("path", "ngrok_webhook_config")]
 
     def __str__(self):
         return self.path

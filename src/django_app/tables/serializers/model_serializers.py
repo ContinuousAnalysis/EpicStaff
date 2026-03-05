@@ -1557,8 +1557,8 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
             path = webhook_trigger_data.get("path")
             ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
-            webhook_trigger_instance, created = WebhookTrigger.objects.update_or_create(
-                path=path, defaults={"ngrok_webhook_config": ngrok_conf}
+            webhook_trigger_instance, created = WebhookTrigger.objects.get_or_create(
+                path=path, ngrok_webhook_config=ngrok_conf
             )
 
         node = WebhookTriggerNode.objects.create(
@@ -1584,8 +1584,8 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
                 ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
                 webhook_trigger_instance, created = (
-                    WebhookTrigger.objects.update_or_create(
-                        path=path, defaults={"ngrok_webhook_config": ngrok_conf}
+                    WebhookTrigger.objects.get_or_create(
+                        path=path, ngrok_webhook_config=ngrok_conf
                     )
                 )
                 instance.webhook_trigger = webhook_trigger_instance
