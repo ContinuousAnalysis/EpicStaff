@@ -8,7 +8,7 @@ from services.graph.graph_session_manager_service import (
     RunPythonCodeService,
     KnowledgeSearchService,
 )
-from models.request_models import (
+from src.shared.models import (
     ConditionData,
     ConditionGroupData,
     LLMConfigData,

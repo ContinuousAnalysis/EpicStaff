@@ -9,7 +9,7 @@ from loguru import logger
 from crewai.tools.base_tool import Tool
 
 from src.crew.models.response_models import ToolResponse
-from src.crew.models.request_models import (
+from src.shared.models import (
     PythonCodeToolData,
     ConfiguredToolData,
     ToolInitConfigurationModel,
