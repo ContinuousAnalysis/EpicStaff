@@ -1,4 +1,4 @@
-# docker-compose.yaml — production
+# docker-compose.base.yaml
 
 x-common-env: &common_env
   CODE_RESULT_CHANNEL: code_results
@@ -21,7 +21,6 @@ services:
       context: .
       dockerfile: ./django_app/Dockerfile.dj
     container_name: django_app
-    command: ./entrypoint.sh
     environment:
       <<: *common_env
       DEBUG: ${DEBUG:-True}
@@ -38,7 +37,6 @@ services:
       GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
       DJANGO_HOST: ${DJANGO_HOST:-localhost}
       DJANGO_PORT: ${DJANGO_PORT:-8000}
-      LOAD_DEBUG_ENV: ${LOAD_DEBUG_ENV}
     volumes:
       - crew_config:/home/user/root/app/env_config
       - media_data:/app/media
@@ -99,8 +97,6 @@ services:
       DB_MANAGER_USER: ${DB_MANAGER_USER}
       DB_MANAGER_PASSWORD: ${DB_MANAGER_PASSWORD}
       CREW_SAVEFILES_PATH: ${CREW_SAVEFILES_PATH}
-    env_file:
-      - .env
     volumes:
       - ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH}
       - ${DOCKER_BIN_PATH}:${DOCKER_BIN_PATH}
@@ -112,7 +108,7 @@ services:
       crewdb:
         condition: service_healthy
       redis:
-        condition: service_healthy
+        condition: service_healthy      
 
   crewdb:
     image: crewdb
@@ -279,7 +275,7 @@ services:
       - API_URL=${API_URL}
       - REALTIME_API_URL=${REALTIME_API_URL}
     networks:
-      - frontend-network
+     - frontend-network
 
   webhook:
     image: webhook
@@ -295,8 +291,6 @@ services:
       NGROK_DOMAIN: ${NGROK_DOMAIN}
       WEBHOOK_EMPTY_JSON_PATHS: ${WEBHOOK_EMPTY_JSON_PATHS}
       WEBHOOK_PORT: ${WEBHOOK_PORT:-8051}
-    ports:
-      - "${WEBHOOK_PORT:-8051}:${WEBHOOK_PORT:-8051}"
     depends_on:
       redis:
         condition: service_healthy
@@ -310,31 +304,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 5s
-
-  epicstaff-nginx:
-    image: nginx
-    container_name: epicstaff-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      - DOMAIN_NAME=${DOMAIN_NAME}
-      - SSL_ENABLE=${SSL_ENABLE}
-    volumes:
-      - ./nginx/templates/default.conf.template:/etc/nginx/templates/default.conf.template
-      - ./nginx/certs:/etc/nginx/certs:ro
-      - media_data:/usr/share/nginx/html/media:ro
-    networks:
-      - backend-network
-      - frontend-network
-    depends_on:
-      django_app:
-        condition: service_healthy
-      frontend:
-        condition: service_started
-      realtime:
-        condition: service_started
-    restart: always
 
 volumes:
   sandbox_venvs:
