@@ -20,6 +20,7 @@ from tables.exceptions import (
     LLMConfigNotFoundException,
     CollectionNotFoundException,
     InvalidGraphRagParametersException,
+    GraphRagDocumentNotFoundException,
 )
 from tables.constants.knowledge_constants import (
     GRAPHRAG_DEFAULT_INPUT_FILE_TYPE,
@@ -416,6 +417,37 @@ class GraphRagService:
         return {
             "removed_count": deleted_count,
             "removed_document_ids": deleted_ids,
+        }
+
+    @staticmethod
+    @transaction.atomic
+    def delete_document(graph_rag_id: int, document_id: int) -> Dict[str, Any]:
+        """
+        Remove a single document from GraphRag.
+
+        Args:
+            graph_rag_id: ID of GraphRag
+            document_id: ID of document to remove
+
+        Returns:
+            dict with removal info
+        """
+        graph_rag = GraphRagService.get_graph_rag(graph_rag_id)
+
+        try:
+            link = GraphRagDocument.objects.get(
+                graph_rag=graph_rag, document_id=document_id
+            )
+        except GraphRagDocument.DoesNotExist:
+            raise GraphRagDocumentNotFoundException(document_id, graph_rag_id)
+
+        link.delete()
+
+        logger.info(f"Removed document {document_id} from GraphRag {graph_rag_id}")
+
+        return {
+            "graph_rag_id": graph_rag_id,
+            "document_id": document_id,
         }
 
     @staticmethod

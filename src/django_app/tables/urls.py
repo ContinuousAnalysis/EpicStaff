@@ -346,6 +346,11 @@ urlpatterns = [
         name="graph-rag-documents-bulk-delete",
     ),
     path(
+        "graph-rag/<int:pk>/documents/<int:document_id>/",
+        GraphRagViewSet.as_view({"delete": "delete_document"}),
+        name="graph-rag-document-delete",
+    ),
+    path(
         "graph-rag/<int:pk>/documents/list/",
         GraphRagViewSet.as_view({"get": "list_documents"}),
         name="graph-rag-documents-list",

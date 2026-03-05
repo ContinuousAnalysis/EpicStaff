@@ -284,6 +284,17 @@ class InvalidGraphRagParametersException(RagException):
     pass
 
 
+class GraphRagDocumentNotFoundException(RagException):
+    """Raised when a document is not linked to the specified GraphRag."""
+
+    def __init__(self, document_id, graph_rag_id):
+        self.document_id = document_id
+        self.graph_rag_id = graph_rag_id
+        super().__init__(
+            f"Document {document_id} is not linked to GraphRag {graph_rag_id}"
+        )
+
+
 class AgentMissingCollectionException(RagException):
     """Raised when attempting to assign RAG to agent without knowledge_collection."""
 

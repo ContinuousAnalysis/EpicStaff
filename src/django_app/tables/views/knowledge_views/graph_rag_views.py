@@ -16,6 +16,7 @@ from tables.services.knowledge_services.graph_rag_service import GraphRagService
 from tables.exceptions import (
     RagException,
     GraphRagNotFoundException,
+    GraphRagDocumentNotFoundException,
     EmbedderNotFoundException,
     LLMConfigNotFoundException,
     CollectionNotFoundException,
@@ -280,6 +281,41 @@ class GraphRagViewSet(viewsets.GenericViewSet):
             return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
         except RagException as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path="documents/(?P<document_id>[^/.]+)",
+    )
+    def delete_document(self, request, pk=None, document_id=None):
+        """
+        Remove a single document from GraphRag.
+
+        URL: DELETE /graph-rag/{id}/documents/{document_id}/
+        """
+        try:
+            result = GraphRagService.delete_document(
+                graph_rag_id=int(pk),
+                document_id=int(document_id),
+            )
+
+            return Response(
+                {
+                    "message": f"Document {result['document_id']} removed from GraphRag",
+                    **result,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except GraphRagNotFoundException as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except GraphRagDocumentNotFoundException as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response(
                 {"error": f"An unexpected error occurred: {str(e)}"},
