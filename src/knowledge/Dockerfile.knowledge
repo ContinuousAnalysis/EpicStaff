@@ -19,6 +19,7 @@ RUN pip install --upgrade --no-cache-dir pip setuptools wheel poetry
 # Install python poetry dependencies
 COPY ./knowledge/pyproject.toml ./knowledge/poetry.lock .
 RUN poetry config virtualenvs.create false && \
+    poetry lock && \
     poetry install --no-root && \
     rm -rf /root/.cache
 
