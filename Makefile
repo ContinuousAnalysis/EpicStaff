@@ -85,45 +85,45 @@ docker-generate-certs:
 # Starts the DEVELOPMENT environment (with live-reload and port mapping)
 dev:
 	@echo "--- Starting development services ---"
-	@cd src && docker compose -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env up -d
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env up -d
 
 # Usage: make dev-down
 # Stops the DEVELOPMENT environment
 dev-down:
 	@echo "--- Stopping development services ---"
-	@cd src && docker compose -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env down
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env down
 
 dev-build:
 	@echo "--- Starting building services ---"
-	@cd src && docker compose -f docker-compose.dev.yaml build
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env build
 
 
 # Usage: make dev-logs
 # Tails logs for the DEVELOPMENT environment in real-time
 dev-logs:
-	@cd src && docker compose -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env logs -f
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env logs -f
 
 # Usage: make dev-restart s=<service>
 # Restarts a single dev service (e.g., make dev-restart s=manager)
 dev-restart:
-	@cd src && docker compose -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env restart $(s)
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env restart $(s)
 
 # Usage: make dev-logs-s s=<service>
 # Tails logs for a single dev service (e.g., make dev-logs-s s=manager)
 dev-logs-s:
-	@cd src && docker compose -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env logs -f $(s)
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env logs -f $(s)
 
 # Usage: make dev-rebuild-s s=<service>
 # Rebuilds and restarts a single service (e.g., make dev-rebuild-s s=manager)
 dev-rebuild-s:
-	@cd src && docker compose -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env up --build -d $(s)
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env up --build -d $(s)
 
 # Usage: make rebuild-dev
 # Rebuilds and starts the DEVELOPMENT environment completely from scratch (ignores Docker cache)
 rebuild-dev:
 	@echo "--- Rebuilding development services ---"
-	@cd src && docker compose -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env build --no-cache
-	@cd src && docker compose -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env up -d
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env build --no-cache
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env up -d
 
 # ==========================================
 # PRODUCTION Environment Commands
@@ -136,18 +136,18 @@ prod: start-prod
 # Kept for backward compatibility with your existing workflow
 start-prod:
 	@echo "--- Starting production services ---"
-	@cd src && docker compose --env-file ./.env up --build -d
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env up --build -d
 
 # Usage: make prod-down
 # Stops the PRODUCTION environment
 prod-down:
 	@echo "--- Stopping production services ---"
-	@cd src && docker compose --env-file ./.env down
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env down
 
 # Usage: make prod-logs
 # Tails logs for the PRODUCTION environment
 prod-logs:
-	@cd src && docker compose --env-file ./.env logs -f
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env logs -f
 
 # ==========================================
 # UTILITIES
@@ -157,5 +157,5 @@ prod-logs:
 # Stops and completely removes containers, networks, and VOLUMES
 clean:
 	@echo "--- Cleaning up all environments and removing volumes ---"
-	@cd src && docker compose -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env down -v --remove-orphans
-	@cd src && docker compose --env-file ./.env down -v --remove-orphans
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env down -v --remove-orphans
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env down -v --remove-orphans

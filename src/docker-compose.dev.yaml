@@ -1,8 +1,5 @@
 # docker-compose.dev.yaml
 
-include:
-  - docker-compose.base.yaml
-
 services:
   django_app:
     command: sh -lc "
@@ -106,3 +103,7 @@ services:
     volumes:
       - ./sandbox:/home/user/root/app
       - ./shared:/home/user/root/app/shared
+
+  epicstaff-nginx:
+    profiles:
+      - prod
