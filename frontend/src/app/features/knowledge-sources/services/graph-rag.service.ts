@@ -46,4 +46,12 @@ export class GraphRagService {
             dto
         )
     }
+
+    deleteFileById(ragId: number, fileId: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}${ragId}/documents/${fileId}/`);
+    }
+
+    reIncludeFiles(ragId: number): Observable<void> {
+        return this.http.post<void>(`${this.apiUrl}${ragId}/documents/initialize/`, {});
+    }
 }
