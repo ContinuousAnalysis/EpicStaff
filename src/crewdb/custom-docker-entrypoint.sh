@@ -212,8 +212,7 @@ DECLARE
         'tables_naiveragembedding',
         'graph_rag',
         'graph_rag_index_config',
-        'graph_rag_document',
-        
+        'graph_rag_document'
     ];
 
 BEGIN
@@ -314,11 +313,20 @@ EOF
 # Returns 0 only when ALL required tables are present.
 
 REQUIRED_TABLES=(
+    # manager
     "tables_session"
+    # knowledge
+    "tables_naiverag"
     "tables_naiveragchunk"
     "tables_naiveragembedding"
-    "tables_memorydatabase"
+    "tables_naiveragdocumentconfig"
+    "graph_rag"
+    "graph_rag_index_config"
+    "graph_rag_document"
+    # realtime
     "realtime_session_items"
+    # crew
+    "tables_memorydatabase"
 )
 
 all_tables_exist() {
