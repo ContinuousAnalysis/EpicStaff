@@ -220,6 +220,7 @@ export class FlowsStorageService {
             switchMap((sourceFlow: GraphDto) => {
                 const payload: GraphDto = {
                     id: sourceFlow.id,
+                    uuid: sourceFlow.uuid,
                     name: newName,
                     description: sourceFlow.description,
                     metadata: sourceFlow.metadata,

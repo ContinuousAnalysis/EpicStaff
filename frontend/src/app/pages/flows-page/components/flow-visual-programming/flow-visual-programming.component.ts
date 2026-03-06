@@ -454,13 +454,13 @@ export class FlowVisualProgrammingComponent
     }
 
     public handleGetCurl(): void {
-        const flowId = this.graph?.id;
+        const flowUuid = this.graph?.uuid;
         const startNodeInitialState = this.flowService.startNodeInitialState();
         const apiUrl = this.configService.apiUrl;
 
-        if (flowId && startNodeInitialState) {
+        if (flowUuid && startNodeInitialState) {
             const curlCommand = this.generateCurlCommand(
-                flowId,
+                flowUuid,
                 startNodeInitialState,
                 apiUrl
             );
@@ -474,14 +474,14 @@ export class FlowVisualProgrammingComponent
     }
 
     private generateCurlCommand(
-        flowId: number,
+        flowUuid: string,
         variables: Record<string, unknown>,
         apiUrl: string
     ): string {
         const variablesJson = JSON.stringify(variables, null, 2);
         const payload = JSON.stringify(
             {
-                graph_id: flowId.toString(),
+                graph_uuid: flowUuid,
                 variables: variables,
             },
             null,
