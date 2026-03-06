@@ -25,7 +25,7 @@ import {
     ConfirmationResult,
 } from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
 import { FlowRenameDialogComponent } from '../../../../components/flow-rename-dialog/flow-rename-dialog.component';
-import { RunGraphService } from '../../../../../../services/run-graph-session.service';
+import { RunGraphService } from '../../../../services/run-graph-session.service';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
 import { ImportExportService } from '../../../../../../core/services/import-export.service';
@@ -59,6 +59,16 @@ export class MyFlowsComponent implements OnInit {
     public readonly error = signal<string | null>(null);
     public readonly filteredFlows = this.flowsService.filteredFlows;
     public readonly isFlowsLoaded = this.flowsService.isFlowsLoaded;
+    public readonly selectMode = this.flowsService.selectMode;
+    public readonly selectedFlowIds = this.flowsService.selectedFlowIds;
+
+    public onFlowSelect(flowId: number): void{
+        this.flowsService.toggleFlowSelection(flowId);
+    }
+
+    public isFlowSelected(flowId: number): boolean{
+        return this.selectedFlowIds().includes(flowId);
+    }
 
     public ngOnInit(): void {
         if (!this.flowsService.isFlowsLoaded()) {
