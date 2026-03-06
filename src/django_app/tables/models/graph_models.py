@@ -5,7 +5,7 @@ from django.db import models
 from loguru import logger
 from django.utils import timezone
 
-from tables.models.base_models import BaseGraphEntity, BaseGlobalNode
+from tables.models.base_models import BaseGraphEntity, BaseGlobalNode, TimestampMixin
 
 
 class GraphManager(models.Manager):
@@ -34,7 +34,7 @@ class GraphManager(models.Manager):
         return self.filter(id__in=subgraph_ids).prefetch_related("tags")
 
 
-class Graph(models.Model):
+class Graph(TimestampMixin, models.Model):
     objects = GraphManager()
 
     tags = models.ManyToManyField(to="GraphTag", blank=True, default=[])
