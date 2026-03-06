@@ -464,8 +464,7 @@ export class FlowService {
                 if (normalizedGroupRole === normalizedSourceRole) {
                     return {
                         ...group,
-                        next_node:
-                            targetNode.node_name || targetNode.id || null,
+                        next_node: targetNode.id,
                     };
                 }
 
@@ -477,9 +476,9 @@ export class FlowService {
         let nextErrorNode = tableData.next_error_node;
 
         if (normalizedSourceRole === 'decision-default') {
-            defaultNextNode = targetNode.node_name || targetNode.id || null;
+            defaultNextNode = targetNode.id;
         } else if (normalizedSourceRole === 'decision-error') {
-            nextErrorNode = targetNode.node_name || targetNode.id || null;
+            nextErrorNode = targetNode.id;
         }
 
         const updatedNode: DecisionTableNodeModel = {
@@ -712,7 +711,14 @@ export class FlowService {
                 connectionIdsToRemove.add(connection.id);
             });
 
-            console.log('Node IDs to remove:', Array.from(nodeIdsToRemove));
+            // Auto-delete conditional edge nodes that lose their source connection
+            for (const conn of flow.connections) {
+                if (!connectionIdsToRemove.has(conn.id)) continue;
+                const targetNode = flow.nodes.find(n => n.id === conn.targetNodeId);
+                if (targetNode?.type === NodeType.EDGE) {
+                    nodeIdsToRemove.add(targetNode.id);
+                }
+            }
 
             // Track removed connections for decision table cleanup
             const removedConnections: ConnectionModel[] = [];

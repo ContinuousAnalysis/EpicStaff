@@ -447,7 +447,6 @@ export function getConnectionDiff(
     const conditionalEdges = {
         ...conditionalEdgesRaw,
         toCreate: conditionalEdgesRaw.toCreate.filter(re => re.sourceBackendId != null),
-        toUpdate: conditionalEdgesRaw.toUpdate.filter(({ ui }) => ui.sourceBackendId != null),
     };
 
     return {
@@ -549,13 +548,13 @@ export function buildTelegramPayload(n: TelegramTriggerNodeModel, graphId: numbe
 export function buildCondEdgePayload(re: ResolvedConditionalEdge, graphId: number): CreateConditionalEdgeRequest {
     return {
         graph: graphId,
-        source_node_id: re.sourceBackendId!,
+        source_node_id: re.sourceBackendId ?? null,
         python_code: re.edgeNode.data.python_code,
         input_map: re.edgeNode.input_map || {},
         metadata: {
             ...getUIMetadataForComparison(re.edgeNode),
             node_name: re.edgeNode.node_name,
-            then_node_id: re.targetBackendId,
+            then_node_id: re.targetBackendId ?? null,
         },
     };
 }
@@ -572,10 +571,21 @@ export function buildEndNodePayload(n: EndNodeModel, graphId: number): CreateEnd
     };
 }
 
+/** Resolves a UUID to a backend ID using idMap first (Phase 2), then falling back to allNodes. */
+function resolveBackendIdWithMap(uuid: string | null, allNodes: NodeModel[], idMap?: Map<string, number>): number | null {
+    if (!uuid) return null;
+    if (idMap) {
+        const mapped = idMap.get(uuid);
+        if (mapped != null) return mapped;
+    }
+    return resolveBackendId(uuid, allNodes);
+}
+
 export function buildDecisionTablePayload(
     node: DecisionTableNodeModel,
     graphId: number,
-    allNodes: NodeModel[]
+    allNodes: NodeModel[],
+    idMap?: Map<string, number>
 ): CreateDecisionTableNodeRequest {
     const tableData = (node as any).data?.table;
 
@@ -591,7 +601,7 @@ export function buildDecisionTablePayload(
                 condition: c.condition,
             })),
             manipulation: g.manipulation,
-            next_node_id: resolveBackendId(g.next_node, allNodes),
+            next_node_id: resolveBackendIdWithMap(g.next_node, allNodes, idMap),
             order: typeof g.order === 'number' ? g.order : idx + 1,
         }));
 
@@ -599,8 +609,8 @@ export function buildDecisionTablePayload(
         graph: graphId,
         node_name: node.node_name,
         condition_groups: conditionGroups,
-        default_next_node_id: resolveBackendId(tableData?.default_next_node, allNodes),
-        next_error_node_id: resolveBackendId(tableData?.next_error_node, allNodes),
+        default_next_node_id: resolveBackendIdWithMap(tableData?.default_next_node, allNodes, idMap),
+        next_error_node_id: resolveBackendIdWithMap(tableData?.next_error_node, allNodes, idMap),
         metadata: getUIMetadataForComparison(node),
     };
 }
