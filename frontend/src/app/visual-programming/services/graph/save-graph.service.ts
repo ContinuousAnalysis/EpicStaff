@@ -5,6 +5,7 @@ import { catchError, map, switchMap } from 'rxjs/operators';
 import { FlowsApiService } from '../../../features/flows/services/flows-api.service';
 import { GraphDto, UpdateGraphDtoRequest } from '../../../features/flows/models/graph.model';
 import { FlowModel } from '../../core/models/flow.model';
+import { NodeModel, DecisionTableNodeModel } from '../../core/models/node.model';
 import { ToastService } from '../../../services/notifications/toast.service';
 
 import { ConditionalEdgeService } from '../../../pages/flows-page/components/flow-visual-programming/services/conditional-edge.service';
@@ -159,7 +160,7 @@ export class GraphUpdateService {
                 // Build complete UUID → backendId map (existing + newly created)
                 const idMap = buildUuidToBackendIdMap(allNodes, phase1Mappings);
 
-                // ── Phase 2: Create/update/delete edges + conditional edges ──
+                // ── Phase 2: Create/update/delete edges + conditional edges + DT refs ──
                 const connDiff = getConnectionDiff(
                     previousState.edges,
                     previousState.conditionalEdges,
@@ -168,7 +169,7 @@ export class GraphUpdateService {
                     idMap
                 );
 
-                return this.executePhase2(connDiff, graphId).pipe(
+                return this.executePhase2(connDiff, graphId, newState.decisionTableNodes, allNodes, idMap).pipe(
                     switchMap(phase2Results => {
                         const phase2Mappings = phase2Results.conditionalEdges.createdMappings;
                         const allCreatedMappings = [...phase1Mappings, ...phase2Mappings];
@@ -283,12 +284,25 @@ export class GraphUpdateService {
         });
     }
 
-    // ── Phase 2: Edge + conditional edge operations ──────────────────────────
+    // ── Phase 2: Edge + conditional edge + decision table ref updates ────────
 
     private executePhase2(
         diff: ConnectionDiff,
-        graphId: number
-    ): Observable<{ edges: any[]; conditionalEdges: NodeDiffResult }> {
+        graphId: number,
+        dtNodes: DecisionTableNodeModel[],
+        allNodes: NodeModel[],
+        idMap: Map<string, number>
+    ): Observable<{ edges: any[]; conditionalEdges: NodeDiffResult; dtRefUpdates: any[] }> {
+        // Build DT reference update operations for nodes that have backend IDs
+        const dtRefOps: Observable<any>[] = dtNodes
+            .filter(n => n.backendId != null)
+            .map(n => {
+                const payload = buildDecisionTablePayload(n, graphId, allNodes, idMap);
+                return this.decisionTableNodeService.updateDecisionTableNode(
+                    n.backendId!, payload
+                ).pipe(catchError(err => throwError(() => err)));
+            });
+
         return forkJoin({
             edges: this.applyEdgeDiff(diff.edges, graphId),
             conditionalEdges: this.executeNodeDiff(
@@ -298,6 +312,7 @@ export class GraphUpdateService {
                 (id, n) => this.conditionalEdgeService.updateConditionalEdge(id, buildCondEdgePayload(n, graphId)),
                 n => n.edgeNode.id
             ),
+            dtRefUpdates: dtRefOps.length ? forkJoin(dtRefOps) : of([]),
         });
     }
 
