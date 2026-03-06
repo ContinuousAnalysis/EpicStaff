@@ -1,6 +1,6 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
-import { ApiGetResponse } from "@services";
+import { ApiGetResponse } from '../../../transcription/services/transcription-models.service';
 import { map, Observable } from "rxjs";
 import { ConfigService } from "../../../../services/config";
 import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from "../../models/ngrok-config.model";
