@@ -158,7 +158,7 @@ export class CreateAgentFormComponent implements OnInit {
 
             max_iter: [editMode ? agent?.max_iter : 10, [Validators.min(1), Validators.max(30)]],
             max_rpm: [editMode ? agent?.max_rpm : 10, [Validators.min(1), Validators.max(30)]],
-            max_execution_time: [editMode ? agent?.max_execution_time : 60, [Validators.min(1), Validators.max(300)]],
+            max_execution_time: [editMode ? agent?.max_execution_time : 60, [Validators.min(1), Validators.max(600)]],
             max_retry_limit: [editMode ? agent?.max_retry_limit : 3, [Validators.min(0), Validators.max(10)]],
             cache: [editMode ? agent?.cache : false],
             respect_context_window: [editMode ? agent?.respect_context_window : false],
@@ -168,7 +168,7 @@ export class CreateAgentFormComponent implements OnInit {
                 rag_id: agent?.rag?.rag_id || null,
                 rag_type: agent?.rag?.rag_type || null,
             } : null],
-            search_configs: [editMode ? agent?.search_configs : null, [Validators.required]],
+            search_configs: [editMode ? agent?.search_configs : null],
 
             allow_delegation: [editMode ? agent?.allow_delegation : true],
             memory: [editMode ? agent?.memory : false],
@@ -231,6 +231,10 @@ export class CreateAgentFormComponent implements OnInit {
             mcpToolIds
         ) as ToolUniqueName[];
 
+        const searchConfigs = formData.rag?.rag_type
+            ? { [formData.rag.rag_type]: formData.search_configs }
+            : null;
+
         const basePayload = {
             role: formData.role,
             goal: formData.goal,
@@ -252,9 +256,7 @@ export class CreateAgentFormComponent implements OnInit {
             tool_ids: toolIds,
             cache: formData.cache,
             respect_context_window: formData.respect_context_window,
-            search_configs: {
-                [formData.rag.rag_type]: formData.search_configs,
-            },
+            search_configs: searchConfigs,
         };
 
         if (this.isEditMode && this.agentToEdit) {

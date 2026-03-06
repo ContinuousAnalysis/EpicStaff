@@ -5,7 +5,7 @@ export interface AgentSearchConfigs {
 
 export interface NaiveRagSearchConfig {
     search_limit: number | null;
-    similarity_threshold: string | null;
+    similarity_threshold: number | null;
 }
 
 export interface GraphRagSearchConfig {

@@ -206,12 +206,7 @@ export class AgentsTableComponent {
             knowledge_collection: null,
             rag: null,
             tools: [],
-            search_configs: {
-                naive: {
-                    search_limit: 3,
-                    similarity_threshold: '0.2',
-                }
-            },
+            search_configs: null,
             // Replace realtime_config with realtime_agent object using provided defaults
             realtime_agent: {
                 wake_word: '',

@@ -379,13 +379,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy {
         if (formValue.max_rpm !== undefined) {
             updateData.max_rpm = formValue.max_rpm;
         }
-        if (formValue.similarity_threshold !== undefined) {
-            updateData.similarity_threshold =
-                formValue.similarity_threshold?.toString();
-        }
-        if (formValue.search_limit !== undefined) {
-            updateData.search_limit = formValue.search_limit;
-        }
         if (formValue.manager_llm_config !== undefined) {
             updateData.manager_llm_config = formValue.manager_llm_config;
         }

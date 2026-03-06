@@ -86,7 +86,7 @@ export interface GetAgentRequest {
         data: GetToolConfigRequest | GetPythonCodeToolRequest | GetMcpToolRequest;
     }[];
 
-    search_configs: AgentSearchConfigs;
+    search_configs: AgentSearchConfigs | null;
 }
 
 // Create Agent Request
@@ -117,7 +117,7 @@ export interface CreateAgentRequest {
     rag: AgentRag | null;
     realtime_agent?: RealtimeAgentConfig;
     tool_ids: ToolUniqueName[];
-    search_configs: AgentSearchConfigs;
+    search_configs: AgentSearchConfigs | null;
 }
 
 // partialUpdate Agent Request
@@ -154,7 +154,7 @@ export interface UpdateAgentRequest {
     realtime_agent: RealtimeAgentConfig;
     tool_ids: ToolUniqueName[];
 
-    search_configs: AgentSearchConfigs;
+    search_configs: AgentSearchConfigs | null;
 }
 
 export interface AgentRag {

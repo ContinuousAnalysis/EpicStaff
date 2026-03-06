@@ -136,16 +136,16 @@ export class AdvancedSettingsDialogComponent implements OnInit {
             role: [data.role],
             max_iter: [data.max_iter || 10, [Validators.min(1), Validators.max(30)]],
             max_rpm: [data.max_rpm || 10, [Validators.min(1), Validators.max(30)]],
-            max_execution_time: [data.max_execution_time || 60, [Validators.min(1), Validators.max(300)]],
+            max_execution_time: [data.max_execution_time || 60, [Validators.min(1), Validators.max(600)]],
             max_retry_limit: [data.max_retry_limit || 3, [Validators.min(0), Validators.max(10)]],
             cache: [data.cache ?? false],
             respect_context_window: [data.respect_context_window ?? false],
-            fcm_llm_config: [data.fcm_llm_config || null, [Validators.required]],
-            knowledge_collection: [data.knowledge_collection || null, [Validators.required]],
+            fcm_llm_config: [data.fcm_llm_config || null],
+            knowledge_collection: [data.knowledge_collection || null],
             rag: [{
                 rag_id: data.rag?.rag_id || null,
                 rag_type: data.rag?.rag_type || null,
-            }, [Validators.required]],
+            }],
             search_configs: [data.search_configs || null, [Validators.required]],
         });
     }
@@ -173,9 +173,9 @@ export class AdvancedSettingsDialogComponent implements OnInit {
         const result = {
             ...rest,
             rag,
-            search_configs: {
-                [rag.rag_type]: search_configs,
-            }
+            search_configs: rag?.rag_type
+                ? { [rag.rag_type]: search_configs }
+                : null,
         };
 
         // Update agentData with current form control values

@@ -61,15 +61,11 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         cache: boolean;
         full_output: boolean;
         planning: boolean;
-        similarity_threshold: string;
-        search_limit: number;
     }>({
         temperature: 0.7,
         cache: false,
         full_output: false,
         planning: false,
-        similarity_threshold: '0.2',
-        search_limit: 1,
     });
 
     // Other signals for reactive data
@@ -108,10 +104,6 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         }
     }
 
-    public getParsedThreshold(value: string): number {
-        return parseFloat(value);
-    }
-
     private initializeBasicSettings(): void {
         if (this.project) {
             this.memory.set(this.project.memory ?? false);
@@ -129,9 +121,6 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
                 cache: this.project.cache ?? false,
                 full_output: this.project.full_output ?? false,
                 planning: this.project.planning ?? false,
-                similarity_threshold:
-                    this.project.similarity_threshold ?? '0.2',
-                search_limit: this.project.search_limit ?? 1,
             });
             //   this.cdr.markForCheck();
         }
@@ -312,40 +301,5 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     public onRpmSliderEnd(): void {
         // Only save changes when slider movement ends
         this.onSettingChange('max_rpm', this.rpmCurrentValue);
-    }
-
-    // Текущее значение ползунка (аналог rpmCurrentValue)
-    public thresholdCurrentValue: string = this.settings().similarity_threshold;
-    public searchLimitCurrentValue: number = this.settings().search_limit;
-
-    // Вызывается при движении ползунка
-    public onThresholdSliderMove(value: any): void {
-        this.thresholdCurrentValue = value.toString();
-        const currentSettings = this.settings();
-        this.settings.set({
-            ...currentSettings,
-            similarity_threshold: value.toString(),
-        });
-    }
-
-    // Вызывается при отпускании ползунка
-    public onThresholdSliderEnd(): void {
-        this.onSettingChange(
-            'similarity_threshold',
-            this.thresholdCurrentValue
-        );
-    }
-
-    public onSearchLimitSliderMove(value: number): void {
-        this.searchLimitCurrentValue = value;
-        const currentSettings = this.settings();
-        this.settings.set({
-            ...currentSettings,
-            search_limit: value,
-        });
-    }
-
-    public onSearchLimitSliderEnd(): void {
-        this.onSettingChange('search_limit', this.searchLimitCurrentValue);
     }
 }
