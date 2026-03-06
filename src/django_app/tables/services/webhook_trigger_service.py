@@ -87,3 +87,20 @@ class WebhookTriggerService(metaclass=SingletonMeta):
         if isinstance(url, bytes):
             url = url.decode("utf-8")
         return url
+
+    def wait_for_tunnel_url(
+        self,
+        ngrok_webhook_config: NgrokWebhookConfig,
+        timeout: float = 10.0,
+        interval: float = 0.1,
+    ) -> str | None:
+        """Poll Redis until the tunnel URL is available or timeout is reached."""
+        import time
+
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            url = self.get_tunnel_url(ngrok_webhook_config)
+            if url:
+                return url
+            time.sleep(interval)
+        return None
