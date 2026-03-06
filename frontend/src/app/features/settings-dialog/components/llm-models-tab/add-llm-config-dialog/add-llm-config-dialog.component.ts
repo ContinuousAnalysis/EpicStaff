@@ -10,7 +10,7 @@ import {
     effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, FormControl, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Dialog, DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs/operators';
@@ -22,10 +22,10 @@ import { JsonEditorComponent } from '../../../../../shared/components/json-edito
 import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
 import { HelpTooltipComponent } from '../../../../../shared/components/help-tooltip/help-tooltip.component';
 
-import { LLM_Provider, ModelTypes } from '../../../models/LLM_provider.model';
+import { LLM_Provider, ModelTypes } from '../../../models/llm-provider.model';
 import { LLM_Model } from '../../../models/llms/LLM.model';
 import { CreateLLMConfigRequest, GetLlmConfigRequest } from '../../../models/llms/LLM_config.model';
-import { LLM_Providers_Service } from '../../../services/LLM_providers.service';
+import { LLM_Providers_Service } from '../../../services/llm-providers.service';
 import { LLM_Models_Service } from '../../../services/llms/LLM_models.service';
 import { LLM_Config_Service } from '../../../services/llms/LLM_config.service';
 import { ModelSelectorModalComponent, ModelSelectorResult } from '../model-selector-modal/model-selector-modal.component';
@@ -84,7 +84,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
         timeout: [LLM_FORM_DEFAULTS.timeout, [Validators.required, Validators.min(1)]],
         seed: [LLM_FORM_DEFAULTS.seed, [Validators.min(-2147483648), Validators.max(2147483647)]],
         headers: this.fb.array([this.createHeaderGroup()]),
-        stopSequences: this.fb.array([this.createStopSequenceControl()]),
     });
 
     isLoading = signal(false);
@@ -102,14 +101,11 @@ export class AddLlmConfigDialogComponent implements OnInit {
     selectedModelId = signal<number | null>(null);
 
     logitBiasText = signal('{}');
-    responseFormatText = signal('{}');
     headersText = signal('{}');
     headers = signal<Record<string, string>>({});
     private isUpdatingHeadersFromUI = false;
 
     logitBiasJson = computed(() => this.logitBiasText());
-
-    responseFormatJson = computed(() => this.responseFormatText());
 
     headersJson = computed(() => this.headersText());
 
@@ -142,10 +138,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
         return this.form.get('headers') as FormArray;
     }
 
-    get stopSequencesArray(): FormArray {
-        return this.form.get('stopSequences') as FormArray;
-    }
-
     constructor() {
         effect(() => {
             const provider = this.selectedProvider();
@@ -172,10 +164,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
             key: [''],
             value: [''],
         });
-    }
-
-    private createStopSequenceControl(): FormControl {
-        return this.fb.control('');
     }
 
     ngOnInit(): void {
@@ -244,16 +232,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
         this.selectedModelId.set(config.model);
 
         this.logitBiasText.set(JSON.stringify(config.logit_bias ?? {}, null, 2));
-        this.responseFormatText.set(JSON.stringify(config.response_format ?? {}, null, 2));
-        
-        // Populate stop sequences array
-        if (config.stop && config.stop.length > 0) {
-            this.stopSequencesArray.clear();
-            config.stop.forEach(seq => {
-                this.stopSequencesArray.push(this.fb.control(seq));
-            });
-            this.stopSequencesArray.push(this.createStopSequenceControl());
-        }
         
         // Rebuild headers form array
         const headersToSet = config.headers || {};
@@ -354,18 +332,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
         }
     }
 
-    addStopSequence(): void {
-        this.stopSequencesArray.push(this.createStopSequenceControl());
-    }
-
-    removeStopSequence(index: number): void {
-        this.stopSequencesArray.removeAt(index);
-        
-        if (this.stopSequencesArray.length === 0) {
-            this.stopSequencesArray.push(this.createStopSequenceControl());
-        }
-    }
-
     private syncHeadersToJson(): void {
         const headersObj: Record<string, string> = {};
         this.headersArray.controls.forEach((control) => {
@@ -383,10 +349,6 @@ export class AddLlmConfigDialogComponent implements OnInit {
 
     onLogitBiasChange(json: string): void {
         this.logitBiasText.set(json);
-    }
-
-    onResponseFormatChange(json: string): void {
-        this.responseFormatText.set(json);
     }
 
     private parseJsonObject<T>(json: string): T | null {
@@ -434,12 +396,7 @@ export class AddLlmConfigDialogComponent implements OnInit {
 
         const formValue = this.form.value;
 
-        const stopSeqValues = formValue.stopSequences
-            .map((val: string) => val?.trim())
-            .filter((val: string) => val);
-        const stopSequences = stopSeqValues.length > 0 ? stopSeqValues : null;
         const logitBias = this.parseJsonObject<Record<string, number>>(this.logitBiasText());
-        const responseFormat = this.parseJsonObject<Record<string, unknown>>(this.responseFormatText());
         const headersObj = this.parseJsonObject<Record<string, string>>(this.headersText()) ?? this.headers();
         const headers = Object.keys(headersObj).length > 0 ? headersObj : undefined;
 
@@ -460,9 +417,8 @@ export class AddLlmConfigDialogComponent implements OnInit {
             max_tokens: formValue.maxTokens,
             timeout: formValue.timeout,
             seed: seedValue,
-            stop: stopSequences,
+            stop: [],
             logit_bias: logitBias,
-            response_format: responseFormat,
             is_visible: true,
             headers,
         };

@@ -1,12 +1,12 @@
 import requests
 from loguru import logger
+from requests.exceptions import ConnectionError, Timeout
 from tenacity import (
     retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
 )
-from requests.exceptions import ConnectionError, Timeout
 
 from tables.exceptions import RegisterTelegramTriggerError
 from tables.models.graph_models import TelegramTriggerNode

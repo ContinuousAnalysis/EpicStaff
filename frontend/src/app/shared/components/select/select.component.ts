@@ -47,6 +47,9 @@ export class SelectComponent implements ControlValueAccessor {
     placeholder = input<string>('Select option');
     invalid = input<boolean>(false);
 
+    open = signal(false);
+    isDisabled = signal(false);
+
     selectedValue = model<unknown | null>(null);
     selectedItem = computed(() => {
         const value = this.selectedValue();
@@ -57,12 +60,8 @@ export class SelectComponent implements ControlValueAccessor {
 
     changed = output<any>();
 
-    open = signal(false);
-
     private onChange: (value: unknown) => void = () => {};
     private onTouched: () => void = () => {};
-
-    isDisabled = signal(false);
 
     @ViewChild('triggerBtn') triggerBtn!: ElementRef<HTMLButtonElement>;
     @ViewChild('dropdownTemplate') dropdownTemplate!: any;
