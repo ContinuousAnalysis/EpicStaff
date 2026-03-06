@@ -48,8 +48,6 @@ class Graph(models.Model):
     persistent_variables = models.BooleanField(
         default=False, help_text="If 'True' -> use variables from last session."
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
 
 class BaseNode(BaseGraphEntity, BaseGlobalNode):
