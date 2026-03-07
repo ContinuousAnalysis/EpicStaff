@@ -261,3 +261,6 @@ knowledge/graph_data/
 *.crt!
 dev/dev.config.json
 dev/dev.env
+
+# Claude Code
+.claude
