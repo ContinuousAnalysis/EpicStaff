@@ -170,7 +170,7 @@ from tables.services.import_export_service import ViewSetImportExportService
 from tables.utils.mixins import DeepCopyMixin
 from tables.exceptions import BuiltInToolModificationError
 from tables.import_export.enums import EntityType
-from tables.serializers.import_serializers import FileImportSerializer
+from tables.serializers.import_serializers import ImportRequestSerializer
 
 
 redis_service = RedisService()
@@ -184,10 +184,9 @@ class BasePredefinedRestrictedViewSet(ModelViewSet):
     """
 
     def get_queryset(self):
-
         if self.action == "destroy":
             return self.queryset.filter(predefined=False)
-        
+
         return self.queryset
 
     def perform_create(self, serializer):
@@ -202,15 +201,14 @@ class BasePredefinedRestrictedViewSet(ModelViewSet):
         validated_data = serializer.validated_data
 
         if instance.predefined:
-            
             # Should not be able to change name
-            if 'name' in validated_data and validated_data['name'] != instance.name:
+            if "name" in validated_data and validated_data["name"] != instance.name:
                 e = f"Cannot change the name of a predefined {self.queryset.model.__name__.lower()}"
                 logger.warning(e)
                 raise ValidationError({"name": e})
 
             # Should not be able to remove predefined
-            if 'predefined' in validated_data and validated_data['predefined'] is False:
+            if "predefined" in validated_data and validated_data["predefined"] is False:
                 e = "Cannot unset predefined status for this object"
                 logger.warning(e)
                 raise ValidationError({"predefined": e})
@@ -229,6 +227,7 @@ class BasePredefinedRestrictedViewSet(ModelViewSet):
             logger.error(e)
             raise PermissionDenied(e)
         instance.delete()
+
 
 class TemplateAgentReadWriteViewSet(ModelViewSet):
     queryset = TemplateAgent.objects.all()
@@ -276,6 +275,7 @@ class EmbeddingModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
     serializer_class = EmbeddingModelSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = EmbeddingModelFilter
+
 
 class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     class EmbeddingConfigFilter(filters.FilterSet):
@@ -414,7 +414,7 @@ class AgentViewSet(ModelViewSet, DeepCopyMixin):
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer = ImportRequestSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
 
         data = self.import_export_service.import_entity(
@@ -459,7 +459,7 @@ class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer = ImportRequestSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
 
         data = self.import_export_service.import_entity(
@@ -741,11 +741,13 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer = ImportRequestSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
 
         data = self.import_export_service.import_entity(
-            file_serializer.validated_data["file"], Graph
+            file_serializer.validated_data["file"],
+            Graph,
+            preserve_uuids=file_serializer.validated_data["preserve_uuids"],
         )
         return Response(data, status=status.HTTP_200_OK)
 

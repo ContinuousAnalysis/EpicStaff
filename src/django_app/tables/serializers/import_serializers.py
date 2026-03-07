@@ -44,8 +44,9 @@ from tables.services.import_services import (
 )
 
 
-class FileImportSerializer(serializers.Serializer):
+class ImportRequestSerializer(serializers.Serializer):
     file = serializers.FileField()
+    preserve_uuids = serializers.BooleanField(default=False, required=False)
 
 
 class PythonCodeImportSerializer(serializers.ModelSerializer):

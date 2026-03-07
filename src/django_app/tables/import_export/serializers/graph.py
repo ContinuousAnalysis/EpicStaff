@@ -165,4 +165,4 @@ class GraphImportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Graph
-        exclude = ["tags", "created_at", "updated_at", "uuid"]
+        exclude = ["tags", "created_at", "updated_at"]
