@@ -380,6 +380,7 @@ def cmd_session(args):
 
 def cmd_session_inspect(args):
     """Inspect what each node received as input and produced as output."""
+    full = getattr(args, 'full', False)
     for sid in args.session_ids:
         msgs = api_get("/graph-session-messages/", {"session_id": sid, "ordering": "id"})
         if not msgs:
@@ -401,18 +402,24 @@ def cmd_session_inspect(args):
                 print(f"\n  {name} (input):")
                 for k, v in inp.items():
                     vstr = str(v)
-                    if len(vstr) > 120:
+                    if not full and len(vstr) > 120:
                         vstr = vstr[:120] + "..."
                     print(f"    {k}: {vstr}")
             elif mtype == "finish" and isinstance(out, dict) and out:
                 print(f"\n  {name} (output):")
                 for k, v in out.items():
-                    vstr = str(v)
-                    if len(vstr) > 120:
-                        vstr = vstr[:120] + "..."
+                    if full:
+                        vstr = json.dumps(v, indent=2, default=str) if isinstance(v, (dict, list)) else str(v)
+                    else:
+                        vstr = str(v)
+                        if len(vstr) > 120:
+                            vstr = vstr[:120] + "..."
                     print(f"    {k}: {vstr}")
             elif error and name:
-                print(f"\n  {name} (error): {str(error)[:200]}")
+                estr = str(error)
+                if not full and len(estr) > 200:
+                    estr = estr[:200] + "..."
+                print(f"\n  {name} (error): {estr}")
 
 
 def cmd_session_timings(args):

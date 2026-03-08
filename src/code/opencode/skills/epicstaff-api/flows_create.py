@@ -677,7 +677,11 @@ def cmd_init_metadata(args):
         src_info = node_info[src_name]
         tgt_info = node_info[tgt_name]
         src_port_suffix = _PORT_MAP.get(src_info["type"], ("out", "in"))[0]
-        tgt_port_suffix = _PORT_MAP.get(tgt_info["type"], ("out", "in"))[1] or "in"
+        tgt_port_suffix = _PORT_MAP.get(tgt_info["type"], ("out", "in"))[1]
+        if not tgt_port_suffix:
+            print(f"  ⚠ Skipped edge {src_name} → {tgt_name}: "
+                  f"{tgt_info['type']} nodes have no input port.")
+            continue
         src_port = f"{src_info['uuid']}_{src_port_suffix}"
         tgt_port = f"{tgt_info['uuid']}_{tgt_port_suffix}"
         connections.append({
@@ -736,7 +740,16 @@ def cmd_init_metadata(args):
                 "targetPortId": tgt_port,
             })
 
-    metadata = {"nodes": meta_nodes, "connections": connections, "edges": [], "groups": []}
+    # Build ReactFlow edges — the frontend renders visual lines from these,
+    # separate from the connections array used for routing.
+    rf_edges = []
+    for conn in connections:
+        rf_edges.append({
+            "source": conn["sourceNodeId"],
+            "target": conn["targetNodeId"],
+        })
+
+    metadata = {"nodes": meta_nodes, "connections": connections, "edges": rf_edges, "groups": []}
     api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
     print(f"Initialized metadata for flow {graph_id}:")
     print(f"  {len(meta_nodes)} nodes, {len(connections)} connections")
