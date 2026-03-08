@@ -516,14 +516,22 @@ export class FlowVisualProgrammingComponent
             return;
         }
 
-        this.epicChatService.requestCreateAgent({
-            name: this.graph.name?.trim() || `Flow ${this.graph.id}`,
-            description: this.graph.description?.trim(),
-            flowId: this.graph.id,
-            flowUrl,
-            selectAfterCreate: true,
+        this.flowApiService.patchGraph(this.graph.id, { epicchat_enabled: true }).subscribe({
+            next: () => {
+                this.graph.epicchat_enabled = true;
+                this.epicChatService.requestCreateAgent({
+                    name: this.graph.name?.trim() || `Flow ${this.graph.id}`,
+                    description: this.graph.description?.trim(),
+                    flowId: this.graph.id,
+                    flowUrl,
+                    selectAfterCreate: true,
+                });
+                this.toastService.success('Flow connected to Epic Chat');
+            },
+            error: () => {
+                this.toastService.error('Failed to save EpicChat connection');
+            },
         });
-        this.toastService.success('Flow connected to Epic Chat');
     }
 
     private generateCurlCommand(

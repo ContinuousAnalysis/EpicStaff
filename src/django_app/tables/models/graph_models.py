@@ -20,6 +20,9 @@ class Graph(models.Model):
     persistent_variables = models.BooleanField(
         default=False, help_text="If 'True' -> use variables from last session."
     )
+    epicchat_enabled = models.BooleanField(
+        default=False, help_text="If 'True' -> flow is connected to EpicChat widget."
+    )
 
 
 class BaseNode(BaseGraphEntity, BaseGlobalNode):

@@ -713,6 +713,7 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphLightSerializer
     filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter]
     # filterset_fields = ['tags']  TODO: Uncomment when tags logic implemented
+    filterset_fields = ["epicchat_enabled"]
     search_fields = ["name", "description"]
 
     def get_queryset(self):
