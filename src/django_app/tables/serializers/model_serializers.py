@@ -1447,6 +1447,7 @@ class GraphLightSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "tags",
+            "epicchat_enabled",
         ]
 
 
@@ -1619,6 +1620,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "end_node_list",
             "time_to_live",
             "persistent_variables",
+            "epicchat_enabled",
             "telegram_trigger_node_list",
         ]
 

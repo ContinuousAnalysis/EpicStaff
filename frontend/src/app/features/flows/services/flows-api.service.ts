@@ -56,6 +56,12 @@ export class FlowsApiService {
     });
   }
 
+  patchGraph(id: number, fields: Partial<GraphDto>): Observable<GraphDto> {
+    return this.http.patch<GraphDto>(`${this.apiUrl}${id}/`, fields, {
+      headers: this.httpHeaders,
+    });
+  }
+
   deleteGraph(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
