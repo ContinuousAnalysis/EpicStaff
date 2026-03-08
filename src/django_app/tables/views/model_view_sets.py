@@ -770,7 +770,9 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ["name", "description"]
 
     def get_queryset(self):
-        return Graph.objects.prefetch_related("tags", "labels")
+        return Graph.objects.only("id", "name", "description").prefetch_related(
+            "tags", "labels"
+        )
 
 
 class CrewNodeViewSet(viewsets.ModelViewSet):
