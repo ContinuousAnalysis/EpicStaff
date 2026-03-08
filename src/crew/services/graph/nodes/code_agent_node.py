@@ -325,12 +325,11 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         """Build the text field for the thinking bubble.
         NOTE: The EpicChat widget prepends [toolName] badges from the
         tool_calls array, so this text must NOT repeat tool labels.
-        It should contain only reasoning and/or detail snippets."""
+        Full reasoning is included so the expanded view has details;
+        the frontend extracts a first-line summary for collapsed headers."""
         parts = []
         if reasoning:
-            first_line = reasoning.split("\n")[0].strip()
-            if first_line:
-                parts.append(first_line)
+            parts.append(reasoning)
 
         # Add meaningful detail snippets from tool inputs
         for tc in tool_calls:

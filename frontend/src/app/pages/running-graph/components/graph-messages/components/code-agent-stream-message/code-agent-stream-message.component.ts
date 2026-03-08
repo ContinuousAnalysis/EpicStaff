@@ -84,10 +84,13 @@ interface ThinkingStep {
                   <div class="tool-call-input" *ngIf="tc.input">
                     {{ truncate(tc.input, 200) }}
                   </div>
+                  <div class="tool-call-output" *ngIf="tc.output">
+                    {{ truncate(tc.output, 300) }}
+                  </div>
                 </div>
 
                 <div class="thinking-text" *ngIf="step.text">
-                  {{ truncate(step.text, 500) }}
+                  {{ truncate(step.text, 2000) }}
                 </div>
               </div>
             </div>
@@ -296,13 +299,25 @@ interface ThinkingStep {
       overflow-y: auto;
     }
 
+    .tool-call-output {
+      color: var(--gray-500);
+      font-size: 0.75rem;
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px solid var(--gray-750);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
     .thinking-text {
       color: var(--gray-400);
       font-size: 0.82rem;
       font-style: italic;
       white-space: pre-wrap;
       word-break: break-word;
-      max-height: 100px;
+      max-height: 300px;
       overflow-y: auto;
     }
 
@@ -365,13 +380,26 @@ export class CodeAgentStreamMessageComponent implements OnInit, OnChanges {
     // Extract a meaningful label from thinking text
     const label = this.extractThinkingLabel(step.text);
 
-    // Build tool badges
-    const tools: string[] = [];
+    // Group tool calls by name to avoid "Running command, Running command, ..."
+    const toolCounts = new Map<string, { count: number; detail: string }>();
     for (const tc of step.toolCalls) {
       const detail = this.extractToolDetail(tc);
-      tools.push(detail ? `${tc.name} ${detail}` : tc.name);
+      const existing = toolCounts.get(tc.name);
+      if (existing) {
+        existing.count++;
+      } else {
+        toolCounts.set(tc.name, { count: 1, detail });
+      }
     }
-    const toolStr = tools.length > 0 ? tools.join(', ') : '';
+    const tools: string[] = [];
+    for (const [name, info] of toolCounts) {
+      if (info.count > 1) {
+        tools.push(`${name} (${info.count}x)`);
+      } else {
+        tools.push(info.detail ? `${name} ${info.detail}` : name);
+      }
+    }
+    const toolStr = tools.join(', ');
 
     if (label && toolStr) {
       return `${label}  ·  ${toolStr}`;
