@@ -104,6 +104,7 @@ def main():
     p.add_argument("-c", "--compact", action="store_true")
     p = sub.add_parser("session-inspect", help="Inspect per-node input/output keys")
     p.add_argument("session_ids", type=int, nargs="+")
+    p.add_argument("--full", action="store_true", help="Show full untruncated values (default: truncate at 120 chars)")
     p = sub.add_parser("session-timings", help="Per-node timing breakdown")
     p.add_argument("session_ids", type=int, nargs="+")
     p = sub.add_parser("vars", help="Persistent variables")
