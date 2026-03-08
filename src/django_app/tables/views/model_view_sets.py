@@ -767,7 +767,6 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
         drf_filters.SearchFilter,
         LabelFilterBackend,
     ]
-    # filterset_fields = ['tags']  TODO: Uncomment when tags logic implemented
     search_fields = ["name", "description"]
 
     def get_queryset(self):

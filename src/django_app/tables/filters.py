@@ -15,36 +15,25 @@ class LabelFilterBackend(BaseFilterBackend):
     Filters graphs by label_id (repeatable). Each label_id includes its full
     subtree of descendants. Multiple label_ids use OR logic.
     Example: ?label_id=1&label_id=3
+
+    Use ?no_label=true to return only graphs with no labels assigned.
     """
 
     def filter_queryset(self, request, queryset, view):
         from tables.utils.helpers import get_label_descendant_ids
 
+        no_label = request.query_params.get("no_label", "").lower() in ("true", "1")
         label_ids = request.query_params.getlist("label_id")
+
+        if no_label:
+            return queryset.filter(labels__isnull=True).distinct()
+
         if not label_ids:
             return queryset
         all_ids: set[int] = set()
         for lid in label_ids:
             all_ids |= get_label_descendant_ids(int(lid))
         return queryset.filter(labels__in=all_ids).distinct()
-
-    def get_schema_fields(self, view):
-        import coreschema
-        from coreapi import Field
-
-        return [
-            Field(
-                name="label_id",
-                required=False,
-                location="query",
-                schema=coreschema.Integer(
-                    description=(
-                        "Filter by label ID (includes all descendants). "
-                        "Repeat to filter by multiple labels (OR logic)."
-                    )
-                ),
-            )
-        ]
 
     def get_schema_operation_parameters(self, view):
         return [
@@ -57,7 +46,14 @@ class LabelFilterBackend(BaseFilterBackend):
                     "Repeat to filter by multiple labels (OR logic)."
                 ),
                 "schema": {"type": "integer"},
-            }
+            },
+            {
+                "name": "no_label",
+                "required": False,
+                "in": "query",
+                "description": "If true, return only graphs with no labels.",
+                "schema": {"type": "boolean"},
+            },
         ]
 
 
