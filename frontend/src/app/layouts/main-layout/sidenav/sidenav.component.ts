@@ -14,6 +14,7 @@ import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
 import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
 import { ConfigService } from '../../../services/config/config.service';
+import { environment } from '../../../../environments/environment';
 
 interface NavItem {
     id: string;
@@ -44,6 +45,7 @@ export class LeftSidebarComponent {
     public topNavItems: NavItem[];
     public bottomNavItems: NavItem[];
     public isEpicChatEnabled: boolean;
+    public apiBaseUrl: string = environment.apiUrl;
     @ViewChild('epicChat', { static: false })
     private epicChat?: ElementRef<HTMLElement>;
 

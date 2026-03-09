@@ -36753,14 +36753,17 @@ var UserAction;
 // src/app/models/ep-chat-bridge.model.ts
 var EP_CHAT_COMMANDS = {
   AGENT_CREATE: "agent.create",
-  AGENT_SELECT: "agent.select"
+  AGENT_SELECT: "agent.select",
+  AGENT_REMOVE: "agent.remove"
 };
 var EP_CHAT_EVENTS = {
   CHAT_CLOSED: "chat.closed",
+  CHAT_OPENED: "chat.opened",
   APP_OPEN_FLOW: "app.openFlow",
   APP_OPEN_NODE: "app.openNode",
   APP_REFRESH_CACHE: "app.refreshCache",
-  APP_TOGGLE_DOCK: "app.toggleDock"
+  APP_TOGGLE_DOCK: "app.toggleDock",
+  AGENT_DISCONNECTED: "agent.disconnected"
 };
 
 // node_modules/xlsx/xlsx.mjs
@@ -57594,12 +57597,18 @@ var StorageService = _StorageService;
 
 // src/app/services/epicstaff-agent.service.ts
 var _EpicstaffAgentService = class _EpicstaffAgentService {
-  constructor(storageService) {
+  constructor(http, storageService) {
+    this.http = http;
     this.storageService = storageService;
     this.agentsSignal = signal([], ...ngDevMode ? [{ debugName: "agentsSignal" }] : []);
     this.agents = this.agentsSignal.asReadonly();
     this.currentAgentSignal = signal(null, ...ngDevMode ? [{ debugName: "currentAgentSignal" }] : []);
     this.currentAgent = this.currentAgentSignal.asReadonly();
+    this.visibleAgents = computed(() => {
+      const all = this.agentsSignal();
+      const hasRealAgents = all.some((a3) => a3.epicstaffFlowId !== null && a3.epicstaffFlowId !== void 0);
+      return hasRealAgents ? all.filter((a3) => a3.epicstaffFlowId !== null && a3.epicstaffFlowId !== void 0) : all;
+    }, ...ngDevMode ? [{ debugName: "visibleAgents" }] : []);
     this.defaultImagePath = "";
     this.loadAgents();
   }
@@ -57671,8 +57680,9 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
     }
     this.agentsSignal.update((current) => current.filter((a3) => a3.epicstaffAgentId !== agentToDelete.epicstaffAgentId));
     if (this.currentAgent()?.epicstaffAgentId === agentToDelete.epicstaffAgentId) {
-      const newCurrent = this.agents()[0] || null;
-      this.setCurrentAgent(newCurrent);
+      const remaining = this.agents();
+      const nextAgent = remaining.find((a3) => a3.epicstaffFlowId !== null && a3.epicstaffFlowId !== void 0) ?? remaining[0] ?? null;
+      this.setCurrentAgent(nextAgent);
     }
     this.saveAgentsToStorage();
     return of(void 0);
@@ -57702,6 +57712,52 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
       this.setCurrentAgent(targetAgent);
     }
     return targetAgent;
+  }
+  /**
+   * Sync agents from backend API.
+   * Fetches flows with epicchat_enabled=true and creates/updates/removes agents accordingly.
+   * Agents with epicstaffFlowId === null are not managed by the API and are left untouched.
+   */
+  syncAgentsFromApi(apiBaseUrl) {
+    const url = apiBaseUrl.endsWith("/") ? `${apiBaseUrl}graph-light/?epicchat_enabled=true` : `${apiBaseUrl}/graph-light/?epicchat_enabled=true`;
+    console.log("[EpicChat] syncAgentsFromApi: fetching", url);
+    this.http.get(url).subscribe({
+      next: (response) => {
+        const flows = response?.results || [];
+        const flowIds = new Set(flows.map((f) => f.id));
+        const existingAgents = this.agents();
+        console.log("[EpicChat] syncAgentsFromApi: received flows", flows);
+        console.log("[EpicChat] syncAgentsFromApi: existing agents", existingAgents);
+        for (const flow of flows) {
+          const existing = existingAgents.find((a3) => a3.epicstaffFlowId === flow.id);
+          if (!existing) {
+            console.log("[EpicChat] syncAgentsFromApi: creating agent for flow", flow.id, flow.name);
+            this.createAgent({
+              agent_name: flow.name,
+              agent_description: flow.description || "",
+              flow_id: flow.id,
+              url: apiBaseUrl
+            }, { selectAfterCreate: false });
+          } else if (existing.name !== flow.name || existing.description !== (flow.description || "")) {
+            this.agentsSignal.update((current) => current.map((a3) => a3.epicstaffAgentId === existing.epicstaffAgentId ? __spreadProps(__spreadValues({}, a3), { name: flow.name, description: flow.description || "" }) : a3));
+            if (this.currentAgent()?.epicstaffAgentId === existing.epicstaffAgentId) {
+              this.currentAgentSignal.update((curr) => curr ? __spreadProps(__spreadValues({}, curr), {
+                name: flow.name,
+                description: flow.description || ""
+              }) : curr);
+            }
+          }
+        }
+        const agentsToRemove = this.agents().filter((a3) => a3.epicstaffFlowId !== null && a3.epicstaffFlowId !== void 0 && !flowIds.has(a3.epicstaffFlowId));
+        for (const agent of agentsToRemove) {
+          this.deleteAgent(agent.epicstaffAgentId);
+        }
+        this.saveAgentsToStorage();
+      },
+      error: (error) => {
+        console.error("Failed to sync agents from API:", error);
+      }
+    });
   }
   loadCurrentAgent() {
     const savedAgentId = this.storageService.getItem(STORAGE_KEYS.EPICSTAFF_AGENT_ID);
@@ -57740,7 +57796,7 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
   }
 };
 _EpicstaffAgentService.\u0275fac = function EpicstaffAgentService_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _EpicstaffAgentService)(\u0275\u0275inject(StorageService));
+  return new (__ngFactoryType__ || _EpicstaffAgentService)(\u0275\u0275inject(HttpClient), \u0275\u0275inject(StorageService));
 };
 _EpicstaffAgentService.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _EpicstaffAgentService, factory: _EpicstaffAgentService.\u0275fac, providedIn: "root" });
 var EpicstaffAgentService = _EpicstaffAgentService;
@@ -57750,7 +57806,7 @@ var EpicstaffAgentService = _EpicstaffAgentService;
     args: [{
       providedIn: "root"
     }]
-  }], () => [{ type: StorageService }], null);
+  }], () => [{ type: HttpClient }, { type: StorageService }], null);
 })();
 
 // src/app/services/chat.service.ts
@@ -57864,7 +57920,7 @@ var _ActionService = class _ActionService {
     if (!command?.requestId || !command.action) {
       return;
     }
-    if (runtimeContext.isMonoAgent && (command.action === EP_CHAT_COMMANDS.AGENT_CREATE || command.action === EP_CHAT_COMMANDS.AGENT_SELECT)) {
+    if (runtimeContext.isMonoAgent && (command.action === EP_CHAT_COMMANDS.AGENT_CREATE || command.action === EP_CHAT_COMMANDS.AGENT_SELECT || command.action === EP_CHAT_COMMANDS.AGENT_REMOVE)) {
       onCommandError(command, "Agent command is not available in mono-agent mode");
       return;
     }
@@ -57874,6 +57930,9 @@ var _ActionService = class _ActionService {
         return;
       case EP_CHAT_COMMANDS.AGENT_SELECT:
         this.handleSelectAgentCommand(command.payload, command, onCommandSuccess, onCommandError);
+        return;
+      case EP_CHAT_COMMANDS.AGENT_REMOVE:
+        this.handleRemoveAgentCommand(command.payload, command, onCommandSuccess, onCommandError);
         return;
       default:
         onCommandError(command, `Unsupported command: ${command.action}`);
@@ -57922,6 +57981,23 @@ var _ActionService = class _ActionService {
     }
     this.agentService.setCurrentAgent(agent);
     onCommandSuccess(command, { agentId: data.id });
+  }
+  handleRemoveAgentCommand(payload, command, onCommandSuccess, onCommandError) {
+    const data = payload;
+    const flowId = this.toFlowId(data?.flowId);
+    if (flowId === null) {
+      onCommandError(command, `Invalid payload for ${command.action}`);
+      return;
+    }
+    const agent = this.agentService.agents().find((a3) => a3.epicstaffFlowId === flowId);
+    if (!agent) {
+      onCommandError(command, `Agent with flowId=${flowId} not found`);
+      return;
+    }
+    this.agentService.deleteAgent(agent.epicstaffAgentId).subscribe({
+      next: () => onCommandSuccess(command, { flowId }),
+      error: (error) => onCommandError(command, error instanceof Error ? error.message : "Failed to remove agent")
+    });
   }
   toFlowId(flowId) {
     if (flowId === null || flowId === void 0 || flowId === "") {
@@ -92667,7 +92743,8 @@ function MicrophoneComponent_Conditional_0_Template(rf, ctx) {
   }
 }
 var _MicrophoneComponent = class _MicrophoneComponent {
-  constructor() {
+  constructor(elementRef) {
+    this.elementRef = elementRef;
     this.disabled = false;
     this.showIcon = true;
     this.iconSize = "16px";
@@ -92770,7 +92847,8 @@ var _MicrophoneComponent = class _MicrophoneComponent {
   setupStopOnClickAndFocusListeners() {
     if (!this.toStopOnClickSelector)
       return;
-    const element = document.querySelector(this.toStopOnClickSelector);
+    const root = this.elementRef.nativeElement.getRootNode();
+    const element = root.querySelector(this.toStopOnClickSelector);
     if (!element)
       return;
     this.stopOnInteractionHandler = () => {
@@ -92785,7 +92863,8 @@ var _MicrophoneComponent = class _MicrophoneComponent {
   removeStopOnClickAndFocusListeners() {
     if (!this.toStopOnClickSelector)
       return;
-    const element = document.querySelector(this.toStopOnClickSelector);
+    const root = this.elementRef.nativeElement.getRootNode();
+    const element = root.querySelector(this.toStopOnClickSelector);
     if (!element)
       return;
     if (this.stopOnInteractionHandler) {
@@ -92796,7 +92875,7 @@ var _MicrophoneComponent = class _MicrophoneComponent {
   }
 };
 _MicrophoneComponent.\u0275fac = function MicrophoneComponent_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _MicrophoneComponent)();
+  return new (__ngFactoryType__ || _MicrophoneComponent)(\u0275\u0275directiveInject(ElementRef));
 };
 _MicrophoneComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MicrophoneComponent, selectors: [["ep-microphone"]], inputs: { formControl: "formControl", disabled: "disabled", showIcon: "showIcon", iconSize: "iconSize", toStopOnClickSelector: "toStopOnClickSelector" }, outputs: { voiceStart: "voiceStart", voiceStop: "voiceStop", voiceError: "voiceError", textRecognized: "textRecognized" }, features: [\u0275\u0275ProvidersFeature([
   {
@@ -92855,7 +92934,7 @@ var MicrophoneComponent = _MicrophoneComponent;
   </div>
 }
 `, styles: ["/* src/app/components/shared/microphone/microphone.component.scss */\n.microphone-container {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n}\n.microphone-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: opacity 0.2s ease;\n}\n.microphone-icon:hover {\n  opacity: 0.8;\n}\n.microphone_blinking {\n  animation: blink 1s infinite;\n}\n@keyframes blink {\n  0%, 50% {\n    opacity: 1;\n  }\n  51%, 100% {\n    opacity: 0.3;\n  }\n}\n/*# sourceMappingURL=microphone.component.css.map */\n"] }]
-  }], null, { formControl: [{
+  }], () => [{ type: ElementRef }], { formControl: [{
     type: Input
   }], disabled: [{
     type: Input
@@ -92876,7 +92955,7 @@ var MicrophoneComponent = _MicrophoneComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MicrophoneComponent, { className: "MicrophoneComponent", filePath: "src/app/components/shared/microphone/microphone.component.ts", lineNumber: 67 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MicrophoneComponent, { className: "MicrophoneComponent", filePath: "src/app/components/shared/microphone/microphone.component.ts", lineNumber: 68 });
 })();
 
 // src/app/models/epicstaff-api.model.ts
@@ -92965,7 +93044,8 @@ var _ApiService = class _ApiService {
   sendEpicstaffRequest(params) {
     return __async(this, null, function* () {
       try {
-        const { agentUrl, flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras, userInput, userAction, onStreamUpdate } = params;
+        const { flowId, attachedFiles, chatHistory, userParams, basicAuth, contextExtras, userInput, userAction, onStreamUpdate } = params;
+        const agentUrl = params.agentUrl.replace(/\/+$/, "");
         const formData = new FormData();
         formData.append("graph_id", String(flowId));
         const chatHistoryFormatted = this.formatChatHistory(chatHistory || []);
@@ -93629,7 +93709,7 @@ var _c45 = (a0) => ({ opacity: a0 });
 function ChatFooterComponent_Conditional_1_For_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 17);
+    \u0275\u0275elementStart(0, "ep-button", 24);
     \u0275\u0275listener("buttonClick", function ChatFooterComponent_Conditional_1_For_3_Template_ep_button_buttonClick_0_listener() {
       const action_r5 = \u0275\u0275restoreView(_r4).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -93649,7 +93729,7 @@ function ChatFooterComponent_Conditional_1_For_3_Template(rf, ctx) {
 function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 12);
+    \u0275\u0275elementStart(0, "div", 19);
     \u0275\u0275listener("wheel", function ChatFooterComponent_Conditional_1_Template_div_wheel_0_listener($event) {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext();
@@ -93663,10 +93743,10 @@ function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onQuickActionsTouchMove($event));
     });
-    \u0275\u0275elementStart(1, "div", 13);
-    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_1_For_3_Template, 2, 3, "ep-button", 14, \u0275\u0275componentInstance().trackActionById, true);
+    \u0275\u0275elementStart(1, "div", 20);
+    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_1_For_3_Template, 2, 3, "ep-button", 21, \u0275\u0275componentInstance().trackActionById, true);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 15);
+    \u0275\u0275elementStart(4, "div", 22);
     \u0275\u0275listener("mouseover", function ChatFooterComponent_Conditional_1_Template_div_mouseover_4_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext();
@@ -93677,7 +93757,7 @@ function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
       return \u0275\u0275resetView(ctx_r2.shiftQuickActionsLeft());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div", 16);
+    \u0275\u0275elementStart(5, "div", 23);
     \u0275\u0275listener("mouseover", function ChatFooterComponent_Conditional_1_Template_div_mouseover_5_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext();
@@ -93700,7 +93780,7 @@ function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
 function ChatFooterComponent_Conditional_2_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r6 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 18);
+    \u0275\u0275elementStart(0, "ep-button", 25);
     \u0275\u0275listener("buttonClick", function ChatFooterComponent_Conditional_2_Conditional_1_Template_ep_button_buttonClick_0_listener() {
       \u0275\u0275restoreView(_r6);
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -93718,13 +93798,13 @@ function ChatFooterComponent_Conditional_2_Conditional_1_Template(rf, ctx) {
 function ChatFooterComponent_Conditional_2_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 19);
+    \u0275\u0275elementStart(0, "div", 26);
     \u0275\u0275text(1, "Attached file:");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 20)(3, "div", 21);
+    \u0275\u0275elementStart(2, "div", 27)(3, "div", 28);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div", 22);
+    \u0275\u0275elementStart(5, "div", 29);
     \u0275\u0275listener("click", function ChatFooterComponent_Conditional_2_Conditional_2_Template_div_click_5_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -93739,8 +93819,8 @@ function ChatFooterComponent_Conditional_2_Conditional_2_Template(rf, ctx) {
       return \u0275\u0275resetView(ctx_r2.onDeselectFile());
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(6, "svg", 23);
-    \u0275\u0275element(7, "path", 24);
+    \u0275\u0275elementStart(6, "svg", 30);
+    \u0275\u0275element(7, "path", 31);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -93753,10 +93833,10 @@ function ChatFooterComponent_Conditional_2_Conditional_2_Template(rf, ctx) {
 function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template(rf, ctx) {
   if (rf & 1) {
     const _r8 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 26)(1, "div", 21);
+    \u0275\u0275elementStart(0, "div", 33)(1, "div", 28);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 22);
+    \u0275\u0275elementStart(3, "div", 29);
     \u0275\u0275listener("click", function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template_div_click_3_listener() {
       const file_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
@@ -93771,8 +93851,8 @@ function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template(rf, ctx)
       return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r9));
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(4, "svg", 23);
-    \u0275\u0275element(5, "path", 24);
+    \u0275\u0275elementStart(4, "svg", 30);
+    \u0275\u0275element(5, "path", 31);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -93783,11 +93863,11 @@ function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template(rf, ctx)
 }
 function ChatFooterComponent_Conditional_2_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 19);
+    \u0275\u0275elementStart(0, "div", 26);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 25);
-    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template, 6, 1, "div", 26, \u0275\u0275componentInstance().trackFileById, true);
+    \u0275\u0275elementStart(2, "div", 32);
+    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template, 6, 1, "div", 33, \u0275\u0275componentInstance().trackFileById, true);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -93816,24 +93896,68 @@ function ChatFooterComponent_Conditional_2_Template(rf, ctx) {
     \u0275\u0275conditional(ctx_r2.isMultipleFilesMode() && ctx_r2.chatService.attachedFiles().length > 0 ? 3 : -1);
   }
 }
-function ChatFooterComponent_Conditional_7_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_12_Template(rf, ctx) {
   if (rf & 1) {
     const _r10 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 27);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Template_div_click_0_listener() {
+    \u0275\u0275elementStart(0, "div", 11)(1, "div", 34);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_12_Template_div_click_1_listener() {
       \u0275\u0275restoreView(_r10);
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
-    })("keydown.enter", function ChatFooterComponent_Conditional_7_Template_div_keydown_enter_0_listener() {
+      return \u0275\u0275resetView(ctx_r2.setMode("ask"));
+    })("keydown.enter", function ChatFooterComponent_Conditional_12_Template_div_keydown_enter_1_listener() {
       \u0275\u0275restoreView(_r10);
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
-    })("keydown.space", function ChatFooterComponent_Conditional_7_Template_div_keydown_space_0_listener() {
+      return \u0275\u0275resetView(ctx_r2.setMode("ask"));
+    })("keydown.space", function ChatFooterComponent_Conditional_12_Template_div_keydown_space_1_listener() {
       \u0275\u0275restoreView(_r10);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.setMode("ask"));
+    });
+    \u0275\u0275text(2, " Ask Mode ");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "div", 34);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_12_Template_div_click_3_listener() {
+      \u0275\u0275restoreView(_r10);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.setMode("build"));
+    })("keydown.enter", function ChatFooterComponent_Conditional_12_Template_div_keydown_enter_3_listener() {
+      \u0275\u0275restoreView(_r10);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.setMode("build"));
+    })("keydown.space", function ChatFooterComponent_Conditional_12_Template_div_keydown_space_3_listener() {
+      \u0275\u0275restoreView(_r10);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.setMode("build"));
+    });
+    \u0275\u0275text(4, " Build Mode ");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275classProp("chat-footer__mode-option--active", ctx_r2.chatMode === "ask");
+    \u0275\u0275advance(2);
+    \u0275\u0275classProp("chat-footer__mode-option--active", ctx_r2.chatMode === "build");
+  }
+}
+function ChatFooterComponent_Conditional_14_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r11 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 35);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_14_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r11);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
+    })("keydown.enter", function ChatFooterComponent_Conditional_14_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r11);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
+    })("keydown.space", function ChatFooterComponent_Conditional_14_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r11);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
     });
-    \u0275\u0275element(1, "img", 28);
+    \u0275\u0275element(1, "img", 36);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -93843,26 +93967,26 @@ function ChatFooterComponent_Conditional_7_Template(rf, ctx) {
     \u0275\u0275property("src", ctx_r2.getImagePath("attach.svg"), \u0275\u0275sanitizeUrl);
   }
 }
-function ChatFooterComponent_Conditional_9_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_16_Template(rf, ctx) {
   if (rf & 1) {
-    const _r11 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 29);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_9_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r11);
+    const _r12 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 37);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_16_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r12);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
-    })("keydown.enter", function ChatFooterComponent_Conditional_9_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r11);
+    })("keydown.enter", function ChatFooterComponent_Conditional_16_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r12);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
-    })("keydown.space", function ChatFooterComponent_Conditional_9_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r11);
+    })("keydown.space", function ChatFooterComponent_Conditional_16_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r12);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 30);
-    \u0275\u0275element(2, "path", 31);
+    \u0275\u0275elementStart(1, "svg", 38);
+    \u0275\u0275element(2, "path", 39);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -93871,46 +93995,58 @@ function ChatFooterComponent_Conditional_9_Template(rf, ctx) {
     \u0275\u0275attribute("aria-label", "Send message");
   }
 }
-function ChatFooterComponent_Conditional_10_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_17_Template(rf, ctx) {
   if (rf & 1) {
-    const _r12 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 32);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_10_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r12);
+    const _r13 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 40);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_17_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r13);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.stopGenerating());
-    })("keydown.enter", function ChatFooterComponent_Conditional_10_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r12);
+    })("keydown.enter", function ChatFooterComponent_Conditional_17_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r13);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.stopGenerating());
-    })("keydown.space", function ChatFooterComponent_Conditional_10_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r12);
+    })("keydown.space", function ChatFooterComponent_Conditional_17_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r13);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.stopGenerating());
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 30);
-    \u0275\u0275element(2, "rect", 33);
+    \u0275\u0275elementStart(1, "svg", 38);
+    \u0275\u0275element(2, "rect", 41);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
     \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c110));
   }
 }
-function ChatFooterComponent_Conditional_11_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_18_Template(rf, ctx) {
   if (rf & 1) {
-    const _r13 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-recent-files-menu", 34);
-    \u0275\u0275listener("fileAttached", function ChatFooterComponent_Conditional_11_Template_ep_recent_files_menu_fileAttached_0_listener($event) {
-      \u0275\u0275restoreView(_r13);
+    const _r14 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 42);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_18_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r14);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.isModeMenuOpen = false);
+    });
+    \u0275\u0275elementEnd();
+  }
+}
+function ChatFooterComponent_Conditional_19_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r15 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-recent-files-menu", 43);
+    \u0275\u0275listener("fileAttached", function ChatFooterComponent_Conditional_19_Template_ep_recent_files_menu_fileAttached_0_listener($event) {
+      \u0275\u0275restoreView(_r15);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onFileAttached($event));
-    })("filesAttached", function ChatFooterComponent_Conditional_11_Template_ep_recent_files_menu_filesAttached_0_listener($event) {
-      \u0275\u0275restoreView(_r13);
+    })("filesAttached", function ChatFooterComponent_Conditional_19_Template_ep_recent_files_menu_filesAttached_0_listener($event) {
+      \u0275\u0275restoreView(_r15);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onFilesAttached($event));
-    })("hideRecentFilesMenu", function ChatFooterComponent_Conditional_11_Template_ep_recent_files_menu_hideRecentFilesMenu_0_listener() {
-      \u0275\u0275restoreView(_r13);
+    })("hideRecentFilesMenu", function ChatFooterComponent_Conditional_19_Template_ep_recent_files_menu_hideRecentFilesMenu_0_listener() {
+      \u0275\u0275restoreView(_r15);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.hideRecentFilesMenu());
     });
@@ -93935,6 +94071,8 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     this.messageInputControl = new FormControl("", [
       Validators.maxLength(CHAT_CONSTANTS.MAX_INPUT_LENGTH)
     ]);
+    this.chatMode = "ask";
+    this.isModeMenuOpen = false;
     this.shiftQuickActionsValue = 0;
     this.manuallyEnteredText = "";
     this.isVoiceMessage = false;
@@ -93963,7 +94101,6 @@ var _ChatFooterComponent = class _ChatFooterComponent {
           emitEvent: false
         });
       }
-      this.adjustTextareaHeight();
     }));
   }
   transmitMessageFromInput() {
@@ -93976,7 +94113,6 @@ var _ChatFooterComponent = class _ChatFooterComponent {
       this.sendMessage.emit({ text, isVoice });
       this.messageInputControl.setValue("");
       this.isVoiceMessage = false;
-      this.adjustTextareaHeight();
     }
   }
   stopMicrophoneIfActive() {
@@ -94168,18 +94304,15 @@ var _ChatFooterComponent = class _ChatFooterComponent {
   onTextRecognized() {
     this.isVoiceMessage = true;
   }
+  toggleModeMenu() {
+    this.isModeMenuOpen = !this.isModeMenuOpen;
+  }
+  setMode(mode) {
+    this.chatMode = mode;
+    this.isModeMenuOpen = false;
+  }
   stopGenerating() {
     this.stop.emit();
-  }
-  onInput() {
-    this.adjustTextareaHeight();
-  }
-  adjustTextareaHeight() {
-    if (this.messageInput?.nativeElement) {
-      const textarea = this.messageInput.nativeElement;
-      textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
-    }
   }
   focus() {
     this.messageInput?.nativeElement.focus();
@@ -94271,7 +94404,7 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.messageInput = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.microphoneComponent = _t.first);
   }
-}, inputs: { isTyping: "isTyping", messages: "messages", currentAgent: "currentAgent", fileAttachmentEnabled: "fileAttachmentEnabled" }, outputs: { sendMessage: "sendMessage", quickActionClick: "quickActionClick", stop: "stop" }, decls: 12, vars: 10, consts: [["messageInput", ""], [1, "chat-footer"], [1, "chat-footer__quick-actions"], [1, "chat-footer__choose-file-button-container"], ["epTooltip", "Make a request", 1, "chat-footer__input", 3, "tooltipOptions"], ["placeholder", "Make a request", "rows", "1", "id", "messageInput", 1, "chat-footer__tagify-input", 3, "keydown", "input", "formControl"], [1, "chat-footer__input-icons"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "tooltipOptions"], [1, "chat-footer__input-icon", 3, "voiceStart", "textRecognized", "formControl", "toStopOnClickSelector"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-message-arrow", 3, "ngStyle"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-message-arrow", 3, "tooltipOptions"], [3, "alreadyAttachedFiles", "multipleFilesAllowed"], [1, "chat-footer__quick-actions", 3, "wheel", "touchstart", "touchmove"], ["id", "quickActions", 1, "chat-footer__quick-actions-line", 3, "ngStyle"], [3, "disabled", "noBorder"], ["tabindex", "0", 1, "chat-footer__left-gradient", 3, "mouseover", "focus"], ["tabindex", "0", 1, "chat-footer__right-gradient", 3, "mouseover", "focus"], [3, "buttonClick", "disabled", "noBorder"], [3, "buttonClick"], [1, "chat-footer__attached-file-header"], [1, "chat-footer__single-file-item"], [1, "chat-footer__choose-file-label"], ["role", "button", "tabindex", "0", 1, "chat-footer__deselect-file", 3, "click", "keydown.enter", "keydown.space"], ["viewBox", "0 0 9 9", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M1 1L8 8M8 1L1 8", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-footer__multiple-files-container"], [1, "chat-footer__multiple-file-item"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["draggable", "false", "alt", "Attach file", 2, "cursor", "pointer", 3, "src"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-message-arrow", 3, "click", "keydown.enter", "keydown.space", "ngStyle"], ["viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M2 8L14 2L10 14L8 8L2 8Z", "fill", "white", "stroke", "white", "stroke-width", "0.5", "stroke-linejoin", "round"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-message-arrow", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "4", "y", "4", "width", "8", "height", "8", "rx", "1", "fill", "white"], [3, "fileAttached", "filesAttached", "hideRecentFilesMenu", "alreadyAttachedFiles", "multipleFilesAllowed"]], template: function ChatFooterComponent_Template(rf, ctx) {
+}, inputs: { isTyping: "isTyping", messages: "messages", currentAgent: "currentAgent", fileAttachmentEnabled: "fileAttachmentEnabled" }, outputs: { sendMessage: "sendMessage", quickActionClick: "quickActionClick", stop: "stop" }, decls: 20, vars: 16, consts: [["messageInput", ""], [1, "chat-footer"], [1, "chat-footer__quick-actions"], [1, "chat-footer__choose-file-button-container"], ["epTooltip", "Make a request", 1, "chat-footer__input", 3, "tooltipOptions"], ["placeholder", "Make a request", "rows", "1", "id", "messageInput", 1, "chat-footer__textarea", 3, "keydown", "formControl"], [1, "chat-footer__bottom-bar"], [1, "chat-footer__mode-dropdown"], ["type", "button", "aria-haspopup", "listbox", 1, "chat-footer__mode-trigger", 3, "click"], ["viewBox", "0 0 10 6", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M1 1L5 5L9 1", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "listbox", 1, "chat-footer__mode-menu"], [1, "chat-footer__bottom-bar-right"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "tooltipOptions"], [1, "chat-footer__input-icon", 3, "voiceStart", "textRecognized", "formControl", "toStopOnClickSelector"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "ngStyle"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "tooltipOptions"], [1, "chat-footer__mode-backdrop"], [3, "alreadyAttachedFiles", "multipleFilesAllowed"], [1, "chat-footer__quick-actions", 3, "wheel", "touchstart", "touchmove"], ["id", "quickActions", 1, "chat-footer__quick-actions-line", 3, "ngStyle"], [3, "disabled", "noBorder"], ["tabindex", "0", 1, "chat-footer__left-gradient", 3, "mouseover", "focus"], ["tabindex", "0", 1, "chat-footer__right-gradient", 3, "mouseover", "focus"], [3, "buttonClick", "disabled", "noBorder"], [3, "buttonClick"], [1, "chat-footer__attached-file-header"], [1, "chat-footer__single-file-item"], [1, "chat-footer__choose-file-label"], ["role", "button", "tabindex", "0", 1, "chat-footer__deselect-file", 3, "click", "keydown.enter", "keydown.space"], ["viewBox", "0 0 9 9", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M1 1L8 8M8 1L1 8", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-footer__multiple-files-container"], [1, "chat-footer__multiple-file-item"], ["role", "option", "tabindex", "0", 1, "chat-footer__mode-option", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["draggable", "false", "alt", "Attach file", 2, "cursor", "pointer", 3, "src"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "ngStyle"], ["viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M2 8L14 2L10 14L8 8L2 8Z", "fill", "white", "stroke", "white", "stroke-width", "0.5", "stroke-linejoin", "round"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "4", "y", "4", "width", "8", "height", "8", "rx", "1", "fill", "white"], [1, "chat-footer__mode-backdrop", 3, "click"], [3, "fileAttached", "filesAttached", "hideRecentFilesMenu", "alreadyAttachedFiles", "multipleFilesAllowed"]], template: function ChatFooterComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 1);
@@ -94281,25 +94414,37 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275listener("keydown", function ChatFooterComponent_Template_textarea_keydown_4_listener($event) {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onKeydown($event));
-    })("input", function ChatFooterComponent_Template_textarea_input_4_listener() {
-      \u0275\u0275restoreView(_r1);
-      return \u0275\u0275resetView(ctx.onInput());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "div", 6);
-    \u0275\u0275conditionalCreate(7, ChatFooterComponent_Conditional_7_Template, 2, 3, "div", 7);
-    \u0275\u0275elementStart(8, "ep-microphone", 8);
-    \u0275\u0275listener("voiceStart", function ChatFooterComponent_Template_ep_microphone_voiceStart_8_listener() {
+    \u0275\u0275elementStart(6, "div", 6)(7, "div", 7)(8, "button", 8);
+    \u0275\u0275listener("click", function ChatFooterComponent_Template_button_click_8_listener() {
+      \u0275\u0275restoreView(_r1);
+      return \u0275\u0275resetView(ctx.toggleModeMenu());
+    });
+    \u0275\u0275text(9);
+    \u0275\u0275namespaceSVG();
+    \u0275\u0275elementStart(10, "svg", 9);
+    \u0275\u0275element(11, "path", 10);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275conditionalCreate(12, ChatFooterComponent_Conditional_12_Template, 5, 4, "div", 11);
+    \u0275\u0275elementEnd();
+    \u0275\u0275namespaceHTML();
+    \u0275\u0275elementStart(13, "div", 12);
+    \u0275\u0275conditionalCreate(14, ChatFooterComponent_Conditional_14_Template, 2, 3, "div", 13);
+    \u0275\u0275elementStart(15, "ep-microphone", 14);
+    \u0275\u0275listener("voiceStart", function ChatFooterComponent_Template_ep_microphone_voiceStart_15_listener() {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onVoiceStart());
-    })("textRecognized", function ChatFooterComponent_Template_ep_microphone_textRecognized_8_listener() {
+    })("textRecognized", function ChatFooterComponent_Template_ep_microphone_textRecognized_15_listener() {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onTextRecognized());
     });
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275conditionalCreate(9, ChatFooterComponent_Conditional_9_Template, 3, 4, "div", 9)(10, ChatFooterComponent_Conditional_10_Template, 3, 2, "div", 10);
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(11, ChatFooterComponent_Conditional_11_Template, 1, 2, "ep-recent-files-menu", 11);
+    \u0275\u0275conditionalCreate(16, ChatFooterComponent_Conditional_16_Template, 3, 4, "div", 15)(17, ChatFooterComponent_Conditional_17_Template, 3, 2, "div", 16);
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275conditionalCreate(18, ChatFooterComponent_Conditional_18_Template, 1, 0, "div", 17);
+    \u0275\u0275elementEnd();
+    \u0275\u0275conditionalCreate(19, ChatFooterComponent_Conditional_19_Template, 1, 2, "ep-recent-files-menu", 18);
   }
   if (rf & 2) {
     \u0275\u0275advance();
@@ -94307,17 +94452,27 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.fileAttachmentEnabled && (ctx.chatService.isLastRequestUsedFile() && !ctx.hasAttachedFiles() || ctx.hasAttachedFiles()) ? 2 : -1);
     \u0275\u0275advance();
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(9, _c110));
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(15, _c110));
     \u0275\u0275advance();
     \u0275\u0275property("formControl", ctx.messageInputControl);
-    \u0275\u0275advance(3);
-    \u0275\u0275conditional(ctx.fileAttachmentEnabled ? 7 : -1);
+    \u0275\u0275advance(4);
+    \u0275\u0275attribute("aria-expanded", ctx.isModeMenuOpen);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", ctx.chatMode === "ask" ? "Ask" : "Build", " ");
+    \u0275\u0275advance();
+    \u0275\u0275classProp("chat-footer__mode-chevron--open", ctx.isModeMenuOpen);
+    \u0275\u0275advance(2);
+    \u0275\u0275conditional(ctx.isModeMenuOpen ? 12 : -1);
+    \u0275\u0275advance(2);
+    \u0275\u0275conditional(ctx.fileAttachmentEnabled ? 14 : -1);
     \u0275\u0275advance();
     \u0275\u0275property("formControl", ctx.messageInputControl)("toStopOnClickSelector", "#messageInput");
     \u0275\u0275advance();
-    \u0275\u0275conditional(!ctx.isTyping ? 9 : 10);
+    \u0275\u0275conditional(!ctx.isTyping ? 16 : 17);
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx.fileAttachmentEnabled && ctx.chatService.isRecentFilesMenuShown() ? 11 : -1);
+    \u0275\u0275conditional(ctx.isModeMenuOpen ? 18 : -1);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx.fileAttachmentEnabled && ctx.chatService.isRecentFilesMenuShown() ? 19 : -1);
   }
 }, dependencies: [
   FormsModule,
@@ -94331,7 +94486,7 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
   ButtonComponent,
   TooltipDirective,
   RecentFilesMenuComponent
-], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  max-height: 300px;\n  height: fit-content;\n  overflow-x: hidden;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions[_ngcontent-%COMP%] {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%], \n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%] {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-message-arrow[_ngcontent-%COMP%] {\n  position: absolute;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 38px;\n  width: 38px;\n  bottom: 16px;\n  right: 20px;\n  cursor: pointer;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-message-arrow[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-message-arrow[_ngcontent-%COMP%]:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-message-arrow[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  justify-content: space-between;\n  margin: 0 66px 0 20px;\n  padding: 4px 8px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input[_ngcontent-%COMP%]:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__input-icons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: start;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%], \n.chat-footer__multiple-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n}\n.chat-footer__tagify-input[_ngcontent-%COMP%] {\n  flex: 1;\n  resize: none;\n  line-height: 20px;\n  overflow: auto;\n  border: none;\n  outline: none;\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background-color: transparent;\n  min-height: 20px;\n  max-height: 120px;\n}\n.chat-footer__tagify-input[_ngcontent-%COMP%]::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__tagify-input[_ngcontent-%COMP%]:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n/*# sourceMappingURL=chat-footer.component.css.map */'] });
+], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  overflow-x: hidden;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions[_ngcontent-%COMP%] {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%], \n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%] {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-button[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input[_ngcontent-%COMP%]:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea[_ngcontent-%COMP%] {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 200px;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding-top: 4px;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 25%, transparent);\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n}\n.chat-footer__mode-dropdown[_ngcontent-%COMP%] {\n  position: relative;\n}\n.chat-footer__mode-trigger[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__mode-trigger[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__mode-trigger[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__mode-chevron--open[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-footer__mode-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  bottom: calc(100% + 4px);\n  left: 0;\n  min-width: 120px;\n  border-radius: 6px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  background: var(--ep-color-surface);\n  box-shadow: 0 4px 16px color-mix(in srgb, var(--ep-color-shadow) 15%, transparent);\n  overflow: hidden;\n  z-index: 100;\n}\n.chat-footer__mode-option[_ngcontent-%COMP%] {\n  padding: 8px 12px;\n  font-size: 13px;\n  color: var(--ep-color-text);\n  cursor: pointer;\n  white-space: nowrap;\n  transition: background-color 0.15s, color 0.15s;\n}\n.chat-footer__mode-option[_ngcontent-%COMP%]:hover {\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n  color: var(--ep-color-accent);\n}\n.chat-footer__mode-option--active[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n.chat-footer__mode-backdrop[_ngcontent-%COMP%] {\n  position: fixed;\n  inset: 0;\n  z-index: 99;\n}\n.chat-footer__input-icons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%], \n.chat-footer__multiple-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */'] });
 var ChatFooterComponent = _ChatFooterComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatFooterComponent, [{
@@ -94452,79 +94607,134 @@ var ChatFooterComponent = _ChatFooterComponent;
       #messageInput
       [formControl]="messageInputControl"
       (keydown)="onKeydown($event)"
-      (input)="onInput()"
       placeholder="Make a request"
-      class="chat-footer__tagify-input"
+      class="chat-footer__textarea"
       rows="1"
       id="messageInput"
     ></textarea>
-    <div class="chat-footer__input-icons">
-      @if (fileAttachmentEnabled) {
-        <div
-          class="chat-footer__input-icon"
-          role="button"
-          tabindex="0"
-          (click)="toggleRecentFilesMenu()"
-          (keydown.enter)="toggleRecentFilesMenu()"
-          (keydown.space)="toggleRecentFilesMenu()"
-          epTooltip="Attach file"
-          [tooltipOptions]="{ delay: 500, position: 'top' }"
+    <div class="chat-footer__bottom-bar">
+      <div class="chat-footer__mode-dropdown">
+        <button
+          class="chat-footer__mode-trigger"
+          type="button"
+          (click)="toggleModeMenu()"
+          [attr.aria-expanded]="isModeMenuOpen"
+          aria-haspopup="listbox"
         >
-          <img
-            [src]="getImagePath('attach.svg')"
-            style="cursor: pointer"
-            draggable="false"
-            alt="Attach file"
-          />
-        </div>
-      }
-      <ep-microphone
-        class="chat-footer__input-icon"
-        [formControl]="messageInputControl"
-        [toStopOnClickSelector]="'#messageInput'"
-        (voiceStart)="onVoiceStart()"
-        (textRecognized)="onTextRecognized()"
-      ></ep-microphone>
+          {{ chatMode === "ask" ? "Ask" : "Build" }}
+          <svg
+            viewBox="0 0 10 6"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            [class.chat-footer__mode-chevron--open]="isModeMenuOpen"
+          >
+            <path
+              d="M1 1L5 5L9 1"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        @if (isModeMenuOpen) {
+          <div class="chat-footer__mode-menu" role="listbox">
+            <div
+              class="chat-footer__mode-option"
+              [class.chat-footer__mode-option--active]="chatMode === 'ask'"
+              role="option"
+              tabindex="0"
+              (click)="setMode('ask')"
+              (keydown.enter)="setMode('ask')"
+              (keydown.space)="setMode('ask')"
+            >
+              Ask Mode
+            </div>
+            <div
+              class="chat-footer__mode-option"
+              [class.chat-footer__mode-option--active]="chatMode === 'build'"
+              role="option"
+              tabindex="0"
+              (click)="setMode('build')"
+              (keydown.enter)="setMode('build')"
+              (keydown.space)="setMode('build')"
+            >
+              Build Mode
+            </div>
+          </div>
+        }
+      </div>
+      <div class="chat-footer__bottom-bar-right">
+        @if (fileAttachmentEnabled) {
+          <div
+            class="chat-footer__input-icon"
+            role="button"
+            tabindex="0"
+            (click)="toggleRecentFilesMenu()"
+            (keydown.enter)="toggleRecentFilesMenu()"
+            (keydown.space)="toggleRecentFilesMenu()"
+            epTooltip="Attach file"
+            [tooltipOptions]="{ delay: 500, position: 'top' }"
+          >
+            <img
+              [src]="getImagePath('attach.svg')"
+              style="cursor: pointer"
+              draggable="false"
+              alt="Attach file"
+            />
+          </div>
+        }
+        <ep-microphone
+          class="chat-footer__input-icon"
+          [formControl]="messageInputControl"
+          [toStopOnClickSelector]="'#messageInput'"
+          (voiceStart)="onVoiceStart()"
+          (textRecognized)="onTextRecognized()"
+        ></ep-microphone>
+        @if (!isTyping) {
+          <div
+            class="chat-footer__send-button"
+            [ngStyle]="{ opacity: isSendButtonEnabled() ? '1' : '0.4' }"
+            tabindex="0"
+            role="button"
+            [attr.aria-label]="'Send message'"
+            (click)="transmitMessageFromInput()"
+            (keydown.enter)="transmitMessageFromInput()"
+            (keydown.space)="transmitMessageFromInput()"
+          >
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M2 8L14 2L10 14L8 8L2 8Z"
+                fill="white"
+                stroke="white"
+                stroke-width="0.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+        } @else {
+          <div
+            class="chat-footer__send-button"
+            tabindex="0"
+            role="button"
+            aria-label="Stop generating"
+            epTooltip="Stop generating"
+            [tooltipOptions]="{ delay: 500 }"
+            (click)="stopGenerating()"
+            (keydown.enter)="stopGenerating()"
+            (keydown.space)="stopGenerating()"
+          >
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="4" width="8" height="8" rx="1" fill="white" />
+            </svg>
+          </div>
+        }
+      </div>
     </div>
   </div>
 
-  @if (!isTyping) {
-    <div
-      class="chat-footer__send-message-arrow"
-      [ngStyle]="{ opacity: isSendButtonEnabled() ? '1' : '0.4' }"
-      tabindex="0"
-      role="button"
-      [attr.aria-label]="'Send message'"
-      (click)="transmitMessageFromInput()"
-      (keydown.enter)="transmitMessageFromInput()"
-      (keydown.space)="transmitMessageFromInput()"
-    >
-      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M2 8L14 2L10 14L8 8L2 8Z"
-          fill="white"
-          stroke="white"
-          stroke-width="0.5"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </div>
-  } @else {
-    <div
-      class="chat-footer__send-message-arrow"
-      tabindex="0"
-      role="button"
-      aria-label="Stop generating"
-      epTooltip="Stop generating"
-      [tooltipOptions]="{ delay: 500 }"
-      (click)="stopGenerating()"
-      (keydown.enter)="stopGenerating()"
-      (keydown.space)="stopGenerating()"
-    >
-      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="4" y="4" width="8" height="8" rx="1" fill="white" />
-      </svg>
-    </div>
+  @if (isModeMenuOpen) {
+    <div class="chat-footer__mode-backdrop" (click)="isModeMenuOpen = false"></div>
   }
 </div>
 
@@ -94537,7 +94747,7 @@ var ChatFooterComponent = _ChatFooterComponent;
     (hideRecentFilesMenu)="hideRecentFilesMenu()"
   ></ep-recent-files-menu>
 }
-`, styles: ['/* src/app/components/chat-footer/chat-footer.component.scss */\n:host {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  max-height: 300px;\n  height: fit-content;\n  overflow-x: hidden;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient,\n.chat-footer__right-gradient {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-message-arrow {\n  position: absolute;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 38px;\n  width: 38px;\n  bottom: 16px;\n  right: 20px;\n  cursor: pointer;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-message-arrow:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-message-arrow:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-message-arrow svg {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  justify-content: space-between;\n  margin: 0 66px 0 20px;\n  padding: 4px 8px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__input-icons {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: start;\n}\n.chat-footer__input-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon img {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item .chat-footer__choose-file-label,\n.chat-footer__multiple-file-item .chat-footer__choose-file-label {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file svg {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file:hover {\n  color: var(--ep-color-text);\n}\n.chat-footer__tagify-input {\n  flex: 1;\n  resize: none;\n  line-height: 20px;\n  overflow: auto;\n  border: none;\n  outline: none;\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background-color: transparent;\n  min-height: 20px;\n  max-height: 120px;\n}\n.chat-footer__tagify-input::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__tagify-input:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n/*# sourceMappingURL=chat-footer.component.css.map */\n'] }]
+`, styles: ['/* src/app/components/chat-footer/chat-footer.component.scss */\n:host {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  overflow-x: hidden;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient,\n.chat-footer__right-gradient {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button svg {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 200px;\n}\n.chat-footer__textarea::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding-top: 4px;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 25%, transparent);\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n}\n.chat-footer__mode-dropdown {\n  position: relative;\n}\n.chat-footer__mode-trigger {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__mode-trigger svg {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__mode-trigger:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__mode-chevron--open {\n  transform: rotate(180deg);\n}\n.chat-footer__mode-menu {\n  position: absolute;\n  bottom: calc(100% + 4px);\n  left: 0;\n  min-width: 120px;\n  border-radius: 6px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  background: var(--ep-color-surface);\n  box-shadow: 0 4px 16px color-mix(in srgb, var(--ep-color-shadow) 15%, transparent);\n  overflow: hidden;\n  z-index: 100;\n}\n.chat-footer__mode-option {\n  padding: 8px 12px;\n  font-size: 13px;\n  color: var(--ep-color-text);\n  cursor: pointer;\n  white-space: nowrap;\n  transition: background-color 0.15s, color 0.15s;\n}\n.chat-footer__mode-option:hover {\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n  color: var(--ep-color-accent);\n}\n.chat-footer__mode-option--active {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n.chat-footer__mode-backdrop {\n  position: fixed;\n  inset: 0;\n  z-index: 99;\n}\n.chat-footer__input-icons {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon img {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item .chat-footer__choose-file-label,\n.chat-footer__multiple-file-item .chat-footer__choose-file-label {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file svg {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file:hover {\n  color: var(--ep-color-text);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */\n'] }]
   }], () => [{ type: ChatService }, { type: ApiService }], { isTyping: [{
     type: Input
   }], messages: [{
@@ -94567,12 +94777,12 @@ var ChatFooterComponent = _ChatFooterComponent;
 // src/app/components/chat-header/chat-header.component.ts
 var _c016 = () => ({ delay: 500 });
 var _forTrack07 = ($index, $item) => $item.epicstaffAgentId;
-function ChatHeaderComponent_Conditional_6_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 21);
+    \u0275\u0275elementStart(0, "div", 19);
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 22);
-    \u0275\u0275element(2, "path", 23);
+    \u0275\u0275elementStart(1, "svg", 20);
+    \u0275\u0275element(2, "path", 21);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -94580,50 +94790,102 @@ function ChatHeaderComponent_Conditional_6_Template(rf, ctx) {
     \u0275\u0275classProp("chat-header__dropdown-icon--rotated", ctx_r0.isAgentMenuShown);
   }
 }
-function ChatHeaderComponent_Conditional_23_For_2_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_14_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 25);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_23_For_2_Template_div_click_0_listener() {
-      const agent_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r0 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r3));
-    })("keydown.enter", function ChatHeaderComponent_Conditional_23_For_2_Template_div_keydown_enter_0_listener() {
-      const agent_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r0 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r3));
-    })("keydown.space", function ChatHeaderComponent_Conditional_23_For_2_Template_div_keydown_space_0_listener() {
-      const agent_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r0 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r3));
+    \u0275\u0275elementStart(0, "button", 22);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_14_Template_button_click_0_listener() {
+      \u0275\u0275restoreView(_r2);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.onDockClick());
+    })("keydown.enter", function ChatHeaderComponent_Conditional_14_Template_button_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r2);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.onDockClick());
+    })("keydown.space", function ChatHeaderComponent_Conditional_14_Template_button_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r2);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.onDockClick());
     });
-    \u0275\u0275elementStart(1, "div", 26);
-    \u0275\u0275element(2, "img", 27);
+    \u0275\u0275namespaceSVG();
+    \u0275\u0275elementStart(1, "svg", 9);
+    \u0275\u0275element(2, "rect", 23)(3, "rect", 24);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c016));
+  }
+}
+function ChatHeaderComponent_Conditional_15_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r3 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 25);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_15_Template_button_click_0_listener() {
+      \u0275\u0275restoreView(_r3);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.onToggleFullHeightClick());
+    })("keydown.enter", function ChatHeaderComponent_Conditional_15_Template_button_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r3);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.onToggleFullHeightClick());
+    })("keydown.space", function ChatHeaderComponent_Conditional_15_Template_button_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r3);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.onToggleFullHeightClick());
+    });
+    \u0275\u0275namespaceSVG();
+    \u0275\u0275elementStart(1, "svg", 9);
+    \u0275\u0275element(2, "path", 26);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c016));
+  }
+}
+function ChatHeaderComponent_Conditional_19_For_2_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r4 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 28);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_19_For_2_Template_div_click_0_listener() {
+      const agent_r5 = \u0275\u0275restoreView(_r4).$implicit;
+      const ctx_r0 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r5));
+    })("keydown.enter", function ChatHeaderComponent_Conditional_19_For_2_Template_div_keydown_enter_0_listener() {
+      const agent_r5 = \u0275\u0275restoreView(_r4).$implicit;
+      const ctx_r0 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r5));
+    })("keydown.space", function ChatHeaderComponent_Conditional_19_For_2_Template_div_keydown_space_0_listener() {
+      const agent_r5 = \u0275\u0275restoreView(_r4).$implicit;
+      const ctx_r0 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r5));
+    });
+    \u0275\u0275elementStart(1, "div", 29);
+    \u0275\u0275element(2, "img", 30);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 28)(4, "div", 29);
+    \u0275\u0275elementStart(3, "div", 31)(4, "div", 32);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "div", 30);
+    \u0275\u0275elementStart(6, "div", 33);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const agent_r3 = ctx.$implicit;
+    const agent_r5 = ctx.$implicit;
     const ctx_r0 = \u0275\u0275nextContext(2);
-    \u0275\u0275classProp("chat-header__agent-menu-item--active", ctx_r0.isAgentActive(agent_r3));
-    \u0275\u0275attribute("aria-label", "Select agent " + agent_r3.name);
+    \u0275\u0275classProp("chat-header__agent-menu-item--active", ctx_r0.isAgentActive(agent_r5));
+    \u0275\u0275attribute("aria-label", "Select agent " + agent_r5.name);
     \u0275\u0275advance(2);
-    \u0275\u0275property("src", ctx_r0.getAgentIconPath(agent_r3), \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", ctx_r0.getAgentIconPath(agent_r5), \u0275\u0275sanitizeUrl);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(agent_r3.name);
+    \u0275\u0275textInterpolate(agent_r5.name);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(agent_r3.description);
+    \u0275\u0275textInterpolate(agent_r5.description);
   }
 }
-function ChatHeaderComponent_Conditional_23_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_19_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 19);
-    \u0275\u0275repeaterCreate(1, ChatHeaderComponent_Conditional_23_For_2_Template, 8, 6, "div", 24, _forTrack07);
+    \u0275\u0275elementStart(0, "div", 17);
+    \u0275\u0275repeaterCreate(1, ChatHeaderComponent_Conditional_19_For_2_Template, 8, 6, "div", 27, _forTrack07);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -94632,52 +94894,52 @@ function ChatHeaderComponent_Conditional_23_Template(rf, ctx) {
     \u0275\u0275repeater(ctx_r0.agents);
   }
 }
-function ChatHeaderComponent_Conditional_24_Conditional_3_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_20_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 33);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r5);
+    const _r7 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 36);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r5);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r5);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
     });
     \u0275\u0275text(1, " Create new Epicstaff agent ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 34);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_click_2_listener() {
-      \u0275\u0275restoreView(_r5);
+    \u0275\u0275elementStart(2, "div", 37);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_2_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_enter_2_listener() {
-      \u0275\u0275restoreView(_r5);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_2_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_space_2_listener() {
-      \u0275\u0275restoreView(_r5);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_2_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
     });
     \u0275\u0275text(3, " Edit Epicstaff agent ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 35);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_click_4_listener() {
-      \u0275\u0275restoreView(_r5);
+    \u0275\u0275elementStart(4, "div", 38);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_4_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_enter_4_listener() {
-      \u0275\u0275restoreView(_r5);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_4_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_24_Conditional_3_Template_div_keydown_space_4_listener() {
-      \u0275\u0275restoreView(_r5);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_4_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
     });
@@ -94685,37 +94947,37 @@ function ChatHeaderComponent_Conditional_24_Conditional_3_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-function ChatHeaderComponent_Conditional_24_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_20_Template(rf, ctx) {
   if (rf & 1) {
-    const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 20)(1, "div", 31);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Template_div_click_1_listener() {
-      \u0275\u0275restoreView(_r4);
+    const _r6 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 18)(1, "div", 34);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_div_click_1_listener() {
+      \u0275\u0275restoreView(_r6);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Template_div_keydown_enter_1_listener() {
-      \u0275\u0275restoreView(_r4);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_div_keydown_enter_1_listener() {
+      \u0275\u0275restoreView(_r6);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.space", function ChatHeaderComponent_Conditional_24_Template_div_keydown_space_1_listener() {
-      \u0275\u0275restoreView(_r4);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_div_keydown_space_1_listener() {
+      \u0275\u0275restoreView(_r6);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
     });
     \u0275\u0275text(2, " Clear chat history ");
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(3, ChatHeaderComponent_Conditional_24_Conditional_3_Template, 6, 0);
-    \u0275\u0275elementStart(4, "div", 32);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_24_Template_div_click_4_listener() {
-      \u0275\u0275restoreView(_r4);
+    \u0275\u0275conditionalCreate(3, ChatHeaderComponent_Conditional_20_Conditional_3_Template, 6, 0);
+    \u0275\u0275elementStart(4, "div", 35);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_div_click_4_listener() {
+      \u0275\u0275restoreView(_r6);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_24_Template_div_keydown_enter_4_listener() {
-      \u0275\u0275restoreView(_r4);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_div_keydown_enter_4_listener() {
+      \u0275\u0275restoreView(_r6);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
-    })("keydown.space", function ChatHeaderComponent_Conditional_24_Template_div_keydown_space_4_listener() {
-      \u0275\u0275restoreView(_r4);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_div_keydown_space_4_listener() {
+      \u0275\u0275restoreView(_r6);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
     });
@@ -94733,6 +94995,8 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
     this.currentAgent = null;
     this.agents = [];
     this.isMonoAgent = false;
+    this.dockEnabled = false;
+    this.isDockMode = false;
     this.closed = new EventEmitter();
     this.infoClicked = new EventEmitter();
     this.dragClicked = new EventEmitter();
@@ -94799,6 +95063,9 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
   }
   onSetDefaultPosition() {
     this.closeActionsMenu();
+    if (this.isDockMode) {
+      this.dockClicked.emit();
+    }
     this.setDefaultPosition.emit();
   }
   isAgentActive(agent) {
@@ -94839,7 +95106,7 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return ctx.onDocumentClick($event);
     }, \u0275\u0275resolveDocument);
   }
-}, inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 25, vars: 16, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click", "keydown.enter", "keydown.space"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "2", "y", "2", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["x", "7", "y", "7", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__agent-menu"], [1, "chat-header__actions-menu"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "chat-header__agent-menu-item--active"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-menu-item-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-menu-item-text"], [1, "chat-header__agent-menu-item-name"], [1, "chat-header__agent-menu-item-description"], ["role", "button", "tabindex", "0", "aria-label", "Clear chat history", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Set default position", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Create new Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Edit Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Remove agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
+}, inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent", dockEnabled: "dockEnabled", isDockMode: "isDockMode" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 21, vars: 14, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__title-text"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click", "keydown.enter", "keydown.space"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__agent-menu"], [1, "chat-header__actions-menu"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "2", "y", "2", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["x", "7", "y", "7", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "chat-header__agent-menu-item--active"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-menu-item-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-menu-item-text"], [1, "chat-header__agent-menu-item-name"], [1, "chat-header__agent-menu-item-description"], ["role", "button", "tabindex", "0", "aria-label", "Clear chat history", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Set default position", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Create new Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Edit Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Remove agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "div", 2);
     \u0275\u0275element(3, "img", 3);
@@ -94852,62 +95119,40 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     })("keydown.space", function ChatHeaderComponent_Template_div_keydown_space_4_listener() {
       return ctx.toggleAgentMenu();
     });
-    \u0275\u0275text(5);
-    \u0275\u0275conditionalCreate(6, ChatHeaderComponent_Conditional_6_Template, 3, 2, "div", 5);
+    \u0275\u0275elementStart(5, "span", 5);
+    \u0275\u0275text(6);
+    \u0275\u0275elementEnd();
+    \u0275\u0275conditionalCreate(7, ChatHeaderComponent_Conditional_7_Template, 3, 2, "div", 6);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(7, "div", 6)(8, "button", 7);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_8_listener() {
+    \u0275\u0275elementStart(8, "div", 7)(9, "button", 8);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_9_listener() {
       return ctx.toggleActionsMenu();
-    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_8_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_9_listener() {
       return ctx.toggleActionsMenu();
-    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_8_listener() {
+    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_9_listener() {
       return ctx.toggleActionsMenu();
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(9, "svg", 8);
-    \u0275\u0275element(10, "circle", 9)(11, "circle", 10)(12, "circle", 11);
+    \u0275\u0275elementStart(10, "svg", 9);
+    \u0275\u0275element(11, "circle", 10)(12, "circle", 11)(13, "circle", 12);
     \u0275\u0275elementEnd()();
+    \u0275\u0275conditionalCreate(14, ChatHeaderComponent_Conditional_14_Template, 4, 2, "button", 13);
+    \u0275\u0275conditionalCreate(15, ChatHeaderComponent_Conditional_15_Template, 3, 2, "button", 14);
     \u0275\u0275namespaceHTML();
-    \u0275\u0275elementStart(13, "button", 12);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_13_listener() {
-      return ctx.onDockClick();
-    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_13_listener() {
-      return ctx.onDockClick();
-    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_13_listener() {
-      return ctx.onDockClick();
-    });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(14, "svg", 8);
-    \u0275\u0275element(15, "rect", 13)(16, "rect", 14);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275namespaceHTML();
-    \u0275\u0275elementStart(17, "button", 15);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_17_listener() {
-      return ctx.onToggleFullHeightClick();
-    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_17_listener() {
-      return ctx.onToggleFullHeightClick();
-    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_17_listener() {
-      return ctx.onToggleFullHeightClick();
-    });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(18, "svg", 8);
-    \u0275\u0275element(19, "path", 16);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275namespaceHTML();
-    \u0275\u0275elementStart(20, "button", 17);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_20_listener() {
+    \u0275\u0275elementStart(16, "button", 15);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_16_listener() {
       return ctx.onCollapseClick();
-    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_20_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_16_listener() {
       return ctx.onCollapseClick();
-    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_20_listener() {
+    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_16_listener() {
       return ctx.onCollapseClick();
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(21, "svg", 8);
-    \u0275\u0275element(22, "path", 18);
+    \u0275\u0275elementStart(17, "svg", 9);
+    \u0275\u0275element(18, "path", 16);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275conditionalCreate(23, ChatHeaderComponent_Conditional_23_Template, 3, 0, "div", 19);
-    \u0275\u0275conditionalCreate(24, ChatHeaderComponent_Conditional_24_Template, 6, 1, "div", 20);
+    \u0275\u0275conditionalCreate(19, ChatHeaderComponent_Conditional_19_Template, 3, 0, "div", 17);
+    \u0275\u0275conditionalCreate(20, ChatHeaderComponent_Conditional_20_Template, 6, 1, "div", 18);
   }
   if (rf & 2) {
     \u0275\u0275advance(3);
@@ -94915,22 +95160,22 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275advance();
     \u0275\u0275classProp("chat-header__title--clickable", ctx.hasMultipleAgents);
     \u0275\u0275attribute("tabindex", ctx.hasMultipleAgents ? 0 : -1)("role", ctx.hasMultipleAgents ? "button" : null)("aria-label", ctx.hasMultipleAgents ? "Select agent" : null);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(ctx.title);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx.title, " ");
-    \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.hasMultipleAgents ? 6 : -1);
+    \u0275\u0275conditional(ctx.hasMultipleAgents ? 7 : -1);
     \u0275\u0275advance(7);
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(13, _c016));
-    \u0275\u0275advance(4);
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(14, _c016));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(15, _c016));
-    \u0275\u0275advance(3);
-    \u0275\u0275conditional(ctx.isAgentMenuShown && ctx.hasMultipleAgents ? 23 : -1);
+    \u0275\u0275conditional(ctx.dockEnabled ? 14 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.isActionsMenuShown ? 24 : -1);
+    \u0275\u0275conditional(!ctx.isDockMode ? 15 : -1);
+    \u0275\u0275advance();
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(13, _c016));
+    \u0275\u0275advance(3);
+    \u0275\u0275conditional(ctx.isAgentMenuShown && ctx.hasMultipleAgents ? 19 : -1);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx.isActionsMenuShown ? 20 : -1);
   }
-}, dependencies: [TooltipDirective], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  min-width: 0;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%] {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__dropdown-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-header__controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots[_ngcontent-%COMP%] {\n  margin-left: auto;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 32px;\n  left: 12px;\n  display: flex;\n  gap: 4px;\n  flex-direction: column;\n  z-index: 1005;\n  max-width: 70%;\n  padding: 12px 0px;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__agent-menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-menu-item--active[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-menu-item-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-menu-item-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-menu-item-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-menu-item-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.chat-header__actions-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 32px;\n  right: 12px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 180px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n/*# sourceMappingURL=chat-header.component.css.map */"] });
+}, dependencies: [TooltipDirective], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%] {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text[_ngcontent-%COMP%] {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-header__controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots[_ngcontent-%COMP%] {\n  margin-left: auto;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 32px;\n  left: 12px;\n  display: flex;\n  gap: 4px;\n  flex-direction: column;\n  z-index: 1005;\n  max-width: 70%;\n  padding: 12px 0px;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__agent-menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-menu-item--active[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-menu-item-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-menu-item-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-menu-item-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-menu-item-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.chat-header__actions-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 32px;\n  right: 12px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 180px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n/*# sourceMappingURL=chat-header.component.css.map */"] });
 var ChatHeaderComponent = _ChatHeaderComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatHeaderComponent, [{
@@ -94950,7 +95195,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       (keydown.enter)="toggleAgentMenu()"
       (keydown.space)="toggleAgentMenu()"
     >
-      {{ title }}
+      <span class="chat-header__title-text">{{ title }}</span>
       @if (hasMultipleAgents) {
         <div
           class="chat-header__dropdown-icon"
@@ -94997,54 +95242,58 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       </svg>
     </button>
 
-    <button
-      type="button"
-      class="chat-header__control-btn"
-      (click)="onDockClick()"
-      (keydown.enter)="onDockClick()"
-      (keydown.space)="onDockClick()"
-      aria-label="Dock in parent"
-      epTooltip="Dock in parent"
-      [tooltipOptions]="{ delay: 500 }"
-    >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
+    @if (dockEnabled) {
+      <button
+        type="button"
+        class="chat-header__control-btn"
+        (click)="onDockClick()"
+        (keydown.enter)="onDockClick()"
+        (keydown.space)="onDockClick()"
+        aria-label="Dock in parent"
+        epTooltip="Dock in parent"
+        [tooltipOptions]="{ delay: 500 }"
       >
-        <rect x="2" y="2" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
-        <rect x="7" y="7" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
-      </svg>
-    </button>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect x="2" y="2" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
+          <rect x="7" y="7" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
+        </svg>
+      </button>
+    }
 
-    <button
-      type="button"
-      class="chat-header__control-btn"
-      (click)="onToggleFullHeightClick()"
-      (keydown.enter)="onToggleFullHeightClick()"
-      (keydown.space)="onToggleFullHeightClick()"
-      aria-label="Toggle full height"
-      epTooltip="Toggle full height"
-      [tooltipOptions]="{ delay: 500 }"
-    >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
+    @if (!isDockMode) {
+      <button
+        type="button"
+        class="chat-header__control-btn"
+        (click)="onToggleFullHeightClick()"
+        (keydown.enter)="onToggleFullHeightClick()"
+        (keydown.space)="onToggleFullHeightClick()"
+        aria-label="Toggle full height"
+        epTooltip="Toggle full height"
+        [tooltipOptions]="{ delay: 500 }"
       >
-        <path
-          d="M4 6L8 2L12 6M4 10L8 14L12 10"
-          stroke="white"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M4 6L8 2L12 6M4 10L8 14L12 10"
+            stroke="white"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    }
 
     <button
       type="button"
@@ -95155,12 +95404,16 @@ var ChatHeaderComponent = _ChatHeaderComponent;
     </div>
   </div>
 }
-`, styles: ["/* src/app/components/chat-header/chat-header.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon img {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  min-width: 0;\n}\n.chat-header__title--clickable {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__dropdown-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated {\n  transform: rotate(180deg);\n}\n.chat-header__controls {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  flex-shrink: 0;\n}\n.chat-header__control-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots {\n  margin-left: auto;\n}\n.chat-header__control-btn svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-menu {\n  position: absolute;\n  top: 32px;\n  left: 12px;\n  display: flex;\n  gap: 4px;\n  flex-direction: column;\n  z-index: 1005;\n  max-width: 70%;\n  padding: 12px 0px;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__agent-menu-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-menu-item--active:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-menu-item-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-menu-item-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-menu-item-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-menu-item-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.chat-header__actions-menu {\n  position: absolute;\n  top: 32px;\n  right: 12px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 180px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__actions-menu-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n}\n.chat-header__actions-menu-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-header__actions-menu-item:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n/*# sourceMappingURL=chat-header.component.css.map */\n"] }]
+`, styles: ["/* src/app/components/chat-header/chat-header.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon img {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated {\n  transform: rotate(180deg);\n}\n.chat-header__controls {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots {\n  margin-left: auto;\n}\n.chat-header__control-btn svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-menu {\n  position: absolute;\n  top: 32px;\n  left: 12px;\n  display: flex;\n  gap: 4px;\n  flex-direction: column;\n  z-index: 1005;\n  max-width: 70%;\n  padding: 12px 0px;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__agent-menu-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-menu-item--active:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-menu-item-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-menu-item-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-menu-item-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-menu-item-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.chat-header__actions-menu {\n  position: absolute;\n  top: 32px;\n  right: 12px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 180px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__actions-menu-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n}\n.chat-header__actions-menu-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-header__actions-menu-item:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n/*# sourceMappingURL=chat-header.component.css.map */\n"] }]
   }], null, { currentAgent: [{
     type: Input
   }], agents: [{
     type: Input
   }], isMonoAgent: [{
+    type: Input
+  }], dockEnabled: [{
+    type: Input
+  }], isDockMode: [{
     type: Input
   }], closed: [{
     type: Output
@@ -95757,6 +96010,7 @@ var _ResizableChatDirective = class _ResizableChatDirective {
     this.elementRef = elementRef;
     this.renderer = renderer;
     this.storageService = storageService;
+    this.resizeDisabled = false;
     this.RESIZE_THRESHOLD = 10;
     this.MIN_WIDTH = CHAT_CONSTANTS.MIN_WIDTH;
     this.MIN_HEIGHT = CHAT_CONSTANTS.MIN_HEIGHT;
@@ -95778,7 +96032,22 @@ var _ResizableChatDirective = class _ResizableChatDirective {
   ngOnInit() {
     this.element = this.elementRef.nativeElement;
   }
+  ngOnChanges(changes) {
+    if (changes["resizeDisabled"] && !changes["resizeDisabled"].firstChange) {
+      if (!this.resizeDisabled) {
+        requestAnimationFrame(() => {
+          const loaded = this.loadSizeFromLS();
+          if (!loaded) {
+            this.applyInitialSizeFromConfig();
+            this.setDefaultSize();
+          }
+        });
+      }
+    }
+  }
   ngAfterViewInit() {
+    if (this.resizeDisabled)
+      return;
     requestAnimationFrame(() => {
       const savedSize = this.loadSizeFromLS();
       if (savedSize) {
@@ -95798,6 +96067,8 @@ var _ResizableChatDirective = class _ResizableChatDirective {
     });
   }
   onMouseDown(event) {
+    if (this.resizeDisabled)
+      return;
     const target = event.target;
     const direction = this.getResizeDirection(event);
     if (direction) {
@@ -96289,7 +96560,7 @@ _ResizableChatDirective.\u0275dir = /* @__PURE__ */ \u0275\u0275defineDirective(
       return ctx.onMouseUp($event);
     }, \u0275\u0275resolveDocument);
   }
-}, inputs: { config: "config" } });
+}, inputs: { config: "config", resizeDisabled: "resizeDisabled" }, features: [\u0275\u0275NgOnChangesFeature] });
 var ResizableChatDirective = _ResizableChatDirective;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ResizableChatDirective, [{
@@ -96298,6 +96569,8 @@ var ResizableChatDirective = _ResizableChatDirective;
       selector: "[epResizableChat]"
     }]
   }], () => [{ type: ElementRef }, { type: Renderer2 }, { type: StorageService }], { config: [{
+    type: Input
+  }], resizeDisabled: [{
     type: Input
   }], onMouseDown: [{
     type: HostListener,
@@ -96494,9 +96767,9 @@ function ChatComponent_Conditional_2_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext();
-    \u0275\u0275property("ngStyle", ctx_r1.chatStyle)("config", ctx_r1.getConfig());
+    \u0275\u0275property("ngStyle", ctx_r1.chatStyle)("config", ctx_r1.getConfig())("resizeDisabled", ctx_r1.isDockMode);
     \u0275\u0275advance();
-    \u0275\u0275property("currentAgent", ctx_r1.currentAgent)("agents", ctx_r1.agentService.agents())("isMonoAgent", ctx_r1.isMonoAgent);
+    \u0275\u0275property("currentAgent", ctx_r1.currentAgent)("agents", ctx_r1.agentService.visibleAgents())("isMonoAgent", ctx_r1.isMonoAgent)("dockEnabled", ctx_r1.dockEnabled)("isDockMode", ctx_r1.isDockMode);
     \u0275\u0275advance();
     \u0275\u0275property("messages", ctx_r1.chatService.messages())("isTyping", ctx_r1.isTyping)("scrollMode", ctx_r1.scrollMode);
     \u0275\u0275advance();
@@ -96547,6 +96820,9 @@ var _ChatComponent = class _ChatComponent {
     this.defaultAgentFlowUrl = "";
     this.defaultAgentFlowId = null;
     this.fileAttachmentDisabled = true;
+    this.dockEnabled = false;
+    this.isDockMode = false;
+    this.apiBaseUrl = "";
     this.basicAuthLogin = "";
     this.basicAuthPassword = "";
     this.epChatCommand = null;
@@ -96563,6 +96839,7 @@ var _ChatComponent = class _ChatComponent {
     this.newAgentParamsForConfig = null;
     this.chatSessionId = Date.now();
     this.hasInitializedOpenState = false;
+    this.apiSyncDone = false;
     effect(() => {
       if (this.chatService.isOpen() && this.chatFooter) {
         setTimeout(() => this.chatFooter?.focus(), 100);
@@ -96638,7 +96915,10 @@ var _ChatComponent = class _ChatComponent {
         isMonoAgent: this.isMonoAgent
       }, (result) => this.epChatCommandResult.emit(result));
     }
-    if (changes["chatWidth"] || changes["chatHeight"] || changes["chatTop"] || changes["chatLeft"] || changes["chatRight"] || changes["chatBottom"] || changes["chatPosition"]) {
+    if (changes["apiBaseUrl"]) {
+      this.trySyncAgentsFromApi();
+    }
+    if (changes["isDockMode"] || changes["chatWidth"] || changes["chatHeight"] || changes["chatTop"] || changes["chatLeft"] || changes["chatRight"] || changes["chatBottom"] || changes["chatPosition"]) {
       this.updateChatStyle();
     }
     if (changes["unreadMessagesCount"]) {
@@ -96654,13 +96934,18 @@ var _ChatComponent = class _ChatComponent {
   }
   openChat() {
     this.chatService.openChat();
+    this.epChatEvent.emit({ type: EP_CHAT_EVENTS.CHAT_OPENED });
   }
   closeChat() {
     this.chatService.closeChat();
     this.epChatEvent.emit({ type: EP_CHAT_EVENTS.CHAT_CLOSED });
   }
   toggleChat() {
+    const wasOpen = this.chatService.isOpen();
     this.chatService.toggleChat();
+    if (!wasOpen) {
+      this.epChatEvent.emit({ type: EP_CHAT_EVENTS.CHAT_OPENED });
+    }
   }
   onDockClick() {
     this.epChatEvent.emit({ type: EP_CHAT_EVENTS.APP_TOGGLE_DOCK });
@@ -96711,9 +96996,19 @@ var _ChatComponent = class _ChatComponent {
   }
   onRemoveAgent() {
     if (!this.isMonoAgent && this.currentAgent?.epicstaffAgentId !== void 0) {
+      const flowId = this.currentAgent.epicstaffFlowId;
+      const flowUrl = this.currentAgent.epicstaffFlowUrl;
       this.agentService.deleteAgent(this.currentAgent.epicstaffAgentId).subscribe({
         next: () => {
-          console.log("Agent removed");
+          if (flowId !== null && flowId !== void 0) {
+            const stillConnected = this.agentService.agents().some((a3) => a3.epicstaffFlowUrl === flowUrl && a3.epicstaffFlowId === flowId);
+            if (!stillConnected) {
+              this.epChatEvent.emit({
+                type: EP_CHAT_EVENTS.AGENT_DISCONNECTED,
+                payload: { flowId }
+              });
+            }
+          }
         },
         error: (error) => {
           console.error("Failed to remove agent:", error);
@@ -97035,9 +97330,7 @@ var _ChatComponent = class _ChatComponent {
       if (!currentAgent) {
         this.agentService.setCurrentAgent(defaultAgentToSet);
       }
-      return;
-    }
-    if (existingAgents.length === 0) {
+    } else if (existingAgents.length === 0) {
       const userId = this.storageService.getUserId() || "session";
       const storageKey = `default_agent_id_${userId}`;
       const savedAgentId = this.storageService.getItem(storageKey, false);
@@ -97051,6 +97344,20 @@ var _ChatComponent = class _ChatComponent {
     } else if (!this.agentService.currentAgent()) {
       this.agentService.setCurrentAgent(existingAgents[0]);
     }
+    this.trySyncAgentsFromApi();
+  }
+  /**
+   * Sync agents from backend API.
+   * Guarded by hasInitializedOpenState (set in ngOnInit) to ensure agents are loaded from
+   * storage first. Guarded by apiSyncDone to avoid duplicate calls when both ngOnInit and
+   * ngOnChanges fire.
+   */
+  trySyncAgentsFromApi() {
+    if (this.isMonoAgent || !this.apiBaseUrl || !this.hasInitializedOpenState || this.apiSyncDone) {
+      return;
+    }
+    this.apiSyncDone = true;
+    this.agentService.syncAgentsFromApi(this.apiBaseUrl);
   }
   /**
    * Initialize mono agent mode - create single agent from input parameters
@@ -97288,7 +97595,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatFooter = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.resizableChat = _t.first);
   }
-}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "ngStyle", "config"], [3, "popupState", "currentAgent", "newAgentParams"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "dockClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "stop", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], [3, "closed", "popupState", "currentAgent", "newAgentParams"]], template: function ChatComponent_Template(rf, ctx) {
+}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", dockEnabled: "dockEnabled", isDockMode: "isDockMode", apiBaseUrl: "apiBaseUrl", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "ngStyle", "config", "resizeDisabled"], [3, "popupState", "currentAgent", "newAgentParams"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config", "resizeDisabled"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "dockClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent", "dockEnabled", "isDockMode"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "stop", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], [3, "closed", "popupState", "currentAgent", "newAgentParams"]], template: function ChatComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275listener("click", function ChatComponent_Template_div_click_0_listener() {
@@ -97300,7 +97607,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
       return ctx.toggleChat();
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(2, ChatComponent_Conditional_2_Template, 4, 12, "div", 2);
+    \u0275\u0275conditionalCreate(2, ChatComponent_Conditional_2_Template, 4, 15, "div", 2);
     \u0275\u0275conditionalCreate(3, ChatComponent_Conditional_3_Template, 1, 3, "ep-epicstaff-agent-config", 3);
   }
   if (rf & 2) {
@@ -97335,7 +97642,7 @@ var ChatComponent = _ChatComponent;
       EpicstaffAgentConfigComponent,
       ClickOutsideDirective,
       ResizableChatDirective
-    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.agents()"\n      [isMonoAgent]="isMonoAgent"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (dockClicked)="onDockClick()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n      (stop)="onStopGenerating()"\n    />\n  </div>\n\n  <!-- <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div> -->\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    [newAgentParams]="newAgentParamsForConfig"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow: 0 2px 8px var(--ep-color-popup-shadow);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
+    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [ngStyle]="chatStyle"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    [resizeDisabled]="isDockMode"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="currentAgent"\n      [agents]="agentService.visibleAgents()"\n      [isMonoAgent]="isMonoAgent"\n      [dockEnabled]="dockEnabled"\n      [isDockMode]="isDockMode"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (dockClicked)="onDockClick()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping"\n      [scrollMode]="scrollMode"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping"\n      [messages]="chatService.messages()"\n      [currentAgent]="currentAgent"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (quickActionClick)="onQuickActionClick($event)"\n      (stop)="onStopGenerating()"\n    />\n  </div>\n\n  <!-- <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div> -->\n}\n\n@if (isAgentConfigOpen && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState"\n    [currentAgent]="currentAgent"\n    [newAgentParams]="newAgentParamsForConfig"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow: 0 2px 8px var(--ep-color-popup-shadow);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
   }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: ChatParentBridgeService }, { type: DateAdapter }], { uniqueUserId: [{
     type: Input
   }], userData: [{
@@ -97375,6 +97682,12 @@ var ChatComponent = _ChatComponent;
   }], defaultAgentFlowId: [{
     type: Input
   }], fileAttachmentDisabled: [{
+    type: Input
+  }], dockEnabled: [{
+    type: Input
+  }], isDockMode: [{
+    type: Input
+  }], apiBaseUrl: [{
     type: Input
   }], basicAuthLogin: [{
     type: Input

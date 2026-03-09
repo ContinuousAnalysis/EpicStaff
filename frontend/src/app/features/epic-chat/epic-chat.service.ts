@@ -1,14 +1,15 @@
 import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { FlowsApiService } from 'src/app/features/flows/services/flows-api.service';
+import { FlowUnsavedStateService } from 'src/app/pages/flows-page/services/flow-unsaved-state.service';
 import {
+    EP_CHAT_COMMANDS,
+    EP_CHAT_EVENT_TYPES,
     EpChatCommand,
     EpChatCommandResult,
     EpChatEvent,
     EpicChatCreateAgentPayload,
-    EP_CHAT_COMMANDS,
-    EP_CHAT_EVENT_TYPES,
 } from './models/epic-chat-command.model';
-import { FlowUnsavedStateService } from 'src/app/pages/flows-page/services/flow-unsaved-state.service';
 
 @Injectable({
     providedIn: 'root',
@@ -17,14 +18,17 @@ export class EpicChatService {
     private readonly epChatCommandSignal = signal<EpChatCommand | null>(null);
     private readonly isDockedSignal = signal(false);
     private readonly dockWidthSignal = signal(420);
+    private readonly isChatOpenSignal = signal(true);
 
     public readonly epChatCommand = this.epChatCommandSignal.asReadonly();
     public readonly isDocked = this.isDockedSignal.asReadonly();
     public readonly dockWidth = this.dockWidthSignal.asReadonly();
+    public readonly isChatOpen = this.isChatOpenSignal.asReadonly();
 
     constructor(
         private readonly router: Router,
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
+        private readonly flowsApiService: FlowsApiService,
     ) {}
 
     public requestCreateAgent(payload: EpicChatCreateAgentPayload): void {
@@ -60,6 +64,14 @@ export class EpicChatService {
             return;
         }
         switch (data.type) {
+            case EP_CHAT_EVENT_TYPES.CHAT_CLOSED: {
+                this.isChatOpenSignal.set(false);
+                return;
+            }
+            case EP_CHAT_EVENT_TYPES.CHAT_OPENED: {
+                this.isChatOpenSignal.set(true);
+                return;
+            }
             case EP_CHAT_EVENT_TYPES.APP_OPEN_FLOW: {
                 const flowId = this.toNumber(data.payload?.['flowId']);
                 if (flowId != null) {
@@ -91,6 +103,21 @@ export class EpicChatService {
                 this.toggleDock();
                 return;
             }
+            case EP_CHAT_EVENT_TYPES.AGENT_DISCONNECTED: {
+                const flowId = this.toNumber(data.payload?.['flowId']);
+                if (flowId != null) {
+                    this.flowsApiService
+                        .patchGraph(flowId, { epicchat_enabled: false })
+                        .subscribe({
+                            error: (err) =>
+                                console.error(
+                                    '[EpicChat] Failed to disable epicchat_enabled:',
+                                    err,
+                                ),
+                        });
+                }
+                return;
+            }
             default:
                 console.log('[EpicChat event]', data.type, data.payload || {});
         }
@@ -102,7 +129,10 @@ export class EpicChatService {
 
     public setDockWidth(width: number): void {
         const minWidth = 320;
-        const maxWidth = Math.max(minWidth, Math.floor(window.innerWidth * 0.7));
+        const maxWidth = Math.max(
+            minWidth,
+            Math.floor(window.innerWidth * 0.7),
+        );
         const next = Math.min(maxWidth, Math.max(minWidth, Math.round(width)));
         this.dockWidthSignal.set(next);
     }
