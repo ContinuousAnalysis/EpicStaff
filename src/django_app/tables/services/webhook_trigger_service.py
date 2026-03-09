@@ -1,3 +1,5 @@
+import time
+
 from loguru import logger
 
 from django_app.settings import (
@@ -95,7 +97,6 @@ class WebhookTriggerService(metaclass=SingletonMeta):
         interval: float = 0.1,
     ) -> str | None:
         """Poll Redis until the tunnel URL is available or timeout is reached."""
-        import time
 
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
