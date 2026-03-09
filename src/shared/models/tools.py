@@ -65,7 +65,7 @@ class PythonCodeToolData(BaseModel):
     id: int
     name: str
     description: str
-    # args_schema: dict <?!> used in crew and django_app 
+    # args_schema: dict <?!> used in crew and django_app
     args_schema: ArgsSchema
     python_code: PythonCodeData
 
@@ -91,12 +91,25 @@ class BaseToolData(BaseModel):
             raise ValueError(
                 "Invalid unique_name. Unique name should be splited by `:`. \nFor example: python-code-tool:1"
             )
-        if prefix in {"python-code-tool", "python-code-tool-config"}:  # <?> realtime checks only python-code-tool 
-            values["data"] = PythonCodeToolData(**data)
+        if prefix in {
+            "python-code-tool",
+            "python-code-tool-config",
+        }:
+            values["data"] = (
+                data
+                if isinstance(data, PythonCodeToolData)
+                else PythonCodeToolData(**data)
+            )
         elif prefix == "configured-tool":
-            values["data"] = ConfiguredToolData(**data)
-        elif prefix == "mcp-tool":  # <?> exist only in crew module
-            values["data"] = McpToolData(**data)
+            values["data"] = (
+                data
+                if isinstance(data, ConfiguredToolData)
+                else ConfiguredToolData(**data)
+            )
+        elif prefix == "mcp-tool":
+            values["data"] = (
+                data if isinstance(data, McpToolData) else McpToolData(**data)
+            )
         else:
             raise ValueError(f"Unknown tool prefix: {prefix}")
 
