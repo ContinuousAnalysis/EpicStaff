@@ -47,6 +47,7 @@ export class JsonEditorComponent implements OnChanges {
   @Output() public validationChange = new EventEmitter<boolean>();
 
   private monacoEditor: any;
+  private isProgrammaticChange: boolean = false;
   public jsonIsValid = true;
 
   @Input() public editorOptions: any = {
@@ -85,16 +86,22 @@ export class JsonEditorComponent implements OnChanges {
       // On first change, if editor exists, set the value directly
       if (isFirst && this.monacoEditor && newValue && newValue !== '{}') {
         this.lastExternalValue = newValue;
+        this.isProgrammaticChange = true;
         this.monacoEditor.setValue(newValue);
-        setTimeout(() => this.monacoEditor?.getAction('editor.action.formatDocument')?.run(), 50);
+        setTimeout(() => {
+          this.monacoEditor?.getAction('editor.action.formatDocument')?.run();
+          setTimeout(() => { this.isProgrammaticChange = false; }, 0);
+        }, 50);
         this.cdr.markForCheck();
       }
       // On subsequent changes from external sources
       else if (!isFirst && this.monacoEditor && newValue !== this.lastExternalValue) {
         this.lastExternalValue = newValue;
+        this.isProgrammaticChange = true;
         this.monacoEditor.setValue(newValue || '{}');
         setTimeout(() => {
           this.monacoEditor?.getAction('editor.action.formatDocument')?.run();
+          setTimeout(() => { this.isProgrammaticChange = false; }, 0);
         }, 50);
         this.cdr.markForCheck();
       }
@@ -102,6 +109,10 @@ export class JsonEditorComponent implements OnChanges {
   }
 
   public onJsonChange(newValue: string): void {
+    if (this.isProgrammaticChange) {
+      return;
+    }
+
     // Mark that user is typing to prevent cursor jump
     this.isUserTyping = true;
     this.lastExternalValue = newValue;
@@ -130,10 +141,12 @@ export class JsonEditorComponent implements OnChanges {
 
     if (this.monacoEditor) {
       this.monacoEditor.updateOptions(this.editorOptions);
+      this.isProgrammaticChange = true;
       this.monacoEditor.setValue(this.jsonData || '{}');
 
       setTimeout(() => {
         this.monacoEditor?.getAction('editor.action.formatDocument')?.run();
+        setTimeout(() => { this.isProgrammaticChange = false; }, 0);
       }, 100);
     }
 

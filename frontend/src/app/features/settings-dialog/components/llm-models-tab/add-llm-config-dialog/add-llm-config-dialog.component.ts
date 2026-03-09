@@ -80,7 +80,7 @@ export class AddLlmConfigDialogComponent implements OnInit {
         topP: [LLM_FORM_DEFAULTS.topP, [Validators.min(0.1)]],
         presencePenalty: [LLM_FORM_DEFAULTS.presencePenalty],
         frequencyPenalty: [LLM_FORM_DEFAULTS.frequencyPenalty],
-        maxTokens: [LLM_FORM_DEFAULTS.maxTokens, [Validators.required, Validators.min(1)]],
+        maxTokens: [LLM_FORM_DEFAULTS.maxTokens, [Validators.required, Validators.min(500)]],
         timeout: [LLM_FORM_DEFAULTS.timeout, [Validators.required, Validators.min(1)]],
         seed: [LLM_FORM_DEFAULTS.seed, [Validators.min(-2147483648), Validators.max(2147483647)]],
         headers: this.fb.array([this.createHeaderGroup()]),
@@ -207,7 +207,7 @@ export class AddLlmConfigDialogComponent implements OnInit {
         const frequencyPenalty = typeof config.frequency_penalty === 'number'
             ? config.frequency_penalty
             : LLM_FORM_DEFAULTS.frequencyPenalty;
-        const maxTokens = typeof config.max_tokens === 'number' && config.max_tokens >= 1
+        const maxTokens = typeof config.max_tokens === 'number' && config.max_tokens >= 500
             ? config.max_tokens
             : LLM_FORM_DEFAULTS.maxTokens;
         const timeout = typeof config.timeout === 'number' && config.timeout >= 1
@@ -258,7 +258,41 @@ export class AddLlmConfigDialogComponent implements OnInit {
         this.form.setControl('headers', newArray);
         
         this.subscribeToHeadersChanges();
-        
+    }
+
+    /**
+     * Updates existing FormArray controls in-place without recreating DOM elements.
+     * Use this instead of rebuildHeadersFormArray when focus must be preserved
+     * (e.g. when syncing back from the Monaco editor while a header input is focused).
+     */
+    private patchHeadersFormArray(headersObj: Record<string, string>): void {
+        const entries = Object.entries(headersObj);
+        const targetTotalRows = entries.length + 1; // data rows + one trailing empty row
+
+        // Patch or add data rows
+        entries.forEach(([key, value], i) => {
+            if (i < this.headersArray.length) {
+                this.headersArray.at(i).patchValue({ key, value }, { emitEvent: false });
+            } else {
+                this.headersArray.push(this.fb.group({ key: [key], value: [value] }), { emitEvent: false });
+            }
+        });
+
+        // Add missing trailing row(s)
+        while (this.headersArray.length < targetTotalRows) {
+            this.headersArray.push(this.createHeaderGroup(), { emitEvent: false });
+        }
+
+        // Remove surplus rows
+        while (this.headersArray.length > targetTotalRows) {
+            this.headersArray.removeAt(this.headersArray.length - 1, { emitEvent: false });
+        }
+
+        // Ensure the trailing row is blank
+        this.headersArray.at(this.headersArray.length - 1).patchValue(
+            { key: '', value: '' },
+            { emitEvent: false }
+        );
     }
 
     private subscribeToHeadersChanges(): void {
@@ -379,7 +413,7 @@ export class AddLlmConfigDialogComponent implements OnInit {
 
                 this.headers.set(normalized);
                 this.isUpdatingHeadersFromUI = true;
-                this.rebuildHeadersFormArray(normalized);
+                this.patchHeadersFormArray(normalized);
                 setTimeout(() => {
                     this.isUpdatingHeadersFromUI = false;
                 }, 0);
