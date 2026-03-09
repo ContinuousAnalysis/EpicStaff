@@ -252,6 +252,10 @@ src/django_app/staticfiles/*
 # Cursor AI rules
 .cursorrules
 
+# Claude Code (team config — stored in private epicstaff-claude repo)
+CLAUDE.md
+.claude/
+
 #knowledge data
 knowledge/graph_data/
 
