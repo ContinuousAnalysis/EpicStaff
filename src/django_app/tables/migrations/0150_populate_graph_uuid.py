@@ -6,13 +6,12 @@ from django.db import migrations
 
 def populate_uuid(apps, schema_editor):
     Graph = apps.get_model("tables", "Graph")
-    for graph in Graph.objects.filter(uuid__isnull=True):
+    for graph in Graph.objects.all():
         graph.uuid = uuid.uuid4()
         graph.save(update_fields=["uuid"])
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tables", "0149_graph_uuid"),
     ]
