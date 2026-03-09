@@ -50,7 +50,7 @@ from tables.models.realtime_models import (
     RealtimeAgent,
     RealtimeAgentChat,
 )
-from tables.filters import ProviderFilter
+from tables.filters import EmbeddingModelFilter, LLMModelFilter, ProviderFilter
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
 from tables.models.mcp_models import McpTool
@@ -64,6 +64,7 @@ from tables.serializers.model_serializers import (
     AgentTagSerializer,
     DecisionTableNodeSerializer,
     EndNodeSerializer,
+    SubGraphNodeSerializer,
     GraphLightSerializer,
     GraphTagSerializer,
     PythonCodeToolConfigFieldSerializer,
@@ -84,17 +85,6 @@ from tables.serializers.model_serializers import (
     WebhookTriggerNodeSerializer,
     WebhookTriggerSerializer,
 )
-from tables.serializers.export_serializers import (
-    AgentExportSerializer,
-    CrewExportSerializer,
-    GraphExportSerializer,
-    EntityType,
-)
-from tables.serializers.import_serializers import (
-    AgentImportSerializer,
-    CrewImportSerializer,
-    GraphImportSerializer,
-)
 from tables.serializers.copy_serializers import (
     AgentCopySerializer,
     AgentCopyDeserializer,
@@ -110,6 +100,7 @@ from tables.serializers.telegram_trigger_serializers import (
 from tables.serializers.serializers import (
     UploadGraphFileSerializer,
     GraphFileUpdateSerializer,
+    BulkExportSerializer,
 )
 
 from tables.models import (
@@ -133,6 +124,7 @@ from tables.models import (
     PythonCodeTool,
     PythonNode,
     FileExtractorNode,
+    SubGraphNode,
     AudioTranscriptionNode,
     RealtimeModel,
     StartNode,
@@ -174,8 +166,12 @@ from tables.serializers.model_serializers import (
 )
 
 from tables.services.redis_service import RedisService
-from tables.utils.mixins import ImportExportMixin, DeepCopyMixin
+from tables.services.import_export_service import ViewSetImportExportService
+from tables.utils.mixins import DeepCopyMixin
 from tables.exceptions import BuiltInToolModificationError
+from tables.import_export.enums import EntityType
+from tables.serializers.import_serializers import FileImportSerializer
+
 
 redis_service = RedisService()
 
@@ -183,12 +179,16 @@ redis_service = RedisService()
 class BasePredefinedRestrictedViewSet(ModelViewSet):
     """
     Base ViewSet class for predefined models.
+    Allows updating non-critical fields of predefined objects.
+    Prevents deletion of predefined objects.
     """
 
     def get_queryset(self):
-        if self.action in ["list", "retrieve"]:
-            return self.queryset
-        return self.queryset.filter(predefined=False)
+
+        if self.action == "destroy":
+            return self.queryset.filter(predefined=False)
+        
+        return self.queryset
 
     def perform_create(self, serializer):
         if serializer.validated_data.get("predefined", False):
@@ -199,16 +199,36 @@ class BasePredefinedRestrictedViewSet(ModelViewSet):
 
     def perform_update(self, serializer):
         instance = self.get_object()
+        validated_data = serializer.validated_data
+
         if instance.predefined:
-            e = f"Attempt to update predefined {self.queryset.model.__name__.lower()}"
-            logger.error(e)
-            raise PermissionDenied(e)
-        if serializer.validated_data.get("predefined", False):
-            e = f"Attempt to update predefined field in {self.queryset.model.__name__.lower()}"
-            logger.error(e)
-            raise PermissionDenied(e)
+            
+            # Should not be able to change name
+            if 'name' in validated_data and validated_data['name'] != instance.name:
+                e = f"Cannot change the name of a predefined {self.queryset.model.__name__.lower()}"
+                logger.warning(e)
+                raise ValidationError({"name": e})
+
+            # Should not be able to remove predefined
+            if 'predefined' in validated_data and validated_data['predefined'] is False:
+                e = "Cannot unset predefined status for this object"
+                logger.warning(e)
+                raise ValidationError({"predefined": e})
+
+        else:
+            if validated_data.get("predefined", False):
+                e = f"Attempt to set predefined=True for custom {self.queryset.model.__name__.lower()}"
+                logger.error(e)
+                raise PermissionDenied(e)
+
         serializer.save()
 
+    def perform_destroy(self, instance):
+        if instance.predefined:
+            e = f"Attempt to delete predefined {self.queryset.model.__name__.lower()}"
+            logger.error(e)
+            raise PermissionDenied(e)
+        instance.delete()
 
 class TemplateAgentReadWriteViewSet(ModelViewSet):
     queryset = TemplateAgent.objects.all()
@@ -248,16 +268,14 @@ class LLMModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
     queryset = LLMModel.objects.all()
     serializer_class = LLMModelSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = serializer_class.Meta.fields
+    filterset_class = LLMModelFilter
 
 
 class EmbeddingModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
     queryset = EmbeddingModel.objects.all()
     serializer_class = EmbeddingModelSerializer
     filter_backends = [DjangoFilterBackend]
-
-    filterset_fields = serializer_class.Meta.fields
-
+    filterset_class = EmbeddingModelFilter
 
 class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     class EmbeddingConfigFilter(filters.FilterSet):
@@ -279,7 +297,7 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     filterset_class = EmbeddingConfigFilter
 
 
-class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
+class AgentViewSet(ModelViewSet, DeepCopyMixin):
     queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
         Prefetch(
             "python_code_tools",
@@ -315,22 +333,22 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         "allow_code_execution",
     ]
 
-    entity_type = EntityType.AGENT.value
-    export_prefix = "agent"
-    filename_attr = "role"
-    serializer_response_class = AgentReadSerializer
-
     copy_serializer_class = AgentCopySerializer
     copy_deserializer_class = AgentCopyDeserializer
     copy_serializer_response_class = AgentReadSerializer
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.import_export_service = ViewSetImportExportService(
+            entity_type=EntityType.AGENT,
+            export_prefix="agent",
+            filename_attr="role",
+            response_serializer_class=AgentReadSerializer,
+        )
+
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
             return AgentReadSerializer
-        if self.action == "export":
-            return AgentExportSerializer
-        if self.action == "import_entity":
-            return AgentImportSerializer
         return AgentWriteSerializer
 
     def get_queryset(self):
@@ -390,8 +408,22 @@ class AgentViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["get"])
+    def export(self, request, pk: int):
+        return self.import_export_service.export_entity(self.get_object())
 
-class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
+    @action(detail=False, methods=["post"], url_path="import")
+    def import_entity(self, request):
+        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer.is_valid(raise_exception=True)
+
+        data = self.import_export_service.import_entity(
+            file_serializer.validated_data["file"], Agent
+        )
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
     queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
@@ -408,21 +440,32 @@ class CrewReadWriteViewSet(ModelViewSet, ImportExportMixin, DeepCopyMixin):
         "planning_llm_config",
     ]
 
-    entity_type = EntityType.CREW.value
-    export_prefix = "crew"
-    filename_attr = "name"
-    serializer_response_class = CrewSerializer
-
     copy_serializer_class = CrewCopySerializer
     copy_deserializer_class = CrewCopyDeserializer
     copy_serializer_response_class = CrewSerializer
 
-    def get_serializer_class(self):
-        if self.action == "export":
-            return CrewExportSerializer
-        if self.action == "import_entity":
-            return CrewImportSerializer
-        return super().get_serializer_class()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.import_export_service = ViewSetImportExportService(
+            entity_type=EntityType.CREW,
+            export_prefix="crew",
+            filename_attr="name",
+            response_serializer_class=CrewSerializer,
+        )
+
+    @action(detail=True, methods=["get"])
+    def export(self, request, pk: int):
+        return self.import_export_service.export_entity(self.get_object())
+
+    @action(detail=False, methods=["post"], url_path="import")
+    def import_entity(self, request):
+        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer.is_valid(raise_exception=True)
+
+        data = self.import_export_service.import_entity(
+            file_serializer.validated_data["file"], Crew
+        )
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class TaskReadWriteViewSet(ModelViewSet):
@@ -601,17 +644,21 @@ class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["execution_id", "returncode"]
 
 
-class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
+class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
     serializer_class = GraphSerializer
-
-    entity_type = EntityType.GRAPH.value
-    export_prefix = "graph"
-    filename_attr = "name"
-    serializer_response_class = GraphSerializer
 
     copy_serializer_class = GraphCopySerializer
     copy_deserializer_class = GraphCopyDeserializer
     copy_serializer_response_class = GraphSerializer
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.import_export_service = ViewSetImportExportService(
+            entity_type=EntityType.GRAPH,
+            export_prefix="graph",
+            filename_attr="name",
+            response_serializer_class=GraphSerializer,
+        )
 
     def get_queryset(self):
         return (
@@ -647,6 +694,7 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
                 Prefetch(
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
+                Prefetch("subgraph_node_list", queryset=SubGraphNode.objects.all()),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
                 Prefetch(
                     "telegram_trigger_node_list",
@@ -655,13 +703,6 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
             )
             .all()
         )
-
-    def get_serializer_class(self):
-        if self.action == "export":
-            return GraphExportSerializer
-        if self.action == "import_entity":
-            return GraphImportSerializer
-        return super().get_serializer_class()
 
     def perform_create(self, serializer):
         created_graph = serializer.save()
@@ -676,6 +717,37 @@ class GraphViewSet(viewsets.ModelViewSet, ImportExportMixin, DeepCopyMixin):
             instance=files, many=True, context={"request": request}
         )
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get"])
+    def export(self, request, pk: int):
+        return self.import_export_service.export_entity(self.get_object())
+
+    @action(detail=False, methods=["post"], url_path="bulk-export")
+    def bulk_export(self, request):
+        serializer = BulkExportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        entity_ids = serializer.validated_data["ids"]
+
+        existing_ids = Graph.objects.filter(id__in=entity_ids).values_list(
+            "id", flat=True
+        )
+        if len(existing_ids) != len(entity_ids):
+            return Response(
+                {"message": "Some entity IDs do not exist"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return self.import_export_service.bulk_export(entity_ids)
+
+    @action(detail=False, methods=["post"], url_path="import")
+    def import_entity(self, request):
+        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer.is_valid(raise_exception=True)
+
+        data = self.import_export_service.import_entity(
+            file_serializer.validated_data["file"], Graph
+        )
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
@@ -859,6 +931,11 @@ class StartNodeModelViewSet(viewsets.ModelViewSet):
 class EndNodeModelViewSet(viewsets.ModelViewSet):
     queryset = EndNode.objects.all()
     serializer_class = EndNodeSerializer
+
+
+class SubGraphNodeModelViewSet(viewsets.ModelViewSet):
+    queryset = SubGraphNode.objects.all()
+    serializer_class = SubGraphNodeSerializer
 
 
 class ConditionGroupModelViewSet(viewsets.ModelViewSet):

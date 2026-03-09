@@ -44,6 +44,7 @@ from tables.services.knowledge_services.indexing_service import IndexingService
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from tables.enums import SessionWarningType
 
 from tables.models import (
     Session,
@@ -53,6 +54,7 @@ from tables.models import (
     GraphOrganizationUser,
     OrganizationUser,
     Graph,
+    SessionWarningMessage,
 )
 from tables.serializers.model_serializers import (
     SessionSerializer,
@@ -211,6 +213,28 @@ class SessionViewSet(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
 
+    @swagger_auto_schema(
+        method="get",
+        responses={
+            200: openapi.Response(
+                description="Session warnings retrieved successfully"
+            ),
+            400: openapi.Response(description="Session is required"),
+            404: openapi.Response(description="Session not found"),
+        },
+    )
+    @action(detail=True, methods=["get"], url_path="warnings")
+    def get_session_warnings(self, request, pk=None):
+        session = self.get_object()
+
+        warning = (
+            SessionWarningMessage.objects.filter(session=session)
+            .values("messages")
+            .first()
+        )
+
+        return Response(warning, status=status.HTTP_200_OK)
+
 
 class RunSession(APIView):
     @swagger_auto_schema(
@@ -249,6 +273,7 @@ class RunSession(APIView):
         graph_id = serializer.validated_data["graph_id"]
         username = serializer.validated_data.get("username")
         graph_organization_user = None
+        warning_messages = []
 
         graph = Graph.objects.filter(id=graph_id).first()
         if not graph:
@@ -261,6 +286,10 @@ class RunSession(APIView):
             graph__id=graph_id
         ).first()
 
+        if graph_organization:
+            if not username and graph_organization.user_variables:
+                warning_messages.append(SessionWarningType.USER_VARS_WITH_NO_USER.value)
+
         if username and not graph_organization:
             return Response(
                 {"message": "No GraphOrganization exists for this flow."},
@@ -271,6 +300,7 @@ class RunSession(APIView):
             user = OrganizationUser.objects.filter(
                 name=username, organization=graph_organization.organization
             ).first()
+
             if not user and username:
                 return Response(
                     {
@@ -322,8 +352,14 @@ class RunSession(APIView):
             )
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)})
         else:
+            if warning_messages:
+                SessionWarningMessage.objects.create(
+                    session_id=session_id, messages=warning_messages
+                )
+
             return Response(
-                data={"session_id": session_id}, status=status.HTTP_201_CREATED
+                data={"session_id": session_id},
+                status=status.HTTP_201_CREATED,
             )
 
     def _get_file_data(self, file, content_type):

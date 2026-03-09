@@ -71,6 +71,13 @@ class InvalidTaskOrderError(CustomAPIExeption):
     default_code = "invalid_context_task_order"
 
 
+class SubGraphValidationError(CustomAPIExeption):
+    status_code = 400
+    default_detail = (
+        "ValidationError occured in SubGraphValidator during subgraph validation"
+    )
+
+
 class BuiltInToolModificationError(CustomAPIExeption):
     """
     Exception raised when someone tries to modify a built-in PythonCodeTool.
@@ -217,7 +224,9 @@ class EmbedderNotFoundException(RagException):
 class InvalidChunkParametersException(RagException):
     """Raised when chunk parameters are invalid."""
 
-    pass
+    def __init__(self, detail=None, errors=None):
+        self.errors = errors or []
+        super().__init__(detail=detail)
 
 
 class DocumentsNotFoundException(RagException):
