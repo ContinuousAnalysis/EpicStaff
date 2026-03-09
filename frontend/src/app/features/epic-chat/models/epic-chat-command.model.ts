@@ -3,16 +3,21 @@ export const EP_CHAT_COMMANDS = {
     AGENT_SELECT: 'agent.select',
 } as const;
 
-export type EpChatAction = (typeof EP_CHAT_COMMANDS)[keyof typeof EP_CHAT_COMMANDS];
+export type EpChatAction =
+    (typeof EP_CHAT_COMMANDS)[keyof typeof EP_CHAT_COMMANDS];
 
 export const EP_CHAT_EVENT_TYPES = {
+    CHAT_CLOSED: 'chat.closed',
+    CHAT_OPENED: 'chat.opened',
     APP_OPEN_FLOW: 'app.openFlow',
     APP_OPEN_NODE: 'app.openNode',
     APP_REFRESH_CACHE: 'app.refreshCache',
     APP_TOGGLE_DOCK: 'app.toggleDock',
+    AGENT_DISCONNECTED: 'agent.disconnected',
 } as const;
 
-export type EpChatEventType = (typeof EP_CHAT_EVENT_TYPES)[keyof typeof EP_CHAT_EVENT_TYPES];
+export type EpChatEventType =
+    (typeof EP_CHAT_EVENT_TYPES)[keyof typeof EP_CHAT_EVENT_TYPES];
 
 export interface EpicChatCreateAgentPayload {
     name: string;
