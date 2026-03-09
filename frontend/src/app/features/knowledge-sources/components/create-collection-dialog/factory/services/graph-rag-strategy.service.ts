@@ -25,7 +25,10 @@ export class GraphRagStrategy implements RagCreationStrategy {
         const ragId = this.graphRag.graph_rag_id;
         if (!ragId || !dto) return of(false);
 
-        return this.graphRagService.startIndexing(ragId, dto)
+        return this.graphRagService.startIndexing({
+            rag_id: ragId,
+            rag_type: 'graph'
+        })
             .pipe(map(() => true));
     }
 

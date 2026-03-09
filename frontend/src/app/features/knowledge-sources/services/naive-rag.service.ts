@@ -2,6 +2,7 @@ import { inject, Injectable } from "@angular/core";
 import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import { ConfigService } from "../../../services/config";
 import { Observable } from "rxjs";
+import { StartIndexingDtoRequest, StartIndexingDtoResponse } from "../models/base-rag.model";
 import { GetNaiveRagDocumentChunksResponse, NaiveRagChunkingResponse } from "../models/naive-rag-chunk.model";
 import {
     BulkDeleteNaiveRagDocumentDtoRequest,
@@ -10,8 +11,6 @@ import {
     BulkUpdateNaiveRagDocumentDtoResponse,
     GetNaiveRagDocumentConfigsResponse,
     InitNaiveRagDocumentsResponse,
-    StartIndexingDtoRequest,
-    StartIndexingDtoResponse,
     UpdateNaiveRagDocumentDtoRequest,
     UpdateNaiveRagDocumentResponse
 } from "../models/naive-rag-document.model";

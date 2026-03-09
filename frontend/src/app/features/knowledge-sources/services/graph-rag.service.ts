@@ -2,10 +2,10 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { ConfigService } from "../../../services/config";
+import { StartIndexingDtoRequest, StartIndexingDtoResponse } from "../models/base-rag.model";
 import {
     CollectionGraphRag,
-    CreateGraphRagForCollectionResponse,
-    CreateGraphRagIndexConfigRequest
+    CreateGraphRagForCollectionResponse, CreateGraphRagIndexConfigRequest,
 } from "../models/graph-rag.model";
 
 @Injectable({
@@ -40,11 +40,15 @@ export class GraphRagService {
         return this.http.get<CollectionGraphRag>(`${this.apiUrl}${ragId}/`)
     }
 
-    startIndexing(ragId: number, dto: CreateGraphRagIndexConfigRequest): Observable<CreateGraphRagIndexConfigRequest> {
+    updateRagIndexConfigs(ragId: number, dto: CreateGraphRagIndexConfigRequest): Observable<CreateGraphRagIndexConfigRequest> {
         return this.http.put<CreateGraphRagIndexConfigRequest>(
             `${this.apiUrl}${ragId}/index-config/`,
             dto
         )
+    }
+
+    startIndexing(dto: StartIndexingDtoRequest): Observable<StartIndexingDtoResponse> {
+        return this.http.post<StartIndexingDtoResponse>(`${this.configService.apiUrl}process-rag-indexing/`, dto)
     }
 
     deleteFileById(ragId: number, fileId: number): Observable<void> {

@@ -21,8 +21,6 @@ export class GraphRagConfigurationDialog extends RagConfigurationDialogComponent
 
     graphRag = signal<CollectionGraphRag | null>(null);
 
-    @ViewChild('ragConfig') ragConfig!: GraphRagConfigurationComponent;
-
     ngOnInit() {
         const id = this.data.ragId;
         this.graphRagService.getRagById(id)
@@ -35,14 +33,10 @@ export class GraphRagConfigurationDialog extends RagConfigurationDialogComponent
     }
 
     runIndexing() {
-        const ref = this.ragConfig;
-        if (!ref) return;
-
-        const data = ref.getConfigurationData();
-        if (!data) return;
-
-        const ragId = this.data.ragId;
-        this.graphRagService.startIndexing(ragId, data)
+        this.graphRagService.startIndexing({
+            rag_id: this.data.ragId,
+            rag_type: 'graph'
+        })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.toast.success('Files re-indexed successfully'),

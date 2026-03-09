@@ -16,14 +16,13 @@
                 type="primary"
                 (click)="runIndexing()"
             >
-                Run reindexing
+                Run indexing
             </app-button>
         </div>
     </div>
 
     @if (graphRag()) {
         <app-graph-rag-configuration
-            #ragConfig
             class="dialog__content"
             [graphRag]="graphRag()!"
         />

@@ -28,3 +28,15 @@ export type Rag = {
 export type RagStatus = 'new' | 'processing' | 'completed' | 'warning' | 'failed';
 
 export type RagType = RagValueMap[keyof RagValueMap];
+
+export interface StartIndexingDtoRequest {
+    rag_id: number;
+    rag_type: RagType;
+}
+
+export interface StartIndexingDtoResponse {
+    detail: string;
+    rag_id: number;
+    rag_type: string;
+    collection_id: number;
+}
