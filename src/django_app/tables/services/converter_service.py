@@ -1,4 +1,5 @@
 from typing import Iterable
+from tables.models.webhook_models import NgrokWebhookConfig
 from tables.models.python_models import PythonCodeToolConfig
 from tables.models.crew_models import (
     AgentConfiguredTools,
@@ -576,3 +577,15 @@ class ConverterService(metaclass=SingletonMeta):
             node_name=telegram_trigger_node.node_name,
             field_list=telegram_trigger_node_field_data,
         )
+
+    def convert_ngrok_webhook_config_to_pydantic(
+        self, ngrok_webhook_config: NgrokWebhookConfig
+    ) -> NgrokConfigData:
+        return NgrokConfigData(
+            name=ngrok_webhook_config.name,
+            auth_token=ngrok_webhook_config.auth_token,
+            domain=ngrok_webhook_config.domain,
+            region=ngrok_webhook_config.region,
+        )
+    
+    
