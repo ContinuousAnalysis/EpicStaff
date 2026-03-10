@@ -13,10 +13,6 @@ import {
     generatePortsForNode,
 } from '../core/helpers/helpers';
 import { NodeType } from '../core/enums/node-type';
-import {
-    generateNodeDisplayName,
-    generateMultipleNodeDisplayNames,
-} from '../core/helpers/generate-node-display-name.util';
 
 interface ClipboardData {
     nodes: NodeModel[];
@@ -121,7 +117,6 @@ export class ClipboardService {
         newConnections: ConnectionModel[];
     } {
         if (!this.clipboard) {
-            console.warn('Clipboard is empty, nothing to paste.');
             return { newNodes: [], newConnections: [] };
         }
 
@@ -132,54 +127,17 @@ export class ClipboardService {
         } = this.clipboard;
 
         if (clipboardNodes.length === 0) {
-            console.warn('Clipboard has no nodes.');
             return { newNodes: [], newConnections: [] };
         }
 
         const offsetX = mousePosition.x - boundingBox.minX;
         const offsetY = mousePosition.y - boundingBox.minY;
 
-        // Map old IDs to new IDs for nodes
         const oldToNewIdMap = new Map<string, string>();
 
-        // Generate display names for all nodes at once to ensure unique counts
-        const currentNodes = this.flowService.getFlowState().nodes;
-        const nodesToCreate = clipboardNodes.map((oldNode) => ({
-            type: oldNode.type,
-            data: oldNode.data,
-        }));
+        const allNodes = [...this.flowService.getFlowState().nodes];
 
-        // DEBUG: Log what we're passing to display name generation
-        console.log('=== CLIPBOARD PASTE DEBUG ===');
-        console.log('Nodes to create:', nodesToCreate);
-        console.log(
-            'Current nodes on canvas:',
-            currentNodes.map((n) => ({
-                id: n.id,
-                type: n.type,
-                name: n.node_name,
-            }))
-        );
-        console.log(
-            'Clipboard nodes being pasted:',
-            clipboardNodes.map((n) => ({
-                id: n.id,
-                type: n.type,
-                name: n.node_name,
-            }))
-        );
-
-        const displayNames = generateMultipleNodeDisplayNames(
-            nodesToCreate,
-            currentNodes
-        );
-
-        // DEBUG: Log what we get back
-        console.log('Generated display names:', displayNames);
-        console.log('=== END CLIPBOARD PASTE DEBUG ===');
-
-        // Create new nodes
-        const newNodes: NodeModel[] = clipboardNodes.map((oldNode, index) => {
+        const newNodes: NodeModel[] = clipboardNodes.map((oldNode) => {
             const newNodeId = uuidv4();
             oldToNewIdMap.set(oldNode.id, newNodeId);
 
@@ -188,31 +146,32 @@ export class ClipboardService {
                 oldNode.type
             );
 
-            return {
+            const newName = this.deriveUniqueName(oldNode.node_name, oldNode.type, allNodes);
+
+            const newNode = {
                 ...oldNode,
                 id: newNodeId,
-                backendId: null, // Pasted nodes are new — no backend counterpart yet
+                backendId: null,
                 position: {
                     x: oldNode.position.x + offsetX,
                     y: oldNode.position.y + offsetY,
                 },
                 ports: newPorts,
                 parentId: null,
-                node_name: displayNames[index],
+                node_name: newName,
             };
+
+            allNodes.push(newNode);
+
+            return newNode;
         });
 
-        // Create new connections
         const newConnections = clipboardConnections
             .map((oldConn) => {
                 const newSourceNodeId = oldToNewIdMap.get(oldConn.sourceNodeId);
                 const newTargetNodeId = oldToNewIdMap.get(oldConn.targetNodeId);
 
                 if (!newSourceNodeId || !newTargetNodeId) {
-                    console.warn(
-                        'Skipping connection due to missing new node mapping:',
-                        oldConn
-                    );
                     return null;
                 }
 
@@ -220,10 +179,6 @@ export class ClipboardService {
                 const targetPortParts = oldConn.targetPortId.split('_');
 
                 if (sourcePortParts.length < 2 || targetPortParts.length < 2) {
-                    console.warn(
-                        'Unexpected port ID format in connection:',
-                        oldConn
-                    );
                     return null;
                 }
 
@@ -243,29 +198,21 @@ export class ClipboardService {
 
         const currentFlow = this.flowService.getFlowState();
 
-        // Update the flow with new elements
         this.flowService.setFlow({
             ...currentFlow,
             nodes: [...currentFlow.nodes, ...newNodes],
             connections: [...currentFlow.connections, ...newConnections],
         });
 
-        console.log('=== PASTE COMPLETION DEBUG ===');
-        console.log(
-            'Added new nodes:',
-            newNodes.map((n) => ({ id: n.id, name: n.node_name, type: n.type }))
-        );
-        console.log(
-            'Total nodes in flow after paste:',
-            this.flowService.getFlowState().nodes.length
-        );
-        console.log(
-            'All node names after paste:',
-            this.flowService.getFlowState().nodes.map((n) => n.node_name)
-        );
-        console.log('=== END PASTE COMPLETION DEBUG ===');
-
-        // Return all new elements for selection
         return { newNodes, newConnections };
+    }
+
+    private deriveUniqueName(
+        originalName: string,
+        nodeType: NodeType,
+        allNodes: NodeModel[]
+    ): string {
+        const count = allNodes.filter((n) => n.type === nodeType).length + 1;
+        return `${originalName} (#${count})`;
     }
 }
