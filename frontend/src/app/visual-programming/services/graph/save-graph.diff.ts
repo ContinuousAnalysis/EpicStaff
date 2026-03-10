@@ -349,7 +349,7 @@ export function getGraphDiff(
         'TelegramTriggerNode'
     );
 
-    const conditionalEdgesRaw = diffByKey(
+    const conditionalEdges = diffByKey(
         previous.conditionalEdges,
         current.conditionalEdges,
         n => n.edgeNode.backendId,
@@ -357,13 +357,6 @@ export function getGraphDiff(
         getConditionalEdgeForComparisonFromUI,
         'ConditionalEdge'
     );
-    // Backend requires source to be non-blank — skip create/update for unconnected edge nodes.
-    // Deletions still work because they come from the backend list, not the UI list.
-    const conditionalEdges = {
-        ...conditionalEdgesRaw,
-        toCreate: conditionalEdgesRaw.toCreate.filter(re => !!re.sourceName),
-        toUpdate: conditionalEdgesRaw.toUpdate.filter(({ ui }) => !!ui.sourceName),
-    };
 
     const decisionTableNodes = diffByKey(
         previous.decisionTableNodes,
@@ -508,7 +501,7 @@ export function buildTelegramPayload(n: TelegramTriggerNodeModel, graphId: numbe
 export function buildCondEdgePayload(re: ResolvedConditionalEdge, graphId: number): CreateConditionalEdgeRequest {
     return {
         graph: graphId,
-        source: re.sourceName!,
+        source: re.sourceName ?? '',
         then: re.targetName,
         python_code: re.edgeNode.data.python_code,
         input_map: re.edgeNode.input_map || {},

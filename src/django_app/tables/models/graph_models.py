@@ -177,7 +177,7 @@ class ConditionalEdge(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="conditional_edge_list"
     )
-    source = models.CharField(max_length=255, blank=False)
+    source = models.CharField(max_length=255, blank=True, default="")
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
     then = models.CharField(max_length=255, null=True, default=None)
     input_map = models.JSONField(default=dict)
@@ -185,7 +185,9 @@ class ConditionalEdge(BaseGraphEntity, models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["graph", "source"], name="unique_graph_conditional_edge_source"
+                fields=["graph", "source"],
+                condition=~models.Q(source=""),
+                name="unique_graph_conditional_edge_source",
             )
         ]
 
