@@ -428,7 +428,7 @@ export class GraphUpdateService {
                         python_code: node.data.python_code,
                         input_map: node.input_map || {},
                         output_variable_path: node.output_variable_path,
-                        webhook_trigger_path: node.data.webhook_trigger_path
+                        webhook_trigger: node.data.webhook_trigger,
                     };
                     return this.webhookTriggerService.createWebhookTriggerNode(request);
                 });
@@ -459,6 +459,7 @@ export class GraphUpdateService {
                         node_name: node.node_name,
                         graph: graph.id,
                         telegram_bot_api_key: node.data.telegram_bot_api_key,
+                        webhook_trigger: node.data.webhook_trigger,
                         fields: node.data.fields
                     };
                     return this.telegramTriggerService.createTelegramTriggerNode(request);

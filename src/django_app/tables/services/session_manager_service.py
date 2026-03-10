@@ -1,6 +1,14 @@
-from tables.validators.end_node_validator import EndNodeValidator
-from tables.validators.subgraph_validator import SubGraphValidator
 from tables.exceptions import GraphEntryPointException
+from tables.models import (
+    AudioTranscriptionNode,
+    CrewNode,
+    Edge,
+    FileExtractorNode,
+    Graph,
+    GraphOrganizationUser,
+    PythonNode,
+    Session,
+)
 from tables.models.graph_models import (
     ConditionalEdge,
     DecisionTableNode,
@@ -11,39 +19,29 @@ from tables.models.graph_models import (
     TelegramTriggerNode,
     WebhookTriggerNode,
 )
-
-from utils.singleton_meta import SingletonMeta
-from utils.logger import logger
-from tables.services.converter_service import ConverterService
-from tables.services.redis_service import RedisService
-from tables.validators.file_node_validator import FileNodeValidator
-
 from tables.request_models import (
+    AudioTranscriptionNodeData,
     ConditionalEdgeData,
     CrewNodeData,
     DecisionTableNodeData,
     EdgeData,
+    FileExtractorNodeData,
     GraphData,
     GraphSessionMessageData,
     LLMNodeData,
     PythonNodeData,
-    FileExtractorNodeData,
-    AudioTranscriptionNodeData,
     SessionData,
-    SubGraphNodeData,
     SubGraphData,
+    SubGraphNodeData,
     TelegramTriggerNodeData,
 )
-from tables.models import (
-    CrewNode,
-    Session,
-    Edge,
-    Graph,
-    PythonNode,
-    FileExtractorNode,
-    AudioTranscriptionNode,
-    GraphOrganizationUser,
-)
+from tables.services.converter_service import ConverterService
+from tables.services.redis_service import RedisService
+from tables.validators.end_node_validator import EndNodeValidator
+from tables.validators.file_node_validator import FileNodeValidator
+from tables.validators.subgraph_validator import SubGraphValidator
+from utils.logger import logger
+from utils.singleton_meta import SingletonMeta
 
 
 class SessionManagerService(metaclass=SingletonMeta):
@@ -132,24 +130,33 @@ class SessionManagerService(metaclass=SingletonMeta):
             username=username,
             entrypoint=entrypoint,
         )
-        session_data: SessionData = self.create_session_data(session=session)
-        # TODO: add ping or waiting for crew to accept connections
+        try:
+            session_data: SessionData = self.create_session_data(session=session)
+            # TODO: add ping or waiting for crew to accept connections
 
-        session.graph_schema = session_data.graph.model_dump(mode="json")
-        received_n = self.redis_service.publish_session_data(
-            session_data=session_data,
-        )
-        required_listeners = 2
-        if received_n != required_listeners:
-            logger.error("Data was sent but not received.")
+            session.graph_schema = session_data.graph.model_dump(mode="json")
+            received_n = self.redis_service.publish_session_data(
+                session_data=session_data,
+            )
+            required_listeners = 2
+            if received_n != required_listeners:
+                logger.error("Data was sent but not received.")
+                session.status = Session.SessionStatus.ERROR
+                session.status_data = {
+                    "reason": f"Data was sent and received by ({received_n}) listeners, but ({required_listeners}) required."
+                }
+            logger.info(
+                f"Session data published in Redis for session ID: {session.pk}."
+            )
+
+        except Exception as e:
+            msg = f"Error occured running a session: {e}"
+            logger.exception(msg)
             session.status = Session.SessionStatus.ERROR
-            session.status_data = {
-                "reason": f"Data was sent and received by ({received_n}) listeners, but ({required_listeners}) required."
-            }
-        logger.info(f"Session data published in Redis for session ID: {session.pk}.")
-
-        session.save()
-
+            session.status_data = {"reason": msg}
+            raise e
+        finally:
+            session.save()
         return session.pk
 
     def register_message(self, data: dict, created_at_dt) -> None:
@@ -339,9 +346,9 @@ class SessionManagerService(metaclass=SingletonMeta):
                 self.converter_service.convert_conditional_edge_to_pydantic(item)
             )
 
-        start_edge = Edge.objects.filter(start_key="__start__", graph=graph).first()
-        if start_edge is None:
-            raise GraphEntryPointException()
+        # start_edge = Edge.objects.filter(start_key="__start__", graph=graph).first()
+        # if start_edge is None:
+        #     raise GraphEntryPointException()
 
         decision_table_node_data_list: list[DecisionTableNodeData] = []
         for decision_table_node_list_item in decision_table_node_list:
