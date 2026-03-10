@@ -6,6 +6,7 @@ import {
     ViewContainerRef,
     inject,
     signal,
+    computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { JsonEditorComponent } from '../../../shared/components/json-editor/json-editor.component';
@@ -22,6 +23,14 @@ import {
     findNodeAtOffset,
     Node as JsonNode,
 } from 'jsonc-parser';
+import {
+    validatePersistentVariables,
+    extractPathsFromArray,
+    hasValidationErrors,
+    formatValidationMessages,
+    EMPTY_VALIDATION_RESULT,
+    type PersistentVariablesValidationResult,
+} from '../../services/persistent-variables.validator';
 
 declare const monaco: any;
 
@@ -62,42 +71,22 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                 <div class="autocomplete-hint">
                     <i class="ti ti-bulb"></i>
                     <span>
-                        Place your cursor inside
-                        <code>user</code> or <code>organization</code> arrays
-                        and press <kbd>Ctrl+Space</kbd> to pick variables from
+                        Place your cursor inside <code>user</code> or
+                        <code>organization</code> arrays and press
+                        <kbd>Ctrl+Space</kbd> to pick variables from
                         <code>context</code>.
                     </span>
                 </div>
 
-                @if (pathValidationErrors().length > 0) {
-                    <div class="path-validation-errors">
-                        @for (path of pathValidationErrors(); track path) {
-                            <div class="path-error">
+                @if (pathErrorMessages().length > 0) {
+                    <ul class="path-validation-errors">
+                        @for (message of pathErrorMessages(); track message) {
+                            <li class="path-error">
                                 <i class="ti ti-alert-circle"></i>
-                                <span>Path {{ path }} in persistent_variables does not exist in variables</span>
-                            </div>
+                                <span>{{ message }}</span>
+                            </li>
                         }
-                    </div>
-                }
-                @if (crossArrayDuplicatePaths().length > 0) {
-                    <div class="path-validation-errors">
-                        @for (path of crossArrayDuplicatePaths(); track path) {
-                            <div class="path-error">
-                                <i class="ti ti-alert-circle"></i>
-                                <span>Path {{ path }} cannot be in both user and organization</span>
-                            </div>
-                        }
-                    </div>
-                }
-                @if (withinArrayDuplicatePaths().length > 0) {
-                    <div class="path-validation-errors">
-                        @for (item of withinArrayDuplicatePaths(); track item.path + item.array) {
-                            <div class="path-error">
-                                <i class="ti ti-alert-circle"></i>
-                                <span>Path {{ item.path }} is duplicated in {{ item.array }} array</span>
-                            </div>
-                        }
-                    </div>
+                    </ul>
                 }
                 <div class="json-editor-section">
                     <app-json-editor
@@ -115,7 +104,7 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                 <button class="btn-secondary" (click)="onClose()">Close</button>
                 <button
                     class="btn-primary"
-                    [disabled]="!isJsonValid || pathValidationErrors().length > 0 || crossArrayDuplicatePaths().length > 0 || withinArrayDuplicatePaths().length > 0"
+                    [disabled]="!isJsonValid || hasPathErrors()"
                     (click)="onSave()"
                 >
                     Save
@@ -246,7 +235,7 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
 
             .path-error {
                 display: flex;
-                align-items: flex-start;
+                align-items: center;
                 gap: 0.5rem;
                 color: #f87171;
                 line-height: 1.4;
@@ -326,11 +315,16 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
 export class DomainDialogComponent implements OnDestroy {
     public initialStateJson: string = '{}';
     public isJsonValid: boolean = true;
-    public pathValidationErrors = signal<string[]>([]);
-    public crossArrayDuplicatePaths = signal<string[]>([]);
-    public withinArrayDuplicatePaths = signal<
-        { path: string; array: 'user' | 'organization' }[]
-    >([]);
+    public validationResult = signal<PersistentVariablesValidationResult>(
+        EMPTY_VALIDATION_RESULT
+    );
+
+    public hasPathErrors = computed(() =>
+        hasValidationErrors(this.validationResult())
+    );
+    public pathErrorMessages = computed(() =>
+        formatValidationMessages(this.validationResult())
+    );
 
     private monacoEditor: any = null;
     private overlayService = inject(Overlay);
@@ -387,99 +381,7 @@ export class DomainDialogComponent implements OnDestroy {
     }
 
     private validatePathsInPersistentVariables(json: string): void {
-        const errors: string[] = [];
-        const crossDuplicates: string[] = [];
-        const withinDuplicates: { path: string; array: 'user' | 'organization' }[] = [];
-        try {
-            const parsed = JSON.parse(json);
-            const context = parsed?.variables?.context;
-            const pv = parsed?.persistent_variables;
-            if (!pv || typeof pv !== 'object') {
-                this.pathValidationErrors.set(errors);
-                this.crossArrayDuplicatePaths.set(crossDuplicates);
-                this.withinArrayDuplicatePaths.set(withinDuplicates);
-                return;
-            }
-
-            const userPaths = this.extractPathsFromArray(pv.user);
-            const orgPaths = this.extractPathsFromArray(pv.organization);
-            const userWithinDupes = this.findDuplicatesWithinArray(pv.user);
-            const orgWithinDupes = this.findDuplicatesWithinArray(pv.organization);
-
-            withinDuplicates.push(
-                ...userWithinDupes.map((p) => ({ path: p, array: 'user' as const })),
-                ...orgWithinDupes.map((p) => ({ path: p, array: 'organization' as const }))
-            );
-
-            for (const path of userPaths) {
-                if (orgPaths.has(path)) {
-                    crossDuplicates.push(path);
-                }
-                const pathParts = path.slice('context.'.length).split('.');
-                if (!this.pathExistsInObject(context, pathParts)) {
-                    errors.push(path);
-                }
-            }
-            for (const path of orgPaths) {
-                if (!userPaths.has(path)) {
-                    const pathParts = path.slice('context.'.length).split('.');
-                    if (!this.pathExistsInObject(context, pathParts)) {
-                        errors.push(path);
-                    }
-                }
-            }
-        } catch {
-            // no-op
-        }
-        this.pathValidationErrors.set(errors);
-        this.crossArrayDuplicatePaths.set(crossDuplicates);
-        this.withinArrayDuplicatePaths.set(withinDuplicates);
-    }
-
-    /** Returns paths that appear more than once in the array. */
-    private findDuplicatesWithinArray(arr: unknown): string[] {
-        if (!Array.isArray(arr)) return [];
-        const seen = new Set<string>();
-        const duplicates = new Set<string>();
-        for (const item of arr) {
-            const path = typeof item === 'string' ? item.trim() : null;
-            if (path && path.startsWith('context.')) {
-                if (seen.has(path)) {
-                    duplicates.add(path);
-                } else {
-                    seen.add(path);
-                }
-            }
-        }
-        return Array.from(duplicates);
-    }
-
-    private extractPathsFromArray(arr: unknown): Set<string> {
-        if (!Array.isArray(arr)) return new Set();
-        const set = new Set<string>();
-        for (const item of arr) {
-            const path = typeof item === 'string' ? item.trim() : null;
-            if (path && path.startsWith('context.')) {
-                set.add(path);
-            }
-        }
-        return set;
-    }
-
-    private pathExistsInObject(obj: any, pathParts: string[]): boolean {
-        if (obj === null || obj === undefined) return false;
-        if (pathParts.length === 0) return true;
-        let current = obj;
-        for (const part of pathParts) {
-            if (current === null || current === undefined || typeof current !== 'object') {
-                return false;
-            }
-            if (!Object.prototype.hasOwnProperty.call(current, part)) {
-                return false;
-            }
-            current = current[part];
-        }
-        return true;
+        this.validationResult.set(validatePersistentVariables(json));
     }
 
     public onInitialStateChange(json: string): void {
@@ -492,12 +394,7 @@ export class DomainDialogComponent implements OnDestroy {
     }
 
     public onSave(): void {
-        if (
-            !this.isJsonValid ||
-            this.pathValidationErrors().length > 0 ||
-            this.crossArrayDuplicatePaths().length > 0 ||
-            this.withinArrayDuplicatePaths().length > 0
-        ) {
+        if (!this.isJsonValid || this.hasPathErrors()) {
             return;
         }
 
@@ -707,7 +604,7 @@ export class DomainDialogComponent implements OnDestroy {
             if (!pv || typeof pv !== 'object') return new Set();
             const oppositeKey =
                 this.currentTargetArray === 'user' ? 'organization' : 'user';
-            return this.extractPathsFromArray(
+            return extractPathsFromArray(
                 (pv as Record<string, unknown>)[oppositeKey]
             );
         } catch {
@@ -722,7 +619,7 @@ export class DomainDialogComponent implements OnDestroy {
             if (!parsed) return new Set();
             const pv = parsed['persistent_variables'];
             if (!pv || typeof pv !== 'object') return new Set();
-            return this.extractPathsFromArray(
+            return extractPathsFromArray(
                 (pv as Record<string, unknown>)[this.currentTargetArray]
             );
         } catch {
