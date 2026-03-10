@@ -168,6 +168,7 @@ from tables.serializers.model_serializers import (
 from tables.serializers.serializers import (
     GraphFileUpdateSerializer,
     UploadGraphFileSerializer,
+    BulkExportSerializer,
 )
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeFieldSerializer,
