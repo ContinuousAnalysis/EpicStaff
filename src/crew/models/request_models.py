@@ -1,3 +1,5 @@
+# TODO: remove, all models in src/shared/models
+
 from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Any, List, Literal, Optional, Union
@@ -22,7 +24,6 @@ class LLMConfigData(BaseModel):
     deployment_id: str | None = None
     headers: dict[str, str] | None = None
     extra_headers: dict[str, str] | None = None
-    
 
     model_config = ConfigDict(from_attributes=True)
 

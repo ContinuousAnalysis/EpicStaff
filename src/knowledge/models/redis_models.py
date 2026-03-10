@@ -1,3 +1,5 @@
+# TODO: remove, linked to anything, same models at src/shared/models
+
 from pydantic import BaseModel
 from typing import Annotated, Literal, Union, List
 from pydantic import Field

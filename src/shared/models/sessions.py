@@ -4,11 +4,10 @@ from pydantic import ConfigDict
 from .graph_nodes import GraphData, SubGraphData
 
 
-
 class SessionData(BaseModel):
     id: int
     graph: "GraphData"
-    unique_subgraph_list: list[SubGraphData] = [] 
+    unique_subgraph_list: list[SubGraphData] = []
     initial_state: dict[str, Any] = {}
     output_state: dict[str, Any] = {}
 
@@ -33,3 +32,4 @@ class StopSessionMessage(BaseModel):
 class WebhookEventData(BaseModel):
     path: str
     payload: dict
+    config_id: str | None = None

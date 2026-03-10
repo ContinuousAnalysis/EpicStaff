@@ -1,3 +1,5 @@
+# TODO: remove, linked to anything, same models at src/shared/models
+
 from enum import Enum
 from typing import Annotated, Any, List, Literal, Union
 from pydantic import BaseModel, Field, HttpUrl, model_validator
@@ -21,7 +23,7 @@ class LLMConfigData(BaseModel):
     deployment_id: str | None = None
     headers: dict[str, str] | None = None
     extra_headers: dict[str, str] | None = None
-    
+
 
 class EmbedderConfigData(BaseModel):
     model: str

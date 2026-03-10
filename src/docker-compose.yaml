@@ -138,7 +138,7 @@ services:
       DJANGO_HOST: ${DJANGO_HOST}
       DJANGO_PORT: ${DJANGO_PORT:-8000}
     volumes:
-      - crew_pgdata:${PGDATA}
+      - crew_pgdata:/var/lib/postgresql/data
     networks:
       - backend-network
     healthcheck:
@@ -159,6 +159,7 @@ services:
       - backend-network
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - redis_data:/data
     environment:
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
@@ -218,9 +219,11 @@ services:
     tty: true
     stdin_open: true
     depends_on:
-      crewdb:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      sandbox:
+        condition: service_started
+      crewdb:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -345,6 +348,7 @@ volumes:
     external: true
   media_data:
     external: true
+  redis_data: {}
 
 networks:
   backend-network:

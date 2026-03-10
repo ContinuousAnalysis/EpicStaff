@@ -6,12 +6,13 @@ from .ai_providers import LLMData, EmbedderData
 from .tools import ConfiguredToolData, PythonCodeToolData, BaseToolData
 from .knowledge import RagSearchConfig
 
+
 class AgentData(BaseModel):
     id: int
     role: str
     goal: str
     backstory: str
-    tool_id_list: list[int] = []   # <?> only in realtime
+    tool_id_list: list[int] = []  # <?> only in realtime
     tool_unique_name_list: list[str] = []  # <?> not used in realtime
     python_code_tool_id_list: list[int] = []  # <?> only in realtime
     max_iter: int
@@ -27,7 +28,7 @@ class AgentData(BaseModel):
     function_calling_llm: LLMData | None
     knowledge_collection_id: int | None
     # <?> not used in realtime
-    rag_type_id: str | None = None   
+    rag_type_id: str | None = None
     rag_search_config: RagSearchConfig | None = None
 
     model_config = ConfigDict(from_attributes=True)

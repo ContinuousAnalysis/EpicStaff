@@ -1,3 +1,5 @@
+# TODO: remove, linked to anything, same models at src/shared/models
+
 from typing import Any
 from pydantic import BaseModel
 

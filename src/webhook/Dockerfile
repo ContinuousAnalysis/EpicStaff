@@ -13,9 +13,10 @@ RUN apt-get update && \
 RUN pip install poetry
 
 # Set Python env variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV POETRY_NO_INTERACTION=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \ 
+    POETRY_NO_INTERACTION=1 \
+    PYTHONPATH=/app
 
 # Install other poetry dependencies
 COPY ./webhook/poetry.lock ./webhook/pyproject.toml .

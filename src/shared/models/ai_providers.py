@@ -1,6 +1,7 @@
 from pydantic import BaseModel
-from typing import Any
+from typing import Any, Literal
 from pydantic import ConfigDict, HttpUrl
+
 
 class LLMConfigData(BaseModel):
     model: str
@@ -20,7 +21,7 @@ class LLMConfigData(BaseModel):
     deployment_id: str | None = None
     headers: dict[str, str] | None = None
     extra_headers: dict[str, str] | None = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -45,3 +46,31 @@ class EmbedderData(BaseModel):
     config: EmbedderConfigData
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class BaseTunnelConfigData(BaseModel):
+    name: str
+
+    @classmethod
+    def _tunnel_prefix(cls):
+        return "base"
+
+    @property
+    def unique_id(self):
+        return f"{self.__class__._tunnel_prefix()}:{self.name}"
+
+
+class NgrokConfigData(BaseTunnelConfigData):
+    auth_token: str
+    domain: str | None = None
+    region: Literal["us", "eu", "ap"] | None = None
+
+    @classmethod
+    def _tunnel_prefix(cls) -> str:
+        return "ngrok"
+
+
+class WebhookConfigData(BaseModel):
+    ngrok_configs: list[NgrokConfigData]
+    # other configs
+    ...
