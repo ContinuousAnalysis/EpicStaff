@@ -92,6 +92,7 @@ from tables.models.tag_models import (
     LLMModelTag,
 )
 from tables.models.vector_models import MemoryDatabase
+from tables.models.labels import Label
 from tables.validators.tool_config_validator import ToolConfigValidator, eval_any
 from tables.models import (
     AgentSessionMessage,
@@ -1435,6 +1436,9 @@ class GraphTagSerializer(serializers.ModelSerializer):
 
 class GraphLightSerializer(serializers.ModelSerializer):
     tags = GraphTagSerializer(many=True, read_only=True)
+    label_ids = serializers.PrimaryKeyRelatedField(
+        many=True, read_only=True, source="labels"
+    )
 
     class Meta:
         model = Graph
@@ -1443,6 +1447,7 @@ class GraphLightSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "tags",
+            "label_ids",
         ]
 
 
@@ -1618,6 +1623,9 @@ class GraphSerializer(serializers.ModelSerializer):
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
     )
+    label_ids = serializers.PrimaryKeyRelatedField(
+        many=True, source="labels", queryset=Label.objects.all(), required=False
+    )
 
     class Meta:
         model = Graph
@@ -1641,7 +1649,21 @@ class GraphSerializer(serializers.ModelSerializer):
             "time_to_live",
             "persistent_variables",
             "telegram_trigger_node_list",
+            "label_ids",
         ]
+
+    def create(self, validated_data):
+        labels = validated_data.pop("labels", [])
+        instance = super().create(validated_data)
+        instance.labels.set(labels)
+        return instance
+
+    def update(self, instance, validated_data):
+        labels = validated_data.pop("labels", None)
+        instance = super().update(instance, validated_data)
+        if labels is not None:
+            instance.labels.set(labels)
+        return instance
 
 
 class GraphFileReadSerializer(serializers.ModelSerializer):
@@ -1731,3 +1753,32 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
+
+
+class LabelSerializer(serializers.ModelSerializer):
+    full_path = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Label
+        fields = ["id", "name", "parent", "created_at", "full_path"]
+        read_only_fields = ["id", "created_at", "full_path"]
+        extra_kwargs = {
+            "name": {"validators": []},
+        }
+
+    def validate(self, attrs):
+        name = attrs.get("name")
+        parent = attrs.get("parent")
+
+        if parent is None:
+            if Label.objects.filter(name=name, parent__isnull=True).exists():
+                raise serializers.ValidationError(
+                    {"name": "Top-level label with this name already exists."}
+                )
+        else:
+            if Label.objects.filter(name=name, parent=parent).exists():
+                raise serializers.ValidationError(
+                    {"name": "Label with this name already exists under this parent."}
+                )
+
+        return attrs
