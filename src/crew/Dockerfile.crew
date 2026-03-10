@@ -11,14 +11,8 @@ ENV POETRY_VERSION=1.8.3 \
     POETRY_NO_INTERACTION=1 \
     PYTHONPATH=/app
 
-# Update system and clean garbage
-RUN apt-get update && \
-    apt-get install -y curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 # Install dependencies for Poetry
-RUN pip install poetry
+RUN pip install poetry==$POETRY_VERSION
 
 # Add Poetry to the PATH
 ENV PATH="/root/.local/bin:$PATH"
@@ -40,10 +34,8 @@ COPY ./crew .
 COPY ./shared /app/src/shared
 
 # If dotdict is a poetry group and depends on src/shared presence, install it now from project root
-RUN poetry install --no-root --only dotdict -v
-
-# Cleanup
-RUN rm -rf /root/.cache
+RUN poetry install --no-root --only dotdict -v && \
+    rm -rf /root/.cache
 
 # Run entrypoint (code is in /src)
 CMD ["poetry", "run", "python3", "/app/src/crew/main.py"]

@@ -4,11 +4,6 @@ FROM python:3.12.10-slim
 # Set work dir
 WORKDIR /app/src/manager
 
-# Update system and clean garbage
-RUN apt-get update && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 # Install poetry package
 RUN pip install poetry
 # RUN pip install --upgrade pip setuptools wheel

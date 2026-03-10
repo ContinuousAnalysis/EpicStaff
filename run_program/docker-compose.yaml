@@ -29,9 +29,6 @@ services:
 
       - GUNICORN_WORKERS=1
       - GUNICORN_THREADS=4
-    volumes:
-      # TODO: remove, crew_config is deprecated
-      - crew_config:/home/user/root/app/env_config
 
     networks:
       - backend-network
@@ -182,9 +179,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock 
       - /usr/bin/docker:/usr/bin/docker
-
-      # TODO: remove, crew_config is deprecated
-      - crew_config:/home/user/root/app/env_config/
     networks:
       - backend-network
     tty: true
@@ -259,9 +253,6 @@ volumes:
   sandbox_executions:
     external: true
   crew_pgdata:
-    external: true
-  # TODO: remove, crew_config is deprecated
-  crew_config:
     external: true
 
 networks:

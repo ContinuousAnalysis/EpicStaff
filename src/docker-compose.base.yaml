@@ -38,8 +38,6 @@ services:
       DJANGO_HOST: ${DJANGO_HOST:-localhost}
       DJANGO_PORT: ${DJANGO_PORT:-8000}
     volumes:
-      - ./django_app:/app/src/django_app:cached
-      - ./shared:/app/src/shared:cached
       - media_data:/app/src/django_app/media
     networks:
       - backend-network
@@ -209,13 +207,6 @@ services:
     volumes:
       - ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH}
       - ${DOCKER_BIN_PATH}:${DOCKER_BIN_PATH}
-      - ./crew/callbacks:/app/src/crew/callbacks:cached
-      - ./crew/config:/app/src/crew/config:cached
-
-      - ./crew/models:/app/src/crew/models:cached
-      - ./crew/config:/app/src/crew/config:cached
-      - ./crew/services:/app/src/crew/services:cached
-      - ./crew/utils:/app/src/crew/utils:cached
     networks:
       - backend-network
     tty: true

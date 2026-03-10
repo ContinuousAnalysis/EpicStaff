@@ -4,11 +4,6 @@ FROM python:3.12-slim
 # Set work dir
 WORKDIR /app/src/webhook
 
-# Update system and clean garbage
-RUN apt-get update && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 # Install poetry package
 RUN pip install poetry
 
