@@ -1,33 +1,35 @@
 import json
 import os
 import time
-from typing import Type
-import redis
 from collections import defaultdict, deque
-from django.db import transaction, IntegrityError, models
-from tables.services.telegram_trigger_service import TelegramTriggerService
-from tables.services.webhook_trigger_service import WebhookTriggerService
-from tables.models import GraphSessionMessage
-from tables.models import PythonCodeResult
-from tables.models import GraphOrganization
-from tables.request_models import CodeResultData, GraphSessionMessageData
-from tables.request_models import (
-    WebhookEventData,
-)
-from tables.models import Session
+from typing import Type
+
+import redis
+from django.db import IntegrityError, models, transaction
 from loguru import logger
 
-
-SESSION_STATUS_CHANNEL = os.environ.get(
-    "SESSION_STATUS_CHANNEL", "sessions:session_status"
+from django_app.settings import (
+    CODE_RESULT_CHANNEL,
+    GRAPH_MESSAGE_UPDATE_CHANNEL,
+    GRAPH_MESSAGES_CHANNEL,
+    SESSION_STATUS_CHANNEL,
+    TELEGRAM_TRIGGER_PREFIX,
+    WEBHOOK_MESSAGE_CHANNEL,
+    REQUEST_WEBHOOK_UPDATE_CHANNEL,
 )
-CODE_RESULT_CHANNEL = os.environ.get("CODE_RESULT_CHANNEL", "code_results")
-GRAPH_MESSAGES_CHANNEL = os.environ.get("GRAPH_MESSAGES_CHANNEL", "graph:messages")
-GRAPH_MESSAGE_UPDATE_CHANNEL = os.environ.get(
-    "GRAPH_MESSAGE_UPDATE_CHANNEL", "graph:message:update"
+from tables.models import (
+    GraphOrganization,
+    GraphSessionMessage,
+    PythonCodeResult,
+    Session,
 )
-WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
-TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
+from tables.request_models import (
+    CodeResultData,
+    GraphSessionMessageData,
+    WebhookEventData,
+)
+from tables.services.telegram_trigger_service import TelegramTriggerService
+from tables.services.webhook_trigger_service import WebhookTriggerService
 
 
 class RedisPubSub:
@@ -70,7 +72,7 @@ class RedisPubSub:
                     Session.SessionStatus.ERROR,
                 ]:
                     logger.warning(
-                        f'Unable change status from {session.status} to {data["status"]}'
+                        f"Unable change status from {session.status} to {data['status']}"
                     )
                 else:
                     status_data = data.get("status_data", {})
@@ -101,13 +103,27 @@ class RedisPubSub:
                 TelegramTriggerService().handle_telegram_trigger(
                     url_path=data.path[len(TELEGRAM_TRIGGER_PREFIX) : -1],
                     payload=data.payload,
+                    config_id=data.config_id,
                 )
             else:
                 WebhookTriggerService().handle_webhook_trigger(
-                    path=data.path, payload=data.payload
+                    path=data.path,
+                    payload=data.payload,
+                    config_id=data.config_id,
                 )
         except Exception as e:
             logger.error(f"Error handling webhook_events_handler message: {e}")
+
+    def request_webhook_update_handler(self, message: dict):
+        try:
+            logger.debug(f"Received request to update webhook")
+            registered = WebhookTriggerService().register_webhooks()
+            if not registered:
+                raise ValueError("0 services listened for registration")
+        except Exception as e:
+            logger.error(
+                f"Error updating webhook with current webhook configurations {e}"
+            )
 
     def _save_organization_variables(self, session: Session, data: dict):
         """
@@ -255,6 +271,9 @@ class RedisPubSub:
         self.set_handler(SESSION_STATUS_CHANNEL, self.session_status_handler)
         self.set_handler(CODE_RESULT_CHANNEL, self.code_results_handler)
         self.set_handler(WEBHOOK_MESSAGE_CHANNEL, self.webhook_events_handler)
+        self.set_handler(
+            REQUEST_WEBHOOK_UPDATE_CHANNEL, self.request_webhook_update_handler
+        )
         self.subscribe_to_channels()
 
         while True:

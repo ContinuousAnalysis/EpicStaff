@@ -1,6 +1,8 @@
 from typing import Literal
 from itertools import chain
 
+from loguru import logger
+
 from tables.serializers.base_serializer import BaseGraphEntityMixin
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
@@ -9,7 +11,7 @@ from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
-from tables.models.webhook_models import WebhookTrigger
+from tables.models.webhook_models import WebhookTrigger, NgrokWebhookConfig
 from tables.models.graph_models import WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
@@ -68,6 +70,7 @@ from tables.models.graph_models import (
     OrganizationUser,
     GraphOrganization,
     GraphOrganizationUser,
+    WebhookTriggerNode,
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -107,7 +110,7 @@ from tables.serializers.naive_rag_serializers import (
     RagInputSerializer,
     NestedSearchConfigSerializer,
 )
-
+from tables.serializers.base_serializers import WebhookTriggerNestedSerializer
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
 
@@ -1504,39 +1507,66 @@ class DecisionTableNodeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class WebhookTriggerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WebhookTrigger
+        fields = "__all__"
+
+
+class NgrokWebhookConfigModelSerializer(serializers.ModelSerializer):
+    webhook_full_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = NgrokWebhookConfig
+        fields = [
+            "id",
+            "name",
+            "auth_token",
+            "domain",
+            "region",
+            "webhook_full_url",
+        ]
+
+    def get_webhook_full_url(self, instance: NgrokWebhookConfig):
+        from tables.services.webhook_trigger_service import WebhookTriggerService
+
+        try:
+            return WebhookTriggerService().get_tunnel_url(ngrok_webhook_config=instance)
+        except Exception as e:
+            logger.error(f"Failed to read tunnel URL for '{instance.name}': {e}")
+        return None
+
+
 class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
-    webhook_trigger_path = serializers.CharField(required=False, allow_blank=True)
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data["webhook_trigger_path"] = (
-            instance.webhook_trigger.path if instance.webhook_trigger else None
-        )
-        return data
+    webhook_trigger = WebhookTriggerNestedSerializer(required=False, allow_null=True)
 
     class Meta:
         model = WebhookTriggerNode
-        exclude = ["webhook_trigger"]
+        fields = ["id", "node_name", "graph", "python_code", "webhook_trigger"]
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
+        webhook_trigger_data = validated_data.pop("webhook_trigger", None)
+
         python_code = PythonCode.objects.create(**python_code_data)
 
-        webhook_trigger_path = validated_data.pop("webhook_trigger_path", "").strip()
-        if not webhook_trigger_path:
-            webhook_trigger_path = "default"
+        webhook_trigger_instance = None
+        if webhook_trigger_data:
+            path = webhook_trigger_data.get("path")
+            ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
-        webhook_trigger, _ = WebhookTrigger.objects.get_or_create(
-            path=webhook_trigger_path
-        )
+            webhook_trigger_instance, created = WebhookTrigger.objects.get_or_create(
+                path=path, ngrok_webhook_config=ngrok_conf
+            )
 
-        webhook_trigger_node = WebhookTriggerNode.objects.create(
+        node = WebhookTriggerNode.objects.create(
             python_code=python_code,
-            webhook_trigger=webhook_trigger,
+            webhook_trigger=webhook_trigger_instance,
             **validated_data,
         )
-        return webhook_trigger_node
+        return node
 
     def update(self, instance, validated_data):
         python_code_data = validated_data.pop("python_code", None)
@@ -1546,27 +1576,27 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
                 setattr(python_code, attr, value)
             python_code.save()
 
-        webhook_trigger_path = validated_data.pop("webhook_trigger_path", None)
-        if webhook_trigger_path is not None:
-            webhook_trigger_path = webhook_trigger_path.strip() or "default"
-            webhook_trigger, _ = WebhookTrigger.objects.get_or_create(
-                path=webhook_trigger_path
-            )
-            instance.webhook_trigger = webhook_trigger
+        if "webhook_trigger" in validated_data:
+            webhook_trigger_data = validated_data.pop("webhook_trigger")
+
+            if webhook_trigger_data:
+                path = webhook_trigger_data.get("path")
+                ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
+
+                webhook_trigger_instance, created = (
+                    WebhookTrigger.objects.get_or_create(
+                        path=path, ngrok_webhook_config=ngrok_conf
+                    )
+                )
+                instance.webhook_trigger = webhook_trigger_instance
+            else:
+                instance.webhook_trigger = None
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
         instance.save()
         return instance
-
-    def partial_update(self, instance, validated_data):
-        return self.update(instance, validated_data)
-
-
-class WebhookTriggerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = WebhookTrigger
-        fields = "__all__"
 
 
 class GraphSerializer(serializers.ModelSerializer):
