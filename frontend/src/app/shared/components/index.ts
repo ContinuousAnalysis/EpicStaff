@@ -35,6 +35,8 @@ export * from './form-field-label/form-field-label.component';
 export * from './slider-with-stepper/slider-with-stepper.component';
 export * from './number-stepper/number-stepper.component';
 export * from './tooltip/tooltip.component';
+export * from './textarea/textarea.component';
+export * from './key-value-list/key-value-list.component';
 export * from './radio-button/radio-button.component';
 export * from './expand-panel/expand-panel.component';
 export * from './listbox/listbox.component';

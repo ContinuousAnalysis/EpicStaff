@@ -1,73 +1,73 @@
 <section class="llm-library">
-  <header class="llm-library__header">
-    <div class="llm-library__header-left">
-      <h3 class="llm-library__title">LLM Library</h3>
-      <p class="llm-library__subtitle">
-        Configure large language models for text generation and AI assistants.
-      </p>
-    </div>
+    <header class="llm-library__header">
+        <div class="llm-library__header-left">
+            <h3 class="llm-library__title">LLM Library</h3>
+            <p class="llm-library__subtitle">
+                Configure large language models for text generation and AI assistants.
+            </p>
+        </div>
 
-    <div class="llm-library__header-right">
-      <div class="llm-library__search">
-        <i class="ti ti-search llm-library__search-icon" aria-hidden="true"></i>
-        <input
-          type="text"
-          class="llm-library__search-input"
-          placeholder="Search providers..."
-          [value]="searchQuery()"
-          (input)="onSearchChange($any($event.target).value)"
-        />
-      </div>
+        <div class="llm-library__header-right">
+            <div class="llm-library__search">
+                <i class="ti ti-search llm-library__search-icon" aria-hidden="true"></i>
+                <input
+                    type="text"
+                    class="llm-library__search-input"
+                    placeholder="Search providers..."
+                    [value]="searchQuery()"
+                    (input)="onSearchChange($any($event.target).value)"
+                />
+            </div>
 
-      <div class="llm-library__filter">
-        <select
-          class="llm-library__filter-select"
-          [value]="selectedCapability()"
-          (change)="onCapabilityChange($any($event.target).value)"
-        >
-          <option value="all">All Capabilities</option>
-          @for (cap of capabilities; track cap) {
-            @if (cap !== 'All Capabilities') {
-              <option [value]="cap">{{ cap }}</option>
-            }
-          }
-        </select>
-        <i class="ti ti-chevron-down llm-library__filter-chevron" aria-hidden="true"></i>
-      </div>
+            <div class="llm-library__filter">
+                <select
+                    class="llm-library__filter-select"
+                    [value]="selectedCapability()"
+                    (change)="onCapabilityChange($any($event.target).value)"
+                >
+                    <option value="all">All Capabilities</option>
+                    @for (cap of capabilities; track cap) {
+                        @if (cap !== 'All Capabilities') {
+                            <option [value]="cap">{{ cap }}</option>
+                        }
+                    }
+                </select>
+                <i class="ti ti-chevron-down llm-library__filter-chevron" aria-hidden="true"></i>
+            </div>
 
-      <button
-        type="button"
-        class="llm-library__add-btn"
-        (click)="onAddModel()"
-      >
-        <i class="ti ti-plus" aria-hidden="true"></i>
-        Add Model
-      </button>
-    </div>
-  </header>
+            <button
+                type="button"
+                class="llm-library__add-btn"
+                (click)="onAddModel()"
+            >
+                <i class="ti ti-plus" aria-hidden="true"></i>
+                Add Model
+            </button>
+        </div>
+    </header>
 
-  @for (group of filteredGroups; track group.id) {
-    <div class="llm-library__provider-group">
-      <div class="llm-library__provider-header">
-        <app-icon
-          [icon]="group.providerIconPath"
-          [size]="'22px'"
-          [ariaLabel]="group.providerName"
-        ></app-icon>
-        <span class="llm-library__provider-name">{{ group.providerName }}</span>
-      </div>
+    @for (group of filteredGroups; track group.id) {
+        <div class="llm-library__provider-group">
+            <div class="llm-library__provider-header">
+                <app-icon
+                    [icon]="group.providerIconPath"
+                    [size]="'22px'"
+                    [ariaLabel]="group.providerName"
+                ></app-icon>
+                <span class="llm-library__provider-name">{{ group.providerName }}</span>
+            </div>
 
-      <div class="llm-library__grid">
-        @for (model of group.models; track model.id) {
-          <app-llm-library-card
-            [model]="model"
-            (historyClick)="onHistory($event)"
-            (editClick)="onEdit($event)"
-            (deleteClick)="onDelete($event)"
-          ></app-llm-library-card>
-        }
-      </div>
-    </div>
-  }
+            <div class="llm-library__grid">
+                @for (model of group.models; track model.id) {
+                    <app-llm-library-card
+                        [model]="model"
+                        (historyClick)="onHistory($event)"
+                        (editClick)="onEdit($event)"
+                        (deleteClick)="onDelete($event)"
+                    ></app-llm-library-card>
+                }
+            </div>
+        </div>
+    }
 </section>
 

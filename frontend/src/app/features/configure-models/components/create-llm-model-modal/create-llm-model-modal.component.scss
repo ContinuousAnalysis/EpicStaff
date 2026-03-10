@@ -1,8 +1,7 @@
 .create-model {
     display: flex;
     flex-direction: column;
-    width: 30rem;
-    max-width: 92vw;
+    width: 100%;
     max-height: 85vh;
     background: var(--color-background-body, #212325);
     border: 1px solid var(--color-ks-line, #2b2d30);
@@ -54,15 +53,6 @@
         justify-content: flex-start;
         gap: 0.75rem;
         margin-bottom: 0;
-    }
-
-    &__label {
-        font-size: 0.875rem;
-        color: #acacac;
-    }
-
-    &__label-required {
-        color: #f45b69;
     }
 
     &__provider {

@@ -9,36 +9,35 @@ import { QuickstartSectionComponent } from '../quickstart-section/quickstart-sec
 import { LlmLibrarySectionComponent } from '../llm-library-section/llm-library-section.component';
 
 @Component({
-  selector: 'app-configure-models-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    CloseIconButtonComponent,
-    DefaultLlmsSectionComponent,
-    QuickstartSectionComponent,
-    LlmLibrarySectionComponent,
-  ],
-  templateUrl: './configure-models-dialog.component.html',
-  styleUrls: ['./configure-models-dialog.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-configure-models-dialog',
+    imports: [
+        CommonModule,
+        CloseIconButtonComponent,
+        DefaultLlmsSectionComponent,
+        QuickstartSectionComponent,
+        LlmLibrarySectionComponent,
+    ],
+    templateUrl: './configure-models-dialog.component.html',
+    styleUrls: ['./configure-models-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfigureModelsDialogComponent {
-  private readonly dialogRef: DialogRef<void> = inject(DialogRef<void>);
+    private readonly dialogRef: DialogRef<void> = inject(DialogRef<void>);
 
-  public readonly tabIds = ConfigureModelsTabId;
-  public readonly tabs = CONFIGURE_MODELS_TABS;
+    public readonly tabIds = ConfigureModelsTabId;
+    public readonly tabs = CONFIGURE_MODELS_TABS;
 
-  public readonly activeTabId = signal<ConfigureModelsTabId>(
-    ConfigureModelsTabId.QUICKSTART
-  );
+    public readonly activeTabId = signal<ConfigureModelsTabId>(
+        ConfigureModelsTabId.QUICKSTART
+    );
 
-  public selectTab(tabId: ConfigureModelsTabId): void {
-    this.activeTabId.set(tabId);
-  }
+    public selectTab(tabId: ConfigureModelsTabId): void {
+        this.activeTabId.set(tabId);
+    }
 
-  public close(): void {
-    this.dialogRef.close();
-  }
+    public close(): void {
+        this.dialogRef.close();
+    }
 }
 
 

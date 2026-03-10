@@ -20,6 +20,12 @@
         @if (loading()) {
             <div class="selector__spinner" [ngClass]="'selector__spinner--' + mod()"></div>
         } @else {
+            @if (selectedItem()?.icon) {
+                <app-icon
+                    [icon]="selectedItem()!.icon!"
+                    [size]="'18px'"
+                ></app-icon>
+            }
             {{ selectedItem() ? selectedItem()!.name : placeholder() }}
 
             <svg
@@ -43,6 +49,12 @@
                 [ngClass]="'selector__option--' + mod()"
                 (click)="select(item)"
             >
+                @if (item.icon) {
+                    <app-icon
+                        [icon]="item.icon"
+                        [size]="'18px'"
+                    ></app-icon>
+                }
                 {{ item.name }}
             </div>
         }

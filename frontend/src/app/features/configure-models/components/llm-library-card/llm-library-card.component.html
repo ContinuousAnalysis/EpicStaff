@@ -1,58 +1,58 @@
 <article class="llm-card">
-  <div class="llm-card__top">
-    <span class="llm-card__creator">{{ model().createdBy }}</span>
-    <div class="llm-card__actions">
-      <button
-        type="button"
-        class="llm-card__action"
-        title="History"
-        (click)="onHistory()"
-      >
-        <i class="ti ti-history" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="llm-card__action"
-        title="Edit"
-        (click)="onEdit()"
-      >
-        <i class="ti ti-pencil" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="llm-card__action llm-card__action--delete"
-        title="Delete"
-        (click)="onDelete()"
-      >
-        <i class="ti ti-x" aria-hidden="true"></i>
-      </button>
+    <div class="llm-card__top">
+        <span class="llm-card__creator">{{ model().createdBy }}</span>
+        <div class="llm-card__actions">
+            <button
+                type="button"
+                class="llm-card__action"
+                title="History"
+                (click)="onHistory()"
+            >
+                <i class="ti ti-history" aria-hidden="true"></i>
+            </button>
+            <button
+                type="button"
+                class="llm-card__action"
+                title="Edit"
+                (click)="onEdit()"
+            >
+                <i class="ti ti-pencil" aria-hidden="true"></i>
+            </button>
+            <button
+                type="button"
+                class="llm-card__action llm-card__action--delete"
+                title="Delete"
+                (click)="onDelete()"
+            >
+                <i class="ti ti-x" aria-hidden="true"></i>
+            </button>
+        </div>
     </div>
-  </div>
 
-  <div class="llm-card__name">{{ model().name }}</div>
+    <div class="llm-card__name">{{ model().name }}</div>
 
-  @if (model().tags.length > 0) {
-    <div class="llm-card__tags">
-      @for (tag of model().tags; track tag) {
-        <span class="llm-card__tag">{{ tag }}</span>
-      }
-    </div>
-  }
+    @if (model().tags.length > 0) {
+        <div class="llm-card__tags">
+            @for (tag of model().tags; track tag) {
+                <span class="llm-card__tag">{{ tag }}</span>
+            }
+        </div>
+    }
 
-  <div class="llm-card__bottom">
-    <div class="llm-card__temp">
-      <i class="ti ti-thermometer" aria-hidden="true"></i>
-      {{ model().temperature }}°
+    <div class="llm-card__bottom">
+        <div class="llm-card__temp">
+            <i class="ti ti-thermometer" aria-hidden="true"></i>
+            {{ model().temperature }}°
+        </div>
+        <div
+            class="llm-card__usage"
+            [class.llm-card__usage--active]="isUsed"
+        >
+            {{ usageLabel }}
+            @if (isUsed) {
+                <span class="llm-card__usage-arrow">→</span>
+            }
+        </div>
     </div>
-    <div
-      class="llm-card__usage"
-      [class.llm-card__usage--active]="isUsed"
-    >
-      {{ usageLabel }}
-      @if (isUsed) {
-        <span class="llm-card__usage-arrow">→</span>
-      }
-    </div>
-  </div>
 </article>
 

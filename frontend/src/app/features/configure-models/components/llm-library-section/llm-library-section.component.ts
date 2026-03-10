@@ -1,81 +1,106 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { Dialog } from "@angular/cdk/dialog";
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from '@angular/forms';
+import { ConfirmationDialogData, ConfirmationDialogService } from "@shared/components";
 import { LLM_LIBRARY_MOCK_DATA } from '../../constants/llm-library-mock-data.constant';
+import { LlmLibraryModel } from "../../interfaces/llm-library-model.interface";
 import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
 import { LlmLibraryCardComponent } from '../llm-library-card/llm-library-card.component';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppIconComponent } from '@shared/components';
+import { LlmModelConfigDialogComponent } from "../llm-model-config-dialog/llm-model-config-dialog.component";
 
 @Component({
-  selector: 'app-llm-library-section',
-  standalone: true,
-  imports: [CommonModule, FormsModule, LlmLibraryCardComponent, AppIconComponent],
-  templateUrl: './llm-library-section.component.html',
-  styleUrls: ['./llm-library-section.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-llm-library-section',
+    standalone: true,
+    imports: [CommonModule, FormsModule, LlmLibraryCardComponent, AppIconComponent],
+    templateUrl: './llm-library-section.component.html',
+    styleUrls: ['./llm-library-section.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LlmLibrarySectionComponent {
-  public readonly providerGroups: LlmLibraryProviderGroup[] = LLM_LIBRARY_MOCK_DATA;
+    public readonly providerGroups: LlmLibraryProviderGroup[] = LLM_LIBRARY_MOCK_DATA;
 
-  public readonly searchQuery = signal('');
-  public readonly selectedCapability = signal('all');
+    private readonly confirmationDialogService = inject(ConfirmationDialogService);
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly dialog = inject(Dialog);
 
-  public readonly capabilities: string[] = [
-    'All Capabilities',
-    'Embedding',
-    'Realtime',
-    'Voice',
-    'Memory',
-    'ToolsEmbedding',
-    'AgentFunctionCalling',
-  ];
+    public readonly searchQuery = signal('');
+    public readonly selectedCapability = signal('all');
 
-  public get filteredGroups(): LlmLibraryProviderGroup[] {
-    const query = this.searchQuery().toLowerCase();
-    const cap = this.selectedCapability();
+    public readonly capabilities: string[] = [
+        'All Capabilities',
+        'Embedding',
+        'Realtime',
+        'Voice',
+        'Memory',
+        'ToolsEmbedding',
+        'AgentFunctionCalling',
+    ];
 
-    return this.providerGroups
-      .map((group) => {
-        const filteredModels = group.models.filter((model) => {
-          const matchesSearch =
-            !query ||
-            model.name.toLowerCase().includes(query) ||
-            group.providerName.toLowerCase().includes(query);
+    public get filteredGroups(): LlmLibraryProviderGroup[] {
+        const query = this.searchQuery().toLowerCase();
+        const cap = this.selectedCapability();
 
-          const matchesCap =
-            cap === 'all' ||
-            model.tags.some((t) => t.toLowerCase().includes(cap.toLowerCase()));
+        return this.providerGroups
+            .map((group) => {
+                const filteredModels = group.models.filter((model) => {
+                    const matchesSearch =
+                        !query ||
+                        model.name.toLowerCase().includes(query) ||
+                        group.providerName.toLowerCase().includes(query);
 
-          return matchesSearch && matchesCap;
-        });
+                    const matchesCap =
+                        cap === 'all' ||
+                        model.tags.some((t) => t.toLowerCase().includes(cap.toLowerCase()));
 
-        return { ...group, models: filteredModels };
-      })
-      .filter((group) => group.models.length > 0);
-  }
+                    return matchesSearch && matchesCap;
+                });
 
-  public onSearchChange(value: string): void {
-    this.searchQuery.set(value);
-  }
+                return { ...group, models: filteredModels };
+            })
+            .filter((group) => group.models.length > 0);
+    }
 
-  public onCapabilityChange(value: string): void {
-    this.selectedCapability.set(value);
-  }
+    public onSearchChange(value: string): void {
+        this.searchQuery.set(value);
+    }
 
-  public onAddModel(): void {
-    console.log('[LLM Library] Add model');
-  }
+    public onCapabilityChange(value: string): void {
+        this.selectedCapability.set(value);
+    }
 
-  public onHistory(modelId: string): void {
-    console.log('[LLM Library] History:', modelId);
-  }
+    public onAddModel(): void {
+        this.dialog.open(LlmModelConfigDialogComponent, {
+            height: '90vh',
+            width: '600px',
+        })
+    }
 
-  public onEdit(modelId: string): void {
-    console.log('[LLM Library] Edit:', modelId);
-  }
+    public onHistory(modelId: string): void {
+        console.log('[LLM Library] History:', modelId);
+    }
 
-  public onDelete(modelId: string): void {
-    console.log('[LLM Library] Delete:', modelId);
-  }
+    public onEdit(modelId: string): void {
+        console.log('[LLM Library] Edit:', modelId);
+    }
+
+    public onDelete(model: LlmLibraryModel): void {
+        const opts: ConfirmationDialogData = {
+            title: 'Delete the model?',
+            message: `Are you sure you want to delete the ${model.name} model? This will delete it in all agents, tools and flows.`,
+            type: 'danger',
+            cautionText: 'this model is used in 2 agents'
+        };
+
+        this.confirmationDialogService.confirm(opts)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((result) => {
+                if (result === true) {
+                    console.log('[LLM Library] Delete:', model);
+                }
+            })
+    }
 }
 

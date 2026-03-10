@@ -12,12 +12,12 @@ import { FormsModule } from '@angular/forms';
 import { Dialog, DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
+import { AppIconComponent } from '@shared/components';
 import { LLM_Provider } from '../../../models/llm-provider.model';
 import { LLM_Model } from '../../../models/llms/LLM.model';
 import { LLM_Models_Service } from '../../../services/llms/llm-models.service';
 import { getProviderIconPath } from '../../../utils/get-provider-icon';
-import { CreateLlmModelModalComponent } from '../create-llm-model-modal/create-llm-model-modal.component';
+import { CreateLlmModelModalComponent } from '../../../../configure-models/components/create-llm-model-modal/create-llm-model-modal.component';
 
 export interface AllModelsDialogData {
     provider: LLM_Provider;
@@ -83,10 +83,10 @@ export class AllModelsModalComponent implements OnInit {
 
     toggleVisibility(model: LLM_Model): void {
         const newVisibility = !model.is_visible;
-        
+
         this.modelsService.patchModel(model.id, { is_visible: newVisibility }).subscribe({
             next: (updatedModel) => {
-                this.models.update(models => 
+                this.models.update(models =>
                     models.map(m => m.id === model.id ? updatedModel : m)
                 );
                 this.hasChanges.set(true);

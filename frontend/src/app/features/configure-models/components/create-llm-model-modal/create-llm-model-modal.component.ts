@@ -2,17 +2,15 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
+import { TooltipComponent, ValidationErrorsComponent } from "@shared/components";
 import { finalize } from 'rxjs/operators';
 
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
-import { CustomInputComponent } from '../../../../../shared/components/form-input/form-input.component';
-import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
-import { ToggleSwitchComponent } from '../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
-import { LLM_Provider } from '../../../models/llm-provider.model';
-import { LLM_Model } from '../../../models/llms/LLM.model';
-import { LLM_Models_Service } from '../../../services/llms/llm-models.service';
-import { getProviderIconPath } from '../../../utils/get-provider-icon';
-import { ToastService } from '../../../../../services/notifications/toast.service';
+import { AppIconComponent, CustomInputComponent, ButtonComponent, ToggleSwitchComponent } from '@shared/components';
+import { LLM_Provider } from "../../../settings-dialog/models/llm-provider.model";
+import { ToastService } from '../../../../services/notifications';
+import { LLM_Model } from "../../models/llms/LLM.model";
+import { LLM_Models_Service } from "../../services/llms/llm-models.service";
+import { getProviderIconPath } from "../../utils/get-provider-icon";
 
 export interface CreateLlmModelDialogData {
     provider: LLM_Provider;
@@ -28,6 +26,8 @@ export interface CreateLlmModelDialogData {
         CustomInputComponent,
         ButtonComponent,
         ToggleSwitchComponent,
+        TooltipComponent,
+        ValidationErrorsComponent,
     ],
     templateUrl: './create-llm-model-modal.component.html',
     styleUrls: ['./create-llm-model-modal.component.scss'],

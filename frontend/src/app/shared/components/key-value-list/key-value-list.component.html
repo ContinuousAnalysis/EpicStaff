@@ -1,0 +1,94 @@
+@if (label()) {
+    <app-tooltip
+        [required]="required()"
+        [tooltipText]="tooltipText()"
+        [label]="label()"
+        [icon]="icon()"
+    />
+}
+
+<div class="kv-list">
+    <div class="kv-list__input-row">
+        <input
+            class="kv-list__input"
+            type="text"
+            [placeholder]="namePlaceholder()"
+            [ngModel]="draftName()"
+            (ngModelChange)="draftName.set($event)"
+            (keydown)="handleKeydown($event)"
+            [disabled]="isDisabled()"
+        />
+        <input
+            class="kv-list__input"
+            type="text"
+            [placeholder]="valuePlaceholder()"
+            [ngModel]="draftValue()"
+            (ngModelChange)="draftValue.set($event)"
+            (keydown)="handleKeydown($event)"
+            [disabled]="isDisabled()"
+        />
+        @if (editingIndex() !== null) {
+            <button
+                type="button"
+                class="kv-list__action-btn kv-list__action-btn--confirm"
+                title="Save"
+                (click)="confirm()"
+                [disabled]="isDisabled() || !draftName().trim()"
+            >
+                <i class="ti ti-check"></i>
+            </button>
+            <button
+                type="button"
+                class="kv-list__action-btn kv-list__action-btn--cancel"
+                title="Cancel"
+                (click)="cancelEdit()"
+                [disabled]="isDisabled()"
+            >
+                <i class="ti ti-x"></i>
+            </button>
+        } @else {
+            <button
+                type="button"
+                class="kv-list__action-btn kv-list__action-btn--add"
+                title="Add"
+                (click)="confirm()"
+                [disabled]="isDisabled() || !draftName().trim()"
+            >
+                <i class="ti ti-plus"></i>
+            </button>
+        }
+    </div>
+
+    @if (items().length) {
+        <div class="kv-list__cards">
+            @for (item of items(); track item.name + $index; let i = $index) {
+                <div
+                    class="kv-list__card"
+                    [class.kv-list__card--editing]="editingIndex() === i"
+                    (click)="editCard(i)"
+                >
+                    <div class="kv-list__card-content">
+                        <span class="kv-list__card-name">{{ item.name }}</span>
+                        <span class="kv-list__card-value">{{ item.value }}</span>
+                    </div>
+                    <button
+                        type="button"
+                        class="kv-list__remove-btn"
+                        title="Remove"
+                        (click)="removeCard(i); $event.stopPropagation()"
+                        [disabled]="isDisabled()"
+                    >
+                        <i class="ti ti-x"></i>
+                    </button>
+                </div>
+            }
+        </div>
+    }
+
+    <app-json-editor
+        [jsonData]="jsonText()"
+        (jsonChange)="onJsonChange($event)"
+        [editorHeight]="120"
+        [showHeader]="false"
+    />
+</div>
