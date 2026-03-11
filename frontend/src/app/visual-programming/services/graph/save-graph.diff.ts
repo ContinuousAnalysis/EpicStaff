@@ -530,7 +530,8 @@ export function buildWebhookPayload(n: WebhookTriggerNodeModel, graphId: number)
         python_code: n.data.python_code,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
-        webhook_trigger_path: n.data.webhook_trigger_path,
+        webhook_trigger_path: '',
+        webhook_trigger: n.data.webhook_trigger,
         metadata: getUIMetadataForComparison(n),
     };
 }
@@ -540,6 +541,7 @@ export function buildTelegramPayload(n: TelegramTriggerNodeModel, graphId: numbe
         node_name: n.node_name,
         graph: graphId,
         telegram_bot_api_key: n.data.telegram_bot_api_key,
+        webhook_trigger: n.data.webhook_trigger,
         fields: n.data.fields,
         metadata: getUIMetadataForComparison(n),
     };

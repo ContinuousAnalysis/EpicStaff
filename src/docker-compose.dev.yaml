@@ -17,7 +17,6 @@ services:
       GUNICORN_RELOAD: 1
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
-      # Добавляем локальные папки к тем, что уже описаны в base.yaml
       - ./django_app:/home/user/root/app/django_app:cached
       - ./shared:/home/user/root/app/shared:cached
 

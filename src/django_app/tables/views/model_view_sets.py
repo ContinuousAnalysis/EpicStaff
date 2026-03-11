@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import NOT_PROVIDED, IntegerField, Prefetch
 from django.db.models.functions import Cast
@@ -67,6 +68,7 @@ from tables.models.graph_models import (
     GraphOrganization,
     GraphOrganizationUser,
     LLMNode,
+    NoteNode,
     Organization,
     OrganizationUser,
     TelegramTriggerNode,
@@ -87,7 +89,7 @@ from tables.models.realtime_models import (
 )
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
-from tables.models.webhook_models import WebhookTrigger
+from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
 from tables.serializers.copy_serializers import (
     AgentCopyDeserializer,
     AgentCopySerializer,
@@ -103,6 +105,7 @@ from tables.serializers.model_serializers import (
     AgentWriteSerializer,
     AudioTranscriptionNodeSerializer,
     ConditionalEdgeSerializer,
+    NoteNodeSerializer,
     ConditionGroupSerializer,
     ConditionSerializer,
     CrewNodeSerializer,
@@ -126,6 +129,7 @@ from tables.serializers.model_serializers import (
     LLMNodeSerializer,
     McpToolSerializer,
     MemorySerializer,
+    NgrokWebhookConfigModelSerializer,
     OrganizationSerializer,
     OrganizationUserSerializer,
     ProviderSerializer,
@@ -162,6 +166,7 @@ from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeFieldSerializer,
     TelegramTriggerNodeSerializer,
 )
+from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
 from tables.services.redis_service import RedisService
 from tables.utils.mixins import DeepCopyMixin
@@ -1158,3 +1163,27 @@ class TelegramTriggerNodeViewSet(ModelViewSet):
 class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     queryset = TelegramTriggerNodeField.objects.select_related("telegram_trigger_node")
     serializer_class = TelegramTriggerNodeFieldSerializer
+
+
+class NoteNodeViewSet(ModelViewSet):
+    queryset = NoteNode.objects.all()
+    serializer_class = NoteNodeSerializer
+
+
+class NgrokWebhookConfigViewSet(ModelViewSet):
+    queryset = NgrokWebhookConfig.objects.all()
+    serializer_class = NgrokWebhookConfigModelSerializer
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        instance = NgrokWebhookConfig.objects.get(pk=response.data["id"])
+        WebhookTriggerService().wait_for_tunnel_url(instance)
+        response.data = self.get_serializer(instance).data
+        return response
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        instance = NgrokWebhookConfig.objects.get(pk=response.data["id"])
+        WebhookTriggerService().wait_for_tunnel_url(instance)
+        response.data = self.get_serializer(instance).data
+        return response

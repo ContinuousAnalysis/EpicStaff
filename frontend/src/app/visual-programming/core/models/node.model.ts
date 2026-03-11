@@ -1,8 +1,8 @@
 import { CustomConditionalEdgeModelForNode } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
-import { GetAgentRequest } from '../../../shared/models/agent.model';
+import { GetAgentRequest } from '../../../features/staff/models/agent.model';
 import { GetLlmConfigRequest } from '../../../features/settings-dialog/models/llms/LLM_config.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { CreateTaskRequest } from '../../../shared/models/task.model';
+import { CreateTaskRequest } from '../../../features/tasks/models/task.model';
 import { ToolConfig } from '../../../features/tools/models/tool-config.model';
 import { GetPythonCodeToolRequest } from '../../../features/tools/models/python-code-tool.model';
 import {
@@ -16,6 +16,7 @@ import { DecisionTableNode } from './decision-table.model';
 import {
     TelegramTriggerNodeField
 } from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
+import { WebhookTriggerModel } from "./webhook-trigger.model";
 import { GetGraphLightRequest } from '../../../features/flows/models/graph.model';
 
 export interface BaseNodeModel {
@@ -108,7 +109,7 @@ export interface AudioToTextNodeModel extends BaseNodeModel {
 export interface WebhookTriggerNodeModel extends BaseNodeModel {
     type: NodeType.WEBHOOK_TRIGGER;
     data: {
-        webhook_trigger_path: string;
+        webhook_trigger: WebhookTriggerModel | null;
         python_code: CustomPythonCode;
     }
 }
@@ -117,6 +118,7 @@ export interface TelegramTriggerNodeModel extends BaseNodeModel {
     type: NodeType.TELEGRAM_TRIGGER;
     data: {
         telegram_bot_api_key: string;
+        webhook_trigger: WebhookTriggerModel | null;
         fields: TelegramTriggerNodeField[];
     }
 }

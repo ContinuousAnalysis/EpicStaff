@@ -2,6 +2,20 @@ from typing import Iterable
 
 from loguru import logger
 
+from tables.models.webhook_models import NgrokWebhookConfig
+from tables.models.python_models import PythonCodeToolConfig
+from tables.models.crew_models import (
+    AgentConfiguredTools,
+    AgentMcpTools,
+    AgentPythonCodeTools,
+    AgentPythonCodeToolConfigs,
+)
+from tables.models.mcp_models import McpTool
+from tables.models.llm_models import (
+    RealtimeConfig,
+    RealtimeTranscriptionConfig,
+    LLMConfig,
+)
 from tables.models import (
     Agent,
     Crew,
@@ -634,3 +648,14 @@ class ConverterService(metaclass=SingletonMeta):
             input_map=subgraph_node.input_map,
             output_variable_path=subgraph_node.output_variable_path,
         )
+    def convert_ngrok_webhook_config_to_pydantic(
+        self, ngrok_webhook_config: NgrokWebhookConfig
+    ) -> NgrokConfigData:
+        return NgrokConfigData(
+            name=ngrok_webhook_config.name,
+            auth_token=ngrok_webhook_config.auth_token,
+            domain=ngrok_webhook_config.domain,
+            region=ngrok_webhook_config.region,
+        )
+    
+    
