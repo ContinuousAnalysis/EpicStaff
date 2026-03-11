@@ -9,14 +9,7 @@ endif
 # IMPORTANT: This Makefile must be run from the project's root directory
 # (the same directory this file is in).
 
-.DEFAULT_GOAL := help
-.PHONY: help \
-        backup apply-backup stash-tags apply-tags switch \
-        dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
-        prod start-prod prod-down prod-logs \
-        clean docker-generate-certs
-
-# --- Help ---
+.PHONY: help backup apply-backup stash-tags apply-tags switch dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev prod start-prod prod-down prod-logs clean docker-generate-certs
 
 help:
 	@type make_scripts\help.txt

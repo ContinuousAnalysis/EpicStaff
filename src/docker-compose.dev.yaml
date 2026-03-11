@@ -17,7 +17,6 @@ services:
       GUNICORN_RELOAD: 1
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
-      # Добавляем локальные папки к тем, что уже описаны в base.yaml
       - ./django_app:/app/src/django_app:cached
       - ./shared:/app/src/shared:cached
 
@@ -100,7 +99,7 @@ services:
       - ./knowledge:/app/src/knowledge
 
   sandbox:
-    command: sh -c "watchfiles --filter python 'python main.py' ."
+    command: sh -c "watchfiles --filter python --ignore-paths ./executions,./savefiles,./venvs 'python main.py' ."
     environment:
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
