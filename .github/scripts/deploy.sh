@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_DIR="/home/developer/EpicStaff"
 COMPOSE_DIR="$APP_DIR/src"
-COMPOSE_FILE="docker-compose.deploy.yaml"
+COMPOSE_FILE="docker-compose.yaml"
 
 echo ">> deploy from current checkout"
 echo ">> repo dir: $APP_DIR"
