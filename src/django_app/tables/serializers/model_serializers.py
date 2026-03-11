@@ -1749,9 +1749,3 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
-
-
-class NoteNodeSerializer(serializers.ModelSerializer):
-    class Meta(BaseGraphEntityMixin.Meta):
-        model = NoteNode
-        fields = "__all__"
