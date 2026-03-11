@@ -13,21 +13,11 @@ import { LlmLibraryModel } from '../../interfaces/llm-library-model.interface';
 export class LlmLibraryCardComponent {
     public readonly model = input.required<LlmLibraryModel>();
 
-    public readonly historyClick = output<string>();
     public readonly editClick = output<string>();
     public readonly deleteClick = output<LlmLibraryModel>();
 
-    public get usageLabel(): string {
-        const count = this.model().usedByCount;
-        return count !== null ? `Used by ${count}` : 'Ready to be used';
-    }
-
     public get isUsed(): boolean {
         return this.model().usedByCount !== null;
-    }
-
-    public onHistory(): void {
-        this.historyClick.emit(this.model().id);
     }
 
     public onEdit(): void {

@@ -25,6 +25,7 @@
                 placeholder="Select provider"
                 tooltipText="Provider"
                 [required]="true"
+                (modelChanged)="onModelChanged($event)"
             />
             <div>
                 <app-custom-input
@@ -44,47 +45,25 @@
                     label="Configuration Name"
                     placeholder="Enter a custom name"
                     tooltipText="config name"
+                    [required]="true"
                 />
                 <app-validation-errors
-                    [control]="form.get('api_key')!"
+                    [control]="form.get('custom_name')!"
                 />
             </div>
-            <app-select
-                label="Capatibilities"
-                placeholder="Select capatibilities"
-                tooltipText="Capatibilities"
-                [items]="[]"
-            />
         </section>
 
         <section class="section">
             <h3 class="title">
                 API CONFIGURATION
             </h3>
-            <app-custom-input
-                label="Base URL"
-                placeholder="e.g. https://api.openai.com/v1"
-                tooltipText="Base url"
+            <app-key-value-list
+                formControlName="headers"
+                label="Header Configuration"
+                tooltipText="Header config"
+                namePlaceholder="Header name"
+                valuePlaceholder="Header value"
             />
-            <div class="combined">
-                <app-custom-input
-                    label="API Version"
-                    placeholder="01-01-2024"
-                    tooltipText="Api version"
-                />
-                <app-custom-input
-                    label="Deployment"
-                    placeholder="Enter deployment here"
-                    tooltipText="Deployment"
-                />
-            </div>
-<!--            <app-key-value-list-->
-<!--                formControlName="headers"-->
-<!--                label="Header Configuration"-->
-<!--                tooltipText="Header config"-->
-<!--                namePlaceholder="Header name"-->
-<!--                valuePlaceholder="Header value"-->
-<!--            />-->
         </section>
 
         <section class="section">
@@ -98,7 +77,7 @@
                     tooltipText="Temperature"
                 />
                 <app-validation-errors
-                    [control]="form.get('api_key')!"
+                    [control]="form.get('temperature')!"
                 />
             </div>
             <div>
@@ -108,7 +87,7 @@
                     tooltipText="Top P"
                 />
                 <app-validation-errors
-                    [control]="form.get('api_key')!"
+                    [control]="form.get('top_p')!"
                 />
             </div>
             <div>
@@ -118,7 +97,7 @@
                     tooltipText="Presence Penalty"
                 />
                 <app-validation-errors
-                    [control]="form.get('api_key')!"
+                    [control]="form.get('presence_penalty')!"
                 />
             </div>
             <div>
@@ -128,7 +107,7 @@
                     tooltipText="Frequency Penalty"
                 />
                 <app-validation-errors
-                    [control]="form.get('api_key')!"
+                    [control]="form.get('frequency_penalty')!"
                 />
             </div>
         </section>
@@ -137,35 +116,26 @@
             <h3 class="title">
                 TOKEN LIMITS & COMPLETION
             </h3>
-
-            <div class="combined">
-                <div>
-                    <app-input-number
-                        formControlName="max_tokens"
-                        label="Max Tokens"
-                        tooltipText="Max tokens"
-                        [alwaysShowSteps]="true"
-                    />
-                    <app-validation-errors
-                        [control]="form.get('api_key')!"
-                    />
-                </div>
+            <div>
                 <app-input-number
-                    label="Max Completion Tokens"
-                    tooltipText="Max Completion tokens"
+                    formControlName="max_tokens"
+                    label="Max Tokens"
+                    tooltipText="Max tokens"
                     [alwaysShowSteps]="true"
+                />
+                <app-validation-errors
+                    [control]="form.get('max_tokens')!"
                 />
             </div>
-            <div class="combined">
+            <div>
                 <app-input-number
-                    label="N (Completions)"
-                    tooltipText="N (Completions)"
-                    [alwaysShowSteps]="true"
-                />
-                <app-input-number
+                    formControlName="timeout"
                     label="Timeout (seconds)"
                     tooltipText="Timeout (seconds)"
                     [alwaysShowSteps]="true"
+                />
+                <app-validation-errors
+                    [control]="form.get('timeout')!"
                 />
             </div>
         </section>
@@ -174,39 +144,23 @@
             <h3 class="title">
                 ADVANCED PARAMETERS
             </h3>
-            <div class="combined">
-                <div>
-                    <app-input-number
-                        formControlName="seed"
-                        label="Seed"
-                        tooltipText="Seed"
-                        [alwaysShowSteps]="true"
-                    />
-                    <app-validation-errors
-                        [control]="form.get('api_key')!"
-                    />
-                </div>
+            <div>
                 <app-input-number
-                    label="Top Logrobs"
-                    tooltipText="Top Logrobs"
+                    formControlName="seed"
+                    placeholder="random"
+                    label="Seed"
+                    tooltipText="Seed"
                     [alwaysShowSteps]="true"
                 />
+                <app-validation-errors
+                    [control]="form.get('seed')!"
+                />
             </div>
-<!--            <app-textarea-->
-<!--                label="Stop Sequences (JSON)"-->
-<!--                tooltipText="Stop sequences"-->
-<!--                placeholder='{"sequences": ["\n\n", "Human:", "AI:"]}'-->
-<!--            />-->
-<!--            <app-textarea-->
-<!--                label="Logit Bias (JSON)"-->
-<!--                tooltipText="Logit Bias (JSON)"-->
-<!--                placeholder='{"50256": -100}'-->
-<!--            />-->
-<!--            <app-textarea-->
-<!--                label="Response format (JSON)"-->
-<!--                tooltipText="Response format (JSON)"-->
-<!--                placeholder='{"type": "json_object"}'-->
-<!--            />-->
+            <app-textarea
+                label="Logit Bias (JSON)"
+                tooltipText="Logit Bias (JSON)"
+                placeholder='{"50256": -100}'
+            />
         </section>
     </div>
 
@@ -219,6 +173,7 @@
         </app-button>
         <app-button
             type="primary"
+            [disabled]="form.invalid || isSaving()"
             (click)="onSave()"
         >
             Add LLM

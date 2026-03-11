@@ -10,6 +10,7 @@ import {
     inject,
     input,
     model,
+    OnInit,
     output,
     signal,
     ViewChild,
@@ -25,7 +26,6 @@ import { finalize } from "rxjs/operators";
 import { LLM_Provider } from "../../../settings-dialog/models/llm-provider.model";
 import { ModelTypes } from "../../models/llm-provider.model";
 import { LLM_Model } from "../../models/llms/LLM.model";
-import { FullLLMConfig } from "../../services/llms/full-llm-config.service";
 import { LLM_Models_Service } from "../../services/llms/llm-models.service";
 import { LLM_Providers_Service } from "../../services/llms/llm-providers.service";
 import { getProviderIconPath } from "../../utils/get-provider-icon";
@@ -77,7 +77,6 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     private vcr = inject(ViewContainerRef);
 
     placeholder = input<string>('Select LLM model');
-    llmConfigs = input<FullLLMConfig[]>([]);
     icon = input<string>('help_outline');
     label = input<string>('');
     required = input<boolean>(false);
@@ -89,16 +88,24 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     selectedModelId = signal<number | null>(null);
 
     selectedValue = model<number | null>(null);
-    changed = output<number | null>();
+    modelChanged = output<LLM_Model>();
     configAdded = output<void>();
+
+    readonly COLLAPSED_COUNT = 3;
+    readonly COLLAPSE_THRESHOLD = 4;
 
     open = signal(false);
     isDisabled = signal(false);
+    expandedProviders = signal<Set<number>>(new Set());
 
-    selectedConfig = computed(() => {
+    selectedModelInfo = computed<{ model: LLM_Model; provider: LLM_Provider } | null>(() => {
         const id = this.selectedValue();
         if (id === null || id === undefined) return null;
-        return this.llmConfigs().find(c => c.id === id) ?? null;
+        for (const group of this.providersWithModels()) {
+            const model = group.models.find(m => m.id === id);
+            if (model) return { model, provider: group.provider };
+        }
+        return null;
     });
 
     filteredProviders = computed(() => {
@@ -116,15 +123,10 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
                     m.name.toLowerCase().includes(query)
                 );
 
-                if (providerMatches) {
-                    return p;
-                }
+                if (providerMatches) return p;
 
                 if (matchingModels.length > 0) {
-                    return {
-                        ...p,
-                        visibleModels: matchingModels,
-                    };
+                    return { ...p, visibleModels: matchingModels };
                 }
 
                 return null;
@@ -255,17 +257,39 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         this.searchQuery.set(target.value);
     }
 
-    toggleModelSelection(provider: LLM_Provider, model: LLM_Model): void {
-        const currentId = this.selectedModelId();
-        if (currentId === model.id) {
-            this.selectedModelId.set(null);
-        } else {
-            this.selectedModelId.set(model.id);
-        }
+    selectModel(model: LLM_Model): void {
+        this.selectedModelId.set(model.id);
+        this.selectedValue.set(model.id);
+        this.onChange(model.id);
+        this.modelChanged.emit(model);
+        this.close();
     }
 
     isModelSelected(modelId: number): boolean {
         return this.selectedModelId() === modelId;
+    }
+
+    getVisibleModels(group: ProviderWithModels): LLM_Model[] {
+        if (this.searchQuery().trim() || this.expandedProviders().has(group.provider.id)) {
+            return group.visibleModels;
+        }
+        return group.visibleModels.slice(0, this.COLLAPSED_COUNT);
+    }
+
+    isCollapsible(group: ProviderWithModels): boolean {
+        return group.visibleModels.length > this.COLLAPSE_THRESHOLD && !this.searchQuery().trim();
+    }
+
+    hiddenCount(group: ProviderWithModels): number {
+        return group.visibleModels.length - this.COLLAPSED_COUNT;
+    }
+
+    toggleExpand(providerId: number): void {
+        this.expandedProviders.update(set => {
+            const next = new Set(set);
+            next.has(providerId) ? next.delete(providerId) : next.add(providerId);
+            return next;
+        });
     }
 
     openAllModelsModal(provider: LLM_Provider): void {

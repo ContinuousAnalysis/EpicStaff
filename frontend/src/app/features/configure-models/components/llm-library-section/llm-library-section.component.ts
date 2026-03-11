@@ -1,5 +1,5 @@
 import { Dialog } from "@angular/cdk/dialog";
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from '@angular/forms';
@@ -78,9 +78,6 @@ export class LlmLibrarySectionComponent {
         })
     }
 
-    public onHistory(modelId: string): void {
-        console.log('[LLM Library] History:', modelId);
-    }
 
     public onEdit(modelId: string): void {
         console.log('[LLM Library] Edit:', modelId);
@@ -91,7 +88,6 @@ export class LlmLibrarySectionComponent {
             title: 'Delete the model?',
             message: `Are you sure you want to delete the ${model.name} model? This will delete it in all agents, tools and flows.`,
             type: 'danger',
-            cautionText: 'this model is used in 2 agents'
         };
 
         this.confirmationDialogService.confirm(opts)

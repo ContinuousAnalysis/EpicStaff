@@ -3,30 +3,31 @@ import {
     Component,
     OnInit,
     inject,
-    signal, computed,
+    signal, computed, DestroyRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    AppIconComponent,
     ButtonComponent,
     CustomInputComponent,
     SelectComponent,
     SelectItem
 } from '@shared/components';
 import { MATERIAL_FORMS } from "@shared/material-forms";
-import { LLM_Provider, ModelTypes } from "../../../settings-dialog/models/llm-provider.model";
-import { LLM_Providers_Service } from "../../../settings-dialog/services/llm-providers.service";
 import { getProviderIconPath } from '../../../settings-dialog/utils/get-provider-icon';
 import { catchError, take, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { LLM_Provider, ModelTypes } from "../../models/llm-provider.model";
+import { Quickstart } from "../../models/quickstart.model";
+import { LLM_Providers_Service } from "../../services/llms/llm-providers.service";
+import { QuickstartService } from "../../services/quickstart.service";
 
 @Component({
     selector: 'app-quickstart-section',
     imports: [
         CommonModule,
         ReactiveFormsModule,
-        AppIconComponent,
         MATERIAL_FORMS,
         CustomInputComponent,
         ButtonComponent,
@@ -39,34 +40,29 @@ import { of } from 'rxjs';
 export class QuickstartSectionComponent implements OnInit {
     private readonly fb = inject(FormBuilder);
     private readonly providersService = inject(LLM_Providers_Service);
+    private readonly quickstartService =  inject(QuickstartService);
+    private readonly destroyRef = inject(DestroyRef);
 
     public readonly quickStartForm = this.fb.group({
-        apiKey: [''],
+        apiKey: ['', [Validators.required]],
+        provider: [null, [Validators.required]],
     });
 
     public isSaving = signal(false);
     public providers = signal<LLM_Provider[]>([]);
-    public selectedProvider = signal<LLM_Provider | null>(null);
 
     public providerItems = computed<SelectItem[]>(() => {
         return this.providers().map((provider) => ({
             name: provider.name
                 .replace(/[_-]+/g, ' ')
                 .replace(/\b\w/g, (char) => char.toUpperCase()),
-            value: provider.id,
+            value: provider.name,
             icon: getProviderIconPath(provider.name)
         }))
     })
 
     public ngOnInit(): void {
         this.loadProviders();
-    }
-
-    public onQuickStart(): void {
-        const apiKey = this.quickStartForm.get('apiKey')?.value;
-        if (!apiKey || !this.selectedProvider()) {
-            return;
-        }
     }
 
     public onCancel(): void {
@@ -105,6 +101,26 @@ export class QuickstartSectionComponent implements OnInit {
                 })
             )
             .subscribe();
+    }
+
+    public onQuickStart(): void {
+        const formValue = this.quickStartForm.value;
+
+        if (!formValue.apiKey || !formValue.provider) return;
+        this.isSaving.set(true);
+
+        const data: Quickstart = {
+            api_key: formValue.apiKey,
+            provider: formValue.provider,
+        };
+
+        this.quickstartService.createQuickstart(data)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: data => console.log(data),
+                error: error => console.log(error),
+                complete: () => this.isSaving.set(false),
+            })
     }
 }
 

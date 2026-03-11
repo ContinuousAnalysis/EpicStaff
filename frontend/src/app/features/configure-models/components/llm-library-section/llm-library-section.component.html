@@ -13,7 +13,7 @@
                 <input
                     type="text"
                     class="llm-library__search-input"
-                    placeholder="Search providers..."
+                    placeholder="Search configurations..."
                     [value]="searchQuery()"
                     (input)="onSearchChange($any($event.target).value)"
                 />
@@ -41,7 +41,7 @@
                 (click)="onAddModel()"
             >
                 <i class="ti ti-plus" aria-hidden="true"></i>
-                Add Model
+                Add Configuration
             </button>
         </div>
     </header>
@@ -61,7 +61,6 @@
                 @for (model of group.models; track model.id) {
                     <app-llm-library-card
                         [model]="model"
-                        (historyClick)="onHistory($event)"
                         (editClick)="onEdit($event)"
                         (deleteClick)="onDelete($event)"
                     ></app-llm-library-card>

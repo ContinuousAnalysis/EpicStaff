@@ -9,7 +9,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/f
 import { TooltipComponent } from '../tooltip/tooltip.component';
 import { JsonEditorComponent } from '../json-editor/json-editor.component';
 
-export interface KeyValueItem {
+interface KeyValueItem {
     name: string;
     value: string;
 }
@@ -45,7 +45,7 @@ export class KeyValueListComponent implements ControlValueAccessor {
 
     private isUpdatingFromJson = false;
 
-    private onChange: (value: KeyValueItem[]) => void = () => {};
+    private onChange: (value: Record<string, string>) => void = () => {};
     private onTouched: () => void = () => {};
 
     confirm(): void {
@@ -129,19 +129,20 @@ export class KeyValueListComponent implements ControlValueAccessor {
     }
 
     private emit(): void {
-        this.onChange(this.items());
+        const record = Object.fromEntries(this.items().map(i => [i.name, i.value]));
+        this.onChange(record);
         this.onTouched();
     }
 
-    writeValue(value: KeyValueItem[] | null): void {
-        const items = value ?? [];
+    writeValue(value: Record<string, string> | null): void {
+        const record = value ?? {};
+        const items: KeyValueItem[] = Object.entries(record).map(([name, val]) => ({ name, value: val }));
         this.items.set(items);
-        const obj = Object.fromEntries(items.map(i => [i.name, i.value]));
-        this.jsonText.set(JSON.stringify(obj, null, 2));
+        this.jsonText.set(JSON.stringify(record, null, 2));
         this.cancelEdit();
     }
 
-    registerOnChange(fn: (value: KeyValueItem[]) => void): void {
+    registerOnChange(fn: (value: Record<string, string>) => void): void {
         this.onChange = fn;
     }
 

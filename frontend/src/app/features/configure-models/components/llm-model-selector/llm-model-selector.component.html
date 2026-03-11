@@ -12,19 +12,17 @@
     type="button"
     class="llm-selector__trigger"
     [class.llm-selector__trigger--open]="open()"
-    [class.llm-selector__trigger--placeholder]="!selectedConfig()"
+    [class.llm-selector__trigger--placeholder]="!selectedModelInfo()"
     [class.llm-selector__trigger--disabled]="isDisabled()"
     [disabled]="isDisabled()"
     (click)="toggle()"
 >
-    @if (selectedConfig(); as config) {
-        <app-icon [icon]="getProviderIcon(config.providerDetails?.name || '')" size="18px" />
-        <span class="llm-selector__trigger-name">
-            {{ config.modelDetails?.name || config.custom_name || 'Unknown Model' }}
+    @if (selectedModelInfo(); as info) {
+        <app-icon [icon]="getProviderIcon(info.provider.name)" size="18px" />
+        <span class="llm-selector__trigger-label">
+            <span class="llm-selector__trigger-provider">{{ info.provider.name }}:</span>
+            <span class="llm-selector__trigger-model">{{ info.model.name }}</span>
         </span>
-        @if (config.custom_name && config.modelDetails?.name) {
-            <span class="llm-selector__trigger-custom">({{ config.custom_name }})</span>
-        }
     } @else {
         <span>{{ placeholder() }}</span>
     }
@@ -88,20 +86,35 @@
                         <!-- Visible Models -->
                         @if (providerData.visibleModels.length > 0) {
                             <div class="model-selector__models">
-                                @for (model of providerData.visibleModels; track model.id) {
+                                @for (model of getVisibleModels(providerData); track model.id) {
                                     <button
                                         type="button"
                                         class="model-selector__model"
                                         [class.model-selector__model--selected]="isModelSelected(model.id)"
-                                        (click)="toggleModelSelection(providerData.provider, model)"
+                                        (click)="selectModel(model)"
                                     >
                                         <span class="model-selector__model-name">{{ model.name }}</span>
                                     </button>
                                 }
                             </div>
+                            @if (isCollapsible(providerData)) {
+                                <button
+                                    type="button"
+                                    class="model-selector__expand-btn"
+                                    (click)="toggleExpand(providerData.provider.id); $event.stopPropagation()"
+                                >
+                                    @if (expandedProviders().has(providerData.provider.id)) {
+                                        <svg width="12" height="12" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+                                        Show less
+                                    } @else {
+                                        <svg width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+                                        {{ hiddenCount(providerData) }} more
+                                    }
+                                </button>
+                            }
                         } @else {
                             <div class="model-selector__no-favorites">
-                                <p>No visible models. Click "Edit models" to manage visibility.</p>
+                                <p>No visible models. Click "Add model" to manage visibility.</p>
                             </div>
                         }
                     </div>

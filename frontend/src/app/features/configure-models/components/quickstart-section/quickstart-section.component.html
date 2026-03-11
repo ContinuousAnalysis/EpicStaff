@@ -22,7 +22,9 @@
                         </mat-icon>
                     </div>
                     <app-select
+                        formControlName="provider"
                         placeholder="Select Provider"
+                        [required]="true"
                         [items]="providerItems()"
                     />
                 </div>
@@ -40,8 +42,8 @@
                         </mat-icon>
                     </div>
                     <app-custom-input
-                        type="password"
                         formControlName="apiKey"
+                        type="password"
                         placeholder="Enter API key"
                     />
                 </div>
@@ -56,7 +58,7 @@
                     <app-button
                         type="primary"
                         (click)="onQuickStart()"
-                        [disabled]="!quickStartForm.get('apiKey')?.value || !selectedProvider()"
+                        [disabled]="!quickStartForm.get('apiKey')?.value || isSaving()"
                     >
                         Activate
                     </app-button>
@@ -104,35 +106,35 @@
                 </ol>
             </div>
 
-            <div class="quickstart-section__card quickstart-section__card--success">
-                <div class="quickstart-section__card-title quickstart-section__card-title--success">
-                    <i class="ti ti-check" aria-hidden="true"></i>
-                    Default models successfully updated
-                </div>
-                <p class="quickstart-section__card-text">
-                    Your new LLM model has been successfully applied as the default across all
-                    supported tasks. This includes models for:
-                    <span class="quickstart-section__card-link">Knowledge</span>,
-                    <span class="quickstart-section__card-link">Agents</span>,
-                    <span class="quickstart-section__card-link">Planning</span>,
-                    <span class="quickstart-section__card-link">Memory</span>,
-                    <span class="quickstart-section__card-link">Tools</span>,
-                    <span class="quickstart-section__card-link">Voice</span> and
-                    <span class="quickstart-section__card-link">Transcription</span>.
-                </p>
-                <p class="quickstart-section__card-text">
-                    You can review or adjust these assignments at any time.
-                </p>
-                <div class="quickstart-section__card-actions">
-                    <button
-                        type="button"
-                        class="quickstart-section__cta"
-                        (click)="onReviewDefaults()"
-                    >
-                        Review default models
-                    </button>
-                </div>
-            </div>
+<!--            <div class="quickstart-section__card quickstart-section__card&#45;&#45;success">-->
+<!--                <div class="quickstart-section__card-title quickstart-section__card-title&#45;&#45;success">-->
+<!--                    <i class="ti ti-check" aria-hidden="true"></i>-->
+<!--                    Default models successfully updated-->
+<!--                </div>-->
+<!--                <p class="quickstart-section__card-text">-->
+<!--                    Your new LLM model has been successfully applied as the default across all-->
+<!--                    supported tasks. This includes models for:-->
+<!--                    <span class="quickstart-section__card-link">Knowledge</span>,-->
+<!--                    <span class="quickstart-section__card-link">Agents</span>,-->
+<!--                    <span class="quickstart-section__card-link">Planning</span>,-->
+<!--                    <span class="quickstart-section__card-link">Memory</span>,-->
+<!--                    <span class="quickstart-section__card-link">Tools</span>,-->
+<!--                    <span class="quickstart-section__card-link">Voice</span> and-->
+<!--                    <span class="quickstart-section__card-link">Transcription</span>.-->
+<!--                </p>-->
+<!--                <p class="quickstart-section__card-text">-->
+<!--                    You can review or adjust these assignments at any time.-->
+<!--                </p>-->
+<!--                <div class="quickstart-section__card-actions">-->
+<!--                    <button-->
+<!--                        type="button"-->
+<!--                        class="quickstart-section__cta"-->
+<!--                        (click)="onReviewDefaults()"-->
+<!--                    >-->
+<!--                        Review default models-->
+<!--                    </button>-->
+<!--                </div>-->
+<!--            </div>-->
         </div>
     </div>
 </section>
