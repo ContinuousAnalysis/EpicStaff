@@ -1,4 +1,5 @@
 import { CreatePythonCodeRequest, GetPythonCodeRequest } from "../../../../../features/tools/models/python-code.model";
+import { WebhookTriggerModel } from "../../../../../visual-programming/core/models/webhook-trigger.model";
 
 export interface GetWebhookTriggerNodeRequest {
     id: number;
@@ -9,6 +10,7 @@ export interface GetWebhookTriggerNodeRequest {
     output_variable_path: string | null;
     webhook_trigger_path: string;
     metadata: Record<string, any>;
+    webhook_trigger: WebhookTriggerModel | null;
 }
 
 export interface CreateWebhookTriggerNodeRequest {
@@ -19,4 +21,5 @@ export interface CreateWebhookTriggerNodeRequest {
     output_variable_path: string | null;
     webhook_trigger_path: string;
     metadata?: Record<string, any>;
+    webhook_trigger: WebhookTriggerModel | null;
 }

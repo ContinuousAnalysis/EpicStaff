@@ -130,24 +130,33 @@ class SessionManagerService(metaclass=SingletonMeta):
             username=username,
             entrypoint=entrypoint,
         )
-        session_data: SessionData = self.create_session_data(session=session)
-        # TODO: add ping or waiting for crew to accept connections
+        try:
+            session_data: SessionData = self.create_session_data(session=session)
+            # TODO: add ping or waiting for crew to accept connections
 
-        session.graph_schema = session_data.graph.model_dump()
-        received_n = self.redis_service.publish_session_data(
-            session_data=session_data,
-        )
-        required_listeners = 2
-        if received_n != required_listeners:
-            logger.error("Data was sent but not received.")
+            session.graph_schema = session_data.graph.model_dump(mode="json")
+            received_n = self.redis_service.publish_session_data(
+                session_data=session_data,
+            )
+            required_listeners = 2
+            if received_n != required_listeners:
+                logger.error("Data was sent but not received.")
+                session.status = Session.SessionStatus.ERROR
+                session.status_data = {
+                    "reason": f"Data was sent and received by ({received_n}) listeners, but ({required_listeners}) required."
+                }
+            logger.info(
+                f"Session data published in Redis for session ID: {session.pk}."
+            )
+
+        except Exception as e:
+            msg = f"Error occured running a session: {e}"
+            logger.exception(msg)
             session.status = Session.SessionStatus.ERROR
-            session.status_data = {
-                "reason": f"Data was sent and received by ({received_n}) listeners, but ({required_listeners}) required."
-            }
-        logger.info(f"Session data published in Redis for session ID: {session.pk}.")
-
-        session.save()
-
+            session.status_data = {"reason": msg}
+            raise e
+        finally:
+            session.save()
         return session.pk
 
     def register_message(self, data: dict, created_at_dt) -> None:

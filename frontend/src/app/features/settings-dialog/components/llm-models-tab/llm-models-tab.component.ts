@@ -17,7 +17,7 @@ import {
     FullLLMConfigService,
     FullLLMConfig,
 } from '../../services/llms/full-llm-config.service';
-import { LLM_Config_Service } from '../../services/llms/LLM_config.service';
+import { LLM_Config_Service } from '../../services/llms/llm-config.service';
 import { UpdateLLMConfigRequest } from '../../models/llms/LLM_config.model';
 
 @Component({
@@ -131,7 +131,6 @@ export class LlmModelsTabComponent implements OnInit {
                 presence_penalty: config.presence_penalty ?? null,
                 frequency_penalty: config.frequency_penalty ?? null,
                 logit_bias: config.logit_bias ?? null,
-                response_format: config.response_format ?? null,
                 seed: config.seed ?? null,
                 timeout: config.timeout ?? null,
                 headers: config.headers ?? undefined,

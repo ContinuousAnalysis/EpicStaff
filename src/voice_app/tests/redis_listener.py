@@ -1,6 +1,6 @@
 import asyncio
 import redis.asyncio as redis
-from app.core.config import settings
+from app.core.settings import settings
 
 
 async def listen_to_voice():

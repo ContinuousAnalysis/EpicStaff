@@ -13,15 +13,12 @@ from drf_yasg.utils import swagger_auto_schema  # <--- Импортируйте 
 from rest_framework.parsers import MultiPartParser, FormParser
 from loguru import logger
 from asgiref.sync import sync_to_async
-from django.http import StreamingHttpResponse, HttpResponse
+from django.http import StreamingHttpResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.views import View
 from django.db import IntegrityError, transaction
 
 from tables.models.knowledge_models.collection_models import DocumentMetadata
-from tables.utils.helpers import generate_file_name
-from tables.serializers.import_serializers import FileImportSerializer
-
 from tables.services.redis_service import RedisService
 from functools import partial
 

@@ -38,7 +38,7 @@ import { ConditionalEdgeService } from './services/conditional-edge.service';
 import { CrewNodeService } from './services/crew-node.service';
 import { EdgeService } from './services/edge.service';
 import { PythonNodeService } from './services/python-node.service';
-import { RunGraphService } from '../../../../services/run-graph-session.service';
+import { RunGraphService } from '../../../../features/flows/services/run-graph-session.service';
 import { StartNodeService } from './services/start-node.service';
 import { StartNode, CreateStartNodeRequest } from './models/start-node.model';
 
@@ -67,7 +67,7 @@ import {
 } from '../../../../visual-programming/core/models/node.model';
 import { NodeType } from '../../../../visual-programming/core/enums/node-type';
 import { GraphUpdateService } from '../../../../visual-programming/services/graph/save-graph.service';
-import { CreatedNodeMapping } from '../../../../visual-programming/services/graph/save-graph.types';
+import { CreatedNodeMapping, getUIMetadataForComparison } from '../../../../visual-programming/services/graph/save-graph.types';
 import { Dialog as CdkDialog } from '@angular/cdk/dialog';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
@@ -222,6 +222,7 @@ export class FlowVisualProgrammingComponent
         showNotif: boolean
     ): Observable<boolean> {
         const initialStateData = startNode.data.initialState;
+        const metadata = getUIMetadataForComparison(startNode);
 
         return this.startNodeService.getStartNodes().pipe(
             takeUntil(this.destroy$),
@@ -236,6 +237,7 @@ export class FlowVisualProgrammingComponent
                         {
                             graph: this.graph.id,
                             variables: initialStateData,
+                            metadata,
                         }
                     );
                 }
@@ -243,6 +245,7 @@ export class FlowVisualProgrammingComponent
                 return this.startNodeService.createStartNode({
                     graph: this.graph.id,
                     variables: initialStateData,
+                    metadata,
                 });
             }),
             switchMap((startNodeResult) => {
@@ -340,6 +343,7 @@ export class FlowVisualProgrammingComponent
                 }
 
                 const initialStateData = startNodeInFlow.data.initialState;
+                const metadata = getUIMetadataForComparison(startNodeInFlow);
 
                 return this.startNodeService.getStartNodes().pipe(
                     switchMap((startNodes) => {
@@ -353,6 +357,7 @@ export class FlowVisualProgrammingComponent
                                 {
                                     graph: this.graph.id,
                                     variables: initialStateData,
+                                    metadata,
                                 }
                             );
                         }
@@ -360,6 +365,7 @@ export class FlowVisualProgrammingComponent
                         return this.startNodeService.createStartNode({
                             graph: this.graph.id,
                             variables: initialStateData,
+                            metadata,
                         });
                     }),
                     switchMap(() =>

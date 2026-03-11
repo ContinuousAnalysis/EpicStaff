@@ -140,7 +140,7 @@ class BaseKnowledgeSearchMessage(BaseModel):
 
     collection_id: int
     rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
-    rag_type: str  # Type of RAG ("naive", "graph", etc.)
+    rag_type: Literal["naive", "graph"]
     uuid: str
     query: str
     rag_search_config: (
@@ -407,13 +407,19 @@ class KnowledgeSearchMessage(BaseModel):
 
 
 class ChunkDocumentMessage(BaseModel):
-    naive_rag_document_id: int
+    chunking_job_id: str  # UUID
+    rag_type: Literal["naive", "graph"]
+    document_config_id: int
 
 
 class ChunkDocumentMessageResponse(BaseModel):
-    naive_rag_document_id: int
-    success: bool
-    message: str | None
+    chunking_job_id: str  # UUID
+    rag_type: Literal["naive", "graph"]
+    document_config_id: int
+    status: str  # "completed", "failed", "cancelled"
+    chunk_count: int | None = None
+    message: str | None = None
+    elapsed_time: float | None = None
 
 
 class StopSessionMessage(BaseModel):
@@ -423,9 +429,38 @@ class StopSessionMessage(BaseModel):
 class WebhookEventData(BaseModel):
     path: str
     payload: dict
+    config_id: str | None = None
 
 
 class ProcessRagIndexingMessage(BaseModel):
     rag_id: int
-    rag_type: str  # "naive" or "graph"
+    rag_type: Literal["naive", "graph"]
     collection_id: int
+
+
+class BaseTunnelConfigData(BaseModel):
+    name: str
+
+    @classmethod
+    def _tunnel_prefix(cls):
+        return "base"
+
+    @property
+    def unique_id(self):
+        return f"{self.__class__._tunnel_prefix()}:{self.name}"
+
+
+class NgrokConfigData(BaseTunnelConfigData):
+    auth_token: str
+    domain: str | None = None
+    region: Literal["us", "eu", "ap"] | None = None
+
+    @classmethod
+    def _tunnel_prefix(cls) -> str:
+        return "ngrok"
+
+
+class WebhookConfigData(BaseModel):
+    ngrok_configs: list[NgrokConfigData]
+    # other configs
+    ...
