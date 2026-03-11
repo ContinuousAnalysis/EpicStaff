@@ -4,7 +4,7 @@ export const DEFAULT_EDGE_NODE_PORTS: BasePort[] = [
     {
         port_type: 'input',
         role: 'edge-in',
-        multiple: true,
+        multiple: false,
         label: 'In',
         allowedConnections: [
             'project-out',
