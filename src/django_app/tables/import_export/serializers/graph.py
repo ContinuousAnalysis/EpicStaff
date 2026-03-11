@@ -14,6 +14,7 @@ from tables.models import (
     TelegramTriggerNodeField,
     AudioTranscriptionNode,
     Edge,
+    ConditionalEdge,
     PythonCode,
     WebhookTrigger,
     ConditionGroup,
@@ -159,8 +160,22 @@ class EdgeImportSerializer(serializers.ModelSerializer):
         exclude = ["created_at", "updated_at", "content_hash"]
 
 
+class ConditionalEdgeImportSerializer(serializers.ModelSerializer):
+    python_code = PythonCodeImportSerializer(read_only=True)
+    python_code_id = serializers.PrimaryKeyRelatedField(
+        queryset=PythonCode.objects.all(),
+        source="python_code",
+        write_only=True,
+    )
+
+    class Meta:
+        model = ConditionalEdge
+        exclude = ["created_at", "updated_at", "content_hash"]
+
+
 class GraphImportSerializer(serializers.ModelSerializer):
     edge_list = EdgeImportSerializer(many=True, read_only=True)
+    conditional_edge_list = ConditionalEdgeImportSerializer(many=True, read_only=True)
     nodes = serializers.JSONField(required=False)
 
     class Meta:
