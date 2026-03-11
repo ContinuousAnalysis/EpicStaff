@@ -5,10 +5,10 @@ from django.db import models
 from loguru import logger
 from django.utils import timezone
 
-from tables.models.base_models import BaseGraphEntity, BaseGlobalNode
+from tables.models.base_models import BaseGraphEntity, BaseGlobalNode, TimestampMixin
 
 
-class Graph(models.Model):
+class Graph(TimestampMixin, models.Model):
     tags = models.ManyToManyField(to="GraphTag", blank=True, default=[])
 
     name = models.CharField(max_length=255, blank=False)
@@ -385,9 +385,14 @@ class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
     telegram_bot_api_key = models.CharField(
         max_length=255, blank=True, null=True, default=None
     )
-    url_path = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="telegram_trigger_node_list"
+    )
+    webhook_trigger = models.ForeignKey(
+        "WebhookTrigger",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="telegram_trigger_nodes",
     )
 
     class Meta:

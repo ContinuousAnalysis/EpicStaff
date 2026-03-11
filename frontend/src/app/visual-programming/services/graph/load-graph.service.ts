@@ -290,7 +290,7 @@ function buildWebhookTriggerNode(wn: GetWebhookTriggerNodeRequest, idx: number):
         type: NodeType.WEBHOOK_TRIGGER,
         node_name: wn.node_name,
         data: {
-            webhook_trigger_path: wn.webhook_trigger_path,
+            webhook_trigger: wn.webhook_trigger,
             python_code: {
                 name: wn.node_name,
                 libraries: wn.python_code.libraries,
@@ -319,6 +319,7 @@ function buildTelegramTriggerNode(tn: GetTelegramTriggerNodeRequest, idx: number
         node_name: tn.node_name,
         data: {
             telegram_bot_api_key: tn.telegram_bot_api_key,
+            webhook_trigger: tn.webhook_trigger,
             fields: tn.fields,
         },
         position: ui.position,

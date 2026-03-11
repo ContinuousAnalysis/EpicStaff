@@ -213,7 +213,7 @@ export class FlowGraphCoreMenuComponent {
         }
         else if (type === NodeType.WEBHOOK_TRIGGER) {
             data = {
-                webhook_trigger: 0,
+                webhook_trigger: null,
                 python_code: {
                     name: 'Webhook trigger Node',
                     libraries: [],
@@ -224,6 +224,7 @@ export class FlowGraphCoreMenuComponent {
         }
         else if (type === NodeType.TELEGRAM_TRIGGER) {
             data = {
+                webhook_trigger: null,
                 telegram_bot_api_key: '',
                 fields: [],
             }
