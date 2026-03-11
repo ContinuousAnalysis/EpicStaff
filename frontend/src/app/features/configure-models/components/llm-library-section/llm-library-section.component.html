@@ -46,7 +46,7 @@
         </div>
     </header>
 
-    @for (group of filteredGroups; track group.id) {
+    @for (group of filteredGroups(); track group.id) {
         <div class="llm-library__provider-group">
             <div class="llm-library__provider-header">
                 <app-icon

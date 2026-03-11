@@ -20,6 +20,8 @@ export class LlmProvidersStorageService {
     private providersByTypeSignal = signal<Map<ModelTypes, LLM_Provider[]>>(new Map());
     private providerTypesLoaded = signal<Set<ModelTypes>>(new Set());
 
+    public readonly providersByType = this.providersByTypeSignal.asReadonly();
+
     getProviders(forceRefresh = false): Observable<LLM_Provider[]> {
         if (this.providersLoaded() && !forceRefresh) {
             return of(this.providersSignal());

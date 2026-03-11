@@ -13,7 +13,7 @@ import { LlmLibraryModel } from '../../interfaces/llm-library-model.interface';
 export class LlmLibraryCardComponent {
     public readonly model = input.required<LlmLibraryModel>();
 
-    public readonly editClick = output<string>();
+    public readonly editClick = output<number>();
     public readonly deleteClick = output<LlmLibraryModel>();
 
     public get isUsed(): boolean {

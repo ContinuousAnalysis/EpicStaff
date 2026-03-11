@@ -1,7 +1,7 @@
 export interface LlmLibraryModel {
-  id: string;
-  name: string;
-  createdBy: string;
+  id: number;
+  customName: string;
+  modelName: string;
   tags: string[];
   temperature: number;
   usedByCount: number | null; // null = "Ready to be used"
