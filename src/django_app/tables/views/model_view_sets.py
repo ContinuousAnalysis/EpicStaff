@@ -769,37 +769,54 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
         return Graph.objects.prefetch_related("tags")
 
 
-class CrewNodeViewSet(viewsets.ModelViewSet):
+class ContentHashPreconditionMixin:
+    """Passes content_hash from request data to the model instance before saving.
+
+    The model's ContentHashMixin.save() validates _expected_hash against the DB,
+    raising 409 Conflict on mismatch. Omitting content_hash skips the check.
+    Scripts can also set instance._expected_hash = hash before calling .save().
+    """
+
+    def perform_update(self, serializer):
+        incoming_hash = self.request.data.get("content_hash")
+        if incoming_hash is not None:
+            serializer.instance._expected_hash = incoming_hash
+        super().perform_update(serializer)
+
+
+class CrewNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = CrewNode.objects.all()
     serializer_class = CrewNodeSerializer
 
 
-class PythonNodeViewSet(viewsets.ModelViewSet):
+class PythonNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = PythonNode.objects.all()
     serializer_class = PythonNodeSerializer
 
 
-class FileExtractorNodeViewSet(viewsets.ModelViewSet):
+class FileExtractorNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = FileExtractorNode.objects.all()
     serializer_class = FileExtractorNodeSerializer
 
 
-class AudioTranscriptionNodeViewSet(viewsets.ModelViewSet):
+class AudioTranscriptionNodeViewSet(
+    ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = AudioTranscriptionNode.objects.all()
     serializer_class = AudioTranscriptionNodeSerializer
 
 
-class LLMNodeViewSet(viewsets.ModelViewSet):
+class LLMNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = LLMNode.objects.all()
     serializer_class = LLMNodeSerializer
 
 
-class EdgeViewSet(viewsets.ModelViewSet):
+class EdgeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = Edge.objects.all()
     serializer_class = EdgeSerializer
 
 
-class ConditionalEdgeViewSet(viewsets.ModelViewSet):
+class ConditionalEdgeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = ConditionalEdge.objects.all()
     serializer_class = ConditionalEdgeSerializer
 
@@ -932,17 +949,17 @@ class RealtimeAgentChatViewSet(ReadOnlyModelViewSet):
         )
 
 
-class StartNodeModelViewSet(viewsets.ModelViewSet):
+class StartNodeModelViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = StartNode.objects.all()
     serializer_class = StartNodeSerializer
 
 
-class EndNodeModelViewSet(viewsets.ModelViewSet):
+class EndNodeModelViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = EndNode.objects.all()
     serializer_class = EndNodeSerializer
 
 
-class SubGraphNodeModelViewSet(viewsets.ModelViewSet):
+class SubGraphNodeModelViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = SubGraphNode.objects.all()
     serializer_class = SubGraphNodeSerializer
 
@@ -957,7 +974,9 @@ class ConditionModelViewSet(viewsets.ModelViewSet):
     serializer_class = ConditionSerializer
 
 
-class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
+class DecisionTableNodeModelViewSet(
+    ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = DecisionTableNode.objects.all()
     serializer_class = DecisionTableNodeSerializer
     filter_backends = [DjangoFilterBackend]
@@ -979,6 +998,9 @@ class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
         """
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
+        incoming_hash = request.data.get("content_hash")
+        if incoming_hash is not None:
+            instance._expected_hash = incoming_hash
         node, _ = self._create_or_update_node(
             data=request.data, instance=instance, partial=partial
         )
@@ -1152,7 +1174,7 @@ class GraphOrganizationUserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphOrganizationUserSerializer
 
 
-class WebhookTriggerNodeViewSet(viewsets.ModelViewSet):
+class WebhookTriggerNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = WebhookTriggerNode.objects.all()
     serializer_class = WebhookTriggerNodeSerializer
     filter_backends = [DjangoFilterBackend]
@@ -1165,7 +1187,7 @@ class WebhookTriggerViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
 
 
-class TelegramTriggerNodeViewSet(ModelViewSet):
+class TelegramTriggerNodeViewSet(ContentHashPreconditionMixin, ModelViewSet):
     queryset = TelegramTriggerNode.objects.prefetch_related("fields")
     serializer_class = TelegramTriggerNodeSerializer
 

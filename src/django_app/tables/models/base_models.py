@@ -157,6 +157,18 @@ class ContentHashMixin(models.Model):
         return hashlib.sha256(data_string).hexdigest()
 
     def save(self, *args, **kwargs):
+        if self.pk:
+            expected_hash = getattr(self, "_expected_hash", None)
+            if expected_hash is not None:
+                current_hash = (
+                    self.__class__.objects.values_list("content_hash", flat=True)
+                    .filter(pk=self.pk)
+                    .first()
+                )
+                if current_hash is not None and current_hash != expected_hash:
+                    from tables.exceptions import ContentHashConflictError
+
+                    raise ContentHashConflictError()
         self.content_hash = self.generate_hash()
         super().save(*args, **kwargs)
 
