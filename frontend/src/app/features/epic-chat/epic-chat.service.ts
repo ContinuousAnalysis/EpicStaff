@@ -15,8 +15,12 @@ import {
     providedIn: 'root',
 })
 export class EpicChatService {
+    private static readonly DOCK_STORAGE_KEY = 'epicchat_is_docked';
+
     private readonly epChatCommandSignal = signal<EpChatCommand | null>(null);
-    private readonly isDockedSignal = signal(false);
+    private readonly isDockedSignal = signal(
+        localStorage.getItem(EpicChatService.DOCK_STORAGE_KEY) === '1',
+    );
     private readonly dockWidthSignal = signal(420);
     private readonly isChatOpenSignal = signal(true);
 
@@ -125,6 +129,7 @@ export class EpicChatService {
 
     public toggleDock(): void {
         this.isDockedSignal.update((v) => !v);
+        localStorage.setItem(EpicChatService.DOCK_STORAGE_KEY, this.isDockedSignal() ? '1' : '0');
     }
 
     public setDockWidth(width: number): void {

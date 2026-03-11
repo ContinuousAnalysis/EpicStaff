@@ -57720,18 +57720,14 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
    */
   syncAgentsFromApi(apiBaseUrl) {
     const url = apiBaseUrl.endsWith("/") ? `${apiBaseUrl}graph-light/?epicchat_enabled=true` : `${apiBaseUrl}/graph-light/?epicchat_enabled=true`;
-    console.log("[EpicChat] syncAgentsFromApi: fetching", url);
     this.http.get(url).subscribe({
       next: (response) => {
         const flows = response?.results || [];
         const flowIds = new Set(flows.map((f) => f.id));
         const existingAgents = this.agents();
-        console.log("[EpicChat] syncAgentsFromApi: received flows", flows);
-        console.log("[EpicChat] syncAgentsFromApi: existing agents", existingAgents);
         for (const flow of flows) {
           const existing = existingAgents.find((a3) => a3.epicstaffFlowId === flow.id);
           if (!existing) {
-            console.log("[EpicChat] syncAgentsFromApi: creating agent for flow", flow.id, flow.name);
             this.createAgent({
               agent_name: flow.name,
               agent_description: flow.description || "",
@@ -91764,7 +91760,11 @@ var _ThinkingExpanderComponent = class _ThinkingExpanderComponent {
       } else {
         this.stopTimer();
         this.expanded = false;
+        this.computeElapsedFromDates();
       }
+    }
+    if (!this.isActive && (changes["startedAtUnixSeconds"] || changes["endedAtUnixSeconds"])) {
+      this.computeElapsedFromDates();
     }
   }
   ngOnDestroy() {
@@ -91779,6 +91779,11 @@ var _ThinkingExpanderComponent = class _ThinkingExpanderComponent {
     if (this.tickTimerId) {
       clearInterval(this.tickTimerId);
       this.tickTimerId = null;
+    }
+  }
+  computeElapsedFromDates() {
+    if (this.startedAtUnixSeconds != null && this.endedAtUnixSeconds != null) {
+      this.elapsedSeconds = Math.max(0, this.endedAtUnixSeconds - this.startedAtUnixSeconds);
     }
   }
   updateElapsed() {
@@ -91810,24 +91815,26 @@ var _ThinkingExpanderComponent = class _ThinkingExpanderComponent {
 _ThinkingExpanderComponent.\u0275fac = function ThinkingExpanderComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _ThinkingExpanderComponent)();
 };
-_ThinkingExpanderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ThinkingExpanderComponent, selectors: [["ep-thinking-expander"]], inputs: { entries: "entries", isActive: "isActive", startedAtUnixSeconds: "startedAtUnixSeconds" }, features: [\u0275\u0275NgOnChangesFeature], decls: 1, vars: 1, consts: [[1, "ep-thinking", 3, "ep-thinking--expanded"], [1, "ep-thinking"], ["type", "button", 1, "ep-thinking__header", 3, "click"], [1, "ep-thinking__chevron"], [1, "ep-thinking__summary"], [1, "ep-thinking__history"], [1, "ep-thinking__timer"], [1, "ep-thinking__item"], ["type", "button", 1, "ep-thinking__item-header", 3, "click"], [1, "ep-thinking__chevron-small"], [1, "ep-thinking__item-summary"], [1, "ep-thinking__item-body"]], template: function ThinkingExpanderComponent_Template(rf, ctx) {
+_ThinkingExpanderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ThinkingExpanderComponent, selectors: [["ep-thinking-expander"]], inputs: { entries: "entries", isActive: "isActive", startedAtUnixSeconds: "startedAtUnixSeconds", endedAtUnixSeconds: "endedAtUnixSeconds" }, features: [\u0275\u0275NgOnChangesFeature], decls: 1, vars: 1, consts: [[1, "ep-thinking", 3, "ep-thinking--expanded"], [1, "ep-thinking"], ["type", "button", 1, "ep-thinking__header", 3, "click"], [1, "ep-thinking__chevron"], [1, "ep-thinking__summary"], [1, "ep-thinking__history"], [1, "ep-thinking__timer"], [1, "ep-thinking__item"], ["type", "button", 1, "ep-thinking__item-header", 3, "click"], [1, "ep-thinking__chevron-small"], [1, "ep-thinking__item-summary"], [1, "ep-thinking__item-body"]], template: function ThinkingExpanderComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275conditionalCreate(0, ThinkingExpanderComponent_Conditional_0_Template, 8, 5, "div", 0);
   }
   if (rf & 2) {
     \u0275\u0275conditional(ctx.hasEntries ? 0 : -1);
   }
-}, dependencies: [CommonModule], styles: ["\n\n.ep-thinking[_ngcontent-%COMP%] {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n}\n.ep-thinking__header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron[_ngcontent-%COMP%] {\n  width: 12px;\n  text-align: center;\n}\n.ep-thinking__summary[_ngcontent-%COMP%] {\n  flex: 1;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer[_ngcontent-%COMP%] {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n}\n.ep-thinking__history[_ngcontent-%COMP%] {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  text-align: left;\n}\n.ep-thinking__chevron-small[_ngcontent-%COMP%] {\n  width: 10px;\n  text-align: center;\n}\n.ep-thinking__item-summary[_ngcontent-%COMP%] {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body[_ngcontent-%COMP%] {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text-muted);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */"], changeDetection: 0 });
+}, dependencies: [CommonModule], styles: ["\n\n.ep-thinking[_ngcontent-%COMP%] {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n  overflow: hidden;\n}\n.ep-thinking__header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron[_ngcontent-%COMP%] {\n  width: 12px;\n  text-align: center;\n}\n.ep-thinking__summary[_ngcontent-%COMP%] {\n  flex: 1;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer[_ngcontent-%COMP%] {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n}\n.ep-thinking__history[_ngcontent-%COMP%] {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  text-align: left;\n}\n.ep-thinking__chevron-small[_ngcontent-%COMP%] {\n  width: 10px;\n  text-align: center;\n}\n.ep-thinking__item-summary[_ngcontent-%COMP%] {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body[_ngcontent-%COMP%] {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text-muted);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */"], changeDetection: 0 });
 var ThinkingExpanderComponent = _ThinkingExpanderComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ThinkingExpanderComponent, [{
     type: Component,
-    args: [{ selector: "ep-thinking-expander", standalone: true, imports: [CommonModule], changeDetection: ChangeDetectionStrategy.OnPush, template: '@if (hasEntries) {\n  <div class="ep-thinking" [class.ep-thinking--expanded]="expanded">\n    <button type="button" class="ep-thinking__header" (click)="toggleExpanded()">\n      <span class="ep-thinking__chevron">{{ expanded ? "\u25BE" : "\u25B8" }}</span>\n      <span class="ep-thinking__summary">\n        @if (isActive) {\n          {{ latestSummary }}\n          <span class="ep-thinking__timer">({{ elapsedSeconds }}s)</span>\n        } @else {\n          Thought for {{ elapsedSeconds }}s\n        }\n      </span>\n    </button>\n\n    @if (expanded) {\n      <div class="ep-thinking__history">\n        @for (entry of entries; track $index) {\n          <div class="ep-thinking__item">\n            <button type="button" class="ep-thinking__item-header" (click)="toggleItem($index)">\n              <span class="ep-thinking__chevron-small">\n                {{ isItemExpanded($index) ? "\u25BE" : "\u25B8" }}\n              </span>\n              <span class="ep-thinking__item-summary">\n                {{ summary(entry) }}\n              </span>\n            </button>\n\n            @if (isItemExpanded($index)) {\n              <div class="ep-thinking__item-body">\n                {{ entry }}\n              </div>\n            }\n          </div>\n        }\n      </div>\n    }\n  </div>\n}\n', styles: ["/* src/app/components/thinking-expander/thinking-expander.component.scss */\n.ep-thinking {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n}\n.ep-thinking__header {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron {\n  width: 12px;\n  text-align: center;\n}\n.ep-thinking__summary {\n  flex: 1;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n}\n.ep-thinking__history {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  text-align: left;\n}\n.ep-thinking__chevron-small {\n  width: 10px;\n  text-align: center;\n}\n.ep-thinking__item-summary {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text-muted);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */\n"] }]
+    args: [{ selector: "ep-thinking-expander", standalone: true, imports: [CommonModule], changeDetection: ChangeDetectionStrategy.OnPush, template: '@if (hasEntries) {\n  <div class="ep-thinking" [class.ep-thinking--expanded]="expanded">\n    <button type="button" class="ep-thinking__header" (click)="toggleExpanded()">\n      <span class="ep-thinking__chevron">{{ expanded ? "\u25BE" : "\u25B8" }}</span>\n      <span class="ep-thinking__summary">\n        @if (isActive) {\n          {{ latestSummary }}\n          <span class="ep-thinking__timer">({{ elapsedSeconds }}s)</span>\n        } @else {\n          Thought for {{ elapsedSeconds }}s\n        }\n      </span>\n    </button>\n\n    @if (expanded) {\n      <div class="ep-thinking__history">\n        @for (entry of entries; track $index) {\n          <div class="ep-thinking__item">\n            <button type="button" class="ep-thinking__item-header" (click)="toggleItem($index)">\n              <span class="ep-thinking__chevron-small">\n                {{ isItemExpanded($index) ? "\u25BE" : "\u25B8" }}\n              </span>\n              <span class="ep-thinking__item-summary">\n                {{ summary(entry) }}\n              </span>\n            </button>\n\n            @if (isItemExpanded($index)) {\n              <div class="ep-thinking__item-body">\n                {{ entry }}\n              </div>\n            }\n          </div>\n        }\n      </div>\n    }\n  </div>\n}\n', styles: ["/* src/app/components/thinking-expander/thinking-expander.component.scss */\n.ep-thinking {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n  overflow: hidden;\n}\n.ep-thinking__header {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron {\n  width: 12px;\n  text-align: center;\n}\n.ep-thinking__summary {\n  flex: 1;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n}\n.ep-thinking__history {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  text-align: left;\n}\n.ep-thinking__chevron-small {\n  width: 10px;\n  text-align: center;\n}\n.ep-thinking__item-summary {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text-muted);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */\n"] }]
   }], null, { entries: [{
     type: Input
   }], isActive: [{
     type: Input
   }], startedAtUnixSeconds: [{
+    type: Input
+  }], endedAtUnixSeconds: [{
     type: Input
   }] });
 })();
@@ -91900,7 +91907,7 @@ function MessageItemComponent_Conditional_3_Conditional_3_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("entries", ctx_r0.thinkingEntries)("isActive", ctx_r0.isThinkingActive)("startedAtUnixSeconds", ctx_r0.message._epicaThinkingStartedAt ?? ctx_r0.message.time ?? null);
+    \u0275\u0275property("entries", ctx_r0.thinkingEntries)("isActive", ctx_r0.isThinkingActive)("startedAtUnixSeconds", ctx_r0.message._epicaThinkingStartedAt ?? ctx_r0.message.time ?? null)("endedAtUnixSeconds", ctx_r0.message._epicaThinkingEndedAt ?? null);
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_4_Template(rf, ctx) {
@@ -92001,7 +92008,7 @@ function MessageItemComponent_Conditional_3_Template(rf, ctx) {
     \u0275\u0275elementStart(0, "div", 2)(1, "div", 5);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(3, MessageItemComponent_Conditional_3_Conditional_3_Template, 1, 3, "ep-thinking-expander", 9);
+    \u0275\u0275conditionalCreate(3, MessageItemComponent_Conditional_3_Conditional_3_Template, 1, 4, "ep-thinking-expander", 9);
     \u0275\u0275conditionalCreate(4, MessageItemComponent_Conditional_3_Conditional_4_Template, 2, 1, "div", 6);
     \u0275\u0275conditionalCreate(5, MessageItemComponent_Conditional_3_Conditional_5_Template, 2, 0);
     \u0275\u0275conditionalCreate(6, MessageItemComponent_Conditional_3_Conditional_6_Template, 2, 1, "div", 6);
@@ -92193,7 +92200,7 @@ var _MessageItemComponent = class _MessageItemComponent {
 _MessageItemComponent.\u0275fac = function MessageItemComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _MessageItemComponent)();
 };
-_MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageItemComponent, selectors: [["ep-message-item"]], inputs: { message: "message" }, outputs: { actionClick: "actionClick" }, decls: 6, vars: 8, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [3, "entries", "isActive", "startedAtUnixSeconds"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], [3, "disabled"], [3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], ["height", "80", "width", "80", "alt", "Epica sleeping", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
+_MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageItemComponent, selectors: [["ep-message-item"]], inputs: { message: "message" }, outputs: { actionClick: "actionClick" }, decls: 6, vars: 8, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [3, "entries", "isActive", "startedAtUnixSeconds", "endedAtUnixSeconds"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], [3, "disabled"], [3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], ["height", "80", "width", "80", "alt", "Epica sleeping", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275conditionalCreate(1, MessageItemComponent_Conditional_1_Template, 2, 1, "div", 1);
@@ -92266,6 +92273,7 @@ var MessageItemComponent = _MessageItemComponent;
           [entries]="thinkingEntries"
           [isActive]="isThinkingActive"
           [startedAtUnixSeconds]="message._epicaThinkingStartedAt ?? message.time ?? null"
+          [endedAtUnixSeconds]="message._epicaThinkingEndedAt ?? null"
         />
       }
 
@@ -92687,6 +92695,142 @@ var ChatBodyComponent = _ChatBodyComponent;
 })();
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatBodyComponent, { className: "ChatBodyComponent", filePath: "src/app/components/chat-body/chat-body.component.ts", lineNumber: 26 });
+})();
+
+// src/app/components/shared/menu/menu-item.component.ts
+var _c014 = ["*"];
+var _MenuItemComponent = class _MenuItemComponent {
+  constructor() {
+    this.role = "menuitem";
+    this.tabindex = 0;
+  }
+};
+_MenuItemComponent.\u0275fac = function MenuItemComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _MenuItemComponent)();
+};
+_MenuItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MenuItemComponent, selectors: [["ep-menu-item"]], hostVars: 2, hostBindings: function MenuItemComponent_HostBindings(rf, ctx) {
+  if (rf & 2) {
+    \u0275\u0275attribute("role", ctx.role)("tabindex", ctx.tabindex);
+  }
+}, ngContentSelectors: _c014, decls: 1, vars: 0, template: function MenuItemComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275projectionDef();
+    \u0275\u0275projection(0);
+  }
+}, styles: ["\n\n[_nghost-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n  transition: background-color 0.15s;\n}\n[_nghost-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n[_nghost-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-menu-item--active[_nghost-%COMP%] {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n/*# sourceMappingURL=menu-item.component.css.map */"] });
+var MenuItemComponent = _MenuItemComponent;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MenuItemComponent, [{
+    type: Component,
+    args: [{ selector: "ep-menu-item", template: `<ng-content></ng-content>`, styles: ["/* src/app/components/shared/menu/menu-item.component.scss */\n:host {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n  transition: background-color 0.15s;\n}\n:host:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n:host:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n:host.ep-menu-item--active {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n/*# sourceMappingURL=menu-item.component.css.map */\n"] }]
+  }], null, { role: [{
+    type: HostBinding,
+    args: ["attr.role"]
+  }], tabindex: [{
+    type: HostBinding,
+    args: ["attr.tabindex"]
+  }] });
+})();
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MenuItemComponent, { className: "MenuItemComponent", filePath: "src/app/components/shared/menu/menu-item.component.ts", lineNumber: 8 });
+})();
+
+// src/app/components/shared/menu/menu.component.ts
+var _c015 = ["*"];
+var _MenuComponent = class _MenuComponent {
+  constructor(elRef) {
+    this.elRef = elRef;
+    this.closed = new EventEmitter();
+    this.filePickerActive = false;
+  }
+  /** Detect when a file input (or label wrapping one) is clicked inside the menu */
+  onMenuClick(event) {
+    const target = event.target;
+    const isFileInput = target.tagName === "INPUT" && target.type === "file";
+    const isLabelWithFileInput = target.tagName === "LABEL" && !!target.querySelector('input[type="file"]');
+    if (isFileInput || isLabelWithFileInput) {
+      this.filePickerActive = true;
+    }
+  }
+  /** Window loses focus when any native dialog (e.g. file picker) opens */
+  onWindowBlur() {
+    if (this.hasFileInput()) {
+      this.filePickerActive = true;
+    }
+  }
+  /** Window regains focus when the native file dialog is dismissed */
+  onWindowFocus() {
+    if (this.filePickerActive) {
+      setTimeout(() => {
+        this.filePickerActive = false;
+      }, 300);
+    }
+  }
+  hasFileInput() {
+    return !!this.elRef.nativeElement.querySelector('input[type="file"]');
+  }
+  onDocumentClick(event) {
+    if (this.filePickerActive)
+      return;
+    const path = event.composedPath?.() ?? [];
+    const inside = path.includes(this.elRef.nativeElement) || this.elRef.nativeElement.contains(event.target);
+    if (!inside) {
+      this.closed.emit();
+    }
+  }
+  onEscape() {
+    this.closed.emit();
+  }
+};
+_MenuComponent.\u0275fac = function MenuComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _MenuComponent)(\u0275\u0275directiveInject(ElementRef));
+};
+_MenuComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MenuComponent, selectors: [["ep-menu"]], hostBindings: function MenuComponent_HostBindings(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275listener("click", function MenuComponent_click_HostBindingHandler($event) {
+      return ctx.onMenuClick($event);
+    })("blur", function MenuComponent_blur_HostBindingHandler() {
+      return ctx.onWindowBlur();
+    }, \u0275\u0275resolveWindow)("focus", function MenuComponent_focus_HostBindingHandler() {
+      return ctx.onWindowFocus();
+    }, \u0275\u0275resolveWindow)("click", function MenuComponent_click_HostBindingHandler($event) {
+      return ctx.onDocumentClick($event);
+    }, \u0275\u0275resolveDocument)("keydown.escape", function MenuComponent_keydown_escape_HostBindingHandler() {
+      return ctx.onEscape();
+    }, \u0275\u0275resolveDocument);
+  }
+}, outputs: { closed: "closed" }, ngContentSelectors: _c015, decls: 1, vars: 0, template: function MenuComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275projectionDef();
+    \u0275\u0275projection(0);
+  }
+}, styles: ["\n\n[_nghost-%COMP%] {\n  position: absolute;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  padding: 12px 0;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n  min-width: 160px;\n}\n/*# sourceMappingURL=menu.component.css.map */"] });
+var MenuComponent = _MenuComponent;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MenuComponent, [{
+    type: Component,
+    args: [{ selector: "ep-menu", template: `<ng-content></ng-content>`, styles: ["/* src/app/components/shared/menu/menu.component.scss */\n:host {\n  position: absolute;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  padding: 12px 0;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n  min-width: 160px;\n}\n/*# sourceMappingURL=menu.component.css.map */\n"] }]
+  }], () => [{ type: ElementRef }], { closed: [{
+    type: Output
+  }], onMenuClick: [{
+    type: HostListener,
+    args: ["click", ["$event"]]
+  }], onWindowBlur: [{
+    type: HostListener,
+    args: ["window:blur"]
+  }], onWindowFocus: [{
+    type: HostListener,
+    args: ["window:focus"]
+  }], onDocumentClick: [{
+    type: HostListener,
+    args: ["document:click", ["$event"]]
+  }], onEscape: [{
+    type: HostListener,
+    args: ["document:keydown.escape"]
+  }] });
+})();
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MenuComponent, { className: "MenuComponent", filePath: "src/app/components/shared/menu/menu.component.ts", lineNumber: 8 });
 })();
 
 // src/app/components/shared/microphone/microphone.component.ts
@@ -93410,79 +93554,78 @@ var ApiService = _ApiService;
 })();
 
 // src/app/components/shared/recent-files-menu/recent-files-menu.component.ts
-var _c014 = ["attachFileMenuItem"];
+var _c016 = ["attachFileMenuItem"];
 var _forTrack06 = ($index, $item) => $item.name;
-function RecentFilesMenuComponent_Conditional_1_For_3_Conditional_4_Template(rf, ctx) {
+function RecentFilesMenuComponent_Conditional_1_For_3_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275domElementStart(0, "span", 9);
+    \u0275\u0275elementStart(0, "span", 9);
     \u0275\u0275text(1, "(attached)");
-    \u0275\u0275domElementEnd();
+    \u0275\u0275elementEnd();
   }
 }
 function RecentFilesMenuComponent_Conditional_1_For_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275domElementStart(0, "div", 5)(1, "div", 7);
-    \u0275\u0275domListener("click", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_click_1_listener() {
+    \u0275\u0275elementStart(0, "div", 7);
+    \u0275\u0275listener("click", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_click_0_listener() {
       const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.attachRecentFile(file_r3));
-    })("keydown.enter", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_keydown_enter_1_listener() {
+    })("keydown.enter", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_keydown_enter_0_listener() {
       const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.attachRecentFile(file_r3));
-    })("keydown.space", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_keydown_space_1_listener() {
+    })("keydown.space", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_keydown_space_0_listener() {
       const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.attachRecentFile(file_r3));
-    })("mouseenter", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_mouseenter_1_listener() {
+    })("mouseenter", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_mouseenter_0_listener() {
       const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.onFileHover(file_r3));
-    })("mouseleave", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_mouseleave_1_listener() {
+    })("mouseleave", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_mouseleave_0_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.onFileHover(null));
     });
-    \u0275\u0275domElementStart(2, "div", 8);
-    \u0275\u0275text(3);
-    \u0275\u0275conditionalCreate(4, RecentFilesMenuComponent_Conditional_1_For_3_Conditional_4_Template, 2, 0, "span", 9);
-    \u0275\u0275domElementEnd();
-    \u0275\u0275domElementStart(5, "div", 10);
-    \u0275\u0275domListener("click", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_click_5_listener($event) {
+    \u0275\u0275elementStart(1, "div", 8);
+    \u0275\u0275text(2);
+    \u0275\u0275conditionalCreate(3, RecentFilesMenuComponent_Conditional_1_For_3_Conditional_3_Template, 2, 0, "span", 9);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 10);
+    \u0275\u0275listener("click", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_click_4_listener($event) {
       const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.removeFileFromRecentFiles($event, file_r3));
-    })("keydown", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_keydown_5_listener($event) {
+    })("keydown", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_keydown_4_listener($event) {
       const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.onRemoveFileKeydown($event, file_r3));
     });
-    \u0275\u0275domElement(6, "img", 11);
-    \u0275\u0275domElementEnd()()();
+    \u0275\u0275element(5, "img", 11);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
     const file_r3 = ctx.$implicit;
     const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance();
     \u0275\u0275classProp("disabled", ctx_r3.isFileAlreadyAttached(file_r3));
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate1(" ", file_r3.name, " ");
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r3.isFileAlreadyAttached(file_r3) ? 4 : -1);
+    \u0275\u0275conditional(ctx_r3.isFileAlreadyAttached(file_r3) ? 3 : -1);
     \u0275\u0275advance();
     \u0275\u0275classProp("visible", ctx_r3.hoveredFile === file_r3);
     \u0275\u0275advance();
-    \u0275\u0275domProperty("src", ctx_r3.getImagePath("x.svg"), \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", ctx_r3.getImagePath("x.svg"), \u0275\u0275sanitizeUrl);
   }
 }
 function RecentFilesMenuComponent_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275domElementStart(0, "div", 4);
+    \u0275\u0275elementStart(0, "div", 4);
     \u0275\u0275text(1, "Recent files");
-    \u0275\u0275domElementEnd();
-    \u0275\u0275repeaterCreate(2, RecentFilesMenuComponent_Conditional_1_For_3_Template, 7, 7, "div", 5, _forTrack06);
-    \u0275\u0275domElement(4, "div", 6);
+    \u0275\u0275elementEnd();
+    \u0275\u0275repeaterCreate(2, RecentFilesMenuComponent_Conditional_1_For_3_Template, 6, 7, "div", 5, _forTrack06);
+    \u0275\u0275element(4, "div", 6);
   }
   if (rf & 2) {
     const ctx_r3 = \u0275\u0275nextContext();
@@ -93492,9 +93635,9 @@ function RecentFilesMenuComponent_Conditional_1_Template(rf, ctx) {
 }
 function RecentFilesMenuComponent_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275domElementStart(0, "div");
+    \u0275\u0275elementStart(0, "div");
     \u0275\u0275text(1);
-    \u0275\u0275domElementEnd();
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r3 = \u0275\u0275nextContext();
@@ -93593,74 +93736,78 @@ _RecentFilesMenuComponent.\u0275fac = function RecentFilesMenuComponent_Factory(
 };
 _RecentFilesMenuComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _RecentFilesMenuComponent, selectors: [["ep-recent-files-menu"]], viewQuery: function RecentFilesMenuComponent_Query(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275viewQuery(_c014, 5);
+    \u0275\u0275viewQuery(_c016, 5);
   }
   if (rf & 2) {
     let _t;
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.attachFileMenuItem = _t.first);
   }
-}, inputs: { alreadyAttachedFiles: "alreadyAttachedFiles", multipleFilesAllowed: "multipleFilesAllowed" }, outputs: { fileAttached: "fileAttached", filesAttached: "filesAttached", hideRecentFilesMenu: "hideRecentFilesMenu" }, decls: 6, vars: 6, consts: [["attachFileMenuItem", ""], [1, "ep-recent-files"], [1, "ep-recent-files__menu-item"], ["type", "file", 3, "change", "multiple"], [1, "ep-recent-files__header"], [1, "ep-recent-files__list"], [1, "ep-recent-files__menu_divider"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__menu-item", 3, "click", "keydown.enter", "keydown.space", "mouseenter", "mouseleave"], [1, "ep-recent-files__file-name"], [2, "opacity", "0.6", "margin-left", "4px"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__remove", 3, "click", "keydown"], ["width", "9", "draggable", "false", "alt", "Remove", 3, "src"]], template: function RecentFilesMenuComponent_Template(rf, ctx) {
+}, inputs: { alreadyAttachedFiles: "alreadyAttachedFiles", multipleFilesAllowed: "multipleFilesAllowed" }, outputs: { fileAttached: "fileAttached", filesAttached: "filesAttached", hideRecentFilesMenu: "hideRecentFilesMenu" }, decls: 6, vars: 4, consts: [["attachFileMenuItem", ""], [2, "bottom", "100%", "right", "12px", "margin-bottom", "8px", "min-width", "220px", "max-width", "80%", 3, "closed"], [1, "ep-recent-files__menu-item"], ["type", "file", 3, "change", "multiple"], [1, "ep-recent-files__header"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__menu-item", 3, "disabled"], [1, "ep-recent-files__menu_divider"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__menu-item", 3, "click", "keydown.enter", "keydown.space", "mouseenter", "mouseleave"], [1, "ep-recent-files__file-name"], [2, "opacity", "0.6", "margin-left", "4px"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__remove", 3, "click", "keydown"], ["width", "9", "draggable", "false", "alt", "Remove", 3, "src"]], template: function RecentFilesMenuComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275domElementStart(0, "div", 1);
+    \u0275\u0275elementStart(0, "ep-menu", 1);
+    \u0275\u0275listener("closed", function RecentFilesMenuComponent_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r1);
+      return \u0275\u0275resetView(ctx.hideRecentFilesMenu.emit());
+    });
     \u0275\u0275conditionalCreate(1, RecentFilesMenuComponent_Conditional_1_Template, 5, 0);
-    \u0275\u0275domElementStart(2, "label", 2, 0);
+    \u0275\u0275elementStart(2, "label", 2, 0);
     \u0275\u0275conditionalCreate(4, RecentFilesMenuComponent_Conditional_4_Template, 2, 1, "div");
-    \u0275\u0275domElementStart(5, "input", 3);
-    \u0275\u0275domListener("change", function RecentFilesMenuComponent_Template_input_change_5_listener($event) {
+    \u0275\u0275elementStart(5, "input", 3);
+    \u0275\u0275listener("change", function RecentFilesMenuComponent_Template_input_change_5_listener($event) {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onNewFileSelect($event));
     });
-    \u0275\u0275domElementEnd()()();
+    \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    \u0275\u0275classProp("shadow", ctx.recentFiles.length > 0);
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.recentFiles.length ? 1 : -1);
     \u0275\u0275advance(3);
     \u0275\u0275conditional(ctx.recentFiles.length ? 4 : -1);
     \u0275\u0275advance();
-    \u0275\u0275domProperty("multiple", ctx.multipleFilesAllowed);
+    \u0275\u0275property("multiple", ctx.multipleFilesAllowed);
     \u0275\u0275attribute("accept", ctx.multipleFilesAllowed ? null : ctx.singleModeAccept);
   }
-}, dependencies: [CommonModule], styles: ["\n\n.ep-recent-files[_ngcontent-%COMP%] {\n  position: absolute;\n  bottom: 100%;\n  right: 12px;\n  margin-bottom: 8px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 220px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  border-radius: 4px;\n  max-width: 80%;\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n}\n.ep-recent-files.shadow[_ngcontent-%COMP%] {\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n}\n.ep-recent-files__header[_ngcontent-%COMP%] {\n  padding: 4px 20px 8px;\n  justify-content: space-between;\n  align-items: center;\n  align-self: stretch;\n  width: 100%;\n  height: 32px;\n  font-size: 14px;\n  font-weight: 600;\n}\n.ep-recent-files__list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-recent-files__menu-item.disabled[_ngcontent-%COMP%] {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled[_ngcontent-%COMP%]:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%]   input[type=file][_ngcontent-%COMP%] {\n  display: none;\n}\n.ep-recent-files__file-name[_ngcontent-%COMP%] {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n}\n.ep-recent-files__menu_divider[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 1px;\n  margin: 8px 0;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__remove[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n}\n.ep-recent-files__remove.visible[_ngcontent-%COMP%] {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */"] });
+}, dependencies: [CommonModule, MenuComponent], styles: ["\n\n[_nghost-%COMP%] {\n  pointer-events: auto;\n}\n.ep-recent-files__header[_ngcontent-%COMP%] {\n  padding: 4px 20px 8px;\n  justify-content: space-between;\n  align-items: center;\n  align-self: stretch;\n  width: 100%;\n  height: 32px;\n  font-size: 14px;\n  font-weight: 600;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-recent-files__menu-item.disabled[_ngcontent-%COMP%] {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled[_ngcontent-%COMP%]:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%]   input[type=file][_ngcontent-%COMP%] {\n  display: none;\n}\n.ep-recent-files__file-name[_ngcontent-%COMP%] {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n}\n.ep-recent-files__menu_divider[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 1px;\n  margin: 8px 0;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__remove[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n}\n.ep-recent-files__remove.visible[_ngcontent-%COMP%] {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */"] });
 var RecentFilesMenuComponent = _RecentFilesMenuComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(RecentFilesMenuComponent, [{
     type: Component,
-    args: [{ selector: "ep-recent-files-menu", imports: [CommonModule], template: `<div class="ep-recent-files" [class.shadow]="recentFiles.length > 0">
+    args: [{ selector: "ep-recent-files-menu", imports: [CommonModule, MenuComponent], template: `<ep-menu
+  (closed)="hideRecentFilesMenu.emit()"
+  style="bottom: 100%; right: 12px; margin-bottom: 8px; min-width: 220px; max-width: 80%;"
+>
   @if (recentFiles.length) {
     <div class="ep-recent-files__header">Recent files</div>
 
     @for (file of recentFiles; track file.name) {
-      <div class="ep-recent-files__list">
+      <div
+        class="ep-recent-files__menu-item"
+        [class.disabled]="isFileAlreadyAttached(file)"
+        role="button"
+        tabindex="0"
+        (click)="attachRecentFile(file)"
+        (keydown.enter)="attachRecentFile(file)"
+        (keydown.space)="attachRecentFile(file)"
+        (mouseenter)="onFileHover(file)"
+        (mouseleave)="onFileHover(null)"
+      >
+        <div class="ep-recent-files__file-name">
+          {{ file.name }}
+          @if (isFileAlreadyAttached(file)) {
+            <span style="opacity: 0.6; margin-left: 4px">(attached)</span>
+          }
+        </div>
         <div
-          class="ep-recent-files__menu-item"
-          [class.disabled]="isFileAlreadyAttached(file)"
+          class="ep-recent-files__remove"
+          [class.visible]="hoveredFile === file"
           role="button"
           tabindex="0"
-          (click)="attachRecentFile(file)"
-          (keydown.enter)="attachRecentFile(file)"
-          (keydown.space)="attachRecentFile(file)"
-          (mouseenter)="onFileHover(file)"
-          (mouseleave)="onFileHover(null)"
+          (click)="removeFileFromRecentFiles($event, file)"
+          (keydown)="onRemoveFileKeydown($event, file)"
         >
-          <div class="ep-recent-files__file-name">
-            {{ file.name }}
-            @if (isFileAlreadyAttached(file)) {
-              <span style="opacity: 0.6; margin-left: 4px">(attached)</span>
-            }
-          </div>
-          <div
-            class="ep-recent-files__remove"
-            [class.visible]="hoveredFile === file"
-            role="button"
-            tabindex="0"
-            (click)="removeFileFromRecentFiles($event, file)"
-            (keydown)="onRemoveFileKeydown($event, file)"
-          >
-            <img [src]="getImagePath('x.svg')" width="9" draggable="false" alt="Remove" />
-          </div>
+          <img [src]="getImagePath('x.svg')" width="9" draggable="false" alt="Remove" />
         </div>
       </div>
     }
@@ -93679,8 +93826,8 @@ var RecentFilesMenuComponent = _RecentFilesMenuComponent;
       [attr.accept]="multipleFilesAllowed ? null : singleModeAccept"
     />
   </label>
-</div>
-`, styles: ["/* src/app/components/shared/recent-files-menu/recent-files-menu.component.scss */\n.ep-recent-files {\n  position: absolute;\n  bottom: 100%;\n  right: 12px;\n  margin-bottom: 8px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 220px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  border-radius: 4px;\n  max-width: 80%;\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n}\n.ep-recent-files.shadow {\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n}\n.ep-recent-files__header {\n  padding: 4px 20px 8px;\n  justify-content: space-between;\n  align-items: center;\n  align-self: stretch;\n  width: 100%;\n  height: 32px;\n  font-size: 14px;\n  font-weight: 600;\n}\n.ep-recent-files__list {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-recent-files__menu-item {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n}\n.ep-recent-files__menu-item:hover {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-recent-files__menu-item.disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item input[type=file] {\n  display: none;\n}\n.ep-recent-files__file-name {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n}\n.ep-recent-files__menu_divider {\n  width: 100%;\n  height: 1px;\n  margin: 8px 0;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__remove {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n}\n.ep-recent-files__remove.visible {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */\n"] }]
+</ep-menu>
+`, styles: ["/* src/app/components/shared/recent-files-menu/recent-files-menu.component.scss */\n:host {\n  pointer-events: auto;\n}\n.ep-recent-files__header {\n  padding: 4px 20px 8px;\n  justify-content: space-between;\n  align-items: center;\n  align-self: stretch;\n  width: 100%;\n  height: 32px;\n  font-size: 14px;\n  font-weight: 600;\n}\n.ep-recent-files__menu-item {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-recent-files__menu-item.disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item input[type=file] {\n  display: none;\n}\n.ep-recent-files__file-name {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n}\n.ep-recent-files__menu_divider {\n  width: 100%;\n  height: 1px;\n  margin: 8px 0;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__remove {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n}\n.ep-recent-files__remove.visible {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */\n"] }]
   }], () => [{ type: ApiService }], { alreadyAttachedFiles: [{
     type: Input
   }], multipleFilesAllowed: [{
@@ -93697,19 +93844,20 @@ var RecentFilesMenuComponent = _RecentFilesMenuComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(RecentFilesMenuComponent, { className: "RecentFilesMenuComponent", filePath: "src/app/components/shared/recent-files-menu/recent-files-menu.component.ts", lineNumber: 20 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(RecentFilesMenuComponent, { className: "RecentFilesMenuComponent", filePath: "src/app/components/shared/recent-files-menu/recent-files-menu.component.ts", lineNumber: 21 });
 })();
 
 // src/app/components/chat-footer/chat-footer.component.ts
-var _c015 = ["messageInput"];
+var _c017 = ["messageInput"];
 var _c110 = () => ({ delay: 500 });
 var _c27 = (a0) => ({ "right.px": a0 });
 var _c35 = () => ({ delay: 500, position: "top" });
 var _c45 = (a0) => ({ opacity: a0 });
+var _forTrack07 = ($index, $item) => $item.value;
 function ChatFooterComponent_Conditional_1_For_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 24);
+    \u0275\u0275elementStart(0, "ep-button", 20);
     \u0275\u0275listener("buttonClick", function ChatFooterComponent_Conditional_1_For_3_Template_ep_button_buttonClick_0_listener() {
       const action_r5 = \u0275\u0275restoreView(_r4).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -93729,7 +93877,7 @@ function ChatFooterComponent_Conditional_1_For_3_Template(rf, ctx) {
 function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 19);
+    \u0275\u0275elementStart(0, "div", 15);
     \u0275\u0275listener("wheel", function ChatFooterComponent_Conditional_1_Template_div_wheel_0_listener($event) {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext();
@@ -93743,10 +93891,10 @@ function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onQuickActionsTouchMove($event));
     });
-    \u0275\u0275elementStart(1, "div", 20);
-    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_1_For_3_Template, 2, 3, "ep-button", 21, \u0275\u0275componentInstance().trackActionById, true);
+    \u0275\u0275elementStart(1, "div", 16);
+    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_1_For_3_Template, 2, 3, "ep-button", 17, \u0275\u0275componentInstance().trackActionById, true);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 22);
+    \u0275\u0275elementStart(4, "div", 18);
     \u0275\u0275listener("mouseover", function ChatFooterComponent_Conditional_1_Template_div_mouseover_4_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext();
@@ -93757,7 +93905,7 @@ function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
       return \u0275\u0275resetView(ctx_r2.shiftQuickActionsLeft());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div", 23);
+    \u0275\u0275elementStart(5, "div", 19);
     \u0275\u0275listener("mouseover", function ChatFooterComponent_Conditional_1_Template_div_mouseover_5_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext();
@@ -93780,7 +93928,7 @@ function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
 function ChatFooterComponent_Conditional_2_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r6 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 25);
+    \u0275\u0275elementStart(0, "ep-button", 21);
     \u0275\u0275listener("buttonClick", function ChatFooterComponent_Conditional_2_Conditional_1_Template_ep_button_buttonClick_0_listener() {
       \u0275\u0275restoreView(_r6);
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -93798,13 +93946,13 @@ function ChatFooterComponent_Conditional_2_Conditional_1_Template(rf, ctx) {
 function ChatFooterComponent_Conditional_2_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 26);
+    \u0275\u0275elementStart(0, "div", 22);
     \u0275\u0275text(1, "Attached file:");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 27)(3, "div", 28);
+    \u0275\u0275elementStart(2, "div", 23)(3, "div", 24);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div", 29);
+    \u0275\u0275elementStart(5, "div", 25);
     \u0275\u0275listener("click", function ChatFooterComponent_Conditional_2_Conditional_2_Template_div_click_5_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -93819,8 +93967,8 @@ function ChatFooterComponent_Conditional_2_Conditional_2_Template(rf, ctx) {
       return \u0275\u0275resetView(ctx_r2.onDeselectFile());
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(6, "svg", 30);
-    \u0275\u0275element(7, "path", 31);
+    \u0275\u0275elementStart(6, "svg", 26);
+    \u0275\u0275element(7, "path", 27);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -93833,10 +93981,10 @@ function ChatFooterComponent_Conditional_2_Conditional_2_Template(rf, ctx) {
 function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template(rf, ctx) {
   if (rf & 1) {
     const _r8 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 33)(1, "div", 28);
+    \u0275\u0275elementStart(0, "div", 29)(1, "div", 24);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 29);
+    \u0275\u0275elementStart(3, "div", 25);
     \u0275\u0275listener("click", function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template_div_click_3_listener() {
       const file_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
@@ -93851,8 +93999,8 @@ function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template(rf, ctx)
       return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r9));
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(4, "svg", 30);
-    \u0275\u0275element(5, "path", 31);
+    \u0275\u0275elementStart(4, "svg", 26);
+    \u0275\u0275element(5, "path", 27);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -93863,11 +94011,11 @@ function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template(rf, ctx)
 }
 function ChatFooterComponent_Conditional_2_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 26);
+    \u0275\u0275elementStart(0, "div", 22);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 32);
-    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template, 6, 1, "div", 33, \u0275\u0275componentInstance().trackFileById, true);
+    \u0275\u0275elementStart(2, "div", 28);
+    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template, 6, 1, "div", 29, \u0275\u0275componentInstance().trackFileById, true);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -93896,68 +94044,316 @@ function ChatFooterComponent_Conditional_2_Template(rf, ctx) {
     \u0275\u0275conditional(ctx_r2.isMultipleFilesMode() && ctx_r2.chatService.attachedFiles().length > 0 ? 3 : -1);
   }
 }
-function ChatFooterComponent_Conditional_12_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r12 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu-item", 35);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template_ep_menu_item_click_0_listener() {
+      const tool_r13 = \u0275\u0275restoreView(_r12).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r13));
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template_ep_menu_item_keydown_enter_0_listener() {
+      const tool_r13 = \u0275\u0275restoreView(_r12).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r13));
+    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template_ep_menu_item_keydown_space_0_listener() {
+      const tool_r13 = \u0275\u0275restoreView(_r12).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r13));
+    });
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const tool_r13 = ctx.$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.effectiveSelectedTool === tool_r13);
+    \u0275\u0275attribute("aria-selected", ctx_r2.effectiveSelectedTool === tool_r13);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(tool_r13);
+  }
+}
+function ChatFooterComponent_Conditional_7_Conditional_5_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r11 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu", 34);
+    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_7_Conditional_5_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r11);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.isToolMenuOpen = false);
+    });
+    \u0275\u0275elementStart(1, "ep-menu-item", 35);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_5_Template_ep_menu_item_click_1_listener() {
+      \u0275\u0275restoreView(_r11);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.selectTool(null));
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_5_Template_ep_menu_item_keydown_enter_1_listener() {
+      \u0275\u0275restoreView(_r11);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.selectTool(null));
+    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_5_Template_ep_menu_item_keydown_space_1_listener() {
+      \u0275\u0275restoreView(_r11);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.selectTool(null));
+    });
+    \u0275\u0275text(2, "None");
+    \u0275\u0275elementEnd();
+    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template, 2, 4, "ep-menu-item", 36, \u0275\u0275repeaterTrackByIdentity);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.effectiveSelectedTool === null);
+    \u0275\u0275attribute("aria-selected", ctx_r2.effectiveSelectedTool === null);
+    \u0275\u0275advance(2);
+    \u0275\u0275repeater(ctx_r2.availableTools);
+  }
+}
+function ChatFooterComponent_Conditional_7_Template(rf, ctx) {
   if (rf & 1) {
     const _r10 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 11)(1, "div", 34);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_12_Template_div_click_1_listener() {
+    \u0275\u0275elementStart(0, "div", 7)(1, "button", 30);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Template_button_click_1_listener($event) {
       \u0275\u0275restoreView(_r10);
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.setMode("ask"));
-    })("keydown.enter", function ChatFooterComponent_Conditional_12_Template_div_keydown_enter_1_listener() {
-      \u0275\u0275restoreView(_r10);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.setMode("ask"));
-    })("keydown.space", function ChatFooterComponent_Conditional_12_Template_div_keydown_space_1_listener() {
-      \u0275\u0275restoreView(_r10);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.setMode("ask"));
+      ctx_r2.toggleToolMenu();
+      return \u0275\u0275resetView($event.stopPropagation());
     });
-    \u0275\u0275text(2, " Ask Mode ");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 34);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_12_Template_div_click_3_listener() {
-      \u0275\u0275restoreView(_r10);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.setMode("build"));
-    })("keydown.enter", function ChatFooterComponent_Conditional_12_Template_div_keydown_enter_3_listener() {
-      \u0275\u0275restoreView(_r10);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.setMode("build"));
-    })("keydown.space", function ChatFooterComponent_Conditional_12_Template_div_keydown_space_3_listener() {
-      \u0275\u0275restoreView(_r10);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.setMode("build"));
-    });
-    \u0275\u0275text(4, " Build Mode ");
+    \u0275\u0275text(2);
+    \u0275\u0275namespaceSVG();
+    \u0275\u0275elementStart(3, "svg", 31);
+    \u0275\u0275element(4, "path", 32);
     \u0275\u0275elementEnd()();
+    \u0275\u0275conditionalCreate(5, ChatFooterComponent_Conditional_7_Conditional_5_Template, 5, 3, "ep-menu", 33);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275classProp("chat-footer__mode-option--active", ctx_r2.chatMode === "ask");
+    \u0275\u0275attribute("aria-expanded", ctx_r2.isToolMenuOpen);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", ctx_r2.selectedTool || "Tools", " ");
+    \u0275\u0275advance();
+    \u0275\u0275classProp("chat-footer__tool-chevron--open", ctx_r2.isToolMenuOpen);
     \u0275\u0275advance(2);
-    \u0275\u0275classProp("chat-footer__mode-option--active", ctx_r2.chatMode === "build");
+    \u0275\u0275conditional(ctx_r2.isToolMenuOpen ? 5 : -1);
   }
 }
-function ChatFooterComponent_Conditional_14_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template(rf, ctx) {
   if (rf & 1) {
-    const _r11 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 35);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_14_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r11);
+    const _r16 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu-item", 41);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template_ep_menu_item_click_0_listener() {
+      const m_r17 = \u0275\u0275restoreView(_r16).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r17.value));
+    })("keydown.enter", function ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template_ep_menu_item_keydown_enter_0_listener() {
+      const m_r17 = \u0275\u0275restoreView(_r16).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r17.value));
+    })("keydown.space", function ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template_ep_menu_item_keydown_space_0_listener() {
+      const m_r17 = \u0275\u0275restoreView(_r16).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r17.value));
+    });
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const m_r17 = ctx.$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.webMode() === m_r17.value);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(m_r17.label);
+  }
+}
+function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r20 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "input", 51);
+    \u0275\u0275listener("input", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_input_0_listener($event) {
+      \u0275\u0275restoreView(_r20);
+      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.updateSite(\u0275$index_104_r21, $event));
+    })("keydown.enter", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_keydown_enter_0_listener($event) {
+      \u0275\u0275restoreView(_r20);
+      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.onSiteInputEnter(\u0275$index_104_r21, $event));
+    })("keydown", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_keydown_0_listener($event) {
+      \u0275\u0275restoreView(_r20);
+      return \u0275\u0275resetView($event.stopPropagation());
+    })("click", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_click_0_listener($event) {
+      \u0275\u0275restoreView(_r20);
+      return \u0275\u0275resetView($event.stopPropagation());
+    });
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const site_r22 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275attribute("value", site_r22);
+  }
+}
+function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r23 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 52);
+    \u0275\u0275listener("dblclick", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_dblclick_0_listener() {
+      \u0275\u0275restoreView(_r23);
+      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_104_r21));
+    })("click", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_click_0_listener($event) {
+      \u0275\u0275restoreView(_r23);
+      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      ctx_r2.startEditSite(\u0275$index_104_r21);
+      return \u0275\u0275resetView($event.stopPropagation());
+    })("keydown.enter", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r23);
+      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_104_r21));
+    })("keydown.space", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r23);
+      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_104_r21));
+    });
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const site_r22 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", site_r22, " ");
+  }
+}
+function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r19 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 44);
+    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template, 1, 1, "input", 48)(2, ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template, 2, 1, "div", 49);
+    \u0275\u0275elementStart(3, "button", 50);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Template_button_click_3_listener($event) {
+      const \u0275$index_104_r21 = \u0275\u0275restoreView(_r19).$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      ctx_r2.removeSite(\u0275$index_104_r21);
+      return \u0275\u0275resetView($event.stopPropagation());
+    });
+    \u0275\u0275namespaceSVG();
+    \u0275\u0275elementStart(4, "svg", 26);
+    \u0275\u0275element(5, "path", 27);
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const \u0275$index_104_r21 = ctx.$index;
+    const ctx_r2 = \u0275\u0275nextContext(4);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx_r2.editingSiteIndex === \u0275$index_104_r21 ? 1 : 2);
+  }
+}
+function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r18 = \u0275\u0275getCurrentView();
+    \u0275\u0275element(0, "div", 42);
+    \u0275\u0275elementStart(1, "div", 43);
+    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Template, 6, 1, "div", 44, \u0275\u0275repeaterTrackByIndex);
+    \u0275\u0275elementStart(4, "button", 45);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_Template_button_click_4_listener($event) {
+      \u0275\u0275restoreView(_r18);
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      ctx_r2.addSite();
+      return \u0275\u0275resetView($event.stopPropagation());
+    })("keydown.enter", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_Template_button_keydown_enter_4_listener($event) {
+      \u0275\u0275restoreView(_r18);
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      ctx_r2.addSite();
+      return \u0275\u0275resetView($event.stopPropagation());
+    });
+    \u0275\u0275namespaceSVG();
+    \u0275\u0275elementStart(5, "svg", 46);
+    \u0275\u0275element(6, "path", 47);
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275advance(2);
+    \u0275\u0275repeater(ctx_r2.sites());
+  }
+}
+function ChatFooterComponent_Conditional_8_Conditional_5_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r15 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu", 39);
+    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_8_Conditional_5_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r15);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.isWebMenuOpen = false);
+    });
+    \u0275\u0275repeaterCreate(1, ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template, 2, 3, "ep-menu-item", 40, _forTrack07);
+    \u0275\u0275conditionalCreate(3, ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_Template, 7, 0);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275repeater(ctx_r2.webModes);
+    \u0275\u0275advance(2);
+    \u0275\u0275conditional(ctx_r2.webMode() === "restrict" || ctx_r2.webMode() === "prioritize" ? 3 : -1);
+  }
+}
+function ChatFooterComponent_Conditional_8_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r14 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 8)(1, "button", 37);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_8_Template_button_click_1_listener($event) {
+      \u0275\u0275restoreView(_r14);
+      const ctx_r2 = \u0275\u0275nextContext();
+      ctx_r2.toggleWebMenu();
+      return \u0275\u0275resetView($event.stopPropagation());
+    });
+    \u0275\u0275text(2);
+    \u0275\u0275namespaceSVG();
+    \u0275\u0275elementStart(3, "svg", 31);
+    \u0275\u0275element(4, "path", 32);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275conditionalCreate(5, ChatFooterComponent_Conditional_8_Conditional_5_Template, 4, 1, "ep-menu", 38);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275attribute("aria-expanded", ctx_r2.isWebMenuOpen);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", ctx_r2.webModeLabel(), " ");
+    \u0275\u0275advance();
+    \u0275\u0275classProp("chat-footer__tool-chevron--open", ctx_r2.isWebMenuOpen);
+    \u0275\u0275advance(2);
+    \u0275\u0275conditional(ctx_r2.isWebMenuOpen ? 5 : -1);
+  }
+}
+function ChatFooterComponent_Conditional_10_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r24 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 53);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_10_Template_div_click_0_listener($event) {
+      \u0275\u0275restoreView(_r24);
+      const ctx_r2 = \u0275\u0275nextContext();
+      ctx_r2.toggleRecentFilesMenu();
+      return \u0275\u0275resetView($event.stopPropagation());
+    })("keydown.enter", function ChatFooterComponent_Conditional_10_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r24);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
-    })("keydown.enter", function ChatFooterComponent_Conditional_14_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r11);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
-    })("keydown.space", function ChatFooterComponent_Conditional_14_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r11);
+    })("keydown.space", function ChatFooterComponent_Conditional_10_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r24);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
     });
-    \u0275\u0275element(1, "img", 36);
+    \u0275\u0275element(1, "img", 54);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -93967,26 +94363,26 @@ function ChatFooterComponent_Conditional_14_Template(rf, ctx) {
     \u0275\u0275property("src", ctx_r2.getImagePath("attach.svg"), \u0275\u0275sanitizeUrl);
   }
 }
-function ChatFooterComponent_Conditional_16_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_12_Template(rf, ctx) {
   if (rf & 1) {
-    const _r12 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 37);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_16_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r12);
+    const _r25 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 55);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_12_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r25);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
-    })("keydown.enter", function ChatFooterComponent_Conditional_16_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r12);
+    })("keydown.enter", function ChatFooterComponent_Conditional_12_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r25);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
-    })("keydown.space", function ChatFooterComponent_Conditional_16_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r12);
+    })("keydown.space", function ChatFooterComponent_Conditional_12_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r25);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 38);
-    \u0275\u0275element(2, "path", 39);
+    \u0275\u0275elementStart(1, "svg", 56);
+    \u0275\u0275element(2, "path", 57);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -93995,58 +94391,46 @@ function ChatFooterComponent_Conditional_16_Template(rf, ctx) {
     \u0275\u0275attribute("aria-label", "Send message");
   }
 }
-function ChatFooterComponent_Conditional_17_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_13_Template(rf, ctx) {
   if (rf & 1) {
-    const _r13 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 40);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_17_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r13);
+    const _r26 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 58);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_13_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r26);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.stopGenerating());
-    })("keydown.enter", function ChatFooterComponent_Conditional_17_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r13);
+    })("keydown.enter", function ChatFooterComponent_Conditional_13_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r26);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.stopGenerating());
-    })("keydown.space", function ChatFooterComponent_Conditional_17_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r13);
+    })("keydown.space", function ChatFooterComponent_Conditional_13_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r26);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.stopGenerating());
     });
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 38);
-    \u0275\u0275element(2, "rect", 41);
+    \u0275\u0275elementStart(1, "svg", 56);
+    \u0275\u0275element(2, "rect", 59);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
     \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c110));
   }
 }
-function ChatFooterComponent_Conditional_18_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_14_Template(rf, ctx) {
   if (rf & 1) {
-    const _r14 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 42);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_18_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r14);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.isModeMenuOpen = false);
-    });
-    \u0275\u0275elementEnd();
-  }
-}
-function ChatFooterComponent_Conditional_19_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r15 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-recent-files-menu", 43);
-    \u0275\u0275listener("fileAttached", function ChatFooterComponent_Conditional_19_Template_ep_recent_files_menu_fileAttached_0_listener($event) {
-      \u0275\u0275restoreView(_r15);
+    const _r27 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-recent-files-menu", 60);
+    \u0275\u0275listener("fileAttached", function ChatFooterComponent_Conditional_14_Template_ep_recent_files_menu_fileAttached_0_listener($event) {
+      \u0275\u0275restoreView(_r27);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onFileAttached($event));
-    })("filesAttached", function ChatFooterComponent_Conditional_19_Template_ep_recent_files_menu_filesAttached_0_listener($event) {
-      \u0275\u0275restoreView(_r15);
+    })("filesAttached", function ChatFooterComponent_Conditional_14_Template_ep_recent_files_menu_filesAttached_0_listener($event) {
+      \u0275\u0275restoreView(_r27);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onFilesAttached($event));
-    })("hideRecentFilesMenu", function ChatFooterComponent_Conditional_19_Template_ep_recent_files_menu_hideRecentFilesMenu_0_listener() {
-      \u0275\u0275restoreView(_r15);
+    })("hideRecentFilesMenu", function ChatFooterComponent_Conditional_14_Template_ep_recent_files_menu_hideRecentFilesMenu_0_listener() {
+      \u0275\u0275restoreView(_r27);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.hideRecentFilesMenu());
     });
@@ -94071,12 +94455,23 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     this.messageInputControl = new FormControl("", [
       Validators.maxLength(CHAT_CONSTANTS.MAX_INPUT_LENGTH)
     ]);
-    this.chatMode = "ask";
-    this.isModeMenuOpen = false;
+    this.selectedTool = null;
+    this.isToolMenuOpen = false;
+    this.isWebMenuOpen = false;
+    this.webMode = signal(null, ...ngDevMode ? [{ debugName: "webMode" }] : []);
+    this.sites = signal([], ...ngDevMode ? [{ debugName: "sites" }] : []);
+    this.webModeLabel = computed(() => this.webModes.find((m2) => m2.value === this.webMode())?.label ?? "Web", ...ngDevMode ? [{ debugName: "webModeLabel" }] : []);
+    this.webModes = [
+      { value: null, label: "No web" },
+      { value: "all", label: "All web" },
+      { value: "restrict", label: "Restrict sites" },
+      { value: "prioritize", label: "Prioritize sites" }
+    ];
     this.shiftQuickActionsValue = 0;
     this.manuallyEnteredText = "";
     this.isVoiceMessage = false;
     this.getImagePath = getImagePath;
+    this.editingSiteIndex = null;
     this.quickActionsLineWidth = 0;
     this.assistantPopupWidth = 0;
     this.touchStartX = 0;
@@ -94109,8 +94504,14 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     const text = this.messageInputControl.value?.trim() || "";
     if (text?.length) {
       const isVoice = this.isVoiceMessage;
+      const tool = this.effectiveSelectedTool;
       this.stopMicrophoneIfActive();
-      this.sendMessage.emit({ text, isVoice });
+      this.sendMessage.emit({
+        text,
+        isVoice,
+        tool,
+        webConfig: this.allowWebFromResponse && this.webMode() ? { mode: this.webMode(), sites: this.sites().filter((s) => !!s.trim()) } : null
+      });
       this.messageInputControl.setValue("");
       this.isVoiceMessage = false;
     }
@@ -94288,7 +94689,11 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     if (!action?.text)
       return;
     this.isVoiceMessage = false;
-    this.sendMessage.emit({ text: action.text, isVoice: false });
+    this.sendMessage.emit({
+      text: action.text,
+      isVoice: false,
+      tool: this.effectiveSelectedTool
+    });
     this.shiftQuickActionsLeft();
   }
   isFooterActionsVisible() {
@@ -94304,12 +94709,130 @@ var _ChatFooterComponent = class _ChatFooterComponent {
   onTextRecognized() {
     this.isVoiceMessage = true;
   }
-  toggleModeMenu() {
-    this.isModeMenuOpen = !this.isModeMenuOpen;
+  ngOnChanges(changes) {
+    if (changes["messages"] && this.selectedTool) {
+      const lastBotMessage = this.lastFinishedBotMessage;
+      if (lastBotMessage && !lastBotMessage._interim) {
+        const tools = lastBotMessage.response?.tools;
+        if (!Array.isArray(tools) || !tools.includes(this.selectedTool)) {
+          this.selectedTool = null;
+        }
+      }
+    }
   }
-  setMode(mode) {
-    this.chatMode = mode;
-    this.isModeMenuOpen = false;
+  get lastFinishedBotMessage() {
+    for (let i = this.messages.length - 1; i >= 0; i--) {
+      const msg = this.messages[i];
+      if (msg.response && !msg._interim) {
+        return msg;
+      }
+    }
+    return null;
+  }
+  get allowFilesFromResponse() {
+    return this.lastFinishedBotMessage?.response?.allow_files === true;
+  }
+  get allowWebFromResponse() {
+    return this.lastFinishedBotMessage?.response?.allow_web === true;
+  }
+  closeAllMenus() {
+    this.isToolMenuOpen = false;
+    this.isWebMenuOpen = false;
+    this.chatService.setIsRecentFilesMenuShown(false);
+  }
+  toggleWebMenu() {
+    const opening = !this.isWebMenuOpen;
+    this.closeAllMenus();
+    this.isWebMenuOpen = opening;
+  }
+  selectWebMode(mode) {
+    this.webMode.set(mode);
+    if (mode !== "restrict" && mode !== "prioritize") {
+      this.isWebMenuOpen = false;
+    } else if (this.sites().length === 0) {
+      this.addSite(0);
+    } else {
+      this.editingSiteIndex = this.sites().length - 1;
+      this.focusLastSiteInput();
+    }
+  }
+  addSite(focusIndex) {
+    const nextIndex = this.sites().length;
+    this.sites.update((s) => [...s, ""]);
+    const targetIndex = focusIndex === void 0 || focusIndex === null ? nextIndex : focusIndex;
+    if (targetIndex !== null) {
+      this.editingSiteIndex = targetIndex;
+      this.focusLastSiteInput();
+    }
+  }
+  focusLastSiteInput() {
+    this.focusSiteInput(this.sites().length - 1);
+  }
+  focusSiteInput(index) {
+    if (index < 0)
+      return;
+    let attempts = 0;
+    const tryFocus = () => {
+      const inputs = document.querySelectorAll(".web-menu__site-input");
+      const targetInput = inputs[index];
+      if (targetInput) {
+        targetInput.focus({ preventScroll: true });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 8) {
+        requestAnimationFrame(tryFocus);
+      }
+    };
+    requestAnimationFrame(tryFocus);
+  }
+  removeSite(index) {
+    this.sites.update((s) => s.filter((_2, i) => i !== index));
+    if (this.editingSiteIndex !== null) {
+      if (this.editingSiteIndex === index) {
+        this.editingSiteIndex = null;
+      } else if (this.editingSiteIndex > index) {
+        this.editingSiteIndex = this.editingSiteIndex - 1;
+      }
+    }
+  }
+  updateSite(index, event) {
+    const value = event.target.value;
+    this.sites.update((s) => {
+      const copy = [...s];
+      copy[index] = value;
+      return copy;
+    });
+  }
+  onSiteInputEnter(index, event) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.addSite();
+  }
+  startEditSite(index) {
+    this.editingSiteIndex = index;
+    this.focusSiteInput(index);
+  }
+  get availableTools() {
+    for (let i = this.messages.length - 1; i >= 0; i--) {
+      const msg = this.messages[i];
+      if (msg.response && !msg._interim) {
+        return Array.isArray(msg.response.tools) ? msg.response.tools : [];
+      }
+    }
+    return [];
+  }
+  get effectiveSelectedTool() {
+    return this.selectedTool && this.availableTools.includes(this.selectedTool) ? this.selectedTool : null;
+  }
+  toggleToolMenu() {
+    const opening = !this.isToolMenuOpen;
+    this.closeAllMenus();
+    this.isToolMenuOpen = opening;
+  }
+  selectTool(tool) {
+    this.selectedTool = tool;
+    this.isToolMenuOpen = false;
   }
   stopGenerating() {
     this.stop.emit();
@@ -94319,8 +94842,12 @@ var _ChatFooterComponent = class _ChatFooterComponent {
   }
   // File attachment methods
   toggleRecentFilesMenu() {
-    if (this.fileAttachmentEnabled) {
-      this.chatService.toggleRecentFilesMenu();
+    if (!this.fileAttachmentEnabled)
+      return;
+    const opening = !this.chatService.isRecentFilesMenuShown();
+    this.closeAllMenus();
+    if (opening) {
+      this.chatService.setIsRecentFilesMenuShown(true);
     }
   }
   onFileAttached(file) {
@@ -94396,7 +94923,7 @@ _ChatFooterComponent.\u0275fac = function ChatFooterComponent_Factory(__ngFactor
 };
 _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatFooterComponent, selectors: [["ep-chat-footer"]], viewQuery: function ChatFooterComponent_Query(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275viewQuery(_c015, 5);
+    \u0275\u0275viewQuery(_c017, 5);
     \u0275\u0275viewQuery(MicrophoneComponent, 5);
   }
   if (rf & 2) {
@@ -94404,7 +94931,7 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.messageInput = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.microphoneComponent = _t.first);
   }
-}, inputs: { isTyping: "isTyping", messages: "messages", currentAgent: "currentAgent", fileAttachmentEnabled: "fileAttachmentEnabled" }, outputs: { sendMessage: "sendMessage", quickActionClick: "quickActionClick", stop: "stop" }, decls: 20, vars: 16, consts: [["messageInput", ""], [1, "chat-footer"], [1, "chat-footer__quick-actions"], [1, "chat-footer__choose-file-button-container"], ["epTooltip", "Make a request", 1, "chat-footer__input", 3, "tooltipOptions"], ["placeholder", "Make a request", "rows", "1", "id", "messageInput", 1, "chat-footer__textarea", 3, "keydown", "formControl"], [1, "chat-footer__bottom-bar"], [1, "chat-footer__mode-dropdown"], ["type", "button", "aria-haspopup", "listbox", 1, "chat-footer__mode-trigger", 3, "click"], ["viewBox", "0 0 10 6", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M1 1L5 5L9 1", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "listbox", 1, "chat-footer__mode-menu"], [1, "chat-footer__bottom-bar-right"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "tooltipOptions"], [1, "chat-footer__input-icon", 3, "voiceStart", "textRecognized", "formControl", "toStopOnClickSelector"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "ngStyle"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "tooltipOptions"], [1, "chat-footer__mode-backdrop"], [3, "alreadyAttachedFiles", "multipleFilesAllowed"], [1, "chat-footer__quick-actions", 3, "wheel", "touchstart", "touchmove"], ["id", "quickActions", 1, "chat-footer__quick-actions-line", 3, "ngStyle"], [3, "disabled", "noBorder"], ["tabindex", "0", 1, "chat-footer__left-gradient", 3, "mouseover", "focus"], ["tabindex", "0", 1, "chat-footer__right-gradient", 3, "mouseover", "focus"], [3, "buttonClick", "disabled", "noBorder"], [3, "buttonClick"], [1, "chat-footer__attached-file-header"], [1, "chat-footer__single-file-item"], [1, "chat-footer__choose-file-label"], ["role", "button", "tabindex", "0", 1, "chat-footer__deselect-file", 3, "click", "keydown.enter", "keydown.space"], ["viewBox", "0 0 9 9", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M1 1L8 8M8 1L1 8", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-footer__multiple-files-container"], [1, "chat-footer__multiple-file-item"], ["role", "option", "tabindex", "0", 1, "chat-footer__mode-option", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["draggable", "false", "alt", "Attach file", 2, "cursor", "pointer", 3, "src"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "ngStyle"], ["viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M2 8L14 2L10 14L8 8L2 8Z", "fill", "white", "stroke", "white", "stroke-width", "0.5", "stroke-linejoin", "round"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "4", "y", "4", "width", "8", "height", "8", "rx", "1", "fill", "white"], [1, "chat-footer__mode-backdrop", 3, "click"], [3, "fileAttached", "filesAttached", "hideRecentFilesMenu", "alreadyAttachedFiles", "multipleFilesAllowed"]], template: function ChatFooterComponent_Template(rf, ctx) {
+}, inputs: { isTyping: "isTyping", messages: "messages", currentAgent: "currentAgent", fileAttachmentEnabled: "fileAttachmentEnabled" }, outputs: { sendMessage: "sendMessage", quickActionClick: "quickActionClick", stop: "stop" }, features: [\u0275\u0275NgOnChangesFeature], decls: 15, vars: 12, consts: [["messageInput", ""], [1, "chat-footer"], [1, "chat-footer__quick-actions"], [1, "chat-footer__choose-file-button-container"], ["epTooltip", "Make a request", 1, "chat-footer__input", 3, "tooltipOptions"], ["placeholder", "Make a request", "rows", "1", "id", "messageInput", 1, "chat-footer__textarea", 3, "keydown", "formControl"], [1, "chat-footer__bottom-bar"], [1, "chat-footer__tool-dropdown"], [1, "chat-footer__web-dropdown"], [1, "chat-footer__bottom-bar-right"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "tooltipOptions"], [1, "chat-footer__input-icon", 3, "voiceStart", "textRecognized", "formControl", "toStopOnClickSelector"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "ngStyle"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "tooltipOptions"], [3, "alreadyAttachedFiles", "multipleFilesAllowed"], [1, "chat-footer__quick-actions", 3, "wheel", "touchstart", "touchmove"], ["id", "quickActions", 1, "chat-footer__quick-actions-line", 3, "ngStyle"], [3, "disabled", "noBorder"], ["tabindex", "0", 1, "chat-footer__left-gradient", 3, "mouseover", "focus"], ["tabindex", "0", 1, "chat-footer__right-gradient", 3, "mouseover", "focus"], [3, "buttonClick", "disabled", "noBorder"], [3, "buttonClick"], [1, "chat-footer__attached-file-header"], [1, "chat-footer__single-file-item"], [1, "chat-footer__choose-file-label"], ["role", "button", "tabindex", "0", 1, "chat-footer__deselect-file", 3, "click", "keydown.enter", "keydown.space"], ["viewBox", "0 0 9 9", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M1 1L8 8M8 1L1 8", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-footer__multiple-files-container"], [1, "chat-footer__multiple-file-item"], ["type", "button", "aria-haspopup", "listbox", 1, "chat-footer__tool-trigger", 3, "click"], ["viewBox", "0 0 10 6", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M1 1L5 5L9 1", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "listbox", 2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "120px"], ["role", "listbox", 2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "120px", 3, "closed"], ["role", "option", 3, "click", "keydown.enter", "keydown.space"], ["role", "option", 3, "ep-menu-item--active"], ["type", "button", 1, "chat-footer__tool-trigger", 3, "click"], [2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "160px", "max-width", "100%", "box-sizing", "border-box"], [2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "160px", "max-width", "100%", "box-sizing", "border-box", 3, "closed"], [3, "ep-menu-item--active"], [3, "click", "keydown.enter", "keydown.space"], [1, "web-menu__divider"], [1, "web-menu__sites"], [1, "web-menu__site-row"], ["type", "button", "aria-label", "Add site", 1, "web-menu__add-site", 3, "click", "keydown.enter"], ["viewBox", "0 0 10 10", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M5 1V9M1 5H9", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input"], ["tabindex", "0", 1, "web-menu__site-label"], ["type", "button", "aria-label", "Remove", 1, "web-menu__site-remove", 3, "click"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input", 3, "input", "keydown.enter", "keydown", "click"], ["tabindex", "0", 1, "web-menu__site-label", 3, "dblclick", "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["draggable", "false", "alt", "Attach file", 2, "cursor", "pointer", 3, "src"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "ngStyle"], ["viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M2 8L14 2L10 14L8 8L2 8Z", "fill", "white", "stroke", "white", "stroke-width", "0.5", "stroke-linejoin", "round"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "4", "y", "4", "width", "8", "height", "8", "rx", "1", "fill", "white"], [3, "fileAttached", "filesAttached", "hideRecentFilesMenu", "alreadyAttachedFiles", "multipleFilesAllowed"]], template: function ChatFooterComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 1);
@@ -94416,35 +94943,23 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return \u0275\u0275resetView(ctx.onKeydown($event));
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "div", 6)(7, "div", 7)(8, "button", 8);
-    \u0275\u0275listener("click", function ChatFooterComponent_Template_button_click_8_listener() {
-      \u0275\u0275restoreView(_r1);
-      return \u0275\u0275resetView(ctx.toggleModeMenu());
-    });
-    \u0275\u0275text(9);
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(10, "svg", 9);
-    \u0275\u0275element(11, "path", 10);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275conditionalCreate(12, ChatFooterComponent_Conditional_12_Template, 5, 4, "div", 11);
-    \u0275\u0275elementEnd();
-    \u0275\u0275namespaceHTML();
-    \u0275\u0275elementStart(13, "div", 12);
-    \u0275\u0275conditionalCreate(14, ChatFooterComponent_Conditional_14_Template, 2, 3, "div", 13);
-    \u0275\u0275elementStart(15, "ep-microphone", 14);
-    \u0275\u0275listener("voiceStart", function ChatFooterComponent_Template_ep_microphone_voiceStart_15_listener() {
+    \u0275\u0275elementStart(6, "div", 6);
+    \u0275\u0275conditionalCreate(7, ChatFooterComponent_Conditional_7_Template, 6, 5, "div", 7);
+    \u0275\u0275conditionalCreate(8, ChatFooterComponent_Conditional_8_Template, 6, 5, "div", 8);
+    \u0275\u0275elementStart(9, "div", 9);
+    \u0275\u0275conditionalCreate(10, ChatFooterComponent_Conditional_10_Template, 2, 3, "div", 10);
+    \u0275\u0275elementStart(11, "ep-microphone", 11);
+    \u0275\u0275listener("voiceStart", function ChatFooterComponent_Template_ep_microphone_voiceStart_11_listener() {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onVoiceStart());
-    })("textRecognized", function ChatFooterComponent_Template_ep_microphone_textRecognized_15_listener() {
+    })("textRecognized", function ChatFooterComponent_Template_ep_microphone_textRecognized_11_listener() {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onTextRecognized());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(16, ChatFooterComponent_Conditional_16_Template, 3, 4, "div", 15)(17, ChatFooterComponent_Conditional_17_Template, 3, 2, "div", 16);
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275conditionalCreate(18, ChatFooterComponent_Conditional_18_Template, 1, 0, "div", 17);
-    \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(19, ChatFooterComponent_Conditional_19_Template, 1, 2, "ep-recent-files-menu", 18);
+    \u0275\u0275conditionalCreate(12, ChatFooterComponent_Conditional_12_Template, 3, 4, "div", 12)(13, ChatFooterComponent_Conditional_13_Template, 3, 2, "div", 13);
+    \u0275\u0275elementEnd()()()();
+    \u0275\u0275conditionalCreate(14, ChatFooterComponent_Conditional_14_Template, 1, 2, "ep-recent-files-menu", 14);
   }
   if (rf & 2) {
     \u0275\u0275advance();
@@ -94452,27 +94967,21 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.fileAttachmentEnabled && (ctx.chatService.isLastRequestUsedFile() && !ctx.hasAttachedFiles() || ctx.hasAttachedFiles()) ? 2 : -1);
     \u0275\u0275advance();
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(15, _c110));
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(11, _c110));
     \u0275\u0275advance();
     \u0275\u0275property("formControl", ctx.messageInputControl);
-    \u0275\u0275advance(4);
-    \u0275\u0275attribute("aria-expanded", ctx.isModeMenuOpen);
+    \u0275\u0275advance(3);
+    \u0275\u0275conditional(ctx.availableTools.length > 0 ? 7 : -1);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx.chatMode === "ask" ? "Ask" : "Build", " ");
-    \u0275\u0275advance();
-    \u0275\u0275classProp("chat-footer__mode-chevron--open", ctx.isModeMenuOpen);
+    \u0275\u0275conditional(ctx.allowWebFromResponse ? 8 : -1);
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx.isModeMenuOpen ? 12 : -1);
-    \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx.fileAttachmentEnabled ? 14 : -1);
+    \u0275\u0275conditional(ctx.fileAttachmentEnabled && ctx.allowFilesFromResponse ? 10 : -1);
     \u0275\u0275advance();
     \u0275\u0275property("formControl", ctx.messageInputControl)("toStopOnClickSelector", "#messageInput");
     \u0275\u0275advance();
-    \u0275\u0275conditional(!ctx.isTyping ? 16 : 17);
+    \u0275\u0275conditional(!ctx.isTyping ? 12 : 13);
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx.isModeMenuOpen ? 18 : -1);
-    \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.fileAttachmentEnabled && ctx.chatService.isRecentFilesMenuShown() ? 19 : -1);
+    \u0275\u0275conditional(ctx.fileAttachmentEnabled && ctx.chatService.isRecentFilesMenuShown() ? 14 : -1);
   }
 }, dependencies: [
   FormsModule,
@@ -94484,9 +94993,11 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
   NgStyle,
   MicrophoneComponent,
   ButtonComponent,
+  MenuComponent,
+  MenuItemComponent,
   TooltipDirective,
   RecentFilesMenuComponent
-], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  overflow-x: hidden;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions[_ngcontent-%COMP%] {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%], \n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%] {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-button[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input[_ngcontent-%COMP%]:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea[_ngcontent-%COMP%] {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 200px;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding-top: 4px;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 25%, transparent);\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n}\n.chat-footer__mode-dropdown[_ngcontent-%COMP%] {\n  position: relative;\n}\n.chat-footer__mode-trigger[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__mode-trigger[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__mode-trigger[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__mode-chevron--open[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-footer__mode-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  bottom: calc(100% + 4px);\n  left: 0;\n  min-width: 120px;\n  border-radius: 6px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  background: var(--ep-color-surface);\n  box-shadow: 0 4px 16px color-mix(in srgb, var(--ep-color-shadow) 15%, transparent);\n  overflow: hidden;\n  z-index: 100;\n}\n.chat-footer__mode-option[_ngcontent-%COMP%] {\n  padding: 8px 12px;\n  font-size: 13px;\n  color: var(--ep-color-text);\n  cursor: pointer;\n  white-space: nowrap;\n  transition: background-color 0.15s, color 0.15s;\n}\n.chat-footer__mode-option[_ngcontent-%COMP%]:hover {\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n  color: var(--ep-color-accent);\n}\n.chat-footer__mode-option--active[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n.chat-footer__mode-backdrop[_ngcontent-%COMP%] {\n  position: fixed;\n  inset: 0;\n  z-index: 99;\n}\n.chat-footer__input-icons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%], \n.chat-footer__multiple-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */'] });
+], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions[_ngcontent-%COMP%] {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%], \n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%] {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-button[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input[_ngcontent-%COMP%]:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea[_ngcontent-%COMP%] {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 200px;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__tool-dropdown[_ngcontent-%COMP%], \n.chat-footer__web-dropdown[_ngcontent-%COMP%] {\n  position: relative;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__tool-chevron--open[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%], \n.chat-footer__multiple-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider[_ngcontent-%COMP%] {\n  height: 1px;\n  background-color: var(--ep-color-border);\n  margin: 4px 0;\n}\n.web-menu__sites[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 4px 16px 6px;\n}\n.web-menu__site-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  padding-left: 6px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 60%, transparent);\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  background: var(--ep-color-surface);\n  color: var(--ep-color-text);\n  outline: none;\n}\n.web-menu__site-input[_ngcontent-%COMP%]:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input[_ngcontent-%COMP%]::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */'] });
 var ChatFooterComponent = _ChatFooterComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatFooterComponent, [{
@@ -94497,6 +95008,8 @@ var ChatFooterComponent = _ChatFooterComponent;
       CommonModule,
       MicrophoneComponent,
       ButtonComponent,
+      MenuComponent,
+      MenuItemComponent,
       TooltipDirective,
       RecentFilesMenuComponent
     ], template: `<div class="chat-footer">
@@ -94613,64 +95126,174 @@ var ChatFooterComponent = _ChatFooterComponent;
       id="messageInput"
     ></textarea>
     <div class="chat-footer__bottom-bar">
-      <div class="chat-footer__mode-dropdown">
-        <button
-          class="chat-footer__mode-trigger"
-          type="button"
-          (click)="toggleModeMenu()"
-          [attr.aria-expanded]="isModeMenuOpen"
-          aria-haspopup="listbox"
-        >
-          {{ chatMode === "ask" ? "Ask" : "Build" }}
-          <svg
-            viewBox="0 0 10 6"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            [class.chat-footer__mode-chevron--open]="isModeMenuOpen"
+      @if (availableTools.length > 0) {
+        <div class="chat-footer__tool-dropdown">
+          <button
+            class="chat-footer__tool-trigger"
+            type="button"
+            (click)="toggleToolMenu(); $event.stopPropagation()"
+            [attr.aria-expanded]="isToolMenuOpen"
+            aria-haspopup="listbox"
           >
-            <path
-              d="M1 1L5 5L9 1"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        @if (isModeMenuOpen) {
-          <div class="chat-footer__mode-menu" role="listbox">
-            <div
-              class="chat-footer__mode-option"
-              [class.chat-footer__mode-option--active]="chatMode === 'ask'"
-              role="option"
-              tabindex="0"
-              (click)="setMode('ask')"
-              (keydown.enter)="setMode('ask')"
-              (keydown.space)="setMode('ask')"
+            {{ selectedTool || "Tools" }}
+            <svg
+              viewBox="0 0 10 6"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              [class.chat-footer__tool-chevron--open]="isToolMenuOpen"
             >
-              Ask Mode
-            </div>
-            <div
-              class="chat-footer__mode-option"
-              [class.chat-footer__mode-option--active]="chatMode === 'build'"
-              role="option"
-              tabindex="0"
-              (click)="setMode('build')"
-              (keydown.enter)="setMode('build')"
-              (keydown.space)="setMode('build')"
+              <path
+                d="M1 1L5 5L9 1"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          @if (isToolMenuOpen) {
+            <ep-menu
+              (closed)="isToolMenuOpen = false"
+              style="bottom: calc(100% + 4px); left: 0; min-width: 120px"
+              role="listbox"
             >
-              Build Mode
-            </div>
-          </div>
-        }
-      </div>
+              <ep-menu-item
+                [class.ep-menu-item--active]="effectiveSelectedTool === null"
+                role="option"
+                [attr.aria-selected]="effectiveSelectedTool === null"
+                (click)="selectTool(null)"
+                (keydown.enter)="selectTool(null)"
+                (keydown.space)="selectTool(null)"
+                >None</ep-menu-item
+              >
+              @for (tool of availableTools; track tool) {
+                <ep-menu-item
+                  [class.ep-menu-item--active]="effectiveSelectedTool === tool"
+                  role="option"
+                  [attr.aria-selected]="effectiveSelectedTool === tool"
+                  (click)="selectTool(tool)"
+                  (keydown.enter)="selectTool(tool)"
+                  (keydown.space)="selectTool(tool)"
+                  >{{ tool }}</ep-menu-item
+                >
+              }
+            </ep-menu>
+          }
+        </div>
+      }
+      @if (allowWebFromResponse) {
+        <div class="chat-footer__web-dropdown">
+          <button
+            class="chat-footer__tool-trigger"
+            type="button"
+            (click)="toggleWebMenu(); $event.stopPropagation()"
+            [attr.aria-expanded]="isWebMenuOpen"
+          >
+            {{ webModeLabel() }}
+            <svg
+              viewBox="0 0 10 6"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              [class.chat-footer__tool-chevron--open]="isWebMenuOpen"
+            >
+              <path
+                d="M1 1L5 5L9 1"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          @if (isWebMenuOpen) {
+            <ep-menu
+              (closed)="isWebMenuOpen = false"
+              style="bottom: calc(100% + 4px); left: 0; min-width: 160px; max-width: 100%; box-sizing: border-box"
+            >
+              @for (m of webModes; track m.value) {
+                <ep-menu-item
+                  [class.ep-menu-item--active]="webMode() === m.value"
+                  (click)="selectWebMode(m.value)"
+                  (keydown.enter)="selectWebMode(m.value)"
+                  (keydown.space)="selectWebMode(m.value)"
+                  >{{ m.label }}</ep-menu-item
+                >
+              }
+              @if (webMode() === "restrict" || webMode() === "prioritize") {
+                <div class="web-menu__divider"></div>
+                <div class="web-menu__sites">
+                  @for (site of sites(); track $index; let i = $index) {
+                    <div class="web-menu__site-row">
+                      @if (editingSiteIndex === i) {
+                        <input
+                          class="web-menu__site-input"
+                          type="text"
+                          [attr.value]="site"
+                          placeholder="example.com"
+                          (input)="updateSite(i, $event)"
+                          (keydown.enter)="onSiteInputEnter(i, $any($event))"
+                          (keydown)="$event.stopPropagation()"
+                          (click)="$event.stopPropagation()"
+                        />
+                      } @else {
+                        <div
+                          class="web-menu__site-label"
+                          tabindex="0"
+                          (dblclick)="startEditSite(i)"
+                          (click)="startEditSite(i); $event.stopPropagation()"
+                          (keydown.enter)="startEditSite(i)"
+                          (keydown.space)="startEditSite(i)"
+                        >
+                          {{ site }}
+                        </div>
+                      }
+                      <button
+                        class="web-menu__site-remove"
+                        type="button"
+                        (click)="removeSite(i); $event.stopPropagation()"
+                        aria-label="Remove"
+                      >
+                        <svg viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path
+                            d="M1 1L8 8M8 1L1 8"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  }
+                  <button
+                    class="web-menu__add-site"
+                    type="button"
+                    (click)="addSite(); $event.stopPropagation()"
+                    (keydown.enter)="addSite(); $event.stopPropagation()"
+                    aria-label="Add site"
+                  >
+                    <svg viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M5 1V9M1 5H9"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </ep-menu>
+          }
+        </div>
+      }
+
       <div class="chat-footer__bottom-bar-right">
-        @if (fileAttachmentEnabled) {
+        @if (fileAttachmentEnabled && allowFilesFromResponse) {
           <div
             class="chat-footer__input-icon"
             role="button"
             tabindex="0"
-            (click)="toggleRecentFilesMenu()"
+            (click)="toggleRecentFilesMenu(); $event.stopPropagation()"
             (keydown.enter)="toggleRecentFilesMenu()"
             (keydown.space)="toggleRecentFilesMenu()"
             epTooltip="Attach file"
@@ -94732,10 +95355,6 @@ var ChatFooterComponent = _ChatFooterComponent;
       </div>
     </div>
   </div>
-
-  @if (isModeMenuOpen) {
-    <div class="chat-footer__mode-backdrop" (click)="isModeMenuOpen = false"></div>
-  }
 </div>
 
 @if (fileAttachmentEnabled && chatService.isRecentFilesMenuShown()) {
@@ -94747,7 +95366,7 @@ var ChatFooterComponent = _ChatFooterComponent;
     (hideRecentFilesMenu)="hideRecentFilesMenu()"
   ></ep-recent-files-menu>
 }
-`, styles: ['/* src/app/components/chat-footer/chat-footer.component.scss */\n:host {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  overflow-x: hidden;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient,\n.chat-footer__right-gradient {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button svg {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 200px;\n}\n.chat-footer__textarea::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding-top: 4px;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 25%, transparent);\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n}\n.chat-footer__mode-dropdown {\n  position: relative;\n}\n.chat-footer__mode-trigger {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__mode-trigger svg {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__mode-trigger:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__mode-chevron--open {\n  transform: rotate(180deg);\n}\n.chat-footer__mode-menu {\n  position: absolute;\n  bottom: calc(100% + 4px);\n  left: 0;\n  min-width: 120px;\n  border-radius: 6px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  background: var(--ep-color-surface);\n  box-shadow: 0 4px 16px color-mix(in srgb, var(--ep-color-shadow) 15%, transparent);\n  overflow: hidden;\n  z-index: 100;\n}\n.chat-footer__mode-option {\n  padding: 8px 12px;\n  font-size: 13px;\n  color: var(--ep-color-text);\n  cursor: pointer;\n  white-space: nowrap;\n  transition: background-color 0.15s, color 0.15s;\n}\n.chat-footer__mode-option:hover {\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n  color: var(--ep-color-accent);\n}\n.chat-footer__mode-option--active {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n.chat-footer__mode-backdrop {\n  position: fixed;\n  inset: 0;\n  z-index: 99;\n}\n.chat-footer__input-icons {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon img {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item .chat-footer__choose-file-label,\n.chat-footer__multiple-file-item .chat-footer__choose-file-label {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file svg {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file:hover {\n  color: var(--ep-color-text);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */\n'] }]
+`, styles: ['/* src/app/components/chat-footer/chat-footer.component.scss */\n:host {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient,\n.chat-footer__right-gradient {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button svg {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 200px;\n}\n.chat-footer__textarea::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__tool-dropdown,\n.chat-footer__web-dropdown {\n  position: relative;\n}\n.chat-footer__tool-trigger {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__tool-trigger svg {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__tool-trigger:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__tool-chevron--open {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon img {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item .chat-footer__choose-file-label,\n.chat-footer__multiple-file-item .chat-footer__choose-file-label {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file svg {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider {\n  height: 1px;\n  background-color: var(--ep-color-border);\n  margin: 4px 0;\n}\n.web-menu__sites {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 4px 16px 6px;\n}\n.web-menu__site-row {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label {\n  flex: 1;\n  min-width: 0;\n  padding-left: 6px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 60%, transparent);\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  background: var(--ep-color-surface);\n  color: var(--ep-color-text);\n  outline: none;\n}\n.web-menu__site-input:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove svg {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site svg {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */\n'] }]
   }], () => [{ type: ChatService }, { type: ApiService }], { isTyping: [{
     type: Input
   }], messages: [{
@@ -94771,12 +95390,12 @@ var ChatFooterComponent = _ChatFooterComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatFooterComponent, { className: "ChatFooterComponent", filePath: "src/app/components/chat-footer/chat-footer.component.ts", lineNumber: 39 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatFooterComponent, { className: "ChatFooterComponent", filePath: "src/app/components/chat-footer/chat-footer.component.ts", lineNumber: 47 });
 })();
 
 // src/app/components/chat-header/chat-header.component.ts
-var _c016 = () => ({ delay: 500 });
-var _forTrack07 = ($index, $item) => $item.epicstaffAgentId;
+var _c018 = () => ({ delay: 500 });
+var _forTrack08 = ($index, $item) => $item.epicstaffAgentId;
 function ChatHeaderComponent_Conditional_7_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 19);
@@ -94813,7 +95432,7 @@ function ChatHeaderComponent_Conditional_14_Template(rf, ctx) {
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c016));
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c018));
   }
 }
 function ChatHeaderComponent_Conditional_15_Template(rf, ctx) {
@@ -94839,53 +95458,59 @@ function ChatHeaderComponent_Conditional_15_Template(rf, ctx) {
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c016));
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c018));
   }
 }
 function ChatHeaderComponent_Conditional_19_For_2_Template(rf, ctx) {
   if (rf & 1) {
-    const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 28);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_19_For_2_Template_div_click_0_listener() {
-      const agent_r5 = \u0275\u0275restoreView(_r4).$implicit;
+    const _r5 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu-item", 29);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_19_For_2_Template_ep_menu_item_click_0_listener() {
+      const agent_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r5));
-    })("keydown.enter", function ChatHeaderComponent_Conditional_19_For_2_Template_div_keydown_enter_0_listener() {
-      const agent_r5 = \u0275\u0275restoreView(_r4).$implicit;
+      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r6));
+    })("keydown.enter", function ChatHeaderComponent_Conditional_19_For_2_Template_ep_menu_item_keydown_enter_0_listener() {
+      const agent_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r5));
-    })("keydown.space", function ChatHeaderComponent_Conditional_19_For_2_Template_div_keydown_space_0_listener() {
-      const agent_r5 = \u0275\u0275restoreView(_r4).$implicit;
+      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r6));
+    })("keydown.space", function ChatHeaderComponent_Conditional_19_For_2_Template_ep_menu_item_keydown_space_0_listener() {
+      const agent_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r5));
+      return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r6));
     });
-    \u0275\u0275elementStart(1, "div", 29);
-    \u0275\u0275element(2, "img", 30);
+    \u0275\u0275elementStart(1, "div", 30);
+    \u0275\u0275element(2, "img", 31);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 31)(4, "div", 32);
+    \u0275\u0275elementStart(3, "div", 32)(4, "div", 33);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "div", 33);
+    \u0275\u0275elementStart(6, "div", 34);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const agent_r5 = ctx.$implicit;
+    const agent_r6 = ctx.$implicit;
     const ctx_r0 = \u0275\u0275nextContext(2);
-    \u0275\u0275classProp("chat-header__agent-menu-item--active", ctx_r0.isAgentActive(agent_r5));
-    \u0275\u0275attribute("aria-label", "Select agent " + agent_r5.name);
+    \u0275\u0275classProp("ep-menu-item--inactive", !ctx_r0.isAgentActive(agent_r6));
+    \u0275\u0275attribute("aria-label", "Select agent " + agent_r6.name);
     \u0275\u0275advance(2);
-    \u0275\u0275property("src", ctx_r0.getAgentIconPath(agent_r5), \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", ctx_r0.getAgentIconPath(agent_r6), \u0275\u0275sanitizeUrl);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(agent_r5.name);
+    \u0275\u0275textInterpolate(agent_r6.name);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(agent_r5.description);
+    \u0275\u0275textInterpolate(agent_r6.description);
   }
 }
 function ChatHeaderComponent_Conditional_19_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 17);
-    \u0275\u0275repeaterCreate(1, ChatHeaderComponent_Conditional_19_For_2_Template, 8, 6, "div", 27, _forTrack07);
+    const _r4 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu", 27);
+    \u0275\u0275listener("closed", function ChatHeaderComponent_Conditional_19_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r4);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.closeAgentMenu());
+    });
+    \u0275\u0275repeaterCreate(1, ChatHeaderComponent_Conditional_19_For_2_Template, 8, 6, "ep-menu-item", 28, _forTrack08);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -94896,92 +95521,98 @@ function ChatHeaderComponent_Conditional_19_Template(rf, ctx) {
 }
 function ChatHeaderComponent_Conditional_20_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 36);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r7);
+    const _r8 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu-item", 38);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_click_0_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r7);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r7);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
     });
-    \u0275\u0275text(1, " Create new Epicstaff agent ");
+    \u0275\u0275text(1, "Create new Epicstaff agent");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 37);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_2_listener() {
-      \u0275\u0275restoreView(_r7);
+    \u0275\u0275elementStart(2, "ep-menu-item", 39);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_click_2_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_2_listener() {
-      \u0275\u0275restoreView(_r7);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_enter_2_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_2_listener() {
-      \u0275\u0275restoreView(_r7);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_space_2_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
     });
-    \u0275\u0275text(3, " Edit Epicstaff agent ");
+    \u0275\u0275text(3, "Edit Epicstaff agent");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 38);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_click_4_listener() {
-      \u0275\u0275restoreView(_r7);
+    \u0275\u0275elementStart(4, "ep-menu-item", 40);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_click_4_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_enter_4_listener() {
-      \u0275\u0275restoreView(_r7);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_enter_4_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_div_keydown_space_4_listener() {
-      \u0275\u0275restoreView(_r7);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_space_4_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
     });
-    \u0275\u0275text(5, " Remove agent ");
+    \u0275\u0275text(5, "Remove agent");
     \u0275\u0275elementEnd();
   }
 }
 function ChatHeaderComponent_Conditional_20_Template(rf, ctx) {
   if (rf & 1) {
-    const _r6 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 18)(1, "div", 34);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_div_click_1_listener() {
-      \u0275\u0275restoreView(_r6);
+    const _r7 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu", 35);
+    \u0275\u0275listener("closed", function ChatHeaderComponent_Conditional_20_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r7);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.closeActionsMenu());
+    });
+    \u0275\u0275elementStart(1, "ep-menu-item", 36);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_click_1_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_div_keydown_enter_1_listener() {
-      \u0275\u0275restoreView(_r6);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_keydown_enter_1_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_div_keydown_space_1_listener() {
-      \u0275\u0275restoreView(_r6);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_keydown_space_1_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
     });
-    \u0275\u0275text(2, " Clear chat history ");
+    \u0275\u0275text(2, "Clear chat history");
     \u0275\u0275elementEnd();
     \u0275\u0275conditionalCreate(3, ChatHeaderComponent_Conditional_20_Conditional_3_Template, 6, 0);
-    \u0275\u0275elementStart(4, "div", 35);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_div_click_4_listener() {
-      \u0275\u0275restoreView(_r6);
+    \u0275\u0275elementStart(4, "ep-menu-item", 37);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_click_4_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_div_keydown_enter_4_listener() {
-      \u0275\u0275restoreView(_r6);
+    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_keydown_enter_4_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_div_keydown_space_4_listener() {
-      \u0275\u0275restoreView(_r6);
+    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_keydown_space_4_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
     });
-    \u0275\u0275text(5, " Set default position ");
+    \u0275\u0275text(5, "Set default position");
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -95088,32 +95719,19 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
   onDockClick() {
     this.dockClicked.emit();
   }
-  onDocumentClick(event) {
-    const path = event.composedPath?.() ?? [];
-    const hasMatchInPath = (selector) => path.some((node) => node instanceof Element && (node.matches(selector) || node.closest(selector) !== null));
-    if (!hasMatchInPath(".chat-header") && !hasMatchInPath(".chat-header__agent-menu") && !hasMatchInPath(".chat-header__actions-menu")) {
-      this.closeAgentMenu();
-      this.closeActionsMenu();
-    }
-  }
 };
 _ChatHeaderComponent.\u0275fac = function ChatHeaderComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _ChatHeaderComponent)();
 };
-_ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatHeaderComponent, selectors: [["ep-chat-header"]], hostBindings: function ChatHeaderComponent_HostBindings(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275listener("click", function ChatHeaderComponent_click_HostBindingHandler($event) {
-      return ctx.onDocumentClick($event);
-    }, \u0275\u0275resolveDocument);
-  }
-}, inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent", dockEnabled: "dockEnabled", isDockMode: "isDockMode" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 21, vars: 14, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__title-text"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click", "keydown.enter", "keydown.space"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__agent-menu"], [1, "chat-header__actions-menu"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "2", "y", "2", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["x", "7", "y", "7", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "chat-header__agent-menu-item--active"], ["role", "button", "tabindex", "0", 1, "chat-header__agent-menu-item", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-menu-item-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-menu-item-text"], [1, "chat-header__agent-menu-item-name"], [1, "chat-header__agent-menu-item-description"], ["role", "button", "tabindex", "0", "aria-label", "Clear chat history", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Set default position", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Create new Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Edit Epicstaff agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "aria-label", "Remove agent", 1, "chat-header__actions-menu-item", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
+_ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatHeaderComponent, selectors: [["ep-chat-header"]], inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent", dockEnabled: "dockEnabled", isDockMode: "isDockMode" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 21, vars: 14, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__title-text"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [2, "top", "32px", "left", "12px", "max-width", "70%", "gap", "4px"], [2, "top", "32px", "right", "12px", "min-width", "180px"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "2", "y", "2", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["x", "7", "y", "7", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], [2, "top", "32px", "left", "12px", "max-width", "70%", "gap", "4px", 3, "closed"], [3, "ep-menu-item--inactive"], [3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-text"], [1, "chat-header__agent-name"], [1, "chat-header__agent-description"], [2, "top", "32px", "right", "12px", "min-width", "180px", 3, "closed"], ["aria-label", "Clear chat history", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Set default position", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Create new Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Edit Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Remove agent", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "div", 2);
     \u0275\u0275element(3, "img", 3);
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(4, "div", 4);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Template_div_click_4_listener() {
-      return ctx.toggleAgentMenu();
+    \u0275\u0275listener("click", function ChatHeaderComponent_Template_div_click_4_listener($event) {
+      ctx.toggleAgentMenu();
+      return $event.stopPropagation();
     })("keydown.enter", function ChatHeaderComponent_Template_div_keydown_enter_4_listener() {
       return ctx.toggleAgentMenu();
     })("keydown.space", function ChatHeaderComponent_Template_div_keydown_space_4_listener() {
@@ -95125,12 +95743,9 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275conditionalCreate(7, ChatHeaderComponent_Conditional_7_Template, 3, 2, "div", 6);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(8, "div", 7)(9, "button", 8);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_9_listener() {
-      return ctx.toggleActionsMenu();
-    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_9_listener() {
-      return ctx.toggleActionsMenu();
-    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_9_listener() {
-      return ctx.toggleActionsMenu();
+    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_9_listener($event) {
+      ctx.toggleActionsMenu();
+      return $event.stopPropagation();
     });
     \u0275\u0275namespaceSVG();
     \u0275\u0275elementStart(10, "svg", 9);
@@ -95151,8 +95766,8 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275elementStart(17, "svg", 9);
     \u0275\u0275element(18, "path", 16);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275conditionalCreate(19, ChatHeaderComponent_Conditional_19_Template, 3, 0, "div", 17);
-    \u0275\u0275conditionalCreate(20, ChatHeaderComponent_Conditional_20_Template, 6, 1, "div", 18);
+    \u0275\u0275conditionalCreate(19, ChatHeaderComponent_Conditional_19_Template, 3, 0, "ep-menu", 17);
+    \u0275\u0275conditionalCreate(20, ChatHeaderComponent_Conditional_20_Template, 6, 1, "ep-menu", 18);
   }
   if (rf & 2) {
     \u0275\u0275advance(3);
@@ -95169,18 +95784,18 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275advance();
     \u0275\u0275conditional(!ctx.isDockMode ? 15 : -1);
     \u0275\u0275advance();
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(13, _c016));
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(13, _c018));
     \u0275\u0275advance(3);
     \u0275\u0275conditional(ctx.isAgentMenuShown && ctx.hasMultipleAgents ? 19 : -1);
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.isActionsMenuShown ? 20 : -1);
   }
-}, dependencies: [TooltipDirective], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%] {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text[_ngcontent-%COMP%] {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-header__controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots[_ngcontent-%COMP%] {\n  margin-left: auto;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 32px;\n  left: 12px;\n  display: flex;\n  gap: 4px;\n  flex-direction: column;\n  z-index: 1005;\n  max-width: 70%;\n  padding: 12px 0px;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__agent-menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-menu-item--active[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-menu-item-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-menu-item-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-menu-item-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-menu-item-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.chat-header__actions-menu[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 32px;\n  right: 12px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 180px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-header__actions-menu-item[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n/*# sourceMappingURL=chat-header.component.css.map */"] });
+}, dependencies: [TooltipDirective, MenuComponent, MenuItemComponent], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%] {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text[_ngcontent-%COMP%] {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-header__controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots[_ngcontent-%COMP%] {\n  margin-left: auto;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.ep-menu-item--inactive[_ngcontent-%COMP%] {\n  pointer-events: none;\n  opacity: 0.5;\n}\n/*# sourceMappingURL=chat-header.component.css.map */"] });
 var ChatHeaderComponent = _ChatHeaderComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatHeaderComponent, [{
     type: Component,
-    args: [{ selector: "ep-chat-header", imports: [TooltipDirective], template: `<div class="chat-header">
+    args: [{ selector: "ep-chat-header", imports: [TooltipDirective, MenuComponent, MenuItemComponent], template: `<div class="chat-header">
   <div class="chat-header__left">
     <div class="chat-header__icon">
       <img [src]="iconPath" height="16" width="16" alt="Assistant" />
@@ -95191,7 +95806,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       [attr.tabindex]="hasMultipleAgents ? 0 : -1"
       [attr.role]="hasMultipleAgents ? 'button' : null"
       [attr.aria-label]="hasMultipleAgents ? 'Select agent' : null"
-      (click)="toggleAgentMenu()"
+      (click)="toggleAgentMenu(); $event.stopPropagation()"
       (keydown.enter)="toggleAgentMenu()"
       (keydown.space)="toggleAgentMenu()"
     >
@@ -95224,9 +95839,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
     <button
       type="button"
       class="chat-header__control-btn chat-header__control-btn--dots"
-      (click)="toggleActionsMenu()"
-      (keydown.enter)="toggleActionsMenu()"
-      (keydown.space)="toggleActionsMenu()"
+      (click)="toggleActionsMenu(); $event.stopPropagation()"
       aria-label="Menu"
     >
       <svg
@@ -95319,92 +95932,64 @@ var ChatHeaderComponent = _ChatHeaderComponent;
 </div>
 
 @if (isAgentMenuShown && hasMultipleAgents) {
-  <div class="chat-header__agent-menu">
+  <ep-menu (closed)="closeAgentMenu()" style="top: 32px; left: 12px; max-width: 70%; gap: 4px;">
     @for (agent of agents; track agent.epicstaffAgentId) {
-      <div
-        class="chat-header__agent-menu-item"
-        [class.chat-header__agent-menu-item--active]="isAgentActive(agent)"
-        role="button"
-        tabindex="0"
+      <ep-menu-item
+        [class.ep-menu-item--inactive]="!isAgentActive(agent)"
         [attr.aria-label]="'Select agent ' + agent.name"
         (click)="onAgentSelect(agent)"
         (keydown.enter)="onAgentSelect(agent)"
         (keydown.space)="onAgentSelect(agent)"
       >
-        <div class="chat-header__agent-menu-item-icon">
+        <div class="chat-header__agent-icon">
           <img [src]="getAgentIconPath(agent)" height="24" width="24" alt="" />
         </div>
-        <div class="chat-header__agent-menu-item-text">
-          <div class="chat-header__agent-menu-item-name">{{ agent.name }}</div>
-          <div class="chat-header__agent-menu-item-description">{{ agent.description }}</div>
+        <div class="chat-header__agent-text">
+          <div class="chat-header__agent-name">{{ agent.name }}</div>
+          <div class="chat-header__agent-description">{{ agent.description }}</div>
         </div>
-      </div>
+      </ep-menu-item>
     }
-  </div>
+  </ep-menu>
 }
 
 @if (isActionsMenuShown) {
-  <div class="chat-header__actions-menu">
-    <div
-      class="chat-header__actions-menu-item"
-      role="button"
-      tabindex="0"
+  <ep-menu (closed)="closeActionsMenu()" style="top: 32px; right: 12px; min-width: 180px;">
+    <ep-menu-item
       aria-label="Clear chat history"
       (click)="onClearChatHistory()"
       (keydown.enter)="onClearChatHistory()"
       (keydown.space)="onClearChatHistory()"
-    >
-      Clear chat history
-    </div>
+    >Clear chat history</ep-menu-item>
     @if (!isMonoAgent) {
-      <div
-        class="chat-header__actions-menu-item"
-        role="button"
-        tabindex="0"
+      <ep-menu-item
         aria-label="Create new Epicstaff agent"
         (click)="onCreateAgent()"
         (keydown.enter)="onCreateAgent()"
         (keydown.space)="onCreateAgent()"
-      >
-        Create new Epicstaff agent
-      </div>
-      <div
-        class="chat-header__actions-menu-item"
-        role="button"
-        tabindex="0"
+      >Create new Epicstaff agent</ep-menu-item>
+      <ep-menu-item
         aria-label="Edit Epicstaff agent"
         (click)="onEditAgent()"
         (keydown.enter)="onEditAgent()"
         (keydown.space)="onEditAgent()"
-      >
-        Edit Epicstaff agent
-      </div>
-      <div
-        class="chat-header__actions-menu-item"
-        role="button"
-        tabindex="0"
+      >Edit Epicstaff agent</ep-menu-item>
+      <ep-menu-item
         aria-label="Remove agent"
         (click)="onRemoveAgent()"
         (keydown.enter)="onRemoveAgent()"
         (keydown.space)="onRemoveAgent()"
-      >
-        Remove agent
-      </div>
+      >Remove agent</ep-menu-item>
     }
-    <div
-      class="chat-header__actions-menu-item"
-      role="button"
-      tabindex="0"
+    <ep-menu-item
       aria-label="Set default position"
       (click)="onSetDefaultPosition()"
       (keydown.enter)="onSetDefaultPosition()"
       (keydown.space)="onSetDefaultPosition()"
-    >
-      Set default position
-    </div>
-  </div>
+    >Set default position</ep-menu-item>
+  </ep-menu>
 }
-`, styles: ["/* src/app/components/chat-header/chat-header.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon img {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated {\n  transform: rotate(180deg);\n}\n.chat-header__controls {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots {\n  margin-left: auto;\n}\n.chat-header__control-btn svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-menu {\n  position: absolute;\n  top: 32px;\n  left: 12px;\n  display: flex;\n  gap: 4px;\n  flex-direction: column;\n  z-index: 1005;\n  max-width: 70%;\n  padding: 12px 0px;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__agent-menu-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-menu-item--active:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-menu-item-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-menu-item-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-menu-item-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-menu-item-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.chat-header__actions-menu {\n  position: absolute;\n  top: 32px;\n  right: 12px;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  min-width: 180px;\n  padding: 12px 0;\n  align-items: flex-start;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n}\n.chat-header__actions-menu-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n}\n.chat-header__actions-menu-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-header__actions-menu-item:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n/*# sourceMappingURL=chat-header.component.css.map */\n"] }]
+`, styles: ["/* src/app/components/chat-header/chat-header.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon img {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated {\n  transform: rotate(180deg);\n}\n.chat-header__controls {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots {\n  margin-left: auto;\n}\n.chat-header__control-btn svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.chat-header__agent-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.ep-menu-item--inactive {\n  pointer-events: none;\n  opacity: 0.5;\n}\n/*# sourceMappingURL=chat-header.component.css.map */\n"] }]
   }], null, { currentAgent: [{
     type: Input
   }], agents: [{
@@ -95439,13 +96024,10 @@ var ChatHeaderComponent = _ChatHeaderComponent;
     type: Output
   }], dockClicked: [{
     type: Output
-  }], onDocumentClick: [{
-    type: HostListener,
-    args: ["document:click", ["$event"]]
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatHeaderComponent, { className: "ChatHeaderComponent", filePath: "src/app/components/chat-header/chat-header.component.ts", lineNumber: 12 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatHeaderComponent, { className: "ChatHeaderComponent", filePath: "src/app/components/chat-header/chat-header.component.ts", lineNumber: 14 });
 })();
 
 // src/app/components/chat-toggle-button/chat-toggle-button.component.ts
@@ -95517,7 +96099,7 @@ var ChatToggleButtonComponent = _ChatToggleButtonComponent;
 })();
 
 // src/app/components/shared/modal/modal.component.ts
-var _c017 = ["modalWrapper"];
+var _c019 = ["modalWrapper"];
 var _c111 = [[["", "modal-actions", ""]], "*"];
 var _c28 = ["[modal-actions]", "*"];
 function ModalComponent_Conditional_0_Conditional_5_Template(rf, ctx) {
@@ -95674,7 +96256,7 @@ _ModalComponent.\u0275fac = function ModalComponent_Factory(__ngFactoryType__) {
 };
 _ModalComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ModalComponent, selectors: [["ep-modal"]], viewQuery: function ModalComponent_Query(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275viewQuery(_c017, 5);
+    \u0275\u0275viewQuery(_c019, 5);
   }
   if (rf & 2) {
     let _t;
@@ -96049,6 +96631,8 @@ var _ResizableChatDirective = class _ResizableChatDirective {
     if (this.resizeDisabled)
       return;
     requestAnimationFrame(() => {
+      if (this.resizeDisabled)
+        return;
       const savedSize = this.loadSizeFromLS();
       if (savedSize) {
         this.setDefaultSize();
@@ -97050,7 +97634,14 @@ var _ChatComponent = class _ChatComponent {
         const agentUrl = this.currentAgent?.epicstaffFlowUrl;
         const flowId = this.currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
-        const botMessage = yield this.apiService.sendMessage(text, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext(), (update) => this.applyStreamUpdateToMessage(interimMessage.id, update));
+        const contextExtras = {};
+        if (event.tool) {
+          contextExtras["tools"] = event.tool;
+        }
+        if (event.webConfig?.mode) {
+          contextExtras["web"] = event.webConfig;
+        }
+        const botMessage = yield this.apiService.sendMessage(text, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext(contextExtras), (update) => this.applyStreamUpdateToMessage(interimMessage.id, update));
         this.finalizeInterimMessage(interimMessage.id, botMessage);
         this.scrollMode = "question-answer";
         this.chatService.setAttachedFiles([]);
@@ -97161,6 +97752,7 @@ var _ChatComponent = class _ChatComponent {
         _isFirstMessageOfDay: finalMessage._isFirstMessageOfDay ?? this.isFirstMessageOfDay(finalTime),
         _epicaThinkingTrail: prev._epicaThinkingTrail,
         _epicaThinkingStartedAt: prev._epicaThinkingStartedAt ?? prev.time,
+        _epicaThinkingEndedAt: getCurrentTimestamp(),
         _epicaThinkingActive: false,
         _epicaIsThinkingAbout: prev._epicaIsThinkingAbout,
         _interim: false

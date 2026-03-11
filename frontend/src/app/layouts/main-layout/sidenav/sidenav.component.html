@@ -107,6 +107,7 @@
             [attr.chat-width]="epicChatService.isDocked() ? epicChatService.dockWidth() + 'px' : null"
             [attr.chat-height]="epicChatService.isDocked() ? '100vh' : null"
             [dockEnabled]="true"
+            [fileAttachmentDisabled]="false"
             [isDockMode]="epicChatService.isDocked()"
             [epChatCommand]="epicChatService.epChatCommand()"
             (epChatCommandResult)="onEpChatCommandResult($event)"

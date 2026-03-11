@@ -260,9 +260,6 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
 
     public onSave(): void { }
 
-    ngDoCheck() {
-        console.log('PERFORMANCE!');
-    }
     public onInitialized(): void {
         // this.fCanvasComponent.fitToScreen(new Point(140, 140), false);
         this.isLoaded.set(true);
