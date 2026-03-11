@@ -1,0 +1,137 @@
+<div class="import-result-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <h2 class="dialog-title">
+      Imported Items
+
+    </h2>
+    <app-icon
+      [icon]="'ui/close'"
+      class="close-btn"
+      [size]="'1.5rem'"
+      (click)="closeDialog()"
+    />
+  </div>
+
+  <!-- Content -->
+  <div class="dialog-content">
+    <!-- Import Summary Section -->
+    <div class="summary-section">
+      <h3 class="summary-title">
+        Import Summary
+        <span class="summary-count">
+          {{totalItemsCount()}}
+        </span>
+      </h3>
+      <div class="summary-slider">
+        <button
+          type="button"
+          class="slider-nav-btn slider-nav-btn--left"
+          (click)="scrollSummary(-1)"
+          [class.hidden]="!canScrollLeft()"
+          aria-label="Scroll left"
+        >
+          <app-icon icon="ui/chevron-up" size="1rem" class="scroll-btn-icon"></app-icon>
+        </button>
+
+        <div class="summary-list" #summaryList (scroll)="onSummaryScroll()">
+          @for (entityType of entityTypes(); track entityType) {
+            @if(getEntityTypeCount(entityType) > 0 )
+              {
+                <div class="summary-item">
+                  <div class="item-icon" [innerHTML]="getIconForEntityType(entityType)" [style.color]="getIconColorForEntityType(entityType)"></div>
+                  <p class="summary-label">
+                    <span class="summary-count">
+                      {{ getEntityTypeCount(entityType) }}
+                    </span>
+                    {{ getEntityTypeLabel(entityType) }}
+                  </p>   
+                </div>
+                 <div class="summary-item">
+                  <div class="item-icon" [innerHTML]="getIconForEntityType(entityType)" [style.color]="getIconColorForEntityType(entityType)"></div>
+                  <p class="summary-label">
+                    <span class="summary-count">
+                      {{ getEntityTypeCount(entityType) }}
+                    </span>
+                    {{ getEntityTypeLabel(entityType) }}
+                  </p>   
+                </div>
+              }
+          }
+        </div>
+
+        <button
+          type="button"
+          class="slider-nav-btn slider-nav-btn--right"
+          (click)="scrollSummary(1)"
+          [class.hidden]="!canScrollRight()"
+          aria-label="Scroll right"
+        >
+          <app-icon icon="ui/chevron-down" size="1rem" class="scroll-btn-icon"></app-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Entity Lists Section -->
+    <div class="entity-lists-section">
+      @for (entityType of entityTypes(); track entityType) {
+      @let result = getEntityTypeResult(entityType);
+      @if (result!.total !== 0) {
+      <div class="entity-group">
+        <!-- Entity Type Header -->
+        <h4 class="entity-type-title">
+          <div class="item-icon" [innerHTML]="getIconForEntityType(entityType)" [style.color]="getIconColorForEntityType(entityType)"></div>
+          {{ getEntityTypeLabel(entityType) }}
+          <span class="summary-count">{{ result!.total }}</span>
+        </h4>
+
+        <!-- Entity Items List -->
+        <div class="entity-items">
+          <!-- Created Items -->
+          @if (result!.created.items.length > 0) {
+          <div class="entity-subgroup">
+            <div class="entity-items-list">
+              @for (item of result!.created.items; track item.id) {
+              <div class="entity-item">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="status-badge" [ngClass]="getStatusClass('created')">
+                  <app-icon icon="ui/created-imported-item" size="1.2rem" class="created"></app-icon>
+                  Created
+                </span>
+                @if (isNavigable(entityType)) {
+                <button type="button" class="navigate-button" (click)="navigateToEntity(entityType, item.id)"
+                  [attr.aria-label]="'View ' + item.name">
+                  <app-icon icon="ui/arrow-right" size="1rem" class="navigate-arrow"></app-icon>
+                </button>
+                }
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Reused Items -->
+          @if (result!.reused.items.length > 0) {
+          <div class="entity-subgroup">
+            <div class="entity-items-list">
+              @for (item of result!.reused.items; track item.id) {
+              <div class="entity-item">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="status-badge" [ngClass]="getStatusClass('reused')">
+                  <app-icon icon="ui/reused-imported-item" size="1.2rem" class="reused"></app-icon>
+                  Reused
+                </span>
+              </div>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+      }
+    </div>
+  </div>
+
+
+</div>

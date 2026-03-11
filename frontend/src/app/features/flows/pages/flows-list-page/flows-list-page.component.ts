@@ -21,6 +21,8 @@ import {
 } from '@angular/router';
 
 import { CreateFlowDialogComponent } from '../../components/create-flow-dialog/create-flow-dialog.component';
+import { ImportResultDialogComponent } from '../../components/import-result-dialog/import-result-dialog.component';
+import { ImportResult } from '../../models/import-result.model';
 
 import { Dialog } from '@angular/cdk/dialog';
 
@@ -51,6 +53,7 @@ import { FlowService } from '../../../../visual-programming/services/flow.servic
         TabButtonComponent,
         FormsModule,
         AppIconComponent,
+        ImportResultDialogComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -131,10 +134,19 @@ export class FlowsListPageComponent implements OnDestroy {
             const file = event.target.files[0];
             if (file) {
                 this.importExportService.importFlow(file).subscribe({
-                    next: (result) => {
+                    next: (result: ImportResult) => {
                         console.log('Flow imported successfully:', result);
-                        // Reload the page on successful import
-                        window.location.reload();
+
+                        // Open result dialog
+                        this.dialog.open(ImportResultDialogComponent, {
+                            width: '80vw',
+                            data: { importResult: result },
+                        });
+
+                        // Refresh flows list without hard reload
+                        this.flowStorageService.getFlows(true).subscribe(() => {
+                            console.log('Flows list updated after import');
+                        });
                     },
                     error: (error) => {
                         console.error('Import failed:', error);
