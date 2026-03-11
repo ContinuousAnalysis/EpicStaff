@@ -7,7 +7,7 @@ from django.db import models
 from django.utils import timezone
 from loguru import logger
 
-from tables.models.base_models import BaseGlobalNode, BaseGraphEntity
+from tables.models.base_models import BaseGlobalNode, BaseGraphEntity, TimestampMixin
 
 
 class Graph(TimestampMixin, models.Model):
