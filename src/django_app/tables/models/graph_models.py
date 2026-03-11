@@ -192,7 +192,7 @@ class Edge(BaseGraphEntity, models.Model):
             raise ObjectDoesNotExist(f"End node with ID {self.end_node_id} not found.")
 
 
-class ConditionalEdge(BaseGraphEntity, models.Model):
+class ConditionalEdge(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="conditional_edge_list"
     )
