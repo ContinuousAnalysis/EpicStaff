@@ -121,12 +121,6 @@ export class FlowGraphCoreMenuComponent {
             color: NODE_COLORS[NodeType.EDGE],
         },
         {
-            label: 'Group',
-            type: NodeType.GROUP,
-            icon: NODE_ICONS[NodeType.GROUP],
-            color: '#ffffff',
-        },
-        {
             label: 'Note',
             type: NodeType.NOTE,
             icon: NODE_ICONS[NodeType.NOTE],
@@ -184,8 +178,6 @@ export class FlowGraphCoreMenuComponent {
                 code: 'def main(arg1: str, arg2: str) -> dict:\n    return {\n        "result": arg1 + arg2,\n    }\n',
                 entrypoint: 'main',
             };
-        } else if (type === NodeType.GROUP) {
-            data = 'group'; // Assign "group" if NodeType is GROUP
         } else if (type === NodeType.TABLE) {
             data = {
                 name: 'Decision Table',
@@ -247,9 +239,6 @@ export class FlowGraphCoreMenuComponent {
     public isDisabled(type: NodeType): boolean {
         if (type === NodeType.END) {
             return this.flowService.hasEndNode();
-        }
-        if (type === NodeType.GROUP) {
-            return true;
         }
         return false;
     }
