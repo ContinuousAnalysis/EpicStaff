@@ -84,7 +84,7 @@ class SubGraphNode:
     def _build_simple_graph(self) -> CompiledStateGraph:
         """Build simple graph without SessionGraphBuilder."""
         subgraph_data = self.subgraph_data.data
-        self._graph_builder.set_entry_point(subgraph_data.data.entry_point)
+        self._graph_builder.set_entry_point(subgraph_data.data.entrypoint)
         return self._graph_builder.compile()
 
     async def run(self, state, writer: StreamWriter):

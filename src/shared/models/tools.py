@@ -65,7 +65,6 @@ class PythonCodeToolData(BaseModel):
     id: int
     name: str
     description: str
-    # args_schema: dict <?!> used in crew and django_app
     args_schema: ArgsSchema
     python_code: PythonCodeData
 

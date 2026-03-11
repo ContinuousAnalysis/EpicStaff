@@ -30,4 +30,4 @@ COPY ./sandbox .
 COPY ./shared /app/src/shared
 
 # Run sandbox module
-CMD python main.py
+CMD ["python", "main.py"]

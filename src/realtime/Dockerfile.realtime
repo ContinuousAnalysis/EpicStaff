@@ -27,4 +27,4 @@ COPY ./realtime .
 COPY ./shared /app/src/shared
 
 # Run module from workdir
-CMD python run_server.py
+CMD ["python", "run_server.py"]

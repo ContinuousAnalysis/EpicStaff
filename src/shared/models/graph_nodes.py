@@ -141,7 +141,6 @@ class GraphData(BaseModel):
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
     entrypoint: str
-    # entry_point: str  <?> only in realtime, change name
     end_node: EndNodeData | None
     telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
 

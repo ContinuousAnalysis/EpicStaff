@@ -134,7 +134,7 @@ def mock_session_data() -> SessionData:
                 )
             ],
             crew_node_list=[],
-            entry_point="start_node",
+            entrypoint="start_node",
         ),
     )
 

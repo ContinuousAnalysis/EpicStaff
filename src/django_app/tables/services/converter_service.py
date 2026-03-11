@@ -39,7 +39,36 @@ from tables.models.graph_models import (
     TelegramTriggerNode,
     WebhookTriggerNode,
 )
-from src.shared.models import *
+from src.shared.models import (
+    RagSearchConfig,
+    NaiveRagSearchConfig,
+    GraphRagSearchConfig,
+    CrewData,
+    TaskData,
+    BaseToolData,
+    AgentData,
+    RealtimeAgentChatData,
+    PythonCodeData,
+    PythonCodeToolData,
+    ConfiguredToolData,
+    ToolConfigData,
+    McpToolData,
+    LLMConfigData,
+    LLMData,
+    EmbedderData,
+    EmbedderConfigData,
+    PythonNodeData,
+    ConditionalEdgeData,
+    LLMNodeData,
+    ConditionData,
+    ConditionGroupData,
+    DecisionTableNodeData,
+    CrewNodeData,
+    TelegramTriggerNodeData,
+    TelegramTriggerNodeFieldData,
+    EndNodeData,
+    WebhookTriggerNodeData,
+)
 from utils.singleton_meta import SingletonMeta
 
 from tables.serializers.model_serializers import ToolConfigSerializer

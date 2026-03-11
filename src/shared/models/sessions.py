@@ -18,7 +18,7 @@ class GraphSessionMessageData(BaseModel):
     execution_order: int
     timestamp: str
     message_data: dict
-    uuid: str = ""  # <?> appeared in django
+    uuid: str = ""
 
     model_config = ConfigDict(from_attributes=True)
 

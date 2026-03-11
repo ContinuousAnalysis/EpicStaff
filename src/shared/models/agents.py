@@ -12,9 +12,9 @@ class AgentData(BaseModel):
     role: str
     goal: str
     backstory: str
-    tool_id_list: list[int] = []  # <?> only in realtime
-    tool_unique_name_list: list[str] = []  # <?> not used in realtime
-    python_code_tool_id_list: list[int] = []  # <?> only in realtime
+    tool_id_list: list[int] = []
+    tool_unique_name_list: list[str] = []
+    python_code_tool_id_list: list[int] = []
     max_iter: int
     max_rpm: int
     max_execution_time: int
@@ -27,7 +27,7 @@ class AgentData(BaseModel):
     embedder: EmbedderData | None = None
     function_calling_llm: LLMData | None
     knowledge_collection_id: int | None
-    # <?> not used in realtime
+
     rag_type_id: str | None = None
     rag_search_config: RagSearchConfig | None = None
 
@@ -90,13 +90,11 @@ class CrewData(BaseModel):
     full_output: bool | None
     planning: bool | None
     embedder: EmbedderData | None
-    memory_llm: LLMData | None = None  # <?> not used in realtime
+    memory_llm: LLMData | None = None
     manager_llm: LLMData | None
     planning_llm: LLMData | None
-    tools: List[BaseToolData] = []  # <?!> ask what is better (i think BaseToolData)
-    # tools: List[ConfiguredToolData] <?> only in realtime
+    tools: List[BaseToolData] = []
 
-    # <?> used only in realtime
     python_code_tools: list[PythonCodeToolData] = []
     knowledge_collection_id: int | None = None
 
@@ -108,17 +106,15 @@ class TaskData(BaseModel):
     name: str
     agent_id: int
     instructions: str
-    knowledge_query: str | None = None  # <?> not in knowledge
+    knowledge_query: str | None = None
     expected_output: str
     order: int = 1
     human_input: bool
     async_execution: bool
     config: dict | None
     output_model: dict | None
-    # in crew and django_app
     tool_unique_name_list: list[str] = []
     task_context_id_list: list[int] = []
-    # only in realtime
     task_tool_id_list: list[int] = []
     task_python_code_tool_id_list: list[int] = []
 

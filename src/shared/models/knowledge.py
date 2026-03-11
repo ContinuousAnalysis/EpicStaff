@@ -46,8 +46,7 @@ class BaseKnowledgeSearchMessage(BaseModel):
 
     collection_id: int
     rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
-    rag_type: Literal["naive", "graph"] # Type of RAG ("naive", "graph", etc.)  
-    # rag_type: str  # <?!> variant above used in django_app and knowledge
+    rag_type: Literal["naive", "graph"]  # Type of RAG ("naive", "graph", etc.)
     uuid: str
     query: str
     rag_search_config: (
@@ -68,8 +67,7 @@ class KnowledgeChunkResponse(BaseModel):
 
 class BaseKnowledgeSearchMessageResponse(BaseModel):
     rag_id: int  # ID of specific RAG implementation (naive_rag_id, graph_rag_id, etc.)
-    rag_type: Literal["naive", "graph"] 
-    # rag_type: str  # <?!> implementation above is used in knowledge
+    rag_type: Literal["naive", "graph"]
     collection_id: int
     uuid: str
     retrieved_chunks: int
