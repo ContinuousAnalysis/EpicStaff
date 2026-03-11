@@ -47,6 +47,7 @@ export interface GraphDto {
     metadata: FlowModel;
     tags?: [];
     audio_transcription_node_list: GetAudioToTextNodeRequest[];
+    label_ids?: number[];
 }
 
 export interface GetGraphLightRequest {
@@ -54,6 +55,7 @@ export interface GetGraphLightRequest {
     name: string;
     description: string;
     tags: string[];
+    label_ids?: number[];
 }
 
 export interface CreateGraphDtoRequest {

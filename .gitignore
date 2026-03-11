@@ -264,5 +264,6 @@ dev/dev.env
 
 # AI Coding Assistant Configs
 .claude/
+.claude-local/
 CLAUDE.md
 CLAUDE.local.md

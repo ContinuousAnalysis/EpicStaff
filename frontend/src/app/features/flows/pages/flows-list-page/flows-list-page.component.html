@@ -60,6 +60,9 @@
         </header>
         <nav class="tabs">
             <div class="tabs-left">
+                <button class="sidebar-toggle-btn" (click)="toggleSidebar()" [class.active]="showSidebar()" title="Label Branches">
+                    <!-- <app-icon icon="ui/tag" size="1rem"></app-icon> -->
+                </button>
                 @for (tab of tabs; track tab.link) {
                 <app-tab-button
                     routerLink="{{ tab.link }}"
@@ -100,6 +103,11 @@
         </nav>
     </div>
     <section class="body">
-        <router-outlet></router-outlet>
+        @if (showSidebar()) {
+            <app-flows-label-sidebar (closeSidebar)="toggleSidebar()"></app-flows-label-sidebar>
+        }
+        <div class="body-content">
+            <router-outlet></router-outlet>
+        </div>
     </section>
 </div>

@@ -3,7 +3,7 @@ import {
     ChangeDetectionStrategy,
     signal,
     inject,
-    OnInit,
+    effect,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -29,6 +29,7 @@ import { RunGraphService } from '../../../../services/run-graph-session.service'
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
 import { ImportExportService } from '../../../../../../core/services/import-export.service';
+import { LabelsStorageService } from '../../../../services/labels-storage.service';
 
 @Component({
     selector: 'app-my-flows',
@@ -43,7 +44,7 @@ import { ImportExportService } from '../../../../../../core/services/import-expo
         DialogModule,
     ],
 })
-export class MyFlowsComponent implements OnInit {
+export class MyFlowsComponent {
     private readonly flowsService = inject(FlowsStorageService);
     private readonly graphUpdateService = inject(GraphUpdateService);
     private readonly flowsApiService = inject(FlowsApiService);
@@ -55,6 +56,7 @@ export class MyFlowsComponent implements OnInit {
         ConfirmationDialogService
     );
     private readonly importExportService = inject(ImportExportService);
+    private readonly labelsStorage = inject(LabelsStorageService);
 
     public readonly error = signal<string | null>(null);
     public readonly filteredFlows = this.flowsService.filteredFlows;
@@ -62,26 +64,36 @@ export class MyFlowsComponent implements OnInit {
     public readonly selectMode = this.flowsService.selectMode;
     public readonly selectedFlowIds = this.flowsService.selectedFlowIds;
 
+    constructor() {
+        effect(() => {
+            const filter = this.labelsStorage.activeLabelFilter();
+            this.flowsService.getFlows(true, filter).subscribe({
+                next: () => {},
+                error: (err: HttpErrorResponse) => {
+                    console.error('Error loading flows', err);
+                    this.error.set('Failed to load flows. Please try again later.');
+                },
+            });
+        });
+    }
+
+    public retryLoad(): void {
+        this.error.set(null);
+        this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe({
+            next: () => {},
+            error: (err: HttpErrorResponse) => {
+                console.error('Error loading flows', err);
+                this.error.set('Failed to load flows. Please try again later.');
+            },
+        });
+    }
+
     public onFlowSelect(flowId: number): void{
         this.flowsService.toggleFlowSelection(flowId);
     }
 
     public isFlowSelected(flowId: number): boolean{
         return this.selectedFlowIds().includes(flowId);
-    }
-
-    public ngOnInit(): void {
-        if (!this.flowsService.isFlowsLoaded()) {
-            this.flowsService.getFlows().subscribe({
-                next: () => {},
-                error: (err: HttpErrorResponse) => {
-                    console.error('Error loading flows', err);
-                    this.error.set(
-                        'Failed to load flows. Please try again later.'
-                    );
-                },
-            });
-        }
     }
 
     public onOpenFlow(id: number): void {

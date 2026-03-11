@@ -1,0 +1,415 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    width: 422px;
+    min-width: 280px;
+    height: 100%;
+    background-color: var(--color-background-body);
+    border-right: 1px solid var(--color-divider-subtle);
+    border-top: 1px solid var(--color-divider-subtle);
+    border-radius: 0 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--color-divider-subtle);
+    flex-shrink: 0;
+
+    .sidebar-title {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        letter-spacing: 0.05em;
+    }
+
+    .close-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--color-text-secondary);
+        display: flex;
+        align-items: center;
+        padding: 0.2rem;
+        border-radius: 4px;
+
+        &:hover {
+            background: var(--color-ghost-btn-hover);
+            color: var(--color-ks-text);
+        }
+
+        &:active {
+            background: var(--color-ghost-btn-active);
+        }
+    }
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 1rem;
+}
+
+.tree-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.75rem 0.45rem 1rem;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    // border-radius: 4px;
+    // margin: 0 0.5rem;
+    font-size: 0.9rem;
+    position: relative;
+
+    &:hover {
+        background: var(--color-ghost-btn-hover);
+        color: var(--color-ks-text);
+    }
+
+    &:active {
+        background: var(--color-ghost-btn-active);
+    }
+
+    &.active {
+        background: var(--color-ghost-btn-active);
+        color: var(--accent-color);
+    }
+
+    .item-actions {
+        display: none;
+        margin-left: auto;
+        gap: 0.6rem;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    &:hover .item-actions {
+        display: flex;
+    }
+
+    .label-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+
+    .label-icon {
+        flex-shrink: 0;
+        opacity: 0.7;
+    }
+}
+
+.all-flows-item {
+    margin-top: 0.75rem;
+    font-weight: 500;
+    gap: 0.6rem;
+
+    span {
+        padding-top: 4px;
+    }
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem 0.25rem;
+
+    .section-label-header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        letter-spacing: 0.08em;
+    }
+
+    .add-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--color-text-secondary);
+        display: flex;
+        align-items: center;
+        padding: 0.15rem;
+        border-radius: 4px;
+        // width: 28px;
+        // height: 28px;
+
+        &:hover {
+            background: var(--color-ghost-btn-hover);
+            color: var(--color-ks-text);
+        }
+
+        &:active {
+            background: var(--color-ghost-btn-active);
+        }
+    }
+}
+
+.add-label-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.5rem;
+    margin: 0.1rem 0.5rem;
+
+    &.child-add {
+        // paddingLeft applied via [style.paddingLeft] binding
+        padding-left: 0; // overridden by binding
+        padding-right: 0.5rem;
+        margin: 0.1rem 0.5rem;
+    }
+
+    .label-input {
+        flex: 1;
+        min-width: 0;
+        background: var(--color-input-background);
+        border: 1px solid var(--color-input-border);
+        border-radius: 4px;
+        color: var(--color-text-primary);
+        padding: 0.25rem 0.5rem;
+        font-size: 0.85rem;
+        outline: none;
+
+        &:focus {
+            border-color: var(--accent-color);
+        }
+
+        &::placeholder {
+            color: var(--color-text-secondary);
+            opacity: 0.7;
+        }
+    }
+
+    .confirm-btn,
+    .cancel-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.2rem;
+        border-radius: 4px;
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+    }
+
+    .confirm-btn {
+        color: #ffffff;
+        background: var(--accent-color);
+
+        &:hover {
+            background: var(--accent-color-hover);
+        }
+
+        &:active {
+            background: var(--accent-color-active);
+        }
+    }
+
+    .cancel-btn {
+        color: var(--accent-color);
+        background: transparent;
+        border: 1px solid var(--accent-color);
+
+        &:hover {
+            background: var(--color-ghost-btn-hover);
+            color: var(--color-ghost-btn-active);
+        }
+
+        &:active {
+            background: var(--color-ghost-btn-active);
+        }
+    }
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    width: 0.8rem;
+    height: 0.8rem;
+
+    &:hover {
+        background: var(--color-ghost-btn-hover);
+        color: var(--color-ks-text);
+    }
+
+    &:active {
+        background: var(--color-ghost-btn-active);
+    }
+}
+
+.expand-icon {
+    transition: transform 0.15s ease;
+    display: flex;
+    align-items: center;
+
+    &.expanded {
+        transform: rotate(90deg);
+    }
+}
+
+.rename-input {
+    flex: 1;
+    min-width: 0;
+    background: var(--color-input-background);
+    border: 1px solid var(--accent-color);
+    border-radius: 4px;
+    color: var(--color-text-primary);
+    padding: 0.15rem 0.4rem;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.action-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.15rem;
+    border-radius: 3px;
+
+    &:hover {
+        background: var(--color-ghost-btn-hover);
+        color: var(--color-ks-text);
+    }
+
+    &:active {
+        background: var(--color-ghost-btn-active);
+    }   
+}
+
+.confirm-btn.small,
+.cancel-btn.small {
+    padding: 0.15rem;
+
+    &.confirm-btn {
+        color: #ffffff;
+        background: var(--accent-color);
+
+        &:hover {
+            background: var(--accent-color-hover);
+        }
+
+        &:active {
+            background: var(--accent-color-active);
+        }
+    }
+
+    &.cancel-btn {
+        color: var(--color-text-secondary);
+        background: transparent;
+
+        &:hover {
+            background: var(--color-ghost-btn-hover);
+            color: var(--color-ks-text);
+        }
+
+        &:active {
+            background: var(--color-ghost-btn-active);
+        }
+    }
+}
+
+.unlabeled-item {
+    border-top: 1px solid var(--color-divider-subtle);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+}
+
+// ── Icon color states ──────────────────────────────────────────
+
+// All Flows item — home icon (fill-based)
+.all-flows-item {
+    ::ng-deep app-icon svg path {
+        fill: var(--color-text-secondary);
+        transition: fill 0.15s ease;
+    }
+
+    &:hover ::ng-deep app-icon svg path {
+        fill: var(--color-ks-text);
+    }
+
+    &:active ::ng-deep app-icon svg path,
+    &.active ::ng-deep app-icon svg path {
+        fill: var(--accent-color);
+    }
+}
+
+// Label tree items — label icon (fill-based, only .label-icon, not action buttons)
+.label-item {
+    ::ng-deep .label-icon svg path {
+        fill: var(--color-text-secondary);
+        transition: fill 0.15s ease;
+    }
+
+    &:hover ::ng-deep .label-icon svg path {
+        fill: var(--color-ks-text);
+    }
+
+    &:active ::ng-deep .label-icon svg path,
+    &.active ::ng-deep .label-icon svg path {
+        fill: var(--accent-color);
+    }
+}
+
+// Unlabeled item — nolabel icon (stroke-based)
+.unlabeled-item {
+    ::ng-deep app-icon svg path {
+        stroke: var(--color-text-secondary);
+        transition: stroke 0.15s ease;
+    }
+
+    &:hover ::ng-deep app-icon svg path {
+        stroke: var(--color-ks-text);
+    }
+
+    &:active ::ng-deep app-icon svg path,
+    &.active ::ng-deep app-icon svg path {
+        stroke: var(--accent-color);
+    }
+}
+
+// ── Validation error ───────────────────────────────────────────
+
+.label-error {
+    margin: 0.1rem 0.5rem 0.3rem;
+    padding: 0.35rem 0.6rem;
+    background: rgba(220, 91, 96, 0.12);
+    border: 1px solid rgba(220, 91, 96, 0.3);
+    border-radius: 4px;
+    color: var(--color-ks-status-failed);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.label-input.has-error,
+.rename-input.has-error {
+    border-color: var(--color-ks-status-failed) !important;
+}

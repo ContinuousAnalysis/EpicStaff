@@ -63,6 +63,28 @@
             align-items: center;
         }
 
+        .sidebar-toggle-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+            padding: 0.4rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--color-text-primary);
+            }
+
+            &.active {
+                color: var(--accent-color);
+            }
+        }
+
         .tabs-right {
             display: flex;
             align-items: center;
@@ -72,9 +94,19 @@
 
     .body {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: stretch;
-        padding: 0 2.5rem 2rem;
+        flex: 1;
+        overflow: hidden;
+        padding: 0;        
+
+        .body-content {
+            flex: 1;
+            overflow: auto;
+            padding: 0 2.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+        }
     }
 
     // Search input styles

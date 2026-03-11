@@ -7,7 +7,7 @@
   } @else { @if (error()) {
   <div class="error-message">
     {{ error() }}
-    <button type="button" (click)="ngOnInit()" class="retry-button">
+    <button type="button" (click)="retryLoad()" class="retry-button">
       Retry
     </button>
   </div>

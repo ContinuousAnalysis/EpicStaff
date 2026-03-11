@@ -7,6 +7,7 @@ import {
     signal,
     inject,
 } from '@angular/core';
+import { FlowsLabelSidebarComponent } from './components/flows-label-sidebar/flows-label-sidebar.component';
 import {
     GraphDto,
     CreateGraphDtoRequest,
@@ -51,6 +52,7 @@ import { FlowService } from '../../../../visual-programming/services/flow.servic
         TabButtonComponent,
         FormsModule,
         AppIconComponent,
+        FlowsLabelSidebarComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -72,6 +74,12 @@ export class FlowsListPageComponent implements OnDestroy {
 
     public selectMode = this.flowStorageService.selectMode;
     public selectedFlowIds = this.flowStorageService.selectedFlowIds;
+
+    public showSidebar = signal<boolean>(true);
+
+    public toggleSidebar(): void {
+        this.showSidebar.update((v) => !v);
+    }
 
     constructor() {
         this.subscription = this.searchTerms

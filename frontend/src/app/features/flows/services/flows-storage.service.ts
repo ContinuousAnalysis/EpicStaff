@@ -111,21 +111,34 @@ export class FlowsStorageService {
     }
 
     // --- Data Fetching Methods ---
-    public getFlows(forceRefresh = false): Observable<GraphDto[]> {
-        if (this.flowsLoaded() && !forceRefresh) {
+    public getFlows(forceRefresh = false, labelFilter?: 'all' | 'unlabeled' | number): Observable<GraphDto[]> {
+        const isFiltered = labelFilter !== undefined && labelFilter !== 'all';
+        const params = this.buildLabelParams(labelFilter);
+
+        // Only use cache for unfiltered "all" requests
+        if (this.flowsLoaded() && !forceRefresh && !isFiltered) {
             return of(this.flowsSignal());
         }
-        return this.flowsApiService.getGraphsLight().pipe(
+
+        return this.flowsApiService.getGraphsLight(params).pipe(
             tap((flows) => {
-                this.setFlows(flows);
+                this.flowsSignal.set(flows);
+                if (!isFiltered) {
+                    this.flowsLoaded.set(true);
+                }
             }),
-        
             shareReplay(1),
             catchError(() => {
-                this.flowsLoaded.set(false);
+                if (!isFiltered) this.flowsLoaded.set(false);
                 return of([]);
             })
         );
+    }
+
+    private buildLabelParams(filter?: 'all' | 'unlabeled' | number): { label_id?: number; no_label?: boolean } | undefined {
+        if (!filter || filter === 'all') return undefined;
+        if (filter === 'unlabeled') return { no_label: true };
+        return { label_id: filter as number };
     }
 
     public getFlowTemplates(forceRefresh = false): Observable<GraphDto[]> {
