@@ -20,13 +20,18 @@
             <h3 class="title">
                 MODEL INFORMATION
             </h3>
-            <app-llm-model-selector
-                label="Provider"
-                placeholder="Select provider"
-                tooltipText="Provider"
-                [required]="true"
-                (modelChanged)="onModelChanged($event)"
-            />
+            <div>
+                <app-llm-model-selector
+                    formControlName="model"
+                    label="Provider"
+                    placeholder="Select provider"
+                    tooltipText="Provider"
+                    [required]="true"
+                />
+                <app-validation-errors
+                    [control]="form.get('model')!"
+                />
+            </div>
             <div>
                 <app-custom-input
                     formControlName="api_key"

@@ -20,7 +20,7 @@ import { catchError, take, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { LLM_Provider, ModelTypes } from "../../models/llm-provider.model";
 import { Quickstart } from "../../models/quickstart.model";
-import { LLM_Providers_Service } from "../../services/llms/llm-providers.service";
+import { LlmProvidersStorageService } from "../../services/llms/llm-providers-storage.service";
 import { QuickstartService } from "../../services/quickstart.service";
 
 @Component({
@@ -39,7 +39,7 @@ import { QuickstartService } from "../../services/quickstart.service";
 })
 export class QuickstartSectionComponent implements OnInit {
     private readonly fb = inject(FormBuilder);
-    private readonly providersService = inject(LLM_Providers_Service);
+    private readonly providersStorageService = inject(LlmProvidersStorageService);
     private readonly quickstartService =  inject(QuickstartService);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -73,17 +73,13 @@ export class QuickstartSectionComponent implements OnInit {
         this.quickStartForm.reset({ apiKey: '' });
     }
 
-    public onReviewDefaults(): void {
-        console.log('[Quickstart] review default models');
-    }
-
     public getProviderIcon(provider: LLM_Provider | null): string {
         return getProviderIconPath(provider?.name || null);
     }
 
     private loadProviders(): void {
-        this.providersService
-            .getProvidersByQuery(ModelTypes.LLM)
+        this.providersStorageService
+            .getProvidersByType(ModelTypes.LLM)
             .pipe(
                 take(1),
                 tap((providers) => {

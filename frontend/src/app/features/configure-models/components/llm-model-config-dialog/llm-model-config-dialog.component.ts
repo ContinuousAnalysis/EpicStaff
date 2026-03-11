@@ -9,8 +9,7 @@ import {
     KeyValueListComponent, SliderWithStepperComponent, TextareaComponent, ValidationErrorsComponent
 } from "@shared/components";
 import { ToastService } from "../../../../services/notifications";
-import { LLM_Model } from "../../models/llms/LLM.model";
-import { LLM_Config_Service } from "../../services/llms/llm-config.service";
+import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
 import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selector.component";
 
 @Component({
@@ -34,7 +33,7 @@ import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selec
 export class LlmModelConfigDialogComponent implements OnInit {
     private fb = inject(FormBuilder);
     private destroyRef = inject(DestroyRef);
-    private llmConfigService = inject(LLM_Config_Service);
+    private configStorageService = inject(LlmConfigStorageService);
     private toast = inject(ToastService);
     dialogRef = inject(DialogRef);
 
@@ -46,6 +45,7 @@ export class LlmModelConfigDialogComponent implements OnInit {
         this.form = this.fb.group({
             custom_name: ['', [Validators.required]],
             api_key: [''],
+            model: [null, [Validators.required]],
             temperature: [0.7],
             top_p: [1, [Validators.min(0.1)]],
             stop: [{}],
@@ -59,7 +59,6 @@ export class LlmModelConfigDialogComponent implements OnInit {
             extra_headers: [{}],
             timeout: [30, [Validators.min(1)]],
             is_visible: [true],
-            model: [],
         });
     }
 
@@ -71,7 +70,7 @@ export class LlmModelConfigDialogComponent implements OnInit {
         const formValue = this.form.value;
 
         this.isSaving.set(true);
-        this.llmConfigService.createConfig(formValue)
+        this.configStorageService.createConfig(formValue)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
@@ -87,11 +86,5 @@ export class LlmModelConfigDialogComponent implements OnInit {
                 }
             })
 
-    }
-
-    onModelChanged(model: LLM_Model): void {
-        const modelControl = this.form.get('model');
-
-        modelControl?.setValue(model.id)
     }
 }

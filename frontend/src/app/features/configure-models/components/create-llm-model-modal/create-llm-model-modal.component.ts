@@ -9,7 +9,7 @@ import { AppIconComponent, CustomInputComponent, ButtonComponent, ToggleSwitchCo
 import { LLM_Provider } from "../../../settings-dialog/models/llm-provider.model";
 import { ToastService } from '../../../../services/notifications';
 import { LLM_Model } from "../../models/llms/LLM.model";
-import { LLM_Models_Service } from "../../services/llms/llm-models.service";
+import { LlmModelsStorageService } from "../../services/llms/llm-models-storage.service";
 import { getProviderIconPath } from "../../utils/get-provider-icon";
 
 export interface CreateLlmModelDialogData {
@@ -37,7 +37,7 @@ export class CreateLlmModelModalComponent {
     private dialogRef = inject(DialogRef);
     private dialogData = inject<CreateLlmModelDialogData>(DIALOG_DATA);
     private fb = inject(FormBuilder);
-    private modelsService = inject(LLM_Models_Service);
+    private modelsStorageService = inject(LlmModelsStorageService);
     private toastService = inject(ToastService);
 
     isSubmitting = signal(false);
@@ -66,7 +66,7 @@ export class CreateLlmModelModalComponent {
         const value = this.form.getRawValue();
         this.isSubmitting.set(true);
 
-        this.modelsService
+        this.modelsStorageService
             .createModel({
                 name: (value.name || '').trim(),
                 base_url: value.baseUrl?.trim() || null,

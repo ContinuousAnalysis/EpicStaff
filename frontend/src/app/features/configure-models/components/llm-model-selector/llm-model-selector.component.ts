@@ -10,7 +10,6 @@ import {
     inject,
     input,
     model,
-    OnInit,
     output,
     signal,
     ViewChild,
@@ -26,8 +25,8 @@ import { finalize } from "rxjs/operators";
 import { LLM_Provider } from "../../../settings-dialog/models/llm-provider.model";
 import { ModelTypes } from "../../models/llm-provider.model";
 import { LLM_Model } from "../../models/llms/LLM.model";
-import { LLM_Models_Service } from "../../services/llms/llm-models.service";
-import { LLM_Providers_Service } from "../../services/llms/llm-providers.service";
+import { LlmModelsStorageService } from "../../services/llms/llm-models-storage.service";
+import { LlmProvidersStorageService } from "../../services/llms/llm-providers-storage.service";
 import { getProviderIconPath } from "../../utils/get-provider-icon";
 
 import { CreateLlmModelModalComponent } from "../create-llm-model-modal/create-llm-model-modal.component";
@@ -67,8 +66,8 @@ const TOP_PROVIDERS = [
 })
 // TODO refactor needed
 export class LlmModelSelectorComponent implements ControlValueAccessor {
-    private providersService = inject(LLM_Providers_Service);
-    private modelsService = inject(LLM_Models_Service);
+    private providersStorageService = inject(LlmProvidersStorageService);
+    private modelsStorageService = inject(LlmModelsStorageService);
     private destroyRef = inject(DestroyRef);
     private dialog = inject(Dialog);
     private overlayRef!: OverlayRef;
@@ -199,15 +198,15 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     private loadProvidersAndModels(): void {
         this.isLoading.set(true);
 
-        this.providersService
-            .getProvidersByQuery(ModelTypes.LLM)
+        this.providersStorageService
+            .getProvidersByType(ModelTypes.LLM)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (providers) => {
                     const sortedProviders = this.sortProviders(providers);
 
                     const modelRequests = sortedProviders.map(provider =>
-                        this.modelsService.getLLMModels(provider.id, true)
+                        this.modelsStorageService.getModels(provider.id, true)
                     );
 
                     if (modelRequests.length === 0) {
@@ -310,7 +309,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     }
 
     private reloadProviderModels(providerId: number): void {
-        this.modelsService.getLLMModels(providerId, true).pipe(
+        this.modelsStorageService.getModels(providerId, true).pipe(
             takeUntilDestroyed(this.destroyRef)
         ).subscribe({
             next: (visibleModels) => {

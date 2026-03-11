@@ -35,21 +35,6 @@ export class LLM_Config_Service {
             .pipe(map((response) => response.results));
     }
 
-    getConfigsByProviderId(
-        providerId: number
-    ): Observable<GetLlmConfigRequest[]> {
-        const params = new HttpParams()
-            .set('model_provider_id', providerId.toString())
-            .set('limit', '1000');
-
-        return this.http
-            .get<ApiGetRequest<GetLlmConfigRequest>>(this.apiUrl, {
-                headers: this.headers,
-                params,
-            })
-            .pipe(map((response) => response.results));
-    }
-
     getConfigById(id: number): Observable<GetLlmConfigRequest> {
         return this.http.get<GetLlmConfigRequest>(`${this.apiUrl}${id}/`, {
             headers: this.headers,

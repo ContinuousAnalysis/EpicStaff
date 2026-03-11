@@ -7,9 +7,9 @@ import {
     signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GetLlmModelRequest } from "../../../settings-dialog/models/llms/LLM.model";
-import { LLM_Models_Service } from "../../../settings-dialog/services/llms/llm-models.service";
-import { DefaultLlmsCard } from '../../interfaces/default-llms-card.interface';
+import { DefaultLlmsCard } from "../../interfaces/default-llms-card.interface";
+import { GetLlmModelRequest } from "../../models/llms/LLM.model";
+import { LlmModelsStorageService } from "../../services/llms/llm-models-storage.service";
 
 import { take, tap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -29,7 +29,7 @@ export class DefaultLlmsCardComponent {
         model: GetLlmModelRequest;
     }>();
 
-    private readonly llmModelsService = inject(LLM_Models_Service);
+    private readonly llmModelsStorageService = inject(LlmModelsStorageService);
 
     public readonly isDropdownOpen = signal(false);
     public readonly isLoading = signal(false);
@@ -55,8 +55,8 @@ export class DefaultLlmsCardComponent {
 
     private loadModels(): void {
         this.isLoading.set(true);
-        this.llmModelsService
-            .getLLMModels()
+        this.llmModelsStorageService
+            .getModels()
             .pipe(
                 take(1),
                 tap((models) => {
