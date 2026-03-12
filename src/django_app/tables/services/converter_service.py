@@ -1,21 +1,5 @@
 from typing import Iterable
 
-from loguru import logger
-
-from tables.models.webhook_models import NgrokWebhookConfig
-from tables.models.python_models import PythonCodeToolConfig
-from tables.models.crew_models import (
-    AgentConfiguredTools,
-    AgentMcpTools,
-    AgentPythonCodeTools,
-    AgentPythonCodeToolConfigs,
-)
-from tables.models.mcp_models import McpTool
-from tables.models.llm_models import (
-    RealtimeConfig,
-    RealtimeTranscriptionConfig,
-    LLMConfig,
-)
 from tables.models import (
     Agent,
     Crew,
@@ -28,7 +12,6 @@ from tables.models import (
     TaskContext,
     ToolConfig,
 )
-from tables.models.base_models import BaseGlobalNode
 from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
@@ -59,6 +42,7 @@ from tables.models.llm_models import (
 from tables.models.mcp_models import McpTool
 from tables.models.python_models import PythonCodeToolConfig
 from tables.models.realtime_models import RealtimeAgentChat
+from tables.models.webhook_models import NgrokWebhookConfig
 from tables.request_models import *
 from tables.request_models import CrewData, EndNodeData
 from tables.serializers.model_serializers import ToolConfigSerializer
@@ -67,6 +51,10 @@ from tables.validators.task_validator import TaskValidator
 from tables.validators.tool_config_validator import (
     ToolConfigValidator,
     validate_tool_configs,
+)
+from utils.graph_utils import (
+    SINGLE_LOOKUP_RESOLVER,
+    NodeNameResolver,
 )
 from utils.singleton_meta import SingletonMeta
 
@@ -492,42 +480,41 @@ class ConverterService(metaclass=SingletonMeta):
             ),
         )
 
-    # TODO: добавить нод нейм и не искать его в бд если он передан
-    def _generate_node_name_by_id(self, id: int | None):
-        if id is None:
-            return None
-        node = BaseGlobalNode.find_globally(id)
-        try:
-            node_name = node.node_name
-        except Exception as e:
-            logger.exception(e)
-            node_name = "unknown node"
-        return f"{node_name} #{id}"
-
-    def convert_python_node_to_pydantic(self, python_node: PythonNode):
-        python_code: PythonCode = python_node.python_code
-        python_code_data = self.convert_python_code_to_pydantic(python_code=python_code)
-
+    def convert_python_node_to_pydantic(
+        self,
+        python_node: PythonNode,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
+    ) -> PythonNodeData:
+        python_code_data = self.convert_python_code_to_pydantic(
+            python_code=python_node.python_code
+        )
         return PythonNodeData(
-            node_name=self._generate_node_name_by_id(id=python_node.id),
+            node_name=resolver(python_node.id),
             python_code=python_code_data,
             input_map=python_node.input_map,
             output_variable_path=python_node.output_variable_path,
         )
 
-    def convert_conditional_edge_to_pydantic(self, conditional_edge: ConditionalEdge):
-        python_code = conditional_edge.python_code
-        python_code_data = self.convert_python_code_to_pydantic(python_code=python_code)
+    def convert_conditional_edge_to_pydantic(
+        self,
+        conditional_edge: ConditionalEdge,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
+    ) -> ConditionalEdgeData:
+        python_code_data = self.convert_python_code_to_pydantic(
+            python_code=conditional_edge.python_code
+        )
         return ConditionalEdgeData(
-            source=self._generate_node_name_by_id(id=conditional_edge.source_node_id),
+            source=resolver(conditional_edge.source_node_id),
             python_code=python_code_data,
             input_map=conditional_edge.input_map,
         )
 
-    def convert_llm_node_to_pydantic(self, llm_node: LLMNode):
+    def convert_llm_node_to_pydantic(
+        self, llm_node: LLMNode, resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER
+    ) -> LLMNodeData:
         llm_data = self.convert_llm_config_to_pydantic(config=llm_node.llm_config)
         return LLMNodeData(
-            node_name=self._generate_node_name_by_id(id=llm_node.id),
+            node_name=resolver(llm_node.id),
             llm_data=llm_data,
             input_map=llm_node.input_map,
             output_variable_path=llm_node.output_variable_path,
@@ -536,7 +523,11 @@ class ConverterService(metaclass=SingletonMeta):
     def convert_condition_to_pydantic(self, condition: Condition) -> ConditionData:
         return ConditionData(condition=condition.condition)
 
-    def convert_condition_group_to_pydantic(self, condition_group: ConditionGroup):
+    def convert_condition_group_to_pydantic(
+        self,
+        condition_group: ConditionGroup,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
+    ) -> ConditionGroupData:
         return ConditionGroupData(
             group_name=condition_group.group_name,
             group_type=condition_group.group_type,
@@ -546,108 +537,120 @@ class ConverterService(metaclass=SingletonMeta):
                 ConditionData(condition=condition.condition)
                 for condition in condition_group.conditions.all()
             ],
-            next_node=self._generate_node_name_by_id(condition_group.next_node_id),
+            next_node=resolver(condition_group.next_node_id),
         )
 
     def convert_decision_table_node_to_pydantic(
-        self, decision_table_node: DecisionTableNode
-    ):
+        self,
+        decision_table_node: DecisionTableNode,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
+    ) -> DecisionTableNodeData:
         condition_group_list = [
-            self.convert_condition_group_to_pydantic(condition_group)
+            self.convert_condition_group_to_pydantic(condition_group, resolver)
             for condition_group in decision_table_node.condition_groups.all()
         ]
-
         return DecisionTableNodeData(
-            node_name=self._generate_node_name_by_id(id=decision_table_node.id),
+            node_name=resolver(decision_table_node.id),
             conditional_group_list=condition_group_list,
-            default_next_node=self._generate_node_name_by_id(
-                decision_table_node.default_next_node_id
-            ),
-            next_error_node=self._generate_node_name_by_id(
-                decision_table_node.next_error_node_id
-            ),
+            default_next_node=resolver(decision_table_node.default_next_node_id),
+            next_error_node=resolver(decision_table_node.next_error_node_id),
         )
 
-    def convert_crew_node_to_pydantic(self, crew_node: CrewNode):
+    def convert_crew_node_to_pydantic(
+        self, crew_node: CrewNode, resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER
+    ) -> CrewNodeData:
         crew: Crew = crew_node.crew
         validate_tool_configs(crew)
-
         crew_data = self.convert_crew_to_pydantic(crew_id=crew.pk)
         return CrewNodeData(
-            node_name=self._generate_node_name_by_id(id=crew_node.id),
+            node_name=resolver(crew_node.id),
             crew=crew_data,
             input_map=crew_node.input_map,
             output_variable_path=crew_node.output_variable_path,
         )
 
-    def convert_end_node_to_pydantic(self, end_node: EndNode):
+    def convert_end_node_to_pydantic(
+        self, end_node: EndNode, resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER
+    ) -> EndNodeData:
         return EndNodeData(
-            node_name=self._generate_node_name_by_id(id=end_node.id),
+            node_name=resolver(end_node.id),
             output_map=end_node.output_map,
         )
 
     def convert_webhook_trigger_node_to_pydantic(
-        self, webhook_trigger_node: WebhookTriggerNode
-    ):
-        python_code: PythonCode = webhook_trigger_node.python_code
-        python_code_data = self.convert_python_code_to_pydantic(python_code=python_code)
-
+        self,
+        webhook_trigger_node: WebhookTriggerNode,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
+    ) -> WebhookTriggerNodeData:
+        python_code_data = self.convert_python_code_to_pydantic(
+            python_code=webhook_trigger_node.python_code
+        )
         return WebhookTriggerNodeData(
-            node_name=self._generate_node_name_by_id(id=webhook_trigger_node.id),
+            node_name=resolver(webhook_trigger_node.id),
             python_code=python_code_data,
         )
 
     def convert_telegram_trigger_node_to_pydantic(
-        self, telegram_trigger_node: TelegramTriggerNode
-    ):
-        telegram_trigger_node_field_data: list[TelegramTriggerNodeFieldData] = []
-        for field in telegram_trigger_node.fields.all():
-            telegram_trigger_node_field_data.append(
-                TelegramTriggerNodeFieldData(
-                    parent=field.parent,
-                    field_name=field.field_name,
-                    variable_path=field.variable_path,
-                )
+        self,
+        telegram_trigger_node: TelegramTriggerNode,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
+    ) -> TelegramTriggerNodeData:
+        field_data = [
+            TelegramTriggerNodeFieldData(
+                parent=field.parent,
+                field_name=field.field_name,
+                variable_path=field.variable_path,
             )
-
+            for field in telegram_trigger_node.fields.all()
+        ]
         return TelegramTriggerNodeData(
-            node_name=self._generate_node_name_by_id(telegram_trigger_node.id),
-            field_list=telegram_trigger_node_field_data,
+            node_name=resolver(telegram_trigger_node.id),
+            field_list=field_data,
         )
 
-    def convert_edge_to_pytdantic(self, edge: Edge) -> EdgeData:
+    def convert_edge_to_pytdantic(
+        self, edge: Edge, resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER
+    ) -> EdgeData:
         return EdgeData(
-            start_key=self._generate_node_name_by_id(edge.start_node_id),
-            end_key=self._generate_node_name_by_id(edge.end_node_id),
+            start_key=resolver(edge.start_node_id),
+            end_key=resolver(edge.end_node_id),
         )
 
     def convert_file_extractor_node_to_pydantic(
-        self, file_extractor_node: FileExtractorNode
+        self,
+        file_extractor_node: FileExtractorNode,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
     ) -> FileExtractorNodeData:
         return FileExtractorNodeData(
-            node_name=self._generate_node_name_by_id(file_extractor_node.id),
+            node_name=resolver(file_extractor_node.id),
             input_map=file_extractor_node.input_map,
             output_variable_path=file_extractor_node.output_variable_path,
         )
 
     def convert_audio_transcription_node_to_pydantic(
-        self, audio_transcription_node: AudioTranscriptionNode
+        self,
+        audio_transcription_node: AudioTranscriptionNode,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
     ) -> AudioTranscriptionNodeData:
         return AudioTranscriptionNodeData(
-            node_name=self._generate_node_name_by_id(audio_transcription_node.id),
+            node_name=resolver(audio_transcription_node.id),
             input_map=audio_transcription_node.input_map,
             output_variable_path=audio_transcription_node.output_variable_path,
         )
 
     def convert_subgraph_node_to_pydantic(
-        self, subgraph_node: SubGraphNode, subgraph: Graph
+        self,
+        subgraph_node: SubGraphNode,
+        subgraph: Graph,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
     ) -> SubGraphNodeData:
         return SubGraphNodeData(
-            node_name=self._generate_node_name_by_id(subgraph_node.id),
+            node_name=resolver(subgraph_node.id),
             subgraph_id=subgraph.id,
             input_map=subgraph_node.input_map,
             output_variable_path=subgraph_node.output_variable_path,
         )
+
     def convert_ngrok_webhook_config_to_pydantic(
         self, ngrok_webhook_config: NgrokWebhookConfig
     ) -> NgrokConfigData:
@@ -657,5 +660,3 @@ class ConverterService(metaclass=SingletonMeta):
             domain=ngrok_webhook_config.domain,
             region=ngrok_webhook_config.region,
         )
-    
-    
