@@ -90,6 +90,16 @@ interface InputMapPair {
                                         placeholder="Enter libraries (e.g., requests, pandas, numpy)"
                                         [activeColor]="activeColor"
                                     ></app-custom-input>
+
+                                    <div class="stream-config-section" formGroupName="stream_config">
+                                        <span class="section-label">Streaming to EpicChat</span>
+                                        <div class="checkbox-list">
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" formControlName="execution_status" [style.accent-color]="activeColor" />
+                                                <span>Execution status</span>
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             }
 
@@ -174,6 +184,16 @@ interface InputMapPair {
                                 [activeColor]="activeColor"
                             ></app-custom-input>
 
+                            <div class="stream-config-section" formGroupName="stream_config">
+                                <span class="section-label">Streaming to EpicChat</span>
+                                <div class="checkbox-list">
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" formControlName="execution_status" [style.accent-color]="activeColor" />
+                                        <span>Execution status</span>
+                                    </label>
+                                </div>
+                            </div>
+
                             <!-- Code Editor Section -->
                             <div class="code-editor-section">
                                 <app-code-editor
@@ -234,8 +254,6 @@ interface InputMapPair {
                     width: 100%;
 
                     &.code-editor-fullwidth {
-                        overflow: visible;
-
                         .form-fields {
                             display: none;
                         }
@@ -260,8 +278,6 @@ interface InputMapPair {
                     display: flex;
                     flex-direction: column;
                     gap: 1rem;
-                    overflow: visible;
-
                 }
             }
 
@@ -331,7 +347,7 @@ interface InputMapPair {
                 border: 1px solid
                     var(--color-divider-subtle, rgba(255, 255, 255, 0.1));
                 border-radius: 0 8px 8px 0;
-                overflow: visible;
+                overflow: hidden;
                 display: flex;
                 flex-direction: column;               
 
@@ -356,7 +372,6 @@ interface InputMapPair {
                 .form-layout.expanded.code-editor-fullwidth & {
                     transform: scaleX(1) translateX(0);
                     opacity: 1;
-                    overflow: visible;
                 }
             }
 
@@ -366,6 +381,40 @@ interface InputMapPair {
 
             .btn-secondary {
                 @include mixins.secondary-button;
+            }
+
+            .section-label {
+                font-size: 0.75rem;
+                color: #d9d9d999;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .stream-config-section {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .checkbox-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.35rem;
+            }
+
+            .checkbox-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.85rem;
+                color: #d4d4d4;
+                cursor: pointer;
+
+                input[type='checkbox'] {
+                    width: 16px;
+                    height: 16px;
+                    cursor: pointer;
+                }
             }
         `,
     ],
@@ -407,11 +456,15 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     }
 
     initializeForm(): FormGroup {
+        const sc = this.node().stream_config;
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
             input_map: this.fb.array([]),
             output_variable_path: [this.node().output_variable_path || ''],
             libraries: [this.node().data.libraries?.join(', ') || ''],
+            stream_config: this.fb.group({
+                execution_status: [sc?.['execution_status'] ?? true],
+            }),
         });
 
         this.initializeInputMap(form);
@@ -428,9 +481,9 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
         const librariesArray = this.form.value.libraries
             ? this.form.value.libraries
-                .split(',')
-                .map((lib: string) => lib.trim())
-                .filter((lib: string) => lib.length > 0)
+                  .split(',')
+                  .map((lib: string) => lib.trim())
+                  .filter((lib: string) => lib.length > 0)
             : [];
 
         return {
@@ -445,6 +498,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
                 entrypoint: 'main',
                 libraries: librariesArray,
             },
+            stream_config: this.form.value.stream_config || {},
         };
     }
 

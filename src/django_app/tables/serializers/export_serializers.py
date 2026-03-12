@@ -16,7 +16,9 @@ from tables.models import (
     RealtimeConfig,
     RealtimeTranscriptionConfig,
 )
+from tables.models.graph_models import CodeAgentNode
 from tables.serializers.model_serializers import (
+    CodeAgentNodeSerializer,
     GraphSerializer,
     CrewNodeSerializer,
     PythonNodeSerializer,
@@ -403,11 +405,17 @@ class ConditionalEdgeExportSerializer(ConditionalEdgeSerializer):
     python_code = PythonCodeExportSerializer()
 
 
+class CodeAgentNodeExportSerializer(CodeAgentNodeSerializer):
+    class Meta(CodeAgentNodeSerializer.Meta):
+        pass
+
+
 class GraphExportSerializer(GraphSerializer):
     crew_node_list = CrewNodeExportSerializer(many=True)
     python_node_list = PythonNodeExportSerializer(many=True)
     conditional_edge_list = ConditionalEdgeExportSerializer(many=True)
     file_extractor_node_list = FileExtractorNodeSerializer(many=True)
+    code_agent_node_list = CodeAgentNodeExportSerializer(many=True)
     end_node_list = EndNodeSerializer(many=True, source="end_node")
     crews = serializers.SerializerMethodField()
     agents = serializers.SerializerMethodField()
@@ -499,6 +507,16 @@ class GraphExportSerializer(GraphSerializer):
                 unique_ids.add(llm_id)
             if fcm_id:
                 unique_ids.add(fcm_id)
+
+        # Code agent node LLM configs
+        ca_config_ids = (
+            CodeAgentNode.objects.filter(graph=graph)
+            .exclude(llm_config__isnull=True)
+            .values_list("llm_config", flat=True)
+            .distinct()
+        )
+        for config_id in ca_config_ids:
+            unique_ids.add(config_id)
 
         llm_configs = LLMConfig.objects.filter(id__in=unique_ids)
         serializer = LLMConfigExportSerializer(instance=llm_configs, many=True)

@@ -11,7 +11,7 @@ import { RouterModule } from '@angular/router';
 import { Spinner2Component } from '../../../../../../shared/components/spinner-type2/spinner.component';
 import { AppIconComponent } from '../../../../../../shared/components/app-icon/app-icon.component';
 import { Router } from '@angular/router';
-import { RunGraphService } from '../../../../../../features/flows/services/run-graph-session.service';
+import { RunGraphService } from '../../../../../../services/run-graph-session.service';
 import { Dialog as CdkDialog } from '@angular/cdk/dialog';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { FlowService } from '../../../../../../visual-programming/services/flow.service';
@@ -27,6 +27,7 @@ import { FlowService } from '../../../../../../visual-programming/services/flow.
 export class FlowHeaderComponent {
     @Input() graphName?: string;
     @Input() graphId?: number;
+    @Input() isEpicChatEnabled = false;
     @Input() isSaving = false;
     @Input() isRunning = false;
     @Input() hasUnsavedChanges = false;
@@ -35,6 +36,7 @@ export class FlowHeaderComponent {
     @Output() viewSessions = new EventEmitter<void>();
     @Output() run = new EventEmitter<void>();
     @Output() getCurl = new EventEmitter<void>();
+    @Output() connectChat = new EventEmitter<void>();
 
     constructor(private router: Router) {}
 
@@ -56,5 +58,9 @@ export class FlowHeaderComponent {
 
     onGetCurl() {
         this.getCurl.emit();
+    }
+
+    onConnectChat() {
+        this.connectChat.emit();
     }
 }

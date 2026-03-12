@@ -30,10 +30,24 @@
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
         />
-            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet"
+        />
+        <!-- EpicChat Widget -->
+        <link rel="stylesheet" href="/epicchat-widget/styles.css" />
+        <script>
+            window.__epicChatBasePath = "/epicchat-widget/";
+        </script>
+    </head>
     <body class="mat-typography">
         <app-root></app-root>
+        <!-- EpicChat Widget Scripts -->
+        <script src="/epicchat-widget/polyfills.js" defer></script>
+        <script src="/epicchat-widget/main.js" defer></script>
     </body>
 </html>

@@ -168,6 +168,70 @@ from tables.serializers.telegram_trigger_serializers import (
 )
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
+
+from tables.models import (
+    Agent,
+    Task,
+    TemplateAgent,
+    ToolConfig,
+    LLMConfig,
+    EmbeddingModel,
+    LLMModel,
+    Provider,
+    Crew,
+    EmbeddingConfig,
+    ConditionalEdge,
+    CrewNode,
+    Edge,
+    Graph,
+    GraphSessionMessage,
+    PythonCode,
+    PythonCodeResult,
+    PythonCodeTool,
+    PythonNode,
+    FileExtractorNode,
+    SubGraphNode,
+    AudioTranscriptionNode,
+    CodeAgentNode,
+    RealtimeModel,
+    StartNode,
+    ToolConfigField,
+    TaskContext,
+    GraphFile,
+)
+
+
+from tables.serializers.model_serializers import (
+    ConditionalEdgeSerializer,
+    CrewNodeSerializer,
+    EdgeSerializer,
+    GraphSerializer,
+    GraphSessionMessageSerializer,
+    LLMNodeSerializer,
+    CodeAgentNodeSerializer,
+    MemorySerializer,
+    PythonCodeResultSerializer,
+    PythonCodeSerializer,
+    PythonCodeToolSerializer,
+    PythonNodeSerializer,
+    FileExtractorNodeSerializer,
+    AudioTranscriptionNodeSerializer,
+    TemplateAgentSerializer,
+    LLMConfigSerializer,
+    ProviderSerializer,
+    LLMModelSerializer,
+    EmbeddingModelSerializer,
+    EmbeddingConfigSerializer,
+    CrewSerializer,
+    ToolConfigSerializer,
+    RealtimeModelSerializer,
+    RealtimeTranscriptionConfigSerializer,
+    RealtimeTranscriptionModelSerializer,
+    OrganizationSerializer,
+    OrganizationUserSerializer,
+    GraphOrganizationSerializer,
+    GraphOrganizationUserSerializer,
+)
 from tables.services.redis_service import RedisService
 from tables.utils.mixins import DeepCopyMixin
 from utils.logger import logger
@@ -694,6 +758,10 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
                 Prefetch("subgraph_node_list", queryset=SubGraphNode.objects.all()),
+                Prefetch(
+                    "code_agent_node_list",
+                    queryset=CodeAgentNode.objects.select_related("llm_config"),
+                ),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
                 Prefetch(
                     "telegram_trigger_node_list",
@@ -753,6 +821,7 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphLightSerializer
     filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter]
     # filterset_fields = ['tags']  TODO: Uncomment when tags logic implemented
+    filterset_fields = ["epicchat_enabled"]
     search_fields = ["name", "description"]
 
     def get_queryset(self):
@@ -782,6 +851,11 @@ class AudioTranscriptionNodeViewSet(viewsets.ModelViewSet):
 class LLMNodeViewSet(viewsets.ModelViewSet):
     queryset = LLMNode.objects.all()
     serializer_class = LLMNodeSerializer
+
+
+class CodeAgentNodeViewSet(viewsets.ModelViewSet):
+    queryset = CodeAgentNode.objects.all()
+    serializer_class = CodeAgentNodeSerializer
 
 
 class EdgeViewSet(viewsets.ModelViewSet):

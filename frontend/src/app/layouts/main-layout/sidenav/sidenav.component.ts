@@ -1,4 +1,10 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import {
+    Component,
+    ChangeDetectionStrategy,
+    CUSTOM_ELEMENTS_SCHEMA,
+    ElementRef,
+    ViewChild,
+} from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ICONS } from '../../../shared/constants/icons.constants';
 import { TooltipComponent } from './tooltip/tooltip.component';
@@ -6,6 +12,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { SettingsDialogService } from '../../../features/settings-dialog/settings-dialog.service';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
+import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
+import { ConfigService } from '../../../services/config/config.service';
+import { environment } from '../../../../environments/environment';
 
 interface NavItem {
     id: string;
@@ -30,15 +39,23 @@ interface NavItem {
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class LeftSidebarComponent {
     public topNavItems: NavItem[];
     public bottomNavItems: NavItem[];
+    public isEpicChatEnabled: boolean;
+    public apiBaseUrl: string = environment.apiUrl;
+    @ViewChild('epicChat', { static: false })
+    private epicChat?: ElementRef<HTMLElement>;
 
     constructor(
         private sanitizer: DomSanitizer,
-        private settingsDialogService: SettingsDialogService
+        public epicChatService: EpicChatService,
+        private settingsDialogService: SettingsDialogService,
+        private configService: ConfigService
     ) {
+        this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
         this.topNavItems = [
             {
                 id: 'projects',
@@ -84,20 +101,40 @@ export class LeftSidebarComponent {
             },
         ];
 
-        this.bottomNavItems = [
-            {
-                id: 'settings',
-                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.settings),
-                label: 'Settings',
-                showTooltip: false,
-                action: () => this.onSettingsClick(),
-                customClass: 'settings-tooltip',
-            },
-        ];
+        this.bottomNavItems = [];
+        // if (this.isEpicChatEnabled) {
+        //     this.bottomNavItems.push({
+        //         id: 'epic-chat',
+        //         svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.chats),
+        //         label: 'Epic Chat',
+        //         showTooltip: false,
+        //         action: () => this.toggleEpicChat(),
+        //     });
+        // }
+        this.bottomNavItems.push({
+            id: 'settings',
+            svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.settings),
+            label: 'Settings',
+            showTooltip: false,
+            action: () => this.onSettingsClick(),
+            customClass: 'settings-tooltip',
+        });
     }
 
     private onSettingsClick(): void {
         this.settingsDialogService.openSettingsDialog();
+    }
+
+    public toggleEpicChat(): void {
+        this.epicChatService.toggleChat(this.epicChat?.nativeElement);
+    }
+
+    public onEpChatCommandResult(event: Event): void {
+        this.epicChatService.onEpChatCommandResult(event);
+    }
+
+    public onEpChatEvent(event: Event): void {
+        this.epicChatService.onEpChatEvent(event);
     }
 
     public handleItemClick(item: NavItem, event: MouseEvent): void {

@@ -1,9 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ConfigService } from '../../../services/config/config.service';
-import { ApiGetRequest } from '../../../core/models/api-request.model';
+import { ApiGetRequest } from '../../../shared/models/api-request.model';
 import {
   GraphDto,
   CreateGraphDtoRequest,
@@ -37,8 +37,11 @@ export class FlowsApiService {
       .pipe(map((response) => response.results.sort((a, b) => b.id - a.id)));
   }
 
-  getGraphById(id: number): Observable<GraphDto> {
-    return this.http.get<GraphDto>(`${this.apiUrl}${id}/`);
+  getGraphById(id: number, forceRefresh = false): Observable<GraphDto> {
+    const params = forceRefresh
+      ? new HttpParams().set('_ts', Date.now().toString())
+      : undefined;
+    return this.http.get<GraphDto>(`${this.apiUrl}${id}/`, { params });
   }
 
   createGraph(graph: CreateGraphDtoRequest): Observable<GraphDto> {
@@ -49,6 +52,12 @@ export class FlowsApiService {
 
   updateGraph(id: number, graph: UpdateGraphDtoRequest): Observable<GraphDto> {
     return this.http.put<GraphDto>(`${this.apiUrl}${id}/`, graph, {
+      headers: this.httpHeaders,
+    });
+  }
+
+  patchGraph(id: number, fields: Partial<GraphDto>): Observable<GraphDto> {
+    return this.http.patch<GraphDto>(`${this.apiUrl}${id}/`, fields, {
       headers: this.httpHeaders,
     });
   }

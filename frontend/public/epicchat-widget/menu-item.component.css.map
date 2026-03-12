@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/components/shared/menu/menu-item.component.scss"],
+  "sourcesContent": [":host {\n    display: flex;\n    padding: 4px 20px;\n    align-items: center;\n    gap: 10px;\n    align-self: stretch;\n    color: var(--ep-color-text);\n    font-size: 14px;\n    font-weight: 400;\n    line-height: 20px;\n    cursor: pointer;\n    transition: background-color 0.15s;\n\n    &:hover {\n        background-color: var(--ep-color-surface-alt);\n    }\n\n    &:focus-visible {\n        outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n        outline-offset: -2px;\n        background-color: var(--ep-color-surface-alt);\n    }\n}\n\n:host.ep-menu-item--active {\n    color: var(--ep-color-accent);\n    font-weight: 600;\n}\n"],
+  "mappings": ";AAAA;AACI,WAAA;AACA,WAAA,IAAA;AACA,eAAA;AACA,OAAA;AACA,cAAA;AACA,SAAA,IAAA;AACA,aAAA;AACA,eAAA;AACA,eAAA;AACA,UAAA;AACA,cAAA,iBAAA;;AAEA,KAAA;AACI,oBAAA,IAAA;;AAGJ,KAAA;AACI,WAAA,IAAA,MAAA,UAAA,GAAA,IAAA,EAAA,IAAA,mBAAA,GAAA,EAAA;AACA,kBAAA;AACA,oBAAA,IAAA;;AAIR,KAAA,CAAA;AACI,SAAA,IAAA;AACA,eAAA;;",
+  "names": []
+}

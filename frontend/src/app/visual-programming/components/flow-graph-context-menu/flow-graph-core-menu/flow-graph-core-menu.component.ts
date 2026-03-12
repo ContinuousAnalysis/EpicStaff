@@ -121,6 +121,12 @@ export class FlowGraphCoreMenuComponent {
             color: NODE_COLORS[NodeType.EDGE],
         },
         {
+            label: 'Group',
+            type: NodeType.GROUP,
+            icon: NODE_ICONS[NodeType.GROUP],
+            color: '#ffffff',
+        },
+        {
             label: 'Note',
             type: NodeType.NOTE,
             icon: NODE_ICONS[NodeType.NOTE],
@@ -144,12 +150,12 @@ export class FlowGraphCoreMenuComponent {
             icon: NODE_ICONS[NodeType.TELEGRAM_TRIGGER],
             color: NODE_COLORS[NodeType.TELEGRAM_TRIGGER],
         },
-        // {
-        //   label: 'Decision Table',
-        //   type: NodeType.TABLE,
-        //   icon: NODE_ICONS[NodeType.TABLE],
-        //   color: NODE_COLORS[NodeType.TABLE],
-        // },
+        {
+            label: 'Code Agent',
+            type: NodeType.CODE_AGENT,
+            icon: NODE_ICONS[NodeType.CODE_AGENT],
+            color: NODE_COLORS[NodeType.CODE_AGENT],
+        },
     ];
 
     public get filteredBlocks(): FlowGraphBlock[] {
@@ -178,6 +184,8 @@ export class FlowGraphCoreMenuComponent {
                 code: 'def main(arg1: str, arg2: str) -> dict:\n    return {\n        "result": arg1 + arg2,\n    }\n',
                 entrypoint: 'main',
             };
+        } else if (type === NodeType.GROUP) {
+            data = 'group'; // Assign "group" if NodeType is GROUP
         } else if (type === NodeType.TABLE) {
             data = {
                 name: 'Decision Table',
@@ -213,7 +221,7 @@ export class FlowGraphCoreMenuComponent {
         }
         else if (type === NodeType.WEBHOOK_TRIGGER) {
             data = {
-                webhook_trigger: null,
+                webhook_trigger: 0,
                 python_code: {
                     name: 'Webhook trigger Node',
                     libraries: [],
@@ -224,13 +232,47 @@ export class FlowGraphCoreMenuComponent {
         }
         else if (type === NodeType.TELEGRAM_TRIGGER) {
             data = {
-                webhook_trigger: null,
                 telegram_bot_api_key: '',
                 fields: [],
             }
         }
         else if (type === NodeType.END) {
             data = null; // End node data is unknown as specified
+        }
+        else if (type === NodeType.CODE_AGENT) {
+            data = {
+                agent_mode: 'build',
+                session_id: 'variables.chat_id',
+                system_prompt: '',
+                stream_handler_code: `# ── Code Agent Stream Handler ──────────────────────────────────
+# Define any of these functions to hook into the agent lifecycle.
+# Each receives a 'context' dict containing all input_map fields
+# plus 'session_id' and 'node_name'.
+# Return a dict from any handler to persist state across calls
+# (e.g. store a message ID in on_stream_start, read it in on_complete).
+
+# def on_stream_start(context):
+#     \"\"\"Called once before the prompt is sent to OpenCode.\"\"\"
+#     pass
+
+# def on_chunk(text, context):
+#     \"\"\"Called each time the agent's reasoning or tool output updates.
+#     'text' contains the accumulated thinking/tool-call text so far.\"\"\"
+#     pass
+
+# def on_complete(full_reply, context):
+#     \"\"\"Called when the agent finishes (or is stopped).
+#     'full_reply' contains the agent's final response text.\"\"\"
+#     pass
+`,
+                libraries: [],
+                polling_interval_ms: 1000,
+                silence_indicator_s: 3,
+                indicator_repeat_s: 5,
+                chunk_timeout_s: 30,
+                inactivity_timeout_s: 120,
+                max_wait_s: 300,
+            };
         }
 
         this.nodeSelected.emit({ type, data });
@@ -239,6 +281,9 @@ export class FlowGraphCoreMenuComponent {
     public isDisabled(type: NodeType): boolean {
         if (type === NodeType.END) {
             return this.flowService.hasEndNode();
+        }
+        if (type === NodeType.GROUP) {
+            return true;
         }
         return false;
     }
