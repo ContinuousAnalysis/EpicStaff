@@ -454,7 +454,7 @@ function buildDecisionTableNode(dn: GetDecisionTableNodeRequest, idx: number): D
 
 function buildConditionalEdgeNode(ce: ConditionalEdge, idx: number): EdgeNodeModel {
     const ui = readUIMetadata(ce.metadata, NodeType.EDGE, idx);
-    const nodeName = (ce.metadata as any)?.['node_name'] || `cond_edge_${ce.id}`;
+    const nodeName = 'Conditional Edge';
     return {
         id: uuidv4(),
         backendId: ce.id,

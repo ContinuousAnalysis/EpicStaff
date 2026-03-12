@@ -975,10 +975,8 @@ export class FlowService {
                 flow.nodes.forEach((node) => {
                     if (node.parentId === groupId) {
                         if (isCollapsed) {
-                            // If parent group is collapsed, mark node for removal
                             nodeIdsToRemove.add(node.id);
                         } else {
-                            // If parent group is expanded, update the parentId to null
                             nodesToUpdate.push({ ...node, parentId: null });
                         }
                     }
@@ -987,12 +985,9 @@ export class FlowService {
                 flow.groups.forEach((childGroup) => {
                     if (childGroup.parentId === groupId) {
                         if (isCollapsed) {
-                            // If parent group is collapsed, mark group for removal
                             groupIdsToRemove.add(childGroup.id);
-                            // Process its descendants
                             addAllDescendants(childGroup.id, true);
                         } else {
-                            // If parent group is expanded, update the parentId to null
                             groupsToUpdate.push({
                                 ...childGroup,
                                 parentId: null,
@@ -1009,13 +1004,7 @@ export class FlowService {
                 }
             });
 
-            console.log('Group IDs to remove:', Array.from(groupIdsToRemove));
-            console.log('Node IDs to remove:', Array.from(nodeIdsToRemove));
-            console.log('Nodes to update:', nodesToUpdate.length);
-            console.log('Groups to update:', groupsToUpdate.length);
-
-            // Track removed connection IDs for logging
-            const removedConnectionIds: string[] = [];
+            // Track removed connections for decision table cleanup
             const removedConnections: ConnectionModel[] = [];
 
             const updatedConnections = flow.connections.filter((conn) => {
@@ -1029,15 +1018,12 @@ export class FlowService {
                     groupIdsToRemove.has(conn.targetNodeId);
 
                 if (isSelected || isOrphaned) {
-                    removedConnectionIds.push(conn.id);
                     removedConnections.push(conn);
                     return false; // remove connection
                 }
 
                 return true; // keep connection
             });
-
-            console.log('Connection IDs to remove:', removedConnectionIds);
 
             const decisionTableUpdates = new Map<
                 string,

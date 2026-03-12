@@ -458,10 +458,7 @@ export function getConnectionDiff(
         getConditionalEdgeForComparisonFromUI,
         'ConditionalEdge'
     );
-    const conditionalEdges = {
-        ...conditionalEdgesRaw,
-        toCreate: conditionalEdgesRaw.toCreate.filter(re => re.sourceBackendId != null),
-    };
+    const conditionalEdges = conditionalEdgesRaw;
 
     return {
         conditionalEdges,
@@ -571,7 +568,6 @@ export function buildCondEdgePayload(re: ResolvedConditionalEdge, graphId: numbe
         input_map: re.edgeNode.input_map || {},
         metadata: {
             ...getUIMetadataForComparison(re.edgeNode),
-            node_name: re.edgeNode.node_name,
             then_node_id: re.targetBackendId ?? null,
         },
     };

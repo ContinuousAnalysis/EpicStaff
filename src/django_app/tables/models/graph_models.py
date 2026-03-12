@@ -54,14 +54,6 @@ class CrewNode(BaseNode):
     crew = models.ForeignKey("Crew", on_delete=models.CASCADE)
     stream_config = models.JSONField(default=dict, blank=True)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_crew_node",
-            )
-        ]
-
 
 class PythonNode(BaseNode):
     graph = models.ForeignKey(
@@ -70,27 +62,11 @@ class PythonNode(BaseNode):
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
     stream_config = models.JSONField(default=dict, blank=True)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_python_node",
-            )
-        ]
-
 
 class FileExtractorNode(BaseNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="file_extractor_node_list"
     )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_file_extractor_node",
-            )
-        ]
 
 
 class AudioTranscriptionNode(BaseNode):
@@ -98,28 +74,12 @@ class AudioTranscriptionNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="audio_transcription_node_list"
     )
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_audio_transcriotion_node",
-            )
-        ]
-
 
 class LLMNode(BaseNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="llm_node_list"
     )
     llm_config = models.ForeignKey("LLMConfig", blank=False, on_delete=models.CASCADE)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_llm_node",
-            )
-        ]
 
 
 class EndNode(BaseGraphEntity, BaseGlobalNode):
@@ -159,14 +119,6 @@ class SubGraphNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="as_subgraph"
     )
     # TODO: maybe SET_NULL on delete?
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_subgraph_node",
-            )
-        ]
 
 
 class CodeAgentNode(BaseNode):
@@ -285,14 +237,6 @@ class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
     node_name = models.CharField(max_length=255, blank=True)
     default_next_node_id = models.BigIntegerField(null=True, default=None)
     next_error_node_id = models.BigIntegerField(null=True, default=None)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_decision_table_node",
-            )
-        ]
 
     def clean(self):
         super().clean()
@@ -469,14 +413,6 @@ class WebhookTriggerNode(BaseGraphEntity, BaseGlobalNode):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_webhook_nodes",
-            )
-        ]
-
 
 class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
     node_name = models.CharField(max_length=255, blank=False)
@@ -492,14 +428,6 @@ class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
         null=True,
         related_name="telegram_trigger_nodes",
     )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_telegram_trigger_nodes",
-            )
-        ]
 
 
 class TelegramTriggerNodeField(models.Model):

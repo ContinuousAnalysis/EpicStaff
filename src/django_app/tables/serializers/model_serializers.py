@@ -1559,14 +1559,20 @@ class NgrokWebhookConfigModelSerializer(serializers.ModelSerializer):
         return None
 
 
-class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
+class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
     webhook_trigger = WebhookTriggerNestedSerializer(required=False, allow_null=True)
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = WebhookTriggerNode
-        fields = ["id", "node_name", "graph", "python_code", "webhook_trigger"]
+        fields = [
+            "id",
+            "node_name",
+            "graph",
+            "python_code",
+            "webhook_trigger",
+        ] + BaseGraphEntityMixin.Meta.common_fields
 
     def to_internal_value(self, data):
         # COMMIT_COMMENTS: Accept webhook_trigger as int FK ID (sent by frontend
