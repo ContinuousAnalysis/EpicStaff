@@ -1,7 +1,7 @@
 ---
 id: epicstaff
 name: EpicStaff Flow Management
-version: 3.4
+version: 3.5
 trigger: always_on
 triggers: [epicstaff, epic-staff, flows, sessions]
 scope: [api, cli, integration]
@@ -46,7 +46,7 @@ Write commands (`push`, `pull`, `patch-*`, `sync-metadata`, `oc-abort`, `run-ses
 
 ### The `-g <GRAPH_ID>` Flag
 
-Most commands need a graph ID. Those that don't: `list`, `session`, `session-inspect`, `session-timings`, `crews` (global), `agents` (global), `tools` (global), `tool`, `crew-input`, `oc-status`, `oc-sessions`, `oc-messages`, `oc-abort`, `create-flow`, `create-tool`, `create-crew`, `create-agent`, `create-task`, `push-tools`, `push-project`.
+Most commands need a graph ID. Those that don't: `list`, `sessions` (optional -g), `session`, `session-inspect`, `session-timings`, `crews` (global), `agents` (global), `tools` (global), `tool`, `crew-input`, `oc-status`, `oc-sessions`, `oc-messages`, `oc-abort`, `create-flow`, `create-tool`, `create-crew`, `create-agent`, `create-task`, `push-tools`, `push-project`.
 
 Exception: `cdt-code` skips `-g` when `--cdt-id` is provided.
 
@@ -130,6 +130,20 @@ This skill has detailed reference files for specific tasks. Read them when the s
 | **Creating or planning** a new flow, nodes, edges, or wiring | `references/creating-flows.md` |
 | Working with Code Agent nodes or EpicChat | `references/epicchat.md` |
 | Debugging a failed session or API errors | `references/troubleshooting.md` |
+
+---
+
+## Session Debugging
+
+When asked to check sessions, use the `sessions` command:
+
+- **Recent sessions across all flows:** `sessions -n 5 -r` (no `-g` needed)
+- **Sessions for a specific flow:** `sessions -g 55 -n 2 -r`
+- **Don't know the flow ID?** Run `list -r` first to see all flows with their IDs
+- **Inspect a specific session:** `session-inspect <session_id> -r`
+- **Timing breakdown:** `session-timings <session_id> -r`
+
+Flags can go in any order: `sessions -g 55 -n 2 -r` and `sessions -r -g 55 -n 2` both work.
 
 ---
 

@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 
 from common import (
-    api_get, _get_graph, _get_cdt_nodes,
+    api_get, api_get_page, _get_graph, _get_cdt_nodes,
     _discover_files, _read_from_file, _read_from_db, _read_from_metadata,
     _canonical_json, _oc_curl,
     FLOWS_DIR,
@@ -354,15 +354,20 @@ def _print_session(session_id, messages, compact=False, json_mode=False):
 
 
 def cmd_sessions(args):
-    """Last N sessions for a flow."""
-    results = api_get("/sessions/", {"ordering": "-id", "graph": args.graph_id, "limit": args.n})
-    sessions = results[:args.n]
+    """Last N sessions for a flow (or all flows if -g not given)."""
+    params = {"ordering": "-id", "limit": args.n}
+    if args.graph_id:
+        params["graph"] = args.graph_id
+    sessions = api_get_page("/sessions/", params)
     if not sessions:
-        print(f"No sessions found for flow {args.graph_id}")
+        scope = f"flow {args.graph_id}" if args.graph_id else "any flow"
+        print(f"No sessions found for {scope}")
         return
-    print(f"Last {len(sessions)} sessions for flow {args.graph_id}:")
+    scope = f"flow {args.graph_id}" if args.graph_id else "all flows"
+    print(f"Last {len(sessions)} sessions ({scope}):")
     for s in sessions:
-        print(f"  Session {s['id']}: status={s['status']}, created={s.get('created_at','?')[:19]}")
+        graph_label = f" flow={s.get('graph','?')}" if not args.graph_id else ""
+        print(f"  Session {s['id']}:{graph_label} status={s['status']}, created={s.get('created_at','?')[:19]}")
     for s in reversed(sessions):
         msgs = api_get("/graph-session-messages/", {"session_id": s["id"], "ordering": "id", "limit": 100})
         _print_session(s["id"], msgs, compact=args.compact, json_mode=args.json)

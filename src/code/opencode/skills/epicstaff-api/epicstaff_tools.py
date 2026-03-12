@@ -180,6 +180,7 @@ def main():
     p.add_argument("--libraries", help="Comma-separated libraries")
     p.add_argument("--session-id", help="Session ID (variable path or literal)")
     p.add_argument("--output-schema-file", help="Read output_schema from JSON file")
+    p.add_argument("--agent-mode", help="Agent mode: build or plan")
     p = sub.add_parser("patch-libraries", help="Set libraries on a Python node")
     p.add_argument("node_name", help="Python node name")
     p.add_argument("libraries", help="Comma-separated libraries")
@@ -278,7 +279,24 @@ def main():
     p.add_argument("--agent-id", type=int, help="Assign to agent")
     p.add_argument("--crew-id", type=int, help="Add task to this crew")
 
-    args = parser.parse_args()
+    # Reorder argv so global flags (-r, -g, --api) come before the subcommand.
+    # This lets the agent write "get -g 59 -r" instead of only "-r -g 59 get".
+    raw = sys.argv[1:]
+    global_flags = {"-r", "--read-only", "-g", "--graph-id", "--api"}
+    flags_before = []
+    rest = []
+    i = 0
+    while i < len(raw):
+        if raw[i] in global_flags:
+            flags_before.append(raw[i])
+            # flags that take a value
+            if raw[i] in ("-g", "--graph-id", "--api") and i + 1 < len(raw):
+                i += 1
+                flags_before.append(raw[i])
+        else:
+            rest.append(raw[i])
+        i += 1
+    args = parser.parse_args(flags_before + rest)
     if args.api:
         _set_base_url(args.api)
     if not args.command:
@@ -293,7 +311,7 @@ def main():
     # Commands that require graph_id
     needs_graph = {
         "get", "nodes", "edges", "connections", "route-map",
-        "cdt", "cdt-prompts", "sessions", "vars", "history",
+        "cdt", "cdt-prompts", "vars", "history",
         "push", "pull", "verify", "export-compare",
         "patch-cdt", "patch-python", "patch-webhook", "patch-code-agent", "patch-dt", "patch-libraries",
         "patch-node-meta", "patch-start-vars", "sync-metadata", "rename-node",

@@ -462,23 +462,42 @@ export class CodeAgentStreamMessageComponent implements OnInit, OnChanges {
     if (!this.allMessages || !this.message) return;
 
     const nodeName = this.message.name;
-    const steps: ThinkingStep[] = [];
 
-    // Collect ALL non-final code_agent_stream messages for this node
+    // Collect non-final code_agent_stream messages for this node,
+    // consolidating by step_id (same step_id → update in-place).
+    const stepMap = new Map<number | string, ThinkingStep>();
+    const stepOrder: (number | string)[] = [];
+    let fallbackKey = 0;
+
     for (const msg of this.allMessages) {
       if (!msg.message_data) continue;
       if (msg.message_data.message_type !== 'code_agent_stream') continue;
       if (msg.name !== nodeName) continue;
 
       const data = msg.message_data as CodeAgentStreamMessageData;
-      if (!data.is_final) {
-        steps.push({
+      if (data.is_final) continue;
+
+      const key = data.step_id != null ? data.step_id : `_fb_${fallbackKey++}`;
+      const existing = stepMap.get(key);
+
+      if (existing) {
+        // Same step_id — replace text (latest wins), merge tool calls
+        existing.text = data.text || existing.text;
+        if (data.tool_calls?.length) {
+          existing.toolCalls = data.tool_calls;
+        }
+        existing.timestamp = msg.created_at;
+      } else {
+        stepMap.set(key, {
           text: data.text || '',
           toolCalls: data.tool_calls || [],
           timestamp: msg.created_at,
         });
+        stepOrder.push(key);
       }
     }
+
+    const steps = stepOrder.map((k) => stepMap.get(k)!);
 
     // Preserve existing expanded state for steps that haven't changed
     const oldLength = this.expandedSteps.length;

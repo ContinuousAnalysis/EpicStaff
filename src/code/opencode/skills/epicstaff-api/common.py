@@ -105,6 +105,21 @@ def api_get(path, params=None):
     return results
 
 
+def api_get_page(path, params=None):
+    """Like api_get but returns only the first page (no pagination follow).
+    Use when you only need a small number of results and don't want to
+    fetch all pages (e.g. 'limit=2' should return 2, not all results)."""
+    url = f"{BASE_URL}/{path.lstrip('/')}"
+    if params:
+        qs = "&".join(f"{k}={v}" for k, v in params.items() if v is not None)
+        if qs:
+            url += f"?{qs}"
+    req = urllib.request.Request(url, headers=_API_HOST_HEADER)
+    with urllib.request.urlopen(req) as resp:
+        data = json.loads(resp.read())
+    return data.get("results", data) if isinstance(data, dict) and "results" in data else data
+
+
 def api_patch(path, payload):
     url = f"{BASE_URL}/{path.lstrip('/')}"
     body = json.dumps(payload).encode()

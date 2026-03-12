@@ -169,21 +169,96 @@ Multiple buttons with sequential order appear in the same row. Buttons are remov
 
 ## 5. Request Payload (what the flow receives)
 
-When the user sends a message or clicks an action:
+When the user sends a message or clicks an action, the widget sends a `context` object:
 
-```
-variables.context.user_input      — user's text message (string)
-variables.context.user_action     — action text when button clicked (string)
-variables.context.chat_history    — previous messages [{role, content}, ...]
-variables.context.user_params     — from widget's userData attribute (object)
-variables.context.chat_session_id — persistent session ID (string, if widget sends it)
+```json
+{
+    "context": {
+        "user_input": "create a new flow",
+        "chat_history": [
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "Hello! How can I help?"}
+        ],
+        "tools": "Build mode",
+        "web": {"mode": "all"},
+        "chat_session_id": 1773075355088,
+        "page_url": "http://localhost:4200/flows/3"
+    }
+}
 ```
 
-Action-specific context extras (e.g., edited table data from `processTables`) are merged directly into `variables.context`.
+### Context fields
+
+| Field | Type | Description |
+|---|---|---|
+| `user_input` | string | User's text message |
+| `user_action` | string | Action text when button clicked (instead of `user_input`) |
+| `chat_history` | `{role, content}[]` | Previous messages in the conversation |
+| `tools` | string \| null | Name of the currently selected tool (e.g. `"Build mode"`), or absent if none selected |
+| `web` | object \| null | Web search config if enabled: `{"mode": "all" \| "restrict" \| "prioritize"}` |
+| `chat_session_id` | number | Persistent widget session ID (timestamp-based) |
+| `page_url` | string | Current browser URL — useful for detecting which flow the user is viewing |
+| `user_params` | object | From widget's `userData` attribute |
+
+Action-specific context extras (e.g., edited table data from `processTables`) are merged directly into `context`.
+
+### Build mode
+
+Build mode is activated via the **tools dropdown** in the widget. When the agent includes `"Build mode"` in the `tools` response field, the user can select it from the dropdown. While selected, `"tools": "Build mode"` is sent in every message context.
+
+The flow/agent should check `context.tools == "Build mode"` to decide whether to plan-only or execute changes directly.
+
+The first time a session starts, the agent can offer build mode via a button:
+```json
+{
+    "message": "I can help you build flows. Want me to make changes directly?",
+    "action_message": [
+        {"type": "button", "action": "sendAction", "text": "Allow build mode"}
+    ]
+}
+```
+
+Or simply include it in `tools` so the user can toggle it from the dropdown at any time.
 
 ---
 
-## 6. Streaming Messages
+## 6. Agent Response Capabilities
+
+The agent can declare UI capabilities in its response. These persist across messages as long as the agent keeps sending them.
+
+```json
+{
+    "message": "Here's what I found...",
+    "tools": ["Build mode", "Deep research"],
+    "allow_files": true,
+    "allow_web": true
+}
+```
+
+### Capability fields
+
+| Field | Type | Description |
+|---|---|---|
+| `tools` | string[] | Tool/mode toggles shown in the input area. The selected tool stays active across messages if the next response also includes it. |
+| `allow_files` | boolean | If `true`, shows a paperclip icon — user can attach files. |
+| `allow_web` | boolean | If `true`, shows web search options: no web / all web / restrict / prioritize. Selected option is sent back in context. |
+
+### Tool toggles
+
+Tools are rendered as a dropdown in the input area. The user selects one (or "None"). The selected tool name is sent as `context.tools` (string) in every subsequent message.
+
+If the next agent response no longer includes the selected tool in its `tools` array, the selection is automatically cleared.
+
+Example flow:
+1. Agent responds: `"tools": ["Build mode", "Deep research"]`
+2. User selects "Build mode" from dropdown
+3. Next user message includes `"tools": "Build mode"` in context
+4. Agent responds again with `"tools": ["Build mode", "Deep research"]` → selection persists
+5. Agent responds without `tools` or without "Build mode" → selection cleared
+
+---
+
+## 7. Streaming Messages
 
 During execution, the widget displays streaming messages in a **"Thinking..." expander**.
 
@@ -213,7 +288,7 @@ When `stream_config.final_reply` is `false`, the finish message is tagged `sse_v
 
 ---
 
-## 7. Widget Input Behavior
+## 8. Widget Input Behavior
 
 | Feature | Behavior |
 |---|---|
@@ -224,7 +299,7 @@ When `stream_config.final_reply` is `false`, the finish message is tagged `sse_v
 
 ---
 
-## 8. CSS Custom Properties
+## 9. CSS Custom Properties
 
 The widget exposes CSS custom properties for theming. Set them on the `<epicstaff-chat>` element.
 

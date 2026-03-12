@@ -1,6 +1,10 @@
 """
 Instance Manager — manages a pool of OpenCode instances, one per LLM config.
 
+All instances share a single HOME directory so that every session ends up in one
+SQLite DB.  The ``opencode.json`` config (including the model) is written into
+the shared HOME before each spawn.
+
 Endpoints:
     GET  /instance/{llm_config_id}       → get or create instance, return port
     GET  /instances                       → list all running instances
@@ -38,6 +42,8 @@ IDLE_TIMEOUT = int(_require_env("CODE_IDLE_TIMEOUT"))
 REAP_INTERVAL = int(_require_env("CODE_REAP_INTERVAL"))
 DJANGO_API = _require_env("DJANGO_API_URL")
 INSTANCES_DIR = Path(_require_env("CODE_INSTANCES_DIR"))
+SHARED_HOME = INSTANCES_DIR / "shared"
+LOGS_DIR = INSTANCES_DIR / "logs"
 SAVEFILES_DIR = Path(_require_env("CONTAINER_SAVEFILES_PATH"))
 SKILLS_SRC = Path("/home/user/root/app/opencode/skills")
 
@@ -151,9 +157,15 @@ def fetch_llm_config(config_id: int) -> dict:
 # OpenCode instance lifecycle
 # ---------------------------------------------------------------------------
 
-def _write_opencode_config(home_dir: Path, provider: str, model: str):
-    """Write opencode.json for this instance."""
-    config_dir = home_dir / ".config" / "opencode"
+def _write_opencode_config(provider: str, model: str):
+    """Write opencode.json into the shared HOME directory.
+
+    Because ``opencode serve`` does not support the ``-m`` flag, the model
+    must be set in the config file.  All instances share one HOME so the
+    config is overwritten before each spawn — only one instance is started
+    at a time (pool lock), so there is no race.
+    """
+    config_dir = SHARED_HOME / ".config" / "opencode"
     config_dir.mkdir(parents=True, exist_ok=True)
 
     config = {
@@ -196,13 +208,11 @@ def spawn_instance(config_id: int) -> Instance:
     base_url = llm_config.get("base_url") or ""
 
     port = pool.next_port()
-    home_dir = INSTANCES_DIR / str(config_id)
-    home_dir.mkdir(parents=True, exist_ok=True)
 
-    _write_opencode_config(home_dir, provider, model)
+    _write_opencode_config(provider, model)
 
     env = os.environ.copy()
-    env["HOME"] = str(home_dir)
+    env["HOME"] = str(SHARED_HOME)
     env["API_BASE_URL"] = DJANGO_API
 
     # Set the provider-specific API key env var
@@ -212,7 +222,7 @@ def spawn_instance(config_id: int) -> Instance:
     if base_url:
         env[f"{provider.upper()}_BASE_URL"] = base_url
 
-    log_dir = home_dir / "log"
+    log_dir = LOGS_DIR / str(config_id)
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = open(log_dir / "opencode.log", "w")
 
@@ -250,7 +260,7 @@ def spawn_instance(config_id: int) -> Instance:
         pid=proc.pid,
         provider=provider,
         model=model,
-        home_dir=str(home_dir),
+        home_dir=str(SHARED_HOME),
         started_at=now,
         last_used=now,
     )
@@ -418,6 +428,8 @@ def sync_skills():
 def ensure_dirs():
     """Ensure required directory structure exists."""
     SAVEFILES_DIR.mkdir(parents=True, exist_ok=True)
+    SHARED_HOME.mkdir(parents=True, exist_ok=True)
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
     my_es = SAVEFILES_DIR / ".my_epicstaff"
     for sub in ("flows", "tools", "projects"):
         (my_es / sub).mkdir(parents=True, exist_ok=True)
