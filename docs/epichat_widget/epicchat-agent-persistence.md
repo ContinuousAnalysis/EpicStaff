@@ -81,13 +81,13 @@ Returns `epicchat_enabled` in the response body.
 
 No change needed — the frontend already sends this command AND patches `epicchat_enabled`.
 
-### Future: Disconnect Flow
+### Disconnect Flow (implemented)
 
-The frontend will PATCH `epicchat_enabled: false` and send an `agent.remove` command (or the widget can detect the removal on next startup via the API response).
+When the widget emits `agent.disconnected` with `{ flowId }`, the frontend PATCHes `epicchat_enabled: false`. The widget removes the agent from its UI.
 
 ## API Base URL
 
-The widget needs the API base URL to construct the fetch call. This should be passed as an attribute or derived from the existing `flowUrl` pattern on agents. Current format: `http://localhost:8003/api/`.
+The widget needs the API base URL to construct the fetch call. This should be passed as an attribute or derived from the existing `flowUrl` pattern on agents. Current format: `http://localhost:8000/api/`.
 
 ## Migration
 

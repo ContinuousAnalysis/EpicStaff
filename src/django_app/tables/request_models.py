@@ -381,6 +381,7 @@ class TelegramTriggerNodeData(BaseModel):
 
 
 class GraphData(BaseModel):
+    graph_id: int | None = None
     name: str
     crew_node_list: list[CrewNodeData] = []
     webhook_trigger_node_data_list: list[WebhookTriggerNodeData] = []

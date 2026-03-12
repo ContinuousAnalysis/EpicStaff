@@ -180,6 +180,7 @@ export interface CodeAgentStreamMessageData {
   text: string;
   tool_calls?: CodeAgentToolCall[];
   is_final: boolean;
+  step_id?: number;
   message_type: MessageType.CODE_AGENT_STREAM;
 }
 

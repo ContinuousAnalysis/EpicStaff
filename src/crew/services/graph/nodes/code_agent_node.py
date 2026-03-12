@@ -401,6 +401,11 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             raw_bt = 0
         carry_over_turns = int(raw_bt) if str(raw_bt).isdigit() else 0
 
+        # Check widget tools dropdown (e.g. context.tools = "Build mode")
+        widget_tool = input_.get("tools") or ""
+        if widget_tool == _nf:
+            widget_tool = ""
+
         if action and self.BUILD_TRIGGER in action.strip().lower():
             granted = self._parse_build_turns(action)
             effective_mode = "build"
@@ -418,6 +423,9 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             if not prompt and not action:
                 prompt = f"Build mode continues ({carry_over_turns} turn(s) remaining including this one). Continue with the plan."
             logger.info(f"[CodeAgentNode] Build mode continued, {carry_over_turns} turns remaining")
+        elif widget_tool.strip().lower() == "build mode":
+            effective_mode = "build"
+            logger.info("[CodeAgentNode] Build mode enabled via widget tools dropdown")
         elif action and not prompt:
             prompt = action
 
@@ -538,6 +546,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         # Poll for response
         poll_s = self.polling_interval_ms / 1000.0
         last_reasoning = ""
+        last_sent_reasoning = ""
         final_answer = None
         last_content_time = time.time()
         start_time = time.time()
@@ -545,6 +554,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         logged_first = False
         prev_msg_count = 0
         prev_tool_count = 0
+        stream_step_id = 0
 
         fast_poll_s = poll_s / 10
         while True:
@@ -602,14 +612,23 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             delta_tools = tool_calls[prev_tool_count:]
 
             # Build thinking text from reasoning + only new tool details
-            thinking_text = self._format_thinking_text(reasoning, delta_tools)
+            # Only send when reasoning actually changed or new tools appeared;
+            # avoids oscillation where delta_tools empties on the next poll
+            # and the text flips between "reasoning+tools" and "reasoning only".
+            has_new_reasoning = reasoning and reasoning != last_sent_reasoning
+            has_new_tools = bool(delta_tools)
+            if has_new_reasoning or has_new_tools:
+                thinking_text = self._format_thinking_text(reasoning, delta_tools)
+            else:
+                thinking_text = None
 
-            # Stream progress when content changes
-            if thinking_text and thinking_text != last_reasoning:
+            if thinking_text:
                 last_reasoning = thinking_text
+                last_sent_reasoning = reasoning
                 last_content_time = time.time()
                 silence_indicator_sent = 0
                 prev_tool_count = len(tool_calls)
+                stream_step_id += 1
 
                 self.custom_session_message_writer.add_custom_message(
                     session_id=self.session_id,
@@ -619,8 +638,8 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                     message_data={
                         "message_type": "code_agent_stream",
                         "text": thinking_text,
-                        "tool_calls": self._humanize_tool_calls(delta_tools),
                         "is_final": False,
+                        "step_id": stream_step_id,
                         "sse_visible": not self.stream_config
                             or self.stream_config.get("reasoning", True)
                             or self.stream_config.get("tool_calls", True),

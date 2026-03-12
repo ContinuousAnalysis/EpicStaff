@@ -10,6 +10,7 @@ RUN apt-get update && \
 # Install opencode CLI
 RUN curl -fsSL https://opencode.ai/install | bash
 ENV PATH="/root/.opencode/bin:${PATH}"
+ENV HOME="/opt/opencode/instances/shared"
 
 # Bake skill files into image
 COPY ./code/opencode/skills opencode/skills

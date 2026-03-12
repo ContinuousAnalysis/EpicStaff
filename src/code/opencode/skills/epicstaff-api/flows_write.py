@@ -369,6 +369,9 @@ def cmd_patch_code_agent(args):
             schema = json.load(f)
         db_payload["output_schema"] = schema
         meta_updates["output_schema"] = schema
+    if getattr(args, "agent_mode", None):
+        db_payload["agent_mode"] = args.agent_mode
+        meta_updates["agent_mode"] = args.agent_mode
 
     if not db_payload:
         print("No fields to patch. Use --value, --llm-config, --system-prompt, --input-map, --output-variable-path, or --libraries.", file=sys.stderr)
