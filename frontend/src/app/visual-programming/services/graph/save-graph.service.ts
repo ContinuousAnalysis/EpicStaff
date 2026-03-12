@@ -21,6 +21,7 @@ import { EndNodeService } from '../../../pages/flows-page/components/flow-visual
 import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
 import { DecisionTableNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/decision-table-node.service';
 import { NoteNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/note-node.service';
+import { CodeAgentNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/code-agent-node.service';
 
 import { NodeDiff, NodeDiffResult, CreatedNodeMapping, NodeOnlyDiff, ConnectionDiff } from './save-graph.types';
 import {
@@ -42,6 +43,7 @@ import {
     buildEndNodePayload,
     buildDecisionTablePayload,
     buildNoteNodePayload,
+    buildCodeAgentPayload,
 } from './save-graph.diff';
 
 @Injectable({
@@ -63,6 +65,7 @@ export class GraphUpdateService {
         private subGraphNodeService: SubGraphNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
         private noteNodeService: NoteNodeService,
+        private codeAgentNodeService: CodeAgentNodeService,
         private toastService: ToastService
     ) {}
 
@@ -77,23 +80,36 @@ export class GraphUpdateService {
         updateOperation: (backendId: number, node: TUI) => Observable<any>,
         getUINodeId: (node: TUI) => string
     ): Observable<NodeDiffResult> {
+        // COMMIT_COMMENTS: Each operation catches errors individually so one
+        // failure does not abort the entire forkJoin. This prevents orphan
+        // accumulation when partial saves fail — successful creates still get
+        // their backendId mappings applied.
         const operations: Observable<{ type: string; uiNodeId?: string; result: any }>[] = [
             ...diff.toDelete.map(n =>
                 deleteOperation(n).pipe(
                     map(r => ({ type: 'delete', result: r })),
-                    catchError(err => throwError(() => err))
+                    catchError(err => {
+                        console.error('[SaveGraph] delete failed:', err);
+                        return of({ type: 'delete-failed', result: null });
+                    })
                 )
             ),
             ...diff.toCreate.map(n =>
                 createOperation(n).pipe(
                     map(r => ({ type: 'create', uiNodeId: getUINodeId(n), result: r })),
-                    catchError(err => throwError(() => err))
+                    catchError(err => {
+                        console.error('[SaveGraph] create failed:', err);
+                        return of({ type: 'create-failed', uiNodeId: getUINodeId(n), result: null });
+                    })
                 )
             ),
             ...diff.toUpdate.map(({ backend, ui }) =>
                 updateOperation(backend.id, ui).pipe(
                     map(r => ({ type: 'update', result: r })),
-                    catchError(err => throwError(() => err))
+                    catchError(err => {
+                        console.error('[SaveGraph] update failed:', err);
+                        return of({ type: 'update-failed', result: null });
+                    })
                 )
             ),
         ];
@@ -107,6 +123,11 @@ export class GraphUpdateService {
                 const createdMappings: CreatedNodeMapping[] = results
                     .filter(r => r.type === 'create' && r.uiNodeId && r.result?.id != null)
                     .map(r => ({ uiNodeId: r.uiNodeId!, backendId: r.result.id }));
+
+                const failures = results.filter(r => r.type.endsWith('-failed'));
+                if (failures.length) {
+                    console.warn(`[SaveGraph] ${failures.length} operation(s) failed but save continues`);
+                }
 
                 return { results, createdMappings };
             })
@@ -279,6 +300,13 @@ export class GraphUpdateService {
                 n => this.noteNodeService.deleteNoteNode(n.id.toString()),
                 n => this.noteNodeService.createNoteNode(buildNoteNodePayload(n, graphId)),
                 (id, n) => this.noteNodeService.updateNoteNode(id, buildNoteNodePayload(n, graphId)),
+                n => n.id
+            ),
+            codeAgentNodes: this.executeNodeDiff(
+                diff.codeAgentNodes,
+                n => this.codeAgentNodeService.deleteCodeAgentNode(n.id.toString()),
+                n => this.codeAgentNodeService.createCodeAgentNode(buildCodeAgentPayload(n, graphId)),
+                (id, n) => this.codeAgentNodeService.updateCodeAgentNode(id.toString(), buildCodeAgentPayload(n, graphId)),
                 n => n.id
             ),
         });

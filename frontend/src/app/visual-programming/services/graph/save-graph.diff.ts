@@ -29,6 +29,7 @@ import {
     EdgeNodeModel,
     DecisionTableNodeModel,
     NoteNodeModel,
+    CodeAgentNodeModel,
     NodeModel,
 } from '../../core/models/node.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
@@ -48,6 +49,7 @@ import {
     CreateDecisionTableNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
 import { NoteNode, CreateNoteNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
+import { CreateCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 
 import {
     NodeDiff,
@@ -87,6 +89,8 @@ import {
     getEndNodeForComparisonFromUI,
     getNoteNodeForComparisonFromBackend,
     getNoteNodeForComparisonFromUI,
+    getCodeAgentNodeForComparisonFromBackend,
+    getCodeAgentNodeForComparisonFromUI,
 } from './save-graph.comparators';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -167,6 +171,7 @@ export function extractPreviousState(graph: GraphDto): GraphPreviousState {
         endNodes: graph.end_node_list ?? [],
         decisionTableNodes: graph.decision_table_node_list ?? [],
         noteNodes: graph.note_node_list ?? [],
+        codeAgentNodes: graph.code_agent_node_list ?? [],
     };
 }
 
@@ -256,6 +261,7 @@ export function extractNewState(flowState: FlowModel): GraphNewState {
         edges: resolveEdges(connections, nodes),
         noteNodes: nodes.filter(n => n.type === NodeType.NOTE) as NoteNodeModel[],
         endNodes: nodes.filter(n => n.type === NodeType.END) as EndNodeModel[],
+        codeAgentNodes: nodes.filter(n => n.type === NodeType.CODE_AGENT) as CodeAgentNodeModel[],
         decisionTableNodes: nodes.filter(n => n.type === NodeType.TABLE) as DecisionTableNodeModel[],
         allNodes: nodes,
     };
@@ -349,6 +355,13 @@ export function getNodeOnlyDiff(
         'NoteNode'
     );
 
+    const codeAgentNodes = diffByKey(
+        previous.codeAgentNodes, current.codeAgentNodes,
+        n => n.backendId,
+        getCodeAgentNodeForComparisonFromBackend, getCodeAgentNodeForComparisonFromUI,
+        'CodeAgentNode'
+    );
+
     return {
         crewNodes,
         pythonNodes,
@@ -361,6 +374,7 @@ export function getNodeOnlyDiff(
         decisionTableNodes,
         endNodes,
         noteNodes,
+        codeAgentNodes,
     };
 }
 
@@ -466,6 +480,7 @@ export function buildCrewPayload(n: ProjectNodeModel, graphId: number): CreateCr
         crew_id: (n.data as GetProjectRequest).id,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
+        stream_config: n.stream_config ?? {},
         metadata: getUIMetadataForComparison(n),
     };
 }
@@ -477,6 +492,7 @@ export function buildPythonPayload(n: PythonNodeModel, graphId: number): CreateP
         python_code: n.data,
         input_map: n.input_map || {},
         output_variable_path: n.output_variable_path || null,
+        stream_config: n.stream_config ?? {},
         metadata: getUIMetadataForComparison(n),
     };
 }
@@ -626,5 +642,28 @@ export function buildNoteNodePayload(n: NoteNodeModel, graphId: number): CreateN
             ...getUIMetadataForComparison(n),
             backgroundColor: n.data.backgroundColor ?? null,
         },
+    };
+}
+
+export function buildCodeAgentPayload(node: CodeAgentNodeModel, graphId: number): CreateCodeAgentNodeRequest {
+    return {
+        node_name: node.node_name,
+        graph: graphId,
+        llm_config: node.data?.llm_config_id ?? null,
+        agent_mode: node.data?.agent_mode ?? 'code_interpreter',
+        session_id: node.data?.session_id ?? '',
+        system_prompt: node.data?.system_prompt ?? '',
+        stream_handler_code: node.data?.stream_handler_code ?? '',
+        libraries: node.data?.libraries ?? [],
+        polling_interval_ms: node.data?.polling_interval_ms ?? 100,
+        silence_indicator_s: node.data?.silence_indicator_s ?? 3,
+        indicator_repeat_s: node.data?.indicator_repeat_s ?? 5,
+        chunk_timeout_s: node.data?.chunk_timeout_s ?? 30,
+        inactivity_timeout_s: node.data?.inactivity_timeout_s ?? 120,
+        max_wait_s: node.data?.max_wait_s ?? 300,
+        input_map: node.input_map,
+        output_variable_path: node.output_variable_path,
+        stream_config: node.stream_config ?? {},
+        output_schema: node.data?.output_schema ?? {},
     };
 }

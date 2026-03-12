@@ -1,6 +1,7 @@
 export const EP_CHAT_COMMANDS = {
     AGENT_CREATE: 'agent.create',
     AGENT_SELECT: 'agent.select',
+    AGENT_REMOVE: 'agent.remove',
 } as const;
 
 export type EpChatAction =

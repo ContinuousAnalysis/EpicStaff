@@ -317,6 +317,10 @@ class PythonCodeSerializer(serializers.ModelSerializer):
         model = PythonCode
         fields = "__all__"
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "code": {"allow_blank": True},
+            "entrypoint": {"allow_blank": True},
+        }
 
     def to_representation(self, instance):
         """Convert 'libraries' string to a list of strings for output."""
@@ -1564,14 +1568,30 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
         model = WebhookTriggerNode
         fields = ["id", "node_name", "graph", "python_code", "webhook_trigger"]
 
+    def to_internal_value(self, data):
+        # COMMIT_COMMENTS: Accept webhook_trigger as int FK ID (sent by frontend
+        # after loading from backend) in addition to nested dict — prevents
+        # validation error when the frontend round-trips the serialized data.
+        wt = data.get("webhook_trigger")
+        if isinstance(wt, int):
+            self._webhook_trigger_id = wt
+            data = data.copy()
+            data["webhook_trigger"] = None
+        else:
+            self._webhook_trigger_id = None
+        return super().to_internal_value(data)
+
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
         webhook_trigger_data = validated_data.pop("webhook_trigger", None)
+        wt_id = getattr(self, "_webhook_trigger_id", None)
 
         python_code = PythonCode.objects.create(**python_code_data)
 
         webhook_trigger_instance = None
-        if webhook_trigger_data:
+        if wt_id:
+            webhook_trigger_instance = WebhookTrigger.objects.filter(id=wt_id).first()
+        elif webhook_trigger_data:
             path = webhook_trigger_data.get("path")
             ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
@@ -1594,7 +1614,11 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
                 setattr(python_code, attr, value)
             python_code.save()
 
-        if "webhook_trigger" in validated_data:
+        wt_id = getattr(self, "_webhook_trigger_id", None)
+        if wt_id:
+            instance.webhook_trigger = WebhookTrigger.objects.filter(id=wt_id).first()
+            validated_data.pop("webhook_trigger", None)
+        elif "webhook_trigger" in validated_data:
             webhook_trigger_data = validated_data.pop("webhook_trigger")
 
             if webhook_trigger_data:

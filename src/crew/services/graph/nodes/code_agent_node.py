@@ -622,7 +622,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             else:
                 thinking_text = None
 
-            if thinking_text:
+            if thinking_text and thinking_text != last_reasoning:
                 last_reasoning = thinking_text
                 last_sent_reasoning = reasoning
                 last_content_time = time.time()

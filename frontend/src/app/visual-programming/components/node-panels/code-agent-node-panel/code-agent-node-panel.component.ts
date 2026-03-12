@@ -23,7 +23,7 @@ import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
-import { FullLLMConfigService, FullLLMConfig } from '../../../../services/full-llm-config.service';
+import { FullLLMConfigService, FullLLMConfig } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
 import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
 

@@ -18,6 +18,7 @@ import {
 } from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
 import { WebhookTriggerModel } from "./webhook-trigger.model";
 import { GetGraphLightRequest } from '../../../features/flows/models/graph.model';
+import { CodeAgentNodeData } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 
 export interface BaseNodeModel {
     id: string;
@@ -51,11 +52,13 @@ export interface StartNodeModel extends BaseNodeModel {
 export interface PythonNodeModel extends BaseNodeModel {
     type: NodeType.PYTHON;
     data: CustomPythonCode;
+    stream_config?: Record<string, boolean>;
 }
 
 export interface ProjectNodeModel extends BaseNodeModel {
     type: NodeType.PROJECT;
     data: GetProjectRequest;
+    stream_config?: Record<string, boolean>;
 }
 export interface TaskNodeModel extends BaseNodeModel {
     type: NodeType.TASK;
@@ -138,6 +141,12 @@ export interface SubGraphNodeModel extends BaseNodeModel {
     data: GetGraphLightRequest;
 }
 
+export interface CodeAgentNodeModel extends BaseNodeModel {
+    type: NodeType.CODE_AGENT;
+    data: CodeAgentNodeData;
+    stream_config?: Record<string, boolean>;
+}
+
 export type NodeModel =
     | AgentNodeModel
     | TaskNodeModel
@@ -154,4 +163,5 @@ export type NodeModel =
     | SubGraphNodeModel
     | WebhookTriggerNodeModel
     | TelegramTriggerNodeModel
-    | EndNodeModel;
+    | EndNodeModel
+    | CodeAgentNodeModel;

@@ -828,32 +828,57 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
         return Graph.objects.prefetch_related("tags")
 
 
-class CrewNodeViewSet(viewsets.ModelViewSet):
+class IdempotentNodeCreateMixin:
+    """
+    COMMIT_COMMENTS: Makes node POST idempotent — if a node with the same
+    (graph, node_name) already exists, update it instead of failing with a
+    unique constraint violation. This prevents orphan accumulation when
+    forkJoin-based saves partially fail and retry.
+    """
+
+    def create(self, request, *args, **kwargs):
+        graph_id = request.data.get("graph")
+        node_name = request.data.get("node_name")
+        if graph_id and node_name:
+            try:
+                existing = self.get_queryset().model.objects.get(
+                    graph_id=graph_id, node_name=node_name
+                )
+                serializer = self.get_serializer(existing, data=request.data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except self.get_queryset().model.DoesNotExist:
+                pass
+        return super().create(request, *args, **kwargs)
+
+
+class CrewNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet):
     queryset = CrewNode.objects.all()
     serializer_class = CrewNodeSerializer
 
 
-class PythonNodeViewSet(viewsets.ModelViewSet):
+class PythonNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet):
     queryset = PythonNode.objects.all()
     serializer_class = PythonNodeSerializer
 
 
-class FileExtractorNodeViewSet(viewsets.ModelViewSet):
+class FileExtractorNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet):
     queryset = FileExtractorNode.objects.all()
     serializer_class = FileExtractorNodeSerializer
 
 
-class AudioTranscriptionNodeViewSet(viewsets.ModelViewSet):
+class AudioTranscriptionNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet):
     queryset = AudioTranscriptionNode.objects.all()
     serializer_class = AudioTranscriptionNodeSerializer
 
 
-class LLMNodeViewSet(viewsets.ModelViewSet):
+class LLMNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet):
     queryset = LLMNode.objects.all()
     serializer_class = LLMNodeSerializer
 
 
-class CodeAgentNodeViewSet(viewsets.ModelViewSet):
+class CodeAgentNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet):
     queryset = CodeAgentNode.objects.all()
     serializer_class = CodeAgentNodeSerializer
 
@@ -1031,7 +1056,23 @@ class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """
         Create a DecisionTableNode along with nested ConditionGroups and Conditions.
+        If a node with the same (graph, node_name) already exists, update it instead.
         """
+        graph_id = request.data.get("graph")
+        node_name = request.data.get("node_name")
+        if graph_id and node_name:
+            try:
+                existing = DecisionTableNode.objects.get(
+                    graph_id=graph_id, node_name=node_name
+                )
+                node, _ = self._create_or_update_node(
+                    data=request.data, instance=existing
+                )
+                return Response(
+                    self.get_serializer(node).data, status=status.HTTP_200_OK
+                )
+            except DecisionTableNode.DoesNotExist:
+                pass
         node, _ = self._create_or_update_node(data=request.data)
         return Response(self.get_serializer(node).data, status=status.HTTP_201_CREATED)
 
@@ -1216,11 +1257,24 @@ class GraphOrganizationUserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphOrganizationUserSerializer
 
 
-class WebhookTriggerNodeViewSet(viewsets.ModelViewSet):
+class WebhookTriggerNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet):
     queryset = WebhookTriggerNode.objects.all()
     serializer_class = WebhookTriggerNodeSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["graph", "node_name", "webhook_trigger__path"]
+
+    def create(self, request, *args, **kwargs):
+        from loguru import logger
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        logger.info(f"[WebhookTriggerNode] CREATE payload: {request.data}")
+        try:
+            return super().create(request, *args, **kwargs)
+        except DRFValidationError as e:
+            logger.error(f"[WebhookTriggerNode] validation error: {e.detail}")
+            raise
+        except Exception as e:
+            logger.error(f"[WebhookTriggerNode] unexpected error: {e}")
+            raise
 
 
 class WebhookTriggerViewSet(viewsets.ModelViewSet):
@@ -1229,7 +1283,7 @@ class WebhookTriggerViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
 
 
-class TelegramTriggerNodeViewSet(ModelViewSet):
+class TelegramTriggerNodeViewSet(IdempotentNodeCreateMixin, ModelViewSet):
     queryset = TelegramTriggerNode.objects.prefetch_related("fields")
     serializer_class = TelegramTriggerNodeSerializer
 
@@ -1239,7 +1293,7 @@ class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     serializer_class = TelegramTriggerNodeFieldSerializer
 
 
-class NoteNodeViewSet(ModelViewSet):
+class NoteNodeViewSet(IdempotentNodeCreateMixin, ModelViewSet):
     queryset = NoteNode.objects.all()
     serializer_class = NoteNodeSerializer
 

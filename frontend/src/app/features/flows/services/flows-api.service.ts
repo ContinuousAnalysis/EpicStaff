@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ConfigService } from '../../../services/config/config.service';
-import { ApiGetRequest } from '../../../shared/models/api-request.model';
+import { ApiGetRequest } from '../../../core/models/api-request.model';
 import {
   GraphDto,
   CreateGraphDtoRequest,
@@ -35,6 +35,13 @@ export class FlowsApiService {
     return this.http
       .get<ApiGetRequest<GraphDto>>(`${this.configService.apiUrl}graph-light/`)
       .pipe(map((response) => response.results.sort((a, b) => b.id - a.id)));
+  }
+
+  getEpicChatEnabledFlows(): Observable<GraphDto[]> {
+    const params = new HttpParams().set('epicchat_enabled', 'true');
+    return this.http
+      .get<ApiGetRequest<GraphDto>>(`${this.configService.apiUrl}graph-light/`, { params })
+      .pipe(map((response) => response.results));
   }
 
   getGraphById(id: number, forceRefresh = false): Observable<GraphDto> {

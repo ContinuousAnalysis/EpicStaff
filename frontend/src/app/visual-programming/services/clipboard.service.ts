@@ -3,6 +3,7 @@ import { FlowService } from './flow.service';
 
 import { NodeModel } from '../core/models/node.model';
 import { ConnectionModel } from '../core/models/connection.model';
+import { GroupNodeModel } from '../core/models/group.model';
 
 import { v4 as uuidv4 } from 'uuid';
 import { FSelectionChangeEvent } from '@foblex/flow';
@@ -13,10 +14,15 @@ import {
     generatePortsForNode,
 } from '../core/helpers/helpers';
 import { NodeType } from '../core/enums/node-type';
+import {
+    generateNodeDisplayName,
+    generateMultipleNodeDisplayNames,
+} from '../core/helpers/generate-node-display-name.util';
 
 interface ClipboardData {
     nodes: NodeModel[];
     connections: ConnectionModel[];
+    groups: GroupNodeModel[];
     boundingBox: { minX: number; minY: number };
 }
 
@@ -39,12 +45,15 @@ export class ClipboardService {
     public copy(selection: FSelectionChangeEvent): void {
         if (
             !selection ||
-            selection.fNodeIds.length === 0
+            (selection.fNodeIds.length === 0 &&
+                selection.fGroupIds.length === 0)
         ) {
             return;
         }
 
         const allNodes: NodeModel[] = this.flowService.getFlowState().nodes;
+        const allGroups: GroupNodeModel[] =
+            this.flowService.getFlowState().groups;
 
         const selectedNodes: NodeModel[] = allNodes.filter(
             (node) =>
@@ -52,19 +61,55 @@ export class ClipboardService {
                 node.type !== NodeType.START
         );
 
-        if (selectedNodes.length === 0) {
+        // Get selected groups and their descendants
+        const selectedGroups: GroupNodeModel[] = [];
+        const processedGroupIds = new Set<string>();
+
+        const collectGroupAndDescendants = (groupId: string) => {
+            if (processedGroupIds.has(groupId)) return;
+
+            const group = allGroups.find((g) => g.id === groupId);
+            if (!group) return;
+
+            processedGroupIds.add(groupId);
+            selectedGroups.push(group);
+
+            allGroups.forEach((g) => {
+                if (g.parentId === groupId) {
+                    collectGroupAndDescendants(g.id);
+                }
+            });
+
+            selectedNodes.push(
+                ...allNodes.filter(
+                    (node) =>
+                        node.parentId === groupId &&
+                        node.type !== NodeType.START
+                )
+            );
+        };
+
+        selection.fGroupIds.forEach((groupId) => {
+            collectGroupAndDescendants(groupId);
+        });
+
+        if (selectedNodes.length === 0 && selectedGroups.length === 0) {
             return;
         }
 
+        const allElements = [...selectedNodes, ...selectedGroups];
         const minX: number = Math.min(
-            ...selectedNodes.map((el) => el.position.x)
+            ...allElements.map((el) => el.position.x)
         );
         const minY: number = Math.min(
-            ...selectedNodes.map((el) => el.position.y)
+            ...allElements.map((el) => el.position.y)
         );
 
         const selectedNodeIdSet = new Set<string>(
             selectedNodes.map((n) => n.id)
+        );
+        const selectedGroupIdSet = new Set<string>(
+            selectedGroups.map((g) => g.id)
         );
 
         const allConnections: ConnectionModel[] =
@@ -76,9 +121,11 @@ export class ClipboardService {
                 if (!sourceParsed || !targetParsed) return false;
 
                 const sourceInSelection =
-                    selectedNodeIdSet.has(sourceParsed.nodeId);
+                    selectedNodeIdSet.has(sourceParsed.nodeId) ||
+                    selectedGroupIdSet.has(conn.sourceNodeId);
                 const targetInSelection =
-                    selectedNodeIdSet.has(targetParsed.nodeId);
+                    selectedNodeIdSet.has(targetParsed.nodeId) ||
+                    selectedGroupIdSet.has(conn.targetNodeId);
 
                 return sourceInSelection && targetInSelection;
             }
@@ -93,6 +140,10 @@ export class ClipboardService {
                 ports: node.ports ? [...node.ports] : node.ports,
                 position: { ...node.position },
             })),
+            groups: selectedGroups.map((group) => ({
+                ...group,
+                position: { ...group.position },
+            })),
             connections: selectedConnections.map((conn) => ({ ...conn })),
             boundingBox: { minX, minY },
         };
@@ -100,20 +151,22 @@ export class ClipboardService {
 
     public paste(mousePosition: { x: number; y: number }): {
         newNodes: NodeModel[];
+        newGroups: GroupNodeModel[];
         newConnections: ConnectionModel[];
     } {
         if (!this.clipboard) {
-            return { newNodes: [], newConnections: [] };
+            return { newNodes: [], newGroups: [], newConnections: [] };
         }
 
         const {
             nodes: clipboardNodes,
+            groups: clipboardGroups,
             connections: clipboardConnections,
             boundingBox,
         } = this.clipboard;
 
-        if (clipboardNodes.length === 0) {
-            return { newNodes: [], newConnections: [] };
+        if (clipboardNodes.length === 0 && clipboardGroups.length === 0) {
+            return { newNodes: [], newGroups: [], newConnections: [] };
         }
 
         const offsetX = mousePosition.x - boundingBox.minX;
@@ -121,9 +174,39 @@ export class ClipboardService {
 
         const oldToNewIdMap = new Map<string, string>();
 
-        const allNodes = [...this.flowService.getFlowState().nodes];
+        // Create new groups first
+        const newGroups: GroupNodeModel[] = clipboardGroups.map((oldGroup) => {
+            const newGroupId = uuidv4();
+            oldToNewIdMap.set(oldGroup.id, newGroupId);
 
-        const newNodes: NodeModel[] = clipboardNodes.map((oldNode) => {
+            return {
+                ...oldGroup,
+                id: newGroupId,
+                position: {
+                    x: oldGroup.position.x + offsetX,
+                    y: oldGroup.position.y + offsetY,
+                },
+                parentId:
+                    (oldGroup.parentId &&
+                        oldToNewIdMap.get(oldGroup.parentId)) ||
+                    null,
+            };
+        });
+
+        // Generate display names for all nodes at once
+        const currentNodes = this.flowService.getFlowState().nodes;
+        const nodesToCreate = clipboardNodes.map((oldNode) => ({
+            type: oldNode.type,
+            data: oldNode.data,
+        }));
+
+        const displayNames = generateMultipleNodeDisplayNames(
+            nodesToCreate,
+            currentNodes
+        );
+
+        // Create new nodes with RC's backendId: null for diff-save support
+        const newNodes: NodeModel[] = clipboardNodes.map((oldNode, index) => {
             const newNodeId = uuidv4();
             oldToNewIdMap.set(oldNode.id, newNodeId);
 
@@ -132,9 +215,7 @@ export class ClipboardService {
                 oldNode.type
             );
 
-            const newName = this.deriveUniqueName(oldNode.node_name, oldNode.type, allNodes);
-
-            const newNode = {
+            return {
                 ...oldNode,
                 id: newNodeId,
                 backendId: null,
@@ -143,13 +224,11 @@ export class ClipboardService {
                     y: oldNode.position.y + offsetY,
                 },
                 ports: newPorts,
-                parentId: null,
-                node_name: newName,
+                parentId:
+                    (oldNode.parentId && oldToNewIdMap.get(oldNode.parentId)) ||
+                    null,
+                node_name: displayNames[index],
             };
-
-            allNodes.push(newNode);
-
-            return newNode;
         });
 
         const newConnections = clipboardConnections
@@ -187,18 +266,10 @@ export class ClipboardService {
         this.flowService.setFlow({
             ...currentFlow,
             nodes: [...currentFlow.nodes, ...newNodes],
+            groups: [...currentFlow.groups, ...newGroups],
             connections: [...currentFlow.connections, ...newConnections],
         });
 
-        return { newNodes, newConnections };
-    }
-
-    private deriveUniqueName(
-        originalName: string,
-        nodeType: NodeType,
-        allNodes: NodeModel[]
-    ): string {
-        const count = allNodes.filter((n) => n.type === nodeType).length + 1;
-        return `${originalName} (#${count})`;
+        return { newNodes, newGroups, newConnections };
     }
 }

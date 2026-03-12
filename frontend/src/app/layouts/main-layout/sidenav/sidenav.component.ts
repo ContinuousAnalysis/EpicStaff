@@ -4,6 +4,7 @@ import {
     CUSTOM_ELEMENTS_SCHEMA,
     ElementRef,
     ViewChild,
+    AfterViewInit,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ICONS } from '../../../shared/constants/icons.constants';
@@ -14,7 +15,6 @@ import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
 import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
 import { ConfigService } from '../../../services/config/config.service';
-import { environment } from '../../../../environments/environment';
 
 interface NavItem {
     id: string;
@@ -41,11 +41,11 @@ interface NavItem {
     changeDetection: ChangeDetectionStrategy.OnPush,
     schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
-export class LeftSidebarComponent {
+export class LeftSidebarComponent implements AfterViewInit {
     public topNavItems: NavItem[];
     public bottomNavItems: NavItem[];
     public isEpicChatEnabled: boolean;
-    public apiBaseUrl: string = environment.apiUrl;
+    public apiBaseUrl: string;
     @ViewChild('epicChat', { static: false })
     private epicChat?: ElementRef<HTMLElement>;
 
@@ -56,6 +56,10 @@ export class LeftSidebarComponent {
         private configService: ConfigService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
+        // COMMIT_COMMENTS: Derive apiBaseUrl from browser origin so the EpicChat widget's
+        // syncAgentsFromApi call always matches the actual access host (localhost vs 127.0.0.1),
+        // avoiding CORS failures and hardcoded URLs.
+        this.apiBaseUrl = `${window.location.origin}/api/`;
         this.topNavItems = [
             {
                 id: 'projects',
@@ -119,6 +123,15 @@ export class LeftSidebarComponent {
             action: () => this.onSettingsClick(),
             customClass: 'settings-tooltip',
         });
+    }
+
+    public ngAfterViewInit(): void {
+        // COMMIT_COMMENTS: Widget's internal syncAgentsFromApi does not reliably fire in
+        // custom-element mode. Instead, we use AGENT_REMOVE + AGENT_CREATE per flow —
+        // idempotent sync that works on every load without creating duplicates.
+        if (this.isEpicChatEnabled) {
+            setTimeout(() => this.epicChatService.reconnectAgents(), 2000);
+        }
     }
 
     private onSettingsClick(): void {

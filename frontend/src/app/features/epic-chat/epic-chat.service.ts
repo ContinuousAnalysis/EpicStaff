@@ -1,6 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { FlowsApiService } from 'src/app/features/flows/services/flows-api.service';
+import { ConfigService } from 'src/app/services/config/config.service';
 import { FlowUnsavedStateService } from 'src/app/pages/flows-page/services/flow-unsaved-state.service';
 import {
     EP_CHAT_COMMANDS,
@@ -29,6 +30,8 @@ export class EpicChatService {
     public readonly dockWidth = this.dockWidthSignal.asReadonly();
     public readonly isChatOpen = this.isChatOpenSignal.asReadonly();
 
+    private readonly configService = inject(ConfigService);
+
     constructor(
         private readonly router: Router,
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
@@ -40,6 +43,14 @@ export class EpicChatService {
             requestId: this.generateRequestId(),
             action: EP_CHAT_COMMANDS.AGENT_CREATE,
             payload,
+        });
+    }
+
+    public requestRemoveAgent(flowId: number | string): void {
+        this.epChatCommandSignal.set({
+            requestId: this.generateRequestId(),
+            action: EP_CHAT_COMMANDS.AGENT_REMOVE,
+            payload: { flowId },
         });
     }
 
@@ -172,6 +183,38 @@ export class EpicChatService {
         if (toggleButton instanceof HTMLElement) {
             toggleButton.click();
         }
+    }
+
+    public reconnectAgents(): void {
+        const flowUrl = `${window.location.origin}/api`;
+        this.flowsApiService.getEpicChatEnabledFlows().subscribe({
+            next: (flows) => {
+                if (!flows.length) {
+                    return;
+                }
+                console.log(`[EpicChat] Syncing ${flows.length} agent(s)`);
+                flows.forEach((flow, i) => {
+                    // Remove first (clears any stale duplicate), then create
+                    setTimeout(() => {
+                        this.requestRemoveAgent(flow.id);
+                    }, i * 600);
+                    setTimeout(() => {
+                        this.requestCreateAgent({
+                            name: flow.name?.trim() || `Flow ${flow.id}`,
+                            description: flow.description?.trim(),
+                            flowId: flow.id,
+                            flowUrl,
+                        });
+                    }, i * 600 + 300);
+                });
+            },
+            error: (err) =>
+                console.error('[EpicChat] Failed to fetch epicchat-enabled flows:', err),
+        });
+    }
+
+    private normalizeApiUrl(apiUrl: string): string {
+        return (apiUrl || '').trim().replace(/\/+$/, '');
     }
 
     private generateRequestId(): string {

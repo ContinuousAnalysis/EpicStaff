@@ -32,6 +32,7 @@ import {
     EdgeNodeModel,
     DecisionTableNodeModel,
     NoteNodeModel,
+    CodeAgentNodeModel,
 } from '../../core/models/node.model';
 
 import { CrewNode } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
@@ -48,6 +49,7 @@ import { StartNode } from '../../../pages/flows-page/components/flow-visual-prog
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
 import { NoteNode } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
+import { GetCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 
 import { NodeUIMetadata } from './save-graph.types';
 
@@ -145,6 +147,7 @@ function buildCrewNode(cn: CrewNode, idx: number): ProjectNodeModel {
         icon: ui.icon,
         input_map: cn.input_map ?? {},
         output_variable_path: cn.output_variable_path,
+        stream_config: cn.stream_config ?? {},
         size: ui.size,
     };
 }
@@ -170,6 +173,42 @@ function buildPythonNode(pn: PythonNode, idx: number): PythonNodeModel {
         icon: ui.icon,
         input_map: pn.input_map ?? {},
         output_variable_path: pn.output_variable_path,
+        stream_config: pn.stream_config ?? {},
+        size: ui.size,
+    };
+}
+
+function buildCodeAgentNode(ca: GetCodeAgentNodeRequest, idx: number): CodeAgentNodeModel {
+    const ui = readUIMetadata(ca.metadata, NodeType.CODE_AGENT, idx);
+    return {
+        id: uuidv4(),
+        backendId: ca.id,
+        category: 'web',
+        type: NodeType.CODE_AGENT,
+        node_name: ca.node_name,
+        data: {
+            llm_config_id: ca.llm_config,
+            agent_mode: ca.agent_mode ?? 'build',
+            session_id: ca.session_id ?? '',
+            system_prompt: ca.system_prompt ?? '',
+            stream_handler_code: ca.stream_handler_code ?? '',
+            libraries: ca.libraries ?? [],
+            polling_interval_ms: ca.polling_interval_ms ?? 1000,
+            silence_indicator_s: ca.silence_indicator_s ?? 3,
+            indicator_repeat_s: ca.indicator_repeat_s ?? 5,
+            chunk_timeout_s: ca.chunk_timeout_s ?? 30,
+            inactivity_timeout_s: ca.inactivity_timeout_s ?? 120,
+            max_wait_s: ca.max_wait_s ?? 300,
+            output_schema: ca.output_schema ?? {},
+        },
+        position: ui.position,
+        ports: null,
+        parentId: null,
+        color: ui.color,
+        icon: ui.icon,
+        input_map: ca.input_map ?? {},
+        output_variable_path: ca.output_variable_path,
+        stream_config: ca.stream_config ?? {},
         size: ui.size,
     };
 }
@@ -462,6 +501,7 @@ function getOutputPortRole(nodeType: NodeType): string {
         case NodeType.WEBHOOK_TRIGGER: return 'webhook-trigger-out';
         case NodeType.TELEGRAM_TRIGGER: return 'telegram-trigger-out';
         case NodeType.END: return 'end-out';
+        case NodeType.CODE_AGENT: return 'code-agent-out';
         default: return 'output';
     }
 }
@@ -479,6 +519,7 @@ function getInputPortRole(nodeType: NodeType): string {
         case NodeType.WEBHOOK_TRIGGER: return 'webhook-trigger-in';
         case NodeType.TELEGRAM_TRIGGER: return 'telegram-trigger-in';
         case NodeType.END: return 'end-in';
+        case NodeType.CODE_AGENT: return 'code-agent-in';
         default: return 'input';
     }
 }
@@ -780,6 +821,7 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     const webhookTriggerNodes = (graph.webhook_trigger_node_list ?? []).map(wn => buildWebhookTriggerNode(wn, idx++));
     const telegramTriggerNodes = (graph.telegram_trigger_node_list ?? []).map(tn => buildTelegramTriggerNode(tn, idx++));
     const endNodes = (graph.end_node_list ?? []).map(en => buildEndNode(en, idx++));
+    const codeAgentNodes = (graph.code_agent_node_list ?? []).map(ca => buildCodeAgentNode(ca, idx++));
     const decisionTableNodes = (graph.decision_table_node_list ?? []).map(dn => buildDecisionTableNode(dn, idx++));
     const conditionalEdgeNodes = (graph.conditional_edge_list ?? []).map(ce => buildConditionalEdgeNode(ce, idx++));
 
@@ -796,6 +838,7 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
         ...webhookTriggerNodes,
         ...telegramTriggerNodes,
         ...endNodes,
+        ...codeAgentNodes,
         ...decisionTableNodes,
         ...conditionalEdgeNodes,
     ];
@@ -872,5 +915,6 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     return {
         nodes: allNodes,
         connections: allConnections,
+        groups: [],
     };
 }

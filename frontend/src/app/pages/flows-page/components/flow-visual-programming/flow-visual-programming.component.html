@@ -10,12 +10,12 @@
     (viewSessions)="handleViewSessions()"
     (run)="handleRunFlow()"
     (getCurl)="handleGetCurl()"
-    (connectChat)="handleConnectChat()"
+    (connectChat)="connectToEpicChat()"
 ></app-flow-header>
 
 <div class="body">
     <app-flow-graph
-        [flowState]="graph.metadata"
+        [flowState]="loadedFlowState"
         [nodesMode]="'flow-graph'"
         [currentFlowId]="graph.id"
         [initialNodeId]="initialNodeId"

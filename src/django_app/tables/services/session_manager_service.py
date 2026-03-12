@@ -336,7 +336,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         for item in code_agent_node_list:
             code_agent_node_data_list.append(
                 CodeAgentNodeData(
-                    node_name=item.node_name,
+                    node_name=self.converter_service._generate_node_name_by_id(item.id),
                     llm_config_id=item.llm_config_id,
                     agent_mode=item.agent_mode,
                     session_id=item.session_id,

@@ -6,6 +6,7 @@ import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/
 import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { GetCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { Edge } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
@@ -25,6 +26,7 @@ import {
     EdgeNodeModel,
     DecisionTableNodeModel,
     NoteNodeModel,
+    CodeAgentNodeModel,
     NodeModel,
 } from '../../core/models/node.model';
 
@@ -117,6 +119,7 @@ export interface GraphPreviousState {
     endNodes: EndNode[];
     decisionTableNodes: GetDecisionTableNodeRequest[];
     noteNodes: NoteNode[];
+    codeAgentNodes: GetCodeAgentNodeRequest[];
 }
 
 // ---- New state (what the UI currently shows) ----
@@ -137,6 +140,7 @@ export interface GraphNewState {
     endNodes: EndNodeModel[];
     decisionTableNodes: DecisionTableNodeModel[];
     noteNodes: NoteNodeModel[];
+    codeAgentNodes: CodeAgentNodeModel[];
     /** All UI nodes — used to resolve UUID → backendId for decision tables/edges. */
     allNodes: NodeModel[];
 }
@@ -155,6 +159,7 @@ export interface NodeOnlyDiff {
     decisionTableNodes: NodeDiff<GetDecisionTableNodeRequest, DecisionTableNodeModel>;
     endNodes: NodeDiff<EndNode, EndNodeModel>;
     noteNodes: NodeDiff<NoteNode, NoteNodeModel>;
+    codeAgentNodes: NodeDiff<GetCodeAgentNodeRequest, CodeAgentNodeModel>;
 }
 
 // ---- Connection diff (Phase 2 — after node IDs are known) ----

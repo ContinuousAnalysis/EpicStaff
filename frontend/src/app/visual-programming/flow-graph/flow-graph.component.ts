@@ -185,7 +185,39 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.initializeFlowStateIfEmpty();
         this.addStartNodeIfNeeded();
         this.generatePortsForNodesIfNeeded();
+        this.sanitizeConnections();
         this.flowService.setFlow(this.flowState);
+    }
+
+    /**
+     * Strips connections that reference ports not actually present on the rendered nodes.
+     * Prevents f-flow errors like "fOutput with id ...table-out not found".
+     */
+    private sanitizeConnections(): void {
+        const portIds = new Set<string>();
+        for (const node of this.flowState.nodes) {
+            if (node.ports) {
+                for (const port of node.ports) {
+                    portIds.add(port.id);
+                }
+            }
+        }
+        const before = this.flowState.connections.length;
+        this.flowState.connections = this.flowState.connections.filter(conn => {
+            const srcOk = portIds.has(conn.sourcePortId);
+            const tgtOk = portIds.has(conn.targetPortId);
+            if (!srcOk || !tgtOk) {
+                console.warn(
+                    `[flow-graph] Removing invalid connection ${conn.id}: ` +
+                    `sourcePort "${conn.sourcePortId}" ${srcOk ? 'OK' : 'MISSING'}, ` +
+                    `targetPort "${conn.targetPortId}" ${tgtOk ? 'OK' : 'MISSING'}`
+                );
+            }
+            return srcOk && tgtOk;
+        });
+        if (this.flowState.connections.length < before) {
+            console.warn(`[flow-graph] Removed ${before - this.flowState.connections.length} invalid connections`);
+        }
     }
 
     private initializeFlowStateIfEmpty(): void {
@@ -211,6 +243,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             // Create a new Start node
             const startNode: StartNodeModel = {
                 id: newStartNodeId,
+                backendId: null,
                 category: 'web',
                 type: NodeType.START,
                 node_name: '__start__',
@@ -756,11 +789,12 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
 
             const newNode: NodeModel = {
                 id: newNodeId,
+                backendId: null,
                 category: 'web',
                 position: { x: position.x, y: position.y },
                 ports,
                 parentId: null,
-                type: event.type,
+                type: event.type as NodeModel['type'],
                 node_name: newNodeName,
                 data: nodeData,
                 color: nodeColor,
@@ -1320,7 +1354,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         }
     }
 
-    private calculateNodesBoundingBox(nodes: NodeModel[]): IRect | null {
+    private calculateNodesBoundingBox(nodes: (NodeModel | GroupNodeModel)[]): IRect | null {
         if (nodes.length === 0) {
             return null;
         }

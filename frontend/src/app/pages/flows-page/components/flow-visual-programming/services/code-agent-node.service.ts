@@ -24,6 +24,12 @@ export class CodeAgentNodeService {
         });
     }
 
+    updateCodeAgentNode(id: string, request: Partial<CreateCodeAgentNodeRequest>): Observable<any> {
+        return this.http.patch<any>(`${this.apiUrl}${id}/`, request, {
+            headers: this.headers,
+        });
+    }
+
     deleteCodeAgentNode(id: string): Observable<any> {
         return this.http.delete(`${this.apiUrl}${id}/`, {
             headers: this.headers,
