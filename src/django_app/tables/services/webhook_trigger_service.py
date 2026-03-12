@@ -8,7 +8,7 @@ from django_app.settings import (
 )
 from tables.models.graph_models import GraphOrganization, WebhookTriggerNode
 from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
-from tables.request_models import WebhookConfigData
+from src.shared.models import WebhookConfigData
 from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
 from tables.services.session_manager_service import SessionManagerService

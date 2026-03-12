@@ -7,6 +7,7 @@ from tables.views.model_view_sets import (
     DecisionTableNodeModelViewSet,
     EdgeViewSet,
     EndNodeModelViewSet,
+    NoteNodeViewSet,
     SubGraphNodeModelViewSet,
     GraphLightViewSet,
     GraphViewSet,
@@ -171,6 +172,7 @@ router.register(r"telegram-trigger-nodes", TelegramTriggerNodeViewSet)
 router.register(r"telegram-trigger-node-fields", TelegramTriggerNodeFieldViewSet)
 router.register(r"python-code-tool-configs", PythonCodeToolConfigViewSet)
 router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldViewSet)
+router.register(r"note-nodes", NoteNodeViewSet)
 router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
 
 

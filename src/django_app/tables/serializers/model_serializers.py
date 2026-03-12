@@ -13,7 +13,7 @@ from tables.validators.python_code_tool_config_validator import (
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import WebhookTrigger, NgrokWebhookConfig
-from tables.models.graph_models import WebhookTriggerNode
+from tables.models.graph_models import NoteNode, WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
@@ -1288,6 +1288,11 @@ class LLMNodeSerializer(serializers.ModelSerializer):
         model = LLMNode
         fields = "__all__"
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["llm_config_detail"] = LLMConfigSerializer(instance.llm_config).data
+        return data
+
 
 class EdgeSerializer(serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1308,6 +1313,11 @@ class SubGraphNodeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Graph and subgraph cannot be the same.")
 
         return attrs
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["subgraph_detail"] = GraphLightSerializer(instance.subgraph).data
+        return data
 
 
 class ConditionalEdgeSerializer(serializers.ModelSerializer):
@@ -1719,6 +1729,12 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
         return instance
 
 
+class NoteNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+    class Meta(BaseGraphEntityMixin.Meta):
+        model = NoteNode
+        fields = "__all__"
+
+
 class GraphSerializer(serializers.ModelSerializer):
     # Reverse relationships
     crew_node_list = CrewNodeSerializer(many=True, read_only=True)
@@ -1738,6 +1754,7 @@ class GraphSerializer(serializers.ModelSerializer):
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
     )
+    note_node_list = NoteNodeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Graph
@@ -1761,6 +1778,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "time_to_live",
             "persistent_variables",
             "telegram_trigger_node_list",
+            "note_node_list",
         ]
 
 

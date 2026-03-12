@@ -25,7 +25,7 @@ from tables.models import (
     PythonCodeTool,
     LLMNode,
 )
-
+from src.shared.models import NgrokConfigData
 from tables.models.realtime_models import RealtimeAgentChat
 from tables.models.graph_models import (
     Condition,
@@ -39,8 +39,36 @@ from tables.models.graph_models import (
     TelegramTriggerNode,
     WebhookTriggerNode,
 )
-from tables.request_models import *
-from tables.request_models import CrewData, EndNodeData
+from src.shared.models import (
+    RagSearchConfig,
+    NaiveRagSearchConfig,
+    GraphRagSearchConfig,
+    CrewData,
+    TaskData,
+    BaseToolData,
+    AgentData,
+    RealtimeAgentChatData,
+    PythonCodeData,
+    PythonCodeToolData,
+    ConfiguredToolData,
+    ToolConfigData,
+    McpToolData,
+    LLMConfigData,
+    LLMData,
+    EmbedderData,
+    EmbedderConfigData,
+    PythonNodeData,
+    ConditionalEdgeData,
+    LLMNodeData,
+    ConditionData,
+    ConditionGroupData,
+    DecisionTableNodeData,
+    CrewNodeData,
+    TelegramTriggerNodeData,
+    TelegramTriggerNodeFieldData,
+    EndNodeData,
+    WebhookTriggerNodeData,
+)
 from utils.singleton_meta import SingletonMeta
 
 from tables.serializers.model_serializers import ToolConfigSerializer
@@ -587,5 +615,3 @@ class ConverterService(metaclass=SingletonMeta):
             domain=ngrok_webhook_config.domain,
             region=ngrok_webhook_config.region,
         )
-    
-    

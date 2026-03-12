@@ -19,7 +19,7 @@ from tables.models.graph_models import (
     TelegramTriggerNode,
     WebhookTriggerNode,
 )
-from tables.request_models import (
+from src.shared.models import (
     AudioTranscriptionNodeData,
     ConditionalEdgeData,
     CrewNodeData,

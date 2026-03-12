@@ -23,7 +23,7 @@ from tables.models import (
     PythonCodeResult,
     Session,
 )
-from tables.request_models import (
+from src.shared.models import (
     CodeResultData,
     GraphSessionMessageData,
     WebhookEventData,
