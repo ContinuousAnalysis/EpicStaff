@@ -1,8 +1,10 @@
 <article class="default-llms-card">
     <div class="default-llms-card__header">
-        <div class="default-llms-card__icon">
-            <i [ngClass]="card().iconClass" aria-hidden="true"></i>
-        </div>
+        <app-icon
+            [icon]="card().icon"
+            size="2rem"
+            class="default-llms-card__icon"
+        />
         <div class="default-llms-card__title">{{ card().title }}</div>
     </div>
     <div class="default-llms-card__controls">

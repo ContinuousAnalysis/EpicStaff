@@ -7,6 +7,7 @@ import {
     signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AppIconComponent } from "@shared/components";
 import { DefaultLlmsCard } from "../../interfaces/default-llms-card.interface";
 import { GetLlmModelRequest } from "../../models/llms/LLM.model";
 import { LlmModelsStorageService } from "../../services/llms/llm-models-storage.service";
@@ -17,7 +18,7 @@ import { of } from 'rxjs';
 @Component({
     selector: 'app-default-llms-card',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, AppIconComponent],
     templateUrl: './default-llms-card.component.html',
     styleUrls: ['./default-llms-card.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

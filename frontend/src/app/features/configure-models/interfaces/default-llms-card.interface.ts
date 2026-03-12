@@ -3,7 +3,7 @@ export interface DefaultLlmsCard {
   title: string;
   description: string;
   selectLabel: string;
-  iconClass: string;
+  icon: string;
 }
 
 
