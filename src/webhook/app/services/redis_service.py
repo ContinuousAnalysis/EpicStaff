@@ -5,7 +5,7 @@ from app.core.settings import settings
 from typing import Dict, Any, Optional
 from redis.client import PubSub
 
-from app.request_models import WebhookEventData
+from src.shared.models import WebhookEventData
 
 
 class RedisService:
