@@ -13,6 +13,7 @@ export const DEFAULT_TABLE_NODE_PORTS: BasePort[] = [
       'table-out',
       'start-start',
       'llm-out-right',
+      'file-extractor-out',
       'subgraph-out',
       'audio-to-text-out',
       'webhook-trigger-out',
