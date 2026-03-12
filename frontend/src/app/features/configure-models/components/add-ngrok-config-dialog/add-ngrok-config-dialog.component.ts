@@ -10,8 +10,8 @@ import {
     SelectItem,
     ValidationErrorsComponent
 } from "@shared/components";
-import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from "../../models/ngrok-config.model";
-import { NgrokConfigStorageService } from "../../services/ngrok-config/ngrok-config-storage.service";
+import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from "@shared/models";
+import { NgrokConfigStorageService } from "@shared/services";
 
 @Component({
     selector: 'app-create-ngrok-config-dialog',

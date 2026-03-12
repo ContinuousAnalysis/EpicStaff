@@ -6,9 +6,9 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FullEmbeddingConfig } from '../../../../features/settings-dialog/services/embeddings/full-embedding.service';
+import { getProviderIconPath } from "@shared/utils";
+import { FullEmbeddingConfig } from '@shared/services';
 import { AppIconComponent } from '../../app-icon/app-icon.component';
-import { getProviderIconPath } from '../../../../features/settings-dialog/utils/get-provider-icon';
 
 @Component({
   selector: 'app-embedding-model-item',

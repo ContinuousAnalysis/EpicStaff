@@ -20,10 +20,10 @@ import { Overlay, OverlayModule, OverlayPositionBuilder, OverlayRef } from '@ang
 import { TemplatePortal } from '@angular/cdk/portal';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppIconComponent, ButtonComponent, TooltipComponent } from "@shared/components";
+import { LLMModel } from "@shared/models";
 import { finalize } from "rxjs/operators";
-import { LLM_Model } from "../../models/llms/LLM.model";
-import { LlmLibraryService, ProviderWithModels } from "../../services/llm-library.service";
-import { getProviderIconPath } from "../../utils/get-provider-icon";
+import { LLMLibraryService, ProviderWithModels } from "../../services/llms/llm-library.service";
+import { getProviderIconPath } from "@shared/utils";
 
 import { CreateLlmModelModalComponent } from "../create-llm-model-modal/create-llm-model-modal.component";
 
@@ -55,7 +55,7 @@ const TOP_PROVIDERS = [
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LlmModelSelectorComponent implements ControlValueAccessor {
-    private llmLibraryService = inject(LlmLibraryService);
+    private llmLibraryService = inject(LLMLibraryService);
     private destroyRef = inject(DestroyRef);
     private dialog = inject(Dialog);
     private overlayRef!: OverlayRef;
@@ -72,7 +72,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     isLoading = signal(true);
     searchQuery = signal('');
     selectedValue = model<number | null>(null);
-    modelChanged = output<LLM_Model>();
+    modelChanged = output<LLMModel>();
     configAdded = output<void>();
 
     readonly COLLAPSED_COUNT = 3;
@@ -93,7 +93,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         })
     );
 
-    selectedModelInfo = computed<{ model: LLM_Model; provider: ProviderWithModels['provider'] } | null>(() => {
+    selectedModelInfo = computed<{ model: LLMModel; provider: ProviderWithModels['provider'] } | null>(() => {
         const id = this.selectedValue();
         if (id === null || id === undefined) return null;
         for (const group of this.providersWithModels()) {
@@ -189,7 +189,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         this.searchQuery.set(target.value);
     }
 
-    selectModel(model: LLM_Model): void {
+    selectModel(model: LLMModel): void {
         this.selectedValue.set(model.id);
         this.onChange(model.id);
         this.modelChanged.emit(model);
@@ -200,7 +200,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         return this.selectedValue() === modelId;
     }
 
-    getVisibleModels(group: ProviderWithModels): LLM_Model[] {
+    getVisibleModels(group: ProviderWithModels): LLMModel[] {
         if (this.searchQuery().trim() || this.expandedProviders().has(group.provider.id)) {
             return group.visibleModels;
         }

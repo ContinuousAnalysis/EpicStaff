@@ -17,11 +17,11 @@ import {
     FormsModule,
     NG_VALUE_ACCESSOR,
 } from '@angular/forms';
+import { getProviderIconPath } from "@shared/utils";
 import { AppIconComponent } from '../app-icon/app-icon.component';
-import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
-import { FullEmbeddingConfig } from '../../../features/settings-dialog/services/embeddings/full-embedding.service';
+import { FullEmbeddingConfig } from '@shared/services';
 import { EmbeddingModelItemComponent } from './embedding-model-item/embedding-model-item.component';
-import { DropdownManagerService } from '../../services/dropdown-manager.service';
+import { DropdownManagerService } from '@shared/services';
 
 @Component({
     selector: 'app-embedding-model-selector',

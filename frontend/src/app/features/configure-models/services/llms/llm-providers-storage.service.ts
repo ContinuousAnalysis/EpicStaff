@@ -1,28 +1,29 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { LLMProvider, ModelTypes } from "@shared/models";
+import { LLMProvidersService } from "@shared/services";
 import { catchError, Observable, of, tap, throwError } from 'rxjs';
-import { LLM_Provider, ModelTypes } from '../../models/llm-provider.model';
-import { LLM_Providers_Service } from './llm-providers.service';
+
 
 @Injectable({
     providedIn: 'root',
 })
 export class LlmProvidersStorageService {
-    private readonly llmProvidersService = inject(LLM_Providers_Service);
+    private readonly llmProvidersService = inject(LLMProvidersService);
 
     // All providers (unfiltered)
-    private providersSignal = signal<LLM_Provider[]>([]);
+    private providersSignal = signal<LLMProvider[]>([]);
     private providersLoaded = signal<boolean>(false);
 
     public readonly providers = this.providersSignal.asReadonly();
     public readonly isProvidersLoaded = this.providersLoaded.asReadonly();
 
     // Per-type cache
-    private providersByTypeSignal = signal<Map<ModelTypes, LLM_Provider[]>>(new Map());
+    private providersByTypeSignal = signal<Map<ModelTypes, LLMProvider[]>>(new Map());
     private providerTypesLoaded = signal<Set<ModelTypes>>(new Set());
 
     public readonly providersByType = this.providersByTypeSignal.asReadonly();
 
-    getProviders(forceRefresh = false): Observable<LLM_Provider[]> {
+    getProviders(forceRefresh = false): Observable<LLMProvider[]> {
         if (this.providersLoaded() && !forceRefresh) {
             return of(this.providersSignal());
         }
@@ -38,7 +39,7 @@ export class LlmProvidersStorageService {
         );
     }
 
-    getProvidersByType(type: ModelTypes, forceRefresh = false): Observable<LLM_Provider[]> {
+    getProvidersByType(type: ModelTypes, forceRefresh = false): Observable<LLMProvider[]> {
         const loadedTypes = this.providerTypesLoaded();
         if (loadedTypes.has(type) && !forceRefresh) {
             return of(this.providersByTypeSignal().get(type) ?? []);

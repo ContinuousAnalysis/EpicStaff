@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DEFAULT_LLMS_SECTIONS } from '../../constants/default-llms-sections.constant';
 import { DefaultLlmsCardComponent } from '../default-llms-card/default-llms-card.component';
-import { GetLlmModelRequest } from "../../../settings-dialog/models/llms/LLM.model";
+import { GetLlmModelRequest } from "@shared/models";
 
 @Component({
   selector: 'app-default-llms-section',

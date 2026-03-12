@@ -1,6 +1,6 @@
-import { LLM_Provider } from '../../features/settings-dialog/models/llm-provider.model';
+import { LLMProvider } from '@shared/models';
 
-export const PROVIDERS: LLM_Provider[] = [
+export const PROVIDERS: LLMProvider[] = [
   {
     id: 1,
     name: 'openai',

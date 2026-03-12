@@ -3,8 +3,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, model, OnInit, 
 import { RagTypeComponent } from "./rag-type/rag-type.component";
 import { RAG_TYPES } from "../../../../constants/constants";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { EmbeddingConfigsService } from "../../../../../settings-dialog/services/embeddings/embedding_configs.service";
-import { EmbeddingConfig } from "../../../../../settings-dialog/models/embeddings/embedding-config.model";
+import { EmbeddingConfigsService } from "@shared/services";
+import { EmbeddingConfig } from "@shared/models";
 import { SelectComponent, SelectItem } from "@shared/components";
 import { map } from "rxjs/operators";
 import { RagType } from "../../../../models/naive-rag.model";

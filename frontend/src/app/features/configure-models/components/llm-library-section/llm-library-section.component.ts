@@ -7,7 +7,7 @@ import { ConfirmationDialogData, ConfirmationDialogService, LoadingSpinnerCompon
 import { ToastService } from "../../../../services/notifications";
 import { LlmLibraryModel } from "../../interfaces/llm-library-model.interface";
 import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
-import { LlmLibraryService } from "../../services/llm-library.service";
+import { LLMLibraryService } from "../../services/llms/llm-library.service";
 import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
 import { LlmLibraryCardComponent } from '../llm-library-card/llm-library-card.component';
 import { AppIconComponent } from '@shared/components';
@@ -21,7 +21,7 @@ import { LlmModelConfigDialogComponent } from "../llm-model-config-dialog/llm-mo
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LlmLibrarySectionComponent implements OnInit {
-    private llmLibraryService = inject(LlmLibraryService);
+    private llmLibraryService = inject(LLMLibraryService);
     private llmConfigStorageService = inject(LlmConfigStorageService);
     private confirmationDialogService = inject(ConfirmationDialogService);
     private destroyRef = inject(DestroyRef);

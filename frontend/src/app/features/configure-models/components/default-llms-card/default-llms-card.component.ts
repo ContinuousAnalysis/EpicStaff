@@ -9,7 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from "@shared/components";
 import { DefaultLlmsCard } from "../../interfaces/default-llms-card.interface";
-import { GetLlmModelRequest } from "../../models/llms/LLM.model";
+import { GetLlmModelRequest } from "@shared/models";
 import { LlmModelsStorageService } from "../../services/llms/llm-models-storage.service";
 
 import { take, tap, catchError } from 'rxjs/operators';

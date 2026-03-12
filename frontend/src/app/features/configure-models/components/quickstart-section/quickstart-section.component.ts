@@ -15,13 +15,14 @@ import {
     SelectItem
 } from '@shared/components';
 import { MATERIAL_FORMS } from "@shared/material-forms";
-import { getProviderIconPath } from '../../../settings-dialog/utils/get-provider-icon';
+import { LLMProvider, ModelTypes } from "@shared/models";
 import { catchError, take, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
-import { LLM_Provider, ModelTypes } from "../../models/llm-provider.model";
+
 import { Quickstart } from "../../models/quickstart.model";
 import { LlmProvidersStorageService } from "../../services/llms/llm-providers-storage.service";
 import { QuickstartService } from "../../services/quickstart.service";
+import { getProviderIconPath } from "@shared/utils";
 
 @Component({
     selector: 'app-quickstart-section',
@@ -49,7 +50,7 @@ export class QuickstartSectionComponent implements OnInit {
     });
 
     public isSaving = signal(false);
-    public providers = signal<LLM_Provider[]>([]);
+    public providers = signal<LLMProvider[]>([]);
 
     public providerItems = computed<SelectItem[]>(() => {
         return this.providers().map((provider) => ({
@@ -73,7 +74,7 @@ export class QuickstartSectionComponent implements OnInit {
         this.quickStartForm.reset({ apiKey: '' });
     }
 
-    public getProviderIcon(provider: LLM_Provider | null): string {
+    public getProviderIcon(provider: LLMProvider | null): string {
         return getProviderIconPath(provider?.name || null);
     }
 

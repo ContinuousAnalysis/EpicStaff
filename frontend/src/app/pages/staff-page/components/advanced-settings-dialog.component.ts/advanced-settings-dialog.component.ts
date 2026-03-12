@@ -13,22 +13,22 @@ import {
     FormControl,
     Validators,
 } from '@angular/forms';
-import { MATERIAL_FORMS } from '../../../../shared/material-forms';
+import { MATERIAL_FORMS } from '@shared/material-forms';
 
-
-import {forkJoin, of, Subject, takeUntil} from 'rxjs';
-import { LLM_Config_Service } from '../../../../features/settings-dialog/services/llms/llm-config.service';
-import { LLM_Models_Service } from '../../../../features/settings-dialog/services/llms/llm-models.service';
-import { KnowledgeSelectorComponent } from '../../../../shared/components/knowledge-selector/knowledge-selector.component';
-import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
+import { forkJoin, of, Subject, takeUntil } from 'rxjs';
 import {
-    FullLLMConfig,
+    LLMModelsService, LLMConfigService, FullLLMConfig,
     FullLLMConfigService,
-} from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
-import {CollectionsApiService} from "../../../../features/knowledge-sources/services/collections-api.service";
-import {GetCollectionRequest} from "../../../../features/knowledge-sources/models/collection.model";
-import {SelectComponent, SelectItem} from "../../../../shared/components/select/select.component";
+} from '@shared/services';
+import {
+    LlmModelSelectorComponent,
+    SelectComponent,
+    SelectItem,
+    IconButtonComponent,
+    KnowledgeSelectorComponent
+} from '@shared/components';
+import { CollectionsApiService } from "../../../../features/knowledge-sources/services/collections-api.service";
+import { GetCollectionRequest } from "../../../../features/knowledge-sources/models/collection.model";
 
 export interface AdvancedSettingsData {
     id: number;
@@ -121,8 +121,8 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
     constructor(
         public dialogRef: DialogRef<AdvancedSettingsData>,
         @Inject(DIALOG_DATA) public data: AdvancedSettingsData,
-        private llmConfigService: LLM_Config_Service,
-        private llmModelsService: LLM_Models_Service,
+        private llmConfigService: LLMConfigService,
+        private llmModelsService: LLMModelsService,
         private fullLLMConfigService: FullLLMConfigService,
         private collectionsService: CollectionsApiService,
         private cdr: ChangeDetectorRef
@@ -197,7 +197,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
                         knowledgeSources
                     );
 
-                    this.agentRagsSelectItems = rags.map(rag => ({name: rag.rag_type, value: rag.rag_id}));
+                    this.agentRagsSelectItems = rags.map(rag => ({ name: rag.rag_type, value: rag.rag_id }));
 
                     // Process LLM configs
                     this.combinedLLMs = llmConfigs;

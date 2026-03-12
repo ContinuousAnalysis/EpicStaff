@@ -7,9 +7,7 @@ import {
     OnInit, signal, SimpleChanges
 } from '@angular/core';
 import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import {
-    NgrokConfigStorageService
-} from "../../../../features/configure-models/services/ngrok-config/ngrok-config-storage.service";
+import { NgrokConfigStorageService } from "@shared/services";
 import { ToastService } from "../../../../services/notifications";
 import { WebhookTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';

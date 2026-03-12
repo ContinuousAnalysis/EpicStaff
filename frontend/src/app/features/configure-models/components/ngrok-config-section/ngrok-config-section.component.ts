@@ -10,8 +10,8 @@ import {
 } from "@shared/components";
 import { LoadingState } from "../../../../core/enums/loading-state.enum";
 import { ToastService } from "../../../../services/notifications";
-import { GetNgrokConfigResponse } from "../../models/ngrok-config.model";
-import { NgrokConfigStorageService } from "../../services/ngrok-config/ngrok-config-storage.service";
+import { GetNgrokConfigResponse } from "@shared/models";
+import { NgrokConfigStorageService } from "@shared/services";
 import { AddNgrokConfigDialogComponent } from "../add-ngrok-config-dialog/add-ngrok-config-dialog.component";
 import { NgrokConfigItemComponent } from "../ngrok-config-item/ngrok-config-item.component";
 

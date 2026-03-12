@@ -14,18 +14,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { GetProjectRequest } from '../../features/projects/models/project.model';
-import { LLM_Config_Service } from '../../features/settings-dialog/services/llms/llm-config.service';
-import { EmbeddingConfigsService } from '../../features/settings-dialog/services/embeddings/embedding_configs.service';
-import { GetLlmConfigRequest } from '../../features/settings-dialog/models/llms/LLM_config.model';
-import { GetEmbeddingConfigRequest } from '../../features/settings-dialog/models/embeddings/embedding-config.model';
+import { LLMConfigService, FullLLMConfigService, EmbeddingConfigsService, FullEmbeddingConfigService } from '@shared/services';
+import { GetLlmConfigRequest, GetEmbeddingConfigRequest } from '@shared/models';
 
-import { HelpTooltipComponent } from '../../shared/components/help-tooltip/help-tooltip.component';
-
-import { LlmModelSelectorComponent } from '../../shared/components/llm-model-selector/llm-model-selector.component';
-import { EmbeddingModelSelectorComponent } from '../../shared/components/embedding-model-selector/embedding-model-selector.component';
-import { FullLLMConfigService } from '../../features/settings-dialog/services/llms/full-llm-config.service';
-import { FullEmbeddingConfigService } from '../../features/settings-dialog/services/embeddings/full-embedding.service';
-import { RangeSliderComponent } from '../../shared/components/range-slider/range-slider.component';
+import { EmbeddingModelSelectorComponent, LlmModelSelectorComponent, HelpTooltipComponent } from '@shared/components';
 
 @Component({
     selector: 'app-settings-section',
@@ -38,7 +30,6 @@ import { RangeSliderComponent } from '../../shared/components/range-slider/range
         HelpTooltipComponent,
         LlmModelSelectorComponent,
         EmbeddingModelSelectorComponent,
-        RangeSliderComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -87,7 +78,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     private rpmCurrentValue: number = 15;
 
     constructor(
-        private llmConfigService: LLM_Config_Service,
+        private llmConfigService: LLMConfigService,
         private embeddingConfigService: EmbeddingConfigsService,
         private fullLLMConfigService: FullLLMConfigService,
         private fullEmbeddingConfigService: FullEmbeddingConfigService,

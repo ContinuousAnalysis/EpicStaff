@@ -18,10 +18,10 @@ import {
   transition,
   animate,
 } from '@angular/animations';
+import { getProviderIconPath } from "@shared/utils";
 import { FullAgent } from '../../../../../features/staff/services/full-agent.service';
 import { AgentMenuComponent } from './header-sub-menu/header-sub-menu.component';
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
-import { getProviderIconPath } from '../../../../../features/settings-dialog/utils/get-provider-icon';
+import { AppIconComponent } from '@shared/components';
 
 export type CardState = 'adding' | 'removing';
 

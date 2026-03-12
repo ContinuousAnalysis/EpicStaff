@@ -6,14 +6,14 @@ import { TooltipComponent, ValidationErrorsComponent } from "@shared/components"
 import { finalize } from 'rxjs/operators';
 
 import { AppIconComponent, CustomInputComponent, ButtonComponent, ToggleSwitchComponent } from '@shared/components';
-import { LLM_Provider } from "../../../settings-dialog/models/llm-provider.model";
+import { LLMModel, LLMProvider } from "@shared/models";
 import { ToastService } from '../../../../services/notifications';
-import { LLM_Model } from "../../models/llms/LLM.model";
+
 import { LlmModelsStorageService } from "../../services/llms/llm-models-storage.service";
-import { getProviderIconPath } from "../../utils/get-provider-icon";
+import { getProviderIconPath } from "@shared/utils";
 
 export interface CreateLlmModelDialogData {
-    provider: LLM_Provider;
+    provider: LLMProvider;
 }
 
 @Component({
@@ -79,7 +79,7 @@ export class CreateLlmModelModalComponent {
             })
             .pipe(finalize(() => this.isSubmitting.set(false)))
             .subscribe({
-                next: (created: LLM_Model) => {
+                next: (created: LLMModel) => {
                     this.dialogRef.close(created);
                 },
                 error: (error) => {

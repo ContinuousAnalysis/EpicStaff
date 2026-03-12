@@ -1,17 +1,13 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { CreateLLMConfigRequest, GetLlmConfigRequest, UpdateLLMConfigRequest } from "@shared/models";
+import { LLMConfigService } from "@shared/services";
 import { catchError, Observable, of, tap, throwError } from 'rxjs';
-import {
-    CreateLLMConfigRequest,
-    GetLlmConfigRequest,
-    UpdateLLMConfigRequest,
-} from '../../models/llms/LLM_config.model';
-import { LLM_Config_Service } from './llm-config.service';
 
 @Injectable({
     providedIn: 'root',
 })
 export class LlmConfigStorageService {
-    private readonly llmConfigService = inject(LLM_Config_Service);
+    private readonly llmConfigService = inject(LLMConfigService);
 
     private configsSignal = signal<GetLlmConfigRequest[]>([]);
     private configsLoaded = signal<boolean>(false);

@@ -14,8 +14,8 @@ import {
   ControlValueAccessor,
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
-import { ClickOutsideDirective } from '../../../../../shared/directives/click-outside.directive';
-import { FullLLMConfig } from '../../../../../features/settings-dialog/services/llms/full-llm-config.service';
+import { ClickOutsideDirective } from '@shared/directives';
+import { FullLLMConfig } from '@shared/services';
 
 @Component({
   selector: 'app-llm-selector',

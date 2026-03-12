@@ -6,9 +6,9 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FullLLMConfig } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
+import { getProviderIconPath } from "@shared/utils";
+import { FullLLMConfig } from '@shared/services';
 import { AppIconComponent } from '../../app-icon/app-icon.component';
-import { getProviderIconPath } from '../../../../features/settings-dialog/utils/get-provider-icon';
 
 @Component({
   selector: 'app-llm-model-item',

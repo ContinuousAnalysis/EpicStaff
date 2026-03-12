@@ -16,8 +16,7 @@ import { NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { FullLLMConfigService } from '../../../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { FullRealtimeConfigService } from '../../../../../../features/settings-dialog/services/realtime-llms/full-reamtime-config.service';
+import { FullRealtimeConfigService, FullLLMConfigService } from '@shared/services';
 import { LlmItemComponent } from './llm-item/llm-item.component';
 import { MergedConfig } from '../../../../../../features/staff/services/full-agent.service';
 

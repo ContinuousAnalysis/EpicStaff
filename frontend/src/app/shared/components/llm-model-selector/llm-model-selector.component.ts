@@ -17,11 +17,11 @@ import {
     FormsModule,
     NG_VALUE_ACCESSOR,
 } from '@angular/forms';
-import { FullLLMConfig } from '../../../features/settings-dialog/services/llms/full-llm-config.service';
+import { getProviderIconPath } from "@shared/utils";
+import { FullLLMConfig } from '@shared/services';
 import { AppIconComponent } from '../app-icon/app-icon.component';
-import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
 import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component';
-import { DropdownManagerService } from '../../services/dropdown-manager.service';
+import { DropdownManagerService } from '@shared/services';
 
 @Component({
     selector: 'app-llm-model-selector',

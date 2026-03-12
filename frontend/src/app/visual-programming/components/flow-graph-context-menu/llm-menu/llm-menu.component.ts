@@ -8,8 +8,8 @@ import {
   Output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LLM_Config_Service } from '../../../../features/settings-dialog/services/llms/llm-config.service';
-import { GetLlmConfigRequest } from '../../../../features/settings-dialog/models/llms/LLM_config.model';
+import { LLMConfigService } from '@shared/services';
+import { GetLlmConfigRequest } from '@shared/models';
 import { NodeType } from '../../../core/enums/node-type';
 
 @Component({
@@ -86,7 +86,7 @@ export class LlmMenuComponent implements OnInit {
   public configs: GetLlmConfigRequest[] = [];
 
   constructor(
-    private llmConfigService: LLM_Config_Service,
+    private llmConfigService: LLMConfigService,
     private cdr: ChangeDetectorRef
   ) {}
 

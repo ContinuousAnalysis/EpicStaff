@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { SettingsDialogService } from "../../../features/settings-dialog/settings-dialog.service";
-import { ICONS } from '../../../shared/constants/icons.constants';
+import { ICONS } from '@shared/constants';
 import { TooltipComponent } from './tooltip/tooltip.component';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ConfigureModelsDialogService } from '../../../features/configure-models/services/configure-models-dialog.service';
@@ -39,7 +38,6 @@ export class LeftSidebarComponent {
     constructor(
         private sanitizer: DomSanitizer,
         private configureModelsDialogService: ConfigureModelsDialogService,
-        private oldSettingsDialogService: SettingsDialogService,
     ) {
         this.topNavItems = [
             {
@@ -88,14 +86,6 @@ export class LeftSidebarComponent {
 
         this.bottomNavItems = [
             {
-                id: 'settings_old',
-                svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.settings),
-                label: 'Settings',
-                showTooltip: false,
-                action: () => this.onOldSettingsClick(),
-                customClass: 'settings-tooltip',
-            },
-            {
                 id: 'settings',
                 svgIcon: this.sanitizer.bypassSecurityTrustHtml(ICONS.settings),
                 label: 'Settings',
@@ -104,10 +94,6 @@ export class LeftSidebarComponent {
                 customClass: 'settings-tooltip',
             },
         ];
-    }
-
-    private onOldSettingsClick(): void {
-        this.oldSettingsDialogService.openSettingsDialog();
     }
 
     private onSettingsClick(): void {
