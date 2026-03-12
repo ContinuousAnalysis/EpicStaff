@@ -21,6 +21,7 @@ import {
 } from '@angular/router';
 
 import { CreateFlowDialogComponent } from '../../components/create-flow-dialog/create-flow-dialog.component';
+import { ImportFlowOptionsDialogComponent, ImportFlowOptions } from '../../components/import-flow-options-dialog/import-flow-options-dialog.component';
 
 import { Dialog } from '@angular/cdk/dialog';
 
@@ -124,26 +125,34 @@ export class FlowsListPageComponent implements OnDestroy {
     }
 
     public onImportClick(): void {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = (event: any) => {
-            const file = event.target.files[0];
-            if (file) {
-                this.importExportService.importFlow(file).subscribe({
-                    next: (result) => {
-                        console.log('Flow imported successfully:', result);
-                        // Reload the page on successful import
-                        window.location.reload();
-                    },
-                    error: (error) => {
-                        console.error('Import failed:', error);
-                        // TODO: Show error message to user
-                    },
-                });
-            }
-        };
-        input.click();
+        const dialogRef = this.dialog.open<ImportFlowOptions | undefined>(
+            ImportFlowOptionsDialogComponent,
+            { width: '400px' }
+        );
+
+        dialogRef.closed.subscribe((options) => {
+            if (options === undefined) return;
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (event: any) => {
+                const file = event.target.files[0];
+                if (file) {
+                    this.importExportService.importFlow(file, options.preserveUuids).subscribe({
+                        next: (result) => {
+                            console.log('Flow imported successfully:', result);
+                            window.location.reload();
+                        },
+                        error: (error) => {
+                            console.error('Import failed:', error);
+                            // TODO: Show error message to user
+                        },
+                    });
+                }
+            };
+            input.click();
+        });
     }
 
     public onExportClick(): void {
