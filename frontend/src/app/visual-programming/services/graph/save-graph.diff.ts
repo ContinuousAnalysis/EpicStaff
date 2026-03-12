@@ -444,10 +444,7 @@ export function getConnectionDiff(
         getConditionalEdgeForComparisonFromUI,
         'ConditionalEdge'
     );
-    const conditionalEdges = {
-        ...conditionalEdgesRaw,
-        toCreate: conditionalEdgesRaw.toCreate.filter(re => re.sourceBackendId != null),
-    };
+    const conditionalEdges = conditionalEdgesRaw;
 
     return {
         conditionalEdges,
