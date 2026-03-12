@@ -18,7 +18,9 @@ import {
     JsonEditorComponent,
 } from "@shared/components";
 import { startWith } from "rxjs";
-import { NgrokConfigStorageService } from "../../../../features/settings-dialog/services/ngrok-config/ngrok-config-storage.service";
+import {
+    NgrokConfigStorageService
+} from "../../../../features/configure-models/services/ngrok-config/ngrok-config-storage.service";
 import { ToastService } from "../../../../services/notifications";
 import { BaseSidePanel } from "../../../core/models/node-panel.abstract";
 import { TelegramTriggerNodeModel } from "../../../core/models/node.model";

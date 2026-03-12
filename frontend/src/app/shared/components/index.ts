@@ -11,6 +11,7 @@ export * from './forms';
 export * from './header';
 export * from './help-tooltip';
 export * from './json-editor/json-editor.component';
+export * from './json-editor/json-editor-form-field.component';
 export * from './knowledge-selector/knowledge-selector.component';
 export * from './llm-model-selector';
 export * from './loading-spinner/loading-spinner.component';

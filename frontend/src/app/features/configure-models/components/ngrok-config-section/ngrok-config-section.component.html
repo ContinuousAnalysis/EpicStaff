@@ -1,27 +1,29 @@
-<div class="tab">
-    <div class="tab__header">
-        <div>
-            <h3 class="tab__title">Ngrok Configuration Parameters</h3>
-            <p class="tab__subtitle">
+<section class="ngrok-config">
+    <header class="header">
+        <div class="header-left">
+            <h3 class="title">Ngrok Configuration Parameters</h3>
+            <p class="subtitle">
                 Configure and manage settings through the Ngrok tunnel.
             </p>
         </div>
-        <app-button
-            type="primary"
-            leftIcon="ui/plus"
-            (click)="onAddConfig()"
-        >
-            Add
-        </app-button>
-    </div>
 
-    <div class="tab__ngrok-config-list">
+        <div class="header-right">
+            <app-button
+                type="primary"
+                (click)="onAddConfig()"
+            >
+                + Add Tunnel
+            </app-button>
+        </div>
+    </header>
+
+    <div class="config-list">
         @if (status() === 'loading') {
-            <div class="tab__loading-state">
-                <p>Loading Ngrok configurations...</p>
-            </div>
+            <app-loading-spinner
+                message="Loading Ngrok configurations"
+            />
         } @else if (status() === 'error') {
-            <div class="tab__loading-state tab__loading-state--error">
+            <div class="loading-state error">
                 <p>{{ errorMessage() }}</p>
                 <app-button
                     type="secondary"
@@ -32,7 +34,7 @@
                 </app-button>
             </div>
         } @else if (ngrokConfigs().length === 0) {
-            <div class="tab__loading-state">
+            <div class="loading-state">
                 <p>No ngrok configurations found. Add one to get started.</p>
             </div>
         } @else {
@@ -45,4 +47,4 @@
             }
         }
     </div>
-</div>
+</section>

@@ -16,10 +16,6 @@ export class LlmLibraryCardComponent {
     public readonly editClick = output<number>();
     public readonly deleteClick = output<LlmLibraryModel>();
 
-    public get isUsed(): boolean {
-        return this.model().usedByCount !== null;
-    }
-
     public onEdit(): void {
         this.editClick.emit(this.model().id);
     }

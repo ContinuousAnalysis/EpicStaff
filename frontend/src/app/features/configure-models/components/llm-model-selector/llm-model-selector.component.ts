@@ -20,22 +20,12 @@ import { Overlay, OverlayModule, OverlayPositionBuilder, OverlayRef } from '@ang
 import { TemplatePortal } from '@angular/cdk/portal';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppIconComponent, ButtonComponent, TooltipComponent } from "@shared/components";
-import { forkJoin } from "rxjs";
 import { finalize } from "rxjs/operators";
-import { LLM_Provider } from "../../../settings-dialog/models/llm-provider.model";
-import { ModelTypes } from "../../models/llm-provider.model";
 import { LLM_Model } from "../../models/llms/LLM.model";
-import { LlmModelsStorageService } from "../../services/llms/llm-models-storage.service";
-import { LlmProvidersStorageService } from "../../services/llms/llm-providers-storage.service";
+import { LlmLibraryService, ProviderWithModels } from "../../services/llm-library.service";
 import { getProviderIconPath } from "../../utils/get-provider-icon";
 
 import { CreateLlmModelModalComponent } from "../create-llm-model-modal/create-llm-model-modal.component";
-
-interface ProviderWithModels {
-    provider: LLM_Provider;
-    models: LLM_Model[];
-    visibleModels: LLM_Model[];
-}
 
 const TOP_PROVIDERS = [
     'openai',
@@ -64,10 +54,8 @@ const TOP_PROVIDERS = [
     styleUrls: ['./llm-model-selector.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-// TODO refactor needed
 export class LlmModelSelectorComponent implements ControlValueAccessor {
-    private providersStorageService = inject(LlmProvidersStorageService);
-    private modelsStorageService = inject(LlmModelsStorageService);
+    private llmLibraryService = inject(LlmLibraryService);
     private destroyRef = inject(DestroyRef);
     private dialog = inject(Dialog);
     private overlayRef!: OverlayRef;
@@ -83,9 +71,6 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
 
     isLoading = signal(true);
     searchQuery = signal('');
-    providersWithModels = signal<ProviderWithModels[]>([]);
-    selectedModelId = signal<number | null>(null);
-
     selectedValue = model<number | null>(null);
     modelChanged = output<LLM_Model>();
     configAdded = output<void>();
@@ -97,7 +82,18 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     isDisabled = signal(false);
     expandedProviders = signal<Set<number>>(new Set());
 
-    selectedModelInfo = computed<{ model: LLM_Model; provider: LLM_Provider } | null>(() => {
+    providersWithModels = computed<ProviderWithModels[]>(() =>
+        [...this.llmLibraryService.providerModels()].sort((a, b) => {
+            const aIndex = TOP_PROVIDERS.indexOf(a.provider.name.toLowerCase());
+            const bIndex = TOP_PROVIDERS.indexOf(b.provider.name.toLowerCase());
+            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+            if (aIndex !== -1) return -1;
+            if (bIndex !== -1) return 1;
+            return a.provider.name.localeCompare(b.provider.name);
+        })
+    );
+
+    selectedModelInfo = computed<{ model: LLM_Model; provider: ProviderWithModels['provider'] } | null>(() => {
         const id = this.selectedValue();
         if (id === null || id === undefined) return null;
         for (const group of this.providersWithModels()) {
@@ -136,10 +132,17 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     @ViewChild('triggerBtn') triggerBtn!: ElementRef<HTMLButtonElement>;
     @ViewChild('dropdownTemplate') dropdownTemplate!: any;
 
-    private onChange: (value: number | null) => void = () => {
-    };
-    private onTouched: () => void = () => {
-    };
+    private onChange: (value: number | null) => void = () => {};
+    private onTouched: () => void = () => {};
+
+    ngOnInit(): void {
+        this.llmLibraryService.loadModels()
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => this.isLoading.set(false))
+            )
+            .subscribe();
+    }
 
     toggle(): void {
         this.open() ? this.close() : this.openDropdown();
@@ -177,76 +180,6 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         this.open.set(false);
     }
 
-    ngOnInit(): void {
-        this.loadProvidersAndModels();
-    }
-
-    private sortProviders(providers: LLM_Provider[]): LLM_Provider[] {
-        return [...providers].sort((a, b) => {
-            const aIndex = TOP_PROVIDERS.indexOf(a.name.toLowerCase());
-            const bIndex = TOP_PROVIDERS.indexOf(b.name.toLowerCase());
-
-            if (aIndex !== -1 && bIndex !== -1) {
-                return aIndex - bIndex;
-            }
-            if (aIndex !== -1) return -1;
-            if (bIndex !== -1) return 1;
-            return a.name.localeCompare(b.name);
-        });
-    }
-
-    private loadProvidersAndModels(): void {
-        this.isLoading.set(true);
-
-        this.providersStorageService
-            .getProvidersByType(ModelTypes.LLM)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (providers) => {
-                    const sortedProviders = this.sortProviders(providers);
-
-                    const modelRequests = sortedProviders.map(provider =>
-                        this.modelsStorageService.getModels(provider.id, true)
-                    );
-
-                    if (modelRequests.length === 0) {
-                        this.providersWithModels.set([]);
-                        this.isLoading.set(false);
-                        return;
-                    }
-
-                    forkJoin(modelRequests)
-                        .pipe(
-                            takeUntilDestroyed(this.destroyRef),
-                            finalize(() => this.isLoading.set(false))
-                        )
-                        .subscribe({
-                            next: (modelsArrays) => {
-                                const providersWithModels: ProviderWithModels[] = sortedProviders.map((provider, index) => {
-                                    const visibleModels = modelsArrays[index] || [];
-
-                                    return {
-                                        provider,
-                                        models: visibleModels,
-                                        visibleModels,
-                                    };
-                                });
-
-                                this.providersWithModels.set(providersWithModels);
-                            },
-                            error: (err) => {
-                                console.error('Error loading models:', err);
-                                this.isLoading.set(false);
-                            },
-                        });
-                },
-                error: (err) => {
-                    console.error('Error loading providers:', err);
-                    this.isLoading.set(false);
-                },
-            });
-    }
-
     getProviderIcon(providerName: string): string {
         return getProviderIconPath(providerName);
     }
@@ -257,7 +190,6 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     }
 
     selectModel(model: LLM_Model): void {
-        this.selectedModelId.set(model.id);
         this.selectedValue.set(model.id);
         this.onChange(model.id);
         this.modelChanged.emit(model);
@@ -265,7 +197,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     }
 
     isModelSelected(modelId: number): boolean {
-        return this.selectedModelId() === modelId;
+        return this.selectedValue() === modelId;
     }
 
     getVisibleModels(group: ProviderWithModels): LLM_Model[] {
@@ -291,39 +223,10 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         });
     }
 
-    openAllModelsModal(provider: LLM_Provider): void {
-        const createDialogRef = this.dialog.open(CreateLlmModelModalComponent, {
+    openAllModelsModal(provider: ProviderWithModels['provider']): void {
+        this.dialog.open(CreateLlmModelModalComponent, {
             data: { provider },
             width: '600px',
-        });
-        createDialogRef.closed
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((createdModel) => {
-                if (!createdModel) {
-                    return;
-                }
-
-                const created = createdModel as LLM_Model;
-                this.reloadProviderModels(provider.id);
-            });
-    }
-
-    private reloadProviderModels(providerId: number): void {
-        this.modelsStorageService.getModels(providerId, true).pipe(
-            takeUntilDestroyed(this.destroyRef)
-        ).subscribe({
-            next: (visibleModels) => {
-                this.providersWithModels.update(providers => {
-                    return providers.map(p => {
-                        if (p.provider.id !== providerId) return p;
-                        return {
-                            ...p,
-                            models: visibleModels,
-                            visibleModels,
-                        };
-                    });
-                });
-            }
         });
     }
 

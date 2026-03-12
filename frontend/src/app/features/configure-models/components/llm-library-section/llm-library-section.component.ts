@@ -3,7 +3,8 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnIni
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from '@angular/forms';
-import { ConfirmationDialogData, ConfirmationDialogService } from "@shared/components";
+import { ConfirmationDialogData, ConfirmationDialogService, LoadingSpinnerComponent } from "@shared/components";
+import { ToastService } from "../../../../services/notifications";
 import { LlmLibraryModel } from "../../interfaces/llm-library-model.interface";
 import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
 import { LlmLibraryService } from "../../services/llm-library.service";
@@ -14,22 +15,24 @@ import { LlmModelConfigDialogComponent } from "../llm-model-config-dialog/llm-mo
 
 @Component({
     selector: 'app-llm-library-section',
-    imports: [CommonModule, FormsModule, LlmLibraryCardComponent, AppIconComponent],
+    imports: [CommonModule, FormsModule, LlmLibraryCardComponent, AppIconComponent, LoadingSpinnerComponent],
     templateUrl: './llm-library-section.component.html',
     styleUrls: ['./llm-library-section.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LlmLibrarySectionComponent implements OnInit {
-    private readonly llmLibraryService = inject(LlmLibraryService);
-    private readonly llmConfigStorageService = inject(LlmConfigStorageService);
-    private readonly confirmationDialogService = inject(ConfirmationDialogService);
-    private readonly destroyRef = inject(DestroyRef);
-    private readonly dialog = inject(Dialog);
+    private llmLibraryService = inject(LlmLibraryService);
+    private llmConfigStorageService = inject(LlmConfigStorageService);
+    private confirmationDialogService = inject(ConfirmationDialogService);
+    private destroyRef = inject(DestroyRef);
+    private dialog = inject(Dialog);
+    private toast = inject(ToastService);
 
-    public readonly searchQuery = signal('');
-    public readonly selectedCapability = signal('all');
+    public searchQuery = signal('');
+    public selectedCapability = signal('all');
+    public configsLoaded = signal<boolean>(false);
 
-    filteredGroups = computed<LlmLibraryProviderGroup[]> (() => {
+    filteredGroups = computed<LlmLibraryProviderGroup[]>(() => {
         const query = this.searchQuery().toLowerCase();
         const cap = this.selectedCapability();
 
@@ -39,6 +42,7 @@ export class LlmLibrarySectionComponent implements OnInit {
                     const matchesSearch =
                         !query ||
                         model.customName.toLowerCase().includes(query) ||
+                        model.modelName.toLowerCase().includes(query) ||
                         group.providerName.toLowerCase().includes(query);
 
                     const matchesCap =
@@ -65,9 +69,9 @@ export class LlmLibrarySectionComponent implements OnInit {
     ];
 
     ngOnInit() {
-       this.llmLibraryService.loadConfigs()
-           .pipe(takeUntilDestroyed(this.destroyRef))
-           .subscribe();
+        this.llmLibraryService.loadConfigs()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.configsLoaded.set(true));
     }
 
     public onSearchChange(value: string): void {
@@ -85,9 +89,12 @@ export class LlmLibrarySectionComponent implements OnInit {
         })
     }
 
-
-    public onEdit(modelId: number): void {
-        console.log('[LLM Library] Edit:', modelId);
+    public onEdit(configId: number): void {
+        this.dialog.open(LlmModelConfigDialogComponent, {
+            height: '90vh',
+            width: '600px',
+            data: { configId },
+        });
     }
 
     public onDelete(model: LlmLibraryModel): void {
@@ -101,8 +108,10 @@ export class LlmLibrarySectionComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((result) => {
                 if (result === true) {
-                    console.log('[LLM Library] Delete:', model);
-                    this.llmConfigStorageService.deleteConfig(model.id).subscribe()
+                    this.llmConfigStorageService.deleteConfig(model.id)
+                        .subscribe({
+                            next: () => this.toast.success('Configuration deleted.'),
+                        });
                 }
             })
     }

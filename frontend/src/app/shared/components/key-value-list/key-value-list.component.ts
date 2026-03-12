@@ -43,6 +43,23 @@ export class KeyValueListComponent implements ControlValueAccessor {
     isDisabled = signal<boolean>(false);
     jsonText = signal<string>('{}');
 
+    editorOptions: any = {
+        theme: 'vs-dark',
+        language: 'json',
+        automaticLayout: true,
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        wordWrap: 'on',
+        wrappingIndent: 'indent',
+        lineNumbers: 'off',
+        wordWrapBreakAfterCharacters: ',',
+        wordWrapBreakBeforeCharacters: '}]',
+        formatOnPaste: true,
+        formatOnType: true,
+        tabSize: 2,
+        readOnly: false,
+    };
+
     private isUpdatingFromJson = false;
 
     private onChange: (value: Record<string, string>) => void = () => {};

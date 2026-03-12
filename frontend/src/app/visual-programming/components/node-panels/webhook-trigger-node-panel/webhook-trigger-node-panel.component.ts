@@ -9,7 +9,7 @@ import {
 import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
     NgrokConfigStorageService
-} from "../../../../features/settings-dialog/services/ngrok-config/ngrok-config-storage.service";
+} from "../../../../features/configure-models/services/ngrok-config/ngrok-config-storage.service";
 import { ToastService } from "../../../../services/notifications";
 import { WebhookTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';

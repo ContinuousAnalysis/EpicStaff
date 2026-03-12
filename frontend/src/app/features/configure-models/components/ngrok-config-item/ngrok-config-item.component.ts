@@ -10,7 +10,7 @@ import {
     IconButtonComponent,
     ButtonComponent
 } from '@shared/components';
-import { GetNgrokConfigResponse } from "../../../models/ngrok-config.model";
+import { GetNgrokConfigResponse } from "../../models/ngrok-config.model";
 
 @Component({
     selector: 'app-ngrok-config-item',

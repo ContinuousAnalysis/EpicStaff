@@ -4,10 +4,17 @@ import { map } from 'rxjs/operators';
 import { PROVIDER_ICON_PATHS } from '../constants/provider-icons.constants';
 import { LlmLibraryModel } from '../interfaces/llm-library-model.interface';
 import { LlmLibraryProviderGroup } from '../interfaces/llm-library-provider-group.interface';
-import { ModelTypes } from '../models/llm-provider.model';
+import { LLM_Provider, ModelTypes } from '../models/llm-provider.model';
+import { LLM_Model } from '../models/llms/LLM.model';
 import { LlmConfigStorageService } from './llms/llm-config-storage.service';
 import { LlmModelsStorageService } from './llms/llm-models-storage.service';
 import { LlmProvidersStorageService } from './llms/llm-providers-storage.service';
+
+export interface ProviderWithModels {
+    provider: LLM_Provider;
+    models: LLM_Model[];
+    visibleModels: LLM_Model[];
+}
 
 @Injectable({
     providedIn: 'root',
@@ -58,9 +65,27 @@ export class LlmLibraryService {
         return Array.from(groupsMap.values());
     });
 
+    // Models grouped by provider — used by the model selector
+    public readonly providerModels = computed<ProviderWithModels[]>(() => {
+        const providers = this.providersStorage.providersByType().get(ModelTypes.LLM) ?? [];
+        const byProvider = this.modelsStorage.modelsByProvider();
+        return providers.map((provider) => {
+            const allModels = byProvider.get(provider.id) ?? [];
+            const visibleModels = allModels.filter((m) => m.is_visible);
+            return { provider, models: allModels, visibleModels };
+        });
+    });
+
     loadConfigs(): Observable<void> {
         return forkJoin({
             configs: this.configStorage.getAllConfigs(),
+            models: this.modelsStorage.getModels(),
+            providers: this.providersStorage.getProvidersByType(ModelTypes.LLM),
+        }).pipe(map(() => void 0));
+    }
+
+    loadModels(): Observable<void> {
+        return forkJoin({
             models: this.modelsStorage.getModels(),
             providers: this.providersStorage.getProvidersByType(ModelTypes.LLM),
         }).pipe(map(() => void 0));

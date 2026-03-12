@@ -46,6 +46,11 @@
                     <app-llm-library-section></app-llm-library-section>
                 </section>
             }
+            @case (tabIds.NGROK_CONFIG) {
+                <section class="configure-models-dialog__panel">
+                    <app-ngrok-config-section></app-ngrok-config-section>
+                </section>
+            }
         }
     </main>
 </div>
