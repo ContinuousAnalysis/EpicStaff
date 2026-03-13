@@ -95,6 +95,8 @@ def cmd_pull_project(args):
 
 def cmd_push_project(args):
     """Push agent/task configs from local files back to the API."""
+    if not args.path:
+        args.path = str(PROJECTS_DIR)
     p = Path(args.path)
     files = sorted(p.iterdir()) if p.is_dir() else [p]
     ok, fail = 0, 0

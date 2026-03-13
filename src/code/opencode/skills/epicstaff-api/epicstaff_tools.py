@@ -39,7 +39,7 @@ from flows_read import (
     cmd_cdt, cmd_cdt_code, cmd_cdt_prompts,
     cmd_sessions, cmd_session, cmd_session_inspect, cmd_session_timings, cmd_vars, cmd_history, cmd_trace, cmd_crew_input,
     cmd_verify, cmd_export_compare,
-    cmd_oc_status, cmd_oc_sessions, cmd_oc_messages,
+    cmd_oc_status, cmd_oc_sessions, cmd_oc_messages, cmd_oc_session,
     cmd_test_flow,
 )
 from flows_write import (
@@ -130,16 +130,18 @@ def main():
     p = sub.add_parser("oc-messages", help="OpenCode session messages")
     p.add_argument("oc_session_id", nargs="?", default=None, help="OpenCode session ID")
     p.add_argument("-n", type=int, default=10)
+    p = sub.add_parser("oc-session", help="Show full OpenCode session conversation")
+    p.add_argument("oc_session_id", help="EpicStaff session ID (numeric) or OpenCode session ID (ses_...)")
     p = sub.add_parser("oc-abort", help="Abort OpenCode request")
     p.add_argument("oc_session_id", nargs="?", default=None, help="OpenCode session ID")
 
     # Data sync — flows
     p = sub.add_parser("push", help="Push flow files to DB + metadata")
-    p.add_argument("path", help="File or directory")
+    p.add_argument("path", nargs="?", default=None, help="File or directory (default: .my_epicstaff/flows/<id>)")
     p = sub.add_parser("pull", help="Pull flow DB state to local files")
     p.add_argument("path", nargs="?", default=None, help="Output dir (default: .my_epicstaff/flows/<id>)")
     p = sub.add_parser("verify", help="Three-way verify")
-    p.add_argument("path", help="File or directory")
+    p.add_argument("path", nargs="?", default=None, help="File or directory (default: .my_epicstaff/flows/<id>)")
     p.add_argument("-v", "--verbose", action="store_true")
     p = sub.add_parser("export-compare", help="Compare export with current")
     p.add_argument("file", help="Export JSON file")
@@ -147,12 +149,12 @@ def main():
     # Data sync — tools
     p = sub.add_parser("pull-tools", help="Pull tool code into .my_epicstaff/tools/")
     p = sub.add_parser("push-tools", help="Push tool code from .my_epicstaff/tools/")
-    p.add_argument("path", help="File or directory")
+    p.add_argument("path", nargs="?", default=None, help="File or directory (default: .my_epicstaff/tools/)")
 
     # Data sync — projects
     p = sub.add_parser("pull-project", help="Pull crew/agent/task into .my_epicstaff/projects/")
     p = sub.add_parser("push-project", help="Push crew/agent/task from .my_epicstaff/projects/")
-    p.add_argument("path", help="File or directory")
+    p.add_argument("path", nargs="?", default=None, help="File or directory (default: .my_epicstaff/projects/)")
 
     # Patching
     p = sub.add_parser("patch-cdt", help="Patch CDT field")
@@ -335,7 +337,7 @@ def main():
         "history": cmd_history, "trace": cmd_trace, "crew-input": cmd_crew_input,
         "verify": cmd_verify, "export-compare": cmd_export_compare,
         "oc-status": cmd_oc_status, "oc-sessions": cmd_oc_sessions,
-        "oc-messages": cmd_oc_messages,
+        "oc-messages": cmd_oc_messages, "oc-session": cmd_oc_session,
         "test-flow": cmd_test_flow,
         # flows — write
         "push": cmd_push, "pull": cmd_pull,

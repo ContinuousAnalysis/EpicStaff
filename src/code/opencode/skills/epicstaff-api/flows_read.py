@@ -9,7 +9,8 @@ from common import (
     api_get, api_get_page, _get_graph, _get_cdt_nodes,
     _discover_files, _read_from_file, _read_from_db, _read_from_metadata,
     _canonical_json, _oc_curl,
-    FLOWS_DIR,
+    build_id_to_name_map,
+    FLOWS_DIR, _flows_dir,
 )
 
 
@@ -89,84 +90,113 @@ def cmd_edges(args):
     NOTE: EdgeViewSet has no filter_backends, so ?graph=<id> is silently ignored.
     We filter client-side by comparing edge graph FK against args.graph_id.
     """
+    graph = _get_graph(args.graph_id)
+    id_to_name = build_id_to_name_map(graph)
     all_edges = api_get(f"/edges/")
     if isinstance(all_edges, dict):
         all_edges = all_edges.get("results", [])
     edges = [e for e in all_edges if e.get("graph") == args.graph_id]
     print(f"DB edges for flow {args.graph_id} ({len(edges)}):\n")
     for e in edges:
-        print(f"  {e['start_key']} → {e['end_key']}  (id={e['id']})")
+        src = id_to_name.get(e['start_node_id'], f"?#{e['start_node_id']}")
+        tgt = id_to_name.get(e['end_node_id'], f"?#{e['end_node_id']}")
+        print(f"  {src} → {tgt}  (id={e['id']}, {e['start_node_id']}→{e['end_node_id']})")
 
 
 def cmd_connections(args):
-    """Show metadata connections (UI + CDT routing)."""
+    """Show all graph connections: edges + conditional edges + DT routing (from DB)."""
     graph = _get_graph(args.graph_id)
-    meta = graph.get("metadata", {})
-    nodes = {n["id"]: n.get("node_name", "") or n.get("data", {}).get("name", "")
-             for n in meta.get("nodes", [])}
-    conns = meta.get("connections", [])
-    print(f"Metadata connections for flow {args.graph_id} ({len(conns)}):\n")
-    for c in conns:
-        sn = nodes.get(c.get("sourceNodeId", ""), "?")
-        tn = nodes.get(c.get("targetNodeId", ""), "?")
-        sp = c.get("sourcePortId", "").split("_", 1)[-1] if "_" in c.get("sourcePortId", "") else c.get("sourcePortId", "")
-        tp = c.get("targetPortId", "").split("_", 1)[-1] if "_" in c.get("targetPortId", "") else c.get("targetPortId", "")
-        print(f"  {sn} [{sp}] → {tn} [{tp}]")
+    id_to_name = build_id_to_name_map(graph)
+
+    # Regular edges
+    edges = graph.get("edge_list", [])
+    print(f"Edges for flow {args.graph_id} ({len(edges)}):\n")
+    for e in edges:
+        src = id_to_name.get(e.get("start_node_id"), f"?#{e.get('start_node_id')}")
+        tgt = id_to_name.get(e.get("end_node_id"), f"?#{e.get('end_node_id')}")
+        print(f"  {src} → {tgt}  (edge id={e['id']})")
+
+    # Conditional edges
+    ce_list = graph.get("conditional_edge_list", [])
+    if ce_list:
+        print(f"\nConditional edges ({len(ce_list)}):\n")
+        for ce in ce_list:
+            src = id_to_name.get(ce.get("source_node_id"), f"?#{ce.get('source_node_id')}")
+            then = id_to_name.get(ce.get("then_node_id"), f"?#{ce.get('then_node_id')}")
+            print(f"  {src} → {then}  (ce id={ce['id']}, condition={ce.get('condition', '?')})")
+
+    # DT condition group routing
+    dt_types = [
+        ("classification_decision_table_node_list", "CDT"),
+        ("decision_table_node_list", "DT"),
+    ]
+    for list_key, label in dt_types:
+        for dt in graph.get(list_key, []):
+            groups = dt.get("condition_groups", [])
+            if not groups:
+                continue
+            print(f"\n{label} '{dt['node_name']}' routing:")
+            for g in groups:
+                next_node = g.get("next_node", "")
+                print(f"  [{g.get('order','-')}] {g.get('group_name','?')} → {next_node or '(empty)'}")
+            default = dt.get("default_next_node")
+            error = dt.get("next_error_node")
+            if default:
+                print(f"  default → {default}")
+            if error:
+                print(f"  error → {error}")
 
 
 def cmd_route_map(args):
-    """Verify CDT route maps (simulates backend _build_route_maps)."""
+    """Verify CDT/DT route maps from DB condition groups."""
     graph = _get_graph(args.graph_id)
-    meta = graph.get("metadata", {})
-    metadata_nodes = meta.get("nodes", [])
-    metadata_connections = meta.get("connections", [])
-    uuid_to_name = {n["id"]: n.get("node_name", "") for n in metadata_nodes}
-    name_to_uuid = {n.get("node_name", ""): n["id"] for n in metadata_nodes}
+    id_to_name = build_id_to_name_map(graph)
 
-    cdts = _get_cdt_nodes(args.graph_id)
-    print(f"CDT route maps for flow {args.graph_id}:\n")
+    dt_types = [
+        ("classification_decision_table_node_list", "CDT"),
+        ("decision_table_node_list", "DT"),
+    ]
+    print(f"Route maps for flow {args.graph_id}:\n")
     all_ok = True
-    for cdt in cdts:
-        db_name = cdt["node_name"]
-        ct_uuid = name_to_uuid.get(db_name)
-        if not ct_uuid:
-            print(f"  ❌ {db_name}: DB name NOT FOUND in metadata (route_map will be empty!)")
-            all_ok = False
-            continue
+    found_any = False
 
-        route_map = {}
-        prefix = f"{ct_uuid}_decision-route-"
-        for conn in metadata_connections:
-            sp = conn.get("sourcePortId", "")
-            if sp.startswith(prefix):
-                rc = sp[len(prefix):]
-                tn = uuid_to_name.get(conn.get("targetNodeId", ""))
-                if rc and tn:
-                    route_map[rc] = tn
+    for list_key, label in dt_types:
+        for dt in graph.get(list_key, []):
+            found_any = True
+            db_name = dt["node_name"]
+            groups = dt.get("condition_groups", [])
+            route_map = {}
+            for g in groups:
+                gname = g.get("group_name", "?")
+                next_node = g.get("next_node")
+                if next_node:
+                    route_map[gname] = next_node
 
-        if route_map:
-            print(f"  ✅ {db_name}:")
-            for rc, tn in route_map.items():
-                print(f"      {rc} → {tn}")
-        else:
-            has_docks = any(g.get("dock_visible") for g in cdt.get("condition_groups", []))
-            if has_docks:
-                print(f"  ⚠️  {db_name}: has dock_visible groups but empty route_map")
-                all_ok = False
+            if route_map:
+                print(f"  ✅ {label} '{db_name}':")
+                for gname, target in route_map.items():
+                    print(f"      {gname} → {target}")
             else:
-                print(f"  ℹ️  {db_name}: no dock_visible groups (no routing needed)")
+                has_groups = len(groups) > 0
+                if has_groups:
+                    print(f"  ⚠️  {label} '{db_name}': has {len(groups)} groups but no next_node routing")
+                    all_ok = False
+                else:
+                    print(f"  ℹ️  {label} '{db_name}': no condition groups")
 
-        default = cdt.get("default_next_node")
-        error = cdt.get("next_error_node")
-        if default:
-            print(f"      default → {default}")
-        if error:
-            print(f"      error → {error}")
+            default = dt.get("default_next_node")
+            error = dt.get("next_error_node")
+            if default:
+                print(f"      default → {default}")
+            if error:
+                print(f"      error → {error}")
 
-    if all_ok:
+    if not found_any:
+        print("  No CDT or DT nodes in this flow.")
+    elif all_ok:
         print("\n  All route maps OK.")
     else:
-        print("\n  ⚠️  Issues found. Check DB name ↔ metadata name match.")
+        print("\n  ⚠️  Issues found — check condition group next_node values.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -623,6 +653,8 @@ def cmd_crew_input(args):
 
 def cmd_verify(args):
     """Three-way verify: file <-> DB <-> metadata."""
+    if not args.path:
+        args.path = str(_flows_dir(args.graph_id))
     specs = _discover_files(args.path)
     if not specs:
         print(f"No recognized files in: {args.path}")
@@ -834,6 +866,238 @@ def cmd_oc_messages(args):
         print(f"  [{idx:3d}] {role:12s} | {preview}")
 
 
+def cmd_oc_session(args):
+    """Show full OpenCode session conversation in friendly format.
+
+    Accepts an EpicStaff session ID (numeric) or an OpenCode session ID (ses_...).
+    Tries the OpenCode API first; falls back to Django graph-session-messages.
+    """
+    raw_id = args.oc_session_id
+    oc_sid = None
+    es_sid = None
+
+    # Determine if it's an EpicStaff session ID or an OC session ID
+    if raw_id and raw_id.isdigit():
+        es_sid = int(raw_id)
+    elif raw_id and raw_id.startswith("ses_"):
+        oc_sid = raw_id
+    elif raw_id:
+        # Could be a partial match — try as EpicStaff session ID
+        try:
+            es_sid = int(raw_id)
+        except ValueError:
+            oc_sid = raw_id
+
+    # If we have an EpicStaff session ID, look up the OC session ID from finish message
+    if es_sid and not oc_sid:
+        msgs = api_get("/graph-session-messages/", params={"session_id": es_sid})
+        for m in msgs:
+            md = m.get("message_data", {})
+            if md.get("message_type") == "finish":
+                out = md.get("output", {})
+                if isinstance(out, dict) and out.get("session_id"):
+                    oc_sid = out["session_id"]
+                    break
+
+    # Try OpenCode API first
+    oc_msgs = None
+    if oc_sid:
+        oc_msgs = _oc_curl(f"/session/{oc_sid}/message")
+        if isinstance(oc_msgs, list) and oc_msgs:
+            _print_oc_session_from_oc(oc_sid, oc_msgs, es_sid)
+            return
+
+    # Fall back to Django graph-session-messages
+    if es_sid:
+        _print_oc_session_from_django(es_sid, oc_sid)
+        return
+
+    # No data found
+    if oc_sid:
+        print(f"No messages found for OC session {oc_sid} (container may have been rebuilt).")
+        if not es_sid:
+            print("Tip: pass an EpicStaff session ID (numeric) to use Django fallback.")
+    else:
+        print("No session found. Pass an EpicStaff session ID or OpenCode session ID.")
+
+
+def _print_oc_session_from_oc(oc_sid, msgs, es_sid=None):
+    """Format OpenCode API messages into friendly output."""
+    header = f"OpenCode session: {oc_sid}"
+    if es_sid:
+        header += f"  (EpicStaff session {es_sid})"
+    print(f"\n{'=' * 80}")
+    print(header)
+    print(f"{'=' * 80}\n")
+
+    for i, m in enumerate(msgs):
+        role = m.get("role", "?")
+        parts = m.get("parts", [])
+
+        if role == "user":
+            print(f"{'─' * 60}")
+            print(f"👤 USER (message {i})")
+            print(f"{'─' * 60}")
+            for p in parts:
+                if p.get("type") == "text":
+                    text = p.get("text", "")
+                    if len(text) > 500:
+                        print(f"{text[:500]}...")
+                        print(f"  [...{len(text)} chars total]")
+                    else:
+                        print(text)
+            print()
+
+        elif role == "assistant":
+            print(f"{'─' * 60}")
+            print(f"🤖 ASSISTANT (message {i})")
+            print(f"{'─' * 60}")
+            for p in parts:
+                pt = p.get("type", "")
+                if pt == "reasoning":
+                    text = p.get("text", "")
+                    if text:
+                        lines = text.strip().split("\n")
+                        print(f"  💭 Reasoning ({len(text)} chars):")
+                        for line in lines[:10]:
+                            print(f"    {line}")
+                        if len(lines) > 10:
+                            print(f"    [...{len(lines)} lines total]")
+                elif pt == "text":
+                    text = p.get("text", "")
+                    if len(text) > 1000:
+                        print(f"  📝 Answer ({len(text)} chars):")
+                        print(text[:1000])
+                        print(f"  [...truncated, {len(text)} chars total]")
+                    else:
+                        print(f"  📝 Answer:")
+                        print(text)
+                elif pt == "tool":
+                    state = p.get("state", {}) or {}
+                    name = p.get("tool", "") or p.get("name", "tool")
+                    status = state.get("status", "?")
+                    inp = state.get("input", "")
+                    out = state.get("output", "")
+                    inp_str = str(inp)[:200] if inp else ""
+                    out_str = str(out)[:200] if out else ""
+                    icon = "✅" if status in ("completed", "done") else "🔧"
+                    print(f"  {icon} Tool: {name} [{status}]")
+                    if inp_str:
+                        print(f"       input:  {inp_str}")
+                    if out_str:
+                        print(f"       output: {out_str}")
+            print()
+
+    print(f"{'=' * 80}")
+    print(f"Total: {len(msgs)} messages")
+    print(f"{'=' * 80}")
+
+
+def _print_oc_session_from_django(es_sid, oc_sid=None):
+    """Format Django graph-session-messages into friendly output."""
+    msgs = api_get("/graph-session-messages/", params={"session_id": es_sid})
+    if not msgs:
+        print(f"No messages found for EpicStaff session {es_sid}.")
+        return
+
+    header = f"EpicStaff session {es_sid}"
+    if oc_sid:
+        header += f"  (OC: {oc_sid})"
+    print(f"\n{'=' * 80}")
+    print(f"{header}  [Django fallback — OC messages unavailable]")
+    print(f"{'=' * 80}\n")
+
+    # Collect messages by type
+    prompt = None
+    thinking_steps = []
+    final_answer = None
+    output_data = None
+
+    for m in msgs:
+        md = m.get("message_data", {})
+        mt = md.get("message_type", "")
+        ts = m.get("created_at", "")[:19] if m.get("created_at") else ""
+
+        if mt == "start":
+            inp = md.get("input", {})
+            if isinstance(inp, dict):
+                prompt = inp.get("prompt", "")
+                tools_mode = inp.get("tools", "")
+                action = inp.get("action", "")
+
+        elif mt == "code_agent_stream":
+            text = md.get("text", "")
+            is_final = md.get("is_final", False)
+            if is_final:
+                final_answer = text
+            else:
+                thinking_steps.append({"text": text, "ts": ts})
+
+        elif mt == "finish":
+            output_data = md.get("output", {})
+
+    # Print prompt
+    if prompt:
+        print(f"{'─' * 60}")
+        print(f"👤 PROMPT")
+        print(f"{'─' * 60}")
+        if len(prompt) > 500:
+            print(f"{prompt[:500]}...")
+            print(f"  [...{len(prompt)} chars total]")
+        else:
+            print(prompt)
+        print()
+
+    # Print thinking steps
+    if thinking_steps:
+        print(f"{'─' * 60}")
+        print(f"💭 THINKING ({len(thinking_steps)} steps)")
+        print(f"{'─' * 60}")
+        for i, step in enumerate(thinking_steps):
+            text = step["text"]
+            ts = step.get("ts", "")
+            ts_label = f" [{ts}]" if ts else ""
+            lines = text.strip().split("\n")
+            first_line = lines[0][:120] if lines else ""
+            print(f"  {i + 1}. {first_line}{ts_label}")
+            if len(lines) > 1:
+                for line in lines[1:5]:
+                    print(f"     {line[:120]}")
+                if len(lines) > 5:
+                    print(f"     [...{len(lines)} lines total]")
+        print()
+
+    # Print final answer
+    if final_answer:
+        print(f"{'─' * 60}")
+        print(f"📝 FINAL ANSWER ({len(final_answer)} chars)")
+        print(f"{'─' * 60}")
+        if len(final_answer) > 2000:
+            print(final_answer[:2000])
+            print(f"\n  [...truncated, {len(final_answer)} chars total]")
+        else:
+            print(final_answer)
+        print()
+
+    # Print output metadata
+    if output_data and isinstance(output_data, dict):
+        print(f"{'─' * 60}")
+        print(f"📊 OUTPUT")
+        print(f"{'─' * 60}")
+        for k, v in output_data.items():
+            if k == "message":
+                continue  # already shown as final answer
+            val_str = str(v)
+            if len(val_str) > 100:
+                val_str = val_str[:100] + "..."
+            print(f"  {k}: {val_str}")
+        print()
+
+    print(f"{'=' * 80}")
+    print(f"Total: {len(msgs)} messages from Django API")
+    print(f"{'=' * 80}")
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Flow Testing (structural)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -875,10 +1139,17 @@ def cmd_test_flow(args):
     node_types = {
         "python": graph.get("python_node_list", []),
         "cdt": graph.get("classification_decision_table_node_list", []),
+        "dt": graph.get("decision_table_node_list", []),
         "crew": graph.get("crew_node_list", []),
+        "llm": graph.get("llm_node_list", []),
+        "code-agent": graph.get("code_agent_node_list", []),
+        "file-extractor": graph.get("file_extractor_node_list", []),
+        "audio": graph.get("audio_transcription_node_list", []),
         "webhook": graph.get("webhook_trigger_node_list", []),
         "telegram": graph.get("telegram_trigger_node_list", []),
         "start": graph.get("start_node_list", []),
+        "end": graph.get("end_node_list", []),
+        "subgraph": graph.get("subgraph_node_list", []),
     }
     total_nodes = sum(len(v) for v in node_types.values())
     counts = ", ".join(f"{k}={len(v)}" for k, v in node_types.items() if v)
@@ -895,27 +1166,39 @@ def cmd_test_flow(args):
     edges = graph.get("edge_list", [])
     _check("Edges exist", len(edges) > 0, f"{len(edges)} edges")
     if verbose:
+        id_to_name = build_id_to_name_map(graph)
         for e in edges:
-            print(f"      {e.get('start_key', '?')} \u2192 {e.get('end_key', '?')}")
+            src = id_to_name.get(e.get('start_node_id'), f"?#{e.get('start_node_id')}")
+            tgt = id_to_name.get(e.get('end_node_id'), f"?#{e.get('end_node_id')}")
+            print(f"      {src} \u2192 {tgt}")
 
-    # 4. Metadata connections
-    meta = graph.get("metadata", {})
-    conns = meta.get("connections", [])
-    _check("Metadata connections exist", len(conns) > 0, f"{len(conns)} connections")
+    # 4. Node metadata (positions) — each node should have its own metadata field
+    nodes_with_pos = 0
+    nodes_without_pos = []
+    for ntype, nlist in node_types.items():
+        for n in nlist:
+            meta = n.get("metadata") or {}
+            if meta.get("position"):
+                nodes_with_pos += 1
+            else:
+                nodes_without_pos.append(n.get("node_name", "?"))
+    _check("Node metadata (positions)", nodes_with_pos > 0 or total_nodes == 0,
+           f"{nodes_with_pos}/{total_nodes} nodes have positions" +
+           (f" — missing: {', '.join(nodes_without_pos[:5])}" if nodes_without_pos else ""))
 
-    # 5. Edge names vs node names
-    all_node_names = set()
+    # 5. Edge node IDs vs known node IDs
+    all_node_ids = set()
     for nlist in node_types.values():
         for n in nlist:
-            all_node_names.add(n.get("node_name", ""))
-    all_node_names.add("__start__")
-    all_node_names.add("__end__")
+            all_node_ids.add(n.get("id"))
     bad_edges = []
     for e in edges:
-        if e.get("start_key") not in all_node_names:
-            bad_edges.append(f"unknown source: {e.get('start_key')}")
-        if e.get("end_key") not in all_node_names:
-            bad_edges.append(f"unknown target: {e.get('end_key')}")
+        sid = e.get('start_node_id')
+        eid = e.get('end_node_id')
+        if sid not in all_node_ids:
+            bad_edges.append(f"unknown source id: {sid}")
+        if eid not in all_node_ids:
+            bad_edges.append(f"unknown target id: {eid}")
     _check("All edge endpoints are valid nodes", len(bad_edges) == 0,
            "; ".join(bad_edges[:3]) if bad_edges else "")
 

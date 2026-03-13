@@ -50,7 +50,7 @@ READ_ONLY_COMMANDS = {
     "cdt", "cdt-code", "cdt-prompts",
     "sessions", "session", "session-inspect", "session-timings", "vars", "history", "trace", "crew-input",
     "crews", "agents", "tools", "tool",
-    "oc-status", "oc-sessions", "oc-messages",
+    "oc-status", "oc-sessions", "oc-messages", "oc-session",
     "verify", "export-compare",
     "test-flow",
 }
@@ -171,6 +171,63 @@ def _flows_dir(graph_id):
     d = FLOWS_DIR / str(graph_id)
     d.mkdir(parents=True, exist_ok=True)
     return d
+
+
+# All node-list keys in the graph API response
+_NODE_LIST_KEYS = [
+    "start_node_list", "end_node_list", "python_node_list",
+    "crew_node_list", "llm_node_list", "code_agent_node_list",
+    "file_extractor_node_list", "audio_transcription_node_list",
+    "webhook_trigger_node_list", "telegram_trigger_node_list",
+    "classification_decision_table_node_list", "decision_table_node_list",
+    "note_node_list", "subgraph_node_list",
+]
+
+
+def build_name_to_id_map(graph):
+    """Build {node_name: db_id} from all node lists in a graph response."""
+    m = {}
+    for key in _NODE_LIST_KEYS:
+        for n in graph.get(key, []):
+            name = n.get("node_name")
+            if name:
+                m[name] = n["id"]
+    return m
+
+
+def build_id_to_name_map(graph):
+    """Build {db_id: node_name} from all node lists in a graph response."""
+    m = {}
+    for key in _NODE_LIST_KEYS:
+        for n in graph.get(key, []):
+            m[n["id"]] = n.get("node_name", f"node#{n['id']}")
+    return m
+
+
+def resolve_node_id(name, graph):
+    """Resolve a node name (or integer string) to a DB ID.
+
+    Accepts exact node_name (e.g. "Python-Node (#3)"), the special
+    names "__start__" / "__end__", or a raw integer ID string.
+    Returns int or raises SystemExit on failure.
+    """
+    # Raw integer
+    try:
+        return int(name)
+    except (ValueError, TypeError):
+        pass
+    m = build_name_to_id_map(graph)
+    if name in m:
+        return m[name]
+    # Fuzzy match: case-insensitive substring
+    norm = _normalize_slug(name)
+    for node_name, nid in m.items():
+        if norm == _normalize_slug(node_name):
+            return nid
+        if norm in _normalize_slug(node_name):
+            return nid
+    print(f"Node '{name}' not found in flow. Available: {', '.join(sorted(m.keys()))}", file=sys.stderr)
+    sys.exit(1)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

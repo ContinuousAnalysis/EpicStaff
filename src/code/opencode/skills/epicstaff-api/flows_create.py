@@ -2,12 +2,34 @@
 
 import sys
 import json
-import uuid
 
-from common import api_get, api_post, api_patch, _get_graph
+from common import api_get, api_post, api_patch, api_delete, _get_graph, build_id_to_name_map, resolve_node_id
 
 # Vertical gap between stacked nodes
 _NODE_STACK_GAP = 60
+
+
+def _collect_all_node_positions(graph):
+    """Collect position info from all nodes' own metadata fields.
+
+    Returns a list of dicts with 'position' key, matching the format
+    _auto_position expects.
+    """
+    result = []
+    for list_key in (
+        "start_node_list", "end_node_list", "python_node_list", "crew_node_list",
+        "code_agent_node_list", "llm_node_list", "file_extractor_node_list",
+        "audio_transcription_node_list", "webhook_trigger_node_list",
+        "telegram_trigger_node_list", "decision_table_node_list",
+        "classification_decision_table_node_list", "note_node_list",
+        "subgraph_node_list",
+    ):
+        for n in graph.get(list_key, []):
+            meta = n.get("metadata") or {}
+            pos = meta.get("position")
+            if pos:
+                result.append({"position": pos})
+    return result
 
 
 def _auto_position(existing_nodes, x=None, y=None):
@@ -67,34 +89,22 @@ def cmd_create_flow(args):
         "node_name": "__start__",
         "graph": gid,
         "variables": {"$schema": "start"},
+        "metadata": {},
     }
     start_result = api_post("/startnodes/", start_payload)
     start_id = start_result.get("id")
     print(f"  Created start node (id={start_id})")
 
-    # Initialize metadata with start node
-    start_uuid = str(uuid.uuid4())
-    metadata = {
-        "nodes": [{
-            "id": start_uuid,
-            "data": {},
-            "icon": "ti ti-player-play-filled",
-            "size": {"width": 125, "height": 60},
-            "type": "start",
-            "color": "#d3d3d3",
-            "ports": None,
-            "category": "web",
-            "parentId": None,
-            "position": {"x": -400, "y": 0},
-            "input_map": {},
-            "node_name": "__start__",
-            "output_variable_path": None,
-        }],
-        "groups": [],
-        "connections": [],
+    # Set position on start node's own metadata field
+    start_meta = {
+        "position": {"x": -400, "y": 0},
+        "color": "#d3d3d3",
+        "icon": "ti ti-player-play-filled",
+        "size": {"width": 125, "height": 60},
+        "parentId": None,
     }
-    api_patch(f"/graphs/{gid}/", {"metadata": metadata})
-    print(f"  Metadata initialized with start node.")
+    api_patch(f"/startnodes/{start_id}/", {"metadata": start_meta})
+    print(f"  Node metadata initialized.")
     return result
 
 
@@ -106,41 +116,25 @@ def cmd_create_start_node(args):
         "node_name": "__start__",
         "graph": graph_id,
         "variables": {"$schema": "start"},
+        "metadata": {},
     }
     result = api_post("/startnodes/", start_payload)
     start_id = result.get("id")
     print(f"Created start node (id={start_id}) in flow {graph_id}")
 
-    # Add to metadata
-    graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    nodes = metadata.setdefault("nodes", [])
-
-    position = _auto_position(
-        nodes,
-        x=getattr(args, "x", None) if getattr(args, "x", None) is not None else -800,
-        y=getattr(args, "y", None) if getattr(args, "y", None) is not None else 0,
-    )
-
-    start_uuid = str(uuid.uuid4())
-    nodes.insert(0, {
-        "id": start_uuid,
-        "data": {},
+    # Set position on start node's own metadata field
+    x = getattr(args, "x", None) if getattr(args, "x", None) is not None else -800
+    y = getattr(args, "y", None) if getattr(args, "y", None) is not None else 0
+    start_meta = {
+        "position": {"x": x, "y": y},
+        "color": "#d3d3d3",
         "icon": "ti ti-player-play-filled",
         "size": {"width": 125, "height": 60},
-        "type": "start",
-        "color": "#d3d3d3",
-        "ports": None,
-        "category": "web",
         "parentId": None,
-        "position": position,
-        "input_map": {},
-        "node_name": "__start__",
-        "output_variable_path": None,
-    })
-    api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-    print(f"  Position: x={position['x']}, y={position['y']}")
-    print(f"  Metadata updated.")
+    }
+    api_patch(f"/startnodes/{start_id}/", {"metadata": start_meta})
+    print(f"  Position: x={x}, y={y}")
+    print(f"  Node metadata set.")
     return result
 
 
@@ -157,36 +151,25 @@ def cmd_create_node(args):
         "node_name": node_name,
         "graph": graph_id,
         "python_code": {"code": code, "libraries": []},
+        "metadata": {},
     }
     result = api_post("/pythonnodes/", payload)
     node_id = result.get("id")
     print(f"Created Python node '{node_name}' (id={node_id}) in flow {graph_id}")
 
-    # Compute position
+    # Set position on node's own metadata field
     graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    existing_nodes = metadata.get("nodes", [])
-    position = _auto_position(
-        existing_nodes,
-        x=getattr(args, "x", None),
-        y=getattr(args, "y", None),
-    )
-
-    # Add to graph metadata so the UI sees it
-    nodes = metadata.setdefault("nodes", [])
-    nodes.append({
-        "node_name": node_name,
-        "type": "pythonNode",
+    all_nodes = _collect_all_node_positions(graph)
+    position = _auto_position(all_nodes, x=getattr(args, "x", None), y=getattr(args, "y", None))
+    node_meta = {
         "position": position,
-        "data": {
-            "name": node_name,
-            "label": node_name,
-            "code": code,
-        },
-    })
-    api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
+        "color": _NODE_DEFAULTS["python"]["color"],
+        "icon": _NODE_DEFAULTS["python"]["icon"],
+        "size": _NODE_DEFAULTS["python"]["size"],
+        "parentId": None,
+    }
+    api_patch(f"/pythonnodes/{node_id}/", {"metadata": node_meta})
     print(f"  Position: x={position['x']}, y={position['y']}")
-    print(f"  Metadata updated.")
     return result
 
 
@@ -217,6 +200,7 @@ def cmd_create_code_agent_node(args):
         "max_wait_s": getattr(args, "max_wait_s", None) or 300,
         "input_map": {},
         "output_variable_path": getattr(args, "output_variable_path", None),
+        "metadata": {},
     }
 
     # LLM config
@@ -228,41 +212,22 @@ def cmd_create_code_agent_node(args):
     node_id = result.get("id")
     print(f"Created Code Agent node '{node_name}' (id={node_id}) in flow {graph_id}")
 
-    # Compute position and update metadata
+    # Set position on node's own metadata field
     graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    existing_nodes = metadata.get("nodes", [])
-    position = _auto_position(
-        existing_nodes,
-        x=getattr(args, "x", None),
-        y=getattr(args, "y", None),
-    )
-
-    nodes = metadata.setdefault("nodes", [])
-    nodes.append({
-        "node_name": node_name,
-        "type": "code-agent",
+    all_nodes = _collect_all_node_positions(graph)
+    position = _auto_position(all_nodes, x=getattr(args, "x", None), y=getattr(args, "y", None))
+    node_meta = {
         "position": position,
-        "data": {
-            "llm_config_id": payload.get("llm_config"),
-            "agent_mode": payload["agent_mode"],
-            "system_prompt": payload["system_prompt"],
-            "stream_handler_code": stream_handler_code,
-            "libraries": libraries,
-            "polling_interval_ms": payload["polling_interval_ms"],
-            "silence_indicator_s": 3,
-            "indicator_repeat_s": 5,
-            "chunk_timeout_s": payload["chunk_timeout_s"],
-            "inactivity_timeout_s": payload["inactivity_timeout_s"],
-            "max_wait_s": payload["max_wait_s"],
-        },
-    })
-    api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
+        "color": _NODE_DEFAULTS["code-agent"]["color"],
+        "icon": _NODE_DEFAULTS["code-agent"]["icon"],
+        "size": _NODE_DEFAULTS["code-agent"]["size"],
+        "parentId": None,
+    }
+    api_patch(f"/code-agent-nodes/{node_id}/", {"metadata": node_meta})
     print(f"  Position: x={position['x']}, y={position['y']}")
     print(f"  Agent mode: {payload['agent_mode']}")
     if llm_config_id:
         print(f"  LLM config: {llm_config_id}")
-    print(f"  Metadata updated.")
     return result
 
 
@@ -286,51 +251,34 @@ def cmd_create_webhook(args):
         "graph": graph_id,
         "python_code": {"code": code, "libraries": libraries},
         "webhook_trigger_path": webhook_path,
+        "metadata": {},
     }
     result = api_post("/webhook-trigger-nodes/", payload)
     node_id = result.get("id")
     print(f"Created Webhook node '{node_name}' (id={node_id}) in flow {graph_id}")
     print(f"  webhook_trigger_path: {webhook_path}")
 
-    # Compute position and update metadata
+    # Set position on node's own metadata field
     graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    existing_nodes = metadata.get("nodes", [])
-    position = _auto_position(
-        existing_nodes,
-        x=getattr(args, "x", None),
-        y=getattr(args, "y", None),
-    )
-
-    nodes = metadata.setdefault("nodes", [])
-    nodes.append({
-        "node_name": node_name,
-        "type": "webhook-trigger",
+    all_nodes = _collect_all_node_positions(graph)
+    position = _auto_position(all_nodes, x=getattr(args, "x", None), y=getattr(args, "y", None))
+    node_meta = {
         "position": position,
-        "data": {
-            "python_code": {
-                "code": code,
-                "name": "Webhook trigger Node",
-                "libraries": libraries,
-                "entrypoint": "main",
-            },
-            "webhook_trigger": 0,
-            "webhook_trigger_path": webhook_path,
-        },
-    })
-    api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
+        "color": _NODE_DEFAULTS["webhook-trigger"]["color"],
+        "icon": _NODE_DEFAULTS["webhook-trigger"]["icon"],
+        "size": _NODE_DEFAULTS["webhook-trigger"]["size"],
+        "parentId": None,
+    }
+    api_patch(f"/webhook-trigger-nodes/{node_id}/", {"metadata": node_meta})
     print(f"  Position: x={position['x']}, y={position['y']}")
-    print(f"  Metadata updated.")
     return result
 
 
 def cmd_create_note(args):
-    """Add a note to a flow's canvas. Notes are metadata-only (no DB record)."""
+    """Add a note to a flow's canvas (NoteNode DB record + metadata)."""
     graph_id = args.graph_id
     text = args.text
     graph = api_get(f"/graphs/{graph_id}/")
-    metadata = graph.get("metadata", {})
-    nodes = metadata.setdefault("nodes", [])
 
     # Position near a target node if specified, otherwise auto-place
     near = getattr(args, "near", None)
@@ -338,55 +286,57 @@ def cmd_create_note(args):
     y = getattr(args, "y", None)
 
     if near:
-        for n in nodes:
-            if n.get("node_name", "").lower() == near.lower():
-                pos = n.get("position", {})
-                x = x if x is not None else pos.get("x", 0)
-                y = y if y is not None else pos.get("y", 0) + 120
-                break
+        # Scan all node types for a matching name to read position
+        for list_key in _NODE_TYPE_ENDPOINTS:
+            for n in graph.get(list_key, []):
+                if n.get("node_name", "").lower() == near.lower():
+                    pos = (n.get("metadata") or {}).get("position", {})
+                    x = x if x is not None else pos.get("x", 0)
+                    y = y if y is not None else pos.get("y", 0) + 120
+                    break
 
     if x is None:
         x = 0
     if y is None:
         y = 300
 
-    color = getattr(args, "color", "#ffffd1") or "#ffffd1"
-    note_id = str(uuid.uuid4())
+    bg_color = getattr(args, "color", "#ffffd1") or "#ffffd1"
 
     # Auto-name: Note (#N)
-    existing_notes = [n for n in nodes if n.get("type") == "note"]
+    existing_notes = graph.get("note_node_list", [])
     note_num = len(existing_notes) + 1
     node_name = f"Note (#{note_num})"
 
-    nodes.append({
-        "id": note_id,
-        "data": {"content": text, "backgroundColor": color},
-        "icon": "ti ti-note",
-        "size": {"width": 200, "height": 150},
-        "type": "note",
-        "color": color,
-        "ports": None,
-        "category": "web",
-        "parentId": None,
-        "position": {"x": x, "y": y},
-        "input_map": {},
+    # Create NoteNode in DB
+    payload = {
         "node_name": node_name,
-        "output_variable_path": None,
-    })
-
-    api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-    print(f"Created {node_name} at x={x}, y={y}")
+        "graph": graph_id,
+        "content": text,
+        "metadata": {
+            "position": {"x": x, "y": y},
+            "color": _NODE_DEFAULTS["note"]["color"],
+            "icon": _NODE_DEFAULTS["note"]["icon"],
+            "size": _NODE_DEFAULTS["note"]["size"],
+            "parentId": None,
+            "backgroundColor": bg_color,
+        },
+    }
+    result = api_post("/note-nodes/", payload)
+    note_id = result.get("id")
+    print(f"Created {node_name} (id={note_id}) at x={x}, y={y}")
     print(f"  Text: {text[:80]}{'...' if len(text) > 80 else ''}")
+    return result
 
 
 def cmd_delete_edge(args):
     """Delete an edge between two nodes in a flow."""
     graph_id = args.graph_id
     graph = _get_graph(graph_id)
+    start_id = resolve_node_id(args.start_node, graph)
+    end_id = resolve_node_id(args.end_node, graph)
     edges = graph.get("edge_list", [])
     for e in edges:
-        if e.get("start_key") == args.start_node and e.get("end_key") == args.end_node:
-            from common import api_delete
+        if e.get("start_node_id") == start_id and e.get("end_node_id") == end_id:
             api_delete(f"/edges/{e['id']}/")
             print(f"Deleted edge {e['id']}: {args.start_node} → {args.end_node}")
             return
@@ -397,27 +347,18 @@ def cmd_delete_edge(args):
 def cmd_create_edge(args):
     """Create an edge between two nodes in a flow."""
     graph_id = args.graph_id
+    graph = _get_graph(graph_id)
+    start_id = resolve_node_id(args.start_node, graph)
+    end_id = resolve_node_id(args.end_node, graph)
     result = api_post("/edges/", {
-        "start_key": args.start_node,
-        "end_key": args.end_node,
+        "start_node_id": start_id,
+        "end_node_id": end_id,
         "graph": graph_id,
     })
     eid = result.get("id")
-    print(f"Created edge {eid}: {args.start_node} \u2192 {args.end_node}")
+    print(f"Created edge {eid}: {args.start_node} \u2192 {args.end_node} ({start_id}\u2192{end_id})")
     return result
 
-
-# Node type to port suffix mapping
-_PORT_MAP = {
-    "start": ("start-start", None),
-    "python": ("python-out", "python-in"),
-    "webhook-trigger": ("webhook-trigger-out", None),
-    "telegram-trigger": ("telegram-trigger-out", None),
-    "classification-decision-table": ("cdt-out", "cdt-in"),
-    "table": ("table-out", "table-in"),
-    "project": ("project-out", "project-in"),
-    "code-agent": ("code-agent-out", "code-agent-in"),
-}
 
 # UI rendering defaults per node type
 _NODE_DEFAULTS = {
@@ -425,6 +366,11 @@ _NODE_DEFAULTS = {
         "icon": "ti ti-player-play-filled",
         "size": {"width": 125, "height": 60},
         "color": "#d3d3d3",
+    },
+    "end": {
+        "icon": "ti ti-player-stop-filled",
+        "size": {"width": 125, "height": 60},
+        "color": "#ef4444",
     },
     "python": {
         "icon": "ti ti-brand-python",
@@ -461,110 +407,70 @@ _NODE_DEFAULTS = {
         "size": {"width": 330, "height": 60},
         "color": "#00e676",
     },
+    "llm": {
+        "icon": "ti ti-brain",
+        "size": {"width": 330, "height": 60},
+        "color": "#f472b6",
+    },
+    "file-extractor": {
+        "icon": "ti ti-file-text",
+        "size": {"width": 330, "height": 60},
+        "color": "#fb923c",
+    },
+    "audio": {
+        "icon": "ti ti-microphone",
+        "size": {"width": 330, "height": 60},
+        "color": "#38bdf8",
+    },
+    "note": {
+        "icon": "ti ti-note",
+        "size": {"width": 250, "height": 120},
+        "color": "#fbbf24",
+    },
+    "subgraph": {
+        "icon": "ti ti-hierarchy-2",
+        "size": {"width": 330, "height": 60},
+        "color": "#c084fc",
+    },
+}
+
+# Map node list keys to their PATCH API endpoints
+_NODE_TYPE_ENDPOINTS = {
+    "start_node_list": "/startnodes/",
+    "end_node_list": "/endnodes/",
+    "python_node_list": "/pythonnodes/",
+    "crew_node_list": "/crew-nodes/",
+    "code_agent_node_list": "/code-agent-nodes/",
+    "llm_node_list": "/llmnodes/",
+    "file_extractor_node_list": "/file-extractor-nodes/",
+    "audio_transcription_node_list": "/audio-transcription-nodes/",
+    "webhook_trigger_node_list": "/webhook-trigger-nodes/",
+    "telegram_trigger_node_list": "/telegram-trigger-nodes/",
+    "decision_table_node_list": "/decision-table-node/",
+    "classification_decision_table_node_list": "/classification-decision-table-node/",
+    "note_node_list": "/note-nodes/",
+    "subgraph_node_list": "/subgraph-nodes/",
 }
 
 
-def _parse_input_map(code):
-    """Extract main() function parameters from Python code and build input_map.
-
-    Maps each parameter (except **kwargs) to variables.<param_name>.
-    Skips 'self' and **kwargs-style params.
-    """
-    import re
-    input_map = {}
-    # Find the main() function definition — may span multiple lines
-    match = re.search(r'def\s+main\s*\((.*?)\)\s*[-:]', code, re.DOTALL)
-    if not match:
-        return input_map
-    params_str = match.group(1)
-    # Split on commas, handling defaults and type hints
-    for param in params_str.split(','):
-        param = param.strip()
-        if not param or param.startswith('**') or param.startswith('*'):
-            continue
-        # Extract just the parameter name (before : or =)
-        name = re.split(r'[=:\s]', param)[0].strip()
-        if name and name != 'self':
-            input_map[name] = f"variables.{name}"
-    return input_map
-
-
-def _build_node_data(db_node, meta_type):
-    """Build the metadata 'data' dict from a DB node, matching the UI format."""
-    if meta_type == "start":
-        return {"initialState": db_node.get("variables", {})}
-    elif meta_type == "python":
-        pc = db_node.get("python_code", {})
-        return {
-            "code": pc.get("code", ""),
-            "name": db_node.get("node_name", ""),
-            "db_id": pc.get("id"),
-            "label": db_node.get("node_name", ""),
-            "libraries": pc.get("libraries", []),
-            "entrypoint": "main",
-        }
-    elif meta_type == "webhook-trigger":
-        pc = db_node.get("python_code", {})
-        return {
-            "python_code": {
-                "code": pc.get("code", ""),
-                "name": "Webhook trigger Node",
-                "libraries": pc.get("libraries", []),
-                "entrypoint": "main",
-            },
-            "webhook_trigger": 0,
-            "webhook_trigger_path": db_node.get("webhook_trigger_path", "default"),
-        }
-    elif meta_type == "telegram-trigger":
-        return {"name": db_node.get("node_name", "")}
-    elif meta_type == "classification-decision-table":
-        return {"name": db_node.get("node_name", "")}
-    elif meta_type == "table":
-        return {
-            "name": db_node.get("node_name", ""),
-            "table": {
-                "graph": db_node.get("graph"),
-                "condition_groups": db_node.get("condition_groups", []),
-                "node_name": db_node.get("node_name", ""),
-                "default_next_node": db_node.get("default_next_node"),
-                "next_error_node": db_node.get("next_error_node"),
-            },
-        }
-    elif meta_type == "project":
-        crew = db_node.get("crew") or {}
-        crew_id = crew.get("id") if isinstance(crew, dict) else crew
-        return {"id": crew_id, "name": db_node.get("node_name", "")}
-    elif meta_type == "code-agent":
-        return {
-            "llm_config_id": db_node.get("llm_config"),
-            "agent_mode": db_node.get("agent_mode", "build"),
-            "system_prompt": db_node.get("system_prompt", ""),
-            "stream_handler_code": db_node.get("stream_handler_code", ""),
-            "libraries": db_node.get("libraries", []),
-            "polling_interval_ms": db_node.get("polling_interval_ms", 1000),
-            "silence_indicator_s": db_node.get("silence_indicator_s", 3),
-            "indicator_repeat_s": db_node.get("indicator_repeat_s", 5),
-            "chunk_timeout_s": db_node.get("chunk_timeout_s", 30),
-            "inactivity_timeout_s": db_node.get("inactivity_timeout_s", 120),
-            "max_wait_s": db_node.get("max_wait_s", 300),
-        }
-    return {"name": db_node.get("node_name", "")}
-
 
 def cmd_init_metadata(args):
-    """Generate metadata (node positions + connections) from DB state.
+    """Set UI positions on each node's own metadata field.
 
-    Reads all nodes and edges from the DB, assigns positions using
-    auto-layout, and creates metadata connections matching the edges.
-    Existing metadata is replaced.
+    Post-RC, Graph.metadata is no longer used. The frontend reads
+    position/color/icon/size from each node's individual `metadata`
+    JSONField and derives connections from DB edges at load time.
+
+    This command assigns auto-layout positions and PATCHes each
+    node's metadata field via its type-specific API endpoint.
     """
     graph_id = args.graph_id
     graph = api_get(f"/graphs/{graph_id}/")
 
-    # Collect all nodes by name with full DB data
-    node_info = {}  # name -> {type, uuid, db_node}
+    # Collect all nodes: (list_key, meta_type, endpoint)
     type_lists = [
         ("start_node_list", "start"),
+        ("end_node_list", "end"),
         ("python_node_list", "python"),
         ("webhook_trigger_node_list", "webhook-trigger"),
         ("telegram_trigger_node_list", "telegram-trigger"),
@@ -572,13 +478,19 @@ def cmd_init_metadata(args):
         ("decision_table_node_list", "table"),
         ("crew_node_list", "project"),
         ("code_agent_node_list", "code-agent"),
+        ("llm_node_list", "llm"),
+        ("file_extractor_node_list", "file-extractor"),
+        ("audio_transcription_node_list", "audio"),
+        ("note_node_list", "note"),
+        ("subgraph_node_list", "subgraph"),
     ]
 
+    # node_info: name -> {type, db_node, list_key}
+    node_info = {}
     for list_key, meta_type in type_lists:
         for n in graph.get(list_key, []):
             name = n.get("node_name", "")
-            nid = str(uuid.uuid4())
-            node_info[name] = {"type": meta_type, "uuid": nid, "db_node": n}
+            node_info[name] = {"type": meta_type, "db_node": n, "list_key": list_key}
 
     if not node_info:
         print("No nodes found in flow.")
@@ -590,11 +502,13 @@ def cmd_init_metadata(args):
     step_x = -400
     step_gap = 400
 
+    # Build id->name map for edge traversal
+    id_to_name = {info["db_node"]["id"]: name for name, info in node_info.items()}
+
     # BFS-ish: start from nodes that have no incoming edges
-    targets = {e.get("end_key") for e in edges}
+    targets = {id_to_name.get(e.get("end_node_id")) for e in edges}
     roots = [n for n in node_info if n not in targets or n == "__start__"]
 
-    # Place __start__ first, then stack trigger roots below it in the same column
     trigger_types = {"webhook-trigger", "telegram-trigger"}
     trigger_roots = [n for n in roots if n != "__start__" and node_info[n]["type"] in trigger_types]
     other_roots = [n for n in roots if n != "__start__" and node_info[n]["type"] not in trigger_types]
@@ -616,9 +530,9 @@ def cmd_init_metadata(args):
         if not remaining:
             break
         for e in edges:
-            src = e.get("start_key")
-            tgt = e.get("end_key")
-            if tgt == "__end__":
+            src = id_to_name.get(e.get("start_node_id"))
+            tgt = id_to_name.get(e.get("end_node_id"))
+            if not src or not tgt or tgt == "__end__":
                 continue
             if src in placed and tgt not in placed and tgt in node_info:
                 src_x = placed[src]["x"]
@@ -633,126 +547,28 @@ def cmd_init_metadata(args):
         max_x += step_gap
         placed[name] = {"x": max_x, "y": 0}
 
-    # Build metadata nodes with full UI structure
-    meta_nodes = []
+    # PATCH each node's own metadata field with position/color/icon/size
+    patched = 0
     for name, info in node_info.items():
         pos = placed.get(name, {"x": 0, "y": 0})
         defaults = _NODE_DEFAULTS.get(info["type"], _NODE_DEFAULTS["python"])
-        data = _build_node_data(info["db_node"], info["type"])
-
-        # input_map: prefer DB value, fall back to auto-parse for Python nodes
-        db_input_map = info["db_node"].get("input_map") or {}
-        if not db_input_map and info["type"] == "python":
-            code = info["db_node"].get("python_code", {}).get("code", "")
-            db_input_map = _parse_input_map(code)
-
-        # output_variable_path: prefer DB value, default to "variables" for Python nodes
-        db_ovp = info["db_node"].get("output_variable_path")
-        if db_ovp is None and info["type"] == "python":
-            db_ovp = "variables"
-
-        meta_nodes.append({
-            "id": info["uuid"],
-            "data": data,
+        endpoint = _NODE_TYPE_ENDPOINTS.get(info["list_key"])
+        if not endpoint:
+            print(f"  ⚠ No endpoint for {info['list_key']}, skipping {name}")
+            continue
+        node_id = info["db_node"]["id"]
+        # Preserve any existing metadata fields, overlay position/color/icon/size
+        existing_meta = info["db_node"].get("metadata") or {}
+        node_meta = {
+            **existing_meta,
+            "position": pos,
+            "color": defaults["color"],
             "icon": defaults["icon"],
             "size": defaults["size"],
-            "type": info["type"],
-            "color": defaults["color"],
-            "ports": None,
-            "category": "web",
             "parentId": None,
-            "position": pos,
-            "input_map": db_input_map,
-            "node_name": name,
-            "output_variable_path": db_ovp,
-        })
+        }
+        api_patch(f"{endpoint}{node_id}/", {"metadata": node_meta})
+        patched += 1
+        print(f"  {info['type']:30s} {name:30s} x={pos['x']:>6} y={pos['y']:>6}  (id={node_id})")
 
-    # Build metadata connections from edges
-    connections = []
-    for e in edges:
-        src_name = e.get("start_key")
-        tgt_name = e.get("end_key")
-        if tgt_name == "__end__" or src_name not in node_info or tgt_name not in node_info:
-            continue
-        src_info = node_info[src_name]
-        tgt_info = node_info[tgt_name]
-        src_port_suffix = _PORT_MAP.get(src_info["type"], ("out", "in"))[0]
-        tgt_port_suffix = _PORT_MAP.get(tgt_info["type"], ("out", "in"))[1]
-        if not tgt_port_suffix:
-            print(f"  ⚠ Skipped edge {src_name} → {tgt_name}: "
-                  f"{tgt_info['type']} nodes have no input port.")
-            continue
-        src_port = f"{src_info['uuid']}_{src_port_suffix}"
-        tgt_port = f"{tgt_info['uuid']}_{tgt_port_suffix}"
-        connections.append({
-            "id": f"{src_port}+{tgt_port}",
-            "type": "segment",
-            "behavior": "fixed",
-            "category": "default",
-            "sourceNodeId": src_info["uuid"],
-            "sourcePortId": src_port,
-            "targetNodeId": tgt_info["uuid"],
-            "targetPortId": tgt_port,
-        })
-
-    # Build connections from Decision Table condition groups
-    dt_types = {"table", "classification-decision-table"}
-    for name, info in node_info.items():
-        if info["type"] not in dt_types:
-            continue
-        db_node = info["db_node"]
-        # Condition group outputs
-        for cg in db_node.get("condition_groups", []):
-            next_node = cg.get("next_node")
-            group_name = cg.get("group_name", "")
-            if not next_node or next_node == "__end__" or next_node not in node_info:
-                continue
-            tgt_info = node_info[next_node]
-            safe_group = group_name.lower().replace(" ", "-")
-            src_port = f"{info['uuid']}_decision-out-{safe_group}"
-            tgt_port_suffix = _PORT_MAP.get(tgt_info["type"], ("out", "in"))[1] or "in"
-            tgt_port = f"{tgt_info['uuid']}_{tgt_port_suffix}"
-            connections.append({
-                "id": f"{src_port}+{tgt_port}",
-                "type": "segment",
-                "behavior": "fixed",
-                "category": "default",
-                "sourceNodeId": info["uuid"],
-                "sourcePortId": src_port,
-                "targetNodeId": tgt_info["uuid"],
-                "targetPortId": tgt_port,
-            })
-        # Default next node
-        default_next = db_node.get("default_next_node")
-        if default_next and default_next != "__end__" and default_next in node_info:
-            tgt_info = node_info[default_next]
-            src_port = f"{info['uuid']}_decision-default"
-            tgt_port_suffix = _PORT_MAP.get(tgt_info["type"], ("out", "in"))[1] or "in"
-            tgt_port = f"{tgt_info['uuid']}_{tgt_port_suffix}"
-            connections.append({
-                "id": f"{src_port}+{tgt_port}",
-                "type": "segment",
-                "behavior": "fixed",
-                "category": "default",
-                "sourceNodeId": info["uuid"],
-                "sourcePortId": src_port,
-                "targetNodeId": tgt_info["uuid"],
-                "targetPortId": tgt_port,
-            })
-
-    # Build ReactFlow edges — the frontend renders visual lines from these,
-    # separate from the connections array used for routing.
-    rf_edges = []
-    for conn in connections:
-        rf_edges.append({
-            "source": conn["sourceNodeId"],
-            "target": conn["targetNodeId"],
-        })
-
-    metadata = {"nodes": meta_nodes, "connections": connections, "edges": rf_edges, "groups": []}
-    api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-    print(f"Initialized metadata for flow {graph_id}:")
-    print(f"  {len(meta_nodes)} nodes, {len(connections)} connections")
-    for n in meta_nodes:
-        pos = n["position"]
-        print(f"    {n['type']:30s} {n['node_name']:30s} x={pos['x']:>6} y={pos['y']:>6}")
+    print(f"\nInitialized metadata on {patched} nodes in flow {graph_id}.")

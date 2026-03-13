@@ -295,6 +295,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             + [n.id for n in file_extractor_node_list]
             + [n.id for n in audio_transcription_node_list]
             + [n.id for n in llm_node_list]
+            + [n.id for n in code_agent_node_list]
             + [n.id for n in decision_table_node_list]
             + [n.default_next_node_id for n in decision_table_node_list]
             + [n.next_error_node_id for n in decision_table_node_list]
@@ -351,7 +352,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         for item in code_agent_node_list:
             code_agent_node_data_list.append(
                 CodeAgentNodeData(
-                    node_name=self.converter_service._generate_node_name_by_id(item.id),
+                    node_name=resolver(item.id),
                     llm_config_id=item.llm_config_id,
                     agent_mode=item.agent_mode,
                     session_id=item.session_id,

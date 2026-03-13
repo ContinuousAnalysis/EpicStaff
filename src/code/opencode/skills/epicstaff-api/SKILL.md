@@ -1,7 +1,7 @@
 ---
 id: epicstaff
 name: EpicStaff Flow Management
-version: 3.5
+version: 3.10
 trigger: always_on
 triggers: [epicstaff, epic-staff, flows, sessions]
 scope: [api, cli, integration]
@@ -12,7 +12,7 @@ description: EpicStaff flow management — inspecting, debugging, syncing, and p
 
 ## Primary Tool
 
-Use `epicstaff_tools.py` for all flow and session operations. The CLI handles dual-store sync (DB + metadata), error handling, and correct serialization — things that break silently when done via raw HTTP calls.
+Use `epicstaff_tools.py` for all flow and session operations. The CLI handles DB operations, error handling, and correct serialization — things that break silently when done via raw HTTP calls.
 
 Do not write raw `urllib`, `requests`, `curl`, or ad-hoc scripts against the Django API. The CLI exists because the API has subtle requirements (e.g., PATCH python_code without `libraries` wipes them; agent `tool_ids` PATCH is destructive replace). These are easy to get wrong in one-off scripts.
 
@@ -89,6 +89,31 @@ The `push` and `patch-*` CLI commands update both automatically. This is the mai
 
 `_build_route_maps` (in `session_manager_service.py`) builds the route map from **metadata connections**, matching DB `node_name` against metadata `node_name` to find UUIDs. If the names don't match, routing fails silently. DB edges only handle non-DT routing. Both Decision Table (DT) and Classification Decision Table (CDT) nodes use this mechanism.
 
+### Python Node Code Convention
+
+Python nodes and Webhook nodes require a `def main(...)` entrypoint. The crew executor calls `main()` at runtime — code without it fails with `name 'main' is not defined`.
+
+**Python nodes:** `main()` receives keyword arguments matching the node's `input_map` keys. It must return a dict that gets written to the node's `output_variable_path`.
+
+```python
+def main(city="Unknown", units="celsius"):
+    weather = {"city": city, "temperature": 18.5, "conditions": "partly cloudy"}
+    return {"weather_data": weather}
+```
+
+**Webhook nodes:** `main()` receives the full trigger payload dict.
+
+```python
+def main(trigger_payload=None):
+    body = trigger_payload.get("body", {})
+    city = body.get("city")
+    if not city:
+        return {"error": "Missing 'city' field", "status": 400}
+    return {"city": city}
+```
+
+The CLI warns if pushed/patched code is missing `def main(`. Always define it.
+
 ### Critical Gotchas
 
 - **`init-metadata` is mandatory after any structural change** (create-node, create-edge, delete, rename). Without it the frontend cannot render the new nodes — they show as black dots, connections are missing, and routing breaks silently.
@@ -151,7 +176,9 @@ Flags can go in any order: `sessions -g 55 -n 2 -r` and `sessions -r -g 55 -n 2`
 
 > When you discover new system behavior or encounter a recurring problem, add a note here.
 
-- **Decision Table nodes have NO edges — only metadata connections.** DT outputs are wired via metadata connections, not the `edge_list` DB table. Use `connections` (not `edges`) to see DT wiring. When rewiring, use `patch-dt` — do not create/delete edges.
+- **Edges use integer node IDs, not name strings.** The DB stores `start_node_id` / `end_node_id` as integers. The CLI resolves node names to IDs automatically — you still pass names like `create-edge "__start__" "Data Enricher"`. The `edges` command shows both names and IDs. Renaming a node does NOT require edge updates (IDs are stable).
+- **Graph.metadata is no longer used (post-RC).** The frontend saves `{nodes:[], connections:[]}` on every UI save. Node positions are stored in each node's own `metadata` JSON field. Connections are derived from DB edges at load time. The backend runtime reads directly from DB models. All `patch-*` commands write only to DB.
+- **`init-metadata` sets node positions** by PATCHing each node's own `metadata` field with `{position, color, icon, size}`. It does NOT write to `Graph.metadata`.
+- **Decision Table nodes have NO edges — only DB refs.** DT outputs are wired via `condition_group.next_node_id`, `default_next_node_id`, `next_error_node_id`. Use `connections` (not `edges`) to see DT wiring. When rewiring, use `patch-dt`.
 - **Python node API endpoint is `/pythonnodes/`** (no hyphen). Other endpoints: `/code-agent-nodes/`, `/crewnodes/`, `/llmnodes/`.
-- **`init-metadata` regenerates all connections** from both DB edges and DT condition groups. Always run after structural changes.
 - **DT `condition_groups` PATCH requires `conditions: []` in each group.** The viewset calls `pop("conditions")` — missing key causes silent rollback. The `patch-dt` command auto-adds this.

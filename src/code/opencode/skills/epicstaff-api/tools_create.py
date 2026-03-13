@@ -17,7 +17,7 @@ def cmd_create_tool(args):
     payload = {
         "name": name,
         "description": description,
-        "python_code": {"code": code, "libraries": ""},
+        "python_code": {"code": code, "libraries": []},
         "args_schema": {"type": "object", "properties": {}},
     }
     result = api_post("/python-code-tool/", payload)

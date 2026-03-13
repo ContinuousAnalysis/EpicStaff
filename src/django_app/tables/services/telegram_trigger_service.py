@@ -53,9 +53,7 @@ class TelegramTriggerService(metaclass=SingletonMeta):
         # TODO: update this to extend to other tunnels
         webhook_trigger: WebhookTrigger = telegram_trigger_instance.webhook_trigger
         if webhook_trigger is None or webhook_trigger.ngrok_webhook_config is None:
-            raise RegisterTelegramTriggerError(
-                f"Webhook trigger does not set", status_code=400
-            )
+            return
         try:
             webhook_tunnel_url = self.webhook_trigger_service.get_tunnel_url(
                 ngrok_webhook_config=webhook_trigger.ngrok_webhook_config

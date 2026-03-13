@@ -314,6 +314,20 @@ def _reap_zombies():
             break
 
 
+def _has_active_sessions(inst: Instance) -> bool:
+    """Check if the OC instance has any active (non-idle) sessions."""
+    try:
+        req = urllib.request.Request(f"http://localhost:{inst.port}/session/status")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            statuses = json.loads(resp.read())
+            for _sid, s in statuses.items():
+                if s.get("type") != "idle":
+                    return True
+    except Exception:
+        pass
+    return False
+
+
 def reap_idle():
     """Kill idle instances and remove dead ones."""
     _reap_zombies()
@@ -324,6 +338,9 @@ def reap_idle():
             pool.remove(inst.llm_config_id)
             continue
         if (now - inst.last_used) > IDLE_TIMEOUT:
+            if _has_active_sessions(inst):
+                inst.last_used = now
+                continue
             print(f"[InstanceManager] Reaping idle instance config={inst.llm_config_id}")
             stop_instance(inst.llm_config_id)
 

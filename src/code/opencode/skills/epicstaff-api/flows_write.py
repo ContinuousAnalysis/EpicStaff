@@ -39,24 +39,7 @@ def _push_cdt(spec, content, graph_id):
     else:
         db_payload = {spec.field: content}
     api_patch(f"/classification-decision-table-node/{node_id}/", db_payload)
-
-    graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    for n in metadata.get("nodes", []):
-        nn = n.get("node_name", n.get("data", {}).get("name", ""))
-        if nn == node_name and "table" in n.get("data", {}):
-            table = n["data"]["table"]
-            if spec.field == "pre_computation_code":
-                table.setdefault("pre_computation", {})["code"] = content
-            elif spec.field == "post_computation_code":
-                table.setdefault("post_computation", {})["code"] = content
-            elif spec.field == "condition_groups":
-                table["condition_groups"] = content
-            elif spec.field == "prompts":
-                table["prompts"] = content
-            api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-            break
-    print(f"  ✅ {Path(spec.path).name} → CDT '{node_name}' .{spec.field}  [DB+Meta]")
+    print(f"  ✅ {Path(spec.path).name} → CDT '{node_name}' .{spec.field}  [DB]")
     return True
 
 
@@ -68,17 +51,10 @@ def _push_python(spec, content, graph_id):
     node_id = node["id"]
     node_name = node.get("node_name", "?")
     libs = (node.get("python_code", {}) or {}).get("libraries", "")
+    if "def main(" not in content:
+        print(f"  ⚠️  {Path(spec.path).name}: no 'def main(...)' — Python nodes require a main() entrypoint")
     api_patch(f"/pythonnodes/{node_id}/", {"python_code": {"code": content, "libraries": libs}})
-
-    graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    for n in metadata.get("nodes", []):
-        nn = n.get("node_name", n.get("data", {}).get("name", ""))
-        if nn == node_name and n.get("type", "").startswith("python"):
-            n.get("data", {})["code"] = content
-            api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-            break
-    print(f"  ✅ {Path(spec.path).name} → Python '{node_name}'  [DB+Meta]")
+    print(f"  ✅ {Path(spec.path).name} → Python '{node_name}'  [DB]")
     return True
 
 
@@ -90,22 +66,17 @@ def _push_webhook(spec, content, graph_id):
     node_id = node["id"]
     node_name = node.get("node_name", "?")
     libs = (node.get("python_code", {}) or {}).get("libraries", [])
+    if "def main(" not in content:
+        print(f"  ⚠️  {Path(spec.path).name}: no 'def main(...)' — Webhook nodes require a main() entrypoint")
     api_patch(f"/webhook-trigger-nodes/{node_id}/", {"python_code": {"code": content, "libraries": libs}})
-
-    graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    for n in metadata.get("nodes", []):
-        nn = n.get("node_name", n.get("data", {}).get("name", ""))
-        if nn == node_name and "webhook" in n.get("type", ""):
-            n.get("data", {})["code"] = content
-            api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-            break
-    print(f"  ✅ {Path(spec.path).name} → Webhook '{node_name}'  [DB+Meta]")
+    print(f"  ✅ {Path(spec.path).name} → Webhook '{node_name}'  [DB]")
     return True
 
 
 def cmd_push(args):
-    """Push file(s) to DB + metadata."""
+    """Push file(s) to DB."""
+    if not args.path:
+        args.path = str(_flows_dir(args.graph_id))
     specs = _discover_files(args.path)
     if not specs:
         print(f"No recognized files in: {args.path}")
@@ -200,37 +171,8 @@ def cmd_pull(args):
 # Patching
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _sync_cdt_metadata(graph_id, node_name, field, value):
-    graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    for n in metadata.get("nodes", []):
-        nn = n.get("node_name", n.get("data", {}).get("name", ""))
-        if nn == node_name and "table" in n.get("data", {}):
-            table = n["data"]["table"]
-            if field == "pre_computation_code":
-                table.setdefault("pre_computation", {})["code"] = value
-            elif field == "post_computation_code":
-                table.setdefault("post_computation", {})["code"] = value
-            elif field == "pre_input_map":
-                table.setdefault("pre_computation", {})["input_map"] = value
-                table["pre_input_map"] = value
-            elif field == "post_input_map":
-                table.setdefault("post_computation", {})["input_map"] = value
-                table["post_input_map"] = value
-            elif field == "condition_groups":
-                table["condition_groups"] = value
-            elif field == "prompts":
-                table["prompts"] = value
-            else:
-                table[field] = value
-            api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-            print(f"  Metadata — '{node_name}' synced.")
-            return
-    print(f"  Warning: '{node_name}' not found in metadata.")
-
-
 def cmd_patch_cdt(args):
-    """Patch a CDT field (DB + metadata)."""
+    """Patch a CDT field in DB."""
     node_name = args.node_name
     field = args.field
     graph_id = args.graph_id
@@ -248,11 +190,10 @@ def cmd_patch_cdt(args):
     print(f"PATCHing CDT '{node_name}' (id={cdt_id}), field='{field}'")
     result = api_patch(f"/classification-decision-table-node/{cdt_id}/", {field: value})
     print(f"  DB updated.")
-    _sync_cdt_metadata(graph_id, node_name, field, value)
 
 
 def cmd_patch_python(args):
-    """Patch Python node code (DB + metadata)."""
+    """Patch Python node code in DB."""
     graph_id = args.graph_id
     node_name = args.node_name
     value = _read_value(args)
@@ -269,21 +210,15 @@ def cmd_patch_python(args):
     node_id = db_node["id"]
     libs = (db_node.get("python_code", {}) or {}).get("libraries", "")
     print(f"PATCHing Python node '{node_name}' (id={node_id})")
+    if "def main(" not in value:
+        print(f"  ⚠️  WARNING: Code does not contain 'def main(...)'. Python nodes require a main() entrypoint.")
+        print(f"     The crew executor calls main() with the node's input_map keys as keyword arguments.")
     api_patch(f"/pythonnodes/{node_id}/", {"python_code": {"code": value, "libraries": libs}})
     print(f"  DB updated.")
-    metadata = graph.get("metadata", {})
-    for n in metadata.get("nodes", []):
-        nn = n.get("node_name", n.get("data", {}).get("name", ""))
-        if nn == node_name:
-            n.get("data", {})["code"] = value
-            api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-            print(f"  Metadata synced.")
-            return
-    print(f"  Warning: '{node_name}' not found in metadata.")
 
 
 def cmd_patch_webhook(args):
-    """Patch webhook node code (DB + metadata)."""
+    """Patch webhook node code in DB."""
     graph_id = args.graph_id
     node_name = args.node_name
     value = _read_value(args)
@@ -300,26 +235,14 @@ def cmd_patch_webhook(args):
     node_id = db_node["id"]
     libs = (db_node.get("python_code", {}) or {}).get("libraries", [])
     print(f"PATCHing Webhook node '{node_name}' (id={node_id})")
+    if "def main(" not in value:
+        print(f"  ⚠️  WARNING: Code does not contain 'def main(...)'. Webhook nodes require a main() entrypoint.")
     api_patch(f"/webhook-trigger-nodes/{node_id}/", {"python_code": {"code": value, "libraries": libs}})
     print(f"  DB updated.")
-    metadata = graph.get("metadata", {})
-    for n in metadata.get("nodes", []):
-        nn = n.get("node_name", n.get("data", {}).get("name", ""))
-        if nn == node_name and "webhook" in n.get("type", ""):
-            data = n.get("data", {})
-            data["code"] = value
-            if "python_code" in data:
-                data["python_code"]["code"] = value
-            else:
-                data["python_code"] = {"code": value, "name": "Python Code", "entrypoint": "main", "libraries": libs}
-            api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-            print(f"  Metadata synced (data.code + data.python_code.code).")
-            return
-    print(f"  Warning: '{node_name}' not found in webhook metadata.")
 
 
 def cmd_patch_code_agent(args):
-    """Patch Code Agent node fields (DB + metadata)."""
+    """Patch Code Agent node fields in DB."""
     graph_id = args.graph_id
     node_name = args.node_name
     graph = _get_graph(graph_id)
@@ -336,42 +259,28 @@ def cmd_patch_code_agent(args):
 
     # Build DB payload from provided flags
     db_payload = {}
-    meta_updates = {}
     if getattr(args, "value", None) or getattr(args, "value_file", None):
-        value = _read_value(args)
-        db_payload["stream_handler_code"] = value
-        meta_updates["stream_handler_code"] = value
+        db_payload["stream_handler_code"] = _read_value(args)
     if getattr(args, "llm_config", None):
         db_payload["llm_config"] = int(args.llm_config)
-        meta_updates["llm_config_id"] = int(args.llm_config)
     if getattr(args, "system_prompt", None):
         db_payload["system_prompt"] = args.system_prompt
-        meta_updates["system_prompt"] = args.system_prompt
     if getattr(args, "system_prompt_file", None):
         with open(args.system_prompt_file) as f:
-            sp = f.read()
-        db_payload["system_prompt"] = sp
-        meta_updates["system_prompt"] = sp
+            db_payload["system_prompt"] = f.read()
     if getattr(args, "input_map", None):
-        parsed = json.loads(args.input_map)
-        db_payload["input_map"] = parsed
+        db_payload["input_map"] = json.loads(args.input_map)
     if getattr(args, "output_variable_path", None):
         db_payload["output_variable_path"] = args.output_variable_path
     if getattr(args, "libraries", None):
-        libs = [l.strip() for l in args.libraries.split(",") if l.strip()]
-        db_payload["libraries"] = libs
-        meta_updates["libraries"] = libs
+        db_payload["libraries"] = [l.strip() for l in args.libraries.split(",") if l.strip()]
     if getattr(args, "session_id", None) is not None:
         db_payload["session_id"] = args.session_id
-        meta_updates["session_id"] = args.session_id
     if getattr(args, "output_schema_file", None):
         with open(args.output_schema_file) as f:
-            schema = json.load(f)
-        db_payload["output_schema"] = schema
-        meta_updates["output_schema"] = schema
+            db_payload["output_schema"] = json.load(f)
     if getattr(args, "agent_mode", None):
         db_payload["agent_mode"] = args.agent_mode
-        meta_updates["agent_mode"] = args.agent_mode
 
     if not db_payload:
         print("No fields to patch. Use --value, --llm-config, --system-prompt, --input-map, --output-variable-path, or --libraries.", file=sys.stderr)
@@ -384,25 +293,9 @@ def cmd_patch_code_agent(args):
     api_patch(f"/code-agent-nodes/{node_id}/", db_payload)
     print(f"  DB updated.")
 
-    # Sync metadata
-    if meta_updates or "input_map" in db_payload or "output_variable_path" in db_payload:
-        metadata = graph.get("metadata", {})
-        for n in metadata.get("nodes", []):
-            if n.get("node_name") == node_name:
-                data = n.setdefault("data", {})
-                data.update(meta_updates)
-                if "input_map" in db_payload:
-                    n["input_map"] = db_payload["input_map"]
-                if "output_variable_path" in db_payload:
-                    n["output_variable_path"] = db_payload["output_variable_path"]
-                api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-                print(f"  Metadata synced.")
-                return
-        print(f"  Warning: '{node_name}' not found in metadata.")
-
 
 def cmd_patch_dt(args):
-    """Patch Decision Table node fields (DB + metadata)."""
+    """Patch Decision Table node fields in DB."""
     graph_id = args.graph_id
     node_name = args.node_name
     graph = _get_graph(graph_id)
@@ -448,26 +341,9 @@ def cmd_patch_dt(args):
     api_patch(f"/decision-table-node/{node_id}/", db_payload)
     print(f"  DB updated.")
 
-    # Sync metadata — update table data in metadata node
-    metadata = graph.get("metadata", {})
-    for n in metadata.get("nodes", []):
-        if n.get("node_name") == node_name:
-            data = n.setdefault("data", {})
-            tbl = data.setdefault("table", {})
-            if "condition_groups" in db_payload:
-                tbl["condition_groups"] = db_payload["condition_groups"]
-            if "default_next_node" in db_payload:
-                tbl["default_next_node"] = db_payload["default_next_node"]
-            if "next_error_node" in db_payload:
-                tbl["next_error_node"] = db_payload["next_error_node"]
-            api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-            print(f"  Metadata synced.")
-            return
-    print(f"  Warning: '{node_name}' not found in metadata.")
-
 
 def cmd_patch_libraries(args):
-    """Patch libraries on a Python node (DB + metadata)."""
+    """Patch libraries on a Python node in DB."""
     graph_id = args.graph_id
     node_name = args.node_name
     libs = [l.strip() for l in args.libraries.split(",") if l.strip()]
@@ -484,68 +360,51 @@ def cmd_patch_libraries(args):
     node_id = db_node["id"]
     code = (db_node.get("python_code", {}) or {}).get("code", "")
     api_patch(f"/pythonnodes/{node_id}/", {"python_code": {"code": code, "libraries": libs}})
-    print(f"DB node {node_id} libraries: {libs}")
-    metadata = graph.get("metadata", {})
-    for n in metadata.get("nodes", []):
-        if n.get("node_name") == node_name:
-            n.get("data", {})["libraries"] = libs
-            api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-            print(f"  Metadata synced.")
-            return
-    print(f"  Warning: '{node_name}' not found in metadata.")
+    print(f"  DB node {node_id} libraries: {libs}")
 
 
 def cmd_patch_node_meta(args):
-    """Patch metadata fields on a node (input_map, output_variable_path).
-    Updates BOTH the DB node and the graph metadata."""
+    """Patch input_map / output_variable_path on a node in DB."""
     graph_id = args.graph_id
     node_name = args.node_name
     graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    target = None
-    for n in metadata.get("nodes", []):
-        if n.get("node_name") == node_name:
-            target = n
-            break
-    if not target:
-        print(f"Node '{node_name}' not found in metadata for flow {graph_id}", file=sys.stderr)
-        sys.exit(1)
 
-    # Build DB patch payload and find the DB node + endpoint
     db_payload = {}
     if getattr(args, "input_map", None):
         parsed = json.loads(args.input_map)
-        target["input_map"] = parsed
         db_payload["input_map"] = parsed
         print(f"  input_map set: {parsed}")
     if getattr(args, "output_variable_path", None):
-        target["output_variable_path"] = args.output_variable_path
         db_payload["output_variable_path"] = args.output_variable_path
         print(f"  output_variable_path set: {args.output_variable_path}")
+
+    if not db_payload:
+        print("No fields to patch. Use --input-map or --output-variable-path.", file=sys.stderr)
+        sys.exit(1)
 
     # Patch DB node — detect type from graph node lists
     node_type_endpoints = {
         "python_node_list": "/pythonnodes/",
         "crew_node_list": "/crew-nodes/",
         "code_agent_node_list": "/code-agent-nodes/",
+        "llm_node_list": "/llmnodes/",
+        "file_extractor_node_list": "/file-extractor-nodes/",
+        "audio_transcription_node_list": "/audio-transcription-nodes/",
     }
-    if db_payload:
-        db_patched = False
-        for list_key, endpoint in node_type_endpoints.items():
-            for db_node in graph.get(list_key, []):
-                if db_node.get("node_name") == node_name:
-                    node_id = db_node["id"]
-                    api_patch(f"{endpoint}{node_id}/", db_payload)
-                    print(f"  DB updated ({list_key.replace('_list','')}, id={node_id}).")
-                    db_patched = True
-                    break
-            if db_patched:
+    db_patched = False
+    for list_key, endpoint in node_type_endpoints.items():
+        for db_node in graph.get(list_key, []):
+            if db_node.get("node_name") == node_name:
+                node_id = db_node["id"]
+                api_patch(f"{endpoint}{node_id}/", db_payload)
+                print(f"  DB updated ({list_key.replace('_list','')}, id={node_id}).")
+                db_patched = True
                 break
-        if not db_patched:
-            print(f"  Warning: '{node_name}' not found in DB node lists (metadata-only patch).")
-
-    api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-    print(f"Metadata updated for '{node_name}'.")
+        if db_patched:
+            break
+    if not db_patched:
+        print(f"Node '{node_name}' not found in flow {graph_id}", file=sys.stderr)
+        sys.exit(1)
 
 
 def cmd_patch_start_vars(args):
@@ -571,111 +430,51 @@ def cmd_patch_start_vars(args):
         vtype = type(v).__name__
         vpreview = str(v)[:80] if not isinstance(v, dict) else f"{{...}} ({len(v)} keys)"
         print(f"  {k}: {vtype} = {vpreview}")
-    # Sync metadata initialState
-    metadata = graph.get("metadata", {})
-    for n in metadata.get("nodes", []):
-        if n.get("node_name") == "__start__":
-            n.setdefault("data", {})["initialState"] = final
-            api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-            print(f"  Metadata initialState synced.")
-            break
 
 
 def cmd_rename_node(args):
-    """Rename a Python node (DB + metadata + edges)."""
+    """Rename a node in DB. Edges use integer IDs, no edge update needed."""
     graph_id = args.graph_id
     old_name = args.old_name
     new_name = args.new_name
     graph = _get_graph(graph_id)
 
-    py_nodes = graph.get("python_node_list", [])
-    db_node = None
-    for pn in py_nodes:
-        if pn.get("node_name") == old_name:
-            db_node = pn
-            break
-    if not db_node:
-        print(f"Python node '{old_name}' not found in flow {graph_id}", file=sys.stderr)
-        sys.exit(1)
-    node_id = db_node["id"]
-    api_patch(f"/pythonnodes/{node_id}/", {"node_name": new_name})
-    print(f"  DB node {node_id}: '{old_name}' → '{new_name}'")
+    # Search all node types for the old name
+    node_type_endpoints = {
+        "python_node_list": "/pythonnodes/",
+        "crew_node_list": "/crew-nodes/",
+        "code_agent_node_list": "/code-agent-nodes/",
+        "llm_node_list": "/llmnodes/",
+        "file_extractor_node_list": "/file-extractor-nodes/",
+        "audio_transcription_node_list": "/audio-transcription-nodes/",
+        "webhook_trigger_node_list": "/webhook-trigger-nodes/",
+        "telegram_trigger_node_list": "/telegram-trigger-nodes/",
+        "decision_table_node_list": "/decision-table-node/",
+        "classification_decision_table_node_list": "/classification-decision-table-node/",
+    }
+    for list_key, endpoint in node_type_endpoints.items():
+        for db_node in graph.get(list_key, []):
+            if db_node.get("node_name") == old_name:
+                node_id = db_node["id"]
+                api_patch(f"{endpoint}{node_id}/", {"node_name": new_name})
+                print(f"  DB node {node_id} ({list_key.replace('_list','')}): '{old_name}' → '{new_name}'")
+                print(f"\nRenamed '{old_name}' → '{new_name}'")
+                return
 
-    metadata = graph.get("metadata", {})
-    meta_updated = False
-    for n in metadata.get("nodes", []):
-        nd = n.get("data", {})
-        nn = n.get("node_name", nd.get("name", ""))
-        if nn == old_name or nd.get("label") == old_name:
-            n["node_name"] = new_name
-            nd["label"] = new_name
-            nd["name"] = new_name
-            meta_updated = True
-            break
-    if meta_updated:
-        api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-        print(f"  Metadata: label/name updated")
-    else:
-        print(f"  Warning: '{old_name}' not found in metadata")
-
-    edges = api_get("/edges/", {"graph": graph_id})
-    edge_count = 0
-    for e in edges:
-        patch = {}
-        if e.get("start_key") == old_name:
-            patch["start_key"] = new_name
-        if e.get("end_key") == old_name:
-            patch["end_key"] = new_name
-        if patch:
-            api_patch(f"/edges/{e['id']}/", patch)
-            edge_count += 1
-            start = patch.get("start_key", e["start_key"])
-            end = patch.get("end_key", e["end_key"])
-            print(f"  Edge {e['id']}: {start} → {end}")
-    if edge_count == 0:
-        print(f"  No edges referenced '{old_name}'")
-    print(f"\nRenamed '{old_name}' → '{new_name}' ({1 + (1 if meta_updated else 0) + edge_count} updates)")
+    print(f"Node '{old_name}' not found in flow {graph_id}", file=sys.stderr)
+    sys.exit(1)
 
 
 def cmd_sync_metadata(args):
-    """Sync CDT code from DB into graph metadata."""
-    graph_id = args.graph_id
-    graph = _get_graph(graph_id)
-    metadata = graph.get("metadata", {})
-    nodes = metadata.get("nodes", [])
-    cdts = _get_cdt_nodes(graph_id)
-    cdt_by_name = {c["node_name"]: c for c in cdts}
-    updated = []
-    for n in nodes:
-        nd = n.get("data", {})
-        table = nd.get("table", {})
-        pre_comp = table.get("pre_computation")
-        post_comp = table.get("post_computation")
-        if pre_comp is None and post_comp is None:
-            continue
-        label = n.get("node_name", nd.get("name", ""))
-        cdt = cdt_by_name.get(label)
-        if not cdt:
-            continue
-        changed = False
-        for comp, prefix in [(pre_comp, "pre"), (post_comp, "post")]:
-            if comp is None:
-                continue
-            for sub in ("code", "input_map", "output_variable_path"):
-                db_key = f"{prefix}_computation_code" if sub == "code" else f"{prefix}_{sub}"
-                db_val = cdt.get(db_key)
-                if db_val is None:
-                    db_val = "" if sub == "code" else ({} if sub == "input_map" else "")
-                if comp.get(sub) != db_val:
-                    comp[sub] = db_val
-                    changed = True
-        if changed:
-            updated.append(label)
-    if not updated:
-        print("Metadata already in sync.")
-        return
-    api_patch(f"/graphs/{graph_id}/", {"metadata": metadata})
-    print(f"Metadata updated for: {', '.join(updated)}")
+    """Deprecated: Graph.metadata is no longer used post-RC.
+
+    The frontend now reads positions from each node's own metadata field
+    and derives connections from DB edges at load time. Graph.metadata
+    is saved as empty {nodes: [], connections: []} on every UI save.
+    """
+    print("sync-metadata is no longer needed.")
+    print("Graph.metadata is not used by the frontend or backend runtime.")
+    print("All data lives in DB models. Use 'patch-*' commands to update DB directly.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════

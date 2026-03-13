@@ -82,7 +82,7 @@ python3 epicstaff_tools.py [-r] [-g <GRAPH_ID>] <command> [args]
 -g <ID> patch-libraries "Node Name" "requests,pandas"  # Set libraries on a Python node
 -g <ID> patch-node-meta "Node Name" --field key --value val  # Patch metadata field
 -g <ID> patch-start-vars --value-file vars.json       # Patch __start__ node variables
--g <ID> rename-node "Old Name" "New Name"              # Updates DB + metadata + edges
+-g <ID> rename-node "Old Name" "New Name"              # Updates DB + metadata (edges use IDs, no update needed)
 -g <ID> sync-metadata                                  # Sync CDT code into metadata
 ```
 

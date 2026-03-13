@@ -58,7 +58,7 @@ def cmd_create_task(args):
     payload = {
         "name": args.name,
         "instructions": getattr(args, "instructions", ""),
-        "expected_output": "",
+        "expected_output": getattr(args, "expected_output", None) or "Task output",
     }
     agent_id = getattr(args, "agent_id", None)
     if agent_id:

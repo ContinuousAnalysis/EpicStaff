@@ -49,6 +49,8 @@ def cmd_pull_tools(args):
 
 def cmd_push_tools(args):
     """Push tool code from local files back to the API."""
+    if not args.path:
+        args.path = str(TOOLS_DIR)
     p = Path(args.path)
     if p.is_dir():
         files = sorted(p.iterdir())
