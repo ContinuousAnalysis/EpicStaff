@@ -34,7 +34,7 @@ def resolve_node_names(ids: Iterable[int]) -> dict[int, str]:
     if not ids:
         return {}
 
-    node_models = BaseGlobalNode._get_all_node_models()
+    node_models = BaseGlobalNode.get_all_node_models()
     if not node_models:
         return {i: f"unknown node #{i}" for i in ids}
 
