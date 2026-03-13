@@ -1434,7 +1434,7 @@ class GraphTagSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class GraphLightSerializer(serializers.ModelSerializer):
+class GraphLightBaseSerializer(serializers.ModelSerializer):
     tags = GraphTagSerializer(many=True, read_only=True)
     label_ids = serializers.PrimaryKeyRelatedField(
         many=True, read_only=True, source="labels"
@@ -1448,7 +1448,20 @@ class GraphLightSerializer(serializers.ModelSerializer):
             "description",
             "tags",
             "label_ids",
+            "created_at",
+            "updated_at",
         ]
+
+
+class GraphLightSerializer(GraphLightBaseSerializer):
+    subflows = serializers.SerializerMethodField()
+
+    class Meta(GraphLightBaseSerializer.Meta):
+        fields = GraphLightBaseSerializer.Meta.fields + ["subflows"]
+
+    def get_subflows(self, obj):
+        graphs = Graph.objects.get_transitive_subflows(obj.id)
+        return GraphLightBaseSerializer(graphs, many=True).data
 
 
 class RealtimeModelSerializer(serializers.ModelSerializer):
