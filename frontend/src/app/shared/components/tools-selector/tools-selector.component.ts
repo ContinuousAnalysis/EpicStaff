@@ -91,12 +91,6 @@ import { AppIconComponent } from '../app-icon/app-icon.component';
                     </div>
                     <div class="tools-tabs">
                         <button
-                            [class.active]="currentToolType === 'builtin'"
-                            (click)="toggleToolType('builtin')"
-                        >
-                            Built-in Tools
-                        </button>
-                        <button
                             [class.active]="currentToolType === 'python'"
                             (click)="toggleToolType('python')"
                         >
@@ -760,7 +754,7 @@ export class ToolsSelectorComponent implements OnInit, OnDestroy {
     public isLoadingTools = false;
     public showToolsDialog = false;
     public toolsSearchTerm = '';
-    public currentToolType: 'builtin' | 'python' | 'mcp' = 'builtin';
+    public currentToolType: 'python' | 'mcp' = 'python';
 
     // Selection tracking
     public selectedToolConfigIds = new Set<number>();
@@ -841,7 +835,7 @@ export class ToolsSelectorComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
     }
 
-    public toggleToolType(toolType: 'builtin' | 'python' | 'mcp'): void {
+    public toggleToolType(toolType: 'python' | 'mcp'): void {
         this.currentToolType = toolType;
         this.cdr.markForCheck();
     }
