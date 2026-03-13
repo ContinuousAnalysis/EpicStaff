@@ -329,7 +329,9 @@ class SessionManagerService(metaclass=SingletonMeta):
             + condition_group_next_ids
         )
         resolver = NodeNameResolver(all_node_ids)
-
+        """
+        TODO: future improvements: use cleaner approach
+        """
         cv = self.converter_service
 
         crew_node_data_list = [

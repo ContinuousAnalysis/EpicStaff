@@ -6,6 +6,14 @@ from loguru import logger
 
 from tables.models.base_models import BaseGlobalNode
 
+"""
+TODO: future improvement: use some cleaner approach
+
+new model field for Nodes with concatenation node_name and node_id in morel lvl
+pass node_name and node_id to langgraph, and concatenate in some LoggerService
+etc
+"""
+
 
 def generate_node_name(id: int | None, node_name: str | None = None) -> str | None:
     if id is None:
