@@ -170,6 +170,10 @@ from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
 from tables.services.redis_service import RedisService
 from tables.utils.mixins import DeepCopyMixin
+from tables.exceptions import BuiltInToolModificationError
+from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
+from tables.import_export.enums import EntityType
+from tables.serializers.import_serializers import FileImportSerializer
 from utils.logger import logger
 
 redis_service = RedisService()
@@ -705,7 +709,9 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
 
     def perform_create(self, serializer):
         created_graph = serializer.save()
-        organization, _ = Organization.objects.get_or_create(name="default")
+        organization, _ = Organization.objects.get_or_create(
+            name=DEFAULT_ORGANIZATION_NAME
+        )
         GraphOrganization.objects.create(graph=created_graph, organization=organization)
 
     @action(detail=True, methods=["get"], url_path="files")
