@@ -1,6 +1,8 @@
 import {
     Component,
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    OnInit,
     inject,
     signal,
 } from '@angular/core';
@@ -8,20 +10,22 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
+import { LabelDropdownComponent } from '../label-dropdown/label-dropdown.component';
 
 interface FlowRenameData {
     flowName: string;
     title?: string;
+    flow?: { id: number; name: string; description: string; label_ids?: number[] };
 }
 
 @Component({
     selector: 'app-flow-rename-dialog',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonComponent],
+    imports: [CommonModule, FormsModule, ButtonComponent, LabelDropdownComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="dialog-container">
-            <h2 class="dialog-title">{{ data.title || 'Rename Flow' }}</h2>
+            <h2 class="dialog-title">{{ data.title || 'Edit Flow' }}</h2>
             <div class="dialog-content">
                 <div class="form-group">
                     <label for="flowName">Flow Name</label>
@@ -35,6 +39,25 @@ interface FlowRenameData {
                         autocomplete="off"
                     />
                 </div>
+                @if (data.flow) {
+                    <div class="form-group">
+                        <label>Labels</label>
+                        <app-label-dropdown
+                            [selectedLabelIds]="selectedLabelIds"
+                            (selectionChange)="selectedLabelIds = $event"
+                        ></app-label-dropdown>
+                    </div>
+                    <div class="form-group">
+                        <label for="flowDescription">Description</label>
+                        <textarea
+                            id="flowDescription"
+                            class="form-control"
+                            [(ngModel)]="description"
+                            placeholder="Enter flow description (optional)"
+                            rows="3"
+                        ></textarea>
+                    </div>
+                }
             </div>
             <!-- TODO: Add error message -->
             <div class="dialog-actions">
@@ -54,7 +77,7 @@ interface FlowRenameData {
                 background: var(--color-sidenav-background);
                 border-radius: 12px;
                 padding: 1.5rem;
-                width: 400px;
+                width: 500px;
                 max-width: 100%;
             }
 
@@ -65,17 +88,7 @@ interface FlowRenameData {
                 font-size: 1.25rem;
                 font-weight: 600;
             }
-            .dialog-title {
-                margin-top: 0;
-                margin-bottom: 1.5rem;
-                color: var(--color-text-primary);
-                font-size: 1.25rem;
-                font-weight: 600;
-            }
 
-            .dialog-content {
-                margin-bottom: 1.5rem;
-            }
             .dialog-content {
                 margin-bottom: 1.5rem;
             }
@@ -83,16 +96,7 @@ interface FlowRenameData {
             .form-group {
                 margin-bottom: 1rem;
             }
-            .form-group {
-                margin-bottom: 1rem;
-            }
 
-            label {
-                display: block;
-                margin-bottom: 0.5rem;
-                color: var(--color-text-secondary);
-                font-size: 0.875rem;
-            }
             label {
                 display: block;
                 margin-bottom: 0.5rem;
@@ -109,22 +113,10 @@ interface FlowRenameData {
                 color: var(--color-text-primary);
                 font-size: 0.875rem;
                 transition: border-color 0.2s;
-            }
-            .form-control {
-                width: 100%;
-                padding: 0.625rem;
-                background-color: var(--color-input-background);
-                border: 1px solid var(--color-input-border);
-                border-radius: 6px;
-                color: var(--color-text-primary);
-                font-size: 0.875rem;
-                transition: border-color 0.2s;
+                resize: vertical;
+                box-sizing: border-box;
             }
 
-            .form-control:focus {
-                outline: none;
-                border-color: var(--accent-color);
-            }
             .form-control:focus {
                 outline: none;
                 border-color: var(--accent-color);
@@ -138,15 +130,22 @@ interface FlowRenameData {
         `,
     ],
 })
-export class FlowRenameDialogComponent {
+export class FlowRenameDialogComponent implements OnInit {
     private readonly dialogRef = inject(DialogRef);
+    private readonly cdr = inject(ChangeDetectorRef);
     public readonly data = inject<FlowRenameData>(DIALOG_DATA);
 
     public newName = this.data.flowName;
+    public description = '';
+    public selectedLabelIds: number[] = [];
 
     public isValid = signal<boolean>(true);
 
     ngOnInit(): void {
+        if (this.data.flow) {
+            this.description = this.data.flow.description || '';
+            this.selectedLabelIds = [...(this.data.flow.label_ids || [])];
+        }
         this.validateName();
     }
 
@@ -157,7 +156,15 @@ export class FlowRenameDialogComponent {
     public save(): void {
         this.validateName();
         if (this.isValid()) {
-            this.dialogRef.close(this.newName);
+            if (this.data.flow) {
+                this.dialogRef.close({
+                    name: this.newName,
+                    description: this.description,
+                    label_ids: this.selectedLabelIds,
+                });
+            } else {
+                this.dialogRef.close(this.newName);
+            }
         }
     }
 

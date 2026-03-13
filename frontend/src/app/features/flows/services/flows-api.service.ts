@@ -60,6 +60,10 @@ export class FlowsApiService {
     });
   }
 
+  patchGraph(id: number, data: { label_ids?: number[]; name?: string; description?: string }): Observable<GraphDto> {
+    return this.http.patch<GraphDto>(`${this.apiUrl}${id}/`, data, { headers: this.httpHeaders });
+  }
+
   deleteGraph(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }

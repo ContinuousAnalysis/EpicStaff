@@ -9,6 +9,7 @@ import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { DialogModule, Dialog } from '@angular/cdk/dialog';
+import { switchMap } from 'rxjs/operators';
 
 import { FlowsStorageService } from '../../../../services/flows-storage.service';
 import { GraphDto } from '../../../../models/graph.model';
@@ -166,25 +167,67 @@ export class MyFlowsComponent {
     }
 
     private openRenameDialog(flow: GraphDto): void {
-        const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
-            data: { flowName: flow.name },
+        const dialogRef = this.dialog.open<
+            string | { name: string; description: string; label_ids: number[] }
+        >(FlowRenameDialogComponent, {
+            data: {
+                flowName: flow.name,
+                flow: {
+                    id: flow.id,
+                    name: flow.name,
+                    description: flow.description,
+                    label_ids: flow.label_ids,
+                },
+            },
+            width: '500px',
         });
 
-        dialogRef.closed.subscribe((newName) => {
-            if (newName && newName !== flow.name) {
+        dialogRef.closed.subscribe((result) => {
+            if (!result) return;
+
+            if (typeof result === 'string') {
+                // Plain rename fallback (should not occur for flows with full edit)
+                if (result !== flow.name) {
+                    this.flowsService
+                        .patchUpdateFlow(flow.id, { name: result })
+                        .subscribe({
+                            next: (updatedFlow) => {
+                                console.log(
+                                    `Flow renamed successfully to: ${updatedFlow.name}`
+                                );
+                            },
+                            error: (err) => {
+                                console.error(
+                                    `Error renaming flow ${flow.id}`,
+                                    err
+                                );
+                            },
+                        });
+                }
+            } else if (typeof result === 'object') {
+                const { name, description, label_ids } = result;
                 this.flowsService
-                    .patchUpdateFlow(flow.id, { name: newName })
+                    .patchUpdateFlow(flow.id, { name, description })
+                    .pipe(
+                        switchMap((updated) =>
+                            this.flowsService.updateFlowLabels(
+                                updated.id,
+                                label_ids || []
+                            )
+                        )
+                    )
                     .subscribe({
-                        next: (updatedFlow) => {
+                        next: () => {
                             console.log(
-                                `Flow renamed successfully to: ${updatedFlow.name}`
+                                `Flow ${flow.id} updated successfully.`
                             );
                         },
                         error: (err) => {
                             console.error(
-                                `Error renaming flow ${flow.id}`,
+                                `Error updating flow ${flow.id}`,
                                 err
                             );
+                            this.toastService.error('Failed to update flow');
                         },
                     });
             }

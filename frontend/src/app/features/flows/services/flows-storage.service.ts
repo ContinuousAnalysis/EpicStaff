@@ -212,6 +212,20 @@ export class FlowsStorageService {
         );
     }
 
+    public updateFlowLabels(id: number, labelIds: number[]): Observable<GraphDto> {
+        return this.flowsApiService.patchGraph(id, { label_ids: labelIds }).pipe(
+            tap((updatedFlow) => {
+                const currentFlows = this.flowsSignal();
+                const index = currentFlows.findIndex((f) => f.id === updatedFlow.id);
+                if (index !== -1) {
+                    const updatedFlowsList = [...currentFlows];
+                    updatedFlowsList[index] = updatedFlow;
+                    this.flowsSignal.set(updatedFlowsList);
+                }
+            })
+        );
+    }
+
     public deleteFlow(id: number): Observable<void> {
         return this.flowsApiService.deleteGraph(id).pipe(
             tap(() => {
