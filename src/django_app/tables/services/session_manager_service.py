@@ -369,7 +369,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             for item in llm_node_list
         ]
 
-        entrypoint = session.entrypoint
+        entrypoint = session.entrypoint if session else None
         start_node_obj = StartNode.objects.filter(graph=graph.pk).first()
         start_node_id = start_node_obj.id if start_node_obj else None
 
@@ -414,9 +414,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                 unique_subgraphs is not None
                 and item.subgraph_id not in unique_subgraphs
             ):
-                subgraph_data = self._build_graph_data(
-                    subgraph, unique_subgraphs, session
-                )
+                subgraph_data = self._build_graph_data(subgraph, unique_subgraphs, None)
                 variables = subgraph.start_node_list.first().variables or {}
                 unique_subgraphs[item.subgraph_id] = SubGraphData(
                     id=subgraph.id,

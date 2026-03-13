@@ -63,7 +63,9 @@ class WebhookTriggerService(metaclass=SingletonMeta):
             self.session_manager_service.run_session(
                 graph_id=webhook_trigger_node.graph.pk,
                 variables=variables,
-                entrypoint=generate_node_name(webhook_trigger_node.id),
+                entrypoint=generate_node_name(
+                    webhook_trigger_node.id, webhook_trigger_node.node_name
+                ),
             )
 
     def register_webhooks(self) -> bool:

@@ -108,7 +108,9 @@ class TelegramTriggerService(metaclass=SingletonMeta):
             self.session_manager_service.run_session(
                 graph_id=telegram_trigger_node.graph.pk,
                 variables={"telegram_payload": payload},
-                entrypoint=generate_node_name(telegram_trigger_node.id),
+                entrypoint=generate_node_name(
+                    telegram_trigger_node.id, telegram_trigger_node.node_name
+                ),
             )
 
     def get_trigger_info(self, telegram_bot_api_key: str):
