@@ -36,8 +36,6 @@ export const DEFAULT_TABLE_NODE_PORTS: BasePort[] = [
       'subgraph-in',
       'audio-to-text-in',
       'end-in',
-      'webhook-trigger-in',
-      'telegram-trigger-in',
       'file-extractor-in',
     ],
     position: 'right',

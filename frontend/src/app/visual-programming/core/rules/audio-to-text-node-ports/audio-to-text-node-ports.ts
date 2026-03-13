@@ -36,7 +36,6 @@ export const DEFAULT_AUDIO_TO_TEXT_NODE_PORTS: BasePort[] = [
             'file-extractor-in',
             'end-in',
             'audio-to-text-in',
-            'telegram-trigger-in',
         ],
         position: 'right',
         color: '#ff7be9ff',
