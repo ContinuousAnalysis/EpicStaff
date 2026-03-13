@@ -1,10 +1,10 @@
-from enum import Enum
 import hashlib
 import json
+from abc import abstractmethod
+from enum import Enum
+
 from django.db import models
 from django.db.models import Func, Value
-
-from abc import abstractmethod
 
 
 class AbstractDefaultFillableModel(models.Model):

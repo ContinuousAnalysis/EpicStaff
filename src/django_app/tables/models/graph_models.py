@@ -1,11 +1,12 @@
 import hashlib
 import json
 import uuid
-from django.db import models
-from loguru import logger
-from django.utils import timezone
 
-from tables.models.base_models import BaseGraphEntity, BaseGlobalNode, TimestampMixin
+from django.db import models
+from django.utils import timezone
+from loguru import logger
+
+from tables.models.base_models import BaseGlobalNode, BaseGraphEntity, TimestampMixin
 
 
 class Graph(TimestampMixin, models.Model):
@@ -70,6 +71,32 @@ class PythonNode(BaseNode):
                 name="unique_graph_node_name_for_python_node",
             )
         ]
+
+    def generate_hash(self):
+        """
+        Generates a SHA-256 hash.
+        """
+
+        excluded_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "content_hash",
+            "metadata",
+            "python_code",
+        ]
+
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        nested_python_code_hash = self.python_code.content_hash
+
+        data["python_code"] = nested_python_code_hash
+
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
 
 
 class FileExtractorNode(BaseNode):
@@ -378,6 +405,32 @@ class WebhookTriggerNode(BaseGraphEntity, BaseGlobalNode):
                 name="unique_graph_node_name_for_webhook_nodes",
             )
         ]
+
+    def generate_hash(self):
+        """
+        Generates a SHA-256 hash.
+        """
+
+        excluded_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "content_hash",
+            "metadata",
+            "python_code",
+        ]
+
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        nested_python_code_hash = self.python_code.content_hash
+
+        data["python_code"] = nested_python_code_hash
+
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
 
 
 class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
