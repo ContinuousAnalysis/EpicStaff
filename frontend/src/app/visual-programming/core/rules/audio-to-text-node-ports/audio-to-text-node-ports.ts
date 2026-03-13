@@ -15,6 +15,7 @@ export const DEFAULT_AUDIO_TO_TEXT_NODE_PORTS: BasePort[] = [
             'llm-out-right',
             'file-extractor-out',
             'audio-to-text-out',
+            'webhook-trigger-out',
             'telegram-trigger-out',
         ],
         position: 'left',

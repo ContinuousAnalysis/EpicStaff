@@ -35,6 +35,8 @@ export const DEFAULT_SUBGRAPH_NODE_PORTS: BasePort[] = [
             'end-in',
             'subgraph-in',
             'table-in',
+            'webhook-trigger-in',
+            'telegram-trigger-in',
         ],
         position: 'right',
         color: '#00bfa5',
