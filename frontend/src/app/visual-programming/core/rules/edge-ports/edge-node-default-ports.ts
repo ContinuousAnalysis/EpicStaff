@@ -36,8 +36,6 @@ export const DEFAULT_EDGE_NODE_PORTS: BasePort[] = [
             'llm-out-left',
             'file-extractor-in',
             'table-in',
-            'webhook-trigger-in',
-            'telegram-trigger-in',
             'end-in',
             'subgraph-in',
             'audio-to-text-in',
