@@ -11,6 +11,7 @@ from tables.models import (
 )
 from tables.models.graph_models import (
     ConditionalEdge,
+    ConditionGroup,
     DecisionTableNode,
     GraphSessionMessage,
     LLMNode,
@@ -40,6 +41,7 @@ from tables.services.redis_service import RedisService
 from tables.validators.end_node_validator import EndNodeValidator
 from tables.validators.file_node_validator import FileNodeValidator
 from tables.validators.subgraph_validator import SubGraphValidator
+from utils.graph_utils import NodeNameResolver
 from utils.logger import logger
 from utils.singleton_meta import SingletonMeta
 
@@ -269,73 +271,81 @@ class SessionManagerService(metaclass=SingletonMeta):
         if audio_transcription_node_list:
             self.file_node_validator.validate_file_nodes(audio_transcription_node_list)
 
-        crew_node_data_list: list[CrewNodeData] = []
-        for item in crew_node_list:
-            crew_node_data_list.append(
-                self.converter_service.convert_crew_node_to_pydantic(crew_node=item)
-            )
+        condition_group_next_ids = list(
+            ConditionGroup.objects.filter(
+                decision_table_node__in=decision_table_node_list
+            ).values_list("next_node_id", flat=True)
+        )
+        all_node_ids = (
+            [n.id for n in crew_node_list]
+            + [n.id for n in python_node_list]
+            + [n.id for n in file_extractor_node_list]
+            + [n.id for n in audio_transcription_node_list]
+            + [n.id for n in llm_node_list]
+            + [n.id for n in decision_table_node_list]
+            + [n.default_next_node_id for n in decision_table_node_list]
+            + [n.next_error_node_id for n in decision_table_node_list]
+            + [n.id for n in subgraph_node_list]
+            + [n.id for n in webhook_trigger_node_list]
+            + [n.id for n in telegram_trigger_node_list]
+            + [e.start_node_id for e in edge_list]
+            + [e.end_node_id for e in edge_list]
+            + [e.source_node_id for e in conditional_edge_list]
+            + condition_group_next_ids
+        )
+        resolver = NodeNameResolver(all_node_ids)
 
-        python_node_data_list: list[PythonNodeData] = []
-        for item in python_node_list:
-            python_node_data_list.append(
-                self.converter_service.convert_python_node_to_pydantic(python_node=item)
-            )
+        cv = self.converter_service
 
-        webhook_trigger_node_data_list: list[PythonNodeData] = []
-        for item in webhook_trigger_node_list:
-            webhook_trigger_node_data_list.append(
-                self.converter_service.convert_webhook_trigger_node_to_pydantic(
-                    webhook_trigger_node=item
-                )
+        crew_node_data_list = [
+            cv.convert_crew_node_to_pydantic(crew_node=item, resolver=resolver)
+            for item in crew_node_list
+        ]
+        python_node_data_list = [
+            cv.convert_python_node_to_pydantic(python_node=item, resolver=resolver)
+            for item in python_node_list
+        ]
+        webhook_trigger_node_data_list = [
+            cv.convert_webhook_trigger_node_to_pydantic(
+                webhook_trigger_node=item, resolver=resolver
             )
-
-        telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
-        for item in telegram_trigger_node_list:
-            telegram_trigger_node_data_list.append(
-                self.converter_service.convert_telegram_trigger_node_to_pydantic(
-                    telegram_trigger_node=item
-                )
+            for item in webhook_trigger_node_list
+        ]
+        telegram_trigger_node_data_list = [
+            cv.convert_telegram_trigger_node_to_pydantic(
+                telegram_trigger_node=item, resolver=resolver
             )
-
-        file_extractor_node_data_list: list[FileExtractorNodeData] = []
-        for item in file_extractor_node_list:
-            file_extractor_node_data_list.append(
-                self.converter_service.convert_file_extractor_node_to_pydantic(
-                    file_extractor_node=item
-                )
+            for item in telegram_trigger_node_list
+        ]
+        file_extractor_node_data_list = [
+            cv.convert_file_extractor_node_to_pydantic(
+                file_extractor_node=item, resolver=resolver
             )
-
-        audio_transcription_node_data_list: list[AudioTranscriptionNode] = []
-        for item in audio_transcription_node_list:
-            audio_transcription_node_data_list.append(
-                self.converter_service.convert_audio_transcription_node_to_pydantic(
-                    audio_transcription_node=item
-                )
+            for item in file_extractor_node_list
+        ]
+        audio_transcription_node_data_list = [
+            cv.convert_audio_transcription_node_to_pydantic(
+                audio_transcription_node=item, resolver=resolver
             )
-
-        llm_node_data_list: list[LLMNodeData] = []
-        for item in llm_node_list:
-            llm_node_data_list.append(
-                self.converter_service.convert_llm_node_to_pydantic(llm_node=item)
-            )
-
-        edge_data_list: list[EdgeData] = []
+            for item in audio_transcription_node_list
+        ]
+        llm_node_data_list = [
+            cv.convert_llm_node_to_pydantic(llm_node=item, resolver=resolver)
+            for item in llm_node_list
+        ]
 
         entrypoint = session.entrypoint
-
         start_node_obj = StartNode.objects.filter(graph=graph.pk).first()
         start_node_id = start_node_obj.id if start_node_obj else None
 
+        edge_data_list: list[EdgeData] = []
         for item in edge_list:
-            edge_data = self.converter_service.convert_edge_to_pytdantic(edge=item)
+            edge_data = cv.convert_edge_to_pytdantic(edge=item, resolver=resolver)
             if start_node_id and item.start_node_id == start_node_id:
                 if entrypoint is None:
                     entrypoint = edge_data.end_key
                 continue
-
-            edge_data_list.append(
-                self.converter_service.convert_edge_to_pytdantic(edge=item)
-            )
+            edge_data_list.append(edge_data)
 
         if entrypoint is None:
             raise GraphEntryPointException()
@@ -348,20 +358,18 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
                 continue
             conditional_edge_data_list.append(
-                self.converter_service.convert_conditional_edge_to_pydantic(item)
+                cv.convert_conditional_edge_to_pydantic(item, resolver=resolver)
             )
 
         if start_node_obj is None and entrypoint is None:
             raise GraphEntryPointException()
 
-        decision_table_node_data_list: list[DecisionTableNodeData] = []
-        for decision_table_node_list_item in decision_table_node_list:
-            decision_table_node_data = (
-                self.converter_service.convert_decision_table_node_to_pydantic(
-                    decision_table_node=decision_table_node_list_item
-                )
+        decision_table_node_data_list = [
+            cv.convert_decision_table_node_to_pydantic(
+                decision_table_node=item, resolver=resolver
             )
-            decision_table_node_data_list.append(decision_table_node_data)
+            for item in decision_table_node_list
+        ]
 
         subgraph_node_data_list: list[SubGraphNodeData] = []
         for item in subgraph_node_list:
@@ -374,11 +382,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                 subgraph_data = self._build_graph_data(
                     subgraph, unique_subgraphs, session
                 )
-
-                variables = subgraph.start_node_list.first().variables
-                if not variables:
-                    variables = dict()
-
+                variables = subgraph.start_node_list.first().variables or {}
                 unique_subgraphs[item.subgraph_id] = SubGraphData(
                     id=subgraph.id,
                     data=subgraph_data,
@@ -386,20 +390,19 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
 
             subgraph_node_data_list.append(
-                self.converter_service.convert_subgraph_node_to_pydantic(
-                    subgraph_node=item, subgraph=subgraph
+                cv.convert_subgraph_node_to_pydantic(
+                    subgraph_node=item, subgraph=subgraph, resolver=resolver
                 )
             )
 
         end_node = self.end_node_validator.validate(graph_id=graph.pk)
 
         # TODO: remove validation
-        if end_node is not None:
-            end_node_data = self.converter_service.convert_end_node_to_pydantic(
-                end_node=end_node
-            )
-        else:
-            end_node_data = None
+        end_node_data = (
+            cv.convert_end_node_to_pydantic(end_node=end_node, resolver=resolver)
+            if end_node is not None
+            else None
+        )
 
         return GraphData(
             name=graph.name,
