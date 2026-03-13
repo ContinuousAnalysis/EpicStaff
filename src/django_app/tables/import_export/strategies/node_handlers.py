@@ -9,6 +9,7 @@ from tables.models import (
     DecisionTableNode,
     SubGraphNode,
 )
+from tables.models.graph_models import NoteNode
 from tables.import_export.enums import NodeType, EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
@@ -27,6 +28,7 @@ from tables.import_export.serializers.graph import (
     ConditionGroupImportSerializer,
     ConditionImportSerializer,
     SubgraphNodeImportSerializer,
+    NoteNodeImportSerializer,
 )
 
 
@@ -196,5 +198,9 @@ NODE_HANDLERS = {
         "serializer": EndNodeImportSerializer,
         "relation": "end_node",
         "import_hook": import_end_node,
+    },
+    NodeType.NOTE_NODE: {
+        "serializer": NoteNodeImportSerializer,
+        "relation": "note_node_list",
     },
 }
