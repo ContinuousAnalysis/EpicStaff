@@ -90,15 +90,13 @@ from tables.models.realtime_models import (
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
 from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
-from tables.serializers.copy_serializers import (
-    AgentCopyDeserializer,
-    AgentCopySerializer,
-    CrewCopyDeserializer,
-    CrewCopySerializer,
-    GraphCopyDeserializer,
-    GraphCopySerializer,
+from tables.services.copy_services import (
+    AgentCopyService,
+    CrewCopyService,
+    GraphCopyService,
+    McpToolCopyService,
+    PythonCodeToolCopyService,
 )
-from tables.serializers.import_serializers import FileImportSerializer
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentTagSerializer,
@@ -161,6 +159,7 @@ from tables.serializers.serializers import (
     BulkExportSerializer,
     GraphFileUpdateSerializer,
     UploadGraphFileSerializer,
+    FileImportSerializer,
 )
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeFieldSerializer,
@@ -169,11 +168,9 @@ from tables.serializers.telegram_trigger_serializers import (
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
 from tables.services.redis_service import RedisService
-from tables.utils.mixins import DeepCopyMixin
 from tables.exceptions import BuiltInToolModificationError
 from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
 from tables.import_export.enums import EntityType
-from tables.serializers.import_serializers import FileImportSerializer
 from utils.logger import logger
 
 redis_service = RedisService()
@@ -300,7 +297,7 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     filterset_class = EmbeddingConfigFilter
 
 
-class AgentViewSet(ModelViewSet, DeepCopyMixin):
+class AgentViewSet(ModelViewSet):
     queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
         Prefetch(
             "python_code_tools",
@@ -335,10 +332,6 @@ class AgentViewSet(ModelViewSet, DeepCopyMixin):
         "cache",
         "allow_code_execution",
     ]
-
-    copy_serializer_class = AgentCopySerializer
-    copy_deserializer_class = AgentCopyDeserializer
-    copy_serializer_response_class = AgentReadSerializer
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -411,6 +404,19 @@ class AgentViewSet(ModelViewSet, DeepCopyMixin):
         )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"], url_path="copy")
+    def copy(self, request, pk: int):
+        instance = self.get_object()
+        name = request.data.get("name") if isinstance(request.data, dict) else None
+        try:
+            with transaction.atomic():
+                new_instance = AgentCopyService().copy(instance, name=name)
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            AgentReadSerializer(new_instance).data, status=status.HTTP_201_CREATED
+        )
+
     @action(detail=True, methods=["get"])
     def export(self, request, pk: int):
         return self.import_export_service.export_entity(self.get_object())
@@ -426,7 +432,7 @@ class AgentViewSet(ModelViewSet, DeepCopyMixin):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
+class CrewReadWriteViewSet(ModelViewSet):
     queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
@@ -443,10 +449,6 @@ class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
         "planning_llm_config",
     ]
 
-    copy_serializer_class = CrewCopySerializer
-    copy_deserializer_class = CrewCopyDeserializer
-    copy_serializer_response_class = CrewSerializer
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.import_export_service = ViewSetImportExportService(
@@ -454,6 +456,19 @@ class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
             export_prefix="crew",
             filename_attr="name",
             response_serializer_class=CrewSerializer,
+        )
+
+    @action(detail=True, methods=["post"], url_path="copy")
+    def copy(self, request, pk: int):
+        instance = self.get_object()
+        name = request.data.get("name") if isinstance(request.data, dict) else None
+        try:
+            with transaction.atomic():
+                new_instance = CrewCopyService().copy(instance, name=name)
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            CrewSerializer(new_instance).data, status=status.HTTP_201_CREATED
         )
 
     @action(detail=True, methods=["get"])
@@ -616,6 +631,19 @@ class PythonCodeToolViewSet(viewsets.ModelViewSet):
             raise BuiltInToolModificationError()
         return super().destroy(request, *args, **kwargs)
 
+    @action(detail=True, methods=["post"], url_path="copy")
+    def copy(self, request, pk: int):
+        instance = self.get_object()
+        name = request.data.get("name") if isinstance(request.data, dict) else None
+        try:
+            with transaction.atomic():
+                new_instance = PythonCodeToolCopyService().copy(instance, name=name)
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            PythonCodeToolSerializer(new_instance).data, status=status.HTTP_201_CREATED
+        )
+
 
 class PythonCodeToolConfigViewSet(viewsets.ModelViewSet):
     queryset = PythonCodeToolConfig.objects.select_related("tool").prefetch_related(
@@ -647,12 +675,8 @@ class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["execution_id", "returncode"]
 
 
-class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
+class GraphViewSet(viewsets.ModelViewSet):
     serializer_class = GraphSerializer
-
-    copy_serializer_class = GraphCopySerializer
-    copy_deserializer_class = GraphCopyDeserializer
-    copy_serializer_response_class = GraphSerializer
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -722,6 +746,19 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
             instance=files, many=True, context={"request": request}
         )
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="copy")
+    def copy(self, request, pk: int):
+        instance = self.get_object()
+        name = request.data.get("name") if isinstance(request.data, dict) else None
+        try:
+            with transaction.atomic():
+                new_instance = GraphCopyService().copy(instance, name=name)
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            GraphSerializer(new_instance).data, status=status.HTTP_201_CREATED
+        )
 
     @action(detail=True, methods=["get"])
     def export(self, request, pk: int):
@@ -1064,6 +1101,19 @@ class McpToolViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="copy")
+    def copy(self, request, pk: int):
+        instance = self.get_object()
+        name = request.data.get("name") if isinstance(request.data, dict) else None
+        try:
+            with transaction.atomic():
+                new_instance = McpToolCopyService().copy(instance, name=name)
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            McpToolSerializer(new_instance).data, status=status.HTTP_201_CREATED
+        )
 
 
 class GraphFileViewSet(ModelViewSet):
