@@ -5,6 +5,9 @@ from tables.services.copy_services.helpers import copy_python_code
 
 class PythonCodeToolCopyService:
     def copy(self, tool: PythonCodeTool, name: str | None = None) -> PythonCodeTool:
+        if tool.built_in:
+            raise ValueError("Cannot copy a built-in tool.")
+
         new_code = copy_python_code(tool.python_code)
 
         existing_names = PythonCodeTool.objects.values_list("name", flat=True)
@@ -19,7 +22,6 @@ class PythonCodeToolCopyService:
             args_schema=tool.args_schema,
             python_code=new_code,
             favorite=tool.favorite,
-            built_in=tool.built_in,
         )
 
         for field in tool.tool_fields.all():
