@@ -234,6 +234,10 @@ from tables.serializers.model_serializers import (
 )
 from tables.services.redis_service import RedisService
 from tables.utils.mixins import DeepCopyMixin
+from tables.exceptions import BuiltInToolModificationError
+from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
+from tables.import_export.enums import EntityType
+from tables.serializers.import_serializers import FileImportSerializer
 from utils.logger import logger
 
 redis_service = RedisService()
@@ -773,7 +777,9 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
 
     def perform_create(self, serializer):
         created_graph = serializer.save()
-        organization, _ = Organization.objects.get_or_create(name="default")
+        organization, _ = Organization.objects.get_or_create(
+            name=DEFAULT_ORGANIZATION_NAME
+        )
         GraphOrganization.objects.create(graph=created_graph, organization=organization)
 
     @action(detail=True, methods=["get"], url_path="files")
@@ -1266,6 +1272,7 @@ class WebhookTriggerNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet
     def create(self, request, *args, **kwargs):
         from loguru import logger
         from rest_framework.exceptions import ValidationError as DRFValidationError
+
         logger.info(f"[WebhookTriggerNode] CREATE payload: {request.data}")
         try:
             return super().create(request, *args, **kwargs)

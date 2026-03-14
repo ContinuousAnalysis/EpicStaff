@@ -40,8 +40,8 @@ services:
       DJANGO_PORT: ${DJANGO_PORT:-8000}
       LOAD_DEBUG_ENV: ${LOAD_DEBUG_ENV}
     volumes:
-      - crew_config:/home/user/root/app/env_config
-      - media_data:/app/media
+      - media_data:/app/src/django_app/media
+
     networks:
       - backend-network
     depends_on:
@@ -60,8 +60,9 @@ services:
     image: realtime
     container_name: realtime
     build:
-      context: ./realtime
-      dockerfile: Dockerfile.realtime
+      context: .
+      dockerfile: ./realtime/Dockerfile.realtime
+
     environment:
       <<: *common_env
       KNOWLEDGE_SEARCH_GET_CHANNEL: knowledge:search:get
@@ -213,7 +214,6 @@ services:
     volumes:
       - ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH}
       - ${DOCKER_BIN_PATH}:${DOCKER_BIN_PATH}
-      - crew_config:/home/user/root/app/env_config/
     networks:
       - backend-network
     tty: true
@@ -283,8 +283,8 @@ services:
   knowledge:
     image: knowledge
     build:
-      context: ./knowledge
-      dockerfile: Dockerfile.knowledge
+      context: .
+      dockerfile: ./knowledge/Dockerfile.knowledge
     container_name: knowledge
     environment:
       <<: *common_env
@@ -374,8 +374,6 @@ volumes:
   sandbox_executions:
     external: true
   crew_pgdata:
-    external: true
-  crew_config:
     external: true
   media_data:
     external: true

@@ -192,13 +192,13 @@ export class FlowService {
             collapsedGroups.size === 0
                 ? nodes
                 : nodes.filter(
-                      (node) =>
-                          !this.isInsideCollapsedGroup(
-                              node.parentId,
-                              groups,
-                              collapsedGroups
-                          )
-                  );
+                    (node) =>
+                        !this.isInsideCollapsedGroup(
+                            node.parentId,
+                            groups,
+                            collapsedGroups
+                        )
+                );
 
         // Additionally filter out nodes with category 'vscode'
         return filteredByGroups.filter((node) => node.category !== 'vscode');
@@ -239,7 +239,7 @@ export class FlowService {
         return this.portConnectionsMap()[portId] || [];
     }
 
-    constructor() {}
+    constructor() { }
 
     public getFlowState(): FlowModel {
         return this.flowSignal();
@@ -661,8 +661,8 @@ export class FlowService {
             condition_groups: (tableData.condition_groups || []).map((group) => {
                 const normalizedGroupRole = group.group_name
                     ? this.normalizeDecisionPortRole(
-                          `decision-out-${group.group_name}`
-                      )
+                        `decision-out-${group.group_name}`
+                    )
                     : null;
 
                 if (normalizedGroupRole === normalizedSourceRole) {
@@ -751,8 +751,8 @@ export class FlowService {
             condition_groups: (tableData.condition_groups || []).map((group) => {
                 const normalizedGroupRole = group.group_name
                     ? this.normalizeDecisionPortRole(
-                          `decision-out-${group.group_name}`
-                      )
+                        `decision-out-${group.group_name}`
+                    )
                     : null;
                 if (normalizedGroupRole === normalizedSourceRole) {
                     return {
@@ -953,7 +953,6 @@ export class FlowService {
 
                 connectionIdsToRemove.add(connection.id);
             });
-
             // Auto-delete conditional edge nodes that lose their source connection
             for (const conn of flow.connections) {
                 if (!connectionIdsToRemove.has(conn.id)) continue;
@@ -1100,10 +1099,10 @@ export class FlowService {
             const updatedNodes = flow.nodes
                 .filter((node) => !nodeIdsToRemove.has(node.id))
                 .map((node) => {
-                     const decisionUpdate = decisionTableUpdates.get(node.id);
-                     if (!decisionUpdate) {
-                         return node;
-                     }
+                    const decisionUpdate = decisionTableUpdates.get(node.id);
+                    if (!decisionUpdate) {
+                        return node;
+                    }
 
                     const baseNode = node as Record<string, any>;
 
@@ -1238,3 +1237,4 @@ export class FlowService {
         }
     );
 }
+// MERGE_COMMENT: merged function deleteSelections. check whole this function and delete comment

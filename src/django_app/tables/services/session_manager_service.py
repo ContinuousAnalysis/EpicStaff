@@ -20,7 +20,7 @@ from tables.models.graph_models import (
     TelegramTriggerNode,
     WebhookTriggerNode,
 )
-from tables.request_models import (
+from src.shared.models import (
     AudioTranscriptionNodeData,
     CodeAgentNodeData,
     ConditionalEdgeData,
@@ -48,6 +48,7 @@ from tables.models import (
     AudioTranscriptionNode,
     GraphOrganizationUser,
 )
+from tables.constants.variables_constants import DOMAIN_VARIABLES_KEY
 from tables.services.converter_service import ConverterService
 from tables.services.redis_service import RedisService
 from tables.validators.end_node_validator import EndNodeValidator
@@ -92,11 +93,13 @@ class SessionManagerService(metaclass=SingletonMeta):
         # it might not exist if graph has no start node
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
 
-        if start_node is not None:
-            if variables and start_node.variables:
-                variables = {**start_node.variables, **variables}
-            elif start_node.variables:
-                variables = start_node.variables
+        if variables and start_node.variables:
+            start_node_variables = self._get_actual_variables(start_node.variables)
+            variables = self._deep_merge_dicts(start_node_variables, variables)
+        elif start_node.variables:
+            variables = start_node.variables
+
+        variables = self._get_actual_variables(variables)
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
         graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
@@ -133,7 +136,8 @@ class SessionManagerService(metaclass=SingletonMeta):
         username: str | None = None,
         entrypoint: str | None = None,
     ) -> int:
-        logger.info(f"'run_session' got variables: {variables}")
+        variables = self._get_actual_variables(variables)
+        logger.info(f"'run_session' got variables: {variables=}")
 
         # Choose to use variables from previous flow or left 'variables' param None
         variables = self.choose_variables(graph_id, variables)
@@ -252,6 +256,27 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         return variables
 
+    def _get_actual_variables(self, variables: dict) -> dict:
+        actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
+        output = actual_variables if actual_variables else variables
+        return output
+
+    def _deep_merge_dicts(self, base: dict, updates: dict) -> dict:
+        """Merge updates into base, recursively merging nested dicts."""
+        result = base.copy()
+
+        for key, value in updates.items():
+            if (
+                key in result
+                and isinstance(result[key], dict)
+                and isinstance(value, dict)
+            ):
+                result[key] = self._deep_merge_dicts(result[key], value)
+            else:
+                result[key] = value
+
+        return result
+
     def _build_graph_data(
         self,
         graph: Graph,
@@ -308,7 +333,9 @@ class SessionManagerService(metaclass=SingletonMeta):
             + condition_group_next_ids
         )
         resolver = NodeNameResolver(all_node_ids)
-
+        """
+        TODO: future improvements: use cleaner approach
+        """
         cv = self.converter_service
 
         crew_node_data_list = [
@@ -372,7 +399,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                 )
             )
 
-        entrypoint = session.entrypoint
+        entrypoint = session.entrypoint if session else None
         start_node_obj = StartNode.objects.filter(graph=graph.pk).first()
         start_node_id = start_node_obj.id if start_node_obj else None
 
@@ -417,9 +444,7 @@ class SessionManagerService(metaclass=SingletonMeta):
                 unique_subgraphs is not None
                 and item.subgraph_id not in unique_subgraphs
             ):
-                subgraph_data = self._build_graph_data(
-                    subgraph, unique_subgraphs, session
-                )
+                subgraph_data = self._build_graph_data(subgraph, unique_subgraphs, None)
                 variables = subgraph.start_node_list.first().variables or {}
                 unique_subgraphs[item.subgraph_id] = SubGraphData(
                     id=subgraph.id,

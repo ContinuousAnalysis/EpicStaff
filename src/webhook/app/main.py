@@ -8,7 +8,7 @@ from loguru import logger
 
 from app.controllers import webhook_routes
 from app.core.settings import settings
-from app.request_models import WebhookConfigData
+from src.shared.models import WebhookConfigData
 from app.services.redis_service import (
     RedisService,
     close_redis_connection,

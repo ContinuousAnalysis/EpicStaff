@@ -44,3 +44,4 @@ export const DEFAULT_PROJECT_NODE_PORTS: BasePort[] = [
         color: '#5672cd',
     },
 ];
+// MERGE_COMMENT: merged line 41. check and remove comment

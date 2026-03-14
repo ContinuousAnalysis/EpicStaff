@@ -9,7 +9,7 @@ from src.crew.services.graph.events import StopEvent
 from src.crew.services.graph.nodes import BaseNode
 from src.crew.services.run_python_code_service import RunPythonCodeService
 from src.crew.services.graph.exceptions import ReturnCodeError
-from src.crew.models.request_models import PythonCodeData
+from src.shared.models import PythonCodeData
 
 
 class PythonNode(BaseNode):
@@ -50,7 +50,7 @@ class PythonNode(BaseNode):
                 "text": f"Executing '{self.node_name}'...",
                 "is_final": False,
                 "sse_visible": not self.stream_config
-                    or self.stream_config.get("execution_status", True),
+                or self.stream_config.get("execution_status", True),
             },
         )
 

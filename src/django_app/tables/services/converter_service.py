@@ -1,5 +1,41 @@
 from typing import Iterable
 
+from src.shared.models import (
+    AgentData,
+    AudioTranscriptionNodeData,
+    BaseToolData,
+    ConditionalEdgeData,
+    ConditionData,
+    ConditionGroupData,
+    ConfiguredToolData,
+    CrewData,
+    CrewNodeData,
+    DecisionTableNodeData,
+    EdgeData,
+    EmbedderConfigData,
+    EmbedderData,
+    EndNodeData,
+    FileExtractorNodeData,
+    GraphRagSearchConfig,
+    LLMConfigData,
+    LLMData,
+    LLMNodeData,
+    McpToolData,
+    NaiveRagSearchConfig,
+    NgrokConfigData,
+    PythonCodeData,
+    PythonCodeToolData,
+    PythonNodeData,
+    RagSearchConfig,
+    RealtimeAgentChatData,
+    SubGraphNodeData,
+    TaskData,
+    TelegramTriggerNodeData,
+    TelegramTriggerNodeFieldData,
+    ToolConfigData,
+    WebhookTriggerNodeData,
+)
+
 from tables.models import (
     Agent,
     Crew,
@@ -43,8 +79,6 @@ from tables.models.mcp_models import McpTool
 from tables.models.python_models import PythonCodeToolConfig
 from tables.models.realtime_models import RealtimeAgentChat
 from tables.models.webhook_models import NgrokWebhookConfig
-from tables.request_models import *
-from tables.request_models import CrewData, EndNodeData
 from tables.serializers.model_serializers import ToolConfigSerializer
 from tables.validators.crew_memory_validator import CrewMemoryValidator
 from tables.validators.task_validator import TaskValidator
