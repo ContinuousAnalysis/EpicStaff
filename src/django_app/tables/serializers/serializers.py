@@ -198,3 +198,7 @@ class BulkExportSerializer(serializers.Serializer):
         allow_empty=False,
         help_text="List of entity IDs",
     )
+
+
+class FileImportSerializer(serializers.Serializer):
+    file = serializers.FileField()
