@@ -37,6 +37,7 @@ COPY ./shared /app/src/shared
 # --- Stage 2: Runtime ---
 FROM python:3.12.10-slim@sha256:fd95fa221297a88e1cf49c55ec1828edd7c5a428187e67b5d1805692d11588db AS runtime
 
+# libpq-dev are required for psycopg2 https://www.psycopg.org/docs/install.html
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     portaudio19-dev \
