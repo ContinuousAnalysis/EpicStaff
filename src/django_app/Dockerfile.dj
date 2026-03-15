@@ -5,6 +5,7 @@ ENV POETRY_HOME=/opt/poetry \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     POETRY_NO_INTERACTION=1 \
     POETRY_CACHE_DIR=/tmp/poetry_cache \
+    POETRY_REQUESTS_TIMEOUT=100 \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -26,7 +27,6 @@ ENV PEP517_BUILD_BACKEND=setuptools.build_meta
 # Copy lockfiles first (better layer caching)
 COPY ./django_app/pyproject.toml ./django_app/poetry.lock ./
 
-ENV POETRY_REQUESTS_TIMEOUT=1000
 # Install dependencies inside project .venv
 RUN poetry install --no-ansi --no-root
 
