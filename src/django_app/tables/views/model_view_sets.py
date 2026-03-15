@@ -757,7 +757,7 @@ class GraphViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(
-            GraphSerializer(new_instance).data, status=status.HTTP_201_CREATED
+            GraphLightSerializer(new_instance).data, status=status.HTTP_201_CREATED
         )
 
     @action(detail=True, methods=["get"])
