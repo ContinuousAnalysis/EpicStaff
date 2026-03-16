@@ -1258,6 +1258,9 @@ class PythonNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer
         # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
+            expected_hash = python_code_data.pop("content_hash", None)
+            if expected_hash is not None:
+                python_code._expected_hash = expected_hash
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
@@ -1348,6 +1351,9 @@ class ConditionalEdgeSerializer(ContentHashWritableMixin, serializers.ModelSeria
         # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
+            expected_hash = python_code_data.pop("content_hash", None)
+            if expected_hash is not None:
+                python_code._expected_hash = expected_hash
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
