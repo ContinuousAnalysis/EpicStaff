@@ -1,9 +1,16 @@
 from tables.import_export.utils import ensure_unique_identifier
 from tables.models.python_models import PythonCodeTool, PythonCodeToolConfigField
+from tables.services.copy_services.base_copy_service import BaseCopyService
 from tables.services.copy_services.helpers import copy_python_code
 
 
-class PythonCodeToolCopyService:
+class PythonCodeToolCopyService(BaseCopyService):
+    """Copy service for PythonCodeTool entities.
+
+    Creates a new PythonCode object (deep copy, not shared). Clones all
+    PythonCodeToolConfigField entries. Built-in tools cannot be copied.
+    """
+
     def copy(self, tool: PythonCodeTool, name: str | None = None) -> PythonCodeTool:
         if tool.built_in:
             raise ValueError("Cannot copy a built-in tool.")

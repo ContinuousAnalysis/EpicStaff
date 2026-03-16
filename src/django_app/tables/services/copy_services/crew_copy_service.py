@@ -8,9 +8,17 @@ from tables.models.crew_models import (
     TaskPythonCodeToolConfigs,
     TaskPythonCodeTools,
 )
+from tables.services.copy_services.base_copy_service import BaseCopyService
 
 
-class CrewCopyService:
+class CrewCopyService(BaseCopyService):
+    """Copy service for Crew entities.
+
+    Duplicates all scalar fields. Agents are re-linked (not cloned).
+    Tasks are fully cloned with a two-pass approach: the first pass creates
+    tasks and builds an ID map, the second pass remaps TaskContext dependencies.
+    """
+
     def copy(self, crew: Crew, name: str | None = None) -> Crew:
         existing_names = Crew.objects.values_list("name", flat=True)
         new_name = ensure_unique_identifier(

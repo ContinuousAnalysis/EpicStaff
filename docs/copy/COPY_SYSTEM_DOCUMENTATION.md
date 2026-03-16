@@ -28,11 +28,12 @@ The copy system duplicates entities within the application. Each copyable entity
 
 | Component | Purpose |
 |---|---|
-| Copy service classes | Entity-specific logic for duplicating each model and its relationships |
+| `BaseCopyService` | Abstract base class defining the `copy(entity, name=None)` interface for all copy services |
+| Copy service classes | Entity-specific logic for duplicating each model and its relationships (inherit `BaseCopyService`) |
+| `CopyActionMixin` | ViewSet mixin that provides the standard `copy` action, configured via `copy_service_class` and `copy_serializer_class` |
 | `NODE_COPY_HANDLERS` | Registry mapping each `NodeType` to a handler function used during graph copy |
 | `helpers.py` | Shared utilities: `copy_python_code`, `get_base_node_fields` |
 | `ensure_unique_identifier` | Generates a unique name by appending `(2)`, `(3)`, … when a name conflict exists |
-| ViewSet `copy` actions | HTTP entry points that call the appropriate service inside `transaction.atomic()` |
 
 ---
 
@@ -88,14 +89,17 @@ The copy system duplicates entities within the application. Each copyable entity
 
 ## Adding a New Top-Level Entity
 
-1. **Create a service** in `src/django_app/tables/services/copy_services/`:
+1. **Create a service** in `src/django_app/tables/services/copy_services/`, inheriting from `BaseCopyService`:
 
    ```python
    # my_entity_copy_service.py
    from tables.import_export.utils import ensure_unique_identifier
    from tables.models import MyEntity
+   from tables.services.copy_services.base_copy_service import BaseCopyService
 
-   class MyEntityCopyService:
+   class MyEntityCopyService(BaseCopyService):
+       """Copy service for MyEntity."""
+
        def copy(self, entity: MyEntity, name: str | None = None) -> MyEntity:
            existing_names = MyEntity.objects.values_list("name", flat=True)
            new_name = ensure_unique_identifier(
@@ -108,19 +112,13 @@ The copy system duplicates entities within the application. Each copyable entity
            )
    ```
 
-2. **Add a `copy` action to the ViewSet** in `model_view_sets.py`:
+2. **Add `CopyActionMixin` to the ViewSet** in `model_view_sets.py`:
 
    ```python
-   @action(detail=True, methods=["post"])
-   def copy(self, request, pk=None):
-       entity = self.get_object()
-       name = request.data.get("name")
-       try:
-           with transaction.atomic():
-               new_entity = MyEntityCopyService().copy(entity, name)
-           return Response(MyEntitySerializer(new_entity).data, status=status.HTTP_201_CREATED)
-       except Exception as e:
-           return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+   class MyEntityViewSet(CopyActionMixin, ModelViewSet):
+       copy_service_class = MyEntityCopyService
+       copy_serializer_class = MyEntitySerializer
+       # No need to write a copy method — CopyActionMixin provides it.
    ```
 
 ---

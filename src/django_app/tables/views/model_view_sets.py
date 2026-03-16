@@ -97,6 +97,7 @@ from tables.services.copy_services import (
     McpToolCopyService,
     PythonCodeToolCopyService,
 )
+from tables.views.mixins import CopyActionMixin
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentTagSerializer,
@@ -297,7 +298,10 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     filterset_class = EmbeddingConfigFilter
 
 
-class AgentViewSet(ModelViewSet):
+class AgentViewSet(CopyActionMixin, ModelViewSet):
+    copy_service_class = AgentCopyService
+    copy_serializer_class = AgentReadSerializer
+
     queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
         Prefetch(
             "python_code_tools",
@@ -404,19 +408,6 @@ class AgentViewSet(ModelViewSet):
         )
         return Response(read_serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=["post"], url_path="copy")
-    def copy(self, request, pk: int):
-        instance = self.get_object()
-        name = request.data.get("name") if isinstance(request.data, dict) else None
-        try:
-            with transaction.atomic():
-                new_instance = AgentCopyService().copy(instance, name=name)
-        except Exception as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            AgentReadSerializer(new_instance).data, status=status.HTTP_201_CREATED
-        )
-
     @action(detail=True, methods=["get"])
     def export(self, request, pk: int):
         return self.import_export_service.export_entity(self.get_object())
@@ -432,7 +423,10 @@ class AgentViewSet(ModelViewSet):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class CrewReadWriteViewSet(ModelViewSet):
+class CrewReadWriteViewSet(CopyActionMixin, ModelViewSet):
+    copy_service_class = CrewCopyService
+    copy_serializer_class = CrewSerializer
+
     queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
@@ -456,19 +450,6 @@ class CrewReadWriteViewSet(ModelViewSet):
             export_prefix="crew",
             filename_attr="name",
             response_serializer_class=CrewSerializer,
-        )
-
-    @action(detail=True, methods=["post"], url_path="copy")
-    def copy(self, request, pk: int):
-        instance = self.get_object()
-        name = request.data.get("name") if isinstance(request.data, dict) else None
-        try:
-            with transaction.atomic():
-                new_instance = CrewCopyService().copy(instance, name=name)
-        except Exception as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            CrewSerializer(new_instance).data, status=status.HTTP_201_CREATED
         )
 
     @action(detail=True, methods=["get"])
@@ -604,11 +585,14 @@ class PythonCodeViewSet(viewsets.ModelViewSet):
     serializer_class = PythonCodeSerializer
 
 
-class PythonCodeToolViewSet(viewsets.ModelViewSet):
+class PythonCodeToolViewSet(CopyActionMixin, viewsets.ModelViewSet):
     """
     A viewset for viewing and editing PythonCodeTool instances.
     Prevents modifications or deletions of built-in tools.
     """
+
+    copy_service_class = PythonCodeToolCopyService
+    copy_serializer_class = PythonCodeToolSerializer
 
     queryset = (
         PythonCodeTool.objects.all()
@@ -630,19 +614,6 @@ class PythonCodeToolViewSet(viewsets.ModelViewSet):
         if instance.built_in:
             raise BuiltInToolModificationError()
         return super().destroy(request, *args, **kwargs)
-
-    @action(detail=True, methods=["post"], url_path="copy")
-    def copy(self, request, pk: int):
-        instance = self.get_object()
-        name = request.data.get("name") if isinstance(request.data, dict) else None
-        try:
-            with transaction.atomic():
-                new_instance = PythonCodeToolCopyService().copy(instance, name=name)
-        except Exception as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            PythonCodeToolSerializer(new_instance).data, status=status.HTTP_201_CREATED
-        )
 
 
 class PythonCodeToolConfigViewSet(viewsets.ModelViewSet):
@@ -675,7 +646,10 @@ class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["execution_id", "returncode"]
 
 
-class GraphViewSet(viewsets.ModelViewSet):
+class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
+    copy_service_class = GraphCopyService
+    copy_serializer_class = GraphLightSerializer
+
     serializer_class = GraphSerializer
 
     def __init__(self, *args, **kwargs):
@@ -746,19 +720,6 @@ class GraphViewSet(viewsets.ModelViewSet):
             instance=files, many=True, context={"request": request}
         )
         return Response(serializer.data)
-
-    @action(detail=True, methods=["post"], url_path="copy")
-    def copy(self, request, pk: int):
-        instance = self.get_object()
-        name = request.data.get("name") if isinstance(request.data, dict) else None
-        try:
-            with transaction.atomic():
-                new_instance = GraphCopyService().copy(instance, name=name)
-        except Exception as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            GraphLightSerializer(new_instance).data, status=status.HTTP_201_CREATED
-        )
 
     @action(detail=True, methods=["get"])
     def export(self, request, pk: int):
@@ -1084,7 +1045,10 @@ class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
             Condition.objects.bulk_create(conditions_to_create)
 
 
-class McpToolViewSet(viewsets.ModelViewSet):
+class McpToolViewSet(CopyActionMixin, viewsets.ModelViewSet):
+    copy_service_class = McpToolCopyService
+    copy_serializer_class = McpToolSerializer
+
     queryset = McpTool.objects.all()
     serializer_class = McpToolSerializer
     filter_backends = [DjangoFilterBackend]
@@ -1101,19 +1065,6 @@ class McpToolViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
-
-    @action(detail=True, methods=["post"], url_path="copy")
-    def copy(self, request, pk: int):
-        instance = self.get_object()
-        name = request.data.get("name") if isinstance(request.data, dict) else None
-        try:
-            with transaction.atomic():
-                new_instance = McpToolCopyService().copy(instance, name=name)
-        except Exception as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            McpToolSerializer(new_instance).data, status=status.HTTP_201_CREATED
-        )
 
 
 class GraphFileViewSet(ModelViewSet):

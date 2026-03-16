@@ -1,11 +1,20 @@
 from tables.import_export.utils import ensure_unique_identifier
 from tables.models import Graph
 from tables.models.graph_models import ConditionalEdge, Edge
+from tables.services.copy_services.base_copy_service import BaseCopyService
 from tables.services.copy_services.helpers import copy_python_code
 from tables.services.copy_services.node_copy_handlers import NODE_COPY_HANDLERS
 
 
-class GraphCopyService:
+class GraphCopyService(BaseCopyService):
+    """Copy service for Graph entities.
+
+    Duplicates all scalar fields, then clones every node via NODE_COPY_HANDLERS,
+    building a node_id_map. Edges and conditional edges are cloned with remapped
+    node IDs. Two post-processing passes fix internal node ID references in
+    DecisionTableNode fields and graph metadata JSON.
+    """
+
     def copy(self, graph: Graph, name: str | None = None) -> Graph:
         existing_names = Graph.objects.values_list("name", flat=True)
         new_name = ensure_unique_identifier(
