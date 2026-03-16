@@ -167,7 +167,7 @@ class TestCodeAgentNodeAPI:
 @pytest.mark.django_db
 class TestCodeAgentNodeRequestModels:
     def test_django_request_model(self):
-        from tables.request_models import CodeAgentNodeData, GraphData
+        from src.shared.models import CodeAgentNodeData, GraphData
 
         data = CodeAgentNodeData(
             node_name="test",
@@ -188,7 +188,7 @@ class TestCodeAgentNodeRequestModels:
 
     def test_crew_request_model_parity(self):
         """Verify Django CodeAgentNodeData fields match expected crew contract."""
-        from tables.request_models import CodeAgentNodeData
+        from src.shared.models import CodeAgentNodeData
 
         data = CodeAgentNodeData(node_name="parity_test", llm_config_id=2)
         assert data.agent_mode == "build"
