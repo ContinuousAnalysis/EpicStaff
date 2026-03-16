@@ -22,9 +22,8 @@ import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { authGuard } from './core/guards/auth.guard';
 import { ToolsListPageComponent } from './features/tools/pages/tools-list-page/tools-list-page.component';
 import { FlowsListPageComponent } from './features/flows/pages/flows-list-page/flows-list-page.component';
-import { LoginPageComponent } from './pages/login-page/login-page.component';
-import { SetupPageComponent } from './pages/setup-page/setup-page.component';
-import { setupGuard } from './core/guards/setup.guard';
+import { LoginPageComponent } from './features/auth/components/login-page/login-page.component';
+import { SignUpPageComponent } from './features/auth/components/sign-up-page/sign-up-page.component';
 import {
     CollectionsListPageComponent
 } from "./features/knowledge-sources/pages/collections-list-page/collections-list-page.component";
@@ -35,9 +34,8 @@ export const routes: Routes = [
         component: LoginPageComponent,
     },
     {
-        path: 'setup',
-        component: SetupPageComponent,
-        canActivate: [setupGuard],
+        path: 'sign-up',
+        component: SignUpPageComponent,
     },
     {
         path: '',

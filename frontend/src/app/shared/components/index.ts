@@ -30,3 +30,4 @@ export * from './list';
 export * from './multi-select/multi-select.component';
 export * from './select/select.component';
 export * from './app-validation-errors/validation-errors.component';
+export * from './password-strength/password-strength.component';

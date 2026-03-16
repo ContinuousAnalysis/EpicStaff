@@ -1,0 +1,55 @@
+<div class="page">
+    <div class="card">
+        <app-icon
+            icon="logo"
+            size="120px"
+        />
+
+        <div class="title-section">
+            <h1 class="title">Welcome to <span>EpicStaff</span></h1>
+            <p class="subtitle">Create your account</p>
+        </div>
+
+        <form
+            [formGroup]="form"
+            class="form"
+        >
+            <div>
+                <app-custom-input
+                    label="Username"
+                    formControlName="username"
+                />
+                <app-validation-errors [control]="form.get('username')!"/>
+            </div>
+
+            <div>
+                <app-custom-input
+                    label="Password"
+                    type="password"
+                    formControlName="password"
+                />
+                <app-password-strength [password]="password"/>
+                <app-validation-errors [control]="form.get('password')!"/>
+            </div>
+        </form>
+
+        <div class="terms-row">
+            <app-checkbox/>
+            <p class="terms-text">
+                I agree to the
+                <span class="terms-link">Terms of Service</span>
+                and
+                <span class="terms-link">Privacy Policy</span>
+            </p>
+        </div>
+
+        <app-button
+            class="btn"
+            (click)="onSubmit()"
+        >
+            Create account
+        </app-button>
+    </div>
+
+    <p class="prompt">Already have an account? <span (click)="navToLogin()">Log in</span></p>
+</div>
