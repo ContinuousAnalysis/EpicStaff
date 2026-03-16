@@ -30,6 +30,7 @@ export interface CreateTelegramTriggerNodeRequest {
     telegram_bot_api_key: string;
     webhook_trigger: WebhookTriggerModel | null;
     fields: CreateTelegramTriggerNodeField[];
+    metadata?: Record<string, any>;
 }
 
 export interface TelegramTriggerNodeField {
@@ -45,5 +46,6 @@ export interface GetTelegramTriggerNodeRequest {
     graph: number;
     telegram_bot_api_key: string;
     fields: TelegramTriggerNodeField[];
+    metadata: Record<string, any>;
     webhook_trigger: WebhookTriggerModel | null;
 }
