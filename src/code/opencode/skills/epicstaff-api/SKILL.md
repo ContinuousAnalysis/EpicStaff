@@ -89,6 +89,10 @@ The `push` and `patch-*` CLI commands update both automatically. This is the mai
 
 `_build_route_maps` (in `session_manager_service.py`) builds the route map from **metadata connections**, matching DB `node_name` against metadata `node_name` to find UUIDs. If the names don't match, routing fails silently. DB edges only handle non-DT routing. Both Decision Table (DT) and Classification Decision Table (CDT) nodes use this mechanism.
 
+### Output Variables
+
+Node output is written to variables.<subvariable> — the output_variable_path field on each node determines which subvariable. The **Start node** in the flow designer shows all available variables.* subvariables, making it the reference for what data is available to downstream nodes via input_map.
+
 ### Python Node Code Convention
 
 Python nodes and Webhook nodes require a `def main(...)` entrypoint. The crew executor calls `main()` at runtime — code without it fails with `name 'main' is not defined`.

@@ -12,7 +12,6 @@ Endpoints:
     GET  /health                          → manager health check
 """
 
-import asyncio
 import json
 import os
 import signal
@@ -29,11 +28,13 @@ from threading import Lock, Thread
 # Config
 # ---------------------------------------------------------------------------
 
+
 def _require_env(name: str) -> str:
     val = os.environ.get(name)
     if not val:
         raise RuntimeError(f"Required environment variable {name} is not set")
     return val
+
 
 MANAGER_PORT = int(_require_env("CODE_MANAGER_PORT"))
 BASE_INSTANCE_PORT = int(_require_env("CODE_BASE_PORT"))
@@ -66,6 +67,7 @@ PROVIDER_KEY_MAP = {
 # Instance data
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Instance:
     llm_config_id: int
@@ -81,6 +83,7 @@ class Instance:
 # ---------------------------------------------------------------------------
 # Instance Pool
 # ---------------------------------------------------------------------------
+
 
 class InstancePool:
     def __init__(self):
@@ -127,35 +130,64 @@ pool = InstancePool()
 # LLM config fetch
 # ---------------------------------------------------------------------------
 
+
 def _api_get(path: str) -> dict:
     """GET a JSON resource from the Django API."""
     url = f"{DJANGO_API}{path}"
+    print(f"[InstanceManager] _api_get → {url}")
     req = urllib.request.Request(url, headers={"Host": "localhost"})
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+            print(f"[InstanceManager] _api_get ← {url} OK: {data}")
+            return data
+    except Exception as e:
+        print(f"[InstanceManager] _api_get ← {url} ERROR: {e}")
+        raise
 
 
 def fetch_llm_config(config_id: int) -> dict:
-    """Fetch LLM config + resolve model name from Django API."""
+    """Fetch LLM config + resolve model name and provider from Django API."""
+    print(f"[InstanceManager] fetch_llm_config config_id={config_id}")
     config = _api_get(f"/llm-configs/{config_id}/")
-    # config["model"] is a numeric FK — resolve to actual model name
+    print(f"[InstanceManager] llm_config raw: {config}")
+    # config["model"] is a numeric FK — resolve to actual model name and provider
     model_id = config.get("model")
     if model_id and isinstance(model_id, int):
         try:
             model_rec = _api_get(f"/llm-models/{model_id}/")
+            print(f"[InstanceManager] model_rec raw: {model_rec}")
             config["model_name"] = model_rec.get("name", str(model_id))
+            # Resolve provider via LLMModel.llm_provider FK → Provider.name
+            provider_id = model_rec.get("llm_provider")
+            print(f"[InstanceManager] provider_id from model: {provider_id}")
+            if provider_id:
+                try:
+                    provider_rec = _api_get(f"/providers/{provider_id}/")
+                    print(f"[InstanceManager] provider_rec raw: {provider_rec}")
+                    config.setdefault("provider", provider_rec.get("name", "").lower())
+                except Exception as e:
+                    print(
+                        f"[InstanceManager] Warning: could not fetch provider {provider_id}: {e}"
+                    )
         except Exception as e:
             print(f"[InstanceManager] Warning: could not fetch model {model_id}: {e}")
-    # Parse provider from custom_name (format: "provider/model-name")
+    else:
+        print(f"[InstanceManager] model_id is missing or not int: {model_id!r}")
+    # custom_name in "provider/model" format overrides the above if present
     custom_name = config.get("custom_name", "")
-    if "/" in custom_name and not config.get("provider"):
+    if "/" in custom_name:
         config["provider"] = custom_name.split("/")[0].strip().lower()
+    print(
+        f"[InstanceManager] fetch_llm_config result: provider={config.get('provider')!r}, model_name={config.get('model_name')!r}"
+    )
     return config
 
 
 # ---------------------------------------------------------------------------
 # OpenCode instance lifecycle
 # ---------------------------------------------------------------------------
+
 
 def _write_opencode_config(provider: str, model: str):
     """Write opencode.json into the shared HOME directory.
@@ -173,13 +205,7 @@ def _write_opencode_config(provider: str, model: str):
         "autoupdate": False,
         "share": "disabled",
         "model": f"{provider}/{model}",
-        "provider": {
-            provider: {
-                "models": {
-                    model: {}
-                }
-            }
-        },
+        "provider": {provider: {"models": {model: {}}}},
         "permission": {
             "*": "allow",
             "edit": "allow",
@@ -193,23 +219,36 @@ def _write_opencode_config(provider: str, model: str):
 
 def spawn_instance(config_id: int) -> Instance:
     """Spawn a new OpenCode instance for the given LLM config."""
+    print(
+        f"[InstanceManager] spawn_instance config_id={config_id} pool_count={pool.count()}"
+    )
     if pool.count() >= MAX_INSTANCES:
         raise RuntimeError(f"Max instances ({MAX_INSTANCES}) reached")
 
     llm_config = fetch_llm_config(config_id)
     provider = llm_config.get("provider")
     if not provider:
-        raise RuntimeError(f"LLM config {config_id}: could not determine provider (custom_name={llm_config.get('custom_name')})")
+        raise RuntimeError(
+            f"LLM config {config_id}: could not determine provider (custom_name={llm_config.get('custom_name')})"
+        )
     provider = provider.lower()
     model = llm_config.get("model_name")
     if not model:
-        raise RuntimeError(f"LLM config {config_id}: could not resolve model name (model FK={llm_config.get('model')})")
+        raise RuntimeError(
+            f"LLM config {config_id}: could not resolve model name (model FK={llm_config.get('model')})"
+        )
     api_key = llm_config.get("api_key") or ""
     base_url = llm_config.get("base_url") or ""
 
     port = pool.next_port()
+    print(
+        f"[InstanceManager] spawning opencode: provider={provider!r} model={model!r} port={port} api_key_set={bool(api_key)} base_url={base_url!r}"
+    )
 
     _write_opencode_config(provider, model)
+    print(
+        f"[InstanceManager] opencode.json written to {SHARED_HOME / '.config' / 'opencode' / 'opencode.json'}"
+    )
 
     env = os.environ.copy()
     env["HOME"] = str(SHARED_HOME)
@@ -218,13 +257,18 @@ def spawn_instance(config_id: int) -> Instance:
     # Set the provider-specific API key env var
     key_var = PROVIDER_KEY_MAP.get(provider, f"{provider.upper()}_API_KEY")
     env[key_var] = api_key
+    print(
+        f"[InstanceManager] setting env var {key_var}={'<set>' if api_key else '<empty>'}"
+    )
 
     if base_url:
         env[f"{provider.upper()}_BASE_URL"] = base_url
 
     log_dir = LOGS_DIR / str(config_id)
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = open(log_dir / "opencode.log", "w")
+    log_path = log_dir / "opencode.log"
+    log_file = open(log_path, "w")
+    print(f"[InstanceManager] opencode log → {log_path}")
 
     proc = subprocess.Popen(
         ["opencode", "serve", "--port", str(port), "--hostname", "0.0.0.0"],
@@ -233,22 +277,31 @@ def spawn_instance(config_id: int) -> Instance:
         stdout=log_file,
         stderr=log_file,
     )
+    print(f"[InstanceManager] opencode process started pid={proc.pid} port={port}")
 
     # Wait for health
     healthy = False
-    for _ in range(30):
+    for i in range(30):
         try:
             hreq = urllib.request.Request(f"http://localhost:{port}/global/health")
             with urllib.request.urlopen(hreq, timeout=2) as resp:
                 data = json.loads(resp.read())
+                print(f"[InstanceManager] health check attempt {i+1}: {data}")
                 if data.get("healthy"):
                     healthy = True
                     break
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[InstanceManager] health check attempt {i+1} failed: {e}")
         time.sleep(1)
 
     if not healthy:
+        # Dump opencode log on failure
+        log_file.flush()
+        try:
+            log_contents = log_path.read_text()
+            print(f"[InstanceManager] opencode log dump:\n{log_contents}")
+        except Exception:
+            pass
         proc.kill()
         proc.wait()
         raise RuntimeError(f"OpenCode instance on port {port} failed to start")
@@ -265,7 +318,9 @@ def spawn_instance(config_id: int) -> Instance:
         last_used=now,
     )
     pool.add(inst)
-    print(f"[InstanceManager] Spawned instance config={config_id} port={port} pid={proc.pid} model={provider}/{model}")
+    print(
+        f"[InstanceManager] Spawned instance config={config_id} port={port} pid={proc.pid} model={provider}/{model}"
+    )
     return inst
 
 
@@ -276,9 +331,13 @@ def stop_instance(config_id: int) -> bool:
         return False
     try:
         os.kill(inst.pid, signal.SIGTERM)
-        print(f"[InstanceManager] Stopped instance config={config_id} port={inst.port} pid={inst.pid}")
+        print(
+            f"[InstanceManager] Stopped instance config={config_id} port={inst.port} pid={inst.pid}"
+        )
     except ProcessLookupError:
-        print(f"[InstanceManager] Instance config={config_id} pid={inst.pid} already dead")
+        print(
+            f"[InstanceManager] Instance config={config_id} pid={inst.pid} already dead"
+        )
     # Reap the child to prevent zombies
     try:
         os.waitpid(inst.pid, 0)
@@ -334,20 +393,25 @@ def reap_idle():
     now = time.time()
     for inst in pool.all():
         if not _is_alive(inst):
-            print(f"[InstanceManager] Removing dead instance config={inst.llm_config_id} pid={inst.pid}")
+            print(
+                f"[InstanceManager] Removing dead instance config={inst.llm_config_id} pid={inst.pid}"
+            )
             pool.remove(inst.llm_config_id)
             continue
         if (now - inst.last_used) > IDLE_TIMEOUT:
             if _has_active_sessions(inst):
                 inst.last_used = now
                 continue
-            print(f"[InstanceManager] Reaping idle instance config={inst.llm_config_id}")
+            print(
+                f"[InstanceManager] Reaping idle instance config={inst.llm_config_id}"
+            )
             stop_instance(inst.llm_config_id)
 
 
 # ---------------------------------------------------------------------------
 # HTTP handler
 # ---------------------------------------------------------------------------
+
 
 class ManagerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -370,15 +434,21 @@ class ManagerHandler(BaseHTTPRequestHandler):
             inst = pool.get(config_id)
             if inst:
                 if _is_alive(inst):
-                    self._json_response({"port": inst.port, "status": "ready", **asdict(inst)})
+                    self._json_response(
+                        {"port": inst.port, "status": "ready", **asdict(inst)}
+                    )
                     return
-                print(f"[InstanceManager] Cached instance config={config_id} is dead, respawning")
+                print(
+                    f"[InstanceManager] Cached instance config={config_id} is dead, respawning"
+                )
                 pool.remove(config_id)
 
             # Spawn new instance
             try:
                 inst = spawn_instance(config_id)
-                self._json_response({"port": inst.port, "status": "ready", **asdict(inst)})
+                self._json_response(
+                    {"port": inst.port, "status": "ready", **asdict(inst)}
+                )
             except RuntimeError as e:
                 self._json_response({"error": str(e)}, status=503)
             except Exception as e:
@@ -420,6 +490,7 @@ class ManagerHandler(BaseHTTPRequestHandler):
 # Reaper thread
 # ---------------------------------------------------------------------------
 
+
 def _reaper_loop():
     while True:
         time.sleep(REAP_INTERVAL)
@@ -432,6 +503,7 @@ def _reaper_loop():
 # ---------------------------------------------------------------------------
 # Startup helpers
 # ---------------------------------------------------------------------------
+
 
 def sync_skills():
     """Copy canonical skill files from image to savefiles."""
@@ -450,16 +522,19 @@ def ensure_dirs():
     my_es = SAVEFILES_DIR / ".my_epicstaff"
     for sub in ("flows", "tools", "projects"):
         (my_es / sub).mkdir(parents=True, exist_ok=True)
-    print(f"[InstanceManager] Directory structure verified")
+    print("[InstanceManager] Directory structure verified")
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     print(f"[InstanceManager] Starting on port {MANAGER_PORT}")
-    print(f"[InstanceManager] Max instances: {MAX_INSTANCES}, idle timeout: {IDLE_TIMEOUT}s")
+    print(
+        f"[InstanceManager] Max instances: {MAX_INSTANCES}, idle timeout: {IDLE_TIMEOUT}s"
+    )
 
     ensure_dirs()
     sync_skills()
