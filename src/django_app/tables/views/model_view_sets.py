@@ -580,7 +580,22 @@ class ToolConfigViewSet(ModelViewSet):
     filterset_fields = ["tool", "name"]
 
 
-class PythonCodeViewSet(viewsets.ModelViewSet):
+class ContentHashPreconditionMixin:
+    """Passes content_hash from request data to the model instance before saving.
+
+    The model's ContentHashMixin.save() validates _expected_hash against the DB,
+    raising 409 Conflict on mismatch. Omitting content_hash skips the check.
+    Scripts can also set instance._expected_hash = hash before calling .save().
+    """
+
+    def perform_update(self, serializer):
+        incoming_hash = self.request.data.get("content_hash")
+        if incoming_hash is not None:
+            serializer.instance._expected_hash = incoming_hash
+        super().perform_update(serializer)
+
+
+class PythonCodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     """
     A viewset for viewing and editing PythonCode instances.
     """
@@ -763,21 +778,6 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return Graph.objects.prefetch_related("tags")
-
-
-class ContentHashPreconditionMixin:
-    """Passes content_hash from request data to the model instance before saving.
-
-    The model's ContentHashMixin.save() validates _expected_hash against the DB,
-    raising 409 Conflict on mismatch. Omitting content_hash skips the check.
-    Scripts can also set instance._expected_hash = hash before calling .save().
-    """
-
-    def perform_update(self, serializer):
-        incoming_hash = self.request.data.get("content_hash")
-        if incoming_hash is not None:
-            serializer.instance._expected_hash = incoming_hash
-        super().perform_update(serializer)
 
 
 class CrewNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
@@ -1193,7 +1193,7 @@ class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     serializer_class = TelegramTriggerNodeFieldSerializer
 
 
-class NoteNodeViewSet(ModelViewSet):
+class NoteNodeViewSet(ContentHashPreconditionMixin, ModelViewSet):
     queryset = NoteNode.objects.all()
     serializer_class = NoteNodeSerializer
 

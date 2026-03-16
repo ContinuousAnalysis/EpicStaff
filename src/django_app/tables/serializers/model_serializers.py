@@ -315,7 +315,7 @@ class ToolSerializer(serializers.ModelSerializer):
         ]
 
 
-class PythonCodeSerializer(serializers.ModelSerializer):
+class PythonCodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     libraries = serializers.ListField(
         child=serializers.CharField(),
         write_only=False,
