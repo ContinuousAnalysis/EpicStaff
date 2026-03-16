@@ -266,3 +266,4 @@ dev/dev.env
 .claude/
 CLAUDE.md
 CLAUDE.local.md
+.claude/settings.local.json

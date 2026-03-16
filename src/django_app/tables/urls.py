@@ -84,6 +84,7 @@ from tables.views.default_config import (
     DefaultConfigAPIView,
     DefaultRealtimeAgentConfigAPIView,
     DefaultToolConfigAPIView,
+    DefaultModelsAPIView,
 )
 
 from tables.views.knowledge_views.collection_management_views import (
@@ -248,6 +249,7 @@ urlpatterns = [
         DefaultToolConfigAPIView.as_view(),
         name="default_tool_config",
     ),
+    path("default-models/", DefaultModelsAPIView.as_view(), name="default_models"),
     path("quickstart/", QuickstartView.as_view(), name="quickstart"),
     path(
         "run-session/subscribe/<int:session_id>/",
