@@ -10,6 +10,7 @@ import {
     EpChatCommandResult,
     EpChatEvent,
     EpicChatCreateAgentPayload,
+    EpicChatSyncAgentsPayload,
 } from './models/epic-chat-command.model';
 
 @Injectable({
@@ -189,23 +190,19 @@ export class EpicChatService {
         const flowUrl = `${window.location.origin}/api`;
         this.flowsApiService.getEpicChatEnabledFlows().subscribe({
             next: (flows) => {
-                if (!flows.length) {
-                    return;
-                }
                 console.log(`[EpicChat] Syncing ${flows.length} agent(s)`);
-                flows.forEach((flow, i) => {
-                    // Remove first (clears any stale duplicate), then create
-                    setTimeout(() => {
-                        this.requestRemoveAgent(flow.id);
-                    }, i * 600);
-                    setTimeout(() => {
-                        this.requestCreateAgent({
-                            name: flow.name?.trim() || `Flow ${flow.id}`,
-                            description: flow.description?.trim(),
-                            flowId: flow.id,
-                            flowUrl,
-                        });
-                    }, i * 600 + 300);
+                const payload: EpicChatSyncAgentsPayload = {
+                    agents: flows.map((flow) => ({
+                        name: flow.name?.trim() || `Flow ${flow.id}`,
+                        description: flow.description?.trim(),
+                        flowId: flow.id,
+                        flowUrl,
+                    })),
+                };
+                this.epChatCommandSignal.set({
+                    requestId: this.generateRequestId(),
+                    action: EP_CHAT_COMMANDS.AGENTS_SYNC,
+                    payload,
                 });
             },
             error: (err) =>

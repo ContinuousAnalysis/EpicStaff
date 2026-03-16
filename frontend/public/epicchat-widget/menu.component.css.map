@@ -1,7 +1,7 @@
 {
   "version": 3,
   "sources": ["src/app/components/shared/menu/menu.component.scss"],
-  "sourcesContent": [":host {\n    position: absolute;\n    display: flex;\n    flex-direction: column;\n    z-index: 1005;\n    padding: 12px 0;\n    background-color: var(--ep-color-surface);\n    box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n    border-radius: 4px;\n    min-width: 160px;\n}\n"],
-  "mappings": ";AAAA;AACI,YAAA;AACA,WAAA;AACA,kBAAA;AACA,WAAA;AACA,WAAA,KAAA;AACA,oBAAA,IAAA;AACA,cAAA,IAAA,IAAA,IAAA,IAAA,IAAA;AACA,iBAAA;AACA,aAAA;;",
+  "sourcesContent": [":host {\r\n  position: absolute;\r\n  display: flex;\r\n  flex-direction: column;\r\n  z-index: 1005;\r\n  padding: 12px 0;\r\n  background-color: var(--ep-color-surface);\r\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\r\n  border-radius: 4px;\r\n  min-width: 160px;\r\n}\r\n"],
+  "mappings": ";AAAA;AACE,YAAA;AACA,WAAA;AACA,kBAAA;AACA,WAAA;AACA,WAAA,KAAA;AACA,oBAAA,IAAA;AACA,cAAA,IAAA,IAAA,IAAA,IAAA,IAAA;AACA,iBAAA;AACA,aAAA;;",
   "names": []
 }
