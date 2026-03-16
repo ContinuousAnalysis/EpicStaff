@@ -12,7 +12,7 @@ import { DialogModule, Dialog } from '@angular/cdk/dialog';
 import { switchMap } from 'rxjs/operators';
 
 import { FlowsStorageService } from '../../../../services/flows-storage.service';
-import { GraphDto } from '../../../../models/graph.model';
+import { GraphDto, GetGraphLightRequest } from '../../../../models/graph.model';
 import {
     FlowCardComponent,
     FlowCardAction,
@@ -54,7 +54,7 @@ export class MyFlowsComponent {
     private readonly dialog = inject(Dialog);
     private readonly toastService = inject(ToastService);
     private readonly confirmationDialogService = inject(
-        ConfirmationDialogService
+        ConfirmationDialogService,
     );
     private readonly importExportService = inject(ImportExportService);
     private readonly labelsStorage = inject(LabelsStorageService);
@@ -72,7 +72,9 @@ export class MyFlowsComponent {
                 next: () => {},
                 error: (err: HttpErrorResponse) => {
                     console.error('Error loading flows', err);
-                    this.error.set('Failed to load flows. Please try again later.');
+                    this.error.set(
+                        'Failed to load flows. Please try again later.',
+                    );
                 },
             });
         });
@@ -80,20 +82,24 @@ export class MyFlowsComponent {
 
     public retryLoad(): void {
         this.error.set(null);
-        this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe({
-            next: () => {},
-            error: (err: HttpErrorResponse) => {
-                console.error('Error loading flows', err);
-                this.error.set('Failed to load flows. Please try again later.');
-            },
-        });
+        this.flowsService
+            .getFlows(true, this.labelsStorage.activeLabelFilter())
+            .subscribe({
+                next: () => {},
+                error: (err: HttpErrorResponse) => {
+                    console.error('Error loading flows', err);
+                    this.error.set(
+                        'Failed to load flows. Please try again later.',
+                    );
+                },
+            });
     }
 
-    public onFlowSelect(flowId: number): void{
+    public onFlowSelect(flowId: number): void {
         this.flowsService.toggleFlowSelection(flowId);
     }
 
-    public isFlowSelected(flowId: number): boolean{
+    public isFlowSelected(flowId: number): boolean {
         return this.selectedFlowIds().includes(flowId);
     }
 
@@ -139,12 +145,12 @@ export class MyFlowsComponent {
             default:
                 console.log(
                     `Action '${action}' not implemented for flow:`,
-                    flow.id
+                    flow.id,
                 );
         }
     }
 
-    private confirmAndDeleteFlow(flow: GraphDto): void {
+    private confirmAndDeleteFlow(flow: GetGraphLightRequest): void {
         this.confirmationDialogService
             .confirmDeleteWithTruncation(flow.name, 50)
             .subscribe((result: ConfirmationResult) => {
@@ -152,13 +158,13 @@ export class MyFlowsComponent {
                     this.flowsService.deleteFlow(flow.id).subscribe({
                         next: () => {
                             console.log(
-                                `Flow ${flow.id} - ${flow.name} deleted successfully.`
+                                `Flow ${flow.id} - ${flow.name} deleted successfully.`,
                             );
                         },
                         error: (err) => {
                             console.error(
                                 `Error deleting flow ${flow.id} - ${flow.name}`,
-                                err
+                                err,
                             );
                         },
                     });
@@ -166,7 +172,7 @@ export class MyFlowsComponent {
             });
     }
 
-    private openRenameDialog(flow: GraphDto): void {
+    private openRenameDialog(flow: GetGraphLightRequest): void {
         const dialogRef = this.dialog.open<
             string | { name: string; description: string; label_ids: number[] }
         >(FlowRenameDialogComponent, {
@@ -193,13 +199,13 @@ export class MyFlowsComponent {
                         .subscribe({
                             next: (updatedFlow) => {
                                 console.log(
-                                    `Flow renamed successfully to: ${updatedFlow.name}`
+                                    `Flow renamed successfully to: ${updatedFlow.name}`,
                                 );
                             },
                             error: (err) => {
                                 console.error(
                                     `Error renaming flow ${flow.id}`,
-                                    err
+                                    err,
                                 );
                             },
                         });
@@ -212,20 +218,20 @@ export class MyFlowsComponent {
                         switchMap((updated) =>
                             this.flowsService.updateFlowLabels(
                                 updated.id,
-                                label_ids || []
-                            )
-                        )
+                                label_ids || [],
+                            ),
+                        ),
                     )
                     .subscribe({
                         next: () => {
                             console.log(
-                                `Flow ${flow.id} updated successfully.`
+                                `Flow ${flow.id} updated successfully.`,
                             );
                         },
                         error: (err) => {
                             console.error(
                                 `Error updating flow ${flow.id}`,
-                                err
+                                err,
                             );
                             this.toastService.error('Failed to update flow');
                         },
@@ -237,7 +243,7 @@ export class MyFlowsComponent {
         this.graphUpdateService.saveGraph(flowState, graph).subscribe({
             next: (result) => {
                 this.toastService.success(
-                    `Flow copied and saved as "${result.graph.name}"`
+                    `Flow copied and saved as "${result.graph.name}"`,
                 );
             },
             error: (err) => {
@@ -247,7 +253,7 @@ export class MyFlowsComponent {
         });
     }
 
-    private openCopyDialog(flow: GraphDto): void {
+    private openCopyDialog(flow: GetGraphLightRequest): void {
         const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
             data: { flowName: `${flow.name} Copy`, title: 'Copy Flow' },
         });
@@ -267,7 +273,7 @@ export class MyFlowsComponent {
         });
     }
 
-    private runFlow(flow: GraphDto): void {
+    private runFlow(flow: GetGraphLightRequest): void {
         // Empty inputs object as per API requirements
         const inputs = {};
 
@@ -285,7 +291,7 @@ export class MyFlowsComponent {
                 } else {
                     console.error(
                         'Invalid response from run graph API:',
-                        response
+                        response,
                     );
                 }
             },
@@ -303,13 +309,13 @@ export class MyFlowsComponent {
                 }
 
                 this.toastService.error(
-                    `Error running flow "${flow.name}": ${errorMessage}`
+                    `Error running flow "${flow.name}": ${errorMessage}`,
                 );
             },
         });
     }
 
-    private exportFlow(flow: GraphDto): void {
+    private exportFlow(flow: GetGraphLightRequest): void {
         this.importExportService.exportFlow(flow.id.toString()).subscribe({
             next: (blob) => {
                 const url = window.URL.createObjectURL(blob);
@@ -320,7 +326,7 @@ export class MyFlowsComponent {
                 window.URL.revokeObjectURL(url);
 
                 this.toastService.success(
-                    `Flow "${flow.name}" exported successfully`
+                    `Flow "${flow.name}" exported successfully`,
                 );
             },
             error: (error) => {

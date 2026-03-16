@@ -19,7 +19,7 @@
     <!-- Labels section header -->
     <div class="section-header">
         <div class="section-label-header">
-            <app-icon icon="ui/label" size="0.75rem"></app-icon>
+            <app-icon icon="ui/label" size="12px"></app-icon>
             <span class="section-label">Labels</span>
         </div>
         <button class="add-btn" (click)="startAddRootLabel()" title="Add label">
@@ -87,7 +87,7 @@
             </button>           
             <app-icon
                 icon="ui/label"
-                size="0.85rem"
+                size="12px"
                 class="label-icon"
             ></app-icon>
 
@@ -104,20 +104,20 @@
                     autofocus
                 />
                 <button
-                    class="confirm-btn small"
+                    class="confirm-btn"
                     (click)="
                         $event.stopPropagation(); confirmRename(item.node.id)
                     "
                     title="Confirm rename"
                 >
-                    <app-icon icon="ui/check" size="0.75rem"></app-icon>
+                    <app-icon icon="ui/check" size="0.85rem"></app-icon>
                 </button>
                 <button
-                    class="cancel-btn small"
+                    class="cancel-btn"
                     (click)="$event.stopPropagation(); cancelRename()"
                     title="Cancel rename"
                 >
-                    <app-icon icon="ui/x" size="0.75rem"></app-icon>
+                    <app-icon icon="ui/x" size="0.85rem"></app-icon>
                 </button>
             } @else {
                 <span class="label-name">{{ item.node.name }}</span>
@@ -207,7 +207,7 @@
         [class.active]="activeLabelFilter() === 'unlabeled'"
         (click)="selectUnlabeled()"
     >
-        <app-icon icon="ui/nolabel" size="0.9rem"></app-icon>
+        <app-icon icon="ui/nolabel" size="12px"></app-icon>
         <span>Unlabeled</span>
     </div>
 </div>

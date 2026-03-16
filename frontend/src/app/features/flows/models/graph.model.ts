@@ -28,6 +28,16 @@ import {
     GetTelegramTriggerNodeRequest
 } from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
 
+export interface SubflowLightDto {
+    id: number;
+    name: string;
+    description: string;
+    tags?: string[];
+    label_ids?: number[];
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface GraphDto {
     id: number;
     name: string;
@@ -45,17 +55,23 @@ export interface GraphDto {
     decision_table_node_list: GetDecisionTableNodeRequest[];
     description: string;
     metadata: FlowModel;
-    tags?: [];
+    tags?: string[];
     audio_transcription_node_list: GetAudioToTextNodeRequest[];
     label_ids?: number[];
+    created_at?: string;
+    updated_at?: string;
+    subflows?: SubflowLightDto[];
 }
 
 export interface GetGraphLightRequest {
     id: number;
     name: string;
     description: string;
-    tags: string[];
+    tags?: string[];
     label_ids?: number[];
+    created_at?: string;
+    updated_at?: string;
+    subflows?: SubflowLightDto[];
 }
 
 export interface CreateGraphDtoRequest {
@@ -63,7 +79,7 @@ export interface CreateGraphDtoRequest {
 
     description?: string;
     metadata?: any;
-    tags?: [];
+    tags?: string[];
     start_node_list?: StartNode[];
     crew_node_list?: CrewNode[];
     python_node_list?: PythonNode[];
@@ -84,5 +100,5 @@ export interface UpdateGraphDtoRequest {
 
     description: string;
     metadata: any;
-    tags?: [];
+    tags?: string[];
 }

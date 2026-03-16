@@ -60,9 +60,6 @@
         </header>
         <nav class="tabs">
             <div class="tabs-left">
-                <button class="sidebar-toggle-btn" (click)="toggleSidebar()" [class.active]="showSidebar()" title="Label Branches">
-                    <!-- <app-icon icon="ui/tag" size="1rem"></app-icon> -->
-                </button>
                 @for (tab of tabs; track tab.link) {
                 <app-tab-button
                     routerLink="{{ tab.link }}"
@@ -107,7 +104,23 @@
             <app-flows-label-sidebar (closeSidebar)="toggleSidebar()"></app-flows-label-sidebar>
         }
         <div class="body-content">
-            <router-outlet></router-outlet>
+            <div class="breadcrumb-bar">
+                <button class="expand-sidebar-btn" (click)="toggleSidebar()" [class.active]="showSidebar()" title="Label Branches">
+                    <app-icon icon="ui/expand-sidebar" size="0.85rem"></app-icon>
+                </button>
+                <div class="breadcrumb-path">
+                    <button class="breadcrumb-home" (click)="selectAllLabels()" title="All Flows">
+                        <app-icon icon="ui/home" size="1rem"></app-icon>
+                    </button>
+                    @if (activeLabelFilterDisplay() !== 'all') {
+                        <span class="breadcrumb-sep">/</span>
+                        <span class="breadcrumb-label">{{ activeLabelFilterDisplay() }}</span>
+                    }
+                </div>
+            </div>
+            <div class="content-wrapper">
+                <router-outlet></router-outlet>
+            </div>
         </div>
     </section>
 </div>
