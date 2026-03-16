@@ -4,6 +4,7 @@ polls for responses, streams chunks via StreamWriter, and runs user-defined
 stream handler callbacks.
 """
 
+import os
 import asyncio
 import hashlib
 import json
@@ -20,10 +21,10 @@ from src.crew.services.graph.events import StopEvent
 from src.crew.services.graph.exceptions import StopSession
 from src.crew.services.graph.nodes import BaseNode
 from src.crew.services.run_python_code_service import RunPythonCodeService
-from src.crew.models.request_models import PythonCodeData
+from src.shared.models import PythonCodeData
 
 
-CODE_CONTAINER_URL = "http://code:4080"
+CODE_CONTAINER_URL = os.environ.get("CODE_CONTAINER_URL")
 
 
 class CodeAgentNode(BaseNode):
@@ -90,7 +91,8 @@ class CodeAgentNode(BaseNode):
         """Parse turn count from action like 'Allow build mode' (1) or
         'Allow build mode (3 turns)' (3)."""
         import re
-        m = re.search(r'\((\d+)\s*turns?\)', action_text, re.IGNORECASE)
+
+        m = re.search(r"\((\d+)\s*turns?\)", action_text, re.IGNORECASE)
         return int(m.group(1)) if m else 1
 
     @staticmethod
@@ -98,9 +100,11 @@ class CodeAgentNode(BaseNode):
         """Extract option suffix from action like 'Allow build mode (3 turns) - Fix code'.
         Returns the option text (e.g. 'Fix code') or empty string."""
         import re
+
         m = re.search(
-            r'allow\s+build\s+mode(?:\s*\(\d+\s*turns?\))?\s*-\s*(.+)',
-            action_text, re.IGNORECASE,
+            r"allow\s+build\s+mode(?:\s*\(\d+\s*turns?\))?\s*-\s*(.+)",
+            action_text,
+            re.IGNORECASE,
         )
         return m.group(1).strip() if m else ""
 
@@ -108,6 +112,7 @@ class CodeAgentNode(BaseNode):
         if self.input_map == "__all__":
             return state["variables"]
         from src.crew.utils import map_variables_to_input
+
         return map_variables_to_input(
             state["variables"], self.input_map, set_missing_variables=True
         )
@@ -135,7 +140,9 @@ class CodeAgentNode(BaseNode):
         url = f"http://code:{port}{path}"
         body = json.dumps(data).encode()
         req = urllib.request.Request(
-            url, data=body, method="POST",
+            url,
+            data=body,
+            method="POST",
             headers={"Content-Type": "application/json"},
         )
         try:
@@ -177,7 +184,9 @@ class CodeAgentNode(BaseNode):
     # Session management
     # ------------------------------------------------------------------
 
-    def _get_or_create_session(self, port: int, code_session_id: str) -> tuple[str, bool]:
+    def _get_or_create_session(
+        self, port: int, code_session_id: str
+    ) -> tuple[str, bool]:
         """Find or create an OpenCode session keyed by code_session_id.
         Returns (session_id, is_new)."""
         title = f"epicstaff_ca_{code_session_id}"
@@ -215,14 +224,18 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
     return result if isinstance(result, dict) else {{}}
 """
 
-    async def _call_handler(self, event_type: str, input_context: dict, bypass_stop=False, **kwargs):
+    async def _call_handler(
+        self, event_type: str, input_context: dict, bypass_stop=False, **kwargs
+    ):
         """Fire-and-forget: schedule the stream handler in the sandbox."""
         if not self.stream_handler_code:
             return
 
         async def _run():
             try:
-                libs_hash = hashlib.sha256("|".join(sorted(self.libraries)).encode()).hexdigest()[:16]
+                libs_hash = hashlib.sha256(
+                    "|".join(sorted(self.libraries)).encode()
+                ).hexdigest()[:16]
                 venv_name = f"ca_{libs_hash}" if self.libraries else "default"
                 code_data = PythonCodeData(
                     venv_name=venv_name,
@@ -233,7 +246,9 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                 ctx = {**input_context, **self._handler_state}
                 func_kwargs = {"event_type": event_type, "context": ctx, **kwargs}
                 result = await self.python_code_executor_service.run_code(
-                    code_data, func_kwargs, stop_event=None if bypass_stop else self.stop_event,
+                    code_data,
+                    func_kwargs,
+                    stop_event=None if bypass_stop else self.stop_event,
                 )
                 if isinstance(result, dict) and result.get("result_data"):
                     try:
@@ -243,7 +258,9 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                     except (json.JSONDecodeError, TypeError):
                         pass
             except Exception as e:
-                logger.warning(f"[CodeAgentNode] Stream handler error ({event_type}): {e}")
+                logger.warning(
+                    f"[CodeAgentNode] Stream handler error ({event_type}): {e}"
+                )
 
         prev = self._pending_handler_task
 
@@ -270,7 +287,9 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         for msg in messages:
             role = msg.get("role") or msg.get("info", {}).get("role")
             # Check for structured output (from OpenCode's StructuredOutput tool)
-            structured = msg.get("structured") or (msg.get("info", {}) or {}).get("structured")
+            structured = msg.get("structured") or (msg.get("info", {}) or {}).get(
+                "structured"
+            )
             if structured is not None and role == "assistant":
                 final_answer = json.dumps(structured)
                 continue
@@ -290,23 +309,32 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                         final_answer = t
                 elif pt == "tool":
                     state_data = part.get("state", {}) or {}
-                    tool_calls.append({
-                        "name": part.get("tool", "") or part.get("name", "tool"),
-                        "input": json.dumps(state_data.get("input", "")) if isinstance(state_data.get("input"), dict) else str(state_data.get("input", "")),
-                        "output": str(state_data.get("output", ""))[:500],
-                        "state": state_data.get("status", ""),
-                    })
+                    tool_calls.append(
+                        {
+                            "name": part.get("tool", "") or part.get("name", "tool"),
+                            "input": json.dumps(state_data.get("input", ""))
+                            if isinstance(state_data.get("input"), dict)
+                            else str(state_data.get("input", "")),
+                            "output": str(state_data.get("output", ""))[:500],
+                            "state": state_data.get("status", ""),
+                        }
+                    )
         return reasoning, final_answer, tool_calls
 
     # Tool name → human-readable label for the thinking expander
     _TOOL_LABELS = {
         "skill": "Loading skill",
         "bash": "Running command",
-        "read": "Reading file", "readFile": "Reading file",
-        "write": "Writing file", "writeFile": "Writing file",
-        "apply_patch": "Applying patch", "patch": "Applying patch",
-        "glob": "Searching files", "list": "Listing files",
-        "grep": "Searching code", "search": "Searching code",
+        "read": "Reading file",
+        "readFile": "Reading file",
+        "write": "Writing file",
+        "writeFile": "Writing file",
+        "apply_patch": "Applying patch",
+        "patch": "Applying patch",
+        "glob": "Searching files",
+        "list": "Listing files",
+        "grep": "Searching code",
+        "search": "Searching code",
         "StructuredOutput": "Formatting response",
     }
 
@@ -416,13 +444,17 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                     prompt = f"I have given you build permissions for {granted} turn(s). The user selected: {option}. Proceed."
                 else:
                     prompt = f"I have given you build permissions for {granted} turn(s). Proceed with the plan."
-            logger.info(f"[CodeAgentNode] Build mode granted for {granted} turn(s) by action: {action!r}")
+            logger.info(
+                f"[CodeAgentNode] Build mode granted for {granted} turn(s) by action: {action!r}"
+            )
         elif carry_over_turns > 0:
             effective_mode = "build"
             build_turns_remaining = carry_over_turns - 1
             if not prompt and not action:
                 prompt = f"Build mode continues ({carry_over_turns} turn(s) remaining including this one). Continue with the plan."
-            logger.info(f"[CodeAgentNode] Build mode continued, {carry_over_turns} turns remaining")
+            logger.info(
+                f"[CodeAgentNode] Build mode continued, {carry_over_turns} turns remaining"
+            )
         elif widget_tool.strip().lower() == "build mode":
             effective_mode = "build"
             logger.info("[CodeAgentNode] Build mode enabled via widget tools dropdown")
@@ -430,7 +462,9 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             prompt = action
 
         if not prompt:
-            raise ValueError("CodeAgentNode requires a 'prompt' or 'action' in input_map")
+            raise ValueError(
+                "CodeAgentNode requires a 'prompt' or 'action' in input_map"
+            )
 
         code_sid = self._resolve_code_session_id(state) or f"session_{self.session_id}"
 
@@ -439,8 +473,12 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         oc_session_id, is_new_session = self._get_or_create_session(port, code_sid)
 
         # Extract model info from instance manager response
-        instance_info = self._oc_get(int(CODE_CONTAINER_URL.split(":")[-1]), f"/instance/{self.llm_config_id}")
-        provider = instance_info.get("provider", "openai") if instance_info else "openai"
+        instance_info = self._oc_get(
+            int(CODE_CONTAINER_URL.split(":")[-1]), f"/instance/{self.llm_config_id}"
+        )
+        provider = (
+            instance_info.get("provider", "openai") if instance_info else "openai"
+        )
         model = instance_info.get("model", "gpt-4o") if instance_info else "gpt-4o"
 
         # Build input context early so it's available in cleanup
@@ -450,16 +488,28 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
 
         try:
             return await self._run_agent_loop(
-                state, writer, execution_order, input_, input_context,
-                port, oc_session_id, is_new_session, provider, model, prompt,
-                effective_mode, build_turns_remaining,
+                state,
+                writer,
+                execution_order,
+                input_,
+                input_context,
+                port,
+                oc_session_id,
+                is_new_session,
+                provider,
+                model,
+                prompt,
+                effective_mode,
+                build_turns_remaining,
             )
         except StopSession:
             logger.info("[CodeAgentNode] Session stopped — running cleanup")
             await self._cleanup_on_stop(input_context, port, oc_session_id)
             raise
 
-    async def _cleanup_on_stop(self, input_context: dict, port: int, oc_session_id: str):
+    async def _cleanup_on_stop(
+        self, input_context: dict, port: int, oc_session_id: str
+    ):
         """Abort OpenCode task, cancel handler tasks, notify via stream handler (e.g. update a GChat bubble), stop instance if last user."""
         # Abort the OpenCode agent task so it stops generating
         try:
@@ -480,7 +530,10 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         try:
             self._pending_handler_task = None
             await self._call_handler(
-                "complete", input_context, bypass_stop=True, full_reply="⏹ Session stopped."
+                "complete",
+                input_context,
+                bypass_stop=True,
+                full_reply="⏹ Session stopped.",
             )
             # Give the fire-and-forget task a moment to execute
             if self._pending_handler_task:
@@ -493,9 +546,20 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
         # The idle reaper (CODE_IDLE_TIMEOUT) handles unused instances.
 
     async def _run_agent_loop(
-        self, state, writer, execution_order, input_, input_context,
-        port, oc_session_id, is_new_session, provider, model, prompt,
-        effective_mode=None, build_turns_remaining=0,
+        self,
+        state,
+        writer,
+        execution_order,
+        input_,
+        input_context,
+        port,
+        oc_session_id,
+        is_new_session,
+        provider,
+        model,
+        prompt,
+        effective_mode=None,
+        build_turns_remaining=0,
     ):
         """Core agent loop — extracted so execute() can wrap it with stop cleanup."""
         agent_mode = effective_mode or self.agent_mode
@@ -519,10 +583,15 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             full_prompt = "\n\n".join(parts)
 
         # Snapshot message count BEFORE posting (needed for polling baseline)
-        baseline_count = 0 if is_new_session else len(self._oc_get(port, f"/session/{oc_session_id}/message") or [])
+        baseline_count = (
+            0
+            if is_new_session
+            else len(self._oc_get(port, f"/session/{oc_session_id}/message") or [])
+        )
 
         # Send prompt to OpenCode in background thread so polling starts immediately
         post_error = [None]
+
         def _bg_post():
             try:
                 msg_payload = {
@@ -540,6 +609,7 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             except Exception as e:
                 post_error[0] = e
                 logger.error(f"[CodeAgentNode] Failed to send message: {e}")
+
         post_thread = threading.Thread(target=_bg_post, daemon=True)
         post_thread.start()
 
@@ -563,7 +633,9 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             elapsed = time.time() - start_time
 
             if elapsed > self.max_wait_s:
-                logger.warning(f"[CodeAgentNode] Max wait exceeded ({self.max_wait_s}s)")
+                logger.warning(
+                    f"[CodeAgentNode] Max wait exceeded ({self.max_wait_s}s)"
+                )
                 break
 
             # Check if POST failed
@@ -577,8 +649,17 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                 statuses = self._oc_get(port, "/session/status") or {}
                 if statuses:
                     s = statuses.get(oc_session_id, {})
-                    oc_busy = s.get("type") not in (None, "idle", "error", "failed", "cancelled")
-                    is_idle = not oc_busy and (oc_session_id not in statuses or s.get("type") in ("idle", "error", "failed", "cancelled"))
+                    oc_busy = s.get("type") not in (
+                        None,
+                        "idle",
+                        "error",
+                        "failed",
+                        "cancelled",
+                    )
+                    is_idle = not oc_busy and (
+                        oc_session_id not in statuses
+                        or s.get("type") in ("idle", "error", "failed", "cancelled")
+                    )
                 else:
                     is_idle = True
             except Exception:
@@ -641,8 +722,8 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
                         "is_final": False,
                         "step_id": stream_step_id,
                         "sse_visible": not self.stream_config
-                            or self.stream_config.get("reasoning", True)
-                            or self.stream_config.get("tool_calls", True),
+                        or self.stream_config.get("reasoning", True)
+                        or self.stream_config.get("tool_calls", True),
                     },
                 )
 
@@ -665,15 +746,26 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             silence = time.time() - last_content_time
             if not oc_busy:
                 if not logged_first and silence > self.chunk_timeout_s:
-                    logger.warning(f"[CodeAgentNode] Chunk timeout ({self.chunk_timeout_s}s) — no response started")
+                    logger.warning(
+                        f"[CodeAgentNode] Chunk timeout ({self.chunk_timeout_s}s) — no response started"
+                    )
                     break
-                if logged_first and not reasoning and silence > self.inactivity_timeout_s:
-                    logger.warning(f"[CodeAgentNode] Inactivity timeout ({self.inactivity_timeout_s}s)")
+                if (
+                    logged_first
+                    and not reasoning
+                    and silence > self.inactivity_timeout_s
+                ):
+                    logger.warning(
+                        f"[CodeAgentNode] Inactivity timeout ({self.inactivity_timeout_s}s)"
+                    )
                     break
 
             # Silence indicator dots
             if silence > self.silence_indicator_s and last_reasoning:
-                dots_due = int((silence - self.silence_indicator_s) / self.indicator_repeat_s) + 1
+                dots_due = (
+                    int((silence - self.silence_indicator_s) / self.indicator_repeat_s)
+                    + 1
+                )
                 if dots_due > silence_indicator_sent:
                     silence_indicator_sent = dots_due
                     dotted_text = last_reasoning + "..." * dots_due
@@ -692,7 +784,11 @@ def main(event_type=None, text=None, full_reply=None, context=None, **kwargs):
             except (json.JSONDecodeError, TypeError):
                 pass
 
-        display_text = structured_output.get("message", reply_text) if structured_output else reply_text
+        display_text = (
+            structured_output.get("message", reply_text)
+            if structured_output
+            else reply_text
+        )
 
         # Stream final message
         self.custom_session_message_writer.add_custom_message(
