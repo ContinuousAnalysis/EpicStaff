@@ -4,7 +4,10 @@ from itertools import chain
 from django.db import transaction
 from loguru import logger
 
-from tables.serializers.base_serializer import BaseGraphEntityMixin
+from tables.serializers.base_serializer import (
+    BaseGraphEntityMixin,
+    ContentHashWritableMixin,
+)
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
 )
@@ -1214,7 +1217,7 @@ class PythonCodeResultSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class CrewNodeSerializer(serializers.ModelSerializer):
+class CrewNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     crew = CrewSerializer(read_only=True)
     crew_id = serializers.IntegerField(write_only=True)
 
@@ -1234,7 +1237,7 @@ class CrewNodeSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class PythonNodeSerializer(serializers.ModelSerializer):
+class PythonNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
     class Meta:
@@ -1271,19 +1274,23 @@ class PythonNodeSerializer(serializers.ModelSerializer):
         return self.update(instance, validated_data)
 
 
-class FileExtractorNodeSerializer(serializers.ModelSerializer):
+class FileExtractorNodeSerializer(
+    ContentHashWritableMixin, serializers.ModelSerializer
+):
     class Meta:
         model = FileExtractorNode
         fields = "__all__"
 
 
-class AudioTranscriptionNodeSerializer(serializers.ModelSerializer):
+class AudioTranscriptionNodeSerializer(
+    ContentHashWritableMixin, serializers.ModelSerializer
+):
     class Meta:
         model = AudioTranscriptionNode
         fields = "__all__"
 
 
-class LLMNodeSerializer(serializers.ModelSerializer):
+class LLMNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta:
         model = LLMNode
         fields = "__all__"
@@ -1294,13 +1301,13 @@ class LLMNodeSerializer(serializers.ModelSerializer):
         return data
 
 
-class EdgeSerializer(serializers.ModelSerializer):
+class EdgeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
         model = Edge
         fields = "__all__"
 
 
-class SubGraphNodeSerializer(serializers.ModelSerializer):
+class SubGraphNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
         model = SubGraphNode
         fields = "__all__"
@@ -1320,7 +1327,7 @@ class SubGraphNodeSerializer(serializers.ModelSerializer):
         return data
 
 
-class ConditionalEdgeSerializer(serializers.ModelSerializer):
+class ConditionalEdgeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1357,7 +1364,7 @@ class ConditionalEdgeSerializer(serializers.ModelSerializer):
         return self.update(instance, validated_data)
 
 
-class StartNodeSerializer(serializers.ModelSerializer):
+class StartNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1487,7 +1494,7 @@ class StartNodeSerializer(serializers.ModelSerializer):
         current[keys[-1]] = value
 
 
-class EndNodeSerializer(serializers.ModelSerializer):
+class EndNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1629,7 +1636,9 @@ class ConditionGroupSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class DecisionTableNodeSerializer(serializers.ModelSerializer):
+class DecisionTableNodeSerializer(
+    ContentHashWritableMixin, serializers.ModelSerializer
+):
     condition_groups = ConditionGroupSerializer(many=True, required=False)
 
     class Meta:

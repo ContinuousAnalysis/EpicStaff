@@ -10,10 +10,26 @@ class TimestampMixin(serializers.Serializer):
 
 
 class ContentHashMixin(serializers.Serializer):
-    content_hash = serializers.CharField(read_only=True)
+    content_hash = serializers.CharField(required=False, allow_null=True)
 
     class Meta:
         common_fields = ["content_hash"]
+
+
+class ContentHashWritableMixin:
+    """Makes content_hash writable in ModelSerializer subclasses.
+
+    ModelSerializer marks content_hash read_only because editable=False on the model.
+    This mixin overrides that so Swagger shows the field as an optional input,
+    allowing clients to pass it for optimistic-locking (ContentHashPreconditionMixin).
+    """
+
+    def get_extra_kwargs(self):
+        kwargs = super().get_extra_kwargs()
+        kwargs.setdefault("content_hash", {}).update(
+            {"read_only": False, "required": False}
+        )
+        return kwargs
 
 
 class MetadataMixin(serializers.Serializer):
