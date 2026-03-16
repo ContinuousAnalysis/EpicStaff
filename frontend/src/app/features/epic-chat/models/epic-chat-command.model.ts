@@ -2,6 +2,7 @@ export const EP_CHAT_COMMANDS = {
     AGENT_CREATE: 'agent.create',
     AGENT_SELECT: 'agent.select',
     AGENT_REMOVE: 'agent.remove',
+    AGENTS_SYNC: 'agents.sync',
 } as const;
 
 export type EpChatAction =
@@ -29,8 +30,13 @@ export interface EpicChatCreateAgentPayload {
     selectAfterCreate?: boolean;
 }
 
+export interface EpicChatSyncAgentsPayload {
+    agents: EpicChatCreateAgentPayload[];
+}
+
 export type EpChatCommandPayload =
     | EpicChatCreateAgentPayload
+    | EpicChatSyncAgentsPayload
     | Record<string, unknown>;
 
 export interface EpChatCommand {

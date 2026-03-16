@@ -99,7 +99,8 @@
                 --ep-color-danger-soft: var(--agent-node-accent-color);
             "
             base-path="/epicchat-widget/"
-            chat-icon-path=""            
+            chat-icon-path=""
+            message-timeout="180000"
             [apiBaseUrl]="apiBaseUrl"
             [attr.chat-left]="epicChatService.isDocked() ? epicChatService.dockLeftPx() + 'px' : '68px'"
             [attr.chat-bottom]="epicChatService.isDocked() ? '0px' : '10px'"
