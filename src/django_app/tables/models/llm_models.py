@@ -5,7 +5,7 @@ from tables.models import (
     Provider,
     AbstractDefaultFillableModel,
 )
-from tables.models.tag_models import LLMModelTag
+from tables.models.tag_models import LLMModelTag, LLMConfigTag
 
 
 class LLMModel(models.Model):
@@ -82,6 +82,7 @@ class LLMConfig(AbstractDefaultFillableModel):
     extra_headers = models.JSONField(default=dict, blank=True)
     timeout = models.FloatField(default=120.0, null=True, blank=True)
     is_visible = models.BooleanField(default=True)
+    tags = models.ManyToManyField(LLMConfigTag, blank=True, related_name="llm_configs")
 
     def get_default_model(self):
         return DefaultLLMConfig.load()
