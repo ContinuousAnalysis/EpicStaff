@@ -17,7 +17,8 @@ export const NODE_ICONS: Record<NodeType, string> = {
     [NodeType.TELEGRAM_TRIGGER]: 'ti ti-brand-telegram',
     [NodeType.END]: 'ti ti-square-rounded',
     [NodeType.SUBGRAPH]: 'ti ti-hierarchy-2',
-    [NodeType.AUDIO_TO_TEXT]: 'ti ti-music'
+    [NodeType.AUDIO_TO_TEXT]: 'ti ti-music',
+    [NodeType.SCHEDULE_TRIGGER]: 'ti ti-calendar'
 };
 
 export const NODE_COLORS: Record<NodeType, string> = {
@@ -37,5 +38,6 @@ export const NODE_COLORS: Record<NodeType, string> = {
     [NodeType.TELEGRAM_TRIGGER]: '#229ED9',
     [NodeType.END]: '#d3d3d3',
     [NodeType.SUBGRAPH]: '#00bfa5',
-    [NodeType.AUDIO_TO_TEXT]: '#ff7be9ff'
+    [NodeType.AUDIO_TO_TEXT]: '#ff7be9ff',
+    [NodeType.SCHEDULE_TRIGGER]: '#FF5C00'
 };

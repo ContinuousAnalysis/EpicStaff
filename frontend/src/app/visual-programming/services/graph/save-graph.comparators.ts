@@ -33,6 +33,9 @@ import {
     GetTelegramTriggerNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
 import {
+    GetScheduleTriggerNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
+import {
     ConditionalEdge,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import {
@@ -47,6 +50,7 @@ import {
     SubGraphNodeModel,
     WebhookTriggerNodeModel,
     TelegramTriggerNodeModel,
+    ScheduleTriggerNodeModel,
     NodeModel,
 } from '../../core/models/node.model';
 import { ResolvedConditionalEdge, NodeUIMetadata, getUIMetadataForComparison } from './save-graph.types';
@@ -267,6 +271,24 @@ export function getTelegramTriggerNodeForComparisonFromUI(node: TelegramTriggerN
         node_name: node.node_name,
         telegram_bot_api_key: node.data.telegram_bot_api_key,
         fields: node.data.fields,
+        metadata: getUIMetadataForComparison(node),
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ScheduleTriggerNode
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getScheduleTriggerNodeForComparisonFromBackend(node: GetScheduleTriggerNodeRequest) {
+    return {
+        node_name: node.node_name,
+        metadata: getBackendMetadataForComparison(node),
+    };
+}
+
+export function getScheduleTriggerNodeForComparisonFromUI(node: ScheduleTriggerNodeModel) {
+    return {
+        node_name: node.node_name,
         metadata: getUIMetadataForComparison(node),
     };
 }

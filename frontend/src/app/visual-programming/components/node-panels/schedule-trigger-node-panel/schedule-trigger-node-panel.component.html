@@ -1,0 +1,113 @@
+<div class="panel-container">
+    <div class="panel-content">
+        <form [formGroup]="form" class="form-container">
+            <div
+                class="form-layout"
+                [class.expanded]="isExpanded()"
+                [class.collapsed]="!isExpanded()"
+            >
+                <div class="form-fields">
+                    <!-- Node Name -->
+                    <app-custom-input
+                        label="Node Name"
+                        tooltipText="The unique identifier used to reference this Schedule Trigger node within the flow."
+                        formControlName="node_name"
+                        placeholder="Enter node name"
+                        [activeColor]="activeColor"
+                        [errorMessage]="getNodeNameErrorMessage()"
+                    ></app-custom-input>
+
+                    <!-- Start section -->
+                    <div class="section">
+                        <div class="section-header">Start</div>
+                        <div class="date-time-row">
+                            <app-time-picker
+                                label="Start time"
+                                formControlName="start_time"
+                                [activeColor]="activeColor"
+                            />
+                            <div class="date-placeholder">
+                                <span class="field-label">Start date</span>
+                                <div class="date-placeholder__input">
+                                    <i class="ti ti-calendar"></i>
+                                    <span>Coming soon</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Run mode -->
+                    <app-radio-button
+                        label="Run mode"
+                        formControlName="run_mode"
+                        [options]="runModeOptions"
+                    />
+
+                    <!-- Repeat settings (visible when run_mode = repeat) -->
+                    @if (showRepeatFields()) {
+                        <div class="section">
+                            <div class="section-header">Repeat every</div>
+                            <div class="repeat-row">
+                                <app-number-stepper
+                                    formControlName="repeat_every"
+                                    [min]="1"
+                                />
+                                <app-select
+                                    formControlName="repeat_unit"
+                                    [items]="repeatUnitItems"
+                                    placeholder="Unit"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- End condition -->
+                        <app-radio-button
+                            label="End condition"
+                            formControlName="end_mode"
+                            [options]="endModeOptions"
+                        />
+
+                        <!-- End date/time (visible when end_mode = on_date) -->
+                        @if (showEndDateTime()) {
+                            <div class="section">
+                                <div class="section-header">End at</div>
+                                <div class="date-time-row">
+                                    <div class="date-placeholder">
+                                        <span class="field-label">End date</span>
+                                        <div class="date-placeholder__input">
+                                            <i class="ti ti-calendar"></i>
+                                            <span>Coming soon</span>
+                                        </div>
+                                    </div>
+                                    <app-time-picker
+                                        label="End time"
+                                        formControlName="end_time"
+                                        [activeColor]="activeColor"
+                                    />
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Max runs (visible when end_mode = after_runs) -->
+                        @if (showMaxRuns()) {
+                            <app-number-stepper
+                                label="Max runs"
+                                formControlName="max_runs"
+                                [min]="1"
+                            />
+                        }
+                    }
+
+                    <!-- Active toggle -->
+                    <div class="toggle-row">
+                        <span class="toggle-row__label">Is active</span>
+                        <app-checkbox
+                            formControlName="is_active"
+                            [variant]="'mainColor'"
+                        />
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

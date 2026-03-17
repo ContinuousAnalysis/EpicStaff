@@ -25,6 +25,7 @@ import {
     SubGraphNodeModel,
     WebhookTriggerNodeModel,
     TelegramTriggerNodeModel,
+    ScheduleTriggerNodeModel,
     EndNodeModel,
     EdgeNodeModel,
     DecisionTableNodeModel,
@@ -40,6 +41,7 @@ import { CreateAudioToTextNodeRequest } from '../../../pages/flows-page/componen
 import { CreateSubGraphNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { CreateWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import { CreateTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { CreateScheduleTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 import { CreateConditionalEdgeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { CreateEdgeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { CreateEndNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
@@ -79,6 +81,8 @@ import {
     getWebhookTriggerNodeForComparisonFromUI,
     getTelegramTriggerNodeForComparisonFromBackend,
     getTelegramTriggerNodeForComparisonFromUI,
+    getScheduleTriggerNodeForComparisonFromBackend,
+    getScheduleTriggerNodeForComparisonFromUI,
     getConditionalEdgeForComparisonFromBackend,
     getConditionalEdgeForComparisonFromUI,
     getDecisionTableNodeForComparisonFromBackend,
@@ -162,6 +166,7 @@ export function extractPreviousState(graph: GraphDto): GraphPreviousState {
         subGraphNodes: graph.subgraph_node_list ?? [],
         webhookTriggerNodes: graph.webhook_trigger_node_list ?? [],
         telegramTriggerNodes: graph.telegram_trigger_node_list ?? [],
+        scheduleTriggerNodes: graph.schedule_trigger_node_list ?? [],
         conditionalEdges: graph.conditional_edge_list ?? [],
         edges: graph.edge_list ?? [],
         endNodes: graph.end_node_list ?? [],
@@ -252,6 +257,7 @@ export function extractNewState(flowState: FlowModel): GraphNewState {
         subGraphNodes: nodes.filter(n => n.type === NodeType.SUBGRAPH) as SubGraphNodeModel[],
         webhookTriggerNodes: nodes.filter(n => n.type === NodeType.WEBHOOK_TRIGGER) as WebhookTriggerNodeModel[],
         telegramTriggerNodes: nodes.filter(n => n.type === NodeType.TELEGRAM_TRIGGER) as TelegramTriggerNodeModel[],
+        scheduleTriggerNodes: nodes.filter(n => n.type === NodeType.SCHEDULE_TRIGGER) as ScheduleTriggerNodeModel[],
         conditionalEdges: resolveConditionalEdges(edgeNodeModels, connections, nodes),
         edges: resolveEdges(connections, nodes),
         noteNodes: nodes.filter(n => n.type === NodeType.NOTE) as NoteNodeModel[],
@@ -327,6 +333,13 @@ export function getNodeOnlyDiff(
         'TelegramTriggerNode'
     );
 
+    const scheduleTriggerNodes = diffByKey(
+        previous.scheduleTriggerNodes, current.scheduleTriggerNodes,
+        n => n.backendId,
+        getScheduleTriggerNodeForComparisonFromBackend, getScheduleTriggerNodeForComparisonFromUI,
+        'ScheduleTriggerNode'
+    );
+
     const decisionTableNodes = diffByKey(
         previous.decisionTableNodes, current.decisionTableNodes,
         n => n.backendId,
@@ -358,6 +371,7 @@ export function getNodeOnlyDiff(
         subGraphNodes,
         webhookTriggerNodes,
         telegramTriggerNodes,
+        scheduleTriggerNodes,
         decisionTableNodes,
         endNodes,
         noteNodes,
@@ -540,6 +554,14 @@ export function buildTelegramPayload(n: TelegramTriggerNodeModel, graphId: numbe
         telegram_bot_api_key: n.data.telegram_bot_api_key,
         webhook_trigger: n.data.webhook_trigger,
         fields: n.data.fields,
+        metadata: getUIMetadataForComparison(n),
+    };
+}
+
+export function buildScheduleTriggerPayload(n: ScheduleTriggerNodeModel, graphId: number): CreateScheduleTriggerNodeRequest {
+    return {
+        node_name: n.node_name,
+        graph: graphId,
         metadata: getUIMetadataForComparison(n),
     };
 }

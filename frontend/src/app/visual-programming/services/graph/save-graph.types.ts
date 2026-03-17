@@ -6,6 +6,7 @@ import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/
 import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { GetScheduleTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { Edge } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
@@ -21,6 +22,7 @@ import {
     SubGraphNodeModel,
     WebhookTriggerNodeModel,
     TelegramTriggerNodeModel,
+    ScheduleTriggerNodeModel,
     EndNodeModel,
     EdgeNodeModel,
     DecisionTableNodeModel,
@@ -112,6 +114,7 @@ export interface GraphPreviousState {
     subGraphNodes: SubGraphNode[];
     webhookTriggerNodes: GetWebhookTriggerNodeRequest[];
     telegramTriggerNodes: GetTelegramTriggerNodeRequest[];
+    scheduleTriggerNodes: GetScheduleTriggerNodeRequest[];
     conditionalEdges: ConditionalEdge[];
     edges: Edge[];
     endNodes: EndNode[];
@@ -130,6 +133,7 @@ export interface GraphNewState {
     subGraphNodes: SubGraphNodeModel[];
     webhookTriggerNodes: WebhookTriggerNodeModel[];
     telegramTriggerNodes: TelegramTriggerNodeModel[];
+    scheduleTriggerNodes: ScheduleTriggerNodeModel[];
     /** Edge nodes resolved with their source/target UUIDs and backend IDs. */
     conditionalEdges: ResolvedConditionalEdge[];
     /** Plain connections reduced to source/target UUIDs and backend IDs. */
@@ -152,6 +156,7 @@ export interface NodeOnlyDiff {
     subGraphNodes: NodeDiff<SubGraphNode, SubGraphNodeModel>;
     webhookTriggerNodes: NodeDiff<GetWebhookTriggerNodeRequest, WebhookTriggerNodeModel>;
     telegramTriggerNodes: NodeDiff<GetTelegramTriggerNodeRequest, TelegramTriggerNodeModel>;
+    scheduleTriggerNodes: NodeDiff<GetScheduleTriggerNodeRequest, ScheduleTriggerNodeModel>;
     decisionTableNodes: NodeDiff<GetDecisionTableNodeRequest, DecisionTableNodeModel>;
     endNodes: NodeDiff<EndNode, EndNodeModel>;
     noteNodes: NodeDiff<NoteNode, NoteNodeModel>;

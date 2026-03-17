@@ -1,7 +1,8 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output,} from '@angular/core';
 import {NgFor} from '@angular/common';
-import {NodeType} from '../../../core/enums/node-type';
+import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output,} from '@angular/core';
+
 import {NODE_COLORS, NODE_ICONS} from '../../../core/enums/node-config';
+import {NodeType} from '../../../core/enums/node-type';
 import {FlowService} from '../../../services/flow.service';
 
 interface FlowGraphBlock {
@@ -144,6 +145,12 @@ export class FlowGraphCoreMenuComponent {
             icon: NODE_ICONS[NodeType.TELEGRAM_TRIGGER],
             color: NODE_COLORS[NodeType.TELEGRAM_TRIGGER],
         },
+        {
+            label: 'Schedule Trigger',
+            type: NodeType.SCHEDULE_TRIGGER,
+            icon: NODE_ICONS[NodeType.SCHEDULE_TRIGGER],
+            color: NODE_COLORS[NodeType.SCHEDULE_TRIGGER],
+        },
         // {
         //   label: 'Decision Table',
         //   type: NodeType.TABLE,
@@ -228,6 +235,9 @@ export class FlowGraphCoreMenuComponent {
                 telegram_bot_api_key: '',
                 fields: [],
             }
+        }
+        else if (type === NodeType.SCHEDULE_TRIGGER) {
+            data = null;
         }
         else if (type === NodeType.END) {
             data = null; // End node data is unknown as specified

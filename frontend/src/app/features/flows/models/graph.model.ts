@@ -28,6 +28,7 @@ import {
     GetTelegramTriggerNodeRequest
 } from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
 import { NoteNode } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
+import { GetScheduleTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 
 export interface GraphDto {
     id: number;
@@ -49,6 +50,7 @@ export interface GraphDto {
     tags?: [];
     audio_transcription_node_list: GetAudioToTextNodeRequest[];
     note_node_list: NoteNode[];
+    schedule_trigger_node_list: GetScheduleTriggerNodeRequest[];
 }
 
 export interface GetGraphLightRequest {

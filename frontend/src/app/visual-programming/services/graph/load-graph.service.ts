@@ -28,6 +28,7 @@ import {
     SubGraphNodeModel,
     WebhookTriggerNodeModel,
     TelegramTriggerNodeModel,
+    ScheduleTriggerNodeModel,
     EndNodeModel,
     EdgeNodeModel,
     DecisionTableNodeModel,
@@ -42,6 +43,7 @@ import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/
 import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { GetScheduleTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { Edge } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { StartNode } from '../../../pages/flows-page/components/flow-visual-programming/models/start-node.model';
@@ -325,6 +327,26 @@ function buildTelegramTriggerNode(tn: GetTelegramTriggerNodeRequest, idx: number
         color: ui.color,
         icon: ui.icon,
         input_map: {} as Record<string, any>,
+        output_variable_path: null,
+        size: ui.size,
+    };
+}
+
+function buildScheduleTriggerNode(sn: GetScheduleTriggerNodeRequest, idx: number): ScheduleTriggerNodeModel {
+    const ui = readUIMetadata(sn.metadata, NodeType.SCHEDULE_TRIGGER, idx);
+    return {
+        id: uuidv4(),
+        backendId: sn.id,
+        category: 'web',
+        type: NodeType.SCHEDULE_TRIGGER,
+        node_name: sn.node_name,
+        data: null,
+        position: ui.position,
+        ports: null,
+        parentId: null,
+        color: ui.color,
+        icon: ui.icon,
+        input_map: {},
         output_variable_path: null,
         size: ui.size,
     };
@@ -779,6 +801,7 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     const noteNodes = (graph.note_node_list ?? []).map(nn => buildNoteNode(nn, idx++));
     const webhookTriggerNodes = (graph.webhook_trigger_node_list ?? []).map(wn => buildWebhookTriggerNode(wn, idx++));
     const telegramTriggerNodes = (graph.telegram_trigger_node_list ?? []).map(tn => buildTelegramTriggerNode(tn, idx++));
+    const scheduleTriggerNodes = (graph.schedule_trigger_node_list ?? []).map(sn => buildScheduleTriggerNode(sn, idx++));
     const endNodes = (graph.end_node_list ?? []).map(en => buildEndNode(en, idx++));
     const decisionTableNodes = (graph.decision_table_node_list ?? []).map(dn => buildDecisionTableNode(dn, idx++));
     const conditionalEdgeNodes = (graph.conditional_edge_list ?? []).map(ce => buildConditionalEdgeNode(ce, idx++));
@@ -795,6 +818,7 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
         ...noteNodes,
         ...webhookTriggerNodes,
         ...telegramTriggerNodes,
+        ...scheduleTriggerNodes,
         ...endNodes,
         ...decisionTableNodes,
         ...conditionalEdgeNodes,

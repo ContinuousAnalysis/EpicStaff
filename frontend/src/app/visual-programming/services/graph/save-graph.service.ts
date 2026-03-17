@@ -17,6 +17,7 @@ import { FileExtractorService } from '../../../pages/flows-page/components/flow-
 import { AudioToTextService } from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
 import { WebhookTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
 import { TelegramTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/telegram-trigger-node.service';
+import { ScheduleTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/schedule-trigger-node.service';
 import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
 import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
 import { DecisionTableNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/decision-table-node.service';
@@ -37,6 +38,7 @@ import {
     buildSubGraphPayload,
     buildWebhookPayload,
     buildTelegramPayload,
+    buildScheduleTriggerPayload,
     buildCondEdgePayload,
     buildEdgePayload,
     buildEndNodePayload,
@@ -59,6 +61,7 @@ export class GraphUpdateService {
         private audioToTextService: AudioToTextService,
         private webhookTriggerService: WebhookTriggerNodeService,
         private telegramTriggerService: TelegramTriggerNodeService,
+        private scheduleTriggerService: ScheduleTriggerNodeService,
         private endNodeService: EndNodeService,
         private subGraphNodeService: SubGraphNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
@@ -258,6 +261,13 @@ export class GraphUpdateService {
                 n => this.telegramTriggerService.deleteTelegramTriggerNode(n.id),
                 n => this.telegramTriggerService.createTelegramTriggerNode(buildTelegramPayload(n, graphId)),
                 (id, n) => this.telegramTriggerService.updateTelegramTriggerNode(id, buildTelegramPayload(n, graphId)),
+                n => n.id
+            ),
+            scheduleTriggerNodes: this.executeNodeDiff(
+                diff.scheduleTriggerNodes,
+                n => this.scheduleTriggerService.deleteScheduleTriggerNode(n.id),
+                n => this.scheduleTriggerService.createScheduleTriggerNode(buildScheduleTriggerPayload(n, graphId)),
+                (id, n) => this.scheduleTriggerService.updateScheduleTriggerNode(id, buildScheduleTriggerPayload(n, graphId)),
                 n => n.id
             ),
             decisionTableNodes: this.executeNodeDiff(

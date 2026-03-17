@@ -11,6 +11,7 @@ import { NodeType } from './node-type';
 import { DecisionTableNodePanelComponent } from '../../components/node-panels/decision-table-node-panel/decision-table-node-panel.component';
 import { WebhookTriggerNodePanelComponent } from '../../components/node-panels/webhook-trigger-node-panel/webhook-trigger-node-panel.component';
 import { TelegramTriggerNodePanelComponent } from "../../components/node-panels/telegram-trigger-node-panel/telegram-trigger-node-panel.component";
+import { ScheduleTriggerNodePanelComponent } from '../../components/node-panels/schedule-trigger-node-panel/schedule-trigger-node-panel.component';
 
 
 export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
@@ -24,5 +25,6 @@ export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<any>>> = {
     subgraph: SubGraphNodePanelComponent,
     table: DecisionTableNodePanelComponent,
     [NodeType.AUDIO_TO_TEXT]: AudioToTextNodePanelComponent,
+    [NodeType.SCHEDULE_TRIGGER]: ScheduleTriggerNodePanelComponent,
     // start: StartNodePanelComponent,
 };

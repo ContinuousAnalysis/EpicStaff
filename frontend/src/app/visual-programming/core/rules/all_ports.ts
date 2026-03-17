@@ -13,6 +13,7 @@ import { DEFAULT_SUBGRAPH_NODE_PORTS } from './subgraph-ports/subgraph-node-defa
 import { DEFAULT_AUDIO_TO_TEXT_NODE_PORTS } from './audio-to-text-node-ports/audio-to-text-node-ports';
 import { DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS } from './webhook-trigger-ports/webhook-trigger-default-ports';
 import {DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS} from "./telegram-trigger-ports/telegram-trigger-default-ports";
+import { DEFAULT_SCHEDULE_TRIGGER_NODE_PORTS } from './schedule-trigger-ports/schedule-trigger-default-ports';
 
 export const PORTS_DICTIONARY: { [role: string]: BasePort } =
     Object.fromEntries(
@@ -29,6 +30,7 @@ export const PORTS_DICTIONARY: { [role: string]: BasePort } =
             ...DEFAULT_FILE_EXTRACTOR_NODE_PORTS,
             ...DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS,
             ...DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS,
+            ...DEFAULT_SCHEDULE_TRIGGER_NODE_PORTS,
             ...DEFAULT_END_NODE_PORTS,
             ...DEFAULT_SUBGRAPH_NODE_PORTS,
             ...DEFAULT_AUDIO_TO_TEXT_NODE_PORTS,

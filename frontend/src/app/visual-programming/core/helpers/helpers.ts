@@ -18,6 +18,7 @@ import { DEFAULT_SUBGRAPH_NODE_PORTS } from '../rules/subgraph-ports/subgraph-no
 import { DEFAULT_AUDIO_TO_TEXT_NODE_PORTS } from '../rules/audio-to-text-node-ports/audio-to-text-node-ports';
 import { DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS } from '../rules/webhook-trigger-ports/webhook-trigger-default-ports';
 import {DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS} from "../rules/telegram-trigger-ports/telegram-trigger-default-ports";
+import { DEFAULT_SCHEDULE_TRIGGER_NODE_PORTS } from '../rules/schedule-trigger-ports/schedule-trigger-default-ports';
 
 export const isDecisionPortRole = (role: string) =>
     role.startsWith('decision-out-') ||
@@ -68,6 +69,8 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
             return DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS;
         case NodeType.TELEGRAM_TRIGGER:
             return DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS;
+        case NodeType.SCHEDULE_TRIGGER:
+            return DEFAULT_SCHEDULE_TRIGGER_NODE_PORTS;
         case NodeType.END:
             return DEFAULT_END_NODE_PORTS;
         case NodeType.SUBGRAPH:

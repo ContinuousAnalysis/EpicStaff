@@ -1,0 +1,85 @@
+@if (label()) {
+    <app-tooltip
+        [required]="required()"
+        [tooltipText]="tooltipText()"
+        [label]="label()"
+    />
+}
+
+<div class="time-picker">
+    <div
+        class="time-picker__trigger"
+        #triggerEl
+        [class.time-picker__trigger--open]="isOpen()"
+        [class.time-picker__trigger--disabled]="isDisabled()"
+        [class.time-picker__trigger--error]="errorMessage()"
+        [style.--active-color]="activeColor()"
+        (click)="openDropdown()"
+    >
+        <i class="ti ti-clock time-picker__icon"></i>
+        <input
+            class="time-picker__input"
+            [placeholder]="placeholder()"
+            [disabled]="isDisabled()"
+            [ngModel]="timeInput()"
+            (ngModelChange)="timeInput.set($event); onInput()"
+            (focus)="onFocus()"
+            (click)="$event.stopPropagation()"
+        />
+        <span class="time-picker__meridiem-display">{{ meridiem() }}</span>
+        <svg
+            class="time-picker__chevron"
+            [class.time-picker__chevron--open]="isOpen()"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+        >
+            <path
+                d="M6 9l6 6 6-6"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+            />
+        </svg>
+    </div>
+</div>
+
+@if (errorMessage()) {
+    <div class="time-picker__error">{{ errorMessage() }}</div>
+}
+
+<ng-template #dropdownTemplate>
+    <div class="time-picker__dropdown" [style.--active-color]="activeColor()">
+        <div class="time-picker__header">
+            <button
+                type="button"
+                class="time-picker__am-pm-btn"
+                [class.time-picker__am-pm-btn--active]="meridiem() === 'AM'"
+                (click)="setMeridiem('AM')"
+            >AM</button>
+            <button
+                type="button"
+                class="time-picker__am-pm-btn"
+                [class.time-picker__am-pm-btn--active]="meridiem() === 'PM'"
+                (click)="setMeridiem('PM')"
+            >PM</button>
+        </div>
+        <div class="time-picker__slots">
+            @for (slot of filteredSlots(); track slot) {
+                <div
+                    class="time-picker__option"
+                    [class.time-picker__option--selected]="slot === timeInput()"
+                    (click)="selectSlot(slot)"
+                >
+                    {{ slot }} {{ meridiem() }}
+                </div>
+            }
+            @if (!filteredSlots().length) {
+                <div class="time-picker__option time-picker__option--empty">
+                    No matching times
+                </div>
+            }
+        </div>
+    </div>
+</ng-template>

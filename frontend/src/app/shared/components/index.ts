@@ -38,3 +38,4 @@ export * from './tooltip/tooltip.component';
 export * from './radio-button/radio-button.component';
 export * from './expand-panel/expand-panel.component';
 export * from './listbox/listbox.component';
+export * from './time-picker/time-picker.component';

@@ -234,6 +234,7 @@ export class FlowsStorageService {
                         sourceFlow.file_extractor_node_list,
                     webhook_trigger_node_list: sourceFlow.webhook_trigger_node_list,
                     telegram_trigger_node_list: sourceFlow.telegram_trigger_node_list,
+                    schedule_trigger_node_list: [],
                     end_node_list: sourceFlow.end_node_list,
                     subgraph_node_list: sourceFlow.subgraph_node_list,
                     audio_transcription_node_list: sourceFlow.audio_transcription_node_list,

@@ -1,23 +1,23 @@
-import { CustomConditionalEdgeModelForNode } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
-import { GetAgentRequest } from '../../../features/staff/models/agent.model';
-import { GetLlmConfigRequest } from '../../../features/settings-dialog/models/llms/LLM_config.model';
+import { GetGraphLightRequest } from '../../../features/flows/models/graph.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
+import { GetLlmConfigRequest } from '../../../features/settings-dialog/models/llms/LLM_config.model';
+import { GetAgentRequest } from '../../../features/staff/models/agent.model';
 import { CreateTaskRequest } from '../../../features/tasks/models/task.model';
-import { ToolConfig } from '../../../features/tools/models/tool-config.model';
-import { GetPythonCodeToolRequest } from '../../../features/tools/models/python-code-tool.model';
 import {
     CreatePythonCodeRequest,
     CustomPythonCode,
 } from '../../../features/tools/models/python-code.model';
-import { NodeType } from '../enums/node-type';
-import { ConnectionModel } from './connection.model';
-import { ViewPort } from './port.model';
-import { DecisionTableNode } from './decision-table.model';
+import { GetPythonCodeToolRequest } from '../../../features/tools/models/python-code-tool.model';
+import { ToolConfig } from '../../../features/tools/models/tool-config.model';
+import { CustomConditionalEdgeModelForNode } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import {
     TelegramTriggerNodeField
 } from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
+import { NodeType } from '../enums/node-type';
+import { ConnectionModel } from './connection.model';
+import { DecisionTableNode } from './decision-table.model';
+import { ViewPort } from './port.model';
 import { WebhookTriggerModel } from "./webhook-trigger.model";
-import { GetGraphLightRequest } from '../../../features/flows/models/graph.model';
 
 export interface BaseNodeModel {
     id: string;
@@ -123,6 +123,11 @@ export interface TelegramTriggerNodeModel extends BaseNodeModel {
     }
 }
 
+export interface ScheduleTriggerNodeModel extends BaseNodeModel {
+    type: NodeType.SCHEDULE_TRIGGER;
+    data: unknown;
+}
+
 export interface EndNodeData {
     output_map: Record<string, unknown>;
 }
@@ -154,4 +159,5 @@ export type NodeModel =
     | SubGraphNodeModel
     | WebhookTriggerNodeModel
     | TelegramTriggerNodeModel
+    | ScheduleTriggerNodeModel
     | EndNodeModel;
