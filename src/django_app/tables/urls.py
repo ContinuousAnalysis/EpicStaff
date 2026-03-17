@@ -7,6 +7,7 @@ from tables.views.model_view_sets import (
     DecisionTableNodeModelViewSet,
     EdgeViewSet,
     EndNodeModelViewSet,
+    NoteNodeViewSet,
     SubGraphNodeModelViewSet,
     GraphLightViewSet,
     GraphViewSet,
@@ -76,6 +77,7 @@ from tables.views.views import (
     DefaultCrewConfigAPIView,
     # CollectionStatusAPIView,
     QuickstartView,
+    QuickstartApplyView,
     delete_environment_config,
 )
 
@@ -83,6 +85,7 @@ from tables.views.default_config import (
     DefaultConfigAPIView,
     DefaultRealtimeAgentConfigAPIView,
     DefaultToolConfigAPIView,
+    DefaultModelsAPIView,
 )
 
 from tables.views.knowledge_views.collection_management_views import (
@@ -171,6 +174,7 @@ router.register(r"telegram-trigger-nodes", TelegramTriggerNodeViewSet)
 router.register(r"telegram-trigger-node-fields", TelegramTriggerNodeFieldViewSet)
 router.register(r"python-code-tool-configs", PythonCodeToolConfigViewSet)
 router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldViewSet)
+router.register(r"note-nodes", NoteNodeViewSet)
 router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
 
 
@@ -246,6 +250,8 @@ urlpatterns = [
         DefaultToolConfigAPIView.as_view(),
         name="default_tool_config",
     ),
+    path("default-models/", DefaultModelsAPIView.as_view(), name="default_models"),
+    path("quickstart/apply/", QuickstartApplyView.as_view(), name="quickstart_apply"),
     path("quickstart/", QuickstartView.as_view(), name="quickstart"),
     path(
         "run-session/subscribe/<int:session_id>/",

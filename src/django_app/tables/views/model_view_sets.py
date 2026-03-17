@@ -23,6 +23,7 @@ from tables.exceptions import (
     TaskSerializerError,
 )
 from tables.filters import EmbeddingModelFilter, LLMModelFilter, ProviderFilter
+from tables.import_export.enums import EntityType
 from tables.models import (
     Agent,
     AudioTranscriptionNode,
@@ -67,6 +68,7 @@ from tables.models.graph_models import (
     GraphOrganization,
     GraphOrganizationUser,
     LLMNode,
+    NoteNode,
     Organization,
     OrganizationUser,
     TelegramTriggerNode,
@@ -96,24 +98,14 @@ from tables.serializers.copy_serializers import (
     GraphCopyDeserializer,
     GraphCopySerializer,
 )
-from tables.serializers.export_serializers import (
-    AgentExportSerializer,
-    CrewExportSerializer,
-    EntityType,
-    GraphExportSerializer,
-)
-from tables.serializers.import_serializers import (
-    AgentImportSerializer,
-    CrewImportSerializer,
-    GraphImportSerializer,
-)
-
+from tables.serializers.import_serializers import FileImportSerializer
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentTagSerializer,
     AgentWriteSerializer,
     AudioTranscriptionNodeSerializer,
     ConditionalEdgeSerializer,
+    NoteNodeSerializer,
     ConditionGroupSerializer,
     ConditionSerializer,
     CrewNodeSerializer,
@@ -166,6 +158,7 @@ from tables.serializers.model_serializers import (
     WebhookTriggerSerializer,
 )
 from tables.serializers.serializers import (
+    BulkExportSerializer,
     GraphFileUpdateSerializer,
     UploadGraphFileSerializer,
 )
@@ -173,11 +166,13 @@ from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeFieldSerializer,
     TelegramTriggerNodeSerializer,
 )
-from tables.services.redis_service import RedisService
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
+from tables.services.redis_service import RedisService
 from tables.utils.mixins import DeepCopyMixin
 from tables.exceptions import BuiltInToolModificationError
+from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
+from tables.import_export.enums import EntityType
 from tables.serializers.import_serializers import FileImportSerializer
 from utils.logger import logger
 
@@ -714,7 +709,9 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
 
     def perform_create(self, serializer):
         created_graph = serializer.save()
-        organization, _ = Organization.objects.get_or_create(name="default")
+        organization, _ = Organization.objects.get_or_create(
+            name=DEFAULT_ORGANIZATION_NAME
+        )
         GraphOrganization.objects.create(graph=created_graph, organization=organization)
 
     @action(detail=True, methods=["get"], url_path="files")
@@ -1172,6 +1169,11 @@ class TelegramTriggerNodeViewSet(ModelViewSet):
 class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     queryset = TelegramTriggerNodeField.objects.select_related("telegram_trigger_node")
     serializer_class = TelegramTriggerNodeFieldSerializer
+
+
+class NoteNodeViewSet(ModelViewSet):
+    queryset = NoteNode.objects.all()
+    serializer_class = NoteNodeSerializer
 
 
 class NgrokWebhookConfigViewSet(ModelViewSet):

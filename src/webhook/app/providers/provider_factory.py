@@ -1,7 +1,6 @@
-from app.request_models import BaseTunnelConfigData, NgrokConfigData
+from src.shared.models import BaseTunnelConfigData, NgrokConfigData
 from .base import AbstractTunnelProvider
 from .ngrok_tunnel import NgrokTunnel
-from typing import Optional, Dict, Type
 from app.core.settings import settings
 
 
@@ -16,7 +15,6 @@ def get_provider(config: BaseTunnelConfigData) -> AbstractTunnelProvider:
     Factory function to get an instance of a tunnel provider.
     """
     if isinstance(config, NgrokConfigData):
-
         return NgrokTunnel(
             port=settings.WEBHOOK_PORT,
             auth_token=config.auth_token,
