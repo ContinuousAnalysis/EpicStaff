@@ -5,7 +5,12 @@ from tables.models import (
     Provider,
     AbstractDefaultFillableModel,
 )
-from tables.models.tag_models import LLMModelTag, LLMConfigTag
+from tables.models.tag_models import (
+    LLMModelTag,
+    LLMConfigTag,
+    RealtimeConfigTag,
+    RealtimeTranscriptionConfigTag,
+)
 
 
 class LLMModel(models.Model):
@@ -114,6 +119,9 @@ class RealtimeConfig(models.Model):
     custom_name = models.CharField(max_length=250)
     realtime_model = models.ForeignKey("RealtimeModel", on_delete=models.CASCADE)
     api_key = models.TextField(null=True, blank=True)
+    tags = models.ManyToManyField(
+        RealtimeConfigTag, blank=True, related_name="realtime_configs"
+    )
 
 
 class RealtimeTranscriptionModel(models.Model):
@@ -130,3 +138,8 @@ class RealtimeTranscriptionConfig(models.Model):
         "RealtimeTranscriptionModel", on_delete=models.CASCADE
     )
     api_key = models.TextField(null=True, blank=True)
+    tags = models.ManyToManyField(
+        RealtimeTranscriptionConfigTag,
+        blank=True,
+        related_name="realtime_transcription_configs",
+    )
