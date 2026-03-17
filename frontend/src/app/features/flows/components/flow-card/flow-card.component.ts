@@ -1,30 +1,23 @@
+import { CommonModule } from '@angular/common';
 import {
+    ChangeDetectionStrategy,
     Component,
+    computed,
+    EventEmitter,
+    inject,
     Input,
     Output,
-    EventEmitter,
-    ChangeDetectionStrategy,
-    inject,
     signal,
-    computed,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
-import { GetGraphLightRequest, SubflowLightDto } from '../../models/graph.model';
-import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
-import { FlowMenuComponent } from './flow-menu/flow-menu.component';
-import { CheckboxComponent } from '../../../../shared/components/checkbox/checkbox.component';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
+import { CheckboxComponent } from '../../../../shared/components/checkbox/checkbox.component';
+import { GetGraphLightRequest, SubflowLightDto } from '../../models/graph.model';
 import { LabelsStorageService } from '../../services/labels-storage.service';
+import { FlowMenuComponent } from './flow-menu/flow-menu.component';
 
-export type FlowAction =
-    | 'viewSessions'
-    | 'delete'
-    | 'open'
-    | 'rename'
-    | 'run'
-    | 'copy'
-    | 'export';
+export type FlowAction = 'viewSessions' | 'delete' | 'open' | 'rename' | 'run' | 'copy' | 'export';
 
 export interface FlowCardAction {
     action: FlowAction;
@@ -51,6 +44,7 @@ export class FlowCardComponent {
 
     public isMenuOpen = false;
     public isExpanded = signal<boolean>(false);
+    public subflowMenuStates = new Map<number, boolean>();
 
     public readonly hasSubflows = computed(() => !!this.flow?.subflows?.length);
 
@@ -125,9 +119,6 @@ export class FlowCardComponent {
             flow: this.flow,
         });
     }
-
-    // Subflow menu state tracking
-    public subflowMenuStates = new Map<number, boolean>();
 
     public isSubflowMenuOpen(id: number): boolean {
         return this.subflowMenuStates.get(id) ?? false;

@@ -1,29 +1,17 @@
-import {
-    Component,
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    OnInit,
-    Output,
-    EventEmitter,
-    signal,
-    computed,
-    inject,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Dialog, DialogModule } from '@angular/cdk/dialog';
+import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, output,signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
-import {
-    LabelsStorageService,
-    LabelTreeNode,
-} from '../../../../services/labels-storage.service';
-import { FlowsStorageService } from '../../../../services/flows-storage.service';
-import { LabelDto } from '../../../../models/label.model';
 import { AppIconComponent } from '../../../../../../shared/components/app-icon/app-icon.component';
 import {
     ConfirmationDialogComponent,
     DialogResult,
 } from '../../../../../../shared/components/cofirm-dialog/confirmation-dialog.component';
+import { LabelDto } from '../../../../models/label.model';
+import { FlowsStorageService } from '../../../../services/flows-storage.service';
+import { LabelsStorageService, LabelTreeNode } from '../../../../services/labels-storage.service';
 
 interface FlatLabelNode {
     node: LabelTreeNode;
@@ -32,19 +20,17 @@ interface FlatLabelNode {
 
 @Component({
     selector: 'app-flows-label-sidebar',
-    standalone: true,
     imports: [CommonModule, FormsModule, DialogModule, AppIconComponent],
     templateUrl: './flows-label-sidebar.component.html',
     styleUrls: ['./flows-label-sidebar.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FlowsLabelSidebarComponent implements OnInit {
-    @Output() closeSidebar = new EventEmitter<void>();
+    closeSidebar = output<void>();
 
     private readonly labelsStorage = inject(LabelsStorageService);
     private readonly flowsStorageService = inject(FlowsStorageService);
     private readonly dialog = inject(Dialog);
-    private readonly cdr = inject(ChangeDetectorRef);
 
     // Expose from storage
     readonly labelTree = this.labelsStorage.labelTree;
@@ -57,12 +43,12 @@ export class FlowsLabelSidebarComponent implements OnInit {
     readonly editingLabelId = signal<number | null>(null);
 
     // Plain properties for ngModel bindings
-    newLabelNameValue = '';
-    editingLabelNameValue = '';
+    readonly newLabelNameValue = signal<string>('');
+    readonly editingLabelNameValue = signal<string>('');
 
     // Validation error messages
-    newLabelError = '';
-    renameLabelError = '';
+    readonly newLabelError = signal<string>('');
+    readonly renameLabelError = signal<string>('');
 
     readonly flatTree = computed<FlatLabelNode[]>(() => {
         const result: FlatLabelNode[] = [];
@@ -113,84 +99,78 @@ export class FlowsLabelSidebarComponent implements OnInit {
     startAddRootLabel(): void {
         this.addingRootLabel.set(true);
         this.addingChildOf.set(null);
-        this.newLabelNameValue = '';
+        this.newLabelNameValue.set('');
     }
 
     cancelAddLabel(): void {
         this.addingRootLabel.set(false);
         this.addingChildOf.set(null);
-        this.newLabelNameValue = '';
-        this.newLabelError = '';
+        this.newLabelNameValue.set('');
+        this.newLabelError.set('');
     }
 
     startAddChildLabel(parentId: number): void {
         this.addingChildOf.set(parentId);
         this.addingRootLabel.set(false);
-        this.newLabelNameValue = '';
+        this.newLabelNameValue.set('');
         this.expandedNodes.update((s) => new Set([...s, parentId]));
     }
 
     confirmAddLabel(): void {
-        const name = this.newLabelNameValue.trim();
+        const name = this.newLabelNameValue().trim();
         if (!name) {
             this.cancelAddLabel();
             return;
         }
-        this.newLabelError = '';
+        this.newLabelError.set('');
         const parentId = this.addingChildOf();
         this.labelsStorage.createLabel(name, parentId ?? undefined).subscribe({
             next: () => {
                 this.cancelAddLabel();
-                this.cdr.markForCheck();
             },
             error: (err) => {
-                this.newLabelError = this.parseCreateError(err);
-                this.cdr.markForCheck();
+                this.newLabelError.set(this.parseCreateError(err));
             },
         });
     }
 
     onNewLabelInput(): void {
-        if (this.newLabelError) {
-            this.newLabelError = '';
-            this.cdr.markForCheck();
+        if (this.newLabelError()) {
+            this.newLabelError.set('');
         }
     }
 
     startRename(label: LabelDto): void {
         this.editingLabelId.set(label.id);
-        this.editingLabelNameValue = label.name;
+        this.editingLabelNameValue.set(label.name);
     }
 
     cancelRename(): void {
         this.editingLabelId.set(null);
-        this.editingLabelNameValue = '';
-        this.renameLabelError = '';
+        this.editingLabelNameValue.set('');
+        this.renameLabelError.set('');
     }
 
     confirmRename(id: number): void {
-        const name = this.editingLabelNameValue.trim();
+        const name = this.editingLabelNameValue().trim();
         if (!name) {
             this.cancelRename();
             return;
         }
-        this.renameLabelError = '';
+        this.renameLabelError.set('');
         this.labelsStorage.renameLabel(id, name).subscribe({
             next: () => {
                 this.cancelRename();
-                this.cdr.markForCheck();
             },
             error: (err) => {
-                this.renameLabelError = this.parseCreateError(err);
-                this.cdr.markForCheck();
+                this.renameLabelError.set(this.parseCreateError(err));
             },
         });
     }
 
     onRenameLabelInput(): void {
-        if (this.renameLabelError) {
-            this.renameLabelError = '';
-            this.cdr.markForCheck();
+        if (this.renameLabelError()) {
+            this.renameLabelError.set('');
         }
     }
 
@@ -199,32 +179,24 @@ export class FlowsLabelSidebarComponent implements OnInit {
         const sublabelCount = this.countAllDescendants(label);
         const sublabelIds = this.getAllDescendantIds(label);
 
-        const directFlowCount = flows.filter((f) =>
-            (f.label_ids || []).includes(label.id),
-        ).length;
+        const directFlowCount = flows.filter((f) => (f.label_ids || []).includes(label.id)).length;
 
         const sublabelFlowCount =
             sublabelIds.length > 0
-                ? flows.filter((f) =>
-                      (f.label_ids || []).some((id) =>
-                          sublabelIds.includes(id),
-                      ),
-                  ).length
+                ? flows.filter((f) => (f.label_ids || []).some((id) => sublabelIds.includes(id))).length
                 : 0;
 
         let caution: string | undefined;
         if (directFlowCount > 0 || sublabelCount > 0) {
             const parts: string[] = [];
             if (directFlowCount > 0) {
-                parts.push(
-                    `<strong>${directFlowCount} flow${directFlowCount !== 1 ? 's' : ''}</strong>`,
-                );
+                parts.push(`<strong>${directFlowCount} flow${directFlowCount !== 1 ? 's' : ''}</strong>`);
             }
             if (sublabelCount > 0) {
                 const sublabelPart = `<strong>${sublabelCount} sublabel${sublabelCount !== 1 ? 's' : ''}</strong>`;
                 if (sublabelFlowCount > 0) {
                     parts.push(
-                        `${sublabelPart} containing <strong>${sublabelFlowCount} flow${sublabelFlowCount !== 1 ? 's' : ''}</strong>`,
+                        `${sublabelPart} containing <strong>${sublabelFlowCount} flow${sublabelFlowCount !== 1 ? 's' : ''}</strong>`
                     );
                 } else {
                     parts.push(sublabelPart);
@@ -233,27 +205,23 @@ export class FlowsLabelSidebarComponent implements OnInit {
             caution = `The label is used in ${parts.join(' and ')}.`;
         }
 
-        const dialogRef = this.dialog.open<DialogResult>(
-            ConfirmationDialogComponent,
-            {
-                width: '500px',
-                data: {
-                    title: 'Delete labels',
-                    message: `Are you sure you want to delete <strong>${label.name}</strong> label? This will remove it from all flows and sublabels.`,
-                    confirmText: 'Delete',
-                    type: 'danger',
-                    isShownBorder: true,
-                    caution,
-                },
+        const dialogRef = this.dialog.open<DialogResult>(ConfirmationDialogComponent, {
+            width: '500px',
+            data: {
+                title: 'Delete labels',
+                message: `Are you sure you want to delete <strong>${label.name}</strong> label? This will remove it from all flows and sublabels.`,
+                confirmText: 'Delete',
+                type: 'danger',
+                isShownBorder: true,
+                caution,
             },
-        );
+        });
 
         dialogRef.closed.subscribe((result) => {
             if (result === 'confirm') {
                 this.labelsStorage.deleteLabel(label.id).subscribe({
                     next: () => {
                         this.flowsStorageService.getFlows(true).subscribe();
-                        this.cdr.markForCheck();
                     },
                     error: (err) => {
                         console.error('Error deleting label', err);
@@ -264,10 +232,7 @@ export class FlowsLabelSidebarComponent implements OnInit {
     }
 
     private countAllDescendants(node: LabelTreeNode): number {
-        return node.children.reduce(
-            (acc, child) => acc + 1 + this.countAllDescendants(child),
-            0,
-        );
+        return node.children.reduce((acc, child) => acc + 1 + this.countAllDescendants(child), 0);
     }
 
     private getAllDescendantIds(node: LabelTreeNode): number[] {
@@ -286,7 +251,7 @@ export class FlowsLabelSidebarComponent implements OnInit {
         return `${depth * 1.2 + 1}rem`;
     }
 
-    private parseCreateError(err: any): string {
+    private parseCreateError(err: HttpErrorResponse): string {
         const msg: string = err?.error?.message ?? err?.message ?? '';
         if (
             msg.includes('Top-level label with this name already exists') ||

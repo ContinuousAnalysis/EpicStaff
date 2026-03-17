@@ -1,23 +1,23 @@
-import {
-    Component,
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    OnInit,
-    OnChanges,
-    Input,
-    Output,
-    EventEmitter,
-    HostListener,
-    ElementRef,
-    inject,
-    signal,
-    computed,
-} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    ElementRef,
+    HostListener,
+    inject,
+    Input,
+    OnChanges,
+    OnInit,
+    output,
+    signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LabelsStorageService, LabelTreeNode } from '../../services/labels-storage.service';
+
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
+import { LabelsStorageService, LabelTreeNode } from '../../services/labels-storage.service';
 
 interface FlatLabelNode {
     node: LabelTreeNode;
@@ -26,7 +26,6 @@ interface FlatLabelNode {
 
 @Component({
     selector: 'app-label-dropdown',
-    standalone: true,
     imports: [CommonModule, FormsModule, AppIconComponent, ButtonComponent],
     templateUrl: './label-dropdown.component.html',
     styleUrls: ['./label-dropdown.component.scss'],
@@ -34,10 +33,9 @@ interface FlatLabelNode {
 })
 export class LabelDropdownComponent implements OnInit, OnChanges {
     @Input() selectedLabelIds: number[] = [];
-    @Output() selectionChange = new EventEmitter<number[]>();
+    selectionChange = output<number[]>();
 
     private readonly labelsStorage = inject(LabelsStorageService);
-    private readonly cdr = inject(ChangeDetectorRef);
     private readonly elementRef = inject(ElementRef);
 
     readonly isOpen = signal<boolean>(false);
@@ -46,8 +44,8 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
     readonly addingChildOf = signal<number | null>(null);
     readonly addingRoot = signal<boolean>(false);
 
-    newLabelName = '';
-    addLabelError = '';
+    readonly newLabelName = signal<string>('');
+    readonly addLabelError = signal<string>('');
 
     readonly labelTree = this.labelsStorage.labelTree;
 
@@ -93,13 +91,11 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
     open(): void {
         this.localSelectedIds.set(new Set(this.selectedLabelIds));
         this.isOpen.set(true);
-        this.cdr.markForCheck();
     }
 
     close(): void {
         this.isOpen.set(false);
         this.cancelAdd();
-        this.cdr.markForCheck();
     }
 
     toggle(): void {
@@ -114,12 +110,10 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
         this.selectionChange.emit(Array.from(this.localSelectedIds()));
         this.isOpen.set(false);
         this.cancelAdd();
-        this.cdr.markForCheck();
     }
 
     clear(): void {
         this.localSelectedIds.set(new Set());
-        this.cdr.markForCheck();
     }
 
     toggleSelection(id: number): void {
@@ -157,52 +151,46 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
     startAddRoot(): void {
         this.addingRoot.set(true);
         this.addingChildOf.set(null);
-        this.newLabelName = '';
-        this.addLabelError = '';
-        this.cdr.markForCheck();
+        this.newLabelName.set('');
+        this.addLabelError.set('');
     }
 
     startAddChild(parentId: number): void {
         this.addingChildOf.set(parentId);
         this.addingRoot.set(false);
-        this.newLabelName = '';
-        this.addLabelError = '';
+        this.newLabelName.set('');
+        this.addLabelError.set('');
         this.expandedIds.update((s) => new Set([...s, parentId]));
-        this.cdr.markForCheck();
     }
 
     cancelAdd(): void {
         this.addingRoot.set(false);
         this.addingChildOf.set(null);
-        this.newLabelName = '';
-        this.addLabelError = '';
+        this.newLabelName.set('');
+        this.addLabelError.set('');
     }
 
     confirmAdd(): void {
-        const name = this.newLabelName.trim();
+        const name = this.newLabelName().trim();
         if (!name) {
             this.cancelAdd();
-            this.cdr.markForCheck();
             return;
         }
-        this.addLabelError = '';
+        this.addLabelError.set('');
         const parentId = this.addingChildOf();
         this.labelsStorage.createLabel(name, parentId ?? undefined).subscribe({
             next: () => {
                 this.cancelAdd();
-                this.cdr.markForCheck();
             },
-            error: (err: any) => {
-                this.addLabelError = this.parseError(err);
-                this.cdr.markForCheck();
+            error: (err: HttpErrorResponse) => {
+                this.addLabelError.set(this.parseError(err));
             },
         });
     }
 
     onNewLabelInput(): void {
-        if (this.addLabelError) {
-            this.addLabelError = '';
-            this.cdr.markForCheck();
+        if (this.addLabelError()) {
+            this.addLabelError.set('');
         }
     }
 
@@ -210,7 +198,7 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
         return `${depth * 1 + 0.25}rem`;
     }
 
-    private parseError(err: any): string {
+    private parseError(err: HttpErrorResponse): string {
         const msg: string = err?.error?.message ?? err?.message ?? '';
         if (
             msg.includes('Top-level label with this name already exists') ||

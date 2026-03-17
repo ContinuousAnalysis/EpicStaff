@@ -7,11 +7,7 @@
 
 <div class="sidebar-content">
     <!-- All Flows row -->
-    <div
-        class="tree-item all-flows-item"
-        [class.active]="activeLabelFilter() === 'all'"
-        (click)="selectAll()"
-    >
+    <div class="tree-item all-flows-item" [class.active]="activeLabelFilter() === 'all'" (click)="selectAll()">
         <app-icon icon="ui/home" size="0.9rem"></app-icon>
         <span>All Flows</span>
     </div>
@@ -32,31 +28,23 @@
         <div class="add-label-row root-add">
             <input
                 class="label-input"
-                [class.has-error]="newLabelError"
-                [(ngModel)]="newLabelNameValue"
+                [class.has-error]="newLabelError()"
+                [ngModel]="newLabelNameValue()"
+                (ngModelChange)="newLabelNameValue.set($event); onNewLabelInput()"
                 placeholder="Enter Label Name..."
                 (keyup.enter)="confirmAddLabel()"
                 (keyup.escape)="cancelAddLabel()"
-                (ngModelChange)="onNewLabelInput()"
                 autofocus
             />
-            <button
-                class="confirm-btn"
-                (click)="confirmAddLabel()"
-                title="Confirm"
-            >
+            <button class="confirm-btn" (click)="confirmAddLabel()" title="Confirm">
                 <app-icon icon="ui/check" size="0.85rem"></app-icon>
             </button>
-            <button
-                class="cancel-btn"
-                (click)="cancelAddLabel()"
-                title="Cancel"
-            >
+            <button class="cancel-btn" (click)="cancelAddLabel()" title="Cancel">
                 <app-icon icon="ui/x" size="0.85rem"></app-icon>
             </button>
         </div>
-        @if (newLabelError) {
-            <div class="label-error">{{ newLabelError }}</div>
+        @if (newLabelError()) {
+            <div class="label-error">{{ newLabelError() }}</div>
         }
     }
 
@@ -73,9 +61,7 @@
             <button
                 class="toggle-btn"
                 (click)="$event.stopPropagation(); toggleExpand(item.node.id)"
-                [style.visibility]="
-                    item.node.children.length > 0 ? 'visible' : 'hidden'
-                "
+                [style.visibility]="item.node.children.length > 0 ? 'visible' : 'hidden'"
                 title="{{ isExpanded(item.node.id) ? 'Collapse' : 'Expand' }}"
             >
                 <app-icon
@@ -84,39 +70,29 @@
                     [class.expanded]="isExpanded(item.node.id)"
                     class="expand-icon"
                 ></app-icon>
-            </button>           
-            <app-icon
-                icon="ui/label"
-                size="12px"
-                class="label-icon"
-            ></app-icon>
+            </button>
+            <app-icon icon="ui/label" size="12px" class="label-icon"></app-icon>
 
             <!-- Label name or rename input -->
             @if (editingLabelId() === item.node.id) {
                 <input
                     class="rename-input"
-                    [class.has-error]="renameLabelError"
-                    [(ngModel)]="editingLabelNameValue"
+                    [class.has-error]="renameLabelError()"
+                    [ngModel]="editingLabelNameValue()"
+                    (ngModelChange)="editingLabelNameValue.set($event); onRenameLabelInput()"
                     (keyup.enter)="confirmRename(item.node.id)"
                     (keyup.escape)="cancelRename()"
                     (click)="$event.stopPropagation()"
-                    (ngModelChange)="onRenameLabelInput()"
                     autofocus
                 />
                 <button
                     class="confirm-btn"
-                    (click)="
-                        $event.stopPropagation(); confirmRename(item.node.id)
-                    "
+                    (click)="$event.stopPropagation(); confirmRename(item.node.id)"
                     title="Confirm rename"
                 >
                     <app-icon icon="ui/check" size="0.85rem"></app-icon>
                 </button>
-                <button
-                    class="cancel-btn"
-                    (click)="$event.stopPropagation(); cancelRename()"
-                    title="Cancel rename"
-                >
+                <button class="cancel-btn" (click)="$event.stopPropagation(); cancelRename()" title="Cancel rename">
                     <app-icon icon="ui/x" size="0.85rem"></app-icon>
                 </button>
             } @else {
@@ -126,32 +102,21 @@
                 <div class="item-actions">
                     <button
                         class="action-btn"
-                        (click)="
-                            $event.stopPropagation();
-                            startAddChildLabel(item.node.id)
-                        "
+                        (click)="$event.stopPropagation(); startAddChildLabel(item.node.id)"
                         title="Add sublabel"
                     >
                         <app-icon icon="ui/plus" size="1rem"></app-icon>
                     </button>
                     <button
                         class="action-btn edit-label-btn"
-                        (click)="
-                            $event.stopPropagation(); startRename(item.node)
-                        "
+                        (click)="$event.stopPropagation(); startRename(item.node)"
                         title="Rename"
                     >
-                        <app-icon
-                            icon="ui/edit-label"
-                            size="0.75rem"
-                        ></app-icon>
+                        <app-icon icon="ui/edit-label" size="0.75rem"></app-icon>
                     </button>
                     <button
                         class="action-btn danger"
-                        (click)="
-                            $event.stopPropagation();
-                            openDeleteDialog(item.node)
-                        "
+                        (click)="$event.stopPropagation(); openDeleteDialog(item.node)"
                         title="Delete"
                     >
                         <app-icon icon="ui/trash" size="0.75rem"></app-icon>
@@ -160,43 +125,40 @@
             }
         </div>
 
-        @if (renameLabelError && editingLabelId() === item.node.id) {
-            <div class="label-error rename-error" [style.marginLeft]="getIndentPadding(item.depth)" (click)="$event.stopPropagation()">{{ renameLabelError }}</div>
+        @if (renameLabelError() && editingLabelId() === item.node.id) {
+            <div
+                class="label-error rename-error"
+                [style.marginLeft]="getIndentPadding(item.depth)"
+                (click)="$event.stopPropagation()"
+            >
+                {{ renameLabelError() }}
+            </div>
         }
 
         <!-- Child add input row (shown below its parent) -->
         @if (addingChildOf() === item.node.id) {
-            <div
-                class="add-label-row child-add"
-                [style.paddingLeft]="getIndentPadding(item.depth + 1)"
-            >
+            <div class="add-label-row child-add" [style.paddingLeft]="getIndentPadding(item.depth + 1)">
                 <input
                     class="label-input"
-                    [class.has-error]="newLabelError"
-                    [(ngModel)]="newLabelNameValue"
+                    [class.has-error]="newLabelError()"
+                    [ngModel]="newLabelNameValue()"
+                    (ngModelChange)="newLabelNameValue.set($event); onNewLabelInput()"
                     placeholder="Enter Sublabel Name..."
                     (keyup.enter)="confirmAddLabel()"
                     (keyup.escape)="cancelAddLabel()"
-                    (ngModelChange)="onNewLabelInput()"
                     autofocus
                 />
-                <button
-                    class="confirm-btn"
-                    (click)="confirmAddLabel()"
-                    title="Confirm"
-                >
+                <button class="confirm-btn" (click)="confirmAddLabel()" title="Confirm">
                     <app-icon icon="ui/check" size="1rem"></app-icon>
                 </button>
-                <button
-                    class="cancel-btn"
-                    (click)="cancelAddLabel()"
-                    title="Cancel"
-                >
+                <button class="cancel-btn" (click)="cancelAddLabel()" title="Cancel">
                     <app-icon icon="ui/x" size="1rem"></app-icon>
                 </button>
             </div>
-            @if (newLabelError) {
-                <div class="label-error" [style.marginLeft]="getIndentPadding(item.depth + 1)">{{ newLabelError }}</div>
+            @if (newLabelError()) {
+                <div class="label-error" [style.marginLeft]="getIndentPadding(item.depth + 1)">
+                    {{ newLabelError() }}
+                </div>
             }
         }
     }
