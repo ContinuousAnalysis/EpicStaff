@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 
-import { BuiltInToolsComponent } from './features/tools/pages/tools-list-page/components/built-in-tools/built-in-tools.component';
 import { CustomToolsComponent } from './features/tools/pages/tools-list-page/components/custom-tools/custom-tools.component';
 import { McpToolsComponent } from './features/tools/pages/tools-list-page/components/mcp-tools/mcp-tools.component';
 
@@ -9,8 +8,7 @@ import { OpenProjectPageComponent } from './open-project-page/open-project-page.
 
 import { FlowVisualProgrammingComponent } from './pages/flows-page/components/flow-visual-programming/flow-visual-programming.component';
 import { StaffPageComponent } from './pages/staff-page/staff-page.component';
-import { RunningGraphComponent } from './pages/running-graph/running-graph-page.component';
-import { KnowledgeSourcesComponent } from './pages/knowledge-sources/knowledge-sources.component';
+import { RunningGraphComponent } from './pages/running-graph/pages/running-graph-page/running-graph-page.component';
 import { ChatsPageComponent } from './pages/chats-page/chats-page.component';
 
 import { ProjectsListPageComponent } from './features/projects/pages/projects-list-page/projects-list-page.component';
@@ -68,8 +66,7 @@ export const routes: Routes = [
                 path: 'tools',
                 component: ToolsListPageComponent,
                 children: [
-                    { path: '', redirectTo: 'built-in', pathMatch: 'full' },
-                    { path: 'built-in', component: BuiltInToolsComponent },
+                    { path: '', redirectTo: 'custom', pathMatch: 'full' },
                     { path: 'custom', component: CustomToolsComponent },
                     { path: 'mcp', component: McpToolsComponent },
                 ],

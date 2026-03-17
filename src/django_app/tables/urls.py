@@ -7,9 +7,12 @@ from tables.views.model_view_sets import (
     DecisionTableNodeModelViewSet,
     EdgeViewSet,
     EndNodeModelViewSet,
+    NoteNodeViewSet,
+    SubGraphNodeModelViewSet,
     GraphLightViewSet,
     GraphViewSet,
     McpToolViewSet,
+    NgrokWebhookConfigViewSet,
     PythonCodeToolConfigFieldViewSet,
     PythonCodeToolConfigViewSet,
     PythonNodeViewSet,
@@ -59,6 +62,7 @@ from tables.views.views import (
     InitRealtimeAPIView,
     RegisterTelegramTriggerApiView,
     ProcessRagIndexingView,
+    RegisterWebhooksApiView,
     RunPythonCodeAPIView,
     TelegramTriggerNodeAvailableFieldsView,
     ToolListRetrieveUpdateGenericViewSet,
@@ -95,6 +99,7 @@ from tables.views.knowledge_views.naive_rag_views import (
     NaiveRagDocumentConfigViewSet,
     ProcessNaiveRagDocumentChunkingView,
     NaiveRagChunkViewSet,
+    NaiveRagChunkPreviewView,
 )
 
 
@@ -132,6 +137,7 @@ router.register(r"audio-transcription-nodes", AudioTranscriptionNodeViewSet)
 router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
+router.register(r"subgraph-nodes", SubGraphNodeModelViewSet)
 
 router.register(r"edges", EdgeViewSet)
 router.register(r"conditionaledges", ConditionalEdgeViewSet)
@@ -166,6 +172,9 @@ router.register(r"telegram-trigger-nodes", TelegramTriggerNodeViewSet)
 router.register(r"telegram-trigger-node-fields", TelegramTriggerNodeFieldViewSet)
 router.register(r"python-code-tool-configs", PythonCodeToolConfigViewSet)
 router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldViewSet)
+router.register(r"note-nodes", NoteNodeViewSet)
+router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
+
 
 urlpatterns = [
     path(
@@ -250,10 +259,16 @@ urlpatterns = [
         RunSessionSSEViewSwagger.as_view(),
         name="run-session-subscribe-swagger",
     ),
+    # Chunking preview endpoints
     path(
-        "process-document-chunking/",
+        "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/process-chunking/",
         ProcessNaiveRagDocumentChunkingView.as_view(),
         name="process-document-chunking",
+    ),
+    path(
+        "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/chunks/",
+        NaiveRagChunkPreviewView.as_view(),
+        name="naive-rag-chunks-preview",
     ),
     path(
         "process-rag-indexing/",
@@ -319,5 +334,10 @@ urlpatterns = [
         "register-telegram-trigger/",
         RegisterTelegramTriggerApiView.as_view(),
         name="register-telegram-trigger",
+    ),
+    path(
+        "register-webhooks/",
+        RegisterWebhooksApiView.as_view(),
+        name="register-webhooks",
     ),
 ]

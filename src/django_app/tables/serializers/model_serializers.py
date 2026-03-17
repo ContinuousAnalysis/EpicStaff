@@ -1,6 +1,10 @@
 from typing import Literal
 from itertools import chain
 
+from django.db import transaction
+from loguru import logger
+
+from tables.serializers.base_serializer import BaseGraphEntityMixin
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
 )
@@ -8,8 +12,8 @@ from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
-from tables.models.webhook_models import WebhookTrigger
-from tables.models.graph_models import WebhookTriggerNode
+from tables.models.webhook_models import WebhookTrigger, NgrokWebhookConfig
+from tables.models.graph_models import NoteNode, WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
@@ -35,6 +39,7 @@ from tables.models import (
     GraphSessionMessage,
     PythonNode,
     FileExtractorNode,
+    SubGraphNode,
     AudioTranscriptionNode,
     GraphFile,
 )
@@ -66,6 +71,7 @@ from tables.models.graph_models import (
     OrganizationUser,
     GraphOrganization,
     GraphOrganizationUser,
+    WebhookTriggerNode,
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -79,7 +85,13 @@ from tables.models.realtime_models import (
     RealtimeAgent,
     RealtimeAgentChat,
 )
-from tables.models.tag_models import AgentTag, CrewTag, GraphTag
+from tables.models.tag_models import (
+    AgentTag,
+    CrewTag,
+    EmbeddingModelTag,
+    GraphTag,
+    LLMModelTag,
+)
 from tables.models.vector_models import MemoryDatabase
 from tables.validators.tool_config_validator import ToolConfigValidator, eval_any
 from tables.models import (
@@ -91,6 +103,12 @@ from tables.models import (
 from tables.models import (
     ToolConfig,
 )
+from tables.constants.variables_constants import (
+    DOMAIN_VARIABLES_KEY,
+    DOMAIN_ORGANIZATION_KEY,
+    DOMAIN_USER_KEY,
+    DOMAIN_PERSISTENT_KEY,
+)
 from tables.services.rag_assignment_service import (
     RagAssignmentService,
     SearchConfigService,
@@ -99,7 +117,7 @@ from tables.serializers.naive_rag_serializers import (
     RagInputSerializer,
     NestedSearchConfigSerializer,
 )
-
+from tables.serializers.base_serializers import WebhookTriggerNestedSerializer
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
 
@@ -122,16 +140,139 @@ class ProviderSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class LLMModelSerializer(serializers.ModelSerializer):
+class LLMModelTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LLMModelTag
+        fields = ("id", "name", "predefined")
+        read_only_fields = ("predefined",)
+
+
+class EmbeddingTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmbeddingModelTag
+        fields = ("id", "name", "predefined")
+        read_only_fields = ("predefined",)
+
+
+class TagHandlingMixin:
+    """
+    Mixin for handling model tags.
+    Rules:
+    1. Predefined tags MAY be present in the request.
+    2. Users CANNOT remove an existing predefined tag (validation error).
+    3. Users CANNOT manually add/assign a predefined tag that was not previously present (validation error).
+    """
+
+    tag_model = None
+
+    def _resolve_tags(self, tags_data):
+        resolved = []
+        for tag in tags_data:
+            if "id" in tag:
+                try:
+                    obj = self.tag_model.objects.get(id=tag["id"])
+                except self.tag_model.DoesNotExist:
+                    raise serializers.ValidationError(
+                        f"Tag with id {tag['id']} not found."
+                    )
+            elif "name" in tag:
+                obj, _ = self.tag_model.objects.get_or_create(
+                    name=tag["name"],
+                    defaults={"predefined": False},
+                )
+            else:
+                continue
+
+            resolved.append(obj)
+        return resolved
+
+    def _validate_predefined_tags_on_update(self, instance, resolved_tags):
+        resolved_set = set(resolved_tags)
+        existing_predefined = set(instance.tags.filter(predefined=True))
+
+        missing_tags = existing_predefined - resolved_set
+        if missing_tags:
+            names = ", ".join([t.name for t in missing_tags])
+            raise serializers.ValidationError(
+                f"You cannot remove the following predefined tags: {names}. They must be present in the request."
+            )
+
+        incoming_predefined = {t for t in resolved_set if t.predefined}
+        new_predefined = incoming_predefined - existing_predefined
+        if new_predefined:
+            names = ", ".join([t.name for t in new_predefined])
+            raise serializers.ValidationError(
+                f"You cannot manually assign predefined tags: {names}."
+            )
+
+    def _validate_predefined_tags_on_create(self, resolved_tags):
+        for tag in resolved_tags:
+            if tag.predefined:
+                raise serializers.ValidationError(
+                    f"You cannot manually assign predefined tag '{tag.name}' during creation."
+                )
+
+
+class LLMModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
+    tags = LLMModelTagSerializer(many=True, required=False)
+    tag_model = LLMModelTag
+
     class Meta:
         model = LLMModel
         fields = "__all__"
 
+    def create(self, validated_data):
+        tags_data = validated_data.pop("tags", [])
+        instance = super().create(validated_data)
 
-class EmbeddingModelSerializer(serializers.ModelSerializer):
+        if tags_data:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_create(resolved_tags)
+            instance.tags.set(resolved_tags)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop("tags", None)
+
+        if tags_data is not None:
+            resolved_tags = self._resolve_tags(tags_data)
+
+            self._validate_predefined_tags_on_update(instance, resolved_tags)
+
+            instance.tags.set(resolved_tags)
+
+        return super().update(instance, validated_data)
+
+
+class EmbeddingModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
+    tags = EmbeddingTagSerializer(many=True, required=False)
+    tag_model = EmbeddingModelTag
+
     class Meta:
         model = EmbeddingModel
         fields = "__all__"
+
+    def create(self, validated_data):
+        tags_data = validated_data.pop("tags", [])
+        instance = super().create(validated_data)
+
+        if tags_data:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_create(resolved_tags)
+            instance.tags.set(resolved_tags)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop("tags", None)
+
+        if tags_data is not None:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_update(instance, resolved_tags)
+            instance.tags.set(resolved_tags)
+
+        return super().update(instance, validated_data)
 
 
 class EmbeddingConfigSerializer(serializers.ModelSerializer):
@@ -1147,17 +1288,42 @@ class LLMNodeSerializer(serializers.ModelSerializer):
         model = LLMNode
         fields = "__all__"
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["llm_config_detail"] = LLMConfigSerializer(instance.llm_config).data
+        return data
+
 
 class EdgeSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = Edge
         fields = "__all__"
+
+
+class SubGraphNodeSerializer(serializers.ModelSerializer):
+    class Meta(BaseGraphEntityMixin.Meta):
+        model = SubGraphNode
+        fields = "__all__"
+
+    def validate(self, attrs):
+        graph = attrs.get("graph") or getattr(self.instance, "graph", None)
+        subgraph = attrs.get("subgraph") or getattr(self.instance, "subgraph", None)
+
+        if graph and subgraph and graph == subgraph:
+            raise serializers.ValidationError("Graph and subgraph cannot be the same.")
+
+        return attrs
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["subgraph_detail"] = GraphLightSerializer(instance.subgraph).data
+        return data
 
 
 class ConditionalEdgeSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = ConditionalEdge
         fields = "__all__"
 
@@ -1194,21 +1360,144 @@ class ConditionalEdgeSerializer(serializers.ModelSerializer):
 class StartNodeSerializer(serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = StartNode
-        fields = ["id", "graph", "variables", "node_name"]
+        fields = [
+            "id",
+            "graph",
+            "variables",
+            "node_name",
+        ] + BaseGraphEntityMixin.Meta.common_fields
         read_only_fields = ["node_name"]
 
     def get_node_name(self, obj):
         return "__start__"
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        old_variables = instance.variables.copy() if instance.variables else {}
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        graph_organization = GraphOrganization.objects.filter(
+            graph=instance.graph
+        ).first()
+
+        if not graph_organization:
+            return instance
+
+        if self._should_update_persistent(
+            old_variables,
+            instance.variables,
+            graph_organization.persistent_variables or {},
+            DOMAIN_ORGANIZATION_KEY,
+        ):
+            graph_organization.persistent_variables = self._get_persistent_variables(
+                instance.variables, DOMAIN_ORGANIZATION_KEY
+            )
+
+        if self._should_update_persistent(
+            old_variables,
+            instance.variables,
+            graph_organization.user_variables or {},
+            DOMAIN_USER_KEY,
+        ):
+            graph_organization.user_variables = self._get_persistent_variables(
+                instance.variables, DOMAIN_USER_KEY
+            )
+
+        graph_organization.save()
+        return instance
+
+    def validate(self, attrs):
+        variables = attrs.get("variables")
+        actual_variables = variables.get(DOMAIN_VARIABLES_KEY, {})
+
+        persistent_variables = variables.get(DOMAIN_PERSISTENT_KEY, {})
+        organization_variables = persistent_variables.get(DOMAIN_ORGANIZATION_KEY, [])
+        user_variables = persistent_variables.get(DOMAIN_USER_KEY, [])
+
+        for path in organization_variables + user_variables:
+            value = self._get_by_path(actual_variables, path)
+            if value is None:
+                raise ValidationError(
+                    f"Path {path} in {DOMAIN_PERSISTENT_KEY} does not exist in {DOMAIN_VARIABLES_KEY}."
+                )
+
+        return super().validate(attrs)
+
+    def _should_update_persistent(
+        self, old_vars: dict, new_vars: dict, existing_persistent: dict, object_key: str
+    ) -> bool:
+        """
+        Check if we should update persistent storage:
+        1. If tracked paths changed
+        2. If persistent storage is empty but we have paths to track
+        """
+        old_paths = set(old_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
+        new_paths = set(new_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
+
+        if old_paths != new_paths:
+            return True
+        if new_paths and not existing_persistent:
+            return True
+
+        return False
+
+    def _get_persistent_variables(self, variables: dict, object_key: str) -> dict:
+        """
+        Extract multiple dot-paths from `variables` and merge them
+        into a single nested dict.
+        """
+        persistent_variables = variables.get(DOMAIN_PERSISTENT_KEY, {}).get(
+            object_key, []
+        )
+        if not persistent_variables:
+            return {}
+
+        result = {}
+        for path in persistent_variables:
+            actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
+            value = self._get_by_path(actual_variables, path)
+            if value is None:
+                continue
+            self._set_by_path(result, path, value)
+
+        return result
+
+    def _get_by_path(self, source: dict, path: str) -> dict | None:
+        """Get value from nested dict by dot-path. Returns None if path not found."""
+        current = source
+        try:
+            for key in path.split("."):
+                current = current[key]
+            return current
+        except (KeyError, TypeError):
+            return None
+
+    def _set_by_path(self, target: dict, path: str, value) -> None:
+        current = target
+        keys = path.split(".")
+
+        for key in keys[:-1]:
+            current = current.setdefault(key, {})
+
+        current[keys[-1]] = value
+
 
 class EndNodeSerializer(serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
-    class Meta:
+    class Meta(BaseGraphEntityMixin.Meta):
         model = EndNode
-        fields = ["id", "graph", "output_map", "node_name"]
+        fields = [
+            "id",
+            "graph",
+            "output_map",
+            "node_name",
+        ] + BaseGraphEntityMixin.Meta.common_fields
         read_only_fields = ["node_name"]
 
     def get_node_name(self, obj):
@@ -1348,39 +1637,72 @@ class DecisionTableNodeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
-    python_code = PythonCodeSerializer()
-    webhook_trigger_path = serializers.CharField(required=False, allow_blank=True)
+class WebhookTriggerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WebhookTrigger
+        fields = "__all__"
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data["webhook_trigger_path"] = (
-            instance.webhook_trigger.path if instance.webhook_trigger else None
-        )
-        return data
+
+class NgrokWebhookConfigModelSerializer(serializers.ModelSerializer):
+    webhook_full_url = serializers.SerializerMethodField()
 
     class Meta:
+        model = NgrokWebhookConfig
+        fields = [
+            "id",
+            "name",
+            "auth_token",
+            "domain",
+            "region",
+            "webhook_full_url",
+        ]
+
+    def get_webhook_full_url(self, instance: NgrokWebhookConfig):
+        from tables.services.webhook_trigger_service import WebhookTriggerService
+
+        try:
+            return WebhookTriggerService().get_tunnel_url(ngrok_webhook_config=instance)
+        except Exception as e:
+            logger.error(f"Failed to read tunnel URL for '{instance.name}': {e}")
+        return None
+
+
+class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+    python_code = PythonCodeSerializer()
+
+    webhook_trigger = WebhookTriggerNestedSerializer(required=False, allow_null=True)
+
+    class Meta(BaseGraphEntityMixin.Meta):
         model = WebhookTriggerNode
-        exclude = ["webhook_trigger"]
+        fields = [
+            "id",
+            "node_name",
+            "graph",
+            "python_code",
+            "webhook_trigger",
+        ] + BaseGraphEntityMixin.Meta.common_fields
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
+        webhook_trigger_data = validated_data.pop("webhook_trigger", None)
+
         python_code = PythonCode.objects.create(**python_code_data)
 
-        webhook_trigger_path = validated_data.pop("webhook_trigger_path", "").strip()
-        if not webhook_trigger_path:
-            webhook_trigger_path = "default"
+        webhook_trigger_instance = None
+        if webhook_trigger_data:
+            path = webhook_trigger_data.get("path")
+            ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
-        webhook_trigger, _ = WebhookTrigger.objects.get_or_create(
-            path=webhook_trigger_path
-        )
+            webhook_trigger_instance, created = WebhookTrigger.objects.get_or_create(
+                path=path, ngrok_webhook_config=ngrok_conf
+            )
 
-        webhook_trigger_node = WebhookTriggerNode.objects.create(
+        node = WebhookTriggerNode.objects.create(
             python_code=python_code,
-            webhook_trigger=webhook_trigger,
+            webhook_trigger=webhook_trigger_instance,
             **validated_data,
         )
-        return webhook_trigger_node
+        return node
 
     def update(self, instance, validated_data):
         python_code_data = validated_data.pop("python_code", None)
@@ -1390,26 +1712,32 @@ class WebhookTriggerNodeSerializer(serializers.ModelSerializer):
                 setattr(python_code, attr, value)
             python_code.save()
 
-        webhook_trigger_path = validated_data.pop("webhook_trigger_path", None)
-        if webhook_trigger_path is not None:
-            webhook_trigger_path = webhook_trigger_path.strip() or "default"
-            webhook_trigger, _ = WebhookTrigger.objects.get_or_create(
-                path=webhook_trigger_path
-            )
-            instance.webhook_trigger = webhook_trigger
+        if "webhook_trigger" in validated_data:
+            webhook_trigger_data = validated_data.pop("webhook_trigger")
+
+            if webhook_trigger_data:
+                path = webhook_trigger_data.get("path")
+                ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
+
+                webhook_trigger_instance, created = (
+                    WebhookTrigger.objects.get_or_create(
+                        path=path, ngrok_webhook_config=ngrok_conf
+                    )
+                )
+                instance.webhook_trigger = webhook_trigger_instance
+            else:
+                instance.webhook_trigger = None
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
         instance.save()
         return instance
 
-    def partial_update(self, instance, validated_data):
-        return self.update(instance, validated_data)
 
-
-class WebhookTriggerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = WebhookTrigger
+class NoteNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+    class Meta(BaseGraphEntityMixin.Meta):
+        model = NoteNode
         fields = "__all__"
 
 
@@ -1427,10 +1755,12 @@ class GraphSerializer(serializers.ModelSerializer):
     webhook_trigger_node_list = WebhookTriggerNodeSerializer(many=True, read_only=True)
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
+    subgraph_node_list = SubGraphNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
     )
+    note_node_list = NoteNodeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Graph
@@ -1448,11 +1778,13 @@ class GraphSerializer(serializers.ModelSerializer):
             "llm_node_list",
             "webhook_trigger_node_list",
             "decision_table_node_list",
+            "subgraph_node_list",
             "start_node_list",
             "end_node_list",
             "time_to_live",
             "persistent_variables",
             "telegram_trigger_node_list",
+            "note_node_list",
         ]
 
 

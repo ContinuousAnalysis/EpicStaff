@@ -15,9 +15,6 @@
         (fLoaded)="onInitialized()"
         (fCreateConnection)="onConnectionAdded($event)"
         (fReassignConnection)="onReassignConnection($event)"
-        (fDropToGroup)="onDropToGroup($event)"
-        (fDragStarted)="onDragStarted($event)"
-        (fDragEnded)="onDragEnded()"
         (fCreateNode)="onCreateNode($event)"
     >
         <f-background>
@@ -178,43 +175,27 @@
                     </div>
                 </div>
             </f-connection>
-            } @for (group of flowService.visibleGroups(); track group.id) {
-            <app-group-node
-                [group]="group"
-                [fGroupId]="group.id"
-                fGroup
-                fNodeInput
-                fNodeOutput
-                [fInputMultiple]="true"
-                [fOutputMultiple]="true"
-                [fInputId]="group.id + '_group-input'"
-                [fOutputId]="group.id + '_group-output'"
-                [fInputDisabled]="true"
-                [fOutputDisabled]="true"
-                [fGroupPosition]="
-                    group.collapsed ? group.collapsedPosition : group.position
-                "
-                [fGroupSize]="
-                    group.collapsed
-                        ? { width: group.size.width * 0.6, height: 60 }
-                        : group.size
-                "
-                [fGroupParentId]="group.parentId"
-                (fGroupPositionChange)="onGroupPositionChanged($event, group)"
-                (fGroupSizeChange)="onGroupSizeChanged($event, group)"
-                (rename)="onGroupRename($event)"
-                (ungroup)="onUngroupGroup($event)"
-                (colorChanged)="onGroupColorChange($event)"
-                (toggleCollapsed)="onGroupToggleCollapsed($event)"
-            >
-            </app-group-node>
             }
         </f-canvas>
         <f-selection-area></f-selection-area>
         <f-minimap [fMinSize]="1000"></f-minimap>
     </f-flow>
     <div class="top-left-actions">
-        <button class="domain-button" (click)="onDomainClick()">Domain</button>
+        <div class="top-left-actions__column">
+            <button class="domain-button" (click)="onDomainClick()">Domain</button>
+
+            <div 
+                #shortcutsAnchor 
+                #shortcutsButton
+                appShortcutListener
+                (openShortcuts)="onOpenShortcuts(shortcutsAnchor)"
+            >
+                <app-flow-shortcuts-button
+                    (clicked)="onOpenShortcuts(shortcutsAnchor)">
+                </app-flow-shortcuts-button>
+            </div>
+        </div>
+
         <app-nodes-search
             [nodes]="flowService.nodes()"
             (nodeSelected)="onZoomInNode($event)"
@@ -241,6 +222,7 @@
     <app-flow-graph-context-menu
         [position]="contextMenuPostion"
         [menuContext]="nodesMode"
+        [currentFlowId]="currentFlowId"
         clickOutside
         (clickOutside)="onCloseContextMenu()"
         (nodeSelected)="onAddNodeFromContextMenu($event)"
@@ -249,6 +231,7 @@
     }
     <app-node-panel-shell
         [node]="sidePanelService.selectedNode()"
+        [currentFlowId]="currentFlowId"
         (save)="onNodePanelSaved($event)"
         (autosave)="onNodePanelAutosaved($event)"
         #nodePanelShell

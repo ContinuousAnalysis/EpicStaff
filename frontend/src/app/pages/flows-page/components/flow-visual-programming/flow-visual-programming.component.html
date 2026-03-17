@@ -13,10 +13,20 @@
 
 <div class="body">
     <app-flow-graph
-        [flowState]="graph.metadata"
+        [flowState]="loadedFlowState"
         [nodesMode]="'flow-graph'"
+        [currentFlowId]="graph.id"
         (save)="handleSaveFlow(true).subscribe()"
+        (openShortcuts)="openShortcutsModal($event)"
     ></app-flow-graph>
+    <app-shortcuts-modal
+        [open]="isShortcutsOpen()"
+        [pos]="shortcutsPos()"
+        title="Command & Shortcuts"
+        iconSrc="assets/icons/ui/shortcut.svg"
+        [sections]="shortcutSections"
+        (closed)="closeShortcutsModal()"
+    ></app-shortcuts-modal>
 </div>
 } @else {
 
