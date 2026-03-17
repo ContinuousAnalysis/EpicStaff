@@ -15,6 +15,7 @@ import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
 import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
 import { ConfigService } from '../../../services/config/config.service';
+import { environment } from 'src/environments/environment';
 
 interface NavItem {
     id: string;
@@ -59,7 +60,11 @@ export class LeftSidebarComponent implements AfterViewInit {
         // COMMIT_COMMENTS: Derive apiBaseUrl from browser origin so the EpicChat widget's
         // syncAgentsFromApi call always matches the actual access host (localhost vs 127.0.0.1),
         // avoiding CORS failures and hardcoded URLs.
-        this.apiBaseUrl = `${window.location.origin}/api/`;
+        // this.apiBaseUrl = `${window.location.origin}/api/`;
+
+        // Bad approach to use window.location because ui and backend can be on different domains
+        // fixed localhost vs 127.0.0.1 problem in widget code
+        this.apiBaseUrl = environment.apiUrl;
         this.topNavItems = [
             {
                 id: 'projects',

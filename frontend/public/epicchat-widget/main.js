@@ -321,11 +321,11 @@ function isValidLink(checkLink, consumer) {
 function defaultEquals(a3, b2) {
   return Object.is(a3, b2);
 }
-function createComputed(computation, equal) {
+function createComputed(computation, equal2) {
   const node = Object.create(COMPUTED_NODE);
   node.computation = computation;
-  if (equal !== void 0) {
-    node.equal = equal;
+  if (equal2 !== void 0) {
+    node.equal = equal2;
   }
   const computed2 = () => {
     producerUpdateValueVersion(node);
@@ -395,11 +395,11 @@ function setThrowInvalidWriteToSignalError(fn) {
   throwInvalidWriteToSignalErrorFn = fn;
 }
 var postSignalSetFn = null;
-function createSignal(initialValue, equal) {
+function createSignal(initialValue, equal2) {
   const node = Object.create(SIGNAL_NODE);
   node.value = initialValue;
-  if (equal !== void 0) {
-    node.equal = equal;
+  if (equal2 !== void 0) {
+    node.equal = equal2;
   }
   const getter = (() => signalGetFn(node));
   getter[SIGNAL] = node;
@@ -5803,9 +5803,9 @@ function callHooks(currentView, arr, initPhase, currentNodeIndex) {
   ngDevMode && assertEqual(isInCheckNoChangesMode(), false, "Hooks should never be run when in check no changes mode.");
   const startIndex = currentNodeIndex !== void 0 ? currentView[PREORDER_HOOK_FLAGS] & 65535 : 0;
   const nodeIndexLimit = currentNodeIndex != null ? currentNodeIndex : -1;
-  const max = arr.length - 1;
+  const max2 = arr.length - 1;
   let lastNodeIndexFound = 0;
-  for (let i = startIndex; i < max; i++) {
+  for (let i = startIndex; i < max2; i++) {
     const hook = arr[i + 1];
     if (typeof hook === "number") {
       lastNodeIndexFound = arr[i];
@@ -21981,9 +21981,9 @@ function verifySemanticsOfNgModuleDef(moduleType, allowDuplicateDeclarationsInRo
   declarations.forEach((decl) => verifyDeclarationIsUnique(decl, allowDuplicateDeclarationsInRoot));
   const ngModule = getAnnotation(moduleType, "NgModule");
   if (ngModule) {
-    ngModule.imports && flatten(ngModule.imports).map(unwrapModuleWithProvidersImports).forEach((mod) => {
-      verifySemanticsOfNgModuleImport(mod, moduleType);
-      verifySemanticsOfNgModuleDef(mod, false, moduleType);
+    ngModule.imports && flatten(ngModule.imports).map(unwrapModuleWithProvidersImports).forEach((mod2) => {
+      verifySemanticsOfNgModuleImport(mod2, moduleType);
+      verifySemanticsOfNgModuleDef(mod2, false, moduleType);
     });
     ngModule.bootstrap && deepForEach(ngModule.bootstrap, verifyCorrectBootstrapType);
     ngModule.bootstrap && deepForEach(ngModule.bootstrap, verifyComponentIsPartOfNgModule);
@@ -23263,7 +23263,7 @@ var ResourceImpl = class extends BaseWritableResource {
   resolvePendingTask = void 0;
   destroyed = false;
   unregisterOnDestroy;
-  constructor(request, loaderFn, defaultValue, equal, injector, throwErrorsFromValue = RESOURCE_VALUE_THROWS_ERRORS_DEFAULT) {
+  constructor(request, loaderFn, defaultValue, equal2, injector, throwErrorsFromValue = RESOURCE_VALUE_THROWS_ERRORS_DEFAULT) {
     super(
       // Feed a computed signal for the value to `BaseWritableResource`, which will upgrade it to a
       // `WritableSignal` that delegates to `ResourceImpl.set`.
@@ -23283,10 +23283,10 @@ var ResourceImpl = class extends BaseWritableResource {
           }
         }
         return streamValue.value;
-      }, { equal })
+      }, { equal: equal2 })
     );
     this.loaderFn = loaderFn;
-    this.equal = equal;
+    this.equal = equal2;
     this.extRequest = linkedSignal({
       source: request,
       computation: (request2) => ({ request: request2, reload: 0 })
@@ -26336,13 +26336,13 @@ function formatDateTime(str, opt_values) {
   return str;
 }
 function padNumber(num, digits, minusSign = "-", trim, negWrap) {
-  let neg = "";
+  let neg2 = "";
   if (num < 0 || negWrap && num <= 0) {
     if (negWrap) {
       num = -num + 1;
     } else {
       num = -num;
-      neg = minusSign;
+      neg2 = minusSign;
     }
   }
   let strNum = String(num);
@@ -26352,7 +26352,7 @@ function padNumber(num, digits, minusSign = "-", trim, negWrap) {
   if (trim) {
     strNum = strNum.slice(strNum.length - digits);
   }
-  return neg + strNum;
+  return neg2 + strNum;
 }
 function formatFractionalSeconds(milliseconds, digits) {
   const strMs = padNumber(milliseconds, 3);
@@ -27660,8 +27660,8 @@ var NgIf = class _NgIf {
    * The Boolean expression to evaluate as the condition for showing a template.
    * @deprecated Use the `@if` block instead. Intent to remove in v22
    */
-  set ngIf(condition) {
-    this._context.$implicit = this._context.ngIf = condition;
+  set ngIf(condition2) {
+    this._context.$implicit = this._context.ngIf = condition2;
     this._updateView();
   }
   /**
@@ -33627,10 +33627,10 @@ var HttpResourceImpl = class extends ResourceImpl {
   headers = computed(() => this.status() === "resolved" || this.status() === "error" ? this._headers() : void 0, ...ngDevMode ? [{ debugName: "headers" }] : []);
   progress = this._progress.asReadonly();
   statusCode = this._statusCode.asReadonly();
-  constructor(injector, request, defaultValue, parse, equal) {
+  constructor(injector, request, defaultValue, parse, equal2) {
     super(request, ({ params: request2, abortSignal }) => {
-      let sub;
-      const onAbort = () => sub.unsubscribe();
+      let sub2;
+      const onAbort = () => sub2.unsubscribe();
       abortSignal.addEventListener("abort", onAbort);
       const stream = signal({ value: void 0 }, ...ngDevMode ? [{ debugName: "stream" }] : []);
       let resolve;
@@ -33640,7 +33640,7 @@ var HttpResourceImpl = class extends ResourceImpl {
         resolve?.(stream);
         resolve = void 0;
       };
-      sub = this.client.request(request2).subscribe({
+      sub2 = this.client.request(request2).subscribe({
         next: (event) => {
           switch (event.type) {
             case HttpEventType.Response:
@@ -33675,7 +33675,7 @@ var HttpResourceImpl = class extends ResourceImpl {
         }
       });
       return promise;
-    }, defaultValue, equal, injector);
+    }, defaultValue, equal2, injector);
     this.client = injector.get(HttpClient);
   }
   set(value) {
@@ -34472,8 +34472,8 @@ var ComponentNgElementStrategy = class {
     const eventEmitters = this.componentFactory.outputs.map(({ propName, templateName }) => {
       const emitter = componentRef.instance[propName];
       return new Observable((observer) => {
-        const sub = emitter.subscribe((value) => observer.next({ name: templateName, value }));
-        return () => sub.unsubscribe();
+        const sub2 = emitter.subscribe((value) => observer.next({ name: templateName, value }));
+        return () => sub2.unsubscribe();
       });
     });
     this.eventEmitters.next(eventEmitters);
@@ -34572,18 +34572,18 @@ function toSignal(source, options) {
     assertInInjectionContext(toSignal);
   }
   const cleanupRef = requiresCleanup ? options?.injector?.get(DestroyRef) ?? inject2(DestroyRef) : null;
-  const equal = makeToSignalEqual(options?.equal);
+  const equal2 = makeToSignalEqual(options?.equal);
   let state;
   if (options?.requireSync) {
     state = signal({
       kind: 0
       /* StateKind.NoValue */
-    }, { equal });
+    }, { equal: equal2 });
   } else {
-    state = signal({ kind: 1, value: options?.initialValue }, { equal });
+    state = signal({ kind: 1, value: options?.initialValue }, { equal: equal2 });
   }
   let destroyUnregisterFn;
-  const sub = source.subscribe({
+  const sub2 = source.subscribe({
     next: (value) => state.set({ kind: 1, value }),
     error: (error) => {
       state.set({ kind: 2, error });
@@ -34598,7 +34598,7 @@ function toSignal(source, options) {
   if (options?.requireSync && state().kind === 0) {
     throw new RuntimeError(601, (typeof ngDevMode === "undefined" || ngDevMode) && "`toSignal()` called with `requireSync` but `Observable` did not emit synchronously.");
   }
-  destroyUnregisterFn = cleanupRef?.onDestroy(sub.unsubscribe.bind(sub));
+  destroyUnregisterFn = cleanupRef?.onDestroy(sub2.unsubscribe.bind(sub2));
   return computed(() => {
     const current = state();
     switch (current.kind) {
@@ -37468,8 +37468,8 @@ function commaify(s) {
 }
 var pct1 = /%/g;
 function write_num_pct(type, fmt, val) {
-  var sfmt = fmt.replace(pct1, ""), mul = fmt.length - sfmt.length;
-  return write_num(type, sfmt, val * Math.pow(10, 2 * mul)) + fill("%", mul);
+  var sfmt = fmt.replace(pct1, ""), mul2 = fmt.length - sfmt.length;
+  return write_num(type, sfmt, val * Math.pow(10, 2 * mul2)) + fill("%", mul2);
 }
 function write_num_cm(type, fmt, val) {
   var idx = fmt.length - 1;
@@ -37506,13 +37506,13 @@ function write_num_exp(fmt, val) {
   return o.replace("e", "E");
 }
 var frac1 = /# (\?+)( ?)\/( ?)(\d+)/;
-function write_num_f1(r, aval, sign) {
+function write_num_f1(r, aval, sign2) {
   var den = parseInt(r[4], 10), rr = Math.round(aval * den), base = Math.floor(rr / den);
   var myn = rr - base * den, myd = den;
-  return sign + (base === 0 ? "" : "" + base) + " " + (myn === 0 ? fill(" ", r[1].length + 1 + r[4].length) : pad_(myn, r[1].length) + r[2] + "/" + r[3] + pad0(myd, r[4].length));
+  return sign2 + (base === 0 ? "" : "" + base) + " " + (myn === 0 ? fill(" ", r[1].length + 1 + r[4].length) : pad_(myn, r[1].length) + r[2] + "/" + r[3] + pad0(myd, r[4].length));
 }
-function write_num_f2(r, aval, sign) {
-  return sign + (aval === 0 ? "" : "" + aval) + fill(" ", r[1].length + 2 + r[4].length);
+function write_num_f2(r, aval, sign2) {
+  return sign2 + (aval === 0 ? "" : "" + aval) + fill(" ", r[1].length + 2 + r[4].length);
 }
 var dec1 = /^#*0*\.([0#]+)/;
 var closeparen = /\).*[0#]/;
@@ -37563,15 +37563,15 @@ function write_num_flt(type, fmt, val) {
   if (fmt.indexOf("E") !== -1) return write_num_exp(fmt, val);
   if (fmt.charCodeAt(0) === 36) return "$" + write_num_flt(type, fmt.substr(fmt.charAt(1) == " " ? 2 : 1), val);
   var o;
-  var r, ri, ff, aval = Math.abs(val), sign = val < 0 ? "-" : "";
-  if (fmt.match(/^00+$/)) return sign + pad0r(aval, fmt.length);
+  var r, ri, ff, aval = Math.abs(val), sign2 = val < 0 ? "-" : "";
+  if (fmt.match(/^00+$/)) return sign2 + pad0r(aval, fmt.length);
   if (fmt.match(/^[#?]+$/)) {
     o = pad0r(val, 0);
     if (o === "0") o = "";
     return o.length > fmt.length ? o : hashq(fmt.substr(0, fmt.length - o.length)) + o;
   }
-  if (r = fmt.match(frac1)) return write_num_f1(r, aval, sign);
-  if (fmt.match(/^#+0+$/)) return sign + pad0r(aval, fmt.length - fmt.indexOf("0"));
+  if (r = fmt.match(frac1)) return write_num_f1(r, aval, sign2);
+  if (fmt.match(/^#+0+$/)) return sign2 + pad0r(aval, fmt.length - fmt.indexOf("0"));
   if (r = fmt.match(dec1)) {
     o = rnd(val, r[1].length).replace(/^([^\.]+)$/, "$1." + hashq(r[1])).replace(/\.$/, "." + hashq(r[1])).replace(/\.(\d*)$/, function($$, $1) {
       return "." + $1 + fill("0", hashq(
@@ -37583,9 +37583,9 @@ function write_num_flt(type, fmt, val) {
   }
   fmt = fmt.replace(/^#+([0.])/, "$1");
   if (r = fmt.match(/^(0*)\.(#*)$/)) {
-    return sign + rnd(aval, r[2].length).replace(/\.(\d*[1-9])0*$/, ".$1").replace(/^(-?\d*)$/, "$1.").replace(/^0\./, r[1].length ? "0." : ".");
+    return sign2 + rnd(aval, r[2].length).replace(/\.(\d*[1-9])0*$/, ".$1").replace(/^(-?\d*)$/, "$1.").replace(/^0\./, r[1].length ? "0." : ".");
   }
-  if (r = fmt.match(/^#{1,3},##0(\.?)$/)) return sign + commaify(pad0r(aval, 0));
+  if (r = fmt.match(/^#{1,3},##0(\.?)$/)) return sign2 + commaify(pad0r(aval, 0));
   if (r = fmt.match(/^#,##0\.([#0]*0)$/)) {
     return val < 0 ? "-" + write_num_flt(type, fmt, -val) : commaify("" + (Math.floor(val) + carry(val, r[1].length))) + "." + pad0(dec(val, r[1].length), r[1].length);
   }
@@ -37609,7 +37609,7 @@ function write_num_flt(type, fmt, val) {
       7
     );
     ff = SSF_frac(aval, Math.pow(10, ri) - 1, false);
-    o = "" + sign;
+    o = "" + sign2;
     oa = write_num(
       "n",
       /*::String(*/
@@ -37628,7 +37628,7 @@ function write_num_flt(type, fmt, val) {
   if (r = fmt.match(/^# ([#0?]+)( ?)\/( ?)([#0?]+)/)) {
     ri = Math.min(Math.max(r[1].length, r[4].length), 7);
     ff = SSF_frac(aval, Math.pow(10, ri) - 1, true);
-    return sign + (ff[0] || (ff[1] ? "" : "0")) + " " + (ff[1] ? pad_(ff[1], ri) + r[2] + "/" + r[3] + rpad_(ff[2], ri) : fill(" ", 2 * ri + 1 + r[2].length + r[3].length));
+    return sign2 + (ff[0] || (ff[1] ? "" : "0")) + " " + (ff[1] ? pad_(ff[1], ri) + r[2] + "/" + r[3] + rpad_(ff[2], ri) : fill(" ", 2 * ri + 1 + r[2].length + r[3].length));
   }
   if (r = fmt.match(/^[#0?]+$/)) {
     o = pad0r(val, 0);
@@ -37654,7 +37654,7 @@ function write_num_flt(type, fmt, val) {
     case "##,###":
     case "#,###":
       var x = commaify(pad0r(aval, 0));
-      return x !== "0" ? sign + x : "";
+      return x !== "0" ? sign2 + x : "";
     case "###,###.00":
       return write_num_flt(type, "###,##0.00", val).replace(/^0\./, ".");
     case "#,###.00":
@@ -37669,8 +37669,8 @@ function write_num_cm2(type, fmt, val) {
   return write_num(type, fmt.substr(0, idx), val / Math.pow(10, 3 * (fmt.length - idx)));
 }
 function write_num_pct2(type, fmt, val) {
-  var sfmt = fmt.replace(pct1, ""), mul = fmt.length - sfmt.length;
-  return write_num(type, sfmt, val * Math.pow(10, 2 * mul)) + fill("%", mul);
+  var sfmt = fmt.replace(pct1, ""), mul2 = fmt.length - sfmt.length;
+  return write_num(type, sfmt, val * Math.pow(10, 2 * mul2)) + fill("%", mul2);
 }
 function write_num_exp2(fmt, val) {
   var o;
@@ -37708,15 +37708,15 @@ function write_num_int(type, fmt, val) {
   if (fmt.indexOf("E") !== -1) return write_num_exp2(fmt, val);
   if (fmt.charCodeAt(0) === 36) return "$" + write_num_int(type, fmt.substr(fmt.charAt(1) == " " ? 2 : 1), val);
   var o;
-  var r, ri, ff, aval = Math.abs(val), sign = val < 0 ? "-" : "";
-  if (fmt.match(/^00+$/)) return sign + pad0(aval, fmt.length);
+  var r, ri, ff, aval = Math.abs(val), sign2 = val < 0 ? "-" : "";
+  if (fmt.match(/^00+$/)) return sign2 + pad0(aval, fmt.length);
   if (fmt.match(/^[#?]+$/)) {
     o = "" + val;
     if (val === 0) o = "";
     return o.length > fmt.length ? o : hashq(fmt.substr(0, fmt.length - o.length)) + o;
   }
-  if (r = fmt.match(frac1)) return write_num_f2(r, aval, sign);
-  if (fmt.match(/^#+0+$/)) return sign + pad0(aval, fmt.length - fmt.indexOf("0"));
+  if (r = fmt.match(frac1)) return write_num_f2(r, aval, sign2);
+  if (fmt.match(/^#+0+$/)) return sign2 + pad0(aval, fmt.length - fmt.indexOf("0"));
   if (r = fmt.match(dec1)) {
     o = ("" + val).replace(/^([^\.]+)$/, "$1." + hashq(r[1])).replace(/\.$/, "." + hashq(r[1]));
     o = o.replace(/\.(\d*)$/, function($$, $1) {
@@ -37726,9 +37726,9 @@ function write_num_int(type, fmt, val) {
   }
   fmt = fmt.replace(/^#+([0.])/, "$1");
   if (r = fmt.match(/^(0*)\.(#*)$/)) {
-    return sign + ("" + aval).replace(/\.(\d*[1-9])0*$/, ".$1").replace(/^(-?\d*)$/, "$1.").replace(/^0\./, r[1].length ? "0." : ".");
+    return sign2 + ("" + aval).replace(/\.(\d*[1-9])0*$/, ".$1").replace(/^(-?\d*)$/, "$1.").replace(/^0\./, r[1].length ? "0." : ".");
   }
-  if (r = fmt.match(/^#{1,3},##0(\.?)$/)) return sign + commaify("" + aval);
+  if (r = fmt.match(/^#{1,3},##0(\.?)$/)) return sign2 + commaify("" + aval);
   if (r = fmt.match(/^#,##0\.([#0]*0)$/)) {
     return val < 0 ? "-" + write_num_int(type, fmt, -val) : commaify("" + val) + "." + fill("0", r[1].length);
   }
@@ -37752,7 +37752,7 @@ function write_num_int(type, fmt, val) {
       7
     );
     ff = SSF_frac(aval, Math.pow(10, ri) - 1, false);
-    o = "" + sign;
+    o = "" + sign2;
     oa = write_num(
       "n",
       /*::String(*/
@@ -37771,7 +37771,7 @@ function write_num_int(type, fmt, val) {
   if (r = fmt.match(/^# ([#0?]+)( ?)\/( ?)([#0?]+)/)) {
     ri = Math.min(Math.max(r[1].length, r[4].length), 7);
     ff = SSF_frac(aval, Math.pow(10, ri) - 1, true);
-    return sign + (ff[0] || (ff[1] ? "" : "0")) + " " + (ff[1] ? pad_(ff[1], ri) + r[2] + "/" + r[3] + rpad_(ff[2], ri) : fill(" ", 2 * ri + 1 + r[2].length + r[3].length));
+    return sign2 + (ff[0] || (ff[1] ? "" : "0")) + " " + (ff[1] ? pad_(ff[1], ri) + r[2] + "/" + r[3] + rpad_(ff[2], ri) : fill(" ", 2 * ri + 1 + r[2].length + r[3].length));
   }
   if (r = fmt.match(/^[#0?]+$/)) {
     o = "" + val;
@@ -37794,7 +37794,7 @@ function write_num_int(type, fmt, val) {
     case "##,###":
     case "#,###":
       var x = commaify("" + aval);
-      return x !== "0" ? sign + x : "";
+      return x !== "0" ? sign2 + x : "";
     default:
       if (fmt.match(/\.[0#?]*$/)) return write_num_int(type, fmt.slice(0, fmt.lastIndexOf(".")), val) + hashq(fmt.slice(fmt.lastIndexOf(".")));
   }
@@ -56047,16 +56047,16 @@ function write_numbers_iwa(wb, opts) {
     console.error("The Numbers writer currently writes only the first table");
   var range2 = decode_range(ws["!ref"]);
   range2.s.r = range2.s.c = 0;
-  var trunc = false;
+  var trunc2 = false;
   if (range2.e.c > 9) {
-    trunc = true;
+    trunc2 = true;
     range2.e.c = 9;
   }
   if (range2.e.r > 49) {
-    trunc = true;
+    trunc2 = true;
     range2.e.r = 49;
   }
-  if (trunc)
+  if (trunc2)
     console.error("The Numbers writer is currently limited to ".concat(encode_range(range2)));
   var data = sheet_to_json(ws, { range: range2, header: 1 });
   var SST = ["~Sh33tJ5~"];
@@ -58033,7 +58033,7 @@ var _ActionService = class _ActionService {
     if (currentAgent?.epicstaffFlowId != null) {
       const restored = newFlowAgents.find((a3) => a3.epicstaffFlowId === currentAgent.epicstaffFlowId);
       this.agentService.setCurrentAgent(restored ?? newFlowAgents[0] ?? null);
-    } else if (newFlowAgents.length > 0 && !currentAgent) {
+    } else if (newFlowAgents.length > 0) {
       this.agentService.setCurrentAgent(newFlowAgents[0]);
     }
     onCommandSuccess(command, { count: newFlowAgents.length });
@@ -58643,6 +58643,1612 @@ var DateUtils = class {
   }
 };
 
+// node_modules/expr-eval/dist/index.mjs
+var INUMBER = "INUMBER";
+var IOP1 = "IOP1";
+var IOP2 = "IOP2";
+var IOP3 = "IOP3";
+var IVAR = "IVAR";
+var IVARNAME = "IVARNAME";
+var IFUNCALL = "IFUNCALL";
+var IFUNDEF = "IFUNDEF";
+var IEXPR = "IEXPR";
+var IEXPREVAL = "IEXPREVAL";
+var IMEMBER = "IMEMBER";
+var IENDSTATEMENT = "IENDSTATEMENT";
+var IARRAY = "IARRAY";
+function Instruction(type, value) {
+  this.type = type;
+  this.value = value !== void 0 && value !== null ? value : 0;
+}
+Instruction.prototype.toString = function() {
+  switch (this.type) {
+    case INUMBER:
+    case IOP1:
+    case IOP2:
+    case IOP3:
+    case IVAR:
+    case IVARNAME:
+    case IENDSTATEMENT:
+      return this.value;
+    case IFUNCALL:
+      return "CALL " + this.value;
+    case IFUNDEF:
+      return "DEF " + this.value;
+    case IARRAY:
+      return "ARRAY " + this.value;
+    case IMEMBER:
+      return "." + this.value;
+    default:
+      return "Invalid Instruction";
+  }
+};
+function unaryInstruction(value) {
+  return new Instruction(IOP1, value);
+}
+function binaryInstruction(value) {
+  return new Instruction(IOP2, value);
+}
+function ternaryInstruction(value) {
+  return new Instruction(IOP3, value);
+}
+function simplify(tokens, unaryOps, binaryOps, ternaryOps, values) {
+  var nstack = [];
+  var newexpression = [];
+  var n1, n2, n3;
+  var f;
+  for (var i = 0; i < tokens.length; i++) {
+    var item = tokens[i];
+    var type = item.type;
+    if (type === INUMBER || type === IVARNAME) {
+      if (Array.isArray(item.value)) {
+        nstack.push.apply(nstack, simplify(item.value.map(function(x) {
+          return new Instruction(INUMBER, x);
+        }).concat(new Instruction(IARRAY, item.value.length)), unaryOps, binaryOps, ternaryOps, values));
+      } else {
+        nstack.push(item);
+      }
+    } else if (type === IVAR && values.hasOwnProperty(item.value)) {
+      item = new Instruction(INUMBER, values[item.value]);
+      nstack.push(item);
+    } else if (type === IOP2 && nstack.length > 1) {
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      f = binaryOps[item.value];
+      item = new Instruction(INUMBER, f(n1.value, n2.value));
+      nstack.push(item);
+    } else if (type === IOP3 && nstack.length > 2) {
+      n3 = nstack.pop();
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      if (item.value === "?") {
+        nstack.push(n1.value ? n2.value : n3.value);
+      } else {
+        f = ternaryOps[item.value];
+        item = new Instruction(INUMBER, f(n1.value, n2.value, n3.value));
+        nstack.push(item);
+      }
+    } else if (type === IOP1 && nstack.length > 0) {
+      n1 = nstack.pop();
+      f = unaryOps[item.value];
+      item = new Instruction(INUMBER, f(n1.value));
+      nstack.push(item);
+    } else if (type === IEXPR) {
+      while (nstack.length > 0) {
+        newexpression.push(nstack.shift());
+      }
+      newexpression.push(new Instruction(IEXPR, simplify(item.value, unaryOps, binaryOps, ternaryOps, values)));
+    } else if (type === IMEMBER && nstack.length > 0) {
+      n1 = nstack.pop();
+      nstack.push(new Instruction(INUMBER, n1.value[item.value]));
+    } else {
+      while (nstack.length > 0) {
+        newexpression.push(nstack.shift());
+      }
+      newexpression.push(item);
+    }
+  }
+  while (nstack.length > 0) {
+    newexpression.push(nstack.shift());
+  }
+  return newexpression;
+}
+function substitute(tokens, variable, expr) {
+  var newexpression = [];
+  for (var i = 0; i < tokens.length; i++) {
+    var item = tokens[i];
+    var type = item.type;
+    if (type === IVAR && item.value === variable) {
+      for (var j2 = 0; j2 < expr.tokens.length; j2++) {
+        var expritem = expr.tokens[j2];
+        var replitem;
+        if (expritem.type === IOP1) {
+          replitem = unaryInstruction(expritem.value);
+        } else if (expritem.type === IOP2) {
+          replitem = binaryInstruction(expritem.value);
+        } else if (expritem.type === IOP3) {
+          replitem = ternaryInstruction(expritem.value);
+        } else {
+          replitem = new Instruction(expritem.type, expritem.value);
+        }
+        newexpression.push(replitem);
+      }
+    } else if (type === IEXPR) {
+      newexpression.push(new Instruction(IEXPR, substitute(item.value, variable, expr)));
+    } else {
+      newexpression.push(item);
+    }
+  }
+  return newexpression;
+}
+function evaluate(tokens, expr, values) {
+  var nstack = [];
+  var n1, n2, n3;
+  var f, args, argCount;
+  if (isExpressionEvaluator(tokens)) {
+    return resolveExpression(tokens, values);
+  }
+  var numTokens = tokens.length;
+  for (var i = 0; i < numTokens; i++) {
+    var item = tokens[i];
+    var type = item.type;
+    if (type === INUMBER || type === IVARNAME) {
+      nstack.push(item.value);
+    } else if (type === IOP2) {
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      if (item.value === "and") {
+        nstack.push(n1 ? !!evaluate(n2, expr, values) : false);
+      } else if (item.value === "or") {
+        nstack.push(n1 ? true : !!evaluate(n2, expr, values));
+      } else if (item.value === "=") {
+        f = expr.binaryOps[item.value];
+        nstack.push(f(n1, evaluate(n2, expr, values), values));
+      } else {
+        f = expr.binaryOps[item.value];
+        nstack.push(f(resolveExpression(n1, values), resolveExpression(n2, values)));
+      }
+    } else if (type === IOP3) {
+      n3 = nstack.pop();
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      if (item.value === "?") {
+        nstack.push(evaluate(n1 ? n2 : n3, expr, values));
+      } else {
+        f = expr.ternaryOps[item.value];
+        nstack.push(f(resolveExpression(n1, values), resolveExpression(n2, values), resolveExpression(n3, values)));
+      }
+    } else if (type === IVAR) {
+      if (item.value in expr.functions) {
+        nstack.push(expr.functions[item.value]);
+      } else if (item.value in expr.unaryOps && expr.parser.isOperatorEnabled(item.value)) {
+        nstack.push(expr.unaryOps[item.value]);
+      } else {
+        var v2 = values[item.value];
+        if (v2 !== void 0) {
+          nstack.push(v2);
+        } else {
+          throw new Error("undefined variable: " + item.value);
+        }
+      }
+    } else if (type === IOP1) {
+      n1 = nstack.pop();
+      f = expr.unaryOps[item.value];
+      nstack.push(f(resolveExpression(n1, values)));
+    } else if (type === IFUNCALL) {
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(resolveExpression(nstack.pop(), values));
+      }
+      f = nstack.pop();
+      if (f.apply && f.call) {
+        nstack.push(f.apply(void 0, args));
+      } else {
+        throw new Error(f + " is not a function");
+      }
+    } else if (type === IFUNDEF) {
+      nstack.push((function() {
+        var n22 = nstack.pop();
+        var args2 = [];
+        var argCount2 = item.value;
+        while (argCount2-- > 0) {
+          args2.unshift(nstack.pop());
+        }
+        var n12 = nstack.pop();
+        var f2 = function() {
+          var scope = Object.assign({}, values);
+          for (var i2 = 0, len = args2.length; i2 < len; i2++) {
+            scope[args2[i2]] = arguments[i2];
+          }
+          return evaluate(n22, expr, scope);
+        };
+        Object.defineProperty(f2, "name", {
+          value: n12,
+          writable: false
+        });
+        values[n12] = f2;
+        return f2;
+      })());
+    } else if (type === IEXPR) {
+      nstack.push(createExpressionEvaluator(item, expr));
+    } else if (type === IEXPREVAL) {
+      nstack.push(item);
+    } else if (type === IMEMBER) {
+      n1 = nstack.pop();
+      nstack.push(n1[item.value]);
+    } else if (type === IENDSTATEMENT) {
+      nstack.pop();
+    } else if (type === IARRAY) {
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(nstack.pop());
+      }
+      nstack.push(args);
+    } else {
+      throw new Error("invalid Expression");
+    }
+  }
+  if (nstack.length > 1) {
+    throw new Error("invalid Expression (parity)");
+  }
+  return nstack[0] === 0 ? 0 : resolveExpression(nstack[0], values);
+}
+function createExpressionEvaluator(token, expr, values) {
+  if (isExpressionEvaluator(token)) return token;
+  return {
+    type: IEXPREVAL,
+    value: function(scope) {
+      return evaluate(token.value, expr, scope);
+    }
+  };
+}
+function isExpressionEvaluator(n) {
+  return n && n.type === IEXPREVAL;
+}
+function resolveExpression(n, values) {
+  return isExpressionEvaluator(n) ? n.value(values) : n;
+}
+function expressionToString(tokens, toJS) {
+  var nstack = [];
+  var n1, n2, n3;
+  var f, args, argCount;
+  for (var i = 0; i < tokens.length; i++) {
+    var item = tokens[i];
+    var type = item.type;
+    if (type === INUMBER) {
+      if (typeof item.value === "number" && item.value < 0) {
+        nstack.push("(" + item.value + ")");
+      } else if (Array.isArray(item.value)) {
+        nstack.push("[" + item.value.map(escapeValue).join(", ") + "]");
+      } else {
+        nstack.push(escapeValue(item.value));
+      }
+    } else if (type === IOP2) {
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      f = item.value;
+      if (toJS) {
+        if (f === "^") {
+          nstack.push("Math.pow(" + n1 + ", " + n2 + ")");
+        } else if (f === "and") {
+          nstack.push("(!!" + n1 + " && !!" + n2 + ")");
+        } else if (f === "or") {
+          nstack.push("(!!" + n1 + " || !!" + n2 + ")");
+        } else if (f === "||") {
+          nstack.push("(function(a,b){ return Array.isArray(a) && Array.isArray(b) ? a.concat(b) : String(a) + String(b); }((" + n1 + "),(" + n2 + ")))");
+        } else if (f === "==") {
+          nstack.push("(" + n1 + " === " + n2 + ")");
+        } else if (f === "!=") {
+          nstack.push("(" + n1 + " !== " + n2 + ")");
+        } else if (f === "[") {
+          nstack.push(n1 + "[(" + n2 + ") | 0]");
+        } else {
+          nstack.push("(" + n1 + " " + f + " " + n2 + ")");
+        }
+      } else {
+        if (f === "[") {
+          nstack.push(n1 + "[" + n2 + "]");
+        } else {
+          nstack.push("(" + n1 + " " + f + " " + n2 + ")");
+        }
+      }
+    } else if (type === IOP3) {
+      n3 = nstack.pop();
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      f = item.value;
+      if (f === "?") {
+        nstack.push("(" + n1 + " ? " + n2 + " : " + n3 + ")");
+      } else {
+        throw new Error("invalid Expression");
+      }
+    } else if (type === IVAR || type === IVARNAME) {
+      nstack.push(item.value);
+    } else if (type === IOP1) {
+      n1 = nstack.pop();
+      f = item.value;
+      if (f === "-" || f === "+") {
+        nstack.push("(" + f + n1 + ")");
+      } else if (toJS) {
+        if (f === "not") {
+          nstack.push("(!" + n1 + ")");
+        } else if (f === "!") {
+          nstack.push("fac(" + n1 + ")");
+        } else {
+          nstack.push(f + "(" + n1 + ")");
+        }
+      } else if (f === "!") {
+        nstack.push("(" + n1 + "!)");
+      } else {
+        nstack.push("(" + f + " " + n1 + ")");
+      }
+    } else if (type === IFUNCALL) {
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(nstack.pop());
+      }
+      f = nstack.pop();
+      nstack.push(f + "(" + args.join(", ") + ")");
+    } else if (type === IFUNDEF) {
+      n2 = nstack.pop();
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(nstack.pop());
+      }
+      n1 = nstack.pop();
+      if (toJS) {
+        nstack.push("(" + n1 + " = function(" + args.join(", ") + ") { return " + n2 + " })");
+      } else {
+        nstack.push("(" + n1 + "(" + args.join(", ") + ") = " + n2 + ")");
+      }
+    } else if (type === IMEMBER) {
+      n1 = nstack.pop();
+      nstack.push(n1 + "." + item.value);
+    } else if (type === IARRAY) {
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(nstack.pop());
+      }
+      nstack.push("[" + args.join(", ") + "]");
+    } else if (type === IEXPR) {
+      nstack.push("(" + expressionToString(item.value, toJS) + ")");
+    } else if (type === IENDSTATEMENT) ;
+    else {
+      throw new Error("invalid Expression");
+    }
+  }
+  if (nstack.length > 1) {
+    if (toJS) {
+      nstack = [nstack.join(",")];
+    } else {
+      nstack = [nstack.join(";")];
+    }
+  }
+  return String(nstack[0]);
+}
+function escapeValue(v2) {
+  if (typeof v2 === "string") {
+    return JSON.stringify(v2).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+  }
+  return v2;
+}
+function contains(array, obj) {
+  for (var i = 0; i < array.length; i++) {
+    if (array[i] === obj) {
+      return true;
+    }
+  }
+  return false;
+}
+function getSymbols(tokens, symbols, options) {
+  options = options || {};
+  var withMembers = !!options.withMembers;
+  var prevVar = null;
+  for (var i = 0; i < tokens.length; i++) {
+    var item = tokens[i];
+    if (item.type === IVAR || item.type === IVARNAME) {
+      if (!withMembers && !contains(symbols, item.value)) {
+        symbols.push(item.value);
+      } else if (prevVar !== null) {
+        if (!contains(symbols, prevVar)) {
+          symbols.push(prevVar);
+        }
+        prevVar = item.value;
+      } else {
+        prevVar = item.value;
+      }
+    } else if (item.type === IMEMBER && withMembers && prevVar !== null) {
+      prevVar += "." + item.value;
+    } else if (item.type === IEXPR) {
+      getSymbols(item.value, symbols, options);
+    } else if (prevVar !== null) {
+      if (!contains(symbols, prevVar)) {
+        symbols.push(prevVar);
+      }
+      prevVar = null;
+    }
+  }
+  if (prevVar !== null && !contains(symbols, prevVar)) {
+    symbols.push(prevVar);
+  }
+}
+function Expression(tokens, parser) {
+  this.tokens = tokens;
+  this.parser = parser;
+  this.unaryOps = parser.unaryOps;
+  this.binaryOps = parser.binaryOps;
+  this.ternaryOps = parser.ternaryOps;
+  this.functions = parser.functions;
+}
+Expression.prototype.simplify = function(values) {
+  values = values || {};
+  return new Expression(simplify(this.tokens, this.unaryOps, this.binaryOps, this.ternaryOps, values), this.parser);
+};
+Expression.prototype.substitute = function(variable, expr) {
+  if (!(expr instanceof Expression)) {
+    expr = this.parser.parse(String(expr));
+  }
+  return new Expression(substitute(this.tokens, variable, expr), this.parser);
+};
+Expression.prototype.evaluate = function(values) {
+  values = values || {};
+  return evaluate(this.tokens, this, values);
+};
+Expression.prototype.toString = function() {
+  return expressionToString(this.tokens, false);
+};
+Expression.prototype.symbols = function(options) {
+  options = options || {};
+  var vars = [];
+  getSymbols(this.tokens, vars, options);
+  return vars;
+};
+Expression.prototype.variables = function(options) {
+  options = options || {};
+  var vars = [];
+  getSymbols(this.tokens, vars, options);
+  var functions = this.functions;
+  return vars.filter(function(name) {
+    return !(name in functions);
+  });
+};
+Expression.prototype.toJSFunction = function(param, variables) {
+  var expr = this;
+  var f = new Function(param, "with(this.functions) with (this.ternaryOps) with (this.binaryOps) with (this.unaryOps) { return " + expressionToString(this.simplify(variables).tokens, true) + "; }");
+  return function() {
+    return f.apply(expr, arguments);
+  };
+};
+var TEOF = "TEOF";
+var TOP = "TOP";
+var TNUMBER = "TNUMBER";
+var TSTRING = "TSTRING";
+var TPAREN = "TPAREN";
+var TBRACKET = "TBRACKET";
+var TCOMMA = "TCOMMA";
+var TNAME = "TNAME";
+var TSEMICOLON = "TSEMICOLON";
+function Token(type, value, index) {
+  this.type = type;
+  this.value = value;
+  this.index = index;
+}
+Token.prototype.toString = function() {
+  return this.type + ": " + this.value;
+};
+function TokenStream(parser, expression) {
+  this.pos = 0;
+  this.current = null;
+  this.unaryOps = parser.unaryOps;
+  this.binaryOps = parser.binaryOps;
+  this.ternaryOps = parser.ternaryOps;
+  this.consts = parser.consts;
+  this.expression = expression;
+  this.savedPosition = 0;
+  this.savedCurrent = null;
+  this.options = parser.options;
+  this.parser = parser;
+}
+TokenStream.prototype.newToken = function(type, value, pos) {
+  return new Token(type, value, pos != null ? pos : this.pos);
+};
+TokenStream.prototype.save = function() {
+  this.savedPosition = this.pos;
+  this.savedCurrent = this.current;
+};
+TokenStream.prototype.restore = function() {
+  this.pos = this.savedPosition;
+  this.current = this.savedCurrent;
+};
+TokenStream.prototype.next = function() {
+  if (this.pos >= this.expression.length) {
+    return this.newToken(TEOF, "EOF");
+  }
+  if (this.isWhitespace() || this.isComment()) {
+    return this.next();
+  } else if (this.isRadixInteger() || this.isNumber() || this.isOperator() || this.isString() || this.isParen() || this.isBracket() || this.isComma() || this.isSemicolon() || this.isNamedOp() || this.isConst() || this.isName()) {
+    return this.current;
+  } else {
+    this.parseError('Unknown character "' + this.expression.charAt(this.pos) + '"');
+  }
+};
+TokenStream.prototype.isString = function() {
+  var r = false;
+  var startPos = this.pos;
+  var quote = this.expression.charAt(startPos);
+  if (quote === "'" || quote === '"') {
+    var index = this.expression.indexOf(quote, startPos + 1);
+    while (index >= 0 && this.pos < this.expression.length) {
+      this.pos = index + 1;
+      if (this.expression.charAt(index - 1) !== "\\") {
+        var rawString = this.expression.substring(startPos + 1, index);
+        this.current = this.newToken(TSTRING, this.unescape(rawString), startPos);
+        r = true;
+        break;
+      }
+      index = this.expression.indexOf(quote, index + 1);
+    }
+  }
+  return r;
+};
+TokenStream.prototype.isParen = function() {
+  var c = this.expression.charAt(this.pos);
+  if (c === "(" || c === ")") {
+    this.current = this.newToken(TPAREN, c);
+    this.pos++;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isBracket = function() {
+  var c = this.expression.charAt(this.pos);
+  if ((c === "[" || c === "]") && this.isOperatorEnabled("[")) {
+    this.current = this.newToken(TBRACKET, c);
+    this.pos++;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isComma = function() {
+  var c = this.expression.charAt(this.pos);
+  if (c === ",") {
+    this.current = this.newToken(TCOMMA, ",");
+    this.pos++;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isSemicolon = function() {
+  var c = this.expression.charAt(this.pos);
+  if (c === ";") {
+    this.current = this.newToken(TSEMICOLON, ";");
+    this.pos++;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isConst = function() {
+  var startPos = this.pos;
+  var i = startPos;
+  for (; i < this.expression.length; i++) {
+    var c = this.expression.charAt(i);
+    if (c.toUpperCase() === c.toLowerCase()) {
+      if (i === this.pos || c !== "_" && c !== "." && (c < "0" || c > "9")) {
+        break;
+      }
+    }
+  }
+  if (i > startPos) {
+    var str = this.expression.substring(startPos, i);
+    if (str in this.consts) {
+      this.current = this.newToken(TNUMBER, this.consts[str]);
+      this.pos += str.length;
+      return true;
+    }
+  }
+  return false;
+};
+TokenStream.prototype.isNamedOp = function() {
+  var startPos = this.pos;
+  var i = startPos;
+  for (; i < this.expression.length; i++) {
+    var c = this.expression.charAt(i);
+    if (c.toUpperCase() === c.toLowerCase()) {
+      if (i === this.pos || c !== "_" && (c < "0" || c > "9")) {
+        break;
+      }
+    }
+  }
+  if (i > startPos) {
+    var str = this.expression.substring(startPos, i);
+    if (this.isOperatorEnabled(str) && (str in this.binaryOps || str in this.unaryOps || str in this.ternaryOps)) {
+      this.current = this.newToken(TOP, str);
+      this.pos += str.length;
+      return true;
+    }
+  }
+  return false;
+};
+TokenStream.prototype.isName = function() {
+  var startPos = this.pos;
+  var i = startPos;
+  var hasLetter = false;
+  for (; i < this.expression.length; i++) {
+    var c = this.expression.charAt(i);
+    if (c.toUpperCase() === c.toLowerCase()) {
+      if (i === this.pos && (c === "$" || c === "_")) {
+        if (c === "_") {
+          hasLetter = true;
+        }
+        continue;
+      } else if (i === this.pos || !hasLetter || c !== "_" && (c < "0" || c > "9")) {
+        break;
+      }
+    } else {
+      hasLetter = true;
+    }
+  }
+  if (hasLetter) {
+    var str = this.expression.substring(startPos, i);
+    this.current = this.newToken(TNAME, str);
+    this.pos += str.length;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isWhitespace = function() {
+  var r = false;
+  var c = this.expression.charAt(this.pos);
+  while (c === " " || c === "	" || c === "\n" || c === "\r") {
+    r = true;
+    this.pos++;
+    if (this.pos >= this.expression.length) {
+      break;
+    }
+    c = this.expression.charAt(this.pos);
+  }
+  return r;
+};
+var codePointPattern = /^[0-9a-f]{4}$/i;
+TokenStream.prototype.unescape = function(v2) {
+  var index = v2.indexOf("\\");
+  if (index < 0) {
+    return v2;
+  }
+  var buffer = v2.substring(0, index);
+  while (index >= 0) {
+    var c = v2.charAt(++index);
+    switch (c) {
+      case "'":
+        buffer += "'";
+        break;
+      case '"':
+        buffer += '"';
+        break;
+      case "\\":
+        buffer += "\\";
+        break;
+      case "/":
+        buffer += "/";
+        break;
+      case "b":
+        buffer += "\b";
+        break;
+      case "f":
+        buffer += "\f";
+        break;
+      case "n":
+        buffer += "\n";
+        break;
+      case "r":
+        buffer += "\r";
+        break;
+      case "t":
+        buffer += "	";
+        break;
+      case "u":
+        var codePoint = v2.substring(index + 1, index + 5);
+        if (!codePointPattern.test(codePoint)) {
+          this.parseError("Illegal escape sequence: \\u" + codePoint);
+        }
+        buffer += String.fromCharCode(parseInt(codePoint, 16));
+        index += 4;
+        break;
+      default:
+        throw this.parseError('Illegal escape sequence: "\\' + c + '"');
+    }
+    ++index;
+    var backslash = v2.indexOf("\\", index);
+    buffer += v2.substring(index, backslash < 0 ? v2.length : backslash);
+    index = backslash;
+  }
+  return buffer;
+};
+TokenStream.prototype.isComment = function() {
+  var c = this.expression.charAt(this.pos);
+  if (c === "/" && this.expression.charAt(this.pos + 1) === "*") {
+    this.pos = this.expression.indexOf("*/", this.pos) + 2;
+    if (this.pos === 1) {
+      this.pos = this.expression.length;
+    }
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isRadixInteger = function() {
+  var pos = this.pos;
+  if (pos >= this.expression.length - 2 || this.expression.charAt(pos) !== "0") {
+    return false;
+  }
+  ++pos;
+  var radix;
+  var validDigit;
+  if (this.expression.charAt(pos) === "x") {
+    radix = 16;
+    validDigit = /^[0-9a-f]$/i;
+    ++pos;
+  } else if (this.expression.charAt(pos) === "b") {
+    radix = 2;
+    validDigit = /^[01]$/i;
+    ++pos;
+  } else {
+    return false;
+  }
+  var valid = false;
+  var startPos = pos;
+  while (pos < this.expression.length) {
+    var c = this.expression.charAt(pos);
+    if (validDigit.test(c)) {
+      pos++;
+      valid = true;
+    } else {
+      break;
+    }
+  }
+  if (valid) {
+    this.current = this.newToken(TNUMBER, parseInt(this.expression.substring(startPos, pos), radix));
+    this.pos = pos;
+  }
+  return valid;
+};
+TokenStream.prototype.isNumber = function() {
+  var valid = false;
+  var pos = this.pos;
+  var startPos = pos;
+  var resetPos = pos;
+  var foundDot = false;
+  var foundDigits = false;
+  var c;
+  while (pos < this.expression.length) {
+    c = this.expression.charAt(pos);
+    if (c >= "0" && c <= "9" || !foundDot && c === ".") {
+      if (c === ".") {
+        foundDot = true;
+      } else {
+        foundDigits = true;
+      }
+      pos++;
+      valid = foundDigits;
+    } else {
+      break;
+    }
+  }
+  if (valid) {
+    resetPos = pos;
+  }
+  if (c === "e" || c === "E") {
+    pos++;
+    var acceptSign = true;
+    var validExponent = false;
+    while (pos < this.expression.length) {
+      c = this.expression.charAt(pos);
+      if (acceptSign && (c === "+" || c === "-")) {
+        acceptSign = false;
+      } else if (c >= "0" && c <= "9") {
+        validExponent = true;
+        acceptSign = false;
+      } else {
+        break;
+      }
+      pos++;
+    }
+    if (!validExponent) {
+      pos = resetPos;
+    }
+  }
+  if (valid) {
+    this.current = this.newToken(TNUMBER, parseFloat(this.expression.substring(startPos, pos)));
+    this.pos = pos;
+  } else {
+    this.pos = resetPos;
+  }
+  return valid;
+};
+TokenStream.prototype.isOperator = function() {
+  var startPos = this.pos;
+  var c = this.expression.charAt(this.pos);
+  if (c === "+" || c === "-" || c === "*" || c === "/" || c === "%" || c === "^" || c === "?" || c === ":" || c === ".") {
+    this.current = this.newToken(TOP, c);
+  } else if (c === "\u2219" || c === "\u2022") {
+    this.current = this.newToken(TOP, "*");
+  } else if (c === ">") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, ">=");
+      this.pos++;
+    } else {
+      this.current = this.newToken(TOP, ">");
+    }
+  } else if (c === "<") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, "<=");
+      this.pos++;
+    } else {
+      this.current = this.newToken(TOP, "<");
+    }
+  } else if (c === "|") {
+    if (this.expression.charAt(this.pos + 1) === "|") {
+      this.current = this.newToken(TOP, "||");
+      this.pos++;
+    } else {
+      return false;
+    }
+  } else if (c === "=") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, "==");
+      this.pos++;
+    } else {
+      this.current = this.newToken(TOP, c);
+    }
+  } else if (c === "!") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, "!=");
+      this.pos++;
+    } else {
+      this.current = this.newToken(TOP, c);
+    }
+  } else {
+    return false;
+  }
+  this.pos++;
+  if (this.isOperatorEnabled(this.current.value)) {
+    return true;
+  } else {
+    this.pos = startPos;
+    return false;
+  }
+};
+TokenStream.prototype.isOperatorEnabled = function(op) {
+  return this.parser.isOperatorEnabled(op);
+};
+TokenStream.prototype.getCoordinates = function() {
+  var line = 0;
+  var column;
+  var newline = -1;
+  do {
+    line++;
+    column = this.pos - newline;
+    newline = this.expression.indexOf("\n", newline + 1);
+  } while (newline >= 0 && newline < this.pos);
+  return {
+    line,
+    column
+  };
+};
+TokenStream.prototype.parseError = function(msg) {
+  var coords = this.getCoordinates();
+  throw new Error("parse error [" + coords.line + ":" + coords.column + "]: " + msg);
+};
+function ParserState(parser, tokenStream, options) {
+  this.parser = parser;
+  this.tokens = tokenStream;
+  this.current = null;
+  this.nextToken = null;
+  this.next();
+  this.savedCurrent = null;
+  this.savedNextToken = null;
+  this.allowMemberAccess = options.allowMemberAccess !== false;
+}
+ParserState.prototype.next = function() {
+  this.current = this.nextToken;
+  return this.nextToken = this.tokens.next();
+};
+ParserState.prototype.tokenMatches = function(token, value) {
+  if (typeof value === "undefined") {
+    return true;
+  } else if (Array.isArray(value)) {
+    return contains(value, token.value);
+  } else if (typeof value === "function") {
+    return value(token);
+  } else {
+    return token.value === value;
+  }
+};
+ParserState.prototype.save = function() {
+  this.savedCurrent = this.current;
+  this.savedNextToken = this.nextToken;
+  this.tokens.save();
+};
+ParserState.prototype.restore = function() {
+  this.tokens.restore();
+  this.current = this.savedCurrent;
+  this.nextToken = this.savedNextToken;
+};
+ParserState.prototype.accept = function(type, value) {
+  if (this.nextToken.type === type && this.tokenMatches(this.nextToken, value)) {
+    this.next();
+    return true;
+  }
+  return false;
+};
+ParserState.prototype.expect = function(type, value) {
+  if (!this.accept(type, value)) {
+    var coords = this.tokens.getCoordinates();
+    throw new Error("parse error [" + coords.line + ":" + coords.column + "]: Expected " + (value || type));
+  }
+};
+ParserState.prototype.parseAtom = function(instr) {
+  var unaryOps = this.tokens.unaryOps;
+  function isPrefixOperator(token) {
+    return token.value in unaryOps;
+  }
+  if (this.accept(TNAME) || this.accept(TOP, isPrefixOperator)) {
+    instr.push(new Instruction(IVAR, this.current.value));
+  } else if (this.accept(TNUMBER)) {
+    instr.push(new Instruction(INUMBER, this.current.value));
+  } else if (this.accept(TSTRING)) {
+    instr.push(new Instruction(INUMBER, this.current.value));
+  } else if (this.accept(TPAREN, "(")) {
+    this.parseExpression(instr);
+    this.expect(TPAREN, ")");
+  } else if (this.accept(TBRACKET, "[")) {
+    if (this.accept(TBRACKET, "]")) {
+      instr.push(new Instruction(IARRAY, 0));
+    } else {
+      var argCount = this.parseArrayList(instr);
+      instr.push(new Instruction(IARRAY, argCount));
+    }
+  } else {
+    throw new Error("unexpected " + this.nextToken);
+  }
+};
+ParserState.prototype.parseExpression = function(instr) {
+  var exprInstr = [];
+  if (this.parseUntilEndStatement(instr, exprInstr)) {
+    return;
+  }
+  this.parseVariableAssignmentExpression(exprInstr);
+  if (this.parseUntilEndStatement(instr, exprInstr)) {
+    return;
+  }
+  this.pushExpression(instr, exprInstr);
+};
+ParserState.prototype.pushExpression = function(instr, exprInstr) {
+  for (var i = 0, len = exprInstr.length; i < len; i++) {
+    instr.push(exprInstr[i]);
+  }
+};
+ParserState.prototype.parseUntilEndStatement = function(instr, exprInstr) {
+  if (!this.accept(TSEMICOLON)) return false;
+  if (this.nextToken && this.nextToken.type !== TEOF && !(this.nextToken.type === TPAREN && this.nextToken.value === ")")) {
+    exprInstr.push(new Instruction(IENDSTATEMENT));
+  }
+  if (this.nextToken.type !== TEOF) {
+    this.parseExpression(exprInstr);
+  }
+  instr.push(new Instruction(IEXPR, exprInstr));
+  return true;
+};
+ParserState.prototype.parseArrayList = function(instr) {
+  var argCount = 0;
+  while (!this.accept(TBRACKET, "]")) {
+    this.parseExpression(instr);
+    ++argCount;
+    while (this.accept(TCOMMA)) {
+      this.parseExpression(instr);
+      ++argCount;
+    }
+  }
+  return argCount;
+};
+ParserState.prototype.parseVariableAssignmentExpression = function(instr) {
+  this.parseConditionalExpression(instr);
+  while (this.accept(TOP, "=")) {
+    var varName = instr.pop();
+    var varValue = [];
+    var lastInstrIndex = instr.length - 1;
+    if (varName.type === IFUNCALL) {
+      if (!this.tokens.isOperatorEnabled("()=")) {
+        throw new Error("function definition is not permitted");
+      }
+      for (var i = 0, len = varName.value + 1; i < len; i++) {
+        var index = lastInstrIndex - i;
+        if (instr[index].type === IVAR) {
+          instr[index] = new Instruction(IVARNAME, instr[index].value);
+        }
+      }
+      this.parseVariableAssignmentExpression(varValue);
+      instr.push(new Instruction(IEXPR, varValue));
+      instr.push(new Instruction(IFUNDEF, varName.value));
+      continue;
+    }
+    if (varName.type !== IVAR && varName.type !== IMEMBER) {
+      throw new Error("expected variable for assignment");
+    }
+    this.parseVariableAssignmentExpression(varValue);
+    instr.push(new Instruction(IVARNAME, varName.value));
+    instr.push(new Instruction(IEXPR, varValue));
+    instr.push(binaryInstruction("="));
+  }
+};
+ParserState.prototype.parseConditionalExpression = function(instr) {
+  this.parseOrExpression(instr);
+  while (this.accept(TOP, "?")) {
+    var trueBranch = [];
+    var falseBranch = [];
+    this.parseConditionalExpression(trueBranch);
+    this.expect(TOP, ":");
+    this.parseConditionalExpression(falseBranch);
+    instr.push(new Instruction(IEXPR, trueBranch));
+    instr.push(new Instruction(IEXPR, falseBranch));
+    instr.push(ternaryInstruction("?"));
+  }
+};
+ParserState.prototype.parseOrExpression = function(instr) {
+  this.parseAndExpression(instr);
+  while (this.accept(TOP, "or")) {
+    var falseBranch = [];
+    this.parseAndExpression(falseBranch);
+    instr.push(new Instruction(IEXPR, falseBranch));
+    instr.push(binaryInstruction("or"));
+  }
+};
+ParserState.prototype.parseAndExpression = function(instr) {
+  this.parseComparison(instr);
+  while (this.accept(TOP, "and")) {
+    var trueBranch = [];
+    this.parseComparison(trueBranch);
+    instr.push(new Instruction(IEXPR, trueBranch));
+    instr.push(binaryInstruction("and"));
+  }
+};
+var COMPARISON_OPERATORS = ["==", "!=", "<", "<=", ">=", ">", "in"];
+ParserState.prototype.parseComparison = function(instr) {
+  this.parseAddSub(instr);
+  while (this.accept(TOP, COMPARISON_OPERATORS)) {
+    var op = this.current;
+    this.parseAddSub(instr);
+    instr.push(binaryInstruction(op.value));
+  }
+};
+var ADD_SUB_OPERATORS = ["+", "-", "||"];
+ParserState.prototype.parseAddSub = function(instr) {
+  this.parseTerm(instr);
+  while (this.accept(TOP, ADD_SUB_OPERATORS)) {
+    var op = this.current;
+    this.parseTerm(instr);
+    instr.push(binaryInstruction(op.value));
+  }
+};
+var TERM_OPERATORS = ["*", "/", "%"];
+ParserState.prototype.parseTerm = function(instr) {
+  this.parseFactor(instr);
+  while (this.accept(TOP, TERM_OPERATORS)) {
+    var op = this.current;
+    this.parseFactor(instr);
+    instr.push(binaryInstruction(op.value));
+  }
+};
+ParserState.prototype.parseFactor = function(instr) {
+  var unaryOps = this.tokens.unaryOps;
+  function isPrefixOperator(token) {
+    return token.value in unaryOps;
+  }
+  this.save();
+  if (this.accept(TOP, isPrefixOperator)) {
+    if (this.current.value !== "-" && this.current.value !== "+") {
+      if (this.nextToken.type === TPAREN && this.nextToken.value === "(") {
+        this.restore();
+        this.parseExponential(instr);
+        return;
+      } else if (this.nextToken.type === TSEMICOLON || this.nextToken.type === TCOMMA || this.nextToken.type === TEOF || this.nextToken.type === TPAREN && this.nextToken.value === ")") {
+        this.restore();
+        this.parseAtom(instr);
+        return;
+      }
+    }
+    var op = this.current;
+    this.parseFactor(instr);
+    instr.push(unaryInstruction(op.value));
+  } else {
+    this.parseExponential(instr);
+  }
+};
+ParserState.prototype.parseExponential = function(instr) {
+  this.parsePostfixExpression(instr);
+  while (this.accept(TOP, "^")) {
+    this.parseFactor(instr);
+    instr.push(binaryInstruction("^"));
+  }
+};
+ParserState.prototype.parsePostfixExpression = function(instr) {
+  this.parseFunctionCall(instr);
+  while (this.accept(TOP, "!")) {
+    instr.push(unaryInstruction("!"));
+  }
+};
+ParserState.prototype.parseFunctionCall = function(instr) {
+  var unaryOps = this.tokens.unaryOps;
+  function isPrefixOperator(token) {
+    return token.value in unaryOps;
+  }
+  if (this.accept(TOP, isPrefixOperator)) {
+    var op = this.current;
+    this.parseAtom(instr);
+    instr.push(unaryInstruction(op.value));
+  } else {
+    this.parseMemberExpression(instr);
+    while (this.accept(TPAREN, "(")) {
+      if (this.accept(TPAREN, ")")) {
+        instr.push(new Instruction(IFUNCALL, 0));
+      } else {
+        var argCount = this.parseArgumentList(instr);
+        instr.push(new Instruction(IFUNCALL, argCount));
+      }
+    }
+  }
+};
+ParserState.prototype.parseArgumentList = function(instr) {
+  var argCount = 0;
+  while (!this.accept(TPAREN, ")")) {
+    this.parseExpression(instr);
+    ++argCount;
+    while (this.accept(TCOMMA)) {
+      this.parseExpression(instr);
+      ++argCount;
+    }
+  }
+  return argCount;
+};
+ParserState.prototype.parseMemberExpression = function(instr) {
+  this.parseAtom(instr);
+  while (this.accept(TOP, ".") || this.accept(TBRACKET, "[")) {
+    var op = this.current;
+    if (op.value === ".") {
+      if (!this.allowMemberAccess) {
+        throw new Error('unexpected ".", member access is not permitted');
+      }
+      this.expect(TNAME);
+      instr.push(new Instruction(IMEMBER, this.current.value));
+    } else if (op.value === "[") {
+      if (!this.tokens.isOperatorEnabled("[")) {
+        throw new Error('unexpected "[]", arrays are disabled');
+      }
+      this.parseExpression(instr);
+      this.expect(TBRACKET, "]");
+      instr.push(binaryInstruction("["));
+    } else {
+      throw new Error("unexpected symbol: " + op.value);
+    }
+  }
+};
+function add(a3, b2) {
+  return Number(a3) + Number(b2);
+}
+function sub(a3, b2) {
+  return a3 - b2;
+}
+function mul(a3, b2) {
+  return a3 * b2;
+}
+function div(a3, b2) {
+  return a3 / b2;
+}
+function mod(a3, b2) {
+  return a3 % b2;
+}
+function concat2(a3, b2) {
+  if (Array.isArray(a3) && Array.isArray(b2)) {
+    return a3.concat(b2);
+  }
+  return "" + a3 + b2;
+}
+function equal(a3, b2) {
+  return a3 === b2;
+}
+function notEqual(a3, b2) {
+  return a3 !== b2;
+}
+function greaterThan(a3, b2) {
+  return a3 > b2;
+}
+function lessThan(a3, b2) {
+  return a3 < b2;
+}
+function greaterThanEqual(a3, b2) {
+  return a3 >= b2;
+}
+function lessThanEqual(a3, b2) {
+  return a3 <= b2;
+}
+function andOperator(a3, b2) {
+  return Boolean(a3 && b2);
+}
+function orOperator(a3, b2) {
+  return Boolean(a3 || b2);
+}
+function inOperator(a3, b2) {
+  return contains(b2, a3);
+}
+function sinh(a3) {
+  return (Math.exp(a3) - Math.exp(-a3)) / 2;
+}
+function cosh(a3) {
+  return (Math.exp(a3) + Math.exp(-a3)) / 2;
+}
+function tanh(a3) {
+  if (a3 === Infinity) return 1;
+  if (a3 === -Infinity) return -1;
+  return (Math.exp(a3) - Math.exp(-a3)) / (Math.exp(a3) + Math.exp(-a3));
+}
+function asinh(a3) {
+  if (a3 === -Infinity) return a3;
+  return Math.log(a3 + Math.sqrt(a3 * a3 + 1));
+}
+function acosh(a3) {
+  return Math.log(a3 + Math.sqrt(a3 * a3 - 1));
+}
+function atanh(a3) {
+  return Math.log((1 + a3) / (1 - a3)) / 2;
+}
+function log10(a3) {
+  return Math.log(a3) * Math.LOG10E;
+}
+function neg(a3) {
+  return -a3;
+}
+function not(a3) {
+  return !a3;
+}
+function trunc(a3) {
+  return a3 < 0 ? Math.ceil(a3) : Math.floor(a3);
+}
+function random(a3) {
+  return Math.random() * (a3 || 1);
+}
+function factorial(a3) {
+  return gamma(a3 + 1);
+}
+function isInteger(value) {
+  return isFinite(value) && value === Math.round(value);
+}
+var GAMMA_G = 4.7421875;
+var GAMMA_P = [
+  0.9999999999999971,
+  57.15623566586292,
+  -59.59796035547549,
+  14.136097974741746,
+  -0.4919138160976202,
+  3399464998481189e-20,
+  4652362892704858e-20,
+  -9837447530487956e-20,
+  1580887032249125e-19,
+  -21026444172410488e-20,
+  21743961811521265e-20,
+  -1643181065367639e-19,
+  8441822398385275e-20,
+  -26190838401581408e-21,
+  36899182659531625e-22
+];
+function gamma(n) {
+  var t, x;
+  if (isInteger(n)) {
+    if (n <= 0) {
+      return isFinite(n) ? Infinity : NaN;
+    }
+    if (n > 171) {
+      return Infinity;
+    }
+    var value = n - 2;
+    var res = n - 1;
+    while (value > 1) {
+      res *= value;
+      value--;
+    }
+    if (res === 0) {
+      res = 1;
+    }
+    return res;
+  }
+  if (n < 0.5) {
+    return Math.PI / (Math.sin(Math.PI * n) * gamma(1 - n));
+  }
+  if (n >= 171.35) {
+    return Infinity;
+  }
+  if (n > 85) {
+    var twoN = n * n;
+    var threeN = twoN * n;
+    var fourN = threeN * n;
+    var fiveN = fourN * n;
+    return Math.sqrt(2 * Math.PI / n) * Math.pow(n / Math.E, n) * (1 + 1 / (12 * n) + 1 / (288 * twoN) - 139 / (51840 * threeN) - 571 / (2488320 * fourN) + 163879 / (209018880 * fiveN) + 5246819 / (75246796800 * fiveN * n));
+  }
+  --n;
+  x = GAMMA_P[0];
+  for (var i = 1; i < GAMMA_P.length; ++i) {
+    x += GAMMA_P[i] / (n + i);
+  }
+  t = n + GAMMA_G + 0.5;
+  return Math.sqrt(2 * Math.PI) * Math.pow(t, n + 0.5) * Math.exp(-t) * x;
+}
+function stringOrArrayLength(s) {
+  if (Array.isArray(s)) {
+    return s.length;
+  }
+  return String(s).length;
+}
+function hypot() {
+  var sum = 0;
+  var larg = 0;
+  for (var i = 0; i < arguments.length; i++) {
+    var arg = Math.abs(arguments[i]);
+    var div2;
+    if (larg < arg) {
+      div2 = larg / arg;
+      sum = sum * div2 * div2 + 1;
+      larg = arg;
+    } else if (arg > 0) {
+      div2 = arg / larg;
+      sum += div2 * div2;
+    } else {
+      sum += arg;
+    }
+  }
+  return larg === Infinity ? Infinity : larg * Math.sqrt(sum);
+}
+function condition(cond, yep, nope) {
+  return cond ? yep : nope;
+}
+function roundTo(value, exp) {
+  if (typeof exp === "undefined" || +exp === 0) {
+    return Math.round(value);
+  }
+  value = +value;
+  exp = -+exp;
+  if (isNaN(value) || !(typeof exp === "number" && exp % 1 === 0)) {
+    return NaN;
+  }
+  value = value.toString().split("e");
+  value = Math.round(+(value[0] + "e" + (value[1] ? +value[1] - exp : -exp)));
+  value = value.toString().split("e");
+  return +(value[0] + "e" + (value[1] ? +value[1] + exp : exp));
+}
+function setVar(name, value, variables) {
+  if (variables) variables[name] = value;
+  return value;
+}
+function arrayIndex(array, index) {
+  return array[index | 0];
+}
+function max(array) {
+  if (arguments.length === 1 && Array.isArray(array)) {
+    return Math.max.apply(Math, array);
+  } else {
+    return Math.max.apply(Math, arguments);
+  }
+}
+function min(array) {
+  if (arguments.length === 1 && Array.isArray(array)) {
+    return Math.min.apply(Math, array);
+  } else {
+    return Math.min.apply(Math, arguments);
+  }
+}
+function arrayMap(f, a3) {
+  if (typeof f !== "function") {
+    throw new Error("First argument to map is not a function");
+  }
+  if (!Array.isArray(a3)) {
+    throw new Error("Second argument to map is not an array");
+  }
+  return a3.map(function(x, i) {
+    return f(x, i);
+  });
+}
+function arrayFold(f, init, a3) {
+  if (typeof f !== "function") {
+    throw new Error("First argument to fold is not a function");
+  }
+  if (!Array.isArray(a3)) {
+    throw new Error("Second argument to fold is not an array");
+  }
+  return a3.reduce(function(acc, x, i) {
+    return f(acc, x, i);
+  }, init);
+}
+function arrayFilter(f, a3) {
+  if (typeof f !== "function") {
+    throw new Error("First argument to filter is not a function");
+  }
+  if (!Array.isArray(a3)) {
+    throw new Error("Second argument to filter is not an array");
+  }
+  return a3.filter(function(x, i) {
+    return f(x, i);
+  });
+}
+function stringOrArrayIndexOf(target, s) {
+  if (!(Array.isArray(s) || typeof s === "string")) {
+    throw new Error("Second argument to indexOf is not a string or array");
+  }
+  return s.indexOf(target);
+}
+function arrayJoin(sep, a3) {
+  if (!Array.isArray(a3)) {
+    throw new Error("Second argument to join is not an array");
+  }
+  return a3.join(sep);
+}
+function sign(x) {
+  return (x > 0) - (x < 0) || +x;
+}
+var ONE_THIRD = 1 / 3;
+function cbrt(x) {
+  return x < 0 ? -Math.pow(-x, ONE_THIRD) : Math.pow(x, ONE_THIRD);
+}
+function expm1(x) {
+  return Math.exp(x) - 1;
+}
+function log1p(x) {
+  return Math.log(1 + x);
+}
+function log2(x) {
+  return Math.log(x) / Math.LN2;
+}
+function Parser(options) {
+  this.options = options || {};
+  this.unaryOps = {
+    sin: Math.sin,
+    cos: Math.cos,
+    tan: Math.tan,
+    asin: Math.asin,
+    acos: Math.acos,
+    atan: Math.atan,
+    sinh: Math.sinh || sinh,
+    cosh: Math.cosh || cosh,
+    tanh: Math.tanh || tanh,
+    asinh: Math.asinh || asinh,
+    acosh: Math.acosh || acosh,
+    atanh: Math.atanh || atanh,
+    sqrt: Math.sqrt,
+    cbrt: Math.cbrt || cbrt,
+    log: Math.log,
+    log2: Math.log2 || log2,
+    ln: Math.log,
+    lg: Math.log10 || log10,
+    log10: Math.log10 || log10,
+    expm1: Math.expm1 || expm1,
+    log1p: Math.log1p || log1p,
+    abs: Math.abs,
+    ceil: Math.ceil,
+    floor: Math.floor,
+    round: Math.round,
+    trunc: Math.trunc || trunc,
+    "-": neg,
+    "+": Number,
+    exp: Math.exp,
+    not,
+    length: stringOrArrayLength,
+    "!": factorial,
+    sign: Math.sign || sign
+  };
+  this.binaryOps = {
+    "+": add,
+    "-": sub,
+    "*": mul,
+    "/": div,
+    "%": mod,
+    "^": Math.pow,
+    "||": concat2,
+    "==": equal,
+    "!=": notEqual,
+    ">": greaterThan,
+    "<": lessThan,
+    ">=": greaterThanEqual,
+    "<=": lessThanEqual,
+    and: andOperator,
+    or: orOperator,
+    "in": inOperator,
+    "=": setVar,
+    "[": arrayIndex
+  };
+  this.ternaryOps = {
+    "?": condition
+  };
+  this.functions = {
+    random,
+    fac: factorial,
+    min,
+    max,
+    hypot: Math.hypot || hypot,
+    pyt: Math.hypot || hypot,
+    // backward compat
+    pow: Math.pow,
+    atan2: Math.atan2,
+    "if": condition,
+    gamma,
+    roundTo,
+    map: arrayMap,
+    fold: arrayFold,
+    filter: arrayFilter,
+    indexOf: stringOrArrayIndexOf,
+    join: arrayJoin
+  };
+  this.consts = {
+    E: Math.E,
+    PI: Math.PI,
+    "true": true,
+    "false": false
+  };
+}
+Parser.prototype.parse = function(expr) {
+  var instr = [];
+  var parserState2 = new ParserState(
+    this,
+    new TokenStream(this, expr),
+    { allowMemberAccess: this.options.allowMemberAccess }
+  );
+  parserState2.parseExpression(instr);
+  parserState2.expect(TEOF, "EOF");
+  return new Expression(instr, this);
+};
+Parser.prototype.evaluate = function(expr, variables) {
+  return this.parse(expr).evaluate(variables);
+};
+var sharedParser = new Parser();
+Parser.parse = function(expr) {
+  return sharedParser.parse(expr);
+};
+Parser.evaluate = function(expr, variables) {
+  return sharedParser.parse(expr).evaluate(variables);
+};
+var optionNameMap = {
+  "+": "add",
+  "-": "subtract",
+  "*": "multiply",
+  "/": "divide",
+  "%": "remainder",
+  "^": "power",
+  "!": "factorial",
+  "<": "comparison",
+  ">": "comparison",
+  "<=": "comparison",
+  ">=": "comparison",
+  "==": "comparison",
+  "!=": "comparison",
+  "||": "concatenate",
+  "and": "logical",
+  "or": "logical",
+  "not": "logical",
+  "?": "conditional",
+  ":": "conditional",
+  "=": "assignment",
+  "[": "array",
+  "()=": "fndef"
+};
+function getOptionName(op) {
+  return optionNameMap.hasOwnProperty(op) ? optionNameMap[op] : op;
+}
+Parser.prototype.isOperatorEnabled = function(op) {
+  var optionName = getOptionName(op);
+  var operators = this.options.operators || {};
+  return !(optionName in operators) || !!operators[optionName];
+};
+
 // node_modules/@angular/forms/fesm2022/forms.mjs
 var BaseControlValueAccessor = class _BaseControlValueAccessor {
   _renderer;
@@ -58911,8 +60517,8 @@ var Validators = class {
    * @see {@link /api/forms/AbstractControl#updateValueAndValidity updateValueAndValidity}
    *
    */
-  static min(min) {
-    return minValidator(min);
+  static min(min2) {
+    return minValidator(min2);
   }
   /**
    * @description
@@ -58934,8 +60540,8 @@ var Validators = class {
    * @see {@link /api/forms/AbstractControl#updateValueAndValidity updateValueAndValidity}
    *
    */
-  static max(max) {
-    return maxValidator(max);
+  static max(max2) {
+    return maxValidator(max2);
   }
   /**
    * @description
@@ -59168,29 +60774,29 @@ var Validators = class {
     return composeAsync(validators);
   }
 };
-function minValidator(min) {
+function minValidator(min2) {
   return (control) => {
-    if (control.value == null || min == null) {
+    if (control.value == null || min2 == null) {
       return null;
     }
     const value = parseFloat(control.value);
-    return !isNaN(value) && value < min ? {
+    return !isNaN(value) && value < min2 ? {
       "min": {
-        "min": min,
+        "min": min2,
         "actual": control.value
       }
     } : null;
   };
 }
-function maxValidator(max) {
+function maxValidator(max2) {
   return (control) => {
-    if (control.value == null || max == null) {
+    if (control.value == null || max2 == null) {
       return null;
     }
     const value = parseFloat(control.value);
-    return !isNaN(value) && value > max ? {
+    return !isNaN(value) && value > max2 ? {
       "max": {
-        "max": max,
+        "max": max2,
         "actual": control.value
       }
     } : null;
@@ -61248,9 +62854,9 @@ var FormGroup = class extends AbstractControl {
     this.value = this._reduceValue();
   }
   /** @internal */
-  _anyControls(condition) {
+  _anyControls(condition2) {
     for (const [controlName, control] of Object.entries(this.controls)) {
-      if (this.contains(controlName) && condition(control)) {
+      if (this.contains(controlName) && condition2(control)) {
         return true;
       }
     }
@@ -61875,7 +63481,7 @@ var FormControl = class FormControl2 extends AbstractControl {
   _updateValue() {
   }
   /**  @internal */
-  _anyControls(condition) {
+  _anyControls(condition2) {
     return false;
   }
   /**  @internal */
@@ -64318,7 +65924,7 @@ var MaxValidator = class _MaxValidator extends AbstractValidatorDirective {
   /** @internal */
   normalizeInput = (input2) => toFloat(input2);
   /** @internal */
-  createValidator = (max) => maxValidator(max);
+  createValidator = (max2) => maxValidator(max2);
   static \u0275fac = /* @__PURE__ */ (() => {
     let \u0275MaxValidator_BaseFactory;
     return function MaxValidator_Factory(__ngFactoryType__) {
@@ -64374,7 +65980,7 @@ var MinValidator = class _MinValidator extends AbstractValidatorDirective {
   /** @internal */
   normalizeInput = (input2) => toFloat(input2);
   /** @internal */
-  createValidator = (min) => minValidator(min);
+  createValidator = (min2) => minValidator(min2);
   static \u0275fac = /* @__PURE__ */ (() => {
     let \u0275MinValidator_BaseFactory;
     return function MinValidator_Factory(__ngFactoryType__) {
@@ -65136,8 +66742,8 @@ var FormArray = class extends AbstractControl {
     this.value = this.controls.filter((control) => control.enabled || this.disabled).map((control) => control.value);
   }
   /** @internal */
-  _anyControls(condition) {
-    return this.controls.some((control) => control.enabled && condition(control));
+  _anyControls(condition2) {
+    return this.controls.some((control) => control.enabled && condition2(control));
   }
   /** @internal */
   _setUpControls() {
@@ -68297,12 +69903,12 @@ var DateAdapter = class {
    * @returns `min` if `date` is less than `min`, `max` if date is greater than `max`,
    *     otherwise `date`.
    */
-  clampDate(date, min, max) {
-    if (min && this.compareDate(date, min) < 0) {
-      return min;
+  clampDate(date, min2, max2) {
+    if (min2 && this.compareDate(date, min2) < 0) {
+      return min2;
     }
-    if (max && this.compareDate(date, max) > 0) {
-      return max;
+    if (max2 && this.compareDate(date, max2) > 0) {
+      return max2;
     }
     return date;
   }
@@ -69543,8 +71149,8 @@ var NativeDateAdapter = class _NativeDateAdapter extends DateAdapter {
     type: Injectable
   }], () => [], null);
 })();
-function inRange(value, min, max) {
-  return !isNaN(value) && value >= min && value <= max;
+function inRange(value, min2, max2) {
+  return !isNaN(value) && value >= min2 && value <= max2;
 }
 var MAT_NATIVE_DATE_FORMATS = {
   parse: {
@@ -81857,10 +83463,10 @@ var MatDatepickerInputBase = class _MatDatepickerInputBase {
   /** The form control validator for the min date. */
   _minValidator = (control) => {
     const controlValue = this._dateAdapter.getValidDateOrNull(this._dateAdapter.deserialize(control.value));
-    const min = this._getMinDate();
-    return !min || !controlValue || this._dateAdapter.compareDate(min, controlValue) <= 0 ? null : {
+    const min2 = this._getMinDate();
+    return !min2 || !controlValue || this._dateAdapter.compareDate(min2, controlValue) <= 0 ? null : {
       "matDatepickerMin": {
-        "min": min,
+        "min": min2,
         "actual": controlValue
       }
     };
@@ -81868,10 +83474,10 @@ var MatDatepickerInputBase = class _MatDatepickerInputBase {
   /** The form control validator for the max date. */
   _maxValidator = (control) => {
     const controlValue = this._dateAdapter.getValidDateOrNull(this._dateAdapter.deserialize(control.value));
-    const max = this._getMaxDate();
-    return !max || !controlValue || this._dateAdapter.compareDate(max, controlValue) >= 0 ? null : {
+    const max2 = this._getMaxDate();
+    return !max2 || !controlValue || this._dateAdapter.compareDate(max2, controlValue) >= 0 ? null : {
       "matDatepickerMax": {
-        "max": max,
+        "max": max2,
         "actual": controlValue
       }
     };
@@ -84999,9 +86605,19 @@ function MessageTableCellComponent_Case_2_Conditional_0_Template(rf, ctx) {
       \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r1.onDateValueChange($event.value));
+    })("keydown", function MessageTableCellComponent_Case_2_Conditional_0_Template_input_keydown_0_listener($event) {
+      \u0275\u0275restoreView(_r3);
+      const ctx_r1 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r1.onEditorKeydownInternal($event));
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275element(2, "mat-datepicker", null, 1);
+    \u0275\u0275elementStart(2, "mat-datepicker", 8, 1);
+    \u0275\u0275listener("closed", function MessageTableCellComponent_Case_2_Conditional_0_Template_mat_datepicker_closed_2_listener() {
+      \u0275\u0275restoreView(_r3);
+      const ctx_r1 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r1.onDatePickerClosed());
+    });
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const datePicker_r4 = \u0275\u0275reference(3);
@@ -85030,7 +86646,7 @@ function MessageTableCellComponent_Case_2_Template(rf, ctx) {
 function MessageTableCellComponent_Case_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-dropdown", 8);
+    \u0275\u0275elementStart(0, "ep-dropdown", 9);
     \u0275\u0275listener("selectedChange", function MessageTableCellComponent_Case_3_Template_ep_dropdown_selectedChange_0_listener($event) {
       \u0275\u0275restoreView(_r5);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -85046,7 +86662,7 @@ function MessageTableCellComponent_Case_3_Template(rf, ctx) {
 function MessageTableCellComponent_Case_4_Template(rf, ctx) {
   if (rf & 1) {
     const _r6 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-dropdown", 8);
+    \u0275\u0275elementStart(0, "ep-dropdown", 9);
     \u0275\u0275listener("selectedChange", function MessageTableCellComponent_Case_4_Template_ep_dropdown_selectedChange_0_listener($event) {
       \u0275\u0275restoreView(_r6);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -85062,7 +86678,7 @@ function MessageTableCellComponent_Case_4_Template(rf, ctx) {
 function MessageTableCellComponent_Case_5_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 9)(1, "div", 10, 2);
+    \u0275\u0275elementStart(0, "div", 10)(1, "div", 11, 2);
     \u0275\u0275listener("input", function MessageTableCellComponent_Case_5_Conditional_0_Template_div_input_1_listener($event) {
       \u0275\u0275restoreView(_r7);
       const ctx_r1 = \u0275\u0275nextContext(2);
@@ -85086,7 +86702,7 @@ function MessageTableCellComponent_Case_5_Conditional_0_Template(rf, ctx) {
 }
 function MessageTableCellComponent_Case_5_Conditional_1_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "markdown", 11);
+    \u0275\u0275element(0, "markdown", 12);
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext(3);
@@ -85095,7 +86711,7 @@ function MessageTableCellComponent_Case_5_Conditional_1_Conditional_0_Template(r
 }
 function MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 14);
+    \u0275\u0275elementStart(0, "span", 15);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -85126,7 +86742,7 @@ function MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditiona
 }
 function MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditional_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 14);
+    \u0275\u0275elementStart(0, "span", 15);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -85138,12 +86754,12 @@ function MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditiona
 }
 function MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 12);
-    \u0275\u0275conditionalCreate(1, MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditional_1_Template, 2, 1, "span", 14);
-    \u0275\u0275elementStart(2, "span", 15);
+    \u0275\u0275elementStart(0, "span", 13);
+    \u0275\u0275conditionalCreate(1, MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditional_1_Template, 2, 1, "span", 15);
+    \u0275\u0275elementStart(2, "span", 16);
     \u0275\u0275conditionalCreate(3, MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditional_3_Template, 2, 4)(4, MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditional_4_Template, 1, 1);
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(5, MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditional_5_Template, 2, 1, "span", 14);
+    \u0275\u0275conditionalCreate(5, MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Conditional_5_Template, 2, 1, "span", 15);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -85158,7 +86774,7 @@ function MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Template(r
 }
 function MessageTableCellComponent_Case_5_Conditional_1_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 13);
+    \u0275\u0275elementStart(0, "div", 14);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -85170,7 +86786,7 @@ function MessageTableCellComponent_Case_5_Conditional_1_Conditional_2_Template(r
 }
 function MessageTableCellComponent_Case_5_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275conditionalCreate(0, MessageTableCellComponent_Case_5_Conditional_1_Conditional_0_Template, 1, 1, "markdown", 11)(1, MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Template, 6, 3, "span", 12)(2, MessageTableCellComponent_Case_5_Conditional_1_Conditional_2_Template, 2, 1, "div", 13);
+    \u0275\u0275conditionalCreate(0, MessageTableCellComponent_Case_5_Conditional_1_Conditional_0_Template, 1, 1, "markdown", 12)(1, MessageTableCellComponent_Case_5_Conditional_1_Conditional_1_Template, 6, 3, "span", 13)(2, MessageTableCellComponent_Case_5_Conditional_1_Conditional_2_Template, 2, 1, "div", 14);
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext(2);
@@ -85179,7 +86795,7 @@ function MessageTableCellComponent_Case_5_Conditional_1_Template(rf, ctx) {
 }
 function MessageTableCellComponent_Case_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275conditionalCreate(0, MessageTableCellComponent_Case_5_Conditional_0_Template, 3, 2, "div", 9)(1, MessageTableCellComponent_Case_5_Conditional_1_Template, 3, 1);
+    \u0275\u0275conditionalCreate(0, MessageTableCellComponent_Case_5_Conditional_0_Template, 3, 2, "div", 10)(1, MessageTableCellComponent_Case_5_Conditional_1_Template, 3, 1);
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext();
@@ -85376,7 +86992,7 @@ _MessageTableCellComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCompone
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.dateInput = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.datePicker = _t.first);
   }
-}, inputs: { column: "column", isColumnEditable: "isColumnEditable", isEditing: "isEditing", displayValue: "displayValue", booleanValue: "booleanValue", editingDate: "editingDate", datePickerMinDate: "datePickerMinDate", dropdownOptions: "dropdownOptions", dropdownSelection: "dropdownSelection" }, outputs: { cellMouseOver: "cellMouseOver", cellMouseLeave: "cellMouseLeave", booleanToggle: "booleanToggle", dateChanged: "dateChanged", dateBlur: "dateBlur", dropdownFocus: "dropdownFocus", selectChanged: "selectChanged", multiChanged: "multiChanged", editorInput: "editorInput", editorKeydown: "editorKeydown", editorBlur: "editorBlur" }, features: [\u0275\u0275NgOnChangesFeature], decls: 6, vars: 7, consts: [["dateInput", ""], ["datePicker", ""], ["contentEditableEl", ""], ["tabindex", "0", 1, "ep-message-table__cell", 3, "mouseover", "mouseleave", "focus", "blur"], ["type", "checkbox", 3, "checked", "disabled"], ["placeholder", "", 3, "options", "selected", "multiple", "disabled"], ["type", "checkbox", 3, "change", "checked", "disabled"], ["type", "text", "matInput", "", 1, "ep-message-table__date-input", 3, "dateInput", "matDatepicker", "ngModel", "min", "max", "disabled"], ["placeholder", "", 3, "selectedChange", "options", "selected", "multiple", "disabled"], [1, "ep-message-table__cell-editor-wrapper"], ["contenteditable", "true", 1, "ep-message-table__cell-editor", 3, "input", "keydown", "blur"], [1, "ep-message-table__markdown", 3, "data"], [1, "ep-message-table__number-cell"], [1, "ep-message-table__text"], [1, "ep-message-table__number-unit"], [1, "ep-message-table__number-value"]], template: function MessageTableCellComponent_Template(rf, ctx) {
+}, inputs: { column: "column", isColumnEditable: "isColumnEditable", isEditing: "isEditing", displayValue: "displayValue", booleanValue: "booleanValue", editingDate: "editingDate", datePickerMinDate: "datePickerMinDate", dropdownOptions: "dropdownOptions", dropdownSelection: "dropdownSelection" }, outputs: { cellMouseOver: "cellMouseOver", cellMouseLeave: "cellMouseLeave", booleanToggle: "booleanToggle", dateChanged: "dateChanged", dateBlur: "dateBlur", dropdownFocus: "dropdownFocus", selectChanged: "selectChanged", multiChanged: "multiChanged", editorInput: "editorInput", editorKeydown: "editorKeydown", editorBlur: "editorBlur" }, features: [\u0275\u0275NgOnChangesFeature], decls: 6, vars: 7, consts: [["dateInput", ""], ["datePicker", ""], ["contentEditableEl", ""], ["tabindex", "0", 1, "ep-message-table__cell", 3, "mouseover", "mouseleave", "focus", "blur"], ["type", "checkbox", 3, "checked", "disabled"], ["placeholder", "", 3, "options", "selected", "multiple", "disabled"], ["type", "checkbox", 3, "change", "checked", "disabled"], ["type", "text", "matInput", "", 1, "ep-message-table__date-input", 3, "dateInput", "keydown", "matDatepicker", "ngModel", "min", "max", "disabled"], [3, "closed"], ["placeholder", "", 3, "selectedChange", "options", "selected", "multiple", "disabled"], [1, "ep-message-table__cell-editor-wrapper"], ["contenteditable", "true", 1, "ep-message-table__cell-editor", 3, "input", "keydown", "blur"], [1, "ep-message-table__markdown", 3, "data"], [1, "ep-message-table__number-cell"], [1, "ep-message-table__text"], [1, "ep-message-table__number-unit"], [1, "ep-message-table__number-value"]], template: function MessageTableCellComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 3);
     \u0275\u0275listener("mouseover", function MessageTableCellComponent_Template_div_mouseover_0_listener($event) {
@@ -85425,109 +87041,110 @@ var MessageTableCellComponent = _MessageTableCellComponent;
       MatDatepickerModule,
       MatNativeDateModule,
       MatInputModule
-    ], changeDetection: ChangeDetectionStrategy.OnPush, template: `<div\r
-  class="ep-message-table__cell"\r
-  [class.ep-message-table__align-right]="column.type === 'number'"\r
-  [class.ep-message-table__align-center]="column.type === 'boolean'"\r
-  [class.ep-message-table__cell-disabled]="!isColumnEditable"\r
-  (mouseover)="onMouseOver($event)"\r
-  (mouseleave)="onMouseLeave($event)"\r
-  (focus)="onMouseOver($event)"\r
-  (blur)="onMouseLeave($event)"\r
-  tabindex="0"\r
->\r
-  @switch (column.type) {\r
-    @case ("boolean") {\r
-      <input\r
-        type="checkbox"\r
-        [checked]="booleanValue"\r
-        [disabled]="!isColumnEditable"\r
-        (change)="onBooleanClick()"\r
-      />\r
-    }\r
-    @case ("date") {\r
-      @if (isEditing) {\r
-        <input\r
-          type="text"\r
-          #dateInput\r
-          class="ep-message-table__date-input"\r
-          matInput\r
-          [matDatepicker]="datePicker"\r
-          [ngModel]="editingDate"\r
-          [min]="datePickerMinDate ?? column.minDate"\r
-          [max]="column.maxDate"\r
-          [disabled]="!isColumnEditable"\r
-          (dateInput)="onDateValueChange($event.value)"\r
-        />\r
-        <mat-datepicker #datePicker></mat-datepicker>\r
-      } @else {\r
-        {{ displayValue }}\r
-      }\r
-    }\r
-    @case ("select") {\r
-      <ep-dropdown\r
-        [options]="dropdownOptions"\r
-        [selected]="dropdownSelection"\r
-        [multiple]="false"\r
-        [disabled]="!isColumnEditable"\r
-        placeholder=""\r
-        (selectedChange)="onDropdownSelectedChange($event)"\r
-      ></ep-dropdown>\r
-    }\r
-    @case ("multiSelect") {\r
-      <ep-dropdown\r
-        [options]="dropdownOptions"\r
-        [selected]="dropdownSelection"\r
-        [multiple]="true"\r
-        [disabled]="!isColumnEditable"\r
-        placeholder=""\r
-        (selectedChange)="onDropdownSelectedChange($event)"\r
-      ></ep-dropdown>\r
-    }\r
-    @default {\r
-      @if (isEditing) {\r
-        <div class="ep-message-table__cell-editor-wrapper">\r
-          <div\r
-            #contentEditableEl\r
-            class="ep-message-table__cell-editor"\r
-            [class.ep-message-table__cell-editor--number]="column.type === 'number'"\r
-            contenteditable="true"\r
-            (input)="onEditorInputInternal($event)"\r
-            (keydown)="onEditorKeydownInternal($event)"\r
-            (blur)="onEditorBlurInternal()"\r
-          ></div>\r
-        </div>\r
-      } @else {\r
-        @if (column.type === "markdown") {\r
-          <markdown\r
-            class="ep-message-table__markdown"\r
-            [data]="displayValue === null || displayValue === undefined ? '' : '' + displayValue"\r
-          ></markdown>\r
-        } @else if (column.type === "number") {\r
-          <span class="ep-message-table__number-cell">\r
-            @if (column.unitLeft) {\r
-              <span class="ep-message-table__number-unit">{{ column.unitLeft }}</span>\r
-            }\r
-            <span class="ep-message-table__number-value">\r
-              @if (numberValue !== null) {\r
-                {{ numberValue | number: "1.0-20" }}\r
-              } @else {\r
-                {{ displayValue }}\r
-              }\r
-            </span>\r
-            @if (column.unitRight) {\r
-              <span class="ep-message-table__number-unit">{{ column.unitRight }}</span>\r
-            }\r
-          </span>\r
-        } @else {\r
-          <div class="ep-message-table__text">\r
-            {{ displayValue }}\r
-          </div>\r
-        }\r
-      }\r
-    }\r
-  }\r
-</div>\r
+    ], changeDetection: ChangeDetectionStrategy.OnPush, template: `<div
+  class="ep-message-table__cell"
+  [class.ep-message-table__align-right]="column.type === 'number'"
+  [class.ep-message-table__align-center]="column.type === 'boolean'"
+  [class.ep-message-table__cell-disabled]="!isColumnEditable"
+  (mouseover)="onMouseOver($event)"
+  (mouseleave)="onMouseLeave($event)"
+  (focus)="onMouseOver($event)"
+  (blur)="onMouseLeave($event)"
+  tabindex="0"
+>
+  @switch (column.type) {
+    @case ("boolean") {
+      <input
+        type="checkbox"
+        [checked]="booleanValue"
+        [disabled]="!isColumnEditable"
+        (change)="onBooleanClick()"
+      />
+    }
+    @case ("date") {
+      @if (isEditing) {
+        <input
+          type="text"
+          #dateInput
+          class="ep-message-table__date-input"
+          matInput
+          [matDatepicker]="datePicker"
+          [ngModel]="editingDate"
+          [min]="datePickerMinDate ?? column.minDate"
+          [max]="column.maxDate"
+          [disabled]="!isColumnEditable"
+          (dateInput)="onDateValueChange($event.value)"
+          (keydown)="onEditorKeydownInternal($event)"
+        />
+        <mat-datepicker #datePicker (closed)="onDatePickerClosed()"></mat-datepicker>
+      } @else {
+        {{ displayValue }}
+      }
+    }
+    @case ("select") {
+      <ep-dropdown
+        [options]="dropdownOptions"
+        [selected]="dropdownSelection"
+        [multiple]="false"
+        [disabled]="!isColumnEditable"
+        placeholder=""
+        (selectedChange)="onDropdownSelectedChange($event)"
+      ></ep-dropdown>
+    }
+    @case ("multiSelect") {
+      <ep-dropdown
+        [options]="dropdownOptions"
+        [selected]="dropdownSelection"
+        [multiple]="true"
+        [disabled]="!isColumnEditable"
+        placeholder=""
+        (selectedChange)="onDropdownSelectedChange($event)"
+      ></ep-dropdown>
+    }
+    @default {
+      @if (isEditing) {
+        <div class="ep-message-table__cell-editor-wrapper">
+          <div
+            #contentEditableEl
+            class="ep-message-table__cell-editor"
+            [class.ep-message-table__cell-editor--number]="column.type === 'number'"
+            contenteditable="true"
+            (input)="onEditorInputInternal($event)"
+            (keydown)="onEditorKeydownInternal($event)"
+            (blur)="onEditorBlurInternal()"
+          ></div>
+        </div>
+      } @else {
+        @if (column.type === "markdown") {
+          <markdown
+            class="ep-message-table__markdown"
+            [data]="displayValue === null || displayValue === undefined ? '' : '' + displayValue"
+          ></markdown>
+        } @else if (column.type === "number") {
+          <span class="ep-message-table__number-cell">
+            @if (column.unitLeft) {
+              <span class="ep-message-table__number-unit">{{ column.unitLeft }}</span>
+            }
+            <span class="ep-message-table__number-value">
+              @if (numberValue !== null) {
+                {{ numberValue | number: "1.0-20" }}
+              } @else {
+                {{ displayValue }}
+              }
+            </span>
+            @if (column.unitRight) {
+              <span class="ep-message-table__number-unit">{{ column.unitRight }}</span>
+            }
+          </span>
+        } @else {
+          <div class="ep-message-table__text">
+            {{ displayValue }}
+          </div>
+        }
+      }
+    }
+  }
+</div>
 `, styles: ['@charset "UTF-8";\n\n/* src/app/components/message-table-cell/message-table-cell.component.scss */\n:host {\n  display: block;\n  width: 100%;\n}\n.ep-message-table__cell {\n  cursor: pointer;\n}\n.ep-message-table__text {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-message-table__number-cell {\n  display: inline-flex;\n  align-items: baseline;\n  gap: 4px;\n  white-space: nowrap;\n}\n.ep-message-table__number-unit {\n  color: var(--ep-color-text-muted);\n}\n.ep-message-table__number-value {\n  font-variant-numeric: tabular-nums;\n}\n:host ::ng-deep .ep-message-table__markdown {\n  display: block;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n:host ::ng-deep .ep-message-table__markdown p,\n:host ::ng-deep .ep-message-table__markdown span,\n:host ::ng-deep .ep-message-table__markdown a,\n:host ::ng-deep .ep-message-table__markdown strong,\n:host ::ng-deep .ep-message-table__markdown em,\n:host ::ng-deep .ep-message-table__markdown code {\n  display: inline;\n  margin: 0;\n  white-space: inherit;\n}\n.ep-message-table__align-right {\n  text-align: right;\n}\n.ep-message-table__align-center {\n  text-align: center;\n}\n.ep-message-table__cell-disabled {\n  opacity: 0.65;\n  cursor: default;\n}\n.ep-message-table__date-input {\n  width: 100%;\n  min-width: 100%;\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: 14px;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n}\n.ep-message-table__cell-editor-wrapper {\n  display: block;\n  width: 100%;\n  min-width: 100%;\n  max-width: 300px;\n}\n.ep-message-table__cell-editor {\n  width: 100%;\n  min-width: 100%;\n  max-width: 300px;\n  min-height: 20px;\n  padding: 2px 4px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  box-sizing: border-box;\n  outline: none;\n  white-space: pre-wrap;\n  word-wrap: break-word;\n  line-height: 1.4;\n  display: block;\n}\n.ep-message-table__cell-editor--number {\n  text-align: right;\n}\n.ep-message-table__cell-editor:empty::before {\n  content: "\\a0";\n}\n/*# sourceMappingURL=message-table-cell.component.css.map */\n'] }]
   }], () => [{ type: ElementRef }], { column: [{
     type: Input
@@ -87049,8 +88666,8 @@ var DragRef = class {
     }
   }
 };
-function clamp$1(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+function clamp$1(value, min2, max2) {
+  return Math.max(min2, Math.min(max2, value));
 }
 function isTouchEvent(event) {
   return event.type[0] === "t";
@@ -87071,8 +88688,8 @@ function moveItemInArray(array, fromIndex, toIndex) {
   }
   array[to] = target;
 }
-function clamp(value, max) {
-  return Math.max(0, Math.min(max, value));
+function clamp(value, max2) {
+  return Math.max(0, Math.min(max2, value));
 }
 var SingleAxisSortStrategy = class {
   _dragDropRegistry;
@@ -91197,6 +92814,8 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.unionsNormalized = [];
     this.unionErrorKeysByRow = /* @__PURE__ */ new WeakMap();
     this.hasUnions = false;
+    this.mathParser = new Parser();
+    this.mathExpressionCache = /* @__PURE__ */ new Map();
   }
   ngOnInit() {
     if (!this.rows || this.rows.length === 0) {
@@ -91248,6 +92867,7 @@ var _MessageTableComponent = class _MessageTableComponent {
       this.currentSortField = this.defaultSortField;
       this.currentSortOrder = "asc";
     }
+    this.recalculateMathForAllRows();
     this.updateDisplayedValues();
   }
   updateDisplayedValues() {
@@ -91282,6 +92902,9 @@ var _MessageTableComponent = class _MessageTableComponent {
     if (!path || typeof path !== "string") {
       return void 0;
     }
+    if (obj && typeof obj === "object" && path in obj) {
+      return obj[path];
+    }
     return path.split(".").reduce((current, key) => {
       if (current && typeof current === "object" && key in current) {
         return current[key];
@@ -91298,6 +92921,11 @@ var _MessageTableComponent = class _MessageTableComponent {
     }
     const parts = path.split(".");
     return (obj) => {
+      if (!obj || typeof obj !== "object")
+        return void 0;
+      if (path in obj) {
+        return obj[path];
+      }
       let current = obj;
       for (let i = 0; i < parts.length && current != null; i++) {
         if (typeof current === "object" && current !== null && parts[i] in current) {
@@ -91576,6 +93204,10 @@ var _MessageTableComponent = class _MessageTableComponent {
   setNestedValue(obj, path, value) {
     if (!obj || !path)
       return;
+    if (path in obj) {
+      obj[path] = value;
+      return;
+    }
     const parts = path.split(".");
     let current = obj;
     for (let i = 0; i < parts.length - 1; i++) {
@@ -91746,6 +93378,7 @@ var _MessageTableComponent = class _MessageTableComponent {
       processedValue = isNaN(parsed) ? newValue : parsed;
     }
     this.setNestedValue(row, column.key, processedValue);
+    this.recalculateMathColumnsForRow(row);
     const union = column?.key ? this.getUnionByColumnKey(column.key) : null;
     if (union) {
       if (union.ruleName === "percentage") {
@@ -91812,6 +93445,7 @@ var _MessageTableComponent = class _MessageTableComponent {
     if (!this.isEditable || column.editable === false)
       return;
     this.setNestedValue(row, column.key, checked);
+    this.recalculateMathColumnsForRow(row);
     this.markTableAsChanged();
   }
   onDateChanged(date, row, column) {
@@ -91820,6 +93454,7 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.editingDate = date;
     const dateString = date ? this.formatDateForBackend(date) : "";
     this.setNestedValue(row, column.key, dateString);
+    this.recalculateMathColumnsForRow(row);
     this.markTableAsChanged();
     this.cdr.detectChanges();
     this.applyEdit(row, column);
@@ -91895,6 +93530,7 @@ var _MessageTableComponent = class _MessageTableComponent {
     const isCleared = option == null;
     state.selected = isCleared ? null : option;
     this.applyDropdownValueToRow(row, column, isCleared ? null : option);
+    this.recalculateMathColumnsForRow(row);
     this.markTableAsChanged();
     this.cdr.markForCheck();
   }
@@ -91913,6 +93549,7 @@ var _MessageTableComponent = class _MessageTableComponent {
     }
     state.selected = selection;
     this.applyDropdownValueToRow(row, column, state.selected);
+    this.recalculateMathColumnsForRow(row);
     this.markTableAsChanged();
     this.cdr.markForCheck();
   }
@@ -92442,6 +94079,84 @@ var _MessageTableComponent = class _MessageTableComponent {
       return null;
     return Math.round(n);
   }
+  normalizeKeyForMath(key) {
+    if (!key)
+      return "_";
+    let normalized = key.replace(/[^0-9A-Za-z_]/g, "_");
+    if (!normalized) {
+      normalized = "_";
+    }
+    if (/^[0-9]/.test(normalized)) {
+      normalized = `_${normalized}`;
+    }
+    return normalized;
+  }
+  recalculateMathForAllRows() {
+    if (!Array.isArray(this.rows) || !this.columns || this.columns.length === 0) {
+      return;
+    }
+    for (const row of this.rows) {
+      this.recalculateMathColumnsForRow(row);
+    }
+  }
+  recalculateMathColumnsForRow(row) {
+    if (!this.columns || this.columns.length === 0)
+      return;
+    for (const column of this.columns) {
+      const mathExpr = column.params?.math;
+      if (!mathExpr || typeof mathExpr !== "string")
+        continue;
+      const result = this.evaluateMathExpression(row, mathExpr);
+      if (result == null)
+        continue;
+      this.setNestedValue(row, column.key, result);
+    }
+  }
+  evaluateMathExpression(row, expr) {
+    if (!expr || typeof expr !== "string")
+      return null;
+    try {
+      let compiled = this.mathExpressionCache.get(expr);
+      if (!compiled) {
+        compiled = this.mathParser.parse(expr);
+        this.mathExpressionCache.set(expr, compiled);
+      }
+      const variables = compiled.variables();
+      const valueByNormalizedKey = /* @__PURE__ */ new Map();
+      if (Array.isArray(this.columns)) {
+        for (const col of this.columns) {
+          if (!col?.key)
+            continue;
+          const norm = this.normalizeKeyForMath(col.key);
+          if (valueByNormalizedKey.has(norm))
+            continue;
+          const raw = this.getNestedValue(row, col.key);
+          const n = this.parseUnionNumber(raw);
+          valueByNormalizedKey.set(norm, n);
+        }
+      }
+      const scope = {};
+      for (const name of variables) {
+        const normName = this.normalizeKeyForMath(name);
+        let n = valueByNormalizedKey.get(normName);
+        if (n === void 0) {
+          const value = this.getNestedValue(row, name);
+          n = this.parseUnionNumber(value);
+        }
+        if (n == null) {
+          return null;
+        }
+        scope[name] = n;
+      }
+      const evaluated = compiled.evaluate(scope);
+      if (typeof evaluated !== "number" || !Number.isFinite(evaluated)) {
+        return null;
+      }
+      return evaluated;
+    } catch {
+      return null;
+    }
+  }
   applyUnionColumnOrdering(columns) {
     const cols = Array.isArray(columns) ? columns.slice() : [];
     const unions = Array.isArray(this.unions) ? this.unions : [];
@@ -92911,7 +94626,7 @@ var MessageTableComponent = _MessageTableComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageTableComponent, { className: "MessageTableComponent", filePath: "src/app/components/message-table/message-table.component.ts", lineNumber: 56 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageTableComponent, { className: "MessageTableComponent", filePath: "src/app/components/message-table/message-table.component.ts", lineNumber: 57 });
 })();
 
 // src/app/components/thinking-expander/thinking-expander.component.ts
@@ -99187,9 +100902,14 @@ var _ChatComponent = class _ChatComponent {
       chat_session_id: this.chatSessionId
     });
     try {
-      const url = window?.location?.href;
-      if (url && typeof url === "string") {
-        base["page_url"] = url;
+      const apiBase = (this.apiBaseUrl || "").trim();
+      if (apiBase) {
+        base["page_url"] = apiBase;
+      } else {
+        const rawUrl = window?.location?.href;
+        if (rawUrl && typeof rawUrl === "string") {
+          base["page_url"] = rawUrl;
+        }
       }
     } catch {
     }
@@ -99825,5 +101545,17 @@ xlsx/xlsx.mjs:
 
 xlsx/xlsx.mjs:
   (*! sheetjs (C) 2013-present SheetJS -- http://sheetjs.com *)
+
+expr-eval/dist/index.mjs:
+  (*!
+   Based on ndef.parser, by Raphael Graf(r@undefined.ch)
+   http://www.undefined.ch/mparser/index.html
+  
+   Ported to JavaScript and modified by Matthew Crumley (email@matthewcrumley.com, http://silentmatt.com/)
+  
+   You are free to use and modify this code in anyway you find useful. Please leave this comment in the code
+   to acknowledge its original source. If you feel like it, I enjoy hearing about projects that use my code,
+   but don't feel like you have to let me know or ask permission.
+  *)
 */
 //# sourceMappingURL=main.js.map

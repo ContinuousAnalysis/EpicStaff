@@ -12,6 +12,7 @@ import {
     EpicChatCreateAgentPayload,
     EpicChatSyncAgentsPayload,
 } from './models/epic-chat-command.model';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
     providedIn: 'root',
@@ -187,7 +188,8 @@ export class EpicChatService {
     }
 
     public reconnectAgents(): void {
-        const flowUrl = `${window.location.origin}/api`;
+        // const flowUrl = `${window.location.origin}/api`;
+        const flowUrl = this.normalizeApiUrl(environment.apiUrl);
         this.flowsApiService.getEpicChatEnabledFlows().subscribe({
             next: (flows) => {
                 console.log(`[EpicChat] Syncing ${flows.length} agent(s)`);
