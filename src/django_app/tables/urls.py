@@ -77,6 +77,7 @@ from tables.views.views import (
     DefaultCrewConfigAPIView,
     # CollectionStatusAPIView,
     QuickstartView,
+    QuickstartApplyView,
     delete_environment_config,
 )
 
@@ -250,6 +251,7 @@ urlpatterns = [
         name="default_tool_config",
     ),
     path("default-models/", DefaultModelsAPIView.as_view(), name="default_models"),
+    path("quickstart/apply/", QuickstartApplyView.as_view(), name="quickstart_apply"),
     path("quickstart/", QuickstartView.as_view(), name="quickstart"),
     path(
         "run-session/subscribe/<int:session_id>/",
