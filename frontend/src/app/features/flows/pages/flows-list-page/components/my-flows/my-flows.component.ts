@@ -9,7 +9,6 @@ import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { DialogModule, Dialog } from '@angular/cdk/dialog';
-import { switchMap } from 'rxjs/operators';
 
 import { FlowsStorageService } from '../../../../services/flows-storage.service';
 import { GraphDto, GetGraphLightRequest } from '../../../../models/graph.model';
@@ -173,9 +172,7 @@ export class MyFlowsComponent {
     }
 
     private openRenameDialog(flow: GetGraphLightRequest): void {
-        const dialogRef = this.dialog.open<
-            string | { name: string; description: string; label_ids: number[] }
-        >(FlowRenameDialogComponent, {
+        const dialogRef = this.dialog.open<any>(FlowRenameDialogComponent, {
             data: {
                 flowName: flow.name,
                 flow: {
@@ -190,53 +187,6 @@ export class MyFlowsComponent {
 
         dialogRef.closed.subscribe((result) => {
             if (!result) return;
-
-            if (typeof result === 'string') {
-                // Plain rename fallback (should not occur for flows with full edit)
-                if (result !== flow.name) {
-                    this.flowsService
-                        .patchUpdateFlow(flow.id, { name: result })
-                        .subscribe({
-                            next: (updatedFlow) => {
-                                console.log(
-                                    `Flow renamed successfully to: ${updatedFlow.name}`,
-                                );
-                            },
-                            error: (err) => {
-                                console.error(
-                                    `Error renaming flow ${flow.id}`,
-                                    err,
-                                );
-                            },
-                        });
-                }
-            } else if (typeof result === 'object') {
-                const { name, description, label_ids } = result;
-                this.flowsService
-                    .patchUpdateFlow(flow.id, { name, description })
-                    .pipe(
-                        switchMap((updated) =>
-                            this.flowsService.updateFlowLabels(
-                                updated.id,
-                                label_ids || [],
-                            ),
-                        ),
-                    )
-                    .subscribe({
-                        next: () => {
-                            console.log(
-                                `Flow ${flow.id} updated successfully.`,
-                            );
-                        },
-                        error: (err) => {
-                            console.error(
-                                `Error updating flow ${flow.id}`,
-                                err,
-                            );
-                            this.toastService.error('Failed to update flow');
-                        },
-                    });
-            }
         });
     }
     private saving(flowState: any, graph: any): void {

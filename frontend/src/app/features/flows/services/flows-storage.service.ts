@@ -35,6 +35,7 @@ export class FlowsStorageService {
     // --- Public State Accessors ---
     public readonly isFlowsLoaded = this.flowsLoaded.asReadonly();
     public readonly isTemplatesLoaded = this.templatesLoaded.asReadonly();
+    public readonly flows = this.flowsSignal.asReadonly();
 
     public selectMode = signal<boolean>(false);
     public selectedFlowIds = signal<number[]>([]);
@@ -51,8 +52,7 @@ export class FlowsStorageService {
                         .includes(filter.searchTerm.toLowerCase())
                 );
             }
-        }
-        // Always sort by id descending
+        }        
         return filtered.slice().sort((a, b) => b.id - a.id);
     });
 

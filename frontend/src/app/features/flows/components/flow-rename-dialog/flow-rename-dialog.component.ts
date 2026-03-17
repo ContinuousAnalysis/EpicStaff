@@ -9,8 +9,10 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { finalize, switchMap, map } from 'rxjs/operators';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { LabelDropdownComponent } from '../label-dropdown/label-dropdown.component';
+import { FlowsStorageService } from '../../services/flows-storage.service';
 
 interface FlowRenameData {
     flowName: string;
@@ -59,7 +61,9 @@ interface FlowRenameData {
                     </div>
                 }
             </div>
-            <!-- TODO: Add error message -->
+            @if (errorMessage) {
+                <div class="error-message-block">{{ errorMessage }}</div>
+            }
             <div class="dialog-actions">
                 <app-button type="ghost" (click)="cancel()">Cancel</app-button>
                 <app-button
@@ -127,6 +131,13 @@ interface FlowRenameData {
                 justify-content: flex-end;
                 gap: 0.75rem;
             }
+
+            .error-message-block {
+                padding: 0.5rem 0.75rem;               
+                color: var(--color-error);
+                font-size: 12px;
+                margin-top: 4px;
+            }
         `,
     ],
 })
@@ -134,10 +145,13 @@ export class FlowRenameDialogComponent implements OnInit {
     private readonly dialogRef = inject(DialogRef);
     private readonly cdr = inject(ChangeDetectorRef);
     public readonly data = inject<FlowRenameData>(DIALOG_DATA);
+    private readonly flowsStorage = inject(FlowsStorageService);
 
     public newName = this.data.flowName;
     public description = '';
     public selectedLabelIds: number[] = [];
+    public errorMessage = '';
+    public isSubmitting = false;
 
     public isValid = signal<boolean>(true);
 
@@ -155,16 +169,38 @@ export class FlowRenameDialogComponent implements OnInit {
 
     public save(): void {
         this.validateName();
-        if (this.isValid()) {
-            if (this.data.flow) {
-                this.dialogRef.close({
+        if (!this.isValid()) return;
+
+        if (this.data.flow) {
+            this.isSubmitting = true;
+            this.errorMessage = '';
+            this.cdr.markForCheck();
+
+            this.flowsStorage
+                .patchUpdateFlow(this.data.flow.id, {
                     name: this.newName,
                     description: this.description,
-                    label_ids: this.selectedLabelIds,
+                })
+                .pipe(
+                    switchMap((updatedFlow) =>
+                        this.flowsStorage
+                            .updateFlowLabels(updatedFlow.id, this.selectedLabelIds)
+                            .pipe(map(() => updatedFlow))
+                    ),
+                    finalize(() => {
+                        this.isSubmitting = false;
+                        this.cdr.markForCheck();
+                    })
+                )
+                .subscribe({
+                    next: (updatedFlow) => this.dialogRef.close(updatedFlow),
+                    error: () => {
+                        this.errorMessage = 'Failed to update flow. Please try again.';
+                        this.cdr.markForCheck();
+                    },
                 });
-            } else {
-                this.dialogRef.close(this.newName);
-            }
+        } else {
+            this.dialogRef.close(this.newName);
         }
     }
 

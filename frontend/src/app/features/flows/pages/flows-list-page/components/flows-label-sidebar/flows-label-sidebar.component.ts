@@ -17,6 +17,7 @@ import {
     LabelsStorageService,
     LabelTreeNode,
 } from '../../../../services/labels-storage.service';
+import { FlowsStorageService } from '../../../../services/flows-storage.service';
 import { LabelDto } from '../../../../models/label.model';
 import { AppIconComponent } from '../../../../../../shared/components/app-icon/app-icon.component';
 import {
@@ -41,6 +42,7 @@ export class FlowsLabelSidebarComponent implements OnInit {
     @Output() closeSidebar = new EventEmitter<void>();
 
     private readonly labelsStorage = inject(LabelsStorageService);
+    private readonly flowsStorageService = inject(FlowsStorageService);
     private readonly dialog = inject(Dialog);
     private readonly cdr = inject(ChangeDetectorRef);
 
@@ -136,18 +138,16 @@ export class FlowsLabelSidebarComponent implements OnInit {
         }
         this.newLabelError = '';
         const parentId = this.addingChildOf();
-        this.labelsStorage
-            .createLabel(name, parentId ?? undefined)
-            .subscribe({
-                next: () => {
-                    this.cancelAddLabel();
-                    this.cdr.markForCheck();
-                },
-                error: (err) => {
-                    this.newLabelError = this.parseCreateError(err);
-                    this.cdr.markForCheck();
-                },
-            });
+        this.labelsStorage.createLabel(name, parentId ?? undefined).subscribe({
+            next: () => {
+                this.cancelAddLabel();
+                this.cdr.markForCheck();
+            },
+            error: (err) => {
+                this.newLabelError = this.parseCreateError(err);
+                this.cdr.markForCheck();
+            },
+        });
     }
 
     onNewLabelInput(): void {
@@ -195,27 +195,64 @@ export class FlowsLabelSidebarComponent implements OnInit {
     }
 
     openDeleteDialog(label: LabelTreeNode): void {
-        const hasChildren = label.children.length > 0;
-        const message = hasChildren
-            ? `Delete "${label.name}" and all its sublabels? This cannot be undone.`
-            : `Delete "${label.name}"? This cannot be undone.`;
+        const flows = this.flowsStorageService.flows();
+        const sublabelCount = this.countAllDescendants(label);
+        const sublabelIds = this.getAllDescendantIds(label);
+
+        const directFlowCount = flows.filter((f) =>
+            (f.label_ids || []).includes(label.id),
+        ).length;
+
+        const sublabelFlowCount =
+            sublabelIds.length > 0
+                ? flows.filter((f) =>
+                      (f.label_ids || []).some((id) =>
+                          sublabelIds.includes(id),
+                      ),
+                  ).length
+                : 0;
+
+        let caution: string | undefined;
+        if (directFlowCount > 0 || sublabelCount > 0) {
+            const parts: string[] = [];
+            if (directFlowCount > 0) {
+                parts.push(
+                    `<strong>${directFlowCount} flow${directFlowCount !== 1 ? 's' : ''}</strong>`,
+                );
+            }
+            if (sublabelCount > 0) {
+                const sublabelPart = `<strong>${sublabelCount} sublabel${sublabelCount !== 1 ? 's' : ''}</strong>`;
+                if (sublabelFlowCount > 0) {
+                    parts.push(
+                        `${sublabelPart} containing <strong>${sublabelFlowCount} flow${sublabelFlowCount !== 1 ? 's' : ''}</strong>`,
+                    );
+                } else {
+                    parts.push(sublabelPart);
+                }
+            }
+            caution = `The label is used in ${parts.join(' and ')}.`;
+        }
 
         const dialogRef = this.dialog.open<DialogResult>(
             ConfirmationDialogComponent,
             {
+                width: '500px',
                 data: {
-                    title: 'Delete Label',
-                    message,
+                    title: 'Delete labels',
+                    message: `Are you sure you want to delete <strong>${label.name}</strong> label? This will remove it from all flows and sublabels.`,
                     confirmText: 'Delete',
                     type: 'danger',
+                    isShownBorder: true,
+                    caution,
                 },
-            }
+            },
         );
 
         dialogRef.closed.subscribe((result) => {
             if (result === 'confirm') {
                 this.labelsStorage.deleteLabel(label.id).subscribe({
                     next: () => {
+                        this.flowsStorageService.getFlows(true).subscribe();
                         this.cdr.markForCheck();
                     },
                     error: (err) => {
@@ -224,6 +261,25 @@ export class FlowsLabelSidebarComponent implements OnInit {
                 });
             }
         });
+    }
+
+    private countAllDescendants(node: LabelTreeNode): number {
+        return node.children.reduce(
+            (acc, child) => acc + 1 + this.countAllDescendants(child),
+            0,
+        );
+    }
+
+    private getAllDescendantIds(node: LabelTreeNode): number[] {
+        const ids: number[] = [];
+        const collect = (n: LabelTreeNode) => {
+            for (const child of n.children) {
+                ids.push(child.id);
+                collect(child);
+            }
+        };
+        collect(node);
+        return ids;
     }
 
     getIndentPadding(depth: number): string {

@@ -39,14 +39,9 @@
         padding: 0.2rem;
         border-radius: 4px;
 
-        &:hover {
-            background: var(--color-ghost-btn-hover);
+        &:hover {           
             color: var(--color-ks-text);
-        }
-
-        &:active {
-            background: var(--color-ghost-btn-active);
-        }
+        }       
     }
 }
 
@@ -70,11 +65,7 @@
     &:hover {
         background: var(--color-ghost-btn-hover);
         color: var(--color-ks-text);
-    }
-
-    &:active {
-        background: var(--color-ghost-btn-active);
-    }
+    }   
 
     &.active {
         background: var(--color-ghost-btn-active);
@@ -149,13 +140,12 @@
         padding: 0.15rem;
         border-radius: 4px;       
 
-        &:hover {
-            background: var(--color-ghost-btn-hover);
+        &:hover {           
             color: var(--color-ks-text);
         }
 
         &:active {
-            background: var(--color-ghost-btn-active);
+            color: var(--color-ks-text);          
         }
     }
 }
@@ -229,12 +219,11 @@
     border: 1px solid var(--accent-color);
 
     &:hover {
-        background: var(--color-ghost-btn-hover);
-        color: var(--color-ghost-btn-active);
+        color: var(--accent-color-hover);        
     }
 
     &:active {
-        background: var(--color-ghost-btn-active);
+        color: var(--accent-color-active);        
     }
 }
 
@@ -301,12 +290,29 @@
     border-radius: 3px;
 
     &:hover {
-        background: var(--color-ghost-btn-hover);
         color: var(--color-ks-text);
     }
 
     &:active {
-        background: var(--color-ghost-btn-active);
+        color: var(--color-ks-text);
+    }
+}
+
+.edit-label-btn {
+    ::ng-deep app-icon svg path {
+        fill: #D9D9DE;
+        fill-opacity: 0.6;
+        transition: fill 0.15s ease, fill-opacity 0.15s ease;
+    }
+
+    &:hover ::ng-deep app-icon svg path {
+        fill: var(--color-ks-text);
+        fill-opacity: 1;
+    }
+
+    &:active ::ng-deep app-icon svg path {
+        fill: var(--color-ks-text);
+        fill-opacity: 1;
     }
 }
 
@@ -369,17 +375,18 @@
 // ── Validation error ──
 
 .label-error {
-    margin: 0.1rem 0.5rem 0.3rem;
+    margin: 0.1rem 0 0.3rem;
     padding: 0.35rem 0.6rem;
-    background: rgba(220, 91, 96, 0.12);
-    border: 1px solid rgba(220, 91, 96, 0.3);
+    background: rgba(245, 66, 66, 0.10);
+    border: 1px solid rgba(245, 66, 66, 0.3);
+    border-left: 3px solid var(--color-error);
     border-radius: 4px;
-    color: var(--color-ks-status-failed);
+    color: var(--color-error);
     font-size: 0.8rem;
     line-height: 1.4;
 }
 
 .label-input.has-error,
 .rename-input.has-error {
-    border-color: var(--color-ks-status-failed) !important;
+    border-color: var(--color-error) !important;
 }

@@ -135,7 +135,7 @@
                         <app-icon icon="ui/plus" size="1rem"></app-icon>
                     </button>
                     <button
-                        class="action-btn"
+                        class="action-btn edit-label-btn"
                         (click)="
                             $event.stopPropagation(); startRename(item.node)
                         "
@@ -161,7 +161,7 @@
         </div>
 
         @if (renameLabelError && editingLabelId() === item.node.id) {
-            <div class="label-error rename-error" (click)="$event.stopPropagation()">{{ renameLabelError }}</div>
+            <div class="label-error rename-error" [style.marginLeft]="getIndentPadding(item.depth)" (click)="$event.stopPropagation()">{{ renameLabelError }}</div>
         }
 
         <!-- Child add input row (shown below its parent) -->
@@ -196,7 +196,7 @@
                 </button>
             </div>
             @if (newLabelError) {
-                <div class="label-error">{{ newLabelError }}</div>
+                <div class="label-error" [style.marginLeft]="getIndentPadding(item.depth + 1)">{{ newLabelError }}</div>
             }
         }
     }
