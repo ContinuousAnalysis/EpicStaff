@@ -113,7 +113,7 @@ docker-generate-certs:
 # LOCAL DJANGO DEVELOPMENT
 # ==========================================
 
-django-makemigrations django-migrate django-manage: export PYTHONPATH = $(CURDIR)
+django-makemigrations django-migrate django-manage django-tests: export PYTHONPATH = $(CURDIR)
 
 django-makemigrations:
 	@cd src/django_app && python manage.py makemigrations $(ARGS)
@@ -123,3 +123,6 @@ django-migrate:
 
 django-manage:
 	@cd src/django_app && python manage.py $(CMD)
+
+django-tests:
+	@cd src/django_app && python -m pytest $(ARGS)
