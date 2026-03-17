@@ -62,7 +62,7 @@ from tests.helpers import data_to_json_file
 import fakeredis
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def reset_db():
     call_command("flush", "--noinput")
 
