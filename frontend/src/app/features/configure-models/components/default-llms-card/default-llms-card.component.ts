@@ -1,76 +1,53 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     inject,
     input,
     output,
     signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AppIconComponent } from "@shared/components";
-import { DefaultLlmsCard } from "../../interfaces/default-llms-card.interface";
-import { GetLlmModelRequest } from "@shared/models";
-import { LlmModelsStorageService } from "../../services/llms/llm-models-storage.service";
-
-import { take, tap, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { AppIconComponent } from '@shared/components';
+import { DefaultLlmsCard } from '../../interfaces/default-llms-card.interface';
+import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
+import { GetLlmConfigRequest } from '@shared/models';
 
 @Component({
     selector: 'app-default-llms-card',
-    standalone: true,
     imports: [CommonModule, AppIconComponent],
     templateUrl: './default-llms-card.component.html',
     styleUrls: ['./default-llms-card.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DefaultLlmsCardComponent {
-    public readonly card = input.required<DefaultLlmsCard>();
-    public readonly modelSelected = output<{
-        cardId: string;
-        model: GetLlmModelRequest;
-    }>();
+    private readonly llmConfigStorageService = inject(LlmConfigStorageService);
 
-    private readonly llmModelsStorageService = inject(LlmModelsStorageService);
+    public readonly card = input.required<DefaultLlmsCard>();
+    public readonly selectedConfigId = input<number | null>(null);
+    public readonly modelSelected = output<{ cardId: string; configId: number | null }>();
 
     public readonly isDropdownOpen = signal(false);
-    public readonly isLoading = signal(false);
 
-    public readonly models = signal<GetLlmModelRequest[]>([]);
-    public readonly selectedModel = signal<GetLlmModelRequest | null>(null);
+    public readonly configs = this.llmConfigStorageService.configs;
+
+    public readonly selectedConfig = computed<GetLlmConfigRequest | null>(() => {
+        const id = this.selectedConfigId();
+        if (id == null) return null;
+        return this.configs().find(c => c.id === id) ?? null;
+    });
 
     public toggleDropdown(): void {
-        const nextState = !this.isDropdownOpen();
-        this.isDropdownOpen.set(nextState);
-
-        //TODO: Refactor this to use a proper loading state
-        if (nextState && this.models().length === 0) {
-            this.loadModels();
-        }
+        this.isDropdownOpen.update(v => !v);
     }
 
-    public selectModel(model: GetLlmModelRequest): void {
-        this.selectedModel.set(model);
-        this.modelSelected.emit({ cardId: this.card().id, model });
+    public selectConfig(config: GetLlmConfigRequest): void {
+        this.modelSelected.emit({ cardId: this.card().id, configId: config.id });
         this.isDropdownOpen.set(false);
     }
 
-    private loadModels(): void {
-        this.isLoading.set(true);
-        this.llmModelsStorageService
-            .getModels()
-            .pipe(
-                take(1),
-                tap((models) => {
-                    this.models.set(models);
-                    this.isLoading.set(false);
-                }),
-                catchError(() => {
-                    this.isLoading.set(false);
-                    return of([]);
-                })
-            )
-            .subscribe();
+    public onResetConfig(): void {
+        this.modelSelected.emit({ cardId: this.card().id, configId: null });
+        this.isDropdownOpen.set(false);
     }
 }
-
-

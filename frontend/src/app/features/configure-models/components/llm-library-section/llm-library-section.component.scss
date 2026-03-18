@@ -79,24 +79,6 @@
         align-items: center;
     }
 
-    &__filter-select {
-        height: 38px;
-        padding: 0 32px 0 14px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: transparent;
-        color: var(--color-text-primary);
-        font-size: 14px;
-        appearance: none;
-        cursor: pointer;
-        transition: border-color 0.2s ease;
-
-        &:focus {
-            outline: none;
-            border-color: var(--configure-models-dialog-inactive-color, #685fff);
-        }
-    }
-
     &__filter-chevron {
         position: absolute;
         right: 10px;

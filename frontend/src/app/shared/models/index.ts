@@ -6,3 +6,4 @@ export * from './llms/llm-config.model';
 export * from './ngrok/ngrok-config.model';
 export * from './realtime-voice/realtime-llm-config.model';
 export * from './realtime-voice/realtime-model.model';
+export * from './tag.model';

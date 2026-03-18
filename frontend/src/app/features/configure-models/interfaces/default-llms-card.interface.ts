@@ -1,9 +1,12 @@
+import { GetDefaultModelsResponse } from "../models/default-models.model";
+
 export interface DefaultLlmsCard {
-  id: string;
-  title: string;
-  description: string;
-  selectLabel: string;
-  icon: string;
+    id: string;
+    field: keyof GetDefaultModelsResponse;
+    title: string;
+    description: string;
+    selectLabel: string;
+    icon: string;
 }
 
 

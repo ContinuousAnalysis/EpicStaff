@@ -1,3 +1,5 @@
+import { Tag } from "../tag.model";
+
 export interface GetLlmConfigRequest {
     id: number;
     custom_name: string;
@@ -15,6 +17,7 @@ export interface GetLlmConfigRequest {
     is_visible: boolean;
     headers?: Record<string, string>;
     extra_headers?: Record<string, string>;
+    tags: Tag[];
 }
 
 export interface CreateLLMConfigRequest {
@@ -33,6 +36,7 @@ export interface CreateLLMConfigRequest {
     is_visible?: boolean;
     headers?: Record<string, string>;
     extra_headers?: Record<string, string>;
+    tags?: Tag[];
 }
 
 export interface UpdateLLMConfigRequest {
@@ -52,21 +56,5 @@ export interface UpdateLLMConfigRequest {
     is_visible?: boolean;
     headers?: Record<string, string>;
     extra_headers?: Record<string, string>;
-}
-
-export interface LLMConfigFormValue {
-    providerId: number | null;
-    modelId: number | null;
-    customName: string;
-    apiKey: string;
-    headers: Record<string, string>;
-    temperature: number | null;
-    topP: number | null;
-    presencePenalty: number | null;
-    frequencyPenalty: number | null;
-    maxTokens: number | null;
-    timeout: number | null;
-    seed: number | null;
-    stop: string[] | null;
-    logitBias: Record<string, number> | null;
+    tags?: Tag[];
 }

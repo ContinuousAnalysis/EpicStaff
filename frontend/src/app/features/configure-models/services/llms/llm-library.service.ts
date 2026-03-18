@@ -54,7 +54,7 @@ export class LLMLibraryService {
                 id: config.id,
                 customName: config.custom_name,
                 modelName: model.name,
-                tags: [],
+                tags: config.tags,
                 temperature: config.temperature ?? 0,
                 usedByCount: null,
             };

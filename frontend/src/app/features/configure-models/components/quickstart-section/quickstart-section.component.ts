@@ -16,10 +16,12 @@ import {
 } from '@shared/components';
 import { MATERIAL_FORMS } from "@shared/material-forms";
 import { LLMProvider, ModelTypes } from "@shared/models";
-import { catchError, take, tap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { EMPTY, finalize, forkJoin, of } from 'rxjs';
+import { ToastService } from "../../../../services/notifications";
 
-import { Quickstart } from "../../models/quickstart.model";
+import { CreateQuickstartRequest } from "../../models/quickstart.model";
+import { DefaultModelsStorageService } from "../../services/default-models-storage.service";
 import { LlmProvidersStorageService } from "../../services/llms/llm-providers-storage.service";
 import { QuickstartService } from "../../services/quickstart.service";
 import { getProviderIconPath } from "@shared/utils";
@@ -42,15 +44,45 @@ export class QuickstartSectionComponent implements OnInit {
     private readonly fb = inject(FormBuilder);
     private readonly providersStorageService = inject(LlmProvidersStorageService);
     private readonly quickstartService =  inject(QuickstartService);
+    private readonly defaultModelsStorageService = inject(DefaultModelsStorageService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly toast = inject(ToastService);
 
     public readonly quickStartForm = this.fb.group({
         apiKey: ['', [Validators.required]],
         provider: [null, [Validators.required]],
     });
 
+    public readonly quickstartCards = {
+        activated: {
+            title: 'Quickstart successfully activated',
+            showIcon: true,
+            text1: `Your Quick Start provider has been applied to recommended default LLMs.`,
+            text2: `To ensure optimal performance, please review and assign models for the remaining tasks.`,
+            actionText: 'Review default models',
+            action: () => this.onReviewDefaults(),
+        },
+        updated: {
+            title: 'Update default models?',
+            showIcon: false,
+            text1: `Would you like to use it as the default model across all supported tasks?`,
+            text2: `This will replace the currently assigned default models.`,
+            actionText: 'Update default models',
+            action: () => this.onUpdateDefaults(),
+        },
+        synced: {
+            title: 'Default models successfully updated',
+            showIcon: true,
+            text1: `Your new LLM model has been successfully applied as the default across all supported tasks.`,
+            text2: `You can review or adjust these assignments at any time.`,
+            actionText: 'Review default models',
+            action: () => this.onReviewDefaults(),
+        },
+    } as const;
+
     public isSaving = signal(false);
     public providers = signal<LLMProvider[]>([]);
+    public quickstartStatus = signal<'activated' | 'updated' | 'synced' | null>(null);
 
     public providerItems = computed<SelectItem[]>(() => {
         return this.providers().map((provider) => ({
@@ -60,14 +92,78 @@ export class QuickstartSectionComponent implements OnInit {
             value: provider.name,
             icon: getProviderIconPath(provider.name)
         }))
-    })
+    });
 
-    public ngOnInit(): void {
-        this.loadProviders();
+    get activeCard() {
+        const status = this.quickstartStatus();
+        return status ? this.quickstartCards[status] : null;
     }
 
-    public onCancel(): void {
-        this.quickStartForm.reset({ apiKey: '' });
+    public ngOnInit(): void {
+        this.loadData();
+    }
+
+    private loadData(): void {
+        forkJoin({
+            providers: this.providersStorageService.getProvidersByType(ModelTypes.LLM),
+            config: this.quickstartService.getQuickstart()
+        })
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                tap(({ config }) => {
+                    if (config.last_config) {
+                        this.quickstartStatus.set(config.is_synced ? 'synced' : 'updated');
+                    }
+                }),
+                map(({ providers, config }) => {
+                    const allowedProviders = new Set(config.supported_providers);
+
+                    return providers.filter(provider =>
+                        allowedProviders.has(provider.name)
+                    );
+                }),
+                tap((filteredProviders) => this.providers.set(filteredProviders)),
+                catchError((error) => {
+                    console.error('[Quickstart] Error loading data:', error);
+                    this.providers.set([]);
+                    return of([]);
+                })
+            )
+            .subscribe();
+    }
+
+    public onQuickStart(): void {
+        const { apiKey, provider } = this.quickStartForm.value;
+
+        if (!apiKey || !provider) return;
+
+        const data: CreateQuickstartRequest = {
+            api_key: apiKey,
+            provider,
+        };
+
+        this.isSaving.set(true);
+
+        this.quickstartService.createQuickstart(data).pipe(
+            switchMap(() => {
+                if (this.quickstartStatus() === null) {
+                    return this.quickstartService.applyQuickstart();
+                }
+                this.quickstartStatus.set('updated');
+                return EMPTY;
+            }),
+            tap(() => {
+                this.quickstartStatus.set('activated');
+                this.toast.success('Quickstart created successfully.');
+            }),
+            catchError((error) => {
+                console.error(error);
+                this.toast.error('Failed to create/apply quickstart.');
+                return EMPTY;
+            }),
+            finalize(() => this.isSaving.set(false)),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe();
     }
 
     public onReset(): void {
@@ -78,46 +174,21 @@ export class QuickstartSectionComponent implements OnInit {
         return getProviderIconPath(provider?.name || null);
     }
 
-    private loadProviders(): void {
-        this.providersStorageService
-            .getProvidersByType(ModelTypes.LLM)
+    public onReviewDefaults(): void {
+
+    }
+
+    public onUpdateDefaults(): void {
+        this.quickstartService.applyQuickstart()
             .pipe(
-                take(1),
-                tap((providers) => {
-                    console.log('[Quickstart] Loaded providers:', providers);
-                    this.providers.set(providers);
-                    // if (!this.selectedProvider() && providers.length > 0) {
-                    //     this.selectedProvider.set(providers[0]);
-                    //     console.log('[Quickstart] Selected default provider:', providers[0]);
-                    // }
-                }),
-                catchError((error) => {
-                    console.error('[Quickstart] Error loading providers:', error);
-                    this.providers.set([]);
-                    return of([]);
+                takeUntilDestroyed(this.destroyRef),
+                tap((models) => {
+                    this.defaultModelsStorageService.updateModelsInStorage(models);
+                    this.quickstartStatus.set('synced');
+                    this.toast.success('Models updated successfully.');
                 })
             )
             .subscribe();
-    }
-
-    public onQuickStart(): void {
-        const formValue = this.quickStartForm.value;
-
-        if (!formValue.apiKey || !formValue.provider) return;
-        this.isSaving.set(true);
-
-        const data: Quickstart = {
-            api_key: formValue.apiKey,
-            provider: formValue.provider,
-        };
-
-        this.quickstartService.createQuickstart(data)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: data => console.log(data),
-                error: error => console.log(error),
-                complete: () => this.isSaving.set(false),
-            })
     }
 }
 

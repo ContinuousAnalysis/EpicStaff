@@ -26,7 +26,7 @@
     @if (model().tags.length > 0) {
         <div class="llm-card__tags">
             @for (tag of model().tags; track tag) {
-                <span class="llm-card__tag">{{ tag }}</span>
+                <span class="llm-card__tag">#{{ tag.name }}</span>
             }
         </div>
     }

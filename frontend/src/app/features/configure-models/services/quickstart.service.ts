@@ -2,7 +2,13 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { ConfigService } from "../../../services/config";
-import { Quickstart } from "../models/quickstart.model";
+import { GetDefaultModelsResponse } from "../models/default-models.model";
+import {
+
+    CreateQuickstartRequest,
+    CreateQuickstartResponse,
+    GetQuickstartResponse
+} from "../models/quickstart.model";
 
 @Injectable({
     providedIn: 'root'
@@ -19,15 +25,19 @@ export class QuickstartService {
         return this.configService.apiUrl + 'quickstart/';
     }
 
-    createQuickstart(data: Quickstart): Observable<void> {
-        return this.http.post<void>(this.apiUrl, data, {
+    createQuickstart(data: CreateQuickstartRequest): Observable<CreateQuickstartResponse> {
+        return this.http.post<CreateQuickstartResponse>(this.apiUrl, data, {
             headers: this.headers
         });
     }
 
-    getQuickstart(): Observable<Quickstart> {
-        return this.http.get<Quickstart>(this.apiUrl, {
+    getQuickstart(): Observable<GetQuickstartResponse> {
+        return this.http.get<GetQuickstartResponse>(this.apiUrl, {
             headers: this.headers
         });
+    }
+
+    applyQuickstart(): Observable<GetDefaultModelsResponse> {
+        return this.http.post<GetDefaultModelsResponse>(`${this.apiUrl}apply/`, {});
     }
 }

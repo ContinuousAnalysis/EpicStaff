@@ -21,19 +21,11 @@
                 </div>
 
                 <div class="llm-library__filter">
-                    <select
-                        class="llm-library__filter-select"
-                        [value]="selectedCapability()"
-                        (change)="onCapabilityChange($any($event.target).value)"
-                    >
-                        <option value="all">All Capabilities</option>
-                        @for (cap of capabilities; track cap) {
-                            @if (cap !== 'All Capabilities') {
-                                <option [value]="cap">{{ cap }}</option>
-                            }
-                        }
-                    </select>
-                    <i class="ti ti-chevron-down llm-library__filter-chevron" aria-hidden="true"></i>
+                    <app-select
+                        [items]="capabilities()"
+                        placeholder="All Capabilities"
+                        (changed)="selectedCapability.set($event)"
+                    />
                 </div>
 
                 <button

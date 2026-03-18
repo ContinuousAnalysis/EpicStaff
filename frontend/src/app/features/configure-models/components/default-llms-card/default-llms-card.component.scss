@@ -14,16 +14,33 @@
     background: transparent;
     position: relative;
 
-    &__header {
+    &--active {
+        border: 1px solid var(--accent-color);
+    }
+
+    &__top {
         display: flex;
         flex-direction: column;
         gap: 6px;
+    }
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     &__icon {
         width: 2rem;
         height: 2rem;
         color: var(--color-ks-text);
+    }
+
+    &__close-icon {
+        padding: 4px;
+        border-radius: 50%;
+        border: 1px solid var(--accent-color);
+        color: var(--accent-color);
     }
 
     &__title {
@@ -120,7 +137,6 @@
         background: #1f1f22;
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 8px;
-        padding: 6px 0;
         z-index: 2;
         max-height: 180px;
         overflow: auto;

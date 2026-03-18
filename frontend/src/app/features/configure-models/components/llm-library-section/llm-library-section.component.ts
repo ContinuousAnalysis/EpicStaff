@@ -3,7 +3,12 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnIni
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from '@angular/forms';
-import { ConfirmationDialogData, ConfirmationDialogService, LoadingSpinnerComponent } from "@shared/components";
+import {
+    ConfirmationDialogData,
+    ConfirmationDialogService,
+    LoadingSpinnerComponent,
+    SelectComponent, SelectItem
+} from "@shared/components";
 import { ToastService } from "../../../../services/notifications";
 import { LlmLibraryModel } from "../../interfaces/llm-library-model.interface";
 import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
@@ -15,7 +20,7 @@ import { LlmModelConfigDialogComponent } from "../llm-model-config-dialog/llm-mo
 
 @Component({
     selector: 'app-llm-library-section',
-    imports: [CommonModule, FormsModule, LlmLibraryCardComponent, AppIconComponent, LoadingSpinnerComponent],
+    imports: [CommonModule, FormsModule, LlmLibraryCardComponent, AppIconComponent, LoadingSpinnerComponent, SelectComponent],
     templateUrl: './llm-library-section.component.html',
     styleUrls: ['./llm-library-section.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,8 +33,10 @@ export class LlmLibrarySectionComponent implements OnInit {
     private dialog = inject(Dialog);
     private toast = inject(ToastService);
 
+    public providerGroups = this.llmLibraryService.providerGroups;
+    public configs = this.llmConfigStorageService.configs;
     public searchQuery = signal('');
-    public selectedCapability = signal('all');
+    public selectedCapability = signal<string | null>(null);
     public configsLoaded = signal<boolean>(false);
 
     filteredGroups = computed<LlmLibraryProviderGroup[]>(() => {
@@ -46,8 +53,8 @@ export class LlmLibrarySectionComponent implements OnInit {
                         group.providerName.toLowerCase().includes(query);
 
                     const matchesCap =
-                        cap === 'all' ||
-                        model.tags.some((t) => t.toLowerCase().includes(cap.toLowerCase()));
+                        cap === null ||
+                        model.tags.some((t) => t.name.includes(cap));
 
                     return matchesSearch && matchesCap;
                 });
@@ -57,16 +64,14 @@ export class LlmLibrarySectionComponent implements OnInit {
             .filter((group) => group.models.length > 0);
     });
 
-    public providerGroups = this.llmLibraryService.providerGroups;
-    public readonly capabilities: string[] = [
-        'All Capabilities',
-        'Embedding',
-        'Realtime',
-        'Voice',
-        'Memory',
-        'ToolsEmbedding',
-        'AgentFunctionCalling',
-    ];
+    public capabilities = computed<SelectItem[]>(() =>
+        [
+            { name: 'All Capabilities', value: null },
+            ...this.configs().flatMap(config =>
+                config.tags.map(tag => ({ name: tag.name, value: tag.name }))
+            )
+        ]
+    );
 
     ngOnInit() {
         this.llmLibraryService.loadConfigs()
@@ -76,10 +81,6 @@ export class LlmLibrarySectionComponent implements OnInit {
 
     public onSearchChange(value: string): void {
         this.searchQuery.set(value);
-    }
-
-    public onCapabilityChange(value: string): void {
-        this.selectedCapability.set(value);
     }
 
     public onAddModel(): void {
