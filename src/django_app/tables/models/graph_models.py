@@ -177,6 +177,9 @@ class GraphSessionMessage(models.Model):
     execution_order = models.IntegerField(default=0)
     message_data = models.JSONField()
     uuid = models.UUIDField(null=False, editable=False, unique=True)
+    subgraph_execution_id = models.CharField(
+        max_length=36, null=True, default=None, db_index=True
+    )
 
 
 class StartNode(BaseGraphEntity, BaseGlobalNode):

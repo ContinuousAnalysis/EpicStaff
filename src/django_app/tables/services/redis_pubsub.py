@@ -3,6 +3,7 @@ import os
 import time
 from collections import defaultdict, deque
 from typing import Type
+from uuid import uuid4
 
 import redis
 from django.db import IntegrityError, models, transaction
@@ -47,6 +48,9 @@ class RedisPubSub:
 
         self.handlers = {}
         self.buffers = {GRAPH_MESSAGES_CHANNEL: deque(maxlen=1000)}
+
+        self._subgraph_session_map: dict[str, list[int]] = {}
+        self._active_subgraph_stack: dict[int, list[str]] = {}
 
         logger.debug(f"Redis host: {redis_host}")
         logger.debug(f"Redis port: {redis_port}")
@@ -261,6 +265,28 @@ class RedisPubSub:
                 logger.warning("This message already proceeded")
                 return
 
+            # subgraph start/finish logic
+            message_type = graph_session_message_data.message_data.get("message_type")
+            subgraph_execution_id_in_data = graph_session_message_data.message_data.get(
+                "subgraph_execution_id"
+            )
+            message_subgraph_exec_id = graph_session_message_data.subgraph_execution_id
+            subgraph_id = graph_session_message_data.message_data.get("subgraph_id")
+
+            if message_type == "subgraph_start":
+                self._handle_subgraph_start(
+                    root_session_id=graph_session_message_data.session_id,
+                    subgraph_id=subgraph_id,
+                    subgraph_execution_id=subgraph_execution_id_in_data,
+                    message_data=graph_session_message_data.message_data,
+                )
+            elif message_type == "subgraph_finish":
+                self._handle_subgraph_finish(
+                    root_session_id=graph_session_message_data.session_id,
+                    subgraph_execution_id=subgraph_execution_id_in_data,
+                    message_data=graph_session_message_data.message_data,
+                )
+
             # Save in Redis.
             self.redis_client.setex(
                 name=f"graph:message:{session_id}:{message_uuid}",
@@ -277,6 +303,7 @@ class RedisPubSub:
                     execution_order=graph_session_message_data.execution_order,
                     message_data=graph_session_message_data.message_data,
                     uuid=message_uuid,
+                    subgraph_execution_id=message_subgraph_exec_id,
                 )
             )
 
@@ -335,32 +362,7 @@ class RedisPubSub:
                 # 2. Bulk save the buffer, clear state
                 buffer = self.buffers.get(GRAPH_MESSAGES_CHANNEL)
                 if buffer and time.time() - start_time >= 3:
-                    try:
-                        graph_session_message_list = [
-                            GraphSessionMessage(**data) for data in list(buffer)
-                        ]
-                    except Exception:
-                        logger.critical(
-                            "Error creating GraphSessionMessage cache_for_redis_messages_worker"
-                        )
-
-                    buffer.clear()
-                    sessions_data = defaultdict(deque)
-
-                    for graph_session_message in graph_session_message_list:
-                        session_id = graph_session_message.session.pk
-                        if session_id is not None:
-                            sessions_data[session_id].append(graph_session_message)
-                        else:
-                            logger.warning(
-                                f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {session_id}"
-                            )
-
-                    for session_id, sessions_data_values in sessions_data.items():
-                        self._buffer_save(
-                            data=sessions_data_values, model=GraphSessionMessage
-                        )
-
+                    self._flush_buffer()
                     start_time = time.time()
 
             except Exception as e:
@@ -368,3 +370,216 @@ class RedisPubSub:
                 logger.error(f"Error in main listener loop: {e}")
             except Exception as e:
                 logger.error(f"Error while saving graph session messages: {e}")
+
+    def _flush_buffer(self):
+        """Flush the graph messages buffer to the database.
+
+        Converts buffered dicts into GraphSessionMessage instances, groups them
+        by session_id, and bulk-saves each group. Clears the buffer afterwards.
+        """
+
+        buffer = self.buffers.get(GRAPH_MESSAGES_CHANNEL)
+
+        try:
+            graph_session_message_list = [
+                GraphSessionMessage(**data) for data in list(buffer)
+            ]
+
+        except Exception:
+            logger.critical("Error creating GraphSessionMessage in database")
+            buffer.clear()
+            return
+
+        buffer.clear()
+        sessions_data = defaultdict(deque)
+
+        for graph_session_message in graph_session_message_list:
+            session_id = graph_session_message.session.pk
+            if session_id is not None:
+                sessions_data[session_id].append(graph_session_message)
+            else:
+                logger.warning(
+                    f"Skipping entity for {GraphSessionMessage.__name__} with missing session_id: {session_id}"
+                )
+
+        for session_id, sessions_data_values in sessions_data.items():
+            self._buffer_save(data=sessions_data_values, model=GraphSessionMessage)
+
+    def _handle_subgraph_start(
+        self, root_session_id, subgraph_id, subgraph_execution_id, message_data
+    ):
+        """Handle subgraph start: create a child session and update tracking state.
+
+        Creates a new Session for the subgraph, determines its parent (either
+        the root session or the most recent ancestor subgraph session), and
+        records the mapping from subgraph_execution_id to the list of session IDs
+        that should receive copies of this subgraph's messages (own + ancestors).
+
+        Args:
+            root_session_id: The ID of the original root session.
+            subgraph_id: The graph ID of the subgraph being started.
+            subgraph_execution_id: Unique execution ID for this subgraph run.
+            message_data: The subgraph_start message payload containing input
+                variables and parent state.
+        """
+        stack = self._active_subgraph_stack.setdefault(root_session_id, [])
+
+        if stack:
+            parent_session_id = self._subgraph_session_map[stack[-1]][0]
+        else:
+            parent_session_id = root_session_id
+
+        root_session = Session.objects.get(pk=root_session_id)
+        subgraph_variables = message_data.get("input", {})
+
+        session = Session.objects.create(
+            graph_id=subgraph_id,
+            status=Session.SessionStatus.RUN,
+            parent_session_id=parent_session_id,
+            variables=subgraph_variables,
+            time_to_live=root_session.time_to_live,
+            graph_schema=root_session.graph_schema,
+        )
+
+        ancestor_sessions = [
+            self._subgraph_session_map[exec_id][0] for exec_id in stack
+        ]
+
+        self._subgraph_session_map[subgraph_execution_id] = [
+            session.pk
+        ] + ancestor_sessions
+
+        stack.append(subgraph_execution_id)
+
+    def _handle_subgraph_finish(
+        self, root_session_id, subgraph_execution_id, message_data
+    ):
+        """Handle subgraph finish: copy messages to subgraph session and ancestor sessions, then close.
+
+        Flushes the buffer to DB first, then queries all messages belonging to this
+        subgraph_execution_id from the root session and copies them into every target
+        session (own + ancestors). Only the direct subgraph session is marked as END.
+        Uses save() instead of update() to trigger the custom Session.save() logic
+        that sets finished_at and status_updated_at.
+
+        Args:
+            root_session_id: The ID of the original root session.
+            subgraph_execution_id: Unique execution ID for the finishing subgraph.
+            message_data: The subgraph_finish message payload containing output
+                variables and final state.
+        """
+        session_ids = self._subgraph_session_map.get(subgraph_execution_id)
+        if not session_ids:
+            logger.warning(
+                f"No session mapping found for subgraph_execution_id={subgraph_execution_id}"
+            )
+            return
+
+        self._flush_buffer()
+
+        messages = list(
+            GraphSessionMessage.objects.filter(
+                session_id=root_session_id,
+                subgraph_execution_id=subgraph_execution_id,
+            )
+        )
+
+        buffer = self.buffers.setdefault(GRAPH_MESSAGES_CHANNEL, deque(maxlen=1000))
+
+        for target_session_id in session_ids:
+            copies = [
+                dict(
+                    session_id=target_session_id,
+                    created_at=msg.created_at,
+                    name=msg.name,
+                    execution_order=msg.execution_order,
+                    message_data=msg.message_data,
+                    subgraph_execution_id=msg.subgraph_execution_id,
+                    uuid=uuid4(),
+                )
+                for msg in messages
+            ]
+
+            buffer.extend(copies)
+
+        direct_session_id = session_ids[0]
+
+        # calculate token usage for the current subgraph
+        token_usage = self._calculate_subgraph_token_usage(messages)
+        child_sessions = Session.objects.filter(parent_session_id=direct_session_id)
+        for child in child_sessions:
+            child_usage = child.token_usage or {}
+            token_usage["total_tokens"] += child_usage.get("total_tokens", 0)
+            token_usage["prompt_tokens"] += child_usage.get("prompt_tokens", 0)
+            token_usage["completion_tokens"] += child_usage.get("completion_tokens", 0)
+            token_usage["successful_requests"] += child_usage.get(
+                "successful_requests", 0
+            )
+
+        # close the subgraph session
+        subgraph_output = message_data.get("output", {})
+        subgraph_error = message_data.get("error")
+
+        session = Session.objects.get(pk=direct_session_id)
+        session.status = (
+            Session.SessionStatus.ERROR if subgraph_error else Session.SessionStatus.END
+        )
+        session.variables = subgraph_output
+        session.token_usage = token_usage
+        session.status_data = {
+            "total_token_usage": token_usage,
+            "variables": subgraph_output,
+        }
+        if subgraph_error:
+            session.status_data["error"] = subgraph_error
+        session.save()
+
+        # remove unnecesarry data from subgraph_stack and session_map
+        stack = self._active_subgraph_stack.get(root_session_id, [])
+        if stack and stack[-1] == subgraph_execution_id:
+            stack.pop()
+        del self._subgraph_session_map[subgraph_execution_id]
+
+    @staticmethod
+    def _calculate_subgraph_token_usage(messages: list) -> dict:
+        """Calculate total token usage from a list of GraphSessionMessage instances.
+
+        Uses the same extraction logic as _calculate_total_token_usage but
+        operates on in-memory message objects instead of Redis cache.
+        This is needed because subgraph messages are only cached in Redis
+        under the root session ID, not under the subgraph session ID.
+
+        Args:
+            messages: List of GraphSessionMessage instances to aggregate from.
+
+        Returns:
+            Dict with total_tokens, prompt_tokens, completion_tokens,
+            successful_requests.
+        """
+        total_usage = {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "successful_requests": 0,
+        }
+
+        for msg in messages:
+            msg_data = msg.message_data or {}
+            token_usage = None
+
+            if "output" in msg_data and "token_usage" in msg_data.get("output", {}):
+                token_usage = msg_data["output"]["token_usage"]
+            elif "token_usage" in msg_data:
+                token_usage = msg_data["token_usage"]
+
+            if token_usage:
+                total_usage["total_tokens"] += token_usage.get("total_tokens", 0)
+                total_usage["prompt_tokens"] += token_usage.get("prompt_tokens", 0)
+                total_usage["completion_tokens"] += token_usage.get(
+                    "completion_tokens", 0
+                )
+                total_usage["successful_requests"] += token_usage.get(
+                    "successful_requests", 0
+                )
+
+        return total_usage

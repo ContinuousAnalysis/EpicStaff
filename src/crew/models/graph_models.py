@@ -14,12 +14,15 @@ class GraphMessage:
     execution_order: int
     message_data: dict
     timestamp: str = field(default_factory=iso_utc_timestamp)
+    subgraph_execution_id: str | None = None
 
 
 @dataclass
 class SubGraphStartMessageData:
     state: dict
     input: object
+    subgraph_id: int
+    subgraph_execution_id: str
     message_type: str = "subgraph_start"
 
 
@@ -27,6 +30,8 @@ class SubGraphStartMessageData:
 class SubGraphFinishMessageData:
     state: dict
     output: object
+    subgraph_execution_id: str
+    error: str | None = None
     message_type: str = "subgraph_finish"
 
 
