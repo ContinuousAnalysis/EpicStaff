@@ -127,6 +127,9 @@
       max-height: 0;
       opacity: 0;
   }
+  .editor-container.expanded {
+    min-height: 300px;
+  }
 
   /* Static resize handle below the editor container */
   .editor-resize-handle {

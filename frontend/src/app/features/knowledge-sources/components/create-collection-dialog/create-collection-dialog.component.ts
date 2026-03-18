@@ -40,7 +40,7 @@ export interface StepConfig {
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreateCollectionDialogComponent {
-    collectionId: number = inject(DIALOG_DATA);
+    data: { collection_id: number, forceType: RagType | undefined } = inject(DIALOG_DATA);
 
     private destroyRef = inject(DestroyRef);
     private dialogRef = inject(DialogRef);
@@ -59,7 +59,7 @@ export class CreateCollectionDialogComponent {
     collection = computed(() =>
         this.collectionsStorageService
             .fullCollections()
-            .find(c => c.collection_id === this.collectionId)!
+            .find(c => c.collection_id === this.data.collection_id)!
     );
 
     canProceedSelectRag = computed(() => {
@@ -140,7 +140,7 @@ export class CreateCollectionDialogComponent {
     private handleCreateRag(): Observable<boolean> {
         const type = this.selectedRagType();
         const embedderId = this.selectedEmbedder();
-        const collectionId = this.collectionId;
+        const collectionId = this.data.collection_id;
         if (!type || !embedderId) return of(false);
 
         const strategy = this.factory.create(type);

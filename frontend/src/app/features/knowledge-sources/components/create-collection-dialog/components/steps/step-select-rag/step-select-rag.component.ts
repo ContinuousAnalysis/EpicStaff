@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, model, OnInit, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, model, OnInit, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { EmbeddingConfigsService, LLM_Config_Service } from "@services";
 import { SelectComponent, SelectItem } from "@shared/components";
@@ -7,7 +7,7 @@ import { EmbeddingConfig } from "@shared/models";
 import { map } from "rxjs/operators";
 import { ToastService } from "../../../../../../../services/notifications";
 import { RAG_TYPES } from "../../../../../constants/constants";
-import { RagType } from "../../../../../models/base-rag.model";
+import { Rag, RagType } from "../../../../../models/base-rag.model";
 import { RagTypeComponent } from "./rag-type/rag-type.component";
 
 @Component({
@@ -22,6 +22,8 @@ import { RagTypeComponent } from "./rag-type/rag-type.component";
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StepSelectRagComponent implements OnInit {
+    forceType = input<RagType>();
+
     embeddingConfigs = signal<SelectItem[]>([]);
     llmModels = signal<SelectItem[]>([]);
 
@@ -37,6 +39,12 @@ export class StepSelectRagComponent implements OnInit {
     ngOnInit() {
         this.getEmbeddingConfigs();
         this.getLLMConfigs();
+
+        const forceType = this.forceType();
+
+        if (forceType) {
+            this.selectedRag.set(forceType);
+        }
     }
 
     private getEmbeddingConfigs() {
@@ -81,6 +89,12 @@ export class StepSelectRagComponent implements OnInit {
                     console.error('Error loading LLM Models:', error);
                 }
             })
+    }
+
+    public onSelectRag(rag: Rag): void {
+        if (rag.disabled || this.forceType() !== rag.value) return;
+
+        this.selectedRag.set(rag.value);
     }
 
     protected readonly RAG_TYPES = RAG_TYPES;

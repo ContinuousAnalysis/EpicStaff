@@ -12,7 +12,7 @@ import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
 import { RadioButtonComponent, SelectItem } from "@shared/components";
 import { MATERIAL_FORMS } from "@shared/material-forms";
 import { EMPTY, merge, Observable, skip } from "rxjs";
-import { debounceTime, distinctUntilChanged, switchMap } from "rxjs/operators";
+import { catchError, debounceTime, distinctUntilChanged, switchMap, tap } from "rxjs/operators";
 import { ToastService } from "../../../../services/notifications";
 import { CollectionGraphRag, CreateGraphRagIndexConfigRequest, GraphRagFileType } from "../../models/graph-rag.model";
 import { RagConfiguration } from "../../models/rag-configuration";
@@ -76,13 +76,16 @@ export class GraphRagConfigurationComponent implements OnInit, AfterViewInit, Ra
                 const data = this.getConfigurationData();
                 if (!data) return EMPTY;
 
-                return this.updateConfigurationData(data);
+                return this.updateConfigurationData(data).pipe(
+                    tap(() => this.toastService.success('Parameters updated')),
+                    catchError(() => {
+                        this.toastService.error('Parameters updating failed');
+                        return EMPTY;
+                    })
+                );
             }),
             takeUntilDestroyed(this.destroyRef)
-        ).subscribe({
-            next: () => this.toastService.success('Parameters updated'),
-            error: () => this.toastService.error('Parameters updating failed'),
-        });
+        ).subscribe();
     }
 
     getConfigurationData(): CreateGraphRagIndexConfigRequest | false {

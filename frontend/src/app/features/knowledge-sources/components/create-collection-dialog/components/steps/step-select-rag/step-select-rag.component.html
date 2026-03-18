@@ -5,11 +5,13 @@
         <p class="select-rag__description">Choose the one that best suits your task.</p>
     </div>
     <section class="select-rag__items">
-        @for (type of RAG_TYPES; track type.name) {
+        @for (rag of RAG_TYPES; track rag.name) {
             <app-rag-type
-                [rag]="type"
-                [selected]="selectedRag() === type.value"
-                (click)="!type.disabled && selectedRag.set(type.value)"
+                class="select-rag__item"
+                [class.select-rag__item--disabled]="rag.disabled || forceType() !== rag.value"
+                [rag]="rag"
+                [selected]="selectedRag() === rag.value"
+                (click)="onSelectRag(rag)"
             />
         }
     </section>

@@ -44,7 +44,7 @@ export class CollectionRagsComponent {
         const ragConfig = ragConfigurations.find(i => i.rag_type === type);
 
         if (!ragConfigurations.length || !ragConfig) {
-            this.openCollectionModal();
+            this.openCollectionModal(type);
             return;
         }
 
@@ -59,11 +59,11 @@ export class CollectionRagsComponent {
         }
     }
 
-    private openCollectionModal(): void {
+    private openCollectionModal(forceType: RagType): void {
         const dialog = this.dialog.open(CreateCollectionDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
-            data: this.collection().collection_id,
+            data: { collection_id: this.collection().collection_id, forceType },
             disableClose: true
         });
 

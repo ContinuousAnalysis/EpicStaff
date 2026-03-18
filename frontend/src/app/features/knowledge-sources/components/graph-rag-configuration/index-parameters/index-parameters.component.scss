@@ -27,6 +27,7 @@
     row-gap: 1rem;
     column-gap: 1.875rem;
     align-items: center;
+    overflow: auto;
 
     .tooltip {
         display: flex;

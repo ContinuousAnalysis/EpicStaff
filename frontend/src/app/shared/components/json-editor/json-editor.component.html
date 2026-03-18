@@ -32,6 +32,7 @@
 <!-- Editor Container -->
 <div
   class="editor-container"
+  [class.expanded]="collapsible && !collapsed"
   [class.collapsed]="collapsible && collapsed"
   #editorContainer
 >

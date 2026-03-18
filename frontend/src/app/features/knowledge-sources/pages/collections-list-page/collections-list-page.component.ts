@@ -69,7 +69,7 @@ export class CollectionsListPageComponent implements OnInit {
         const dialog = this.dialog.open(CreateCollectionDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
-            data: collection_id,
+            data: { collection_id },
             disableClose: true
         });
 
