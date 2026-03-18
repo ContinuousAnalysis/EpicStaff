@@ -1,0 +1,103 @@
+@if (label()) {
+    <app-tooltip [required]="required()" [tooltipText]="tooltipText()" [label]="label()" />
+}
+
+<div class="date-picker">
+    <div
+        class="date-picker__trigger"
+        #triggerEl
+        [class.date-picker__trigger--open]="isOpen()"
+        [class.date-picker__trigger--disabled]="isDisabled()"
+        [class.date-picker__trigger--error]="errorMessage() || inputError()"
+        [style.--active-color]="activeColor()"
+        (click)="openDropdown()"
+    >
+        <i class="ti ti-calendar date-picker__icon"></i>
+        <input
+            class="date-picker__input"
+            [placeholder]="placeholder()"
+            [disabled]="isDisabled()"
+            [ngModel]="inputValue()"
+            (ngModelChange)="inputValue.set($event); onInput()"
+            (focus)="openDropdown()"
+            (click)="$event.stopPropagation()"
+        />
+        <svg
+            class="date-picker__chevron"
+            [class.date-picker__chevron--open]="isOpen()"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            (click)="$event.stopPropagation(); toggleDropdown()"
+        >
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" />
+        </svg>
+    </div>
+</div>
+
+@if (errorMessage()) {
+    <div class="date-picker__error">{{ errorMessage() }}</div>
+}
+
+<ng-template #dropdownTemplate>
+    <div class="date-picker__dropdown" [style.width.px]="dropdownWidth()" [style.--active-color]="activeColor()">
+        <div class="date-picker__calendar">
+            <!-- Header -->
+            <div class="date-picker__header">
+                <span class="date-picker__month-year">{{ viewMonthYear() }}</span>
+                <div class="date-picker__nav">
+                    <button type="button" class="date-picker__nav-btn" (click)="prevMonth()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path
+                                d="M15 18l-6-6 6-6"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                        </svg>
+                    </button>
+                    <button type="button" class="date-picker__nav-btn" (click)="nextMonth()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path
+                                d="M9 18l6-6-6-6"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Weekday labels -->
+            <div class="date-picker__weekdays">
+                @for (wd of weekdays; track $index) {
+                    <div class="date-picker__weekday">{{ wd }}</div>
+                }
+            </div>
+
+            <!-- Days grid -->
+            <div class="date-picker__days">
+                @for (cell of dayCells(); track $index) {
+                    @if (cell.day !== null) {
+                        <div
+                            class="date-picker__day"
+                            [class.date-picker__day--today]="cell.isToday"
+                            [class.date-picker__day--selected]="cell.isSelected"
+                            [class.date-picker__day--past]="cell.isPast"
+                            [style.background-color]="cell.isSelected ? resolvedActiveColor() : null"
+                            [style.color]="cell.isSelected ? '#fff' : null"
+                            (click)="selectDay(cell)"
+                        >
+                            {{ cell.day }}
+                        </div>
+                    } @else {
+                        <div class="date-picker__day date-picker__day--empty"></div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</ng-template>

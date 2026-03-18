@@ -1,11 +1,7 @@
 <div class="panel-container">
     <div class="panel-content">
         <form [formGroup]="form" class="form-container">
-            <div
-                class="form-layout"
-                [class.expanded]="isExpanded()"
-                [class.collapsed]="!isExpanded()"
-            >
+            <div class="form-layout" [class.expanded]="isExpanded()" [class.collapsed]="!isExpanded()">
                 <div class="form-fields">
                     <!-- Node Name -->
                     <app-custom-input
@@ -26,32 +22,26 @@
                                 formControlName="start_time"
                                 [activeColor]="activeColor"
                             />
-                            <div class="date-placeholder">
-                                <span class="field-label">Start date</span>
-                                <div class="date-placeholder__input">
-                                    <i class="ti ti-calendar"></i>
-                                    <span>Coming soon</span>
-                                </div>
-                            </div>
+                            <app-date-picker
+                                label="Start date"
+                                formControlName="start_date"
+                                [activeColor]="activeColor"
+                            />
                         </div>
+                        @if (startRowError()) {
+                            <div class="row-error">{{ startRowError() }}</div>
+                        }
                     </div>
 
                     <!-- Run mode -->
-                    <app-radio-button
-                        label="Run mode"
-                        formControlName="run_mode"
-                        [options]="runModeOptions"
-                    />
+                    <app-radio-button label="Run mode" formControlName="run_mode" [options]="runModeOptions" />
 
                     <!-- Repeat settings (visible when run_mode = repeat) -->
                     @if (showRepeatFields()) {
                         <div class="section">
                             <div class="section-header">Repeat every</div>
                             <div class="repeat-row">
-                                <app-number-stepper
-                                    formControlName="repeat_every"
-                                    [min]="1"
-                                />
+                                <app-number-stepper formControlName="repeat_every" [min]="1" />
                                 <app-select
                                     formControlName="repeat_unit"
                                     [items]="repeatUnitItems"
@@ -61,24 +51,18 @@
                         </div>
 
                         <!-- End condition -->
-                        <app-radio-button
-                            label="End condition"
-                            formControlName="end_mode"
-                            [options]="endModeOptions"
-                        />
+                        <app-radio-button label="End condition" formControlName="end_mode" [options]="endModeOptions" />
 
                         <!-- End date/time (visible when end_mode = on_date) -->
                         @if (showEndDateTime()) {
                             <div class="section">
                                 <div class="section-header">End at</div>
                                 <div class="date-time-row">
-                                    <div class="date-placeholder">
-                                        <span class="field-label">End date</span>
-                                        <div class="date-placeholder__input">
-                                            <i class="ti ti-calendar"></i>
-                                            <span>Coming soon</span>
-                                        </div>
-                                    </div>
+                                    <app-date-picker
+                                        label="End date"
+                                        formControlName="end_date"
+                                        [activeColor]="activeColor"
+                                    />
                                     <app-time-picker
                                         label="End time"
                                         formControlName="end_time"
@@ -90,21 +74,14 @@
 
                         <!-- Max runs (visible when end_mode = after_runs) -->
                         @if (showMaxRuns()) {
-                            <app-number-stepper
-                                label="Max runs"
-                                formControlName="max_runs"
-                                [min]="1"
-                            />
+                            <app-number-stepper label="Max runs" formControlName="max_runs" [min]="1" />
                         }
                     }
 
                     <!-- Active toggle -->
                     <div class="toggle-row">
                         <span class="toggle-row__label">Is active</span>
-                        <app-checkbox
-                            formControlName="is_active"
-                            [variant]="'mainColor'"
-                        />
+                        <app-checkbox formControlName="is_active" [variant]="'mainColor'" />
                     </div>
                 </div>
             </div>

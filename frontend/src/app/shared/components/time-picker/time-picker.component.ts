@@ -16,11 +16,11 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
 
 import { TooltipComponent } from '../tooltip/tooltip.component';
 
-/** 12-hour time slots: 12:00 → 12:30 → 01:00 → … → 11:30 */
+/** 12-hour time slots: 12:00 → 12:05 → … → 11:55 */
 function generateHourSlots(): string[] {
     const slots: string[] = [];
     for (let h = 0; h < 12; h++) {
-        for (let m = 0; m < 60; m += 30) {
+        for (let m = 0; m < 60; m += 5) {
             const display = h === 0 ? 12 : h;
             slots.push(`${String(display).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
         }
@@ -87,15 +87,16 @@ export class TimePickerComponent implements ControlValueAccessor {
 
     filteredSlots = computed<string[]>(() => {
         const val = this.timeInput().trim();
-        if (!val) return HOUR_SLOTS;
-        return HOUR_SLOTS.filter(s => s.startsWith(val));
+        if (!val || HOUR_SLOTS.includes(val)) return HOUR_SLOTS;
+        const filtered = HOUR_SLOTS.filter((s) => s.startsWith(val));
+        return filtered.length > 0 ? filtered : HOUR_SLOTS;
     });
 
     @ViewChild('triggerEl') triggerEl!: ElementRef<HTMLDivElement>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @ViewChild('dropdownTemplate') dropdownTemplate!: any;
 
-    private overlayRef!: OverlayRef;
+    private overlayRef: OverlayRef | null = null;
     private overlay = inject(Overlay);
     private overlayPositionBuilder = inject(OverlayPositionBuilder);
     private vcr = inject(ViewContainerRef);
@@ -129,30 +130,28 @@ export class TimePickerComponent implements ControlValueAccessor {
     openDropdown(): void {
         if (this.isOpen() || this.isDisabled()) return;
 
-        if (!this.overlayRef) {
-            const positionStrategy = this.overlayPositionBuilder
-                .flexibleConnectedTo(this.triggerEl)
-                .withPositions([
-                    {
-                        originX: 'start',
-                        originY: 'bottom',
-                        overlayX: 'start',
-                        overlayY: 'top',
-                        offsetY: 4,
-                    },
-                ])
-                .withPush(true);
+        const positionStrategy = this.overlayPositionBuilder
+            .flexibleConnectedTo(this.triggerEl)
+            .withPositions([
+                {
+                    originX: 'start',
+                    originY: 'bottom',
+                    overlayX: 'start',
+                    overlayY: 'top',
+                    offsetY: 4,
+                },
+            ])
+            .withPush(true);
 
-            this.overlayRef = this.overlay.create({
-                positionStrategy,
-                scrollStrategy: this.overlay.scrollStrategies.reposition(),
-                hasBackdrop: true,
-                backdropClass: 'transparent-backdrop',
-                width: this.triggerEl.nativeElement.offsetWidth,
-            });
+        this.overlayRef = this.overlay.create({
+            positionStrategy,
+            scrollStrategy: this.overlay.scrollStrategies.reposition(),
+            hasBackdrop: true,
+            backdropClass: 'transparent-backdrop',
+            width: this.triggerEl.nativeElement.offsetWidth,
+        });
 
-            this.overlayRef.backdropClick().subscribe(() => this.close());
-        }
+        this.overlayRef.backdropClick().subscribe(() => this.close());
 
         const portal = new TemplatePortal(this.dropdownTemplate, this.vcr);
         this.overlayRef.attach(portal);
@@ -161,7 +160,8 @@ export class TimePickerComponent implements ControlValueAccessor {
 
     close(): void {
         if (this.overlayRef) {
-            this.overlayRef.detach();
+            this.overlayRef.dispose();
+            this.overlayRef = null;
         }
         this.onTouched();
         this.isOpen.set(false);
