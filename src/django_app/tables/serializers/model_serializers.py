@@ -1625,7 +1625,7 @@ class RealtimeAgentChatSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ConditionSerializer(serializers.ModelSerializer):
+class ConditionSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     condition_group = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -1633,7 +1633,7 @@ class ConditionSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ConditionGroupSerializer(serializers.ModelSerializer):
+class ConditionGroupSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     conditions = ConditionSerializer(many=True, required=False)
     decision_table_node = serializers.PrimaryKeyRelatedField(read_only=True)
 

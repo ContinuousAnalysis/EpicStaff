@@ -1042,31 +1042,29 @@ class DecisionTableNodeModelViewSet(
         Create ConditionGroups and nested Conditions for a DecisionTableNode.
         Uses bulk_create for efficiency.
         """
-        groups_to_create = []
-        conditions_to_create = []
-
-        # Prepare group objects
         for group_data in groups_data:
-            copy_grop_data = group_data.copy()
-            copy_grop_data.pop("conditions")
-            groups_to_create.append(
-                ConditionGroup(decision_table_node=node, **copy_grop_data)
+            copy_group_data = group_data.copy()
+            conditions_data = copy_group_data.pop("conditions", [])
+            copy_group_data.pop("decision_table_node", None)
+            copy_group_data.pop("content_hash", None)
+
+            group = ConditionGroup.objects.create(
+                decision_table_node=node, **copy_group_data
             )
-            # Conditions will be mapped after saving groups
 
-        # Save groups in bulk
-        created_groups = ConditionGroup.objects.bulk_create(groups_to_create)
+            for cond_data in conditions_data:
+                cond_data = {
+                    k: v
+                    for k, v in cond_data.items()
+                    if k not in ("condition_group", "content_hash")
+                }
+                Condition.objects.create(condition_group=group, **cond_data)
 
-        # Map and prepare condition objects
-        for group, group_data in zip(created_groups, groups_data):
-            for cond_data in group_data.get("conditions", []):
-                conditions_to_create.append(
-                    Condition(condition_group=group, **cond_data)
-                )
+            # Re-save group so its hash includes the newly created conditions
+            group.save()
 
-        # Save conditions in bulk
-        if conditions_to_create:
-            Condition.objects.bulk_create(conditions_to_create)
+        # Re-save node so its hash includes the updated group hashes
+        node.save()
 
 
 class McpToolViewSet(viewsets.ModelViewSet):

@@ -138,17 +138,21 @@ class MetadataMixin(models.Model):
 
 
 class ContentHashMixin(models.Model):
-    content_hash = models.CharField(max_length=64, editable=False, null=True)
-
     class Meta:
         abstract = True
+
+    @property
+    def content_hash(self):
+        if self._state.adding:
+            return None
+        return self.generate_hash()
 
     def generate_hash(self):
         """
         Generates a SHA-256 hash.
         """
 
-        excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
+        excluded_fields = ["id", "created_at", "updated_at", "metadata"]
 
         data = {
             f.name: str(getattr(self, f.name))
@@ -160,19 +164,14 @@ class ContentHashMixin(models.Model):
         return hashlib.sha256(data_string).hexdigest()
 
     def save(self, *args, **kwargs):
-        if self.pk:
+        if not self._state.adding:
             expected_hash = getattr(self, "_expected_hash", None)
             if expected_hash is not None:
-                current_hash = (
-                    self.__class__.objects.values_list("content_hash", flat=True)
-                    .filter(pk=self.pk)
-                    .first()
-                )
-                if current_hash is not None and current_hash != expected_hash:
+                current = self.__class__.objects.get(pk=self.pk)
+                if current.content_hash != expected_hash:
                     from tables.exceptions import ContentHashConflictError
 
                     raise ContentHashConflictError()
-        self.content_hash = self.generate_hash()
         super().save(*args, **kwargs)
 
 

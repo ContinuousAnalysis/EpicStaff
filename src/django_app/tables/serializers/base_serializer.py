@@ -17,19 +17,24 @@ class ContentHashMixin(serializers.Serializer):
 
 
 class ContentHashWritableMixin:
-    """Makes content_hash writable in ModelSerializer subclasses.
+    """Adds content_hash as an optional writable field.
 
-    ModelSerializer marks content_hash read_only because editable=False on the model.
-    This mixin overrides that so Swagger shows the field as an optional input,
-    allowing clients to pass it for optimistic-locking (ContentHashPreconditionMixin).
+    content_hash is a computed property on the model (not a DB column), so
+    ModelSerializer won't include it automatically. get_fields() injects it
+    so Swagger shows it and clients can pass it. validate() removes it from
+    validated_data — the view-level ContentHashPreconditionMixin is
+    responsible for setting instance._expected_hash before save().
     """
 
-    def get_extra_kwargs(self):
-        kwargs = super().get_extra_kwargs()
-        kwargs.setdefault("content_hash", {}).update(
-            {"read_only": False, "required": False}
-        )
-        return kwargs
+    def get_fields(self):
+        fields = super().get_fields()
+        fields["content_hash"] = serializers.CharField(required=False, allow_null=True)
+        return fields
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        attrs.pop("content_hash", None)
+        return attrs
 
 
 class MetadataMixin(serializers.Serializer):
