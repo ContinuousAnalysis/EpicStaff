@@ -88,6 +88,7 @@ import { SidePanelService } from '../../../services/side-panel.service';
 })
 export class NodePanelShellComponent {
     public readonly node = input<NodeModel | null>(null);
+    public readonly currentFlowId = input<number | null>(null);
     public readonly save = output<NodeModel>();
     public readonly autosave = output<NodeModel>();
 
@@ -113,10 +114,17 @@ export class NodePanelShellComponent {
     });
 
     protected readonly outlet = viewChild(NgComponentOutlet);
-    protected readonly componentInputs = computed(() => ({
-        node: this.node(),
-        isExpanded: this.isExpanded(),
-    }));
+    protected readonly componentInputs = computed(() => {
+        const node = this.node();
+
+        return {
+            node,
+            isExpanded: this.isExpanded(),
+            ...(node?.type === 'subgraph'
+                ? { currentFlowId: this.currentFlowId() }
+                : {}),
+        };
+    });
 
     protected readonly isShaking = signal(false);
     protected readonly isExpanded = signal(false);

@@ -17,13 +17,18 @@ export class CrewNodeService {
     private configService: ConfigService
   ) {}
 
-  // Dynamically retrieve the API URL from ConfigService
   private get apiUrl(): string {
     return this.configService.apiUrl + 'crewnodes/';
   }
 
   createCrewNode(request: CreateCrewNodeRequest): Observable<any> {
     return this.http.post<any>(this.apiUrl, request, {
+      headers: this.headers,
+    });
+  }
+
+  updateCrewNode(id: number, request: CreateCrewNodeRequest): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}${id}/`, request, {
       headers: this.headers,
     });
   }

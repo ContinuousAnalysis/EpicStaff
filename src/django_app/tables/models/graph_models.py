@@ -1,9 +1,16 @@
+import hashlib
+import json
 import uuid
+
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
+from django.utils import timezone
 from loguru import logger
 
+from tables.models.base_models import BaseGlobalNode, BaseGraphEntity, TimestampMixin
 
-class Graph(models.Model):
+
+class Graph(TimestampMixin, models.Model):
     tags = models.ManyToManyField(to="GraphTag", blank=True, default=[])
 
     name = models.CharField(max_length=255, blank=False)
@@ -17,7 +24,7 @@ class Graph(models.Model):
     )
 
 
-class BaseNode(models.Model):
+class BaseNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey("Graph", on_delete=models.CASCADE)
     node_name = models.CharField(max_length=255, blank=True)
     input_map = models.JSONField(default=dict)
@@ -43,14 +50,6 @@ class CrewNode(BaseNode):
     )
     crew = models.ForeignKey("Crew", on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_crew_node",
-            )
-        ]
-
 
 class PythonNode(BaseNode):
     graph = models.ForeignKey(
@@ -58,41 +57,17 @@ class PythonNode(BaseNode):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_python_node",
-            )
-        ]
-
 
 class FileExtractorNode(BaseNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="file_extractor_node_list"
     )
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_file_extractor_node",
-            )
-        ]
-
 
 class AudioTranscriptionNode(BaseNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="audio_transcription_node_list"
     )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_audio_transcriotion_node",
-            )
-        ]
 
 
 class LLMNode(BaseNode):
@@ -101,21 +76,17 @@ class LLMNode(BaseNode):
     )
     llm_config = models.ForeignKey("LLMConfig", blank=False, on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_llm_node",
-            )
-        ]
 
-
-class EndNode(models.Model):
+class EndNode(BaseGraphEntity, BaseGlobalNode):
     # TODO: can be OneToOne field
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="end_node"
     )
     output_map = models.JSONField()
+
+    @property
+    def node_name(self):
+        return "__end_node__"
 
     class Meta:
         constraints = [
@@ -135,36 +106,68 @@ class EndNode(models.Model):
         super().save(*args, **kwargs)
 
 
-class Edge(models.Model):
+class SubGraphNode(BaseNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="subgraph_node_list"
+    )
+    subgraph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="as_subgraph"
+    )
+    # TODO: maybe SET_NULL on delete?
+
+
+class Edge(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="edge_list"
     )
-    start_key = models.CharField(max_length=255, blank=False)
-    end_key = models.CharField(max_length=255, blank=False)
+    start_node_id = models.BigIntegerField(null=False, default=0)
+    end_node_id = models.BigIntegerField(null=False, default=0)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["graph", "start_key", "end_key"], name="unique_graph_edge"
+                fields=["graph", "start_node_id", "end_node_id"],
+                name="unique_graph_edge",
             )
         ]
 
+    def clean(self):
+        # Using the unified class method to find any node type by ID
+        start_node = BaseGlobalNode.find_globally(self.start_node_id)
+        if not start_node:
+            raise ObjectDoesNotExist(
+                f"Start node with ID {self.start_node_id} not found."
+            )
 
-class ConditionalEdge(models.Model):
+        end_node = BaseGlobalNode.find_globally(self.end_node_id)
+        if not end_node:
+            raise ObjectDoesNotExist(f"End node with ID {self.end_node_id} not found.")
+
+
+class ConditionalEdge(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="conditional_edge_list"
     )
-    source = models.CharField(max_length=255, blank=False)
+
+    source_node_id = models.BigIntegerField(null=True, default=None)
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
-    then = models.CharField(max_length=255, null=True, default=None)
     input_map = models.JSONField(default=dict)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["graph", "source"], name="unique_graph_conditional_edge_source"
+                fields=["graph", "source_node_id"],
+                name="unique_graph_conditional_edge_source",
             )
         ]
+
+    def clean(self):
+        if not BaseGlobalNode.find_globally(self.source_node_id):
+            raise ValidationError(
+                {
+                    "source_node_id": f"Node with ID {self.source_node_id} does not exist."
+                }
+            )
 
 
 class GraphSessionMessage(models.Model):
@@ -176,11 +179,15 @@ class GraphSessionMessage(models.Model):
     uuid = models.UUIDField(null=False, editable=False, unique=True)
 
 
-class StartNode(models.Model):
+class StartNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="start_node_list"
     )
     variables = models.JSONField(default=dict)
+
+    @property
+    def node_name(self):
+        return "__start__"
 
     class Meta:
         constraints = [
@@ -188,21 +195,34 @@ class StartNode(models.Model):
         ]
 
 
-class DecisionTableNode(models.Model):
+class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="decision_table_node_list"
     )
     node_name = models.CharField(max_length=255, blank=True)
-    default_next_node = models.CharField(max_length=255, null=True, default=None)
-    next_error_node = models.CharField(max_length=255, null=True, default=None)
+    default_next_node_id = models.BigIntegerField(null=True, default=None)
+    next_error_node_id = models.BigIntegerField(null=True, default=None)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_decision_table_node",
-            )
-        ]
+    def clean(self):
+        super().clean()
+
+        if self.default_next_node_id:
+            default_next_node = BaseGlobalNode.find_globally(self.default_next_node_id)
+            if not default_next_node:
+                raise ValidationError(
+                    {
+                        "default_next_node_id": f"Default next node with ID '{self.default_next_node_id}' not found."
+                    }
+                )
+
+        if self.next_error_node_id:
+            next_error_node = BaseGlobalNode.find_globally(self.next_error_node_id)
+            if not next_error_node:
+                raise ValidationError(
+                    {
+                        "next_error_node_id": f"Error node with ID '{self.next_error_node_id}' not found."
+                    }
+                )
 
 
 class ConditionGroup(models.Model):
@@ -210,12 +230,12 @@ class ConditionGroup(models.Model):
         "DecisionTableNode", on_delete=models.CASCADE, related_name="condition_groups"
     )
     group_name = models.CharField(max_length=255, blank=False)
-
     group_type = models.CharField(max_length=255, blank=False)  # simple, complex
     order = models.PositiveIntegerField(blank=False, default=0)
-    expression = models.CharField(max_length=255, null=True, default=None)
-    manipulation = models.CharField(max_length=255, null=True, default=None)
-    next_node = models.CharField(max_length=255, null=True, default=None)
+    expression = models.CharField(max_length=255, null=True, blank=True, default=None)
+    manipulation = models.CharField(max_length=255, null=True, blank=True, default=None)
+
+    next_node_id = models.BigIntegerField(null=True, default=None)
 
     class Meta:
         constraints = [
@@ -225,6 +245,18 @@ class ConditionGroup(models.Model):
             ),
         ]
         ordering = ["order"]
+
+    def clean(self):
+        super().clean()
+
+        if self.next_node_id:
+            next_node = BaseGlobalNode.find_globally(self.next_node_id)
+            if not next_node:
+                raise ValidationError(
+                    {
+                        "next_node_id": f"Next node with ID '{self.next_node_id}' not found."
+                    }
+                )
 
 
 class Condition(models.Model):
@@ -333,7 +365,7 @@ class GraphOrganizationUser(BasePersistentEntity):
         ]
 
 
-class WebhookTriggerNode(models.Model):
+class WebhookTriggerNode(BaseGraphEntity, BaseGlobalNode):
     node_name = models.CharField(max_length=255, blank=False)
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="webhook_trigger_node_list"
@@ -346,32 +378,21 @@ class WebhookTriggerNode(models.Model):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_webhook_nodes",
-            )
-        ]
 
-
-class TelegramTriggerNode(models.Model):
+class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
     node_name = models.CharField(max_length=255, blank=False)
     telegram_bot_api_key = models.CharField(
         max_length=255, blank=True, null=True, default=None
     )
-    url_path = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="telegram_trigger_node_list"
     )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_telegram_trigger_nodes",
-            )
-        ]
+    webhook_trigger = models.ForeignKey(
+        "WebhookTrigger",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="telegram_trigger_nodes",
+    )
 
 
 class TelegramTriggerNodeField(models.Model):
@@ -389,3 +410,10 @@ class TelegramTriggerNodeField(models.Model):
                 name="unique_telegram_trigger_node_field_name_parent",
             )
         ]
+
+
+class NoteNode(BaseGraphEntity, BaseGlobalNode):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="note_node_list"
+    )
+    content = models.TextField()

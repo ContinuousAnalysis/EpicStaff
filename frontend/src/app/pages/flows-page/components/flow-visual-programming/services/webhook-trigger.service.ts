@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CreatePythonNodeRequest } from '../models/python-node.model';
 import { ConfigService } from '../../../../../services/config/config.service';
-import { ApiGetRequest } from '../../../../../shared/models/api-request.model';
+import { ApiGetRequest } from '../../../../../core/models/api-request.model';
 import { CreateWebhookTriggerNodeRequest, GetWebhookTriggerNodeRequest } from '../models/webhook-trigger';
 export interface WebhookTrigger {
   id: number;
@@ -38,6 +38,15 @@ export class WebhookTriggerNodeService {
 
   createWebhookTriggerNode(request: CreateWebhookTriggerNodeRequest): Observable<any> {
     return this.http.post<any>(this.apiUrlNode, request, {
+      headers: this.headers,
+    });
+  }
+
+  updateWebhookTriggerNode(
+    id: number,
+    request: CreateWebhookTriggerNodeRequest
+  ): Observable<any> {
+    return this.http.put<any>(`${this.apiUrlNode}${id}/`, request, {
       headers: this.headers,
     });
   }

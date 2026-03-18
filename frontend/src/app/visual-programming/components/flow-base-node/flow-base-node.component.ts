@@ -40,6 +40,8 @@ import { NoteNodeComponent } from '../nodes-components/note-node/note-node.compo
 import { getNodeTitle } from '../../core/enums/node-title.util';
 import { ResizeHandleComponent } from '../resize-handle/resize-handle.component';
 import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay.component';
+import { GoToButtonComponent } from '../../../shared/components/go-to-button/go-to-button.component';
+import { flowUrl } from '../../../shared/utils/flow-links';
 
 @Component({
     selector: 'app-flow-base-node',
@@ -56,6 +58,7 @@ import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay
         DecisionTableNodeComponent,
         NoteNodeComponent,
         FlowNodeVariablesOverlayComponent,
+        GoToButtonComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: {
@@ -104,6 +107,9 @@ export class FlowBaseNodeComponent {
             event.preventDefault();
             event.stopPropagation();
         }
+        if (this.isBlockedSubgraph) {
+            return;
+        }
         this.editClicked.emit(this.node);
     }
 
@@ -112,6 +118,7 @@ export class FlowBaseNodeComponent {
     }
 
     public getNodeClass(): string {
+        const blockedClass = this.isBlockedSubgraph ? ' is-blocked' : '';
         switch (this.node.type) {
             case NodeType.AGENT:
                 return 'type-agent';
@@ -134,7 +141,7 @@ export class FlowBaseNodeComponent {
             case NodeType.NOTE:
                 return 'type-note';
             default:
-                return 'type-default';
+                return `type-default${blockedClass}`;
         }
     }
 
@@ -178,6 +185,9 @@ export class FlowBaseNodeComponent {
             ? (this.node as NoteNodeModel)
             : null;
     }
+    public get isBlockedSubgraph(): boolean {
+        return this.node?.type === NodeType.SUBGRAPH && !!this.node.isBlocked;
+    }
     public onExpandProjectClick(): void {
         this.projectExpandToggled.emit(this.node as ProjectNodeModel);
     }
@@ -197,5 +207,13 @@ export class FlowBaseNodeComponent {
 
     onNodeSizeChanged(size: { width: number; height: number }): void {
         this.fNodeSizeChange.emit(size);
+    }
+
+    public getSelectedFlowUrl(): string | null {
+        if (this.node?.type !== NodeType.SUBGRAPH) return null;
+        if (this.isBlockedSubgraph) return null;
+        const flowId = Number((this.node as any)?.data?.id);
+        if (!Number.isFinite(flowId) || flowId <= 0) return null;
+        return flowUrl(flowId);
     }
 }
