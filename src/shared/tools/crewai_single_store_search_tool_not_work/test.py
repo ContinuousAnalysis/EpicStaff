@@ -1,9 +1,11 @@
 import json
 from main import main
 
+
 def ask_param(prompt, default=None):
     val = input(f"{prompt} [{default}]: ").strip()
     return val if val else default
+
 
 def run_test():
     params = {
@@ -16,12 +18,15 @@ def run_test():
         "ssl_key": ask_param("SSL key path", None),
         "ssl_cert": ask_param("SSL cert path", None),
         "ssl_ca": ask_param("SSL CA path", None),
-        "tables": ask_param("Tables (comma separated)", "").split(",") if ask_param("Tables (comma separated)", "") else [],
+        "tables": ask_param("Tables (comma separated)", "").split(",")
+        if ask_param("Tables (comma separated)", "")
+        else [],
     }
 
     result = main(**params)
     print("=== Search Result ===")
     print(result)
+
 
 if __name__ == "__main__":
     run_test()

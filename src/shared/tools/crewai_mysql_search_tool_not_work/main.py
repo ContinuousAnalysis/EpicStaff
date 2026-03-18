@@ -3,10 +3,7 @@ import sqlite3
 
 
 def main(
-    db_uri: str,
-    table_name: str,
-    search_query: str,
-    limit: int | None = None
+    db_uri: str, table_name: str, search_query: str, limit: int | None = None
 ) -> List[Any]:
     """
     Search the table content for the given query.
@@ -29,7 +26,9 @@ def main(
     columns = [col[1] for col in cursor.fetchall()]
 
     # Build simple LIKE search query
-    query = f"SELECT * FROM {table_name} WHERE " + " OR ".join([f"{col} LIKE ?" for col in columns])
+    query = f"SELECT * FROM {table_name} WHERE " + " OR ".join(
+        [f"{col} LIKE ?" for col in columns]
+    )
     params = [f"%{search_query}%"] * len(columns)
     if limit:
         query += f" LIMIT {limit}"

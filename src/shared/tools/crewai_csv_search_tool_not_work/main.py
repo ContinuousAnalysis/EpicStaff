@@ -2,9 +2,11 @@
 import csv
 from typing import Optional
 
+
 # Simple DataType replacement
 class DataType:
     CSV = "csv"
+
 
 # Local base tool replacement for RagTool
 class BaseRagTool:
@@ -15,7 +17,12 @@ class BaseRagTool:
         if data_type == DataType.CSV:
             self.csv_files.append(csv_path)
 
-    def _run(self, query: str, similarity_threshold: Optional[float] = None, limit: Optional[int] = None):
+    def _run(
+        self,
+        query: str,
+        similarity_threshold: Optional[float] = None,
+        limit: Optional[int] = None,
+    ):
         results = []
         for csv_path in self.csv_files:
             try:
@@ -30,10 +37,13 @@ class BaseRagTool:
                 results.append(f"CSV file not found: {csv_path}")
         return results
 
+
 # Tool implementation
 class CSVSearchTool(BaseRagTool):
     name: str = "Search a CSV's content"
-    description: str = "A tool that can be used to semantic search a query from a CSV's content."
+    description: str = (
+        "A tool that can be used to semantic search a query from a CSV's content."
+    )
 
     def __init__(self, csv: Optional[str] = None):
         super().__init__()
@@ -46,11 +56,14 @@ class CSVSearchTool(BaseRagTool):
         search_query: str,
         csv: Optional[str] = None,
         similarity_threshold: Optional[float] = None,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
     ):
         if csv:
             self.add(csv, data_type=DataType.CSV)
-        return super()._run(query=search_query, similarity_threshold=similarity_threshold, limit=limit)
+        return super()._run(
+            query=search_query, similarity_threshold=similarity_threshold, limit=limit
+        )
+
 
 # Example test
 if __name__ == "__main__":

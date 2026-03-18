@@ -53,16 +53,10 @@ def create_args_model(schema: dict) -> type[BaseModel]:
 
         model_fields[name] = (
             py_type,
-            Field(
-                default,
-                description=meta.get("description", "")
-            )
+            Field(default, description=meta.get("description", "")),
         )
 
-    return create_model(
-        schema.get("title", "ArgsModel"),
-        **model_fields
-    )
+    return create_model(schema.get("title", "ArgsModel"), **model_fields)
 
 
 ArgsModel = create_args_model(args_schema_data)
@@ -145,14 +139,16 @@ def fetch_arxiv_data(search_query: str, max_results: int) -> List[Dict[str, Any]
             for author in entry.findall(ATOM_NAMESPACE + "author")
         ]
 
-        papers.append({
-            "arxiv_id": arxiv_id,
-            "title": title,
-            "summary": summary,
-            "authors": authors,
-            "published_date": published,
-            "pdf_url": extract_pdf_url(entry)
-        })
+        papers.append(
+            {
+                "arxiv_id": arxiv_id,
+                "title": title,
+                "summary": summary,
+                "authors": authors,
+                "published_date": published,
+                "pdf_url": extract_pdf_url(entry),
+            }
+        )
 
     return papers
 
@@ -187,14 +183,11 @@ def main(**kwargs) -> str:
         args = ArgsModel(**kwargs)
 
         papers = fetch_arxiv_data(
-            search_query=args.search_query,
-            max_results=args.max_results
+            search_query=args.search_query, max_results=args.max_results
         )
 
         if getattr(args, "download_pdfs", False):
-            save_dir = validate_save_path(
-                getattr(args, "save_dir", "./arxiv_pdfs")
-            )
+            save_dir = validate_save_path(getattr(args, "save_dir", "./arxiv_pdfs"))
 
             for paper in papers:
                 if paper["pdf_url"]:
@@ -206,9 +199,7 @@ def main(**kwargs) -> str:
                     filename = f"{filename_base[:500]}.pdf"
                     download_pdf(paper["pdf_url"], save_dir / filename)
                     time.sleep(SLEEP_DURATION)
-        return "\n\n" + "-" * 80 + "\n\n".join(
-            format_paper(p) for p in papers
-        ) 
+        return "\n\n" + "-" * 80 + "\n\n".join(format_paper(p) for p in papers)
     except ValidationError as e:
         return f"Invalid arguments:\n{e}"
 

@@ -5,6 +5,7 @@ from pypdf import PdfReader, PdfWriter
 from pypdf._page import ContentStream
 from pypdf.generic import NameObject, TextStringObject
 
+
 class PDFTextWritingToolSchema(BaseModel):
     pdf_path: str
     text: str
@@ -15,6 +16,7 @@ class PDFTextWritingToolSchema(BaseModel):
     page_number: int = 0
     output_pdf_path: str = "modified_output.pdf"
 
+
 def main(
     pdf_path: str,
     text: str,
@@ -23,9 +25,8 @@ def main(
     font_color: Tuple[float, float, float] = (0, 0, 0),
     font_name: str = "F1",
     page_number: int = 0,
-    output_pdf_path: str = "modified_output.pdf"
+    output_pdf_path: str = "modified_output.pdf",
 ) -> str:
-
     if not Path(pdf_path).exists():
         return "PDF file does not exist."
 
@@ -45,7 +46,9 @@ def main(
     # Begin text
     content.operations.append([NameObject("BT")])
     # Set font
-    content.operations.append([NameObject(f"/{font_name}"), font_size, NameObject("Tf")])
+    content.operations.append(
+        [NameObject(f"/{font_name}"), font_size, NameObject("Tf")]
+    )
     # Set color
     content.operations.append([(r, g, b), NameObject("rg")])
     # Move to position

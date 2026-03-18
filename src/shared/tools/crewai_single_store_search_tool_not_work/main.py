@@ -6,7 +6,9 @@ from sqlalchemy.pool import QueuePool
 try:
     from singlestoredb import connect
 except ImportError:
-    raise ImportError("The 'singlestoredb' package is required. Install it via 'pip install singlestoredb'.")
+    raise ImportError(
+        "The 'singlestoredb' package is required. Install it via 'pip install singlestoredb'."
+    )
 
 
 class SingleStoreSearchToolSchema(BaseModel):
@@ -49,7 +51,9 @@ class SingleStoreSearchTool:
         self._initialize_tables(self.tables)
 
     def _create_connection(self) -> Any:
-        return connect(**{k: v for k, v in self.connection_args.items() if v is not None})
+        return connect(
+            **{k: v for k, v in self.connection_args.items() if v is not None}
+        )
 
     def _get_connection(self) -> Any:
         return self.pool.connect()
