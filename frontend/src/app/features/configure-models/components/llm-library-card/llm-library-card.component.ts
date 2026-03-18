@@ -4,7 +4,6 @@ import { LlmLibraryModel } from '../../interfaces/llm-library-model.interface';
 
 @Component({
     selector: 'app-llm-library-card',
-    standalone: true,
     imports: [CommonModule],
     templateUrl: './llm-library-card.component.html',
     styleUrls: ['./llm-library-card.component.scss'],
