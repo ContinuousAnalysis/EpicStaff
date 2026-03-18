@@ -13,6 +13,7 @@ import { NgComponentOutlet } from '@angular/common';
 import { NodePanel } from '../../../core/models/node-panel.interface';
 import { NodeModel } from '../../../core/models/node.model';
 import { PANEL_COMPONENT_MAP } from '../../../core/enums/node-panel.map';
+import { NodeType } from '../../../core/enums/node-type';
 import { ShortcutListenerDirective } from '../../../core/directives/shortcut-listener.directive';
 import { SidePanelService } from '../../../services/side-panel.service';
 
@@ -110,7 +111,7 @@ export class NodePanelShellComponent {
 
     public readonly shouldShowExpandButton = computed(() => {
         const node = this.node();
-        return node && node.type !== 'table';
+        return node && node.type !== 'table' && node.type !== NodeType.SCHEDULE_TRIGGER;
     });
 
     protected readonly outlet = viewChild(NgComponentOutlet);

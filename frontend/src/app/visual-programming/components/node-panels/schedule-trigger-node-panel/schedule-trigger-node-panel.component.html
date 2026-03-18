@@ -9,7 +9,6 @@
                         tooltipText="The unique identifier used to reference this Schedule Trigger node within the flow."
                         formControlName="node_name"
                         placeholder="Enter node name"
-                        [activeColor]="activeColor"
                         [errorMessage]="getNodeNameErrorMessage()"
                     ></app-custom-input>
 
@@ -17,16 +16,30 @@
                     <div class="section">
                         <div class="section-header">Start</div>
                         <div class="date-time-row">
-                            <app-time-picker
-                                label="Start time"
-                                formControlName="start_time"
-                                [activeColor]="activeColor"
-                            />
-                            <app-date-picker
-                                label="Start date"
-                                formControlName="start_date"
-                                [activeColor]="activeColor"
-                            />
+                            <div class="field-col" [class.has-row-error]="startRowError()">
+                                <div class="field-label">
+                                    Start time
+                                    <mat-icon
+                                        matTooltip="The time of day when the schedule first runs."
+                                        matTooltipPosition="right"
+                                        matTooltipClass="custom-tooltip"
+                                        class="help-icon"
+                                    >help_outline</mat-icon>
+                                </div>
+                                <app-time-picker formControlName="start_time" />
+                            </div>
+                            <div class="field-col" [class.has-row-error]="startRowError()">
+                                <div class="field-label">
+                                    Start date
+                                    <mat-icon
+                                        matTooltip="The date when the schedule first runs."
+                                        matTooltipPosition="right"
+                                        matTooltipClass="custom-tooltip"
+                                        class="help-icon"
+                                    >help_outline</mat-icon>
+                                </div>
+                                <app-date-picker formControlName="start_date" />
+                            </div>
                         </div>
                         @if (startRowError()) {
                             <div class="row-error">{{ startRowError() }}</div>
@@ -34,12 +47,31 @@
                     </div>
 
                     <!-- Run mode -->
-                    <app-radio-button label="Run mode" formControlName="run_mode" [options]="runModeOptions" />
+                    <div class="section">
+                        <div class="section-header">
+                            Run mode
+                            <mat-icon
+                                matTooltip="Once: run the flow a single time. Repeat: run on a recurring schedule."
+                                matTooltipPosition="right"
+                                matTooltipClass="custom-tooltip"
+                                class="help-icon"
+                            >help_outline</mat-icon>
+                        </div>
+                        <app-segmented-switch formControlName="run_mode" [options]="runModeOptions" />
+                    </div>
 
                     <!-- Repeat settings (visible when run_mode = repeat) -->
                     @if (showRepeatFields()) {
                         <div class="section">
-                            <div class="section-header">Repeat every</div>
+                            <div class="section-header">
+                                Repeat every
+                                <mat-icon
+                                    matTooltip="How often the flow should repeat."
+                                    matTooltipPosition="right"
+                                    matTooltipClass="custom-tooltip"
+                                    class="help-icon"
+                                >help_outline</mat-icon>
+                            </div>
                             <div class="repeat-row">
                                 <app-number-stepper formControlName="repeat_every" [min]="1" />
                                 <app-select
@@ -50,38 +82,107 @@
                             </div>
                         </div>
 
+                        <!-- Repeat on -->
+                        <div class="section">
+                            <div class="section-header">
+                                Repeat on
+                                <mat-icon
+                                    matTooltip="The days of the week when the flow should run."
+                                    matTooltipPosition="right"
+                                    matTooltipClass="custom-tooltip"
+                                    class="help-icon"
+                                >help_outline</mat-icon>
+                            </div>
+                            <div class="weekday-row">
+                                @for (wd of weekdays; track wd.value) {
+                                    <app-round-button
+                                        [label]="wd.label"
+                                        [selected]="repeatDays().includes(wd.value)"
+                                        [tooltip]="wd.tooltip"
+                                        (click)="toggleDay(wd.value)"
+                                    />
+                                }
+                            </div>
+                        </div>
+
                         <!-- End condition -->
-                        <app-radio-button label="End condition" formControlName="end_mode" [options]="endModeOptions" />
+                        <div class="section">
+                            <div class="section-header">
+                                End condition
+                                <mat-icon
+                                    matTooltip="When to stop repeating: never, on a specific date, or after a set number of runs."
+                                    matTooltipPosition="right"
+                                    matTooltipClass="custom-tooltip"
+                                    class="help-icon"
+                                >help_outline</mat-icon>
+                            </div>
+                            <app-segmented-switch formControlName="end_mode" [options]="endModeOptions" />
+                        </div>
 
                         <!-- End date/time (visible when end_mode = on_date) -->
                         @if (showEndDateTime()) {
                             <div class="section">
-                                <div class="section-header">End at</div>
                                 <div class="date-time-row">
-                                    <app-date-picker
-                                        label="End date"
-                                        formControlName="end_date"
-                                        [activeColor]="activeColor"
-                                    />
-                                    <app-time-picker
-                                        label="End time"
-                                        formControlName="end_time"
-                                        [activeColor]="activeColor"
-                                    />
+                                    <div class="field-col" [class.has-row-error]="endRowError()">
+                                        <div class="field-label">
+                                            End time
+                                            <mat-icon
+                                                matTooltip="The time of day when the schedule stops repeating."
+                                                matTooltipPosition="right"
+                                                matTooltipClass="custom-tooltip"
+                                                class="help-icon"
+                                            >help_outline</mat-icon>
+                                        </div>
+                                        <app-time-picker formControlName="end_time" />
+                                    </div>
+                                    <div class="field-col" [class.has-row-error]="endRowError()">
+                                        <div class="field-label">
+                                            End date
+                                            <mat-icon
+                                                matTooltip="The date when the schedule stops repeating."
+                                                matTooltipPosition="right"
+                                                matTooltipClass="custom-tooltip"
+                                                class="help-icon"
+                                            >help_outline</mat-icon>
+                                        </div>
+                                        <app-date-picker formControlName="end_date" />
+                                    </div>
                                 </div>
+                                @if (endRowError()) {
+                                    <div class="row-error">{{ endRowError() }}</div>
+                                }
                             </div>
                         }
 
                         <!-- Max runs (visible when end_mode = after_runs) -->
                         @if (showMaxRuns()) {
-                            <app-number-stepper label="Max runs" formControlName="max_runs" [min]="1" />
+                            <div class="half-row">
+                                <div class="field-label">
+                                    Max runs
+                                    <mat-icon
+                                        matTooltip="The maximum number of times the flow will run before stopping."
+                                        matTooltipPosition="right"
+                                        matTooltipClass="custom-tooltip"
+                                        class="help-icon"
+                                    >help_outline</mat-icon>
+                                </div>
+                                <app-number-stepper formControlName="max_runs" [min]="1" />
+                            </div>
                         }
                     }
 
                     <!-- Active toggle -->
-                    <div class="toggle-row">
-                        <span class="toggle-row__label">Is active</span>
-                        <app-checkbox formControlName="is_active" [variant]="'mainColor'" />
+                    <div class="toggle-stack">
+                        <div class="section-header">
+                            Is active
+                            <mat-icon
+                                matTooltip="Enable or disable this schedule trigger."
+                                matTooltipPosition="right"
+                                matTooltipClass="custom-tooltip"
+                                class="help-icon"
+                            >help_outline</mat-icon>
+                        </div>
+                        <app-toggle-switch formControlName="is_active" />
                     </div>
                 </div>
             </div>

@@ -10,6 +10,7 @@
 <div
     class="segmented"
     [ngClass]="'segmented--mod-' + mod()"
+    [class.segmented--equal-width]="equalWidth()"
 >
     @for (option of options(); track option.value) {
         <button

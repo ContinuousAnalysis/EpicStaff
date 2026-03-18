@@ -18,7 +18,7 @@
             [placeholder]="placeholder()"
             [disabled]="isDisabled()"
             [ngModel]="inputValue()"
-            (ngModelChange)="inputValue.set($event); onInput()"
+            (ngModelChange)="onDateInput($event)"
             (focus)="openDropdown()"
             (click)="$event.stopPropagation()"
         />
@@ -47,7 +47,7 @@
                 <span class="date-picker__month-year">{{ viewMonthYear() }}</span>
                 <div class="date-picker__nav">
                     <button type="button" class="date-picker__nav-btn" (click)="prevMonth()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <path
                                 d="M15 18l-6-6 6-6"
                                 stroke="currentColor"
@@ -58,7 +58,7 @@
                         </svg>
                     </button>
                     <button type="button" class="date-picker__nav-btn" (click)="nextMonth()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <path
                                 d="M9 18l6-6-6-6"
                                 stroke="currentColor"

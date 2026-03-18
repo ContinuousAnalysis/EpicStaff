@@ -80,14 +80,23 @@ export class SelectComponent implements ControlValueAccessor {
         if (!this.overlayRef) {
             const positionStrategy = this.overlayPositionBuilder
                 .flexibleConnectedTo(this.triggerBtn)
-                .withPositions([{
-                    originX: 'start',
-                    originY: 'bottom',
-                    overlayX: 'start',
-                    overlayY: 'top',
-                    offsetY: 4
-                }])
-                .withPush(true);
+                .withPositions([
+                    {
+                        originX: 'start',
+                        originY: 'bottom',
+                        overlayX: 'start',
+                        overlayY: 'top',
+                        offsetY: 4,
+                    },
+                    {
+                        originX: 'start',
+                        originY: 'top',
+                        overlayX: 'start',
+                        overlayY: 'bottom',
+                        offsetY: -4,
+                    },
+                ])
+                .withPush(false);
 
             this.overlayRef = this.overlay.create({
                 positionStrategy,

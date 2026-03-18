@@ -108,6 +108,13 @@ export class TimePickerComponent implements ControlValueAccessor {
         this.openDropdown();
     }
 
+    onTimeInput(raw: string): void {
+        const digits = raw.replace(/\D/g, '').slice(0, 4);
+        const formatted = digits.length >= 3 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+        this.timeInput.set(formatted);
+        this.onInput();
+    }
+
     onInput(): void {
         this.onChange(this.displayValue());
         if (!this.isOpen()) {
@@ -140,8 +147,15 @@ export class TimePickerComponent implements ControlValueAccessor {
                     overlayY: 'top',
                     offsetY: 4,
                 },
+                {
+                    originX: 'start',
+                    originY: 'top',
+                    overlayX: 'start',
+                    overlayY: 'bottom',
+                    offsetY: -4,
+                },
             ])
-            .withPush(true);
+            .withPush(false);
 
         this.overlayRef = this.overlay.create({
             positionStrategy,

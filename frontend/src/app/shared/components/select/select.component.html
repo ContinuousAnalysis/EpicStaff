@@ -14,6 +14,7 @@
         [disabled]="isDisabled()"
         [ngClass]="'selector__btn--' + mod()"
         [class.selector__btn--invalid]="invalid()"
+        [class.selector__btn--open]="open()"
         [class.selector__btn--placeholder]="!selectedItem()"
         (click)="toggle()"
     >
@@ -41,6 +42,7 @@
             <div
                 class="selector__option selector__option--exists"
                 [ngClass]="'selector__option--' + mod()"
+                [class.selector__option--selected]="item.value === selectedValue()"
                 (click)="select(item)"
             >
                 {{ item.name }}

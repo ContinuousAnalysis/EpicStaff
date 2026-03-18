@@ -19,7 +19,7 @@
                 [placeholder]="placeholder()"
                 [disabled]="isDisabled()"
                 [ngModel]="timeInput()"
-                (ngModelChange)="timeInput.set($event); onInput()"
+                (ngModelChange)="onTimeInput($event)"
                 (focus)="onFocus()"
                 (click)="$event.stopPropagation()"
             />

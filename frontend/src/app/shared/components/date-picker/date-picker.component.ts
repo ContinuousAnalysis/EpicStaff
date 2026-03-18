@@ -146,6 +146,20 @@ export class DatePickerComponent implements ControlValueAccessor {
     private onChange: (v: string) => void = () => {};
     private onTouched: () => void = () => {};
 
+    onDateInput(raw: string): void {
+        const digits = raw.replace(/\D/g, '').slice(0, 8);
+        let formatted: string;
+        if (digits.length >= 5) {
+            formatted = `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+        } else if (digits.length >= 3) {
+            formatted = `${digits.slice(0, 2)}.${digits.slice(2)}`;
+        } else {
+            formatted = digits;
+        }
+        this.inputValue.set(formatted);
+        this.onInput();
+    }
+
     onInput(): void {
         const val = this.inputValue();
 
@@ -219,6 +233,13 @@ export class DatePickerComponent implements ControlValueAccessor {
                     overlayX: 'start',
                     overlayY: 'top',
                     offsetY: 4,
+                },
+                {
+                    originX: 'start',
+                    originY: 'top',
+                    overlayX: 'start',
+                    overlayY: 'bottom',
+                    offsetY: -4,
                 },
             ])
             .withPush(false);
