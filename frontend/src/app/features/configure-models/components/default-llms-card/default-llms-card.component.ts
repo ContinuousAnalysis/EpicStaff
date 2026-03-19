@@ -1,3 +1,4 @@
+import { Dialog } from "@angular/cdk/dialog";
 import {
     ChangeDetectionStrategy,
     Component,
@@ -12,6 +13,7 @@ import { AppIconComponent } from '@shared/components';
 import { DefaultLlmsCard } from '../../interfaces/default-llms-card.interface';
 import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
 import { GetLlmConfigRequest } from '@shared/models';
+import { LlmModelConfigDialogComponent } from "../llm-model-config-dialog/llm-model-config-dialog.component";
 
 @Component({
     selector: 'app-default-llms-card',
@@ -22,6 +24,7 @@ import { GetLlmConfigRequest } from '@shared/models';
 })
 export class DefaultLlmsCardComponent {
     private readonly llmConfigStorageService = inject(LlmConfigStorageService);
+    private dialog = inject(Dialog);
 
     public readonly card = input.required<DefaultLlmsCard>();
     public readonly selectedConfigId = input<number | null>(null);
@@ -49,5 +52,12 @@ export class DefaultLlmsCardComponent {
     public onResetConfig(): void {
         this.modelSelected.emit({ cardId: this.card().id, configId: null });
         this.isDropdownOpen.set(false);
+    }
+
+    public onAddModel(): void {
+        this.dialog.open(LlmModelConfigDialogComponent, {
+            height: '90vh',
+            width: '600px',
+        })
     }
 }

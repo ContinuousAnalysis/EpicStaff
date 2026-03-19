@@ -3,7 +3,7 @@ import {
     Component,
     OnInit,
     inject,
-    signal, computed, DestroyRef
+    signal, computed, DestroyRef, input, WritableSignal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -19,6 +19,7 @@ import { LLMProvider, ModelTypes } from "@shared/models";
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { EMPTY, finalize, forkJoin, of } from 'rxjs';
 import { ToastService } from "../../../../services/notifications";
+import { ConfigureModelsTabId } from "../../enums/configure-models-tab-id.enum";
 
 import { CreateQuickstartRequest } from "../../models/quickstart.model";
 import { DefaultModelsStorageService } from "../../services/default-models-storage.service";
@@ -47,6 +48,8 @@ export class QuickstartSectionComponent implements OnInit {
     private readonly defaultModelsStorageService = inject(DefaultModelsStorageService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly toast = inject(ToastService);
+
+    public activeTabSignal = input.required<WritableSignal<ConfigureModelsTabId>>();
 
     public readonly quickStartForm = this.fb.group({
         apiKey: ['', [Validators.required]],
@@ -150,9 +153,12 @@ export class QuickstartSectionComponent implements OnInit {
                     return this.quickstartService.applyQuickstart();
                 }
                 this.quickstartStatus.set('updated');
+                this.toast.success('Quickstart updated.');
+                this.onReset();
                 return EMPTY;
             }),
             tap(() => {
+                this.onReset();
                 this.quickstartStatus.set('activated');
                 this.toast.success('Quickstart created successfully.');
             }),
@@ -175,7 +181,7 @@ export class QuickstartSectionComponent implements OnInit {
     }
 
     public onReviewDefaults(): void {
-
+        this.activeTabSignal().set(ConfigureModelsTabId.DEFAULT_LLMS);
     }
 
     public onUpdateDefaults(): void {

@@ -25,7 +25,7 @@
                     formControlName="model"
                     label="Provider"
                     placeholder="Select provider"
-                    tooltipText="Provider"
+                    tooltipText="The AI provider and model this configuration will use (e.g. OpenAI GPT-4o)"
                     [required]="true"
                 />
                 <app-validation-errors
@@ -37,7 +37,7 @@
                     formControlName="api_key"
                     label="API Key"
                     placeholder="Enter provider's API key"
-                    tooltipText="Api key"
+                    tooltipText="Your secret API key from the provider's dashboard. It will be stored securely."
                     type="password"
                 />
                 <app-validation-errors
@@ -49,7 +49,7 @@
                     formControlName="custom_name"
                     label="Configuration Name"
                     placeholder="Enter a custom name"
-                    tooltipText="config name"
+                    tooltipText="A friendly name to identify this configuration across the app"
                     [required]="true"
                 />
                 <app-validation-errors
@@ -65,7 +65,7 @@
             <app-key-value-list
                 formControlName="headers"
                 label="Header Configuration"
-                tooltipText="Header config"
+                tooltipText="Custom HTTP headers sent with every API request, e.g. for proxies or extra auth"
                 namePlaceholder="Header name"
                 valuePlaceholder="Header value"
             />
@@ -82,7 +82,7 @@
                     [max]="1"
                     [step]="0.1"
                     label="Temperature"
-                    tooltipText="Temperature"
+                    tooltipText="Controls randomness of responses. Lower = more deterministic, higher = more creative."
                 />
                 <app-validation-errors
                     [control]="form.get('temperature')!"
@@ -95,7 +95,7 @@
                     [max]="1"
                     [step]="0.1"
                     label="Top P"
-                    tooltipText="Top P"
+                    tooltipText="Nucleus sampling: only tokens whose cumulative probability reaches Top P are considered."
                 />
                 <app-validation-errors
                     [control]="form.get('top_p')!"
@@ -105,7 +105,7 @@
                 <app-slider-with-stepper
                     formControlName="presence_penalty"
                     label="Presence Penalty"
-                    tooltipText="Presence Penalty"
+                    tooltipText="Penalises tokens that have already appeared, encouraging the model to introduce new topics."
                 />
                 <app-validation-errors
                     [control]="form.get('presence_penalty')!"
@@ -115,7 +115,7 @@
                 <app-slider-with-stepper
                     formControlName="frequency_penalty"
                     label="Frequency Penalty"
-                    tooltipText="Frequency Penalty"
+                    tooltipText="Penalises tokens proportionally to how often they appear, reducing repetition."
                 />
                 <app-validation-errors
                     [control]="form.get('frequency_penalty')!"
@@ -133,7 +133,7 @@
                     [min]="500"
                     [max]="2147483647"
                     label="Max Tokens"
-                    tooltipText="Max tokens"
+                    tooltipText="Maximum number of tokens the model may generate in a single response"
                     [alwaysShowSteps]="true"
                 />
                 <app-validation-errors
@@ -146,7 +146,7 @@
                     [min]="1"
                     [max]="600"
                     label="Timeout (seconds)"
-                    tooltipText="Timeout (seconds)"
+                    tooltipText="How long to wait for the model to respond before the request is cancelled"
                     [alwaysShowSteps]="true"
                 />
                 <app-validation-errors
@@ -164,7 +164,7 @@
                     formControlName="seed"
                     placeholder="random"
                     label="Seed"
-                    tooltipText="Seed"
+                    tooltipText="Fixed seed for reproducible outputs. Leave empty to let the model pick randomly."
                     [alwaysShowSteps]="true"
                 />
                 <app-validation-errors
@@ -174,7 +174,7 @@
             <app-json-editor-form-field
                 formControlName="logit_bias"
                 label="Logit Bias (JSON)"
-                tooltipText="Logit Bias (JSON)"
+                tooltipText="JSON map of token IDs to bias values that adjust token probabilities"
                 [writeValueAsJSON]="false"
             />
         </section>

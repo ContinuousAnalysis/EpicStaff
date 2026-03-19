@@ -5,7 +5,13 @@
             <div class="configure-models-dialog__title">Configure Models</div>
         </div>
 
-        <app-close-icon-button (onClick)="close()"></app-close-icon-button>
+        <app-icon
+            class="configure-models-dialog__close-btn"
+            size="1.25rem"
+            icon="ui/close"
+            [isAction]="true"
+            (click)="close()"
+        />
     </header>
 
     <nav class="configure-models-dialog__tabs">
@@ -33,7 +39,9 @@
         @switch (activeTabId()) {
             @case (tabIds.QUICKSTART) {
                 <section class="configure-models-dialog__panel">
-                    <app-quickstart-section></app-quickstart-section>
+                    <app-quickstart-section
+                        [activeTabSignal]="activeTabId"
+                    ></app-quickstart-section>
                 </section>
             }
             @case (tabIds.DEFAULT_LLMS) {
