@@ -52,7 +52,7 @@ from tables.services.redis_service import RedisService
 from tables.validators.end_node_validator import EndNodeValidator
 from tables.validators.file_node_validator import FileNodeValidator
 from tables.validators.subgraph_validator import SubGraphValidator
-from utils.graph_utils import NodeNameResolver
+from utils.graph_utils import NodeNameResolver, resolve_node_names
 from utils.logger import logger
 from utils.singleton_meta import SingletonMeta
 
@@ -287,18 +287,30 @@ class SessionManagerService(metaclass=SingletonMeta):
             graph: The graph to build data for
             unique_subgraphs: Dictionary to collect unique subgraphs (only used at top level)
         """
-        crew_node_list = CrewNode.objects.filter(graph=graph.pk)
-        python_node_list = PythonNode.objects.filter(graph=graph.pk)
+        crew_node_list = CrewNode.objects.filter(graph=graph.pk).select_related("crew")
+        python_node_list = PythonNode.objects.filter(graph=graph.pk).select_related(
+            "python_code"
+        )
         file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
         audio_transcription_node_list = AudioTranscriptionNode.objects.filter(
             graph=graph.pk
         )
         edge_list = Edge.objects.filter(graph=graph.pk)
-        conditional_edge_list = ConditionalEdge.objects.filter(graph=graph.pk)
-        llm_node_list = LLMNode.objects.filter(graph=graph.pk)
-        decision_table_node_list = DecisionTableNode.objects.filter(graph=graph.pk)
-        subgraph_node_list = SubGraphNode.objects.filter(graph=graph.pk)
-        webhook_trigger_node_list = WebhookTriggerNode.objects.filter(graph=graph.pk)
+        conditional_edge_list = ConditionalEdge.objects.filter(
+            graph=graph.pk
+        ).select_related("python_code")
+        llm_node_list = LLMNode.objects.filter(graph=graph.pk).select_related(
+            "llm_config__model__llm_provider"
+        )
+        decision_table_node_list = DecisionTableNode.objects.filter(
+            graph=graph.pk
+        ).prefetch_related("condition_groups__conditions")
+        subgraph_node_list = SubGraphNode.objects.filter(graph=graph.pk).select_related(
+            "subgraph"
+        )
+        webhook_trigger_node_list = WebhookTriggerNode.objects.filter(
+            graph=graph.pk
+        ).select_related("python_code")
         telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
 
         if file_extractor_node_list:
@@ -311,24 +323,41 @@ class SessionManagerService(metaclass=SingletonMeta):
                 decision_table_node__in=decision_table_node_list
             ).values_list("next_node_id", flat=True)
         )
-        all_node_ids = (
-            [n.id for n in crew_node_list]
-            + [n.id for n in python_node_list]
-            + [n.id for n in file_extractor_node_list]
-            + [n.id for n in audio_transcription_node_list]
-            + [n.id for n in llm_node_list]
-            + [n.id for n in decision_table_node_list]
-            + [n.default_next_node_id for n in decision_table_node_list]
+
+        # Build name cache directly from already-fetched node instances
+        # to avoid re-querying the same tables via NodeNameResolver
+        name_cache: dict[int, str] = {}
+        for node_list in (
+            crew_node_list,
+            python_node_list,
+            file_extractor_node_list,
+            audio_transcription_node_list,
+            llm_node_list,
+            decision_table_node_list,
+            subgraph_node_list,
+            webhook_trigger_node_list,
+            telegram_trigger_node_list,
+        ):
+            for n in node_list:
+                name_cache[n.id] = f"{n.node_name} #{n.id}"
+
+        # IDs only referenced by edges/conditions (not node instances)
+        # need to be resolved from DB — collect any that are missing
+        edge_referenced_ids = set(
+            [n.default_next_node_id for n in decision_table_node_list]
             + [n.next_error_node_id for n in decision_table_node_list]
-            + [n.id for n in subgraph_node_list]
-            + [n.id for n in webhook_trigger_node_list]
-            + [n.id for n in telegram_trigger_node_list]
             + [e.start_node_id for e in edge_list]
             + [e.end_node_id for e in edge_list]
             + [e.source_node_id for e in conditional_edge_list]
             + condition_group_next_ids
         )
-        resolver = NodeNameResolver(all_node_ids)
+        missing_ids = [
+            i for i in edge_referenced_ids if i is not None and i not in name_cache
+        ]
+        if missing_ids:
+            name_cache.update(resolve_node_names(missing_ids))
+
+        resolver = NodeNameResolver(cache=name_cache)
         """
         TODO: future improvements: use cleaner approach
         """
@@ -410,7 +439,7 @@ class SessionManagerService(metaclass=SingletonMeta):
 
         subgraph_node_data_list: list[SubGraphNodeData] = []
         for item in subgraph_node_list:
-            subgraph = Graph.objects.get(pk=item.subgraph_id)
+            subgraph = item.subgraph
 
             if (
                 unique_subgraphs is not None

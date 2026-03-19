@@ -74,17 +74,23 @@ class DefaultBaseModel(models.Model):
     Singleton base model for models that intended to be defaults
     """
 
+    _load_cache: dict = {}
+
     class Meta:
         abstract = True
 
     def save(self, *args, **kwargs):
         self.pk = 1
+        # Invalidate cache on save
+        DefaultBaseModel._load_cache.pop(self.__class__, None)
         super(DefaultBaseModel, self).save(*args, **kwargs)
 
     @classmethod
     def load(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
+        if cls not in DefaultBaseModel._load_cache:
+            obj, _ = cls.objects.get_or_create(pk=1)
+            DefaultBaseModel._load_cache[cls] = obj
+        return DefaultBaseModel._load_cache[cls]
 
 
 class MessageType(Enum):

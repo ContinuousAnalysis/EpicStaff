@@ -110,12 +110,15 @@ class Agent(AbstractDefaultFillableModel):
             return crew_temperature
         return None
 
-    def fill_with_defaults(self, crew_id: int | None):
+    def fill_with_defaults(
+        self, crew_id: int | None, crew_temperature: float | None = None
+    ):
         if self.llm_config is not None:
             if self.default_temperature is not None:
                 self.llm_config.temperature = self.default_temperature
             else:
-                crew_temperature = self.get_crew_temperature(crew_id=crew_id)
+                if crew_temperature is None:
+                    crew_temperature = self.get_crew_temperature(crew_id=crew_id)
                 if crew_temperature is not None:
                     self.llm_config.temperature = crew_temperature
                 # else uses llm temperature
@@ -139,9 +142,11 @@ class Agent(AbstractDefaultFillableModel):
         Get assigned RAG type and ID in format "rag_type:id".
         """
         try:
-            # Get the AgentNaiveRag link (currently only one due to unique=True constraint)
-            agent_naive_rag = self.agent_naive_rags.select_related("naive_rag").get()
-            naive_rag = agent_naive_rag.naive_rag
+            # Use .all() + indexing to leverage prefetch cache when available
+            naive_rags = list(self.agent_naive_rags.all())
+            if not naive_rags:
+                return None
+            naive_rag = naive_rags[0].naive_rag
             return f"naive:{naive_rag.naive_rag_id}"
         except Exception:
             return None
@@ -291,7 +296,6 @@ class Crew(AbstractDefaultFillableModel):
             if self.planning_llm_config.temperature is None:
                 self.planning_llm_config.temperature = self.default_temperature
 
-        self.agents.set(self.get_agents())
         return self
 
     def get_agents(self):
