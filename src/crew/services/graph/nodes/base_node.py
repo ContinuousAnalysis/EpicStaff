@@ -50,10 +50,7 @@ class BaseNode(ABC):
         Returns:
             int: The number of times the node has been executed.
         """
-        state_history = state.get("state_history", None)
-        if not state_history:
-            return 0
-        return sum(1 for item in state.get("state_history") if item["name"] == name)
+        return state.get("execution_counts", {}).get(name, 0)
 
     def add_start_message(
         self, writer: StreamWriter, input_: Any, execution_order: int
@@ -234,9 +231,12 @@ class BaseNode(ABC):
                 "name": name,
                 "additional_data": copy.deepcopy(kwargs),
                 "input": copy.deepcopy(input),
-                "variables": copy.deepcopy(variables.model_dump()),
+                "variables": variables.deep_dump(),
                 "output": copy.deepcopy(output),
             }
         )
+
+        counts = state.setdefault("execution_counts", {})
+        counts[name] = counts.get(name, 0) + 1
 
     async def post_init(self, *args, **kwargs): ...
