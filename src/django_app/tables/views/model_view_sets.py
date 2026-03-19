@@ -90,15 +90,14 @@ from tables.models.realtime_models import (
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
 from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
-from tables.serializers.copy_serializers import (
-    AgentCopyDeserializer,
-    AgentCopySerializer,
-    CrewCopyDeserializer,
-    CrewCopySerializer,
-    GraphCopyDeserializer,
-    GraphCopySerializer,
+from tables.services.copy_services import (
+    AgentCopyService,
+    CrewCopyService,
+    GraphCopyService,
+    McpToolCopyService,
+    PythonCodeToolCopyService,
 )
-from tables.serializers.import_serializers import FileImportSerializer
+from tables.views.mixins import CopyActionMixin
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentTagSerializer,
@@ -161,6 +160,7 @@ from tables.serializers.serializers import (
     BulkExportSerializer,
     GraphFileUpdateSerializer,
     UploadGraphFileSerializer,
+    FileImportSerializer,
 )
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeFieldSerializer,
@@ -169,11 +169,9 @@ from tables.serializers.telegram_trigger_serializers import (
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
 from tables.services.redis_service import RedisService
-from tables.utils.mixins import DeepCopyMixin
 from tables.exceptions import BuiltInToolModificationError
 from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
 from tables.import_export.enums import EntityType
-from tables.serializers.import_serializers import FileImportSerializer
 from utils.logger import logger
 
 redis_service = RedisService()
@@ -300,7 +298,10 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     filterset_class = EmbeddingConfigFilter
 
 
-class AgentViewSet(ModelViewSet, DeepCopyMixin):
+class AgentViewSet(CopyActionMixin, ModelViewSet):
+    copy_service_class = AgentCopyService
+    copy_serializer_class = AgentReadSerializer
+
     queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
         Prefetch(
             "python_code_tools",
@@ -335,10 +336,6 @@ class AgentViewSet(ModelViewSet, DeepCopyMixin):
         "cache",
         "allow_code_execution",
     ]
-
-    copy_serializer_class = AgentCopySerializer
-    copy_deserializer_class = AgentCopyDeserializer
-    copy_serializer_response_class = AgentReadSerializer
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -426,7 +423,10 @@ class AgentViewSet(ModelViewSet, DeepCopyMixin):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
+class CrewReadWriteViewSet(CopyActionMixin, ModelViewSet):
+    copy_service_class = CrewCopyService
+    copy_serializer_class = CrewSerializer
+
     queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
@@ -442,10 +442,6 @@ class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
         "planning",
         "planning_llm_config",
     ]
-
-    copy_serializer_class = CrewCopySerializer
-    copy_deserializer_class = CrewCopyDeserializer
-    copy_serializer_response_class = CrewSerializer
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -589,11 +585,14 @@ class PythonCodeViewSet(viewsets.ModelViewSet):
     serializer_class = PythonCodeSerializer
 
 
-class PythonCodeToolViewSet(viewsets.ModelViewSet):
+class PythonCodeToolViewSet(CopyActionMixin, viewsets.ModelViewSet):
     """
     A viewset for viewing and editing PythonCodeTool instances.
     Prevents modifications or deletions of built-in tools.
     """
+
+    copy_service_class = PythonCodeToolCopyService
+    copy_serializer_class = PythonCodeToolSerializer
 
     queryset = (
         PythonCodeTool.objects.all()
@@ -647,12 +646,11 @@ class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["execution_id", "returncode"]
 
 
-class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
-    serializer_class = GraphSerializer
+class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
+    copy_service_class = GraphCopyService
+    copy_serializer_class = GraphLightSerializer
 
-    copy_serializer_class = GraphCopySerializer
-    copy_deserializer_class = GraphCopyDeserializer
-    copy_serializer_response_class = GraphSerializer
+    serializer_class = GraphSerializer
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1047,7 +1045,10 @@ class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
             Condition.objects.bulk_create(conditions_to_create)
 
 
-class McpToolViewSet(viewsets.ModelViewSet):
+class McpToolViewSet(CopyActionMixin, viewsets.ModelViewSet):
+    copy_service_class = McpToolCopyService
+    copy_serializer_class = McpToolSerializer
+
     queryset = McpTool.objects.all()
     serializer_class = McpToolSerializer
     filter_backends = [DjangoFilterBackend]
