@@ -57,6 +57,7 @@ from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
     AgentPythonCodeTools,
+    AgentPythonCodeToolConfigs,
     TaskMcpTools,
     TaskPythonCodeToolConfigs,
 )
@@ -80,6 +81,7 @@ from tables.models.llm_models import (
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
 )
+from tables.models.knowledge_models.naive_rag_models import AgentNaiveRag
 from tables.models.mcp_models import McpTool
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.realtime_models import (
@@ -267,14 +269,16 @@ class ProviderReadWriteViewSet(ModelViewSet):
 
 
 class LLMModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
-    queryset = LLMModel.objects.all()
+    queryset = LLMModel.objects.select_related("llm_provider").prefetch_related("tags")
     serializer_class = LLMModelSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = LLMModelFilter
 
 
 class EmbeddingModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
-    queryset = EmbeddingModel.objects.all()
+    queryset = EmbeddingModel.objects.select_related(
+        "embedding_provider"
+    ).prefetch_related("tags")
     serializer_class = EmbeddingModelSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = EmbeddingModelFilter
@@ -301,13 +305,28 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
 
 
 class AgentViewSet(ModelViewSet, DeepCopyMixin):
-    queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
+    queryset = Agent.objects.select_related(
+        "realtime_agent",
+        "naive_search_config",
+    ).prefetch_related(
         Prefetch(
             "python_code_tools",
             queryset=AgentPythonCodeTools.objects.select_related(
                 "pythoncodetool__python_code"
+            ).prefetch_related(
+                Prefetch(
+                    "pythoncodetool__tool_fields",
+                    queryset=PythonCodeToolConfigField.objects.all(),
+                )
             ),
             to_attr="prefetched_python_code_tools",
+        ),
+        Prefetch(
+            "python_code_tool_configs",
+            queryset=AgentPythonCodeToolConfigs.objects.select_related(
+                "pythoncodetoolconfig__tool__python_code"
+            ),
+            to_attr="prefetched_python_code_tool_configs",
         ),
         Prefetch(
             "configured_tools",
@@ -326,6 +345,11 @@ class AgentViewSet(ModelViewSet, DeepCopyMixin):
             "mcp_tools",
             queryset=AgentMcpTools.objects.select_related("mcptool"),
             to_attr="prefetched_mcp_tools",
+        ),
+        Prefetch(
+            "agent_naive_rags",
+            queryset=AgentNaiveRag.objects.select_related("naive_rag"),
+            to_attr="prefetched_agent_naive_rags",
         ),
     )
     filter_backends = [DjangoFilterBackend]
@@ -475,38 +499,29 @@ class TaskReadWriteViewSet(ModelViewSet):
     queryset = Task.objects.prefetch_related(
         Prefetch(
             "task_python_code_tool_list",
-            queryset=TaskPythonCodeTools.objects.select_related("tool__python_code"),
-            to_attr="prefetched_python_code_tools",
+            queryset=TaskPythonCodeTools.objects.select_related(
+                "tool__python_code"
+            ).prefetch_related("tool__tool_fields"),
         ),
         Prefetch(
             "task_python_code_tool_config_list",
             queryset=TaskPythonCodeToolConfigs.objects.select_related(
                 "tool__tool__python_code"
             ),
-            to_attr="prefetched_python_code_tool_configs",
         ),
         Prefetch(
             "task_context_list",
             queryset=TaskContext.objects.select_related("context"),
-            to_attr="prefetched_contexts",
         ),
         Prefetch(
             "task_configured_tool_list",
             queryset=TaskConfiguredTools.objects.select_related(
                 "tool__tool"
-            ).prefetch_related(
-                Prefetch(
-                    "tool__tool__tool_fields",
-                    queryset=ToolConfigField.objects.all(),
-                    to_attr="prefetched_config_fields",
-                )
-            ),
-            to_attr="prefetched_configured_tools",
+            ).prefetch_related("tool__tool__tool_fields"),
         ),
         Prefetch(
             "task_mcp_tool_list",
             queryset=TaskMcpTools.objects.select_related("tool"),
-            to_attr="prefetched_mcp_tools",
         ),
     )
     filter_backends = [DjangoFilterBackend]
@@ -598,13 +613,7 @@ class PythonCodeToolViewSet(viewsets.ModelViewSet):
     queryset = (
         PythonCodeTool.objects.all()
         .select_related("python_code")
-        .prefetch_related(
-            Prefetch(
-                "tool_fields",
-                queryset=PythonCodeToolConfigField.objects.all(),
-                to_attr="prefetched_config_fields",
-            )
-        )
+        .prefetch_related("tool_fields")
     )
     serializer_class = PythonCodeToolSerializer
     filter_backends = [DjangoFilterBackend]
@@ -668,7 +677,10 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
             Graph.objects.defer("metadata", "tags")
             .prefetch_related(
                 Prefetch(
-                    "crew_node_list", queryset=CrewNode.objects.select_related("crew")
+                    "crew_node_list",
+                    queryset=CrewNode.objects.select_related("crew").prefetch_related(
+                        "crew__task_set"
+                    ),
                 ),
                 Prefetch(
                     "python_node_list",
@@ -697,12 +709,19 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
                 Prefetch(
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
-                Prefetch("subgraph_node_list", queryset=SubGraphNode.objects.all()),
+                Prefetch(
+                    "subgraph_node_list",
+                    queryset=SubGraphNode.objects.select_related(
+                        "subgraph"
+                    ).prefetch_related("subgraph__tags"),
+                ),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
                 Prefetch(
                     "telegram_trigger_node_list",
                     queryset=TelegramTriggerNode.objects.all(),
                 ),
+                "start_node_list",
+                "note_node_list",
             )
             .all()
         )
