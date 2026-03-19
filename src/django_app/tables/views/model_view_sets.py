@@ -20,8 +20,11 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from tables.exceptions import (
     AgentSerializerError,
     BuiltInToolModificationError,
+    BulkSaveValidationError,
     TaskSerializerError,
 )
+from tables.serializers.graph_bulk_save_serializers import GraphBulkSaveInputSerializer
+from tables.services.graph_bulk_save_service import GraphBulkSaveService
 from tables.filters import EmbeddingModelFilter, LLMModelFilter, ProviderFilter
 from tables.import_export.enums import EntityType
 from tables.models import (
@@ -60,6 +63,34 @@ from tables.models.crew_models import (
     TaskMcpTools,
     TaskPythonCodeToolConfigs,
 )
+from tables.exceptions import (
+    TaskSerializerError,
+    AgentSerializerError,
+)
+from tables.models.llm_models import (
+    RealtimeConfig,
+    RealtimeTranscriptionConfig,
+    RealtimeTranscriptionModel,
+)
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from tables.swagger_schemas.graph_bulk_save_schema import (
+    SAVE_FLOW_SWAGGER as _SAVE_FLOW_SWAGGER,
+)
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.exceptions import PermissionDenied
+from django_filters.rest_framework import (
+    DjangoFilterBackend,
+    FilterSet,
+    CharFilter,
+    NumberFilter,
+)
+from rest_framework import viewsets, mixins, status, filters as drf_filters
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.db import transaction
+from django.db.models import Prefetch
 from tables.models.graph_models import (
     Condition,
     ConditionGroup,
@@ -703,6 +734,7 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
                     "telegram_trigger_node_list",
                     queryset=TelegramTriggerNode.objects.all(),
                 ),
+                Prefetch("note_node_list", queryset=NoteNode.objects.all()),
             )
             .all()
         )
@@ -753,6 +785,24 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
             file_serializer.validated_data["file"], Graph
         )
         return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="save")
+    @swagger_auto_schema(**_SAVE_FLOW_SWAGGER)
+    def save_flow(self, request, pk=None):
+        input_serializer = GraphBulkSaveInputSerializer(data=request.data)
+        if not input_serializer.is_valid():
+            return Response(
+                {"errors": input_serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        graph = self.get_object()
+        try:
+            GraphBulkSaveService().save(graph, input_serializer.validated_data)
+        except BulkSaveValidationError as exc:
+            return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        refreshed = self.get_queryset().get(pk=pk)
+        return Response(GraphSerializer(refreshed).data, status=status.HTTP_200_OK)
 
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
