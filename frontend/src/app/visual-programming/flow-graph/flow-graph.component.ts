@@ -111,6 +111,9 @@ import { FlowShortcutsButtonComponent } from '../components/flow-shortcuts-butto
     ],
 })
 export class FlowGraphComponent implements OnInit, OnDestroy {
+    public readonly GRID_CELL_SIZE = 20;
+    private readonly draggedNodeIds = new Set<string>();
+
     @Input() flowState!: FlowModel;
     @Input() nodesMode!: 'project-graph' | 'flow-graph';
     @Input() currentFlowId: number | null = null;
@@ -164,109 +167,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         this.generatePortsForNodesIfNeeded();
         this.sanitizeConnections();
         this.flowService.setFlow(this.flowState);
-    }
-
-    /**
-     * Strips connections that reference ports not actually present on the rendered nodes.
-     * Prevents f-flow errors like "fOutput with id ...table-out not found".
-     */
-    private sanitizeConnections(): void {
-        const portIds = new Set<string>();
-        for (const node of this.flowState.nodes) {
-            if (node.ports) {
-                for (const port of node.ports) {
-                    portIds.add(port.id);
-                }
-            }
-        }
-
-        const before = this.flowState.connections.length;
-        this.flowState.connections = this.flowState.connections.filter(conn => {
-            const srcOk = portIds.has(conn.sourcePortId);
-            const tgtOk = portIds.has(conn.targetPortId);
-            if (!srcOk || !tgtOk) {
-                console.warn(
-                    `[flow-graph] Removing invalid connection ${conn.id}: ` +
-                    `sourcePort "${conn.sourcePortId}" ${srcOk ? 'OK' : 'MISSING'}, ` +
-                    `targetPort "${conn.targetPortId}" ${tgtOk ? 'OK' : 'MISSING'}`
-                );
-            }
-            return srcOk && tgtOk;
-        });
-
-        if (this.flowState.connections.length < before) {
-            console.warn(`[flow-graph] Removed ${before - this.flowState.connections.length} invalid connections`);
-        }
-    }
-
-    private initializeFlowStateIfEmpty(): void {
-        if (!this.flowState || !Array.isArray(this.flowState.nodes)) {
-            this.flowState = {
-                nodes: [],
-                connections: [],
-            };
-        }
-    }
-
-    private addStartNodeIfNeeded(): void {
-        // Check if a Start node already exists
-        const alreadyHasStart: boolean = this.flowState.nodes.some(
-            (node) => node.type === NodeType.START
-        );
-
-        if (!alreadyHasStart) {
-            // Generate unique ID
-            const newStartNodeId: string = uuidv4();
-
-            // Create a new Start node
-            const startNode: StartNodeModel = {
-                id: newStartNodeId,
-                backendId: null,
-                category: 'web',
-                type: NodeType.START,
-                node_name: '__start__',
-                data: {
-                    initialState: {},
-                },
-                position: { x: 0, y: 0 },
-                ports: generatePortsForNode(newStartNodeId, NodeType.START),
-                parentId: null,
-                color: NODE_COLORS[NodeType.START],
-                icon: NODE_ICONS[NodeType.START],
-                input_map: {},
-                output_variable_path: null,
-                size: { width: 125, height: 60 },
-            };
-
-            // Add Start node to the flow
-            this.flowState.nodes.push(startNode);
-        }
-    }
-
-    private generatePortsForNodesIfNeeded(): void {
-        this.flowState.nodes = this.flowState.nodes.map((node) => {
-            if (node.ports === null) {
-                node.ports = generatePortsForNode(node.id, node.type, node.data);
-            } else if (node.type === NodeType.TABLE) {
-                const tableData = (node as any)?.data?.table ?? {};
-                const conditionGroups = tableData?.condition_groups ?? [];
-                const validGroups = conditionGroups.filter(
-                    (group: any) => group?.valid === true
-                );
-                const expectedPortCount =
-                    1 + validGroups.length + 2;
-
-                if (node.ports.length !== expectedPortCount) {
-                    node.ports = generatePortsForDecisionTableNode(
-                        node.id,
-                        conditionGroups,
-                        true,
-                        true
-                    );
-                }
-            }
-            return node;
-        });
     }
 
     public onSave(): void { }
@@ -466,36 +366,53 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         let pastePosition: IRect;
 
         if (this.mouseCursorPosition) {
-            pastePosition = this.fFlowComponent.getPositionInFlow(
+            const rawPastePos = this.fFlowComponent.getPositionInFlow(
                 PointExtensions.initialize(
                     this.mouseCursorPosition.x,
                     this.mouseCursorPosition.y
                 )
             );
+            pastePosition = {
+                ...rawPastePos,
+                x: this.snapToGrid(rawPastePos.x),
+                y: this.snapToGrid(rawPastePos.y),
+            };
         } else {
-            console.warn(
-                'No current mouse position available, using default paste position.'
-            );
-            pastePosition = { x: 0, y: 0 } as IRect; // Set default position
+            pastePosition = { x: 0, y: 0 } as IRect;
         }
 
         this.undoRedoService.stateChanged();
+        const { newNodes, newConnections } = this.clipboardService.paste(pastePosition);
+        const placedNodes: NodeModel[] = [];
+        const existingBeforePaste = this.flowService.nodes()
+            .filter((n) => !newNodes.some((p) => p.id === n.id));
 
-        const { newNodes, newConnections } =
-            this.clipboardService.paste(pastePosition);
+        for (const rawNode of newNodes) {
+            const node = this.ensureNodeSize(rawNode as NodeModel);
+            const safePosition = this.findNearestFreePosition(
+                {
+                    x: this.snapToGrid(node.position.x),
+                    y: this.snapToGrid(node.position.y),
+                },
+                this.getCollisionBounds(node),
+                [...existingBeforePaste, ...placedNodes]
+            );
 
-        // After pasting, select the new nodes and connections
-        const newNodeIds: string[] = newNodes.map((node) => node.id);
-        const newConnectionIds: string[] = newConnections.map(
-            (conn) => conn.id
-        );
+            const updatedNode = {
+                ...node,
+                position: safePosition,
+            };
+
+            this.flowService.updateNode(updatedNode);
+            placedNodes.push(updatedNode);
+        }
+
+        const newNodeIds = newNodes.map((node) => node.id);
+        const newConnectionIds = newConnections.map((conn) => conn.id);
 
         setTimeout(() => {
             this.fFlowComponent.select(newNodeIds, newConnectionIds);
         }, 0);
-
-        console.log('Pasted nodes:', newNodes);
-        console.log('Pasted connections:', newConnections);
     }
 
     public onUndo(): void {
@@ -550,24 +467,26 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         });
     }
 
-    public onCreateNode(event: FCreateNodeEvent) {
-        if (event.data && typeof event.data === 'object') {
-            const nodeData = event.data as NodeModel;
-            // Create a copy of the node with updated position and category
-            const updatedNode: NodeModel = {
-                ...nodeData,
-                position: {
-                    x: event.rect.x,
-                    y: event.rect.y,
-                },
-                category: 'web', // Change category from 'vscode' to 'web'
-            };
-
-            // Call the flow service to update the node
-            this.flowService.updateNode(updatedNode);
-
-            console.log('Node added to canvas:', updatedNode);
+    public onCreateNode(event: FCreateNodeEvent): void {
+        if (!event.data || typeof event.data !== 'object') {
+            return;
         }
+
+        const normalizedNode = this.ensureNodeSize(event.data as NodeModel);
+
+        const updatedNode: NodeModel = {
+            ...normalizedNode,
+            position: this.findNearestFreePosition(
+                {
+                    x: this.snapToGrid(event.rect.x),
+                    y: this.snapToGrid(event.rect.y),
+                },
+                this.getCollisionBounds(normalizedNode),
+                this.flowService.nodes()
+            ),
+            category: 'web',
+        };
+        this.flowService.updateNode(updatedNode);
     }
 
     public onContextMenu(event: MouseEvent): void {
@@ -625,20 +544,27 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         } else if (event.type === NodeType.TABLE) {
             const tableData = event.data?.table;
             const conditionGroups = tableData?.condition_groups ?? [];
-            const headerHeight = 60;
-            const rowHeight = 46;
-            const validGroupsCount = conditionGroups.filter((g: any) => g.valid).length;
-            const hasDefaultRow = 1;
-            const hasErrorRow = 1;
-            const totalRows = Math.max(
-                validGroupsCount + hasDefaultRow + hasErrorRow,
-                2
-            );
-            const calculatedHeight = headerHeight + rowHeight * totalRows;
             nodeSize = {
                 width: 330,
-                height: Math.max(calculatedHeight, 152),
+                height: this.getDecisionTableVisualHeight({
+                    id: newNodeId,
+                    backendId: null,
+                    category: 'web',
+                    position: { x: 0, y: 0 },
+                    ports: [],
+                    parentId: null,
+                    type: NodeType.TABLE as NodeModel['type'],
+                    node_name: '',
+                    data: event.data,
+                    color: nodeColor,
+                    icon: nodeIcon,
+                    input_map: {},
+                    output_variable_path: null,
+                    size: { width: 330, height: 152 },
+                }),
             };
+        } else if (event.type === NodeType.EDGE) {
+            nodeSize = { width: 300, height: 180 };
         } else {
             nodeSize = {
                 width: 330,
@@ -673,11 +599,38 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             };
         }
 
+        const nodeBounds = this.getCollisionBounds({
+            id: newNodeId,
+            backendId: null,
+            category: 'web',
+            position: {
+                x: this.snapToGrid(position.x),
+                y: this.snapToGrid(position.y),
+            },
+            ports: [],
+            parentId: null,
+            type: event.type as NodeModel['type'],
+            node_name: newNodeName,
+            data: nodeData,
+            color: nodeColor,
+            icon: nodeIcon,
+            input_map: {},
+            output_variable_path: null,
+            size: nodeSize,
+        });
+
         const newNode: NodeModel = {
             id: newNodeId,
             backendId: null,
             category: 'web',
-            position: { x: position.x, y: position.y },
+            position: this.findNearestFreePosition(
+                {
+                    x: this.snapToGrid(position.x),
+                    y: this.snapToGrid(position.y),
+                },
+                nodeBounds,
+                this.flowService.nodes()
+            ),
             ports,
             parentId: null,
             type: event.type as NodeModel['type'],
@@ -690,6 +643,16 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             size: nodeSize,
         };
         this.flowService.addNode(newNode);
+
+        const freePos = this.findNearestFreePosition(
+            newNode.position,
+            this.getCollisionBounds(newNode),
+            this.flowService.nodes().filter((n) => n.id !== newNode.id)
+        );
+
+        if (freePos.x !== newNode.position.x || freePos.y !== newNode.position.y) {
+            this.flowService.updateNode({ ...newNode, position: freePos });
+        }
     }
 
     // side panel logic
@@ -703,6 +666,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
 
             const dialogRef = this.dialog.open(NoteEditDialogComponent, {
                 data: { node: noteNode },
+                disableClose: true,
             });
 
             dialogRef.closed.subscribe((result: any) => {
@@ -725,6 +689,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             const startNodeInitialState = startNode.data?.initialState || {};
 
             const dialogRef = this.dialog.open(DomainDialogComponent, {
+                disableClose: true,
                 width: '1000px',
                 height: '800px',
                 maxWidth: '90vw',
@@ -753,20 +718,22 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     }
 
     public onNodePanelSaved(updatedNode: NodeModel): void {
-        console.log(
-            'Parent received save event. Calling service with:',
-            updatedNode
-        );
-        this.flowService.updateNode(updatedNode);
+        const normalizedNode = this.normalizeTableNode(updatedNode);
+        this.flowService.updateNode(normalizedNode);
+
+        if (normalizedNode.type === NodeType.TABLE) {
+            this.resolveOverlapsForNode(normalizedNode.id);
+        }
         this.sidePanelService.clearSelection();
     }
 
     public onNodePanelAutosaved(updatedNode: NodeModel): void {
-        console.log(
-            'Parent received autosave event. Calling service with:',
-            updatedNode
-        );
-        this.flowService.updateNode(updatedNode);
+        const normalizedNode = this.normalizeTableNode(updatedNode);
+        this.flowService.updateNode(normalizedNode);
+
+        if (normalizedNode.type === NodeType.TABLE) {
+            this.resolveOverlapsForNode(normalizedNode.id);
+        }
     }
 
     public flushOpenSidePanelState(): void {
@@ -776,15 +743,40 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         }
     }
 
-    public onNodePositionChanged(
+        public onNodePositionChanged(
         event: IPoint,
         node: NodeModel
     ): void {
+        this.draggedNodeIds.add(node.id);
         const updatedNode = {
             ...node,
-            position: { x: event.x, y: event.y },
+            position: {
+                x: this.snapToGrid(event.x),
+                y: this.snapToGrid(event.y),
+            },
         };
         this.flowService.updateNode(updatedNode);
+    }
+
+    public onDragEnded(): void {
+        for (const id of this.draggedNodeIds) {
+            const currentNodes = this.flowService.nodes();
+            const current = currentNodes.find((n) => n.id === id);
+            if (!current) continue;
+            const otherNodes = currentNodes.filter((n) => n.id !== id);
+            const freePos = this.findNearestFreePosition(
+                current.position,
+                this.getCollisionBounds(current),
+                otherNodes
+            );
+            if (
+                freePos.x !== current.position.x ||
+                freePos.y !== current.position.y
+            ) {
+                this.flowService.updateNode({ ...current, position: freePos });
+            }
+        }
+        this.draggedNodeIds.clear();
     }
 
     public onNodeSizeChanged(
@@ -807,7 +799,6 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
     public onZoomInNode(node: NodeModel): void {
         this.fCanvasComponent.centerGroupOrNode(node.id, true);
     }
-
 
     // Add this method to handle double-click on nodes from search
     public onNodeDoubleClickAndZoom(data: {
@@ -859,6 +850,266 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         });
     }
 
+        public onProjectExpandToggled(project: ProjectNodeModel): void {
+        console.log('Project expanded:', project.data.id);
+
+        const dialogRef = this.dialog.open(ProjectDialogComponent, {
+            width: '90vw',
+            height: '90vh',
+
+            data: {
+                projectId: project.data.id,
+                projectName: project.data.name,
+            },
+        });
+
+        dialogRef.closed.subscribe(() => { });
+    }
+
+    public ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
+    openShortcuts = output<DOMRect>();
+
+    public onOpenShortcuts(anchorEl: HTMLElement): void {
+        this.openShortcuts.emit(anchorEl.getBoundingClientRect());
+    }
+
+    private isDialogOpen(): boolean {
+        return this.dialog.openDialogs.length > 0;
+    }
+
+    /**
+     * Strips connections that reference ports not actually present on the rendered nodes.
+     * Prevents f-flow errors like "fOutput with id ...table-out not found".
+     */
+    private sanitizeConnections(): void {
+        const portIds = new Set<string>();
+        for (const node of this.flowState.nodes) {
+            if (node.ports) {
+                for (const port of node.ports) {
+                    portIds.add(port.id);
+                }
+            }
+        }
+
+        const before = this.flowState.connections.length;
+        this.flowState.connections = this.flowState.connections.filter(conn => {
+            const srcOk = portIds.has(conn.sourcePortId);
+            const tgtOk = portIds.has(conn.targetPortId);
+            if (!srcOk || !tgtOk) {
+                console.warn(
+                    `[flow-graph] Removing invalid connection ${conn.id}: ` +
+                    `sourcePort "${conn.sourcePortId}" ${srcOk ? 'OK' : 'MISSING'}, ` +
+                    `targetPort "${conn.targetPortId}" ${tgtOk ? 'OK' : 'MISSING'}`
+                );
+            }
+            return srcOk && tgtOk;
+        });
+
+        if (this.flowState.connections.length < before) {
+            console.warn(`[flow-graph] Removed ${before - this.flowState.connections.length} invalid connections`);
+        }
+    }
+
+    private initializeFlowStateIfEmpty(): void {
+        if (!this.flowState || !Array.isArray(this.flowState.nodes)) {
+            this.flowState = {
+                nodes: [],
+                connections: [],
+            };
+        }
+    }
+
+    private addStartNodeIfNeeded(): void {
+        // Check if a Start node already exists
+        const alreadyHasStart: boolean = this.flowState.nodes.some(
+            (node) => node.type === NodeType.START
+        );
+
+        if (!alreadyHasStart) {
+            // Generate unique ID
+            const newStartNodeId: string = uuidv4();
+
+            // Create a new Start node
+            const startNode: StartNodeModel = {
+                id: newStartNodeId,
+                backendId: null,
+                category: 'web',
+                type: NodeType.START,
+                node_name: '__start__',
+                data: {
+                    initialState: {},
+                },
+                position: { x: 0, y: 0 },
+                ports: generatePortsForNode(newStartNodeId, NodeType.START),
+                parentId: null,
+                color: NODE_COLORS[NodeType.START],
+                icon: NODE_ICONS[NodeType.START],
+                input_map: {},
+                output_variable_path: null,
+                size: { width: 125, height: 60 },
+            };
+
+            // Add Start node to the flow
+            this.flowState.nodes.push(startNode);
+        }
+    }
+
+    private generatePortsForNodesIfNeeded(): void {
+        this.flowState.nodes = this.flowState.nodes.map((node) => {
+            if (node.ports === null) {
+                node.ports = generatePortsForNode(node.id, node.type, node.data);
+            } else if (node.type === NodeType.TABLE) {
+                const tableData = (node as any)?.data?.table ?? {};
+                const conditionGroups = tableData?.condition_groups ?? [];
+                const validGroups = conditionGroups.filter(
+                    (group: any) => group?.valid === true
+                );
+                const expectedPortCount =
+                    1 + validGroups.length + 2;
+
+                if (node.ports.length !== expectedPortCount) {
+                    node.ports = generatePortsForDecisionTableNode(
+                        node.id,
+                        conditionGroups,
+                        true,
+                        true
+                    );
+                }
+            }
+            return node;
+        });
+    }
+
+    private snapToGrid(value: number): number {
+        return Math.round(value / this.GRID_CELL_SIZE) * this.GRID_CELL_SIZE;
+    }
+
+    private rectOverlaps(
+        aPos: { x: number; y: number },
+        aBounds: { width: number; height: number; offsetX: number; offsetY: number },
+        bPos: { x: number; y: number },
+        bBounds: { width: number; height: number; offsetX: number; offsetY: number }
+    ): boolean {
+        const aLeft = aPos.x + aBounds.offsetX;
+        const aTop = aPos.y + aBounds.offsetY;
+        const aRight = aLeft + aBounds.width;
+        const aBottom = aTop + aBounds.height;
+        const bLeft = bPos.x + bBounds.offsetX;
+        const bTop = bPos.y + bBounds.offsetY;
+        const bRight = bLeft + bBounds.width;
+        const bBottom = bTop + bBounds.height;
+
+        return (
+            aLeft < bRight &&
+            aRight > bLeft &&
+            aTop < bBottom &&
+            aBottom > bTop
+        );
+    }
+
+    private getCollisionBounds(node: NodeModel): {
+        width: number;
+        height: number;
+        offsetX: number;
+        offsetY: number;
+    } {
+        switch (node.type) {
+            case NodeType.EDGE:
+                // SVG diamond bounding box is exactly 300×180.
+                // 4px padding on all sides, same convention as regular nodes.
+                return {
+                    width: 308,
+                    height: 196,
+                    offsetX: 5,
+                    offsetY: -12,
+                };
+
+            case NodeType.TABLE: {
+                const visualHeight = this.getDecisionTableVisualHeight(node);
+
+                return {
+                    width: node.size.width + 8,
+                    height: visualHeight + 68,
+                    offsetX: -4,
+                    offsetY: -4,
+                };
+            }
+
+            default:
+                return {
+                    width: node.size.width + 10,
+                    height: node.size.height + 10,
+                    offsetX: -5,
+                    offsetY: -5,
+                };
+        }
+    }
+
+    private findFreePosition(
+        proposed: { x: number; y: number },
+        bounds: { width: number; height: number; offsetX: number; offsetY: number },
+        existingNodes: NodeModel[]
+    ): { x: number; y: number } {
+        const overlaps = (pos: { x: number; y: number }) =>
+            existingNodes.some((n) =>
+                this.rectOverlaps(pos, bounds, n.position, this.getCollisionBounds(n))
+            );
+
+        if (!overlaps(proposed)) return proposed;
+
+        const MAX_STEPS = 10;
+        for (let row = 0; row <= MAX_STEPS; row++) {
+            for (let col = row === 0 ? 1 : 0; col <= MAX_STEPS; col++) {
+                const candidate = {
+                    x: proposed.x + col * this.GRID_CELL_SIZE,
+                    y: proposed.y + row * this.GRID_CELL_SIZE,
+                };
+                if (!overlaps(candidate)) return candidate;
+            }
+        }
+
+        return proposed; // fallback: never block creation
+    }
+
+    private findNearestFreePosition(
+        proposed: { x: number; y: number },
+        bounds: { width: number; height: number; offsetX: number; offsetY: number },
+        otherNodes: NodeModel[]
+    ): { x: number; y: number } {
+        const overlaps = (pos: { x: number; y: number }) =>
+            otherNodes.some((n) =>
+                this.rectOverlaps(pos, bounds, n.position, this.getCollisionBounds(n))
+            );
+
+        if (!overlaps(proposed)) return proposed;
+
+        const MAX_R = 40;
+        const candidates: Array<[number, number]> = [];
+        for (let dx = -MAX_R; dx <= MAX_R; dx++) {
+            for (let dy = -MAX_R; dy <= MAX_R; dy++) {
+                if (dx === 0 && dy === 0) continue;
+                candidates.push([dx, dy]);
+            }
+        }
+        candidates.sort(
+            (a, b) => a[0] * a[0] + a[1] * a[1] - (b[0] * b[0] + b[1] * b[1])
+        );
+
+        for (const [dx, dy] of candidates) {
+            const candidate = {
+                x: proposed.x + dx * this.GRID_CELL_SIZE,
+                y: proposed.y + dy * this.GRID_CELL_SIZE,
+            };
+            if (!overlaps(candidate)) return candidate;
+        }
+
+        return proposed; // fallback: never block movement
+    }
+
     private updateStartNodeInitialState(
         newState: Record<string, unknown>
     ): void {
@@ -878,40 +1129,113 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
             };
 
             this.flowService.updateNode(updatedStartNode);
-            this.toastService.success('Domain variables updated successfully');
         } else {
             this.toastService.error('Start node not found');
         }
     }
 
-    public onProjectExpandToggled(project: ProjectNodeModel): void {
-        console.log('Project expanded:', project.data.id);
+    private getDecisionTableVisualHeight(node: NodeModel): number {
+        const tableData = (node.data as any)?.table;
+        const conditionGroups = (tableData?.condition_groups ?? []) as any[];
+        const validGroupsCount = conditionGroups.filter(
+            (g: any) => g.valid !== false
+        ).length;
 
-        const dialogRef = this.dialog.open(ProjectDialogComponent, {
-            width: '90vw',
-            height: '90vh',
+        const HEADER_HEIGHT = 62;
+        const ROW_HEIGHT = 46;
+        const BASE_ROWS = 2;
 
-            data: {
-                projectId: project.data.id,
-                projectName: project.data.name,
+        const totalRows = Math.max(validGroupsCount + BASE_ROWS, BASE_ROWS);
+        return Math.max(HEADER_HEIGHT + ROW_HEIGHT * totalRows, 170);
+    }
+
+    private getDefaultNodeSize(type: NodeType, data?: any): { width: number; height: number } {
+        if (type === NodeType.NOTE) {
+            return { width: 200, height: 150 };
+        }
+
+        if (type === NodeType.TABLE) {
+            return {
+                width: 330,
+                height: this.getDecisionTableVisualHeight({
+                    id: '',
+                    backendId: null,
+                    category: 'web',
+                    position: { x: 0, y: 0 },
+                    ports: [],
+                    parentId: null,
+                    type: NodeType.TABLE as NodeModel['type'],
+                    node_name: '',
+                    data,
+                    color: '',
+                    icon: '',
+                    input_map: {},
+                    output_variable_path: null,
+                    size: { width: 330, height: 152 },
+                } as NodeModel),
+            };
+        }
+
+        if (type === NodeType.EDGE) {
+            return { width: 300, height: 180 };
+        }
+
+        return { width: 330, height: 60 };
+    }
+
+    private ensureNodeSize(node: NodeModel): NodeModel {
+        if (node.size?.width && node.size?.height) {
+            return node;
+        }
+
+        return {
+            ...node,
+            size: this.getDefaultNodeSize(node.type as NodeType, node.data),
+        };
+    }
+
+    private resolveOverlapsForNode(anchorId: string): void {
+        const allNodes = this.flowService.nodes();
+        const anchor = allNodes.find((n) => n.id === anchorId);
+        if (!anchor) return;
+        const anchorBounds = this.getCollisionBounds(anchor);
+
+        const otherNodes = allNodes
+            .filter((n) => n.id !== anchorId)
+            .sort((a, b) => a.position.y - b.position.y);
+
+        for (const node of otherNodes) {
+            const overlaps = this.rectOverlaps(
+                node.position,
+                this.getCollisionBounds(node),
+                anchor.position,
+                anchorBounds
+            );
+
+            if (!overlaps) continue;
+
+            const freePos = this.findNearestFreePosition(
+                node.position,
+                this.getCollisionBounds(node),
+                this.flowService.nodes().filter((n) => n.id !== node.id)
+            );
+
+            if (freePos.x !== node.position.x || freePos.y !== node.position.y) {
+                this.flowService.updateNode({ ...node, position: freePos });
+            }
+        }
+    }
+
+    private normalizeTableNode(node: NodeModel): NodeModel {
+        if (node.type !== NodeType.TABLE) return node;
+        const visualHeight = this.getDecisionTableVisualHeight(node);
+        return {
+            ...node,
+            size: {
+                ...node.size,
+                width: node.size?.width ?? 330,
+                height: visualHeight,
             },
-        });
-
-        dialogRef.closed.subscribe(() => { });
-    }
-
-    private isDialogOpen(): boolean {
-        return this.dialog.openDialogs.length > 0;
-    }
-
-    public ngOnDestroy(): void {
-        this.destroy$.next();
-        this.destroy$.complete();
-    }
-
-    openShortcuts = output<DOMRect>();
-
-    public onOpenShortcuts(anchorEl: HTMLElement): void {
-        this.openShortcuts.emit(anchorEl.getBoundingClientRect());
+        };
     }
 }
