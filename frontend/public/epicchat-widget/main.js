@@ -92183,30 +92183,153 @@ var MessageTableColumnsConfigurationComponent = _MessageTableColumnsConfiguratio
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageTableColumnsConfigurationComponent, { className: "MessageTableColumnsConfigurationComponent", filePath: "src/app/components/message-table-columns-configuration/message-table-columns-configuration.component.ts", lineNumber: 33 });
 })();
 
+// src/app/components/shared/icon/icon.component.ts
+var ICONS = {
+  "chevron-down": `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  "chevron-sm": `<svg viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  "chevron-xs": `<svg viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 2.5L4 5.5L7 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  "kebab-menu": `<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 11C14.825 11 15.5 10.325 15.5 9.5C15.5 8.675 14.825 8 14 8C13.175 8 12.5 8.675 12.5 9.5C12.5 10.325 13.175 11 14 11ZM14 12.5C13.175 12.5 12.5 13.175 12.5 14C12.5 14.825 13.175 15.5 14 15.5C14.825 15.5 15.5 14.825 15.5 14C15.5 13.175 14.825 12.5 14 12.5ZM14 17C13.175 17 12.5 17.675 12.5 18.5C12.5 19.325 13.175 20 14 20C14.825 20 15.5 19.325 15.5 18.5C15.5 17.675 14.825 17 14 17Z" fill="currentColor"/>
+    </svg>`,
+  dock: `<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.4995 8C18.8801 8.00015 19.9995 9.11938 19.9995 10.5V17.499C19.9992 18.8794 18.8799 19.9989 17.4995 19.999H14.5786C14.3028 19.9989 14.0789 19.7748 14.0786 19.499C14.0786 19.223 14.3026 18.9992 14.5786 18.999H17.4995C18.3276 18.9989 18.9992 18.3271 18.9995 17.499V10.5C18.9995 9.67166 18.3278 9.00015 17.4995 9H10.5005C9.67206 9 9.00049 9.67157 9.00049 10.5V13.4209C9.00007 13.6966 8.77626 13.9208 8.50049 13.9209C8.22461 13.9209 8.00091 13.6967 8.00049 13.4209V10.5C8.00049 9.11929 9.11978 8 10.5005 8H17.4995ZM11.8413 15.1562C12.3934 15.1562 12.8411 15.6042 12.8413 16.1562V18.7871C12.8413 19.3394 12.3936 19.7871 11.8413 19.7871H9.21045C8.65831 19.7869 8.21045 19.3393 8.21045 18.7871V16.1562C8.21069 15.6389 8.60406 15.2126 9.10791 15.1611L9.21045 15.1562H11.8413ZM9.21045 18.7871H11.8413V16.1562H9.21045V18.7871ZM17.9731 13.1309C17.9729 13.4068 17.7491 13.6308 17.4731 13.6309C17.1973 13.6307 16.9734 13.4067 16.9731 13.1309V11.7324L14.6431 14.0625C14.4478 14.2578 14.1313 14.2577 13.936 14.0625C13.7409 13.8672 13.7408 13.5507 13.936 13.3555L16.2661 11.0254H14.8687C14.5925 11.0254 14.3687 10.8015 14.3687 10.5254C14.3687 10.2493 14.5925 10.0254 14.8687 10.0254H17.9731V13.1309Z" fill="currentColor"/>
+    </svg>`,
+  undock: `<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.4004 8.09961C18.7809 8.09974 19.9003 9.21904 19.9004 10.5996V17.4004C19.9003 18.7809 18.7809 19.9003 17.4004 19.9004H14.5684C14.2924 19.9003 14.0685 19.6764 14.0684 19.4004C14.0684 19.1244 14.2923 18.9005 14.5684 18.9004H17.4004C18.2286 18.9003 18.9003 18.2286 18.9004 17.4004V10.5996C18.9003 9.77132 18.2287 9.09974 17.4004 9.09961H10.5996C9.77129 9.09968 9.09968 9.77129 9.09961 10.5996V13.4316C9.0995 13.7077 8.87568 13.9316 8.59961 13.9316C8.3236 13.9316 8.09972 13.7076 8.09961 13.4316V10.5996C8.09968 9.219 9.219 8.09968 10.5996 8.09961H17.4004ZM11.9648 15.1416C12.4693 15.1926 12.8632 15.6189 12.8633 16.1367V18.6846L12.8574 18.7861C12.8098 19.2571 12.4358 19.6311 11.9648 19.6787L11.8633 19.6846H9.31543L9.21289 19.6787C8.74235 19.6307 8.3679 19.2568 8.32031 18.7861L8.31543 18.6846V16.1367C8.31551 15.6192 8.70889 15.193 9.21289 15.1416L9.31543 15.1367H11.8633L11.9648 15.1416ZM9.31543 18.6846H11.8633V16.1367H9.31543V18.6846ZM17.0566 10.2354C17.2518 10.0404 17.5685 10.0405 17.7637 10.2354C17.9589 10.4306 17.9589 10.7481 17.7637 10.9434L15.4912 13.2158H16.8418C17.1179 13.2159 17.3418 13.4397 17.3418 13.7158C17.3416 13.9918 17.1178 14.2158 16.8418 14.2158H13.7832V11.1582C13.7832 10.8824 14.0075 10.6587 14.2832 10.6582C14.5593 10.6582 14.7832 10.8821 14.7832 11.1582V12.5088L17.0566 10.2354Z" fill="currentColor"/>
+    </svg>`,
+  expand: `<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 12.5L14 8.5L18 12.5M10 15.5L14 19.5L18 15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  minimize: `<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="9" y1="13.5" x2="19" y2="13.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>`,
+  close: `<svg viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+  plus: `<svg viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M5 1V9M1 5H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+  send: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 8L14 2L10 14L8 8L2 8Z" fill="currentColor" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"/>
+    </svg>`,
+  stop: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="8" height="8" rx="1" fill="currentColor"/>
+    </svg>`,
+  "external-link": `<svg viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M4.22857 0C4.15284 0 4.08021 0.030102 4.02665 0.083659C3.97309 0.137216 3.94299 0.209846 3.94299 0.285577C3.94299 0.361309 3.97309 0.433939 4.02665 0.487496C4.08021 0.541053 4.15284 0.571155 4.22857 0.571155H4.87222L3.26454 2.17884C3.21393 2.23297 3.18649 2.30464 3.18781 2.37867C3.18913 2.4527 3.2191 2.52333 3.27162 2.57585C3.32414 2.62837 3.39477 2.65834 3.4688 2.65966C3.54284 2.66099 3.61451 2.63354 3.66864 2.58293L5.27633 0.975244V1.61889C5.27633 1.69462 5.30643 1.76725 5.35999 1.82081C5.41355 1.87436 5.48618 1.90446 5.56191 1.90446C5.63764 1.90446 5.71027 1.87436 5.76383 1.82081C5.81739 1.76725 5.84749 1.69462 5.84749 1.61889V0H4.22857ZM1.08578 1.14231V4.57116C1.08578 4.62167 1.10584 4.67011 1.14156 4.70583C1.17728 4.74155 1.22572 4.76161 1.27623 4.76161H4.70507C4.75558 4.76161 4.80402 4.74155 4.83974 4.70583C4.87546 4.67011 4.89552 4.62167 4.89552 4.57116V2.95224C4.89552 2.87651 4.92562 2.80388 4.97918 2.75032C5.03274 2.69677 5.10537 2.66666 5.1811 2.66666C5.25683 2.66666 5.32946 2.69677 5.38302 2.75032C5.43658 2.80388 5.46668 2.87651 5.46668 2.95224V4.57116C5.46668 4.77322 5.38642 4.96699 5.24355 5.10986C5.10069 5.25272 4.90691 5.33299 4.70485 5.33299H1.27623C1.07417 5.33299 0.880398 5.25272 0.737534 5.10986C0.59467 4.96699 0.514404 4.77322 0.514404 4.57116V1.14231C0.514404 0.940249 0.59467 0.746479 0.737534 0.603615C0.880398 0.460751 1.07417 0.380485 1.27623 0.380485H2.89515C2.97088 0.380485 3.04351 0.410586 3.09707 0.464143C3.15063 0.5177 3.18073 0.59033 3.18073 0.666062C3.18073 0.741794 3.15063 0.814424 3.09707 0.867981C3.04351 0.921538 2.97088 0.951639 2.89515 0.951639H1.27623C1.22572 0.951639 1.17728 0.971703 1.14156 1.00742C1.10584 1.04314 1.08578 1.0918 1.08578 1.14231Z" fill="currentColor"/>
+    </svg>`,
+  reset: `<svg viewBox="0 0 9 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4.47858 1.70563V0.259888C4.47858 0.0267044 4.17356 -0.0872965 3.99846 0.078523L1.85201 2.04245C1.73904 2.14608 1.73904 2.30672 1.85201 2.41036L3.99281 4.37428C4.17356 4.53492 4.47858 4.42092 4.47858 4.18774V2.742C6.58549 2.742 8.25181 4.51419 7.78863 6.51957C7.52315 7.69585 6.48381 8.64413 5.20724 8.88768C3.19071 9.27632 1.39448 8.00677 1.12335 6.29157C1.08381 6.04284 0.846569 5.85111 0.56979 5.85111C0.230878 5.85111 -0.0402521 6.12575 0.00493622 6.43666C0.355146 8.7115 2.71624 10.3956 5.388 9.91887C7.15034 9.60278 8.56813 8.30213 8.91269 6.68539C9.47189 4.0271 7.26896 1.70563 4.47858 1.70563Z" fill="currentColor"/>
+    </svg>`,
+  download: `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M11.333 6.0957C11.6997 6.0957 12 6.39115 12 6.75195V10.6885C11.9997 11.4098 11.4 11.9998 10.667 12H1.33301C0.599988 11.9998 0.000270417 11.4098 0 10.6885V6.75195C9.25123e-07 6.39115 0.300326 6.0957 0.666992 6.0957C1.03351 6.09588 1.33301 6.39126 1.33301 6.75195V10.0322C1.33314 10.3929 1.63342 10.6885 2 10.6885H10C10.3666 10.6885 10.6669 10.3929 10.667 10.0322V6.75195C10.667 6.39126 10.9665 6.09588 11.333 6.0957ZM5.94531 0C6.31184 0.000168041 6.61133 0.295549 6.61133 0.65625V6.34375L7.86523 5.11035C8.12521 4.8546 8.5447 4.85463 8.80469 5.11035C9.06469 5.36619 9.06469 5.77931 8.80469 6.03516L6.41211 8.39062C6.15217 8.64641 5.73169 8.64629 5.47168 8.39062L3.07812 6.03516C2.81831 5.77936 2.81833 5.36616 3.07812 5.11035C3.33812 4.85451 3.75855 4.85451 4.01855 5.11035L5.27832 6.34375V0.65625C5.27832 0.295446 5.57865 0 5.94531 0Z" fill="currentColor"/>
+    </svg>`
+};
+var _IconComponent = class _IconComponent {
+  get w() {
+    return this.size;
+  }
+  get h() {
+    return this.size;
+  }
+  constructor(sanitizer) {
+    this.sanitizer = sanitizer;
+  }
+  ngOnChanges() {
+    const raw = ICONS[this.name] ?? "";
+    this.svg = this.sanitizer.bypassSecurityTrustHtml(raw);
+  }
+};
+_IconComponent.\u0275fac = function IconComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _IconComponent)(\u0275\u0275directiveInject(DomSanitizer));
+};
+_IconComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _IconComponent, selectors: [["ep-icon"]], hostVars: 4, hostBindings: function IconComponent_HostBindings(rf, ctx) {
+  if (rf & 2) {
+    \u0275\u0275styleProp("width", ctx.w, "px")("height", ctx.h, "px");
+  }
+}, inputs: { name: "name", size: "size" }, features: [\u0275\u0275NgOnChangesFeature], decls: 1, vars: 1, consts: [[3, "innerHTML"]], template: function IconComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275domElement(0, "span", 0);
+  }
+  if (rf & 2) {
+    \u0275\u0275domProperty("innerHTML", ctx.svg, \u0275\u0275sanitizeHtml);
+  }
+}, styles: ["\n\n[_nghost-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n}\nspan[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 100%;\n  height: 100%;\n}\nsvg[_ngcontent-%COMP%] {\n  display: block;\n  width: 100%;\n  height: 100%;\n}\n/*# sourceMappingURL=icon.component.css.map */"] });
+var IconComponent = _IconComponent;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(IconComponent, [{
+    type: Component,
+    args: [{ selector: "ep-icon", standalone: true, template: `<span [innerHTML]="svg"></span>`, styles: ["/* angular:styles/component:scss;aaee3e89c7c488bf3df37993273ff68c6327448c6768eccad887cc64dc393c38;C:/EpicChat/epicstaffchat/src/app/components/shared/icon/icon.component.ts */\n:host {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n}\nspan {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 100%;\n  height: 100%;\n}\nsvg {\n  display: block;\n  width: 100%;\n  height: 100%;\n}\n/*# sourceMappingURL=icon.component.css.map */\n"] }]
+  }], () => [{ type: DomSanitizer }], { name: [{
+    type: Input
+  }], size: [{
+    type: Input
+  }], w: [{
+    type: HostBinding,
+    args: ["style.width.px"]
+  }], h: [{
+    type: HostBinding,
+    args: ["style.height.px"]
+  }] });
+})();
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(IconComponent, { className: "IconComponent", filePath: "src/app/components/shared/icon/icon.component.ts", lineNumber: 95 });
+})();
+
 // src/app/components/shared/button/button.component.ts
 var _c010 = ["*"];
 function ButtonComponent_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275domElementStart(0, "span", 1);
-    \u0275\u0275domElement(1, "img", 3);
-    \u0275\u0275domElementEnd();
+    \u0275\u0275elementStart(0, "span", 1);
+    \u0275\u0275element(1, "ep-icon", 3);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275domProperty("src", ctx_r0.imgSrc, \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("name", ctx_r0.iconName)("size", ctx_r0.iconSize);
   }
 }
-function ButtonComponent_Conditional_4_Template(rf, ctx) {
+function ButtonComponent_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275domElementStart(0, "span", 1);
-    \u0275\u0275domElement(1, "img", 3);
-    \u0275\u0275domElementEnd();
+    \u0275\u0275elementStart(0, "span", 1);
+    \u0275\u0275element(1, "img", 4);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275domProperty("src", ctx_r0.imgSrc, \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", ctx_r0.imgSrc, \u0275\u0275sanitizeUrl);
+  }
+}
+function ButtonComponent_Conditional_5_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "span", 1);
+    \u0275\u0275element(1, "ep-icon", 3);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r0 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275property("name", ctx_r0.iconName)("size", ctx_r0.iconSize);
+  }
+}
+function ButtonComponent_Conditional_6_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "span", 1);
+    \u0275\u0275element(1, "img", 4);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r0 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275property("src", ctx_r0.imgSrc, \u0275\u0275sanitizeUrl);
   }
 }
 var _ButtonComponent = class _ButtonComponent {
@@ -92214,7 +92337,10 @@ var _ButtonComponent = class _ButtonComponent {
     this.disabled = false;
     this.type = "button";
     this.imgPos = "left";
+    this.iconSize = 16;
     this.noBorder = false;
+    this.variant = "secondary";
+    this.size = "sm";
     this.buttonClick = new EventEmitter();
     this.buttonMouseEnter = new EventEmitter();
     this.buttonMouseLeave = new EventEmitter();
@@ -92233,42 +92359,82 @@ var _ButtonComponent = class _ButtonComponent {
     event.stopPropagation();
     this.buttonMouseLeave.emit(event);
   }
+  get resolvedIconPos() {
+    return this.iconPos ?? this.imgPos;
+  }
 };
 _ButtonComponent.\u0275fac = function ButtonComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _ButtonComponent)();
 };
-_ButtonComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ButtonComponent, selectors: [["ep-button"]], inputs: { disabled: "disabled", type: "type", imgPos: "imgPos", imgSrc: "imgSrc", id: "id", noBorder: "noBorder" }, outputs: { buttonClick: "buttonClick", buttonMouseEnter: "buttonMouseEnter", buttonMouseLeave: "buttonMouseLeave" }, ngContentSelectors: _c010, decls: 5, vars: 7, consts: [[1, "ep-button", 3, "click", "mouseenter", "mouseleave", "id", "type", "disabled"], [1, "icon"], [1, "text"], ["alt", "", 3, "src"]], template: function ButtonComponent_Template(rf, ctx) {
+_ButtonComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ButtonComponent, selectors: [["ep-button"]], inputs: { disabled: "disabled", type: "type", imgPos: "imgPos", imgSrc: "imgSrc", iconName: "iconName", iconSize: "iconSize", iconPos: "iconPos", id: "id", noBorder: "noBorder", variant: "variant", size: "size" }, outputs: { buttonClick: "buttonClick", buttonMouseEnter: "buttonMouseEnter", buttonMouseLeave: "buttonMouseLeave" }, ngContentSelectors: _c010, decls: 7, vars: 13, consts: [[1, "ep-button", 3, "click", "mouseenter", "mouseleave", "id", "type", "disabled"], [1, "icon"], [1, "text"], [3, "name", "size"], ["alt", "", 3, "src"]], template: function ButtonComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275projectionDef();
-    \u0275\u0275domElementStart(0, "button", 0);
-    \u0275\u0275domListener("click", function ButtonComponent_Template_button_click_0_listener($event) {
+    \u0275\u0275elementStart(0, "button", 0);
+    \u0275\u0275listener("click", function ButtonComponent_Template_button_click_0_listener($event) {
       return ctx.onClick($event);
     })("mouseenter", function ButtonComponent_Template_button_mouseenter_0_listener($event) {
       return ctx.onMouseEnter($event);
     })("mouseleave", function ButtonComponent_Template_button_mouseleave_0_listener($event) {
       return ctx.onMouseLeave($event);
     });
-    \u0275\u0275conditionalCreate(1, ButtonComponent_Conditional_1_Template, 2, 1, "span", 1);
-    \u0275\u0275domElementStart(2, "span", 2);
-    \u0275\u0275projection(3);
-    \u0275\u0275domElementEnd();
-    \u0275\u0275conditionalCreate(4, ButtonComponent_Conditional_4_Template, 2, 1, "span", 1);
-    \u0275\u0275domElementEnd();
+    \u0275\u0275conditionalCreate(1, ButtonComponent_Conditional_1_Template, 2, 2, "span", 1)(2, ButtonComponent_Conditional_2_Template, 2, 1, "span", 1);
+    \u0275\u0275elementStart(3, "span", 2);
+    \u0275\u0275projection(4);
+    \u0275\u0275elementEnd();
+    \u0275\u0275conditionalCreate(5, ButtonComponent_Conditional_5_Template, 2, 2, "span", 1)(6, ButtonComponent_Conditional_6_Template, 2, 1, "span", 1);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    \u0275\u0275classProp("ep-button--no-border", ctx.noBorder);
-    \u0275\u0275domProperty("id", ctx.id)("type", ctx.type)("disabled", ctx.disabled);
+    \u0275\u0275classProp("ep-button--no-border", ctx.noBorder)("ep-button--primary", ctx.variant === "primary")("ep-button--ghost", ctx.variant === "ghost")("ep-button--md", ctx.size === "md");
+    \u0275\u0275property("id", ctx.id)("type", ctx.type)("disabled", ctx.disabled);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.imgSrc && ctx.imgPos === "left" ? 1 : -1);
-    \u0275\u0275advance(3);
-    \u0275\u0275conditional(ctx.imgSrc && ctx.imgPos === "right" ? 4 : -1);
+    \u0275\u0275conditional(ctx.iconName && ctx.resolvedIconPos === "left" ? 1 : ctx.imgSrc && ctx.resolvedIconPos === "left" ? 2 : -1);
+    \u0275\u0275advance(4);
+    \u0275\u0275conditional(ctx.iconName && ctx.resolvedIconPos === "right" ? 5 : ctx.imgSrc && ctx.resolvedIconPos === "right" ? 6 : -1);
   }
-}, dependencies: [CommonModule], styles: ["\n\n[_nghost-%COMP%] {\n  display: inline-block;\n}\nbutton[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%] {\n  all: unset;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  height: 28px;\n  min-width: 40px;\n  padding: 3px 6px;\n  font-size: 13px;\n  line-height: 16px;\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  box-sizing: border-box;\n  color: var(--ep-color-text);\n  -webkit-user-select: none;\n  user-select: none;\n  cursor: pointer;\n}\nbutton[_ngcontent-%COMP%]:hover, \n.ep-button[_ngcontent-%COMP%]:hover {\n  background: var(--ep-color-accent-soft);\n}\nbutton[_ngcontent-%COMP%]:disabled, \n.ep-button[_ngcontent-%COMP%]:disabled {\n  pointer-events: none;\n  background: var(--ep-color-disabled-bg);\n  color: var(--ep-color-disabled-text);\n  cursor: default;\n}\nbutton[_ngcontent-%COMP%]:disabled   .icon[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%]:disabled   .icon[_ngcontent-%COMP%] {\n  filter: grayscale(1) brightness(1.5) opacity(0.5);\n}\nbutton[_ngcontent-%COMP%]   .icon[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%]   .icon[_ngcontent-%COMP%] {\n  pointer-events: none;\n  display: inline-block;\n}\nbutton[_ngcontent-%COMP%]   .icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%]   .icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n  display: block;\n}\nbutton[_ngcontent-%COMP%]   .text[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%]   .text[_ngcontent-%COMP%] {\n  pointer-events: none;\n  display: inline-block;\n  white-space: nowrap;\n}\nbutton[_ngcontent-%COMP%]   .text[_ngcontent-%COMP%]:empty, \n.ep-button[_ngcontent-%COMP%]   .text[_ngcontent-%COMP%]:empty {\n  display: none;\n}\nbutton--no-border[_ngcontent-%COMP%], \n.ep-button--no-border[_ngcontent-%COMP%] {\n  border: none;\n}\n/*# sourceMappingURL=button.component.css.map */"], changeDetection: 0 });
+}, dependencies: [CommonModule, IconComponent], styles: ["\n\n[_nghost-%COMP%] {\n  display: inline-block;\n}\nbutton[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%] {\n  all: unset;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  height: var(--ep-button-height-sm, 26px);\n  min-width: 40px;\n  padding: var(--ep-button-padding-sm, 3px 10px);\n  font-size: var(--ep-button-font-size-sm, 12px);\n  line-height: 14px;\n  border: 1px solid var(--ep-button-secondary-border, var(--ep-color-border));\n  border-radius: var(--ep-button-radius, 12px);\n  box-sizing: border-box;\n  color: var(--ep-button-secondary-text, var(--ep-color-text));\n  background: var(--ep-button-secondary-bg, transparent);\n  -webkit-user-select: none;\n  user-select: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s ease,\n    border-color 0.15s ease,\n    color 0.15s ease;\n}\nbutton[_ngcontent-%COMP%]:hover, \n.ep-button[_ngcontent-%COMP%]:hover {\n  background: var(--ep-button-secondary-hover-bg, var(--ep-color-accent-soft));\n}\nbutton[_ngcontent-%COMP%]:disabled, \n.ep-button[_ngcontent-%COMP%]:disabled {\n  pointer-events: none;\n  background: var(--ep-color-disabled-bg);\n  color: var(--ep-color-disabled-text);\n  cursor: default;\n}\nbutton[_ngcontent-%COMP%]:disabled   .icon[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%]:disabled   .icon[_ngcontent-%COMP%] {\n  filter: grayscale(1) brightness(1.5) opacity(0.5);\n}\nbutton[_ngcontent-%COMP%]   .icon[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%]   .icon[_ngcontent-%COMP%] {\n  pointer-events: none;\n  display: inline-block;\n}\nbutton[_ngcontent-%COMP%]   .icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%]   .icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n  display: block;\n}\nbutton[_ngcontent-%COMP%]   .text[_ngcontent-%COMP%], \n.ep-button[_ngcontent-%COMP%]   .text[_ngcontent-%COMP%] {\n  pointer-events: none;\n  display: inline-block;\n  white-space: nowrap;\n}\nbutton[_ngcontent-%COMP%]   .text[_ngcontent-%COMP%]:empty, \n.ep-button[_ngcontent-%COMP%]   .text[_ngcontent-%COMP%]:empty {\n  display: none;\n}\nbutton--no-border[_ngcontent-%COMP%], \n.ep-button--no-border[_ngcontent-%COMP%] {\n  border: none;\n}\nbutton--md[_ngcontent-%COMP%], \n.ep-button--md[_ngcontent-%COMP%] {\n  height: var(--ep-button-height-md, 28px);\n  padding: var(--ep-button-padding-md, 6px 12px);\n  font-size: var(--ep-button-font-size-md, 12px);\n}\nbutton--primary[_ngcontent-%COMP%], \n.ep-button--primary[_ngcontent-%COMP%] {\n  border-color: var(--ep-button-primary-border, transparent);\n  color: var(--ep-button-primary-text, var(--ep-color-accent-contrast));\n  background: var(--ep-button-primary-bg, var(--ep-color-accent));\n}\nbutton--primary[_ngcontent-%COMP%]:hover:not(:disabled), \n.ep-button--primary[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: var(--ep-button-primary-hover-bg, color-mix(in srgb, var(--ep-color-accent) 88%, black));\n}\nbutton--ghost[_ngcontent-%COMP%], \n.ep-button--ghost[_ngcontent-%COMP%] {\n  border-color: transparent;\n  color: var(--ep-button-ghost-text, var(--ep-color-text));\n  background: var(--ep-button-ghost-bg, transparent);\n}\nbutton--ghost[_ngcontent-%COMP%]:hover:not(:disabled), \n.ep-button--ghost[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: var(--ep-button-ghost-hover-bg, var(--ep-color-accent-soft));\n}\n/*# sourceMappingURL=button.component.css.map */"], changeDetection: 0 });
 var ButtonComponent = _ButtonComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ButtonComponent, [{
     type: Component,
-    args: [{ selector: "ep-button", changeDetection: ChangeDetectionStrategy.OnPush, standalone: true, imports: [CommonModule], template: '<button\r\n  class="ep-button"\r\n  [id]="id"\r\n  [type]="type"\r\n  [disabled]="disabled"\r\n  [class.ep-button--no-border]="noBorder"\r\n  (click)="onClick($event)"\r\n  (mouseenter)="onMouseEnter($event)"\r\n  (mouseleave)="onMouseLeave($event)"\r\n>\r\n  @if (imgSrc && imgPos === "left") {\r\n    <span class="icon">\r\n      <img [src]="imgSrc" alt="" />\r\n    </span>\r\n  }\r\n\r\n  <span class="text">\r\n    <ng-content></ng-content>\r\n  </span>\r\n\r\n  @if (imgSrc && imgPos === "right") {\r\n    <span class="icon">\r\n      <img [src]="imgSrc" alt="" />\r\n    </span>\r\n  }\r\n</button>\r\n', styles: ["/* src/app/components/shared/button/button.component.scss */\n:host {\n  display: inline-block;\n}\nbutton,\n.ep-button {\n  all: unset;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  height: 28px;\n  min-width: 40px;\n  padding: 3px 6px;\n  font-size: 13px;\n  line-height: 16px;\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  box-sizing: border-box;\n  color: var(--ep-color-text);\n  -webkit-user-select: none;\n  user-select: none;\n  cursor: pointer;\n}\nbutton:hover,\n.ep-button:hover {\n  background: var(--ep-color-accent-soft);\n}\nbutton:disabled,\n.ep-button:disabled {\n  pointer-events: none;\n  background: var(--ep-color-disabled-bg);\n  color: var(--ep-color-disabled-text);\n  cursor: default;\n}\nbutton:disabled .icon,\n.ep-button:disabled .icon {\n  filter: grayscale(1) brightness(1.5) opacity(0.5);\n}\nbutton .icon,\n.ep-button .icon {\n  pointer-events: none;\n  display: inline-block;\n}\nbutton .icon img,\n.ep-button .icon img {\n  width: 16px;\n  height: 16px;\n  display: block;\n}\nbutton .text,\n.ep-button .text {\n  pointer-events: none;\n  display: inline-block;\n  white-space: nowrap;\n}\nbutton .text:empty,\n.ep-button .text:empty {\n  display: none;\n}\nbutton--no-border,\n.ep-button--no-border {\n  border: none;\n}\n/*# sourceMappingURL=button.component.css.map */\n"] }]
+    args: [{ selector: "ep-button", changeDetection: ChangeDetectionStrategy.OnPush, standalone: true, imports: [CommonModule, IconComponent], template: `<button\r
+  class="ep-button"\r
+  [id]="id"\r
+  [type]="type"\r
+  [disabled]="disabled"\r
+  [class.ep-button--no-border]="noBorder"\r
+  [class.ep-button--primary]="variant === 'primary'"\r
+  [class.ep-button--ghost]="variant === 'ghost'"\r
+  [class.ep-button--md]="size === 'md'"\r
+  (click)="onClick($event)"\r
+  (mouseenter)="onMouseEnter($event)"\r
+  (mouseleave)="onMouseLeave($event)"\r
+>\r
+  @if (iconName && resolvedIconPos === "left") {\r
+    <span class="icon">\r
+      <ep-icon [name]="iconName" [size]="iconSize"></ep-icon>\r
+    </span>\r
+  } @else if (imgSrc && resolvedIconPos === "left") {\r
+    <span class="icon">\r
+      <img [src]="imgSrc" alt="" />\r
+    </span>\r
+  }\r
+\r
+  <span class="text">\r
+    <ng-content></ng-content>\r
+  </span>\r
+\r
+  @if (iconName && resolvedIconPos === "right") {\r
+    <span class="icon">\r
+      <ep-icon [name]="iconName" [size]="iconSize"></ep-icon>\r
+    </span>\r
+  } @else if (imgSrc && resolvedIconPos === "right") {\r
+    <span class="icon">\r
+      <img [src]="imgSrc" alt="" />\r
+    </span>\r
+  }\r
+</button>\r
+`, styles: ["/* src/app/components/shared/button/button.component.scss */\n:host {\n  display: inline-block;\n}\nbutton,\n.ep-button {\n  all: unset;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  height: var(--ep-button-height-sm, 26px);\n  min-width: 40px;\n  padding: var(--ep-button-padding-sm, 3px 10px);\n  font-size: var(--ep-button-font-size-sm, 12px);\n  line-height: 14px;\n  border: 1px solid var(--ep-button-secondary-border, var(--ep-color-border));\n  border-radius: var(--ep-button-radius, 12px);\n  box-sizing: border-box;\n  color: var(--ep-button-secondary-text, var(--ep-color-text));\n  background: var(--ep-button-secondary-bg, transparent);\n  -webkit-user-select: none;\n  user-select: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s ease,\n    border-color 0.15s ease,\n    color 0.15s ease;\n}\nbutton:hover,\n.ep-button:hover {\n  background: var(--ep-button-secondary-hover-bg, var(--ep-color-accent-soft));\n}\nbutton:disabled,\n.ep-button:disabled {\n  pointer-events: none;\n  background: var(--ep-color-disabled-bg);\n  color: var(--ep-color-disabled-text);\n  cursor: default;\n}\nbutton:disabled .icon,\n.ep-button:disabled .icon {\n  filter: grayscale(1) brightness(1.5) opacity(0.5);\n}\nbutton .icon,\n.ep-button .icon {\n  pointer-events: none;\n  display: inline-block;\n}\nbutton .icon img,\n.ep-button .icon img {\n  width: 16px;\n  height: 16px;\n  display: block;\n}\nbutton .text,\n.ep-button .text {\n  pointer-events: none;\n  display: inline-block;\n  white-space: nowrap;\n}\nbutton .text:empty,\n.ep-button .text:empty {\n  display: none;\n}\nbutton--no-border,\n.ep-button--no-border {\n  border: none;\n}\nbutton--md,\n.ep-button--md {\n  height: var(--ep-button-height-md, 28px);\n  padding: var(--ep-button-padding-md, 6px 12px);\n  font-size: var(--ep-button-font-size-md, 12px);\n}\nbutton--primary,\n.ep-button--primary {\n  border-color: var(--ep-button-primary-border, transparent);\n  color: var(--ep-button-primary-text, var(--ep-color-accent-contrast));\n  background: var(--ep-button-primary-bg, var(--ep-color-accent));\n}\nbutton--primary:hover:not(:disabled),\n.ep-button--primary:hover:not(:disabled) {\n  background: var(--ep-button-primary-hover-bg, color-mix(in srgb, var(--ep-color-accent) 88%, black));\n}\nbutton--ghost,\n.ep-button--ghost {\n  border-color: transparent;\n  color: var(--ep-button-ghost-text, var(--ep-color-text));\n  background: var(--ep-button-ghost-bg, transparent);\n}\nbutton--ghost:hover:not(:disabled),\n.ep-button--ghost:hover:not(:disabled) {\n  background: var(--ep-button-ghost-hover-bg, var(--ep-color-accent-soft));\n}\n/*# sourceMappingURL=button.component.css.map */\n"] }]
   }], null, { disabled: [{
     type: Input
   }], type: [{
@@ -92277,9 +92443,19 @@ var ButtonComponent = _ButtonComponent;
     type: Input
   }], imgSrc: [{
     type: Input
+  }], iconName: [{
+    type: Input
+  }], iconSize: [{
+    type: Input
+  }], iconPos: [{
+    type: Input
   }], id: [{
     type: Input
   }], noBorder: [{
+    type: Input
+  }], variant: [{
+    type: Input
+  }], size: [{
     type: Input
   }], buttonClick: [{
     type: Output
@@ -92290,7 +92466,7 @@ var ButtonComponent = _ButtonComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ButtonComponent, { className: "ButtonComponent", filePath: "src/app/components/shared/button/button.component.ts", lineNumber: 12 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ButtonComponent, { className: "ButtonComponent", filePath: "src/app/components/shared/button/button.component.ts", lineNumber: 16 });
 })();
 
 // src/app/components/message-table/message-table.component.ts
@@ -92302,461 +92478,485 @@ var _c44 = (a0) => ({ color: a0 });
 var _c54 = (a0) => ({ column: a0 });
 var _c63 = (a0, a1) => ({ "ep-message-table__cell-changed": a0, "ep-message-table__union-error": a1 });
 var _forTrack04 = ($index, $item) => $item.action;
-function MessageTableComponent_Conditional_0_Conditional_2_For_2_Conditional_1_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275text(0);
-  }
-  if (rf & 2) {
-    const action_r3 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275textInterpolate1(" ", action_r3.text, " ");
-  }
-}
-function MessageTableComponent_Conditional_0_Conditional_2_For_2_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 12);
-    \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_Conditional_2_For_2_Template_ep_button_buttonClick_0_listener($event) {
-      const action_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r3.onTableActionClick(action_r3, $event));
+    \u0275\u0275elementStart(0, "ep-button", 18);
+    \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_Conditional_4_Template_ep_button_buttonClick_0_listener($event) {
+      \u0275\u0275restoreView(_r2);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onTableActionClick(ctx_r2.resetTableAction, $event));
     });
-    \u0275\u0275conditionalCreate(1, MessageTableComponent_Conditional_0_Conditional_2_For_2_Conditional_1_Template, 1, 1);
+    \u0275\u0275text(1, " Reset ");
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const action_r3 = ctx.$implicit;
-    const ctx_r3 = \u0275\u0275nextContext(3);
-    \u0275\u0275property("imgSrc", ctx_r3.getActionIcon(action_r3) ?? void 0);
-    \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r3.shouldShowActionText(action_r3) ? 1 : -1);
+    \u0275\u0275property("iconSize", 10);
   }
 }
-function MessageTableComponent_Conditional_0_Conditional_2_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_For_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 5);
-    \u0275\u0275repeaterCreate(1, MessageTableComponent_Conditional_0_Conditional_2_For_2_Template, 2, 2, "ep-button", 11, _forTrack04);
+    const _r4 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-button", 19);
+    \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_For_6_Template_ep_button_buttonClick_0_listener($event) {
+      const action_r5 = \u0275\u0275restoreView(_r4).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onTableActionClick(action_r5, $event));
+    });
+    \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext(2);
+    const action_r5 = ctx.$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275property("imgSrc", ctx_r2.getActionIcon(action_r5) ?? void 0);
     \u0275\u0275advance();
-    \u0275\u0275repeater(ctx_r3.tableActionsToRender);
+    \u0275\u0275textInterpolate1(" ", action_r5.text, " ");
   }
 }
-function MessageTableComponent_Conditional_0_ng_template_6_Conditional_1_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_Conditional_12_Template(rf, ctx) {
   if (rf & 1) {
-    const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "input", 18);
-    \u0275\u0275twoWayListener("ngModelChange", function MessageTableComponent_Conditional_0_ng_template_6_Conditional_1_Template_input_ngModelChange_0_listener($event) {
-      \u0275\u0275restoreView(_r7);
-      const ctx_r3 = \u0275\u0275nextContext(3);
-      \u0275\u0275twoWayBindingSet(ctx_r3.editingColumnTitle, $event) || (ctx_r3.editingColumnTitle = $event);
+    const _r6 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 12)(1, "ep-message-table-columns-configuration", 20);
+    \u0275\u0275listener("updateShownColumns", function MessageTableComponent_Conditional_0_Conditional_12_Template_ep_message_table_columns_configuration_updateShownColumns_1_listener($event) {
+      \u0275\u0275restoreView(_r6);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onColumnsUpdated($event));
+    });
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275property("ngStyle", ctx_r2.columnsDropdownStyles);
+    \u0275\u0275advance();
+    \u0275\u0275property("columns", ctx_r2.dynamicColumns)("maxHeight", 400)("isEmbedded", true);
+  }
+}
+function MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r9 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "input", 26);
+    \u0275\u0275twoWayListener("ngModelChange", function MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Template_input_ngModelChange_0_listener($event) {
+      \u0275\u0275restoreView(_r9);
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      \u0275\u0275twoWayBindingSet(ctx_r2.editingColumnTitle, $event) || (ctx_r2.editingColumnTitle = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("keydown", function MessageTableComponent_Conditional_0_ng_template_6_Conditional_1_Template_input_keydown_0_listener($event) {
-      \u0275\u0275restoreView(_r7);
-      const column_r6 = \u0275\u0275nextContext().column;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onColumnTitleEditKeydown($event, column_r6));
-    })("blur", function MessageTableComponent_Conditional_0_ng_template_6_Conditional_1_Template_input_blur_0_listener() {
-      \u0275\u0275restoreView(_r7);
-      const column_r6 = \u0275\u0275nextContext().column;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.applyColumnTitleEdit(column_r6));
+    \u0275\u0275listener("keydown", function MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Template_input_keydown_0_listener($event) {
+      \u0275\u0275restoreView(_r9);
+      const column_r8 = \u0275\u0275nextContext().column;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onColumnTitleEditKeydown($event, column_r8));
+    })("blur", function MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Template_input_blur_0_listener() {
+      \u0275\u0275restoreView(_r9);
+      const column_r8 = \u0275\u0275nextContext().column;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.applyColumnTitleEdit(column_r8));
     });
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext(3);
-    \u0275\u0275twoWayProperty("ngModel", ctx_r3.editingColumnTitle);
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.editingColumnTitle);
   }
 }
-function MessageTableComponent_Conditional_0_ng_template_6_Conditional_2_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_ng_template_16_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 15);
+    \u0275\u0275elementStart(0, "span", 23);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const column_r6 = \u0275\u0275nextContext().column;
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction1(2, _c44, ctx_r3.currentSortField === column_r6.key ? "var(--ep-color-accent)" : "var(--ep-color-text-muted)"));
+    const column_r8 = \u0275\u0275nextContext().column;
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction1(2, _c44, ctx_r2.currentSortField === column_r8.key ? "var(--ep-color-accent)" : "var(--ep-color-text-muted)"));
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", column_r6.title || column_r6.key, " ");
+    \u0275\u0275textInterpolate1(" ", column_r8.title || column_r8.key, " ");
   }
 }
-function MessageTableComponent_Conditional_0_ng_template_6_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_ng_template_16_Template(rf, ctx) {
   if (rf & 1) {
-    const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 13);
-    \u0275\u0275listener("mouseenter", function MessageTableComponent_Conditional_0_ng_template_6_Template_div_mouseenter_0_listener() {
-      const column_r6 = \u0275\u0275restoreView(_r5).column;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onColumnHeaderMouseEnter(column_r6));
-    })("mouseleave", function MessageTableComponent_Conditional_0_ng_template_6_Template_div_mouseleave_0_listener() {
-      \u0275\u0275restoreView(_r5);
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onColumnHeaderMouseLeave());
-    })("dblclick", function MessageTableComponent_Conditional_0_ng_template_6_Template_div_dblclick_0_listener($event) {
-      const column_r6 = \u0275\u0275restoreView(_r5).column;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onColumnTitleDblClick(column_r6, $event));
+    const _r7 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 21);
+    \u0275\u0275listener("mouseenter", function MessageTableComponent_Conditional_0_ng_template_16_Template_div_mouseenter_0_listener() {
+      const column_r8 = \u0275\u0275restoreView(_r7).column;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onColumnHeaderMouseEnter(column_r8));
+    })("mouseleave", function MessageTableComponent_Conditional_0_ng_template_16_Template_div_mouseleave_0_listener() {
+      \u0275\u0275restoreView(_r7);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onColumnHeaderMouseLeave());
+    })("dblclick", function MessageTableComponent_Conditional_0_ng_template_16_Template_div_dblclick_0_listener($event) {
+      const column_r8 = \u0275\u0275restoreView(_r7).column;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onColumnTitleDblClick(column_r8, $event));
     });
-    \u0275\u0275conditionalCreate(1, MessageTableComponent_Conditional_0_ng_template_6_Conditional_1_Template, 1, 1, "input", 14)(2, MessageTableComponent_Conditional_0_ng_template_6_Conditional_2_Template, 2, 4, "span", 15);
-    \u0275\u0275elementStart(3, "button", 16);
-    \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_ng_template_6_Template_button_click_3_listener() {
-      const column_r6 = \u0275\u0275restoreView(_r5).column;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onColumnHeaderClick(column_r6));
+    \u0275\u0275conditionalCreate(1, MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Template, 1, 1, "input", 22)(2, MessageTableComponent_Conditional_0_ng_template_16_Conditional_2_Template, 2, 4, "span", 23);
+    \u0275\u0275elementStart(3, "button", 24);
+    \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_ng_template_16_Template_button_click_3_listener() {
+      const column_r8 = \u0275\u0275restoreView(_r7).column;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onColumnHeaderClick(column_r8));
     });
-    \u0275\u0275element(4, "img", 17);
+    \u0275\u0275element(4, "img", 25);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const column_r6 = ctx.column;
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("ngClass", \u0275\u0275pureFunction1(4, _c26, ctx_r3.isColumnTitleChanged(column_r6)));
+    const column_r8 = ctx.column;
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275property("ngClass", \u0275\u0275pureFunction1(4, _c26, ctx_r2.isColumnTitleChanged(column_r8)));
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r3.isEditingColumnTitle(column_r6) ? 1 : 2);
+    \u0275\u0275conditional(ctx_r2.isEditingColumnTitle(column_r8) ? 1 : 2);
     \u0275\u0275advance(2);
-    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction2(6, _c34, ctx_r3.isSortable && (ctx_r3.currentSortField === column_r6.key || ctx_r3.hoveredColumn === column_r6.key) ? "1" : "0", ctx_r3.currentSortOrder === "desc" ? "180deg" : "0deg"));
+    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction2(6, _c34, ctx_r2.isSortable && (ctx_r2.currentSortField === column_r8.key || ctx_r2.hoveredColumn === column_r8.key) ? "1" : "0", ctx_r2.currentSortOrder === "desc" ? "180deg" : "0deg"));
     \u0275\u0275advance();
-    \u0275\u0275property("src", ctx_r3.getSortIcon(column_r6), \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", ctx_r2.getSortIcon(column_r8), \u0275\u0275sanitizeUrl);
   }
 }
-function MessageTableComponent_Conditional_0_Conditional_14_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_For_21_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
-    const _r8 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 10)(1, "ep-message-table-columns-configuration", 19);
-    \u0275\u0275listener("updateShownColumns", function MessageTableComponent_Conditional_0_Conditional_14_Template_ep_message_table_columns_configuration_updateShownColumns_1_listener($event) {
-      \u0275\u0275restoreView(_r8);
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onColumnsUpdated($event));
-    });
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("ngStyle", ctx_r3.columnsDropdownStyles);
-    \u0275\u0275advance();
-    \u0275\u0275property("columns", ctx_r3.dynamicColumns)("maxHeight", 400)("isEmbedded", true);
-  }
-}
-function MessageTableComponent_Conditional_0_For_16_Conditional_0_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "th", 20);
+    \u0275\u0275elementStart(0, "th", 27);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const column_r9 = \u0275\u0275nextContext().$implicit;
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275attribute("colspan", ctx_r3.getUnionColspanByColumn(column_r9));
+    const column_r10 = \u0275\u0275nextContext().$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275attribute("colspan", ctx_r2.getUnionColspanByColumn(column_r10));
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx_r3.getUnionTitleByColumn(column_r9), " ");
+    \u0275\u0275textInterpolate1(" ", ctx_r2.getUnionTitleByColumn(column_r10), " ");
   }
 }
-function MessageTableComponent_Conditional_0_For_16_Conditional_1_ng_container_1_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_For_21_Conditional_1_ng_container_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementContainer(0);
   }
 }
-function MessageTableComponent_Conditional_0_For_16_Conditional_1_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_For_21_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "th");
-    \u0275\u0275template(1, MessageTableComponent_Conditional_0_For_16_Conditional_1_ng_container_1_Template, 1, 0, "ng-container", 21);
+    \u0275\u0275template(1, MessageTableComponent_Conditional_0_For_21_Conditional_1_ng_container_1_Template, 1, 0, "ng-container", 28);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const column_r9 = \u0275\u0275nextContext().$implicit;
+    const column_r10 = \u0275\u0275nextContext().$implicit;
     \u0275\u0275nextContext();
-    const columnHeader_r10 = \u0275\u0275reference(7);
-    const ctx_r3 = \u0275\u0275nextContext();
-    \u0275\u0275attribute("rowspan", ctx_r3.hasUnions ? 2 : 1);
+    const columnHeader_r11 = \u0275\u0275reference(17);
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275attribute("rowspan", ctx_r2.hasUnions ? 2 : 1);
     \u0275\u0275advance();
-    \u0275\u0275property("ngTemplateOutlet", columnHeader_r10)("ngTemplateOutletContext", \u0275\u0275pureFunction1(3, _c54, column_r9));
+    \u0275\u0275property("ngTemplateOutlet", columnHeader_r11)("ngTemplateOutletContext", \u0275\u0275pureFunction1(3, _c54, column_r10));
   }
 }
-function MessageTableComponent_Conditional_0_For_16_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_For_21_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_For_16_Conditional_0_Template, 2, 2, "th", 20);
-    \u0275\u0275conditionalCreate(1, MessageTableComponent_Conditional_0_For_16_Conditional_1_Template, 2, 5, "th");
+    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_For_21_Conditional_0_Template, 2, 2, "th", 27);
+    \u0275\u0275conditionalCreate(1, MessageTableComponent_Conditional_0_For_21_Conditional_1_Template, 2, 5, "th");
   }
   if (rf & 2) {
-    const column_r9 = ctx.$implicit;
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275conditional(ctx_r3.hasUnions && ctx_r3.isUnionColumn(column_r9) && ctx_r3.isUnionStartColumn(column_r9) ? 0 : -1);
+    const column_r10 = ctx.$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275conditional(ctx_r2.hasUnions && ctx_r2.isUnionColumn(column_r10) && ctx_r2.isUnionStartColumn(column_r10) ? 0 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(!ctx_r3.isUnionColumn(column_r9) ? 1 : -1);
+    \u0275\u0275conditional(!ctx_r2.isUnionColumn(column_r10) ? 1 : -1);
   }
 }
-function MessageTableComponent_Conditional_0_Conditional_17_For_2_Conditional_0_ng_container_1_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_Conditional_22_For_2_Conditional_0_ng_container_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementContainer(0);
   }
 }
-function MessageTableComponent_Conditional_0_Conditional_17_For_2_Conditional_0_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_Conditional_22_For_2_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "th");
-    \u0275\u0275template(1, MessageTableComponent_Conditional_0_Conditional_17_For_2_Conditional_0_ng_container_1_Template, 1, 0, "ng-container", 21);
+    \u0275\u0275template(1, MessageTableComponent_Conditional_0_Conditional_22_For_2_Conditional_0_ng_container_1_Template, 1, 0, "ng-container", 28);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const column_r11 = \u0275\u0275nextContext().$implicit;
+    const column_r12 = \u0275\u0275nextContext().$implicit;
     \u0275\u0275nextContext(2);
-    const columnHeader_r10 = \u0275\u0275reference(7);
+    const columnHeader_r11 = \u0275\u0275reference(17);
     \u0275\u0275advance();
-    \u0275\u0275property("ngTemplateOutlet", columnHeader_r10)("ngTemplateOutletContext", \u0275\u0275pureFunction1(2, _c54, column_r11));
+    \u0275\u0275property("ngTemplateOutlet", columnHeader_r11)("ngTemplateOutletContext", \u0275\u0275pureFunction1(2, _c54, column_r12));
   }
 }
-function MessageTableComponent_Conditional_0_Conditional_17_For_2_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_Conditional_22_For_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_Conditional_17_For_2_Conditional_0_Template, 2, 4, "th");
+    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_Conditional_22_For_2_Conditional_0_Template, 2, 4, "th");
   }
   if (rf & 2) {
-    const column_r11 = ctx.$implicit;
-    const ctx_r3 = \u0275\u0275nextContext(3);
-    \u0275\u0275conditional(ctx_r3.isUnionColumn(column_r11) ? 0 : -1);
+    const column_r12 = ctx.$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275conditional(ctx_r2.isUnionColumn(column_r12) ? 0 : -1);
   }
 }
-function MessageTableComponent_Conditional_0_Conditional_17_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_Conditional_22_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "tr");
-    \u0275\u0275repeaterCreate(1, MessageTableComponent_Conditional_0_Conditional_17_For_2_Template, 1, 1, null, null, \u0275\u0275componentInstance().trackByColumn, true);
+    \u0275\u0275repeaterCreate(1, MessageTableComponent_Conditional_0_Conditional_22_For_2_Template, 1, 1, null, null, \u0275\u0275componentInstance().trackByColumn, true);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext(2);
+    const ctx_r2 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275repeater(ctx_r3.visibleColumns);
+    \u0275\u0275repeater(ctx_r2.visibleColumns);
   }
 }
-function MessageTableComponent_Conditional_0_For_20_Conditional_2_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_For_25_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    const _r12 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 27);
-    \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_For_20_Conditional_2_Template_button_click_0_listener($event) {
-      \u0275\u0275restoreView(_r12);
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onDeleteRowClick(row_r13, $event));
+    const _r13 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 34);
+    \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_For_25_Conditional_2_Template_button_click_0_listener($event) {
+      \u0275\u0275restoreView(_r13);
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onDeleteRowClick(row_r14, $event));
     });
-    \u0275\u0275element(1, "img", 28);
+    \u0275\u0275element(1, "img", 35);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext(3);
+    const ctx_r2 = \u0275\u0275nextContext(3);
     \u0275\u0275advance();
-    \u0275\u0275property("src", ctx_r3.getImagePath("minus.svg"), \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", ctx_r2.getImagePath("minus.svg"), \u0275\u0275sanitizeUrl);
   }
 }
-function MessageTableComponent_Conditional_0_For_20_Conditional_3_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r14 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 24)(1, "input", 29);
-    \u0275\u0275listener("change", function MessageTableComponent_Conditional_0_For_20_Conditional_3_Template_input_change_1_listener($event) {
-      \u0275\u0275restoreView(_r14);
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onRowSelect(row_r13, $event));
-    });
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const row_r13 = \u0275\u0275nextContext().$implicit;
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance();
-    \u0275\u0275property("name", "ep-table-" + (ctx_r3.id ?? "default"))("checked", ctx_r3.isRowSelected(row_r13))("disabled", !ctx_r3.isEditable);
-  }
-}
-function MessageTableComponent_Conditional_0_For_20_Conditional_4_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_For_25_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r15 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 25)(1, "input", 30);
-    \u0275\u0275listener("change", function MessageTableComponent_Conditional_0_For_20_Conditional_4_Template_input_change_1_listener($event) {
+    \u0275\u0275elementStart(0, "div", 31)(1, "input", 36);
+    \u0275\u0275listener("change", function MessageTableComponent_Conditional_0_For_25_Conditional_3_Template_input_change_1_listener($event) {
       \u0275\u0275restoreView(_r15);
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onRowSelect(row_r13, $event));
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onRowSelect(row_r14, $event));
     });
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const row_r13 = \u0275\u0275nextContext().$implicit;
-    const ctx_r3 = \u0275\u0275nextContext(2);
+    const row_r14 = \u0275\u0275nextContext().$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275property("checked", ctx_r3.isRowSelected(row_r13))("disabled", !ctx_r3.isEditable);
+    \u0275\u0275property("name", "ep-table-" + (ctx_r2.id ?? "default"))("checked", ctx_r2.isRowSelected(row_r14))("disabled", !ctx_r2.isEditable);
   }
 }
-function MessageTableComponent_Conditional_0_For_20_For_6_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_For_25_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
     const _r16 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "td", 31);
-    \u0275\u0275listener("dblclick", function MessageTableComponent_Conditional_0_For_20_For_6_Template_td_dblclick_0_listener() {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onCellDblClick(row_r13, column_r17));
-    });
-    \u0275\u0275elementStart(1, "ep-message-table-cell", 32);
-    \u0275\u0275listener("cellMouseOver", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_cellMouseOver_1_listener($event) {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onCellMouseOver($event, row_r13, column_r17));
-    })("cellMouseLeave", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_cellMouseLeave_1_listener($event) {
+    \u0275\u0275elementStart(0, "div", 32)(1, "input", 37);
+    \u0275\u0275listener("change", function MessageTableComponent_Conditional_0_For_25_Conditional_4_Template_input_change_1_listener($event) {
       \u0275\u0275restoreView(_r16);
-      const ctx_r3 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r3.onCellMouseLeave($event));
-    })("booleanToggle", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_booleanToggle_1_listener($event) {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onBooleanToggle($event, row_r13, column_r17));
-    })("dateChanged", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_dateChanged_1_listener($event) {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onDateChanged($event, row_r13, column_r17));
-    })("dateBlur", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_dateBlur_1_listener() {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.applyEdit(row_r13, column_r17));
-    })("dropdownFocus", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_dropdownFocus_1_listener() {
-      \u0275\u0275restoreView(_r16);
-      const ctx_r3 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r3.onDropdownFocus());
-    })("selectChanged", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_selectChanged_1_listener($event) {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onSelectDropdownChange($event, row_r13, column_r17));
-    })("multiChanged", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_multiChanged_1_listener($event) {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onMultiSelectChange($event, row_r13, column_r17));
-    })("editorInput", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_editorInput_1_listener($event) {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onCellEditorInput($event, row_r13, column_r17));
-    })("editorKeydown", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_editorKeydown_1_listener($event) {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onEditKeydown($event, row_r13, column_r17));
-    })("editorBlur", function MessageTableComponent_Conditional_0_For_20_For_6_Template_ep_message_table_cell_editorBlur_1_listener() {
-      const column_r17 = \u0275\u0275restoreView(_r16).$implicit;
-      const row_r13 = \u0275\u0275nextContext().$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.applyEdit(row_r13, column_r17));
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onRowSelect(row_r14, $event));
     });
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const column_r17 = ctx.$implicit;
-    const row_r13 = \u0275\u0275nextContext().$implicit;
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("ngClass", \u0275\u0275pureFunction2(10, _c63, ctx_r3.isCellChanged(row_r13, column_r17), ctx_r3.hasUnionError(row_r13, column_r17)));
+    const row_r14 = \u0275\u0275nextContext().$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275property("column", column_r17)("isColumnEditable", ctx_r3.isColumnEditable(column_r17))("isEditing", ctx_r3.isEditingCell(row_r13, column_r17))("displayValue", ctx_r3.getCellValue(row_r13, column_r17))("booleanValue", ctx_r3.getBooleanCellValue(row_r13, column_r17))("editingDate", ctx_r3.editingDate)("datePickerMinDate", ctx_r3.getDatePickerMinDate(row_r13, column_r17))("dropdownOptions", ctx_r3.getDropdownOptions(row_r13, column_r17))("dropdownSelection", ctx_r3.getDropdownSelection(row_r13, column_r17));
+    \u0275\u0275property("checked", ctx_r2.isRowSelected(row_r14))("disabled", !ctx_r2.isEditable);
   }
 }
-function MessageTableComponent_Conditional_0_For_20_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_For_25_For_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "tr")(1, "td", 22);
-    \u0275\u0275conditionalCreate(2, MessageTableComponent_Conditional_0_For_20_Conditional_2_Template, 2, 1, "button", 23);
-    \u0275\u0275conditionalCreate(3, MessageTableComponent_Conditional_0_For_20_Conditional_3_Template, 2, 3, "div", 24);
-    \u0275\u0275conditionalCreate(4, MessageTableComponent_Conditional_0_For_20_Conditional_4_Template, 2, 2, "div", 25);
+    const _r17 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "td", 38);
+    \u0275\u0275listener("dblclick", function MessageTableComponent_Conditional_0_For_25_For_6_Template_td_dblclick_0_listener() {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onCellDblClick(row_r14, column_r18));
+    });
+    \u0275\u0275elementStart(1, "ep-message-table-cell", 39);
+    \u0275\u0275listener("cellMouseOver", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_cellMouseOver_1_listener($event) {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onCellMouseOver($event, row_r14, column_r18));
+    })("cellMouseLeave", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_cellMouseLeave_1_listener($event) {
+      \u0275\u0275restoreView(_r17);
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.onCellMouseLeave($event));
+    })("booleanToggle", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_booleanToggle_1_listener($event) {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onBooleanToggle($event, row_r14, column_r18));
+    })("dateChanged", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_dateChanged_1_listener($event) {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onDateChanged($event, row_r14, column_r18));
+    })("dateBlur", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_dateBlur_1_listener() {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.applyEdit(row_r14, column_r18));
+    })("dropdownFocus", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_dropdownFocus_1_listener() {
+      \u0275\u0275restoreView(_r17);
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.onDropdownFocus());
+    })("selectChanged", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_selectChanged_1_listener($event) {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onSelectDropdownChange($event, row_r14, column_r18));
+    })("multiChanged", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_multiChanged_1_listener($event) {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onMultiSelectChange($event, row_r14, column_r18));
+    })("editorInput", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_editorInput_1_listener($event) {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onCellEditorInput($event, row_r14, column_r18));
+    })("editorKeydown", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_editorKeydown_1_listener($event) {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onEditKeydown($event, row_r14, column_r18));
+    })("editorBlur", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_editorBlur_1_listener() {
+      const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const row_r14 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.applyEdit(row_r14, column_r18));
+    });
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const column_r18 = ctx.$implicit;
+    const row_r14 = \u0275\u0275nextContext().$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275property("ngClass", \u0275\u0275pureFunction2(10, _c63, ctx_r2.isCellChanged(row_r14, column_r18), ctx_r2.hasUnionError(row_r14, column_r18)));
+    \u0275\u0275advance();
+    \u0275\u0275property("column", column_r18)("isColumnEditable", ctx_r2.isColumnEditable(column_r18))("isEditing", ctx_r2.isEditingCell(row_r14, column_r18))("displayValue", ctx_r2.getCellValue(row_r14, column_r18))("booleanValue", ctx_r2.getBooleanCellValue(row_r14, column_r18))("editingDate", ctx_r2.editingDate)("datePickerMinDate", ctx_r2.getDatePickerMinDate(row_r14, column_r18))("dropdownOptions", ctx_r2.getDropdownOptions(row_r14, column_r18))("dropdownSelection", ctx_r2.getDropdownSelection(row_r14, column_r18));
+  }
+}
+function MessageTableComponent_Conditional_0_For_25_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "tr")(1, "td", 29);
+    \u0275\u0275conditionalCreate(2, MessageTableComponent_Conditional_0_For_25_Conditional_2_Template, 2, 1, "button", 30);
+    \u0275\u0275conditionalCreate(3, MessageTableComponent_Conditional_0_For_25_Conditional_3_Template, 2, 3, "div", 31);
+    \u0275\u0275conditionalCreate(4, MessageTableComponent_Conditional_0_For_25_Conditional_4_Template, 2, 2, "div", 32);
     \u0275\u0275elementEnd();
-    \u0275\u0275repeaterCreate(5, MessageTableComponent_Conditional_0_For_20_For_6_Template, 2, 13, "td", 26, \u0275\u0275componentInstance().trackByColumn, true);
+    \u0275\u0275repeaterCreate(5, MessageTableComponent_Conditional_0_For_25_For_6_Template, 2, 13, "td", 33, \u0275\u0275componentInstance().trackByColumn, true);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext(2);
+    const ctx_r2 = \u0275\u0275nextContext(2);
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx_r3.isEditable && ctx_r3.rowsSelectionType === "edit" ? 2 : -1);
+    \u0275\u0275conditional(ctx_r2.isEditable && ctx_r2.rowsSelectionType === "edit" ? 2 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r3.rowsSelectionType === "select" ? 3 : -1);
+    \u0275\u0275conditional(ctx_r2.rowsSelectionType === "select" ? 3 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r3.rowsSelectionType === "multiSelect" ? 4 : -1);
+    \u0275\u0275conditional(ctx_r2.rowsSelectionType === "multiSelect" ? 4 : -1);
     \u0275\u0275advance();
-    \u0275\u0275repeater(ctx_r3.visibleColumns);
+    \u0275\u0275repeater(ctx_r2.visibleColumns);
   }
 }
-function MessageTableComponent_Conditional_0_Conditional_21_Template(rf, ctx) {
+function MessageTableComponent_Conditional_0_Conditional_26_Template(rf, ctx) {
   if (rf & 1) {
-    const _r18 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "tr")(1, "td")(2, "div", 33);
-    \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_Conditional_21_Template_div_click_2_listener() {
-      \u0275\u0275restoreView(_r18);
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.toggleShowAll());
-    })("keydown.enter", function MessageTableComponent_Conditional_0_Conditional_21_Template_div_keydown_enter_2_listener() {
-      \u0275\u0275restoreView(_r18);
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.toggleShowAll());
-    })("keydown.space", function MessageTableComponent_Conditional_0_Conditional_21_Template_div_keydown_space_2_listener($event) {
-      \u0275\u0275restoreView(_r18);
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      ctx_r3.toggleShowAll();
+    const _r19 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "tr")(1, "td")(2, "div", 40);
+    \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_Conditional_26_Template_div_click_2_listener() {
+      \u0275\u0275restoreView(_r19);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.toggleShowAll());
+    })("keydown.enter", function MessageTableComponent_Conditional_0_Conditional_26_Template_div_keydown_enter_2_listener() {
+      \u0275\u0275restoreView(_r19);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.toggleShowAll());
+    })("keydown.space", function MessageTableComponent_Conditional_0_Conditional_26_Template_div_keydown_space_2_listener($event) {
+      \u0275\u0275restoreView(_r19);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      ctx_r2.toggleShowAll();
       return \u0275\u0275resetView($event.preventDefault());
     });
     \u0275\u0275text(3);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext(2);
+    const ctx_r2 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275attribute("colspan", ctx_r3.visibleColumns.length + 1);
+    \u0275\u0275attribute("colspan", ctx_r2.visibleColumns.length + 1);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", ctx_r3.getToggleButtonText(), " ");
+    \u0275\u0275textInterpolate1(" ", ctx_r2.getToggleButtonText(), " ");
   }
 }
 function MessageTableComponent_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 3, 0);
-    \u0275\u0275conditionalCreate(2, MessageTableComponent_Conditional_0_Conditional_2_Template, 3, 0, "div", 5);
-    \u0275\u0275elementStart(3, "div", 6)(4, "table", 7)(5, "thead");
-    \u0275\u0275template(6, MessageTableComponent_Conditional_0_ng_template_6_Template, 5, 9, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(8, "tr")(9, "th")(10, "div", 8)(11, "button", 9, 2);
-    \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_Template_button_click_11_listener() {
+    \u0275\u0275elementStart(0, "div", 3, 0)(2, "div", 5)(3, "div", 6);
+    \u0275\u0275conditionalCreate(4, MessageTableComponent_Conditional_0_Conditional_4_Template, 2, 1, "ep-button", 7);
+    \u0275\u0275repeaterCreate(5, MessageTableComponent_Conditional_0_For_6_Template, 2, 2, "ep-button", 8, _forTrack04);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(7, "div", 9)(8, "div", 10, 1)(10, "ep-button", 11);
+    \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_Template_ep_button_buttonClick_10_listener($event) {
       \u0275\u0275restoreView(_r1);
-      const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.toggleColumnsDropdown());
+      const ctx_r2 = \u0275\u0275nextContext();
+      ctx_r2.toggleColumnsDropdown();
+      return \u0275\u0275resetView($event.stopPropagation());
     });
-    \u0275\u0275text(13, " Columns ");
-    \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(14, MessageTableComponent_Conditional_0_Conditional_14_Template, 2, 4, "div", 10);
+    \u0275\u0275text(11, " Manage ");
     \u0275\u0275elementEnd()();
-    \u0275\u0275repeaterCreate(15, MessageTableComponent_Conditional_0_For_16_Template, 2, 2, null, null, \u0275\u0275componentInstance().trackByColumn, true);
+    \u0275\u0275conditionalCreate(12, MessageTableComponent_Conditional_0_Conditional_12_Template, 2, 4, "div", 12);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(13, "div", 13)(14, "table", 14)(15, "thead");
+    \u0275\u0275template(16, MessageTableComponent_Conditional_0_ng_template_16_Template, 5, 9, "ng-template", null, 2, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(18, "tr");
+    \u0275\u0275element(19, "th", 15);
+    \u0275\u0275repeaterCreate(20, MessageTableComponent_Conditional_0_For_21_Template, 2, 2, null, null, \u0275\u0275componentInstance().trackByColumn, true);
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(17, MessageTableComponent_Conditional_0_Conditional_17_Template, 3, 0, "tr");
+    \u0275\u0275conditionalCreate(22, MessageTableComponent_Conditional_0_Conditional_22_Template, 3, 0, "tr");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(18, "tbody");
-    \u0275\u0275repeaterCreate(19, MessageTableComponent_Conditional_0_For_20_Template, 7, 3, "tr", null, \u0275\u0275componentInstance().trackByRow, true);
-    \u0275\u0275conditionalCreate(21, MessageTableComponent_Conditional_0_Conditional_21_Template, 4, 2, "tr");
-    \u0275\u0275elementEnd()()()();
+    \u0275\u0275elementStart(23, "tbody");
+    \u0275\u0275repeaterCreate(24, MessageTableComponent_Conditional_0_For_25_Template, 7, 3, "tr", null, \u0275\u0275componentInstance().trackByRow, true);
+    \u0275\u0275conditionalCreate(26, MessageTableComponent_Conditional_0_Conditional_26_Template, 4, 2, "tr");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(27, "div", 16)(28, "ep-button", 17);
+    \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_Template_ep_button_buttonClick_28_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.onTableActionClick(ctx_r2.csvAction, $event));
+    });
+    \u0275\u0275text(29, " CSV ");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(30, "ep-button", 17);
+    \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_Template_ep_button_buttonClick_30_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.onTableActionClick(ctx_r2.xlsxAction, $event));
+    });
+    \u0275\u0275text(31, " XLSX ");
+    \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext();
-    \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx_r3.tableActionsToRender.length > 0 ? 2 : -1);
-    \u0275\u0275advance(7);
-    \u0275\u0275attribute("rowspan", ctx_r3.hasUnions ? 2 : 1);
-    \u0275\u0275advance(5);
-    \u0275\u0275conditional(ctx_r3.showColumnsDropdown ? 14 : -1);
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance(4);
+    \u0275\u0275conditional(ctx_r2.resetTableAction ? 4 : -1);
     \u0275\u0275advance();
-    \u0275\u0275repeater(ctx_r3.visibleColumns);
+    \u0275\u0275repeater(ctx_r2.customTableActionsToRender);
+    \u0275\u0275advance(5);
+    \u0275\u0275property("iconSize", 8);
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx_r3.hasUnions ? 17 : -1);
+    \u0275\u0275conditional(ctx_r2.showColumnsDropdown ? 12 : -1);
+    \u0275\u0275advance(7);
+    \u0275\u0275attribute("rowspan", ctx_r2.hasUnions ? 2 : 1);
+    \u0275\u0275advance();
+    \u0275\u0275repeater(ctx_r2.visibleColumns);
     \u0275\u0275advance(2);
-    \u0275\u0275repeater(ctx_r3.displayedRows);
+    \u0275\u0275conditional(ctx_r2.hasUnions ? 22 : -1);
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx_r3.shouldShowToggleButton() ? 21 : -1);
+    \u0275\u0275repeater(ctx_r2.displayedRows);
+    \u0275\u0275advance(2);
+    \u0275\u0275conditional(ctx_r2.shouldShowToggleButton() ? 26 : -1);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("iconSize", 12);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("iconSize", 12);
   }
 }
 function MessageTableComponent_Conditional_1_Template(rf, ctx) {
@@ -93077,6 +93277,18 @@ var _MessageTableComponent = class _MessageTableComponent {
   shouldShowActionText(action) {
     return action.action !== UserAction.EpicstaffResetTable;
   }
+  get resetTableAction() {
+    return this.tableActionsToRender.find((a3) => a3.action === UserAction.EpicstaffResetTable) ?? null;
+  }
+  get csvAction() {
+    return { action: UserAction.DownloadEpTableCsv, type: "button", text: "CSV" };
+  }
+  get xlsxAction() {
+    return { action: UserAction.DownloadEpTableExcel, type: "button", text: "XLSX" };
+  }
+  get customTableActionsToRender() {
+    return this.tableActionsToRender.filter((a3) => a3.action !== UserAction.EpicstaffResetTable && a3.action !== UserAction.DownloadEpTableCsv && a3.action !== UserAction.DownloadEpTableExcel);
+  }
   onDeleteRowClick(row, event) {
     if (!this.isEditable || this.rowsSelectionType !== "edit")
       return;
@@ -93360,8 +93572,8 @@ var _MessageTableComponent = class _MessageTableComponent {
     }
     if (this.showColumnsDropdown) {
       const dropdown = hasMatchInPath(".ep-message-table__columns-dropdown") || target.closest(".ep-message-table__columns-dropdown");
-      const settingsButton = hasMatchInPath(".ep-message-table__settings") || target.closest(".ep-message-table__settings");
-      if (!dropdown && !settingsButton) {
+      const manageButton = hasMatchInPath(".ep-message-table__manage") || target.closest(".ep-message-table__manage");
+      if (!dropdown && !manageButton) {
         this.showColumnsDropdown = false;
       }
     }
@@ -94334,9 +94546,9 @@ _MessageTableComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
       return ctx.onDocumentClick($event);
     }, \u0275\u0275resolveDocument);
   }
-}, inputs: { message: "message", columns: "columns", rows: "rows", visibleRowsQuantity: "visibleRowsQuantity", isEditable: "isEditable", isTitleEditable: "isTitleEditable", isSortable: "isSortable", defaultSortField: "defaultSortField", tableActions: "tableActions", id: "id", rowsSelectionType: "rowsSelectionType", preselectedRows: "preselectedRows", unions: "unions" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 2, vars: 1, consts: [["tableContainer", ""], ["columnHeader", ""], ["columnsToggle", ""], [1, "ep-message-table"], [1, "ep-message-table__error"], [1, "ep-message-table__actions"], [1, "ep-message-table__scroll"], [1, "ep-message-table__container"], [1, "ep-message-table__columns-trigger"], ["type", "button", 1, "ep-message-table__settings", 3, "click"], [1, "ep-message-table__columns-dropdown", 3, "ngStyle"], [3, "imgSrc"], [3, "buttonClick", "imgSrc"], [1, "ep-message-table__title", 3, "mouseenter", "mouseleave", "dblclick", "ngClass"], [1, "ep-message-table__title-editor", 3, "ngModel"], [3, "ngStyle"], ["type", "button", 1, "ep-message-table__sort-arrow", 3, "click", "ngStyle"], ["alt", "Sort icon", 2, "vertical-align", "top", 3, "src"], [1, "ep-message-table__title-editor", 3, "ngModelChange", "keydown", "blur", "ngModel"], [3, "updateShownColumns", "columns", "maxHeight", "isEmbedded"], [1, "ep-message-table__union-title"], [4, "ngTemplateOutlet", "ngTemplateOutletContext"], [1, "ep-message-table__selection-cell"], ["type", "button", "title", "Delete row", 1, "ep-message-table__delete-icon"], [1, "ep-message-table__radio"], [1, "ep-message-table__checkbox"], [3, "ngClass"], ["type", "button", "title", "Delete row", 1, "ep-message-table__delete-icon", 3, "click"], ["width", "16", "height", "16", "alt", "Delete row", 3, "src"], ["type", "radio", 3, "change", "name", "checked", "disabled"], ["type", "checkbox", 3, "change", "checked", "disabled"], [3, "dblclick", "ngClass"], [3, "cellMouseOver", "cellMouseLeave", "booleanToggle", "dateChanged", "dateBlur", "dropdownFocus", "selectChanged", "multiChanged", "editorInput", "editorKeydown", "editorBlur", "column", "isColumnEditable", "isEditing", "displayValue", "booleanValue", "editingDate", "datePickerMinDate", "dropdownOptions", "dropdownSelection"], ["role", "button", "tabindex", "0", 1, "ep-message-table__show-more", 3, "click", "keydown.enter", "keydown.space"]], template: function MessageTableComponent_Template(rf, ctx) {
+}, inputs: { message: "message", columns: "columns", rows: "rows", visibleRowsQuantity: "visibleRowsQuantity", isEditable: "isEditable", isTitleEditable: "isTitleEditable", isSortable: "isSortable", defaultSortField: "defaultSortField", tableActions: "tableActions", id: "id", rowsSelectionType: "rowsSelectionType", preselectedRows: "preselectedRows", unions: "unions" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 2, vars: 1, consts: [["tableContainer", ""], ["columnsToggle", ""], ["columnHeader", ""], [1, "ep-message-table"], [1, "ep-message-table__error"], [1, "ep-message-table__header-bar"], [1, "ep-message-table__header-bar-left"], ["variant", "secondary", "size", "md", "iconName", "reset", 3, "iconSize"], ["variant", "secondary", "size", "md", 3, "imgSrc"], [1, "ep-message-table__header-bar-right"], [1, "ep-message-table__manage"], ["variant", "ghost", "size", "md", "iconName", "chevron-xs", "iconPos", "right", 3, "buttonClick", "iconSize"], [1, "ep-message-table__columns-dropdown", 3, "ngStyle"], [1, "ep-message-table__scroll"], [1, "ep-message-table__container"], [1, "ep-message-table__selection-th"], [1, "ep-message-table__footer"], ["variant", "secondary", "size", "md", "iconName", "download", 3, "buttonClick", "iconSize"], ["variant", "secondary", "size", "md", "iconName", "reset", 3, "buttonClick", "iconSize"], ["variant", "secondary", "size", "md", 3, "buttonClick", "imgSrc"], [3, "updateShownColumns", "columns", "maxHeight", "isEmbedded"], [1, "ep-message-table__title", 3, "mouseenter", "mouseleave", "dblclick", "ngClass"], [1, "ep-message-table__title-editor", 3, "ngModel"], [3, "ngStyle"], ["type", "button", 1, "ep-message-table__sort-arrow", 3, "click", "ngStyle"], ["alt", "Sort icon", 2, "vertical-align", "top", 3, "src"], [1, "ep-message-table__title-editor", 3, "ngModelChange", "keydown", "blur", "ngModel"], [1, "ep-message-table__union-title"], [4, "ngTemplateOutlet", "ngTemplateOutletContext"], [1, "ep-message-table__selection-cell"], ["type", "button", "title", "Delete row", 1, "ep-message-table__delete-icon"], [1, "ep-message-table__radio"], [1, "ep-message-table__checkbox"], [3, "ngClass"], ["type", "button", "title", "Delete row", 1, "ep-message-table__delete-icon", 3, "click"], ["width", "16", "height", "16", "alt", "Delete row", 3, "src"], ["type", "radio", 3, "change", "name", "checked", "disabled"], ["type", "checkbox", 3, "change", "checked", "disabled"], [3, "dblclick", "ngClass"], [3, "cellMouseOver", "cellMouseLeave", "booleanToggle", "dateChanged", "dateBlur", "dropdownFocus", "selectChanged", "multiChanged", "editorInput", "editorKeydown", "editorBlur", "column", "isColumnEditable", "isEditing", "displayValue", "booleanValue", "editingDate", "datePickerMinDate", "dropdownOptions", "dropdownSelection"], ["role", "button", "tabindex", "0", 1, "ep-message-table__show-more", 3, "click", "keydown.enter", "keydown.space"]], template: function MessageTableComponent_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_Template, 22, 5, "div", 3)(1, MessageTableComponent_Conditional_1_Template, 2, 0, "div", 4);
+    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_Template, 32, 8, "div", 3)(1, MessageTableComponent_Conditional_1_Template, 2, 0, "div", 4);
   }
   if (rf & 2) {
     \u0275\u0275conditional(ctx.rows && ctx.rows.length > 0 && ctx.columns && ctx.columns.length > 0 ? 0 : 1);
@@ -94353,7 +94565,7 @@ _MessageTableComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
   ButtonComponent,
   MessageTableCellComponent,
   MessageTableColumnsConfigurationComponent
-], styles: ["\n\n.ep-message-table[_ngcontent-%COMP%] {\n  padding: 0;\n  width: 100%;\n  max-width: 100%;\n  overflow: visible;\n}\n.ep-message-table__actions[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 8px;\n  flex-wrap: wrap;\n  justify-content: flex-start;\n  margin-bottom: 10px;\n}\n.ep-message-table__scroll[_ngcontent-%COMP%] {\n  width: 100%;\n  overflow: auto;\n}\n.ep-message-table__container[_ngcontent-%COMP%] {\n  border-collapse: collapse;\n  font-size: 14px;\n  text-align: left;\n  width: max-content;\n  max-width: 100%;\n}\n.ep-message-table[_ngcontent-%COMP%]   th[_ngcontent-%COMP%] {\n  color: var(--ep-color-text-muted);\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-color-border-subtle);\n  background: var(--ep-color-surface-alt);\n}\n.ep-message-table[_ngcontent-%COMP%]   td[_ngcontent-%COMP%] {\n  max-width: 300px;\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-color-border-subtle);\n  line-height: 20px;\n  font-size: 14px;\n  color: var(--ep-color-text);\n}\n.ep-message-table[_ngcontent-%COMP%]   tbody[_ngcontent-%COMP%]   tr[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  width: 100%;\n  height: 100%;\n  min-width: auto;\n  cursor: pointer;\n  font-weight: 600;\n}\n.ep-message-table__title-changed[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title-editor[_ngcontent-%COMP%] {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: 13px;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n}\n.ep-message-table__sort-arrow[_ngcontent-%COMP%] {\n  margin-left: auto;\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: opacity 0.2s ease;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n}\n.ep-message-table__sort-arrow[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.ep-message-table__default-cell[_ngcontent-%COMP%] {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n}\n.ep-message-table__cell-disabled[_ngcontent-%COMP%] {\n  opacity: 0.7;\n  cursor: default;\n}\n.ep-message-table__cell-changed[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__union-error[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-danger-soft);\n}\n.ep-message-table__cell-editor[_ngcontent-%COMP%] {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: inherit;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n  box-shadow: none;\n}\n.ep-message-table__settings[_ngcontent-%COMP%] {\n  border: 1px solid var(--ep-color-border);\n  background: var(--ep-color-surface);\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  cursor: pointer;\n}\n.ep-message-table__columns-trigger[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n}\n.ep-message-table__union-title[_ngcontent-%COMP%] {\n  text-align: center;\n  font-weight: 600;\n  font-size: 13px;\n  color: var(--ep-color-text);\n  background: transparent;\n}\n.ep-message-table__align-right[_ngcontent-%COMP%] {\n  text-align: right;\n}\n.ep-message-table__show-more[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 4px;\n  cursor: pointer;\n  font-size: 13px;\n  color: var(--ep-color-accent);\n  padding: 8px;\n  justify-content: center;\n}\n.ep-message-table__show-more[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message-table__delete-icon[_ngcontent-%COMP%] {\n  display: none;\n  cursor: pointer;\n  transition: opacity 0.2s ease;\n  justify-content: center;\n  align-items: center;\n  background: none;\n  border: none;\n  padding: 0;\n}\n.ep-message-table__delete-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.ep-message-table__selection-cell[_ngcontent-%COMP%] {\n  width: 40px;\n  min-width: 40px;\n  text-align: center;\n  position: relative;\n}\n.ep-message-table__selection-cell[_ngcontent-%COMP%]:hover   .ep-message-table__delete-icon[_ngcontent-%COMP%] {\n  display: flex;\n}\n.ep-message-table__radio[_ngcontent-%COMP%], \n.ep-message-table__checkbox[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.ep-message-table__columns-dropdown[_ngcontent-%COMP%] {\n  position: fixed;\n  top: 0;\n  left: 0;\n  z-index: 1000;\n}\n.ep-message-table__error[_ngcontent-%COMP%] {\n  padding: 10px;\n  color: var(--ep-color-danger);\n  font-size: 14px;\n  background-color: var(--ep-color-danger-soft);\n  border: 1px solid var(--ep-color-danger-border);\n  border-radius: 4px;\n  margin: 10px 0;\n}\n/*# sourceMappingURL=message-table.component.css.map */"], changeDetection: 0 });
+], styles: ["\n\n.ep-message-table[_ngcontent-%COMP%] {\n  padding: 0;\n  width: 100%;\n  max-width: 100%;\n  overflow: visible;\n  --ep-button-secondary-text: var(--ep-color-text-muted);\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n}\n.ep-message-table__header-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  margin-bottom: 8px;\n}\n.ep-message-table__header-bar-left[_ngcontent-%COMP%], \n.ep-message-table__header-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.ep-message-table__header-bar-right[_ngcontent-%COMP%] {\n  position: relative;\n}\n.ep-message-table__manage[_ngcontent-%COMP%] {\n  position: relative;\n}\n.ep-message-table__manage-menu[_ngcontent-%COMP%] {\n  top: calc(100% + 4px);\n  right: 0;\n}\n.ep-message-table__footer[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message-table__selection-th[_ngcontent-%COMP%] {\n  width: 40px;\n  min-width: 40px;\n}\n.ep-message-table__scroll[_ngcontent-%COMP%] {\n  width: 100%;\n  overflow: auto;\n}\n.ep-message-table__container[_ngcontent-%COMP%] {\n  border-collapse: collapse;\n  font-size: 14px;\n  text-align: left;\n  width: max-content;\n  max-width: 100%;\n}\n.ep-message-table[_ngcontent-%COMP%]   th[_ngcontent-%COMP%] {\n  color: var(--ep-table-header-text);\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-table-border);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table[_ngcontent-%COMP%]   th[_ngcontent-%COMP%]:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table[_ngcontent-%COMP%]   td[_ngcontent-%COMP%] {\n  max-width: 300px;\n  padding: 0 8px !important;\n  border: 1px solid var(--ep-table-border);\n  line-height: 20px;\n  font-size: 14px;\n  color: var(--ep-table-cell-text);\n  background: var(--ep-table-row-bg);\n  height: 40px;\n  vertical-align: middle;\n}\n.ep-message-table[_ngcontent-%COMP%]   td[_ngcontent-%COMP%]:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table[_ngcontent-%COMP%]   tbody[_ngcontent-%COMP%]   tr[_ngcontent-%COMP%]:nth-child(even)   td[_ngcontent-%COMP%] {\n  background: var(--ep-table-row-alt-bg);\n}\n.ep-message-table[_ngcontent-%COMP%]   tbody[_ngcontent-%COMP%]   tr[_ngcontent-%COMP%]:hover   td[_ngcontent-%COMP%] {\n  background-color: var(--ep-table-row-hover-bg);\n}\n.ep-message-table__title[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  width: 100%;\n  height: 100%;\n  min-width: auto;\n  cursor: pointer;\n  font-weight: 600;\n}\n.ep-message-table__title-changed[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title-editor[_ngcontent-%COMP%] {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: 13px;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n}\n.ep-message-table__sort-arrow[_ngcontent-%COMP%] {\n  margin-left: auto;\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: opacity 0.2s ease;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n}\n.ep-message-table__sort-arrow[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.ep-message-table__default-cell[_ngcontent-%COMP%] {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n}\n.ep-message-table__cell-disabled[_ngcontent-%COMP%] {\n  opacity: 0.7;\n  cursor: default;\n}\n.ep-message-table__cell-changed[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__union-error[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-danger-soft);\n}\n.ep-message-table__cell-editor[_ngcontent-%COMP%] {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: inherit;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n  box-shadow: none;\n}\n.ep-message-table__settings[_ngcontent-%COMP%] {\n  border: 1px solid var(--ep-color-border);\n  background: var(--ep-color-surface);\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  cursor: pointer;\n}\n.ep-message-table__columns-trigger[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n}\n.ep-message-table__union-title[_ngcontent-%COMP%] {\n  text-align: center;\n  font-weight: 600;\n  font-size: 13px;\n  color: var(--ep-table-header-text);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table__align-right[_ngcontent-%COMP%] {\n  text-align: right;\n}\n.ep-message-table__show-more[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 4px;\n  cursor: pointer;\n  font-size: 13px;\n  color: var(--ep-color-accent);\n  padding: 8px;\n  justify-content: center;\n}\n.ep-message-table__show-more[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message-table__delete-icon[_ngcontent-%COMP%] {\n  display: none;\n  cursor: pointer;\n  transition: opacity 0.2s ease;\n  justify-content: center;\n  align-items: center;\n  background: none;\n  border: none;\n  padding: 0;\n}\n.ep-message-table__delete-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.ep-message-table__selection-cell[_ngcontent-%COMP%] {\n  width: 40px;\n  min-width: 40px;\n  text-align: center;\n  position: relative;\n}\n.ep-message-table__selection-cell[_ngcontent-%COMP%]:hover   .ep-message-table__delete-icon[_ngcontent-%COMP%] {\n  display: flex;\n}\n.ep-message-table__radio[_ngcontent-%COMP%], \n.ep-message-table__checkbox[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.ep-message-table__columns-dropdown[_ngcontent-%COMP%] {\n  position: fixed;\n  top: 0;\n  left: 0;\n  z-index: 1000;\n}\n.ep-message-table__error[_ngcontent-%COMP%] {\n  padding: 10px;\n  color: var(--ep-color-danger);\n  font-size: 14px;\n  background-color: var(--ep-color-danger-soft);\n  border: 1px solid var(--ep-color-danger-border);\n  border-radius: 4px;\n  margin: 10px 0;\n}\n/*# sourceMappingURL=message-table.component.css.map */"], changeDetection: 0 });
 var MessageTableComponent = _MessageTableComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MessageTableComponent, [{
@@ -94364,228 +94576,262 @@ var MessageTableComponent = _MessageTableComponent;
       ButtonComponent,
       MessageTableCellComponent,
       MessageTableColumnsConfigurationComponent
-    ], changeDetection: ChangeDetectionStrategy.OnPush, template: `@if (rows && rows.length > 0 && columns && columns.length > 0) {\r
-  <div class="ep-message-table" #tableContainer>\r
-    @if (tableActionsToRender.length > 0) {\r
-      <div class="ep-message-table__actions">\r
-        @for (action of tableActionsToRender; track action.action) {\r
-          <ep-button\r
-            [imgSrc]="getActionIcon(action) ?? undefined"\r
-            (buttonClick)="onTableActionClick(action, $event)"\r
-          >\r
-            @if (shouldShowActionText(action)) {\r
-              {{ action.text }}\r
-            }\r
-          </ep-button>\r
-        }\r
-      </div>\r
-    }\r
-\r
-    <div class="ep-message-table__scroll">\r
-      <table class="ep-message-table__container">\r
-        <thead>\r
-          <ng-template #columnHeader let-column="column">\r
-            <div\r
-              class="ep-message-table__title"\r
-              [ngClass]="{ 'ep-message-table__title-changed': isColumnTitleChanged(column) }"\r
-              (mouseenter)="onColumnHeaderMouseEnter(column)"\r
-              (mouseleave)="onColumnHeaderMouseLeave()"\r
-              (dblclick)="onColumnTitleDblClick(column, $event)"\r
-            >\r
-              @if (isEditingColumnTitle(column)) {\r
-                <input\r
-                  class="ep-message-table__title-editor"\r
-                  [(ngModel)]="editingColumnTitle"\r
-                  (keydown)="onColumnTitleEditKeydown($event, column)"\r
-                  (blur)="applyColumnTitleEdit(column)"\r
-                />\r
-              } @else {\r
-                <span\r
-                  [ngStyle]="{\r
-                    color:\r
-                      currentSortField === column.key\r
-                        ? 'var(--ep-color-accent)'\r
-                        : 'var(--ep-color-text-muted)',\r
-                  }"\r
-                >\r
-                  {{ column.title || column.key }}\r
-                </span>\r
-              }\r
-              <button\r
-                type="button"\r
-                class="ep-message-table__sort-arrow"\r
-                [ngStyle]="{\r
-                  opacity:\r
-                    isSortable && (currentSortField === column.key || hoveredColumn === column.key)\r
-                      ? '1'\r
-                      : '0',\r
-                  rotate: currentSortOrder === 'desc' ? '180deg' : '0deg',\r
-                }"\r
-                (click)="onColumnHeaderClick(column)"\r
-              >\r
-                <img style="vertical-align: top" [src]="getSortIcon(column)" alt="Sort icon" />\r
-              </button>\r
-            </div>\r
-          </ng-template>\r
-\r
-          <tr>\r
-            <th [attr.rowspan]="hasUnions ? 2 : 1">\r
-              <div class="ep-message-table__columns-trigger">\r
-                <button\r
-                  #columnsToggle\r
-                  class="ep-message-table__settings"\r
-                  type="button"\r
-                  (click)="toggleColumnsDropdown()"\r
-                >\r
-                  Columns\r
-                </button>\r
-                @if (showColumnsDropdown) {\r
-                  <div class="ep-message-table__columns-dropdown" [ngStyle]="columnsDropdownStyles">\r
-                    <ep-message-table-columns-configuration\r
-                      [columns]="dynamicColumns"\r
-                      [maxHeight]="400"\r
-                      [isEmbedded]="true"\r
-                      (updateShownColumns)="onColumnsUpdated($event)"\r
-                    ></ep-message-table-columns-configuration>\r
-                  </div>\r
-                }\r
-              </div>\r
-            </th>\r
-\r
-            @for (column of visibleColumns; track trackByColumn($index, column)) {\r
-              @if (hasUnions && isUnionColumn(column) && isUnionStartColumn(column)) {\r
-                <th\r
-                  class="ep-message-table__union-title"\r
-                  [attr.colspan]="getUnionColspanByColumn(column)"\r
-                >\r
-                  {{ getUnionTitleByColumn(column) }}\r
-                </th>\r
-              }\r
-              @if (!isUnionColumn(column)) {\r
-                <th [attr.rowspan]="hasUnions ? 2 : 1">\r
-                  <ng-container\r
-                    *ngTemplateOutlet="columnHeader; context: { column: column }"\r
-                  ></ng-container>\r
-                </th>\r
-              }\r
-            }\r
-          </tr>\r
-\r
-          @if (hasUnions) {\r
-            <tr>\r
-              @for (column of visibleColumns; track trackByColumn($index, column)) {\r
-                @if (isUnionColumn(column)) {\r
-                  <th>\r
-                    <ng-container\r
-                      *ngTemplateOutlet="columnHeader; context: { column: column }"\r
-                    ></ng-container>\r
-                  </th>\r
-                }\r
-              }\r
-            </tr>\r
-          }\r
-        </thead>\r
-\r
-        <tbody>\r
-          @for (row of displayedRows; track trackByRow($index, row)) {\r
-            <tr>\r
-              <td class="ep-message-table__selection-cell">\r
-                @if (isEditable && rowsSelectionType === "edit") {\r
-                  <button\r
-                    type="button"\r
-                    class="ep-message-table__delete-icon"\r
-                    title="Delete row"\r
-                    (click)="onDeleteRowClick(row, $event)"\r
-                  >\r
-                    <img\r
-                      [src]="getImagePath('minus.svg')"\r
-                      width="16"\r
-                      height="16"\r
-                      alt="Delete row"\r
-                    />\r
-                  </button>\r
-                }\r
-                @if (rowsSelectionType === "select") {\r
-                  <div class="ep-message-table__radio">\r
-                    <input\r
-                      type="radio"\r
-                      [name]="'ep-table-' + (id ?? 'default')"\r
-                      [checked]="isRowSelected(row)"\r
-                      [disabled]="!isEditable"\r
-                      (change)="onRowSelect(row, $event)"\r
-                    />\r
-                  </div>\r
-                }\r
-                @if (rowsSelectionType === "multiSelect") {\r
-                  <div class="ep-message-table__checkbox">\r
-                    <input\r
-                      type="checkbox"\r
-                      [checked]="isRowSelected(row)"\r
-                      [disabled]="!isEditable"\r
-                      (change)="onRowSelect(row, $event)"\r
-                    />\r
-                  </div>\r
-                }\r
-              </td>\r
-\r
-              @for (column of visibleColumns; track trackByColumn($index, column)) {\r
-                <td\r
-                  [ngClass]="{\r
-                    'ep-message-table__cell-changed': isCellChanged(row, column),\r
-                    'ep-message-table__union-error': hasUnionError(row, column),\r
-                  }"\r
-                  (dblclick)="onCellDblClick(row, column)"\r
-                >\r
-                  <ep-message-table-cell\r
-                    [column]="column"\r
-                    [isColumnEditable]="isColumnEditable(column)"\r
-                    [isEditing]="isEditingCell(row, column)"\r
-                    [displayValue]="getCellValue(row, column)"\r
-                    [booleanValue]="getBooleanCellValue(row, column)"\r
-                    [editingDate]="editingDate"\r
-                    [datePickerMinDate]="getDatePickerMinDate(row, column)"\r
-                    [dropdownOptions]="getDropdownOptions(row, column)"\r
-                    [dropdownSelection]="getDropdownSelection(row, column)"\r
-                    (cellMouseOver)="onCellMouseOver($event, row, column)"\r
-                    (cellMouseLeave)="onCellMouseLeave($event)"\r
-                    (booleanToggle)="onBooleanToggle($event, row, column)"\r
-                    (dateChanged)="onDateChanged($event, row, column)"\r
-                    (dateBlur)="applyEdit(row, column)"\r
-                    (dropdownFocus)="onDropdownFocus()"\r
-                    (selectChanged)="onSelectDropdownChange($event, row, column)"\r
-                    (multiChanged)="onMultiSelectChange($event, row, column)"\r
-                    (editorInput)="onCellEditorInput($event, row, column)"\r
-                    (editorKeydown)="onEditKeydown($event, row, column)"\r
-                    (editorBlur)="applyEdit(row, column)"\r
-                  ></ep-message-table-cell>\r
-                </td>\r
-              }\r
-            </tr>\r
-          }\r
-          @if (shouldShowToggleButton()) {\r
-            <tr>\r
-              <td [attr.colspan]="visibleColumns.length + 1">\r
-                <div\r
-                  class="ep-message-table__show-more"\r
-                  role="button"\r
-                  tabindex="0"\r
-                  (click)="toggleShowAll()"\r
-                  (keydown.enter)="toggleShowAll()"\r
-                  (keydown.space)="toggleShowAll(); $event.preventDefault()"\r
-                >\r
-                  {{ getToggleButtonText() }}\r
-                </div>\r
-              </td>\r
-            </tr>\r
-          }\r
-        </tbody>\r
-      </table>\r
-    </div>\r
-  </div>\r
-} @else {\r
-  <div class="ep-message-table__error">Table data is missing or invalid</div>\r
-}\r
-`, styles: ["/* src/app/components/message-table/message-table.component.scss */\n.ep-message-table {\n  padding: 0;\n  width: 100%;\n  max-width: 100%;\n  overflow: visible;\n}\n.ep-message-table__actions {\n  display: flex;\n  gap: 8px;\n  flex-wrap: wrap;\n  justify-content: flex-start;\n  margin-bottom: 10px;\n}\n.ep-message-table__scroll {\n  width: 100%;\n  overflow: auto;\n}\n.ep-message-table__container {\n  border-collapse: collapse;\n  font-size: 14px;\n  text-align: left;\n  width: max-content;\n  max-width: 100%;\n}\n.ep-message-table th {\n  color: var(--ep-color-text-muted);\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-color-border-subtle);\n  background: var(--ep-color-surface-alt);\n}\n.ep-message-table td {\n  max-width: 300px;\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-color-border-subtle);\n  line-height: 20px;\n  font-size: 14px;\n  color: var(--ep-color-text);\n}\n.ep-message-table tbody tr:hover {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  width: 100%;\n  height: 100%;\n  min-width: auto;\n  cursor: pointer;\n  font-weight: 600;\n}\n.ep-message-table__title-changed {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title-editor {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: 13px;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n}\n.ep-message-table__sort-arrow {\n  margin-left: auto;\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: opacity 0.2s ease;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n}\n.ep-message-table__sort-arrow img {\n  width: 16px;\n  height: 16px;\n}\n.ep-message-table__default-cell {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n}\n.ep-message-table__cell-disabled {\n  opacity: 0.7;\n  cursor: default;\n}\n.ep-message-table__cell-changed {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__union-error {\n  background-color: var(--ep-color-danger-soft);\n}\n.ep-message-table__cell-editor {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: inherit;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n  box-shadow: none;\n}\n.ep-message-table__settings {\n  border: 1px solid var(--ep-color-border);\n  background: var(--ep-color-surface);\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  cursor: pointer;\n}\n.ep-message-table__columns-trigger {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n}\n.ep-message-table__union-title {\n  text-align: center;\n  font-weight: 600;\n  font-size: 13px;\n  color: var(--ep-color-text);\n  background: transparent;\n}\n.ep-message-table__align-right {\n  text-align: right;\n}\n.ep-message-table__show-more {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 4px;\n  cursor: pointer;\n  font-size: 13px;\n  color: var(--ep-color-accent);\n  padding: 8px;\n  justify-content: center;\n}\n.ep-message-table__show-more:hover {\n  text-decoration: underline;\n}\n.ep-message-table__delete-icon {\n  display: none;\n  cursor: pointer;\n  transition: opacity 0.2s ease;\n  justify-content: center;\n  align-items: center;\n  background: none;\n  border: none;\n  padding: 0;\n}\n.ep-message-table__delete-icon:hover {\n  opacity: 0.7;\n}\n.ep-message-table__selection-cell {\n  width: 40px;\n  min-width: 40px;\n  text-align: center;\n  position: relative;\n}\n.ep-message-table__selection-cell:hover .ep-message-table__delete-icon {\n  display: flex;\n}\n.ep-message-table__radio,\n.ep-message-table__checkbox {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.ep-message-table__columns-dropdown {\n  position: fixed;\n  top: 0;\n  left: 0;\n  z-index: 1000;\n}\n.ep-message-table__error {\n  padding: 10px;\n  color: var(--ep-color-danger);\n  font-size: 14px;\n  background-color: var(--ep-color-danger-soft);\n  border: 1px solid var(--ep-color-danger-border);\n  border-radius: 4px;\n  margin: 10px 0;\n}\n/*# sourceMappingURL=message-table.component.css.map */\n"] }]
+    ], changeDetection: ChangeDetectionStrategy.OnPush, template: `@if (rows && rows.length > 0 && columns && columns.length > 0) {
+  <div class="ep-message-table" #tableContainer>
+    <div class="ep-message-table__header-bar">
+      <div class="ep-message-table__header-bar-left">
+        @if (resetTableAction) {
+          <ep-button
+            variant="secondary"
+            size="md"
+            iconName="reset"
+            [iconSize]="10"
+            (buttonClick)="onTableActionClick(resetTableAction, $event)"
+          >
+            Reset
+          </ep-button>
+        }
+        @for (action of customTableActionsToRender; track action.action) {
+          <ep-button
+            variant="secondary"
+            size="md"
+            [imgSrc]="getActionIcon(action) ?? undefined"
+            (buttonClick)="onTableActionClick(action, $event)"
+          >
+            {{ action.text }}
+          </ep-button>
+        }
+      </div>
+      <div class="ep-message-table__header-bar-right">
+        <div #columnsToggle class="ep-message-table__manage">
+          <ep-button
+            variant="ghost"
+            size="md"
+            iconName="chevron-xs"
+            [iconSize]="8"
+            iconPos="right"
+            (buttonClick)="toggleColumnsDropdown(); $event.stopPropagation()"
+          >
+            Manage
+          </ep-button>
+        </div>
+        @if (showColumnsDropdown) {
+          <div class="ep-message-table__columns-dropdown" [ngStyle]="columnsDropdownStyles">
+            <ep-message-table-columns-configuration
+              [columns]="dynamicColumns"
+              [maxHeight]="400"
+              [isEmbedded]="true"
+              (updateShownColumns)="onColumnsUpdated($event)"
+            ></ep-message-table-columns-configuration>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="ep-message-table__scroll">
+      <table class="ep-message-table__container">
+        <thead>
+          <ng-template #columnHeader let-column="column">
+            <div
+              class="ep-message-table__title"
+              [ngClass]="{ 'ep-message-table__title-changed': isColumnTitleChanged(column) }"
+              (mouseenter)="onColumnHeaderMouseEnter(column)"
+              (mouseleave)="onColumnHeaderMouseLeave()"
+              (dblclick)="onColumnTitleDblClick(column, $event)"
+            >
+              @if (isEditingColumnTitle(column)) {
+                <input
+                  class="ep-message-table__title-editor"
+                  [(ngModel)]="editingColumnTitle"
+                  (keydown)="onColumnTitleEditKeydown($event, column)"
+                  (blur)="applyColumnTitleEdit(column)"
+                />
+              } @else {
+                <span
+                  [ngStyle]="{
+                    color:
+                      currentSortField === column.key
+                        ? 'var(--ep-color-accent)'
+                        : 'var(--ep-color-text-muted)',
+                  }"
+                >
+                  {{ column.title || column.key }}
+                </span>
+              }
+              <button
+                type="button"
+                class="ep-message-table__sort-arrow"
+                [ngStyle]="{
+                  opacity:
+                    isSortable && (currentSortField === column.key || hoveredColumn === column.key)
+                      ? '1'
+                      : '0',
+                  rotate: currentSortOrder === 'desc' ? '180deg' : '0deg',
+                }"
+                (click)="onColumnHeaderClick(column)"
+              >
+                <img style="vertical-align: top" [src]="getSortIcon(column)" alt="Sort icon" />
+              </button>
+            </div>
+          </ng-template>
+
+          <tr>
+            <th [attr.rowspan]="hasUnions ? 2 : 1" class="ep-message-table__selection-th"></th>
+
+            @for (column of visibleColumns; track trackByColumn($index, column)) {
+              @if (hasUnions && isUnionColumn(column) && isUnionStartColumn(column)) {
+                <th
+                  class="ep-message-table__union-title"
+                  [attr.colspan]="getUnionColspanByColumn(column)"
+                >
+                  {{ getUnionTitleByColumn(column) }}
+                </th>
+              }
+              @if (!isUnionColumn(column)) {
+                <th [attr.rowspan]="hasUnions ? 2 : 1">
+                  <ng-container
+                    *ngTemplateOutlet="columnHeader; context: { column: column }"
+                  ></ng-container>
+                </th>
+              }
+            }
+          </tr>
+
+          @if (hasUnions) {
+            <tr>
+              @for (column of visibleColumns; track trackByColumn($index, column)) {
+                @if (isUnionColumn(column)) {
+                  <th>
+                    <ng-container
+                      *ngTemplateOutlet="columnHeader; context: { column: column }"
+                    ></ng-container>
+                  </th>
+                }
+              }
+            </tr>
+          }
+        </thead>
+
+        <tbody>
+          @for (row of displayedRows; track trackByRow($index, row)) {
+            <tr>
+              <td class="ep-message-table__selection-cell">
+                @if (isEditable && rowsSelectionType === "edit") {
+                  <button
+                    type="button"
+                    class="ep-message-table__delete-icon"
+                    title="Delete row"
+                    (click)="onDeleteRowClick(row, $event)"
+                  >
+                    <img
+                      [src]="getImagePath('minus.svg')"
+                      width="16"
+                      height="16"
+                      alt="Delete row"
+                    />
+                  </button>
+                }
+                @if (rowsSelectionType === "select") {
+                  <div class="ep-message-table__radio">
+                    <input
+                      type="radio"
+                      [name]="'ep-table-' + (id ?? 'default')"
+                      [checked]="isRowSelected(row)"
+                      [disabled]="!isEditable"
+                      (change)="onRowSelect(row, $event)"
+                    />
+                  </div>
+                }
+                @if (rowsSelectionType === "multiSelect") {
+                  <div class="ep-message-table__checkbox">
+                    <input
+                      type="checkbox"
+                      [checked]="isRowSelected(row)"
+                      [disabled]="!isEditable"
+                      (change)="onRowSelect(row, $event)"
+                    />
+                  </div>
+                }
+              </td>
+
+              @for (column of visibleColumns; track trackByColumn($index, column)) {
+                <td
+                  [ngClass]="{
+                    'ep-message-table__cell-changed': isCellChanged(row, column),
+                    'ep-message-table__union-error': hasUnionError(row, column),
+                  }"
+                  (dblclick)="onCellDblClick(row, column)"
+                >
+                  <ep-message-table-cell
+                    [column]="column"
+                    [isColumnEditable]="isColumnEditable(column)"
+                    [isEditing]="isEditingCell(row, column)"
+                    [displayValue]="getCellValue(row, column)"
+                    [booleanValue]="getBooleanCellValue(row, column)"
+                    [editingDate]="editingDate"
+                    [datePickerMinDate]="getDatePickerMinDate(row, column)"
+                    [dropdownOptions]="getDropdownOptions(row, column)"
+                    [dropdownSelection]="getDropdownSelection(row, column)"
+                    (cellMouseOver)="onCellMouseOver($event, row, column)"
+                    (cellMouseLeave)="onCellMouseLeave($event)"
+                    (booleanToggle)="onBooleanToggle($event, row, column)"
+                    (dateChanged)="onDateChanged($event, row, column)"
+                    (dateBlur)="applyEdit(row, column)"
+                    (dropdownFocus)="onDropdownFocus()"
+                    (selectChanged)="onSelectDropdownChange($event, row, column)"
+                    (multiChanged)="onMultiSelectChange($event, row, column)"
+                    (editorInput)="onCellEditorInput($event, row, column)"
+                    (editorKeydown)="onEditKeydown($event, row, column)"
+                    (editorBlur)="applyEdit(row, column)"
+                  ></ep-message-table-cell>
+                </td>
+              }
+            </tr>
+          }
+          @if (shouldShowToggleButton()) {
+            <tr>
+              <td [attr.colspan]="visibleColumns.length + 1">
+                <div
+                  class="ep-message-table__show-more"
+                  role="button"
+                  tabindex="0"
+                  (click)="toggleShowAll()"
+                  (keydown.enter)="toggleShowAll()"
+                  (keydown.space)="toggleShowAll(); $event.preventDefault()"
+                >
+                  {{ getToggleButtonText() }}
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="ep-message-table__footer">
+      <ep-button
+        variant="secondary"
+        size="md"
+        iconName="download"
+        [iconSize]="12"
+        (buttonClick)="onTableActionClick(csvAction, $event)"
+      >
+        CSV
+      </ep-button>
+      <ep-button
+        variant="secondary"
+        size="md"
+        iconName="download"
+        [iconSize]="12"
+        (buttonClick)="onTableActionClick(xlsxAction, $event)"
+      >
+        XLSX
+      </ep-button>
+    </div>
+  </div>
+} @else {
+  <div class="ep-message-table__error">Table data is missing or invalid</div>
+}
+`, styles: ["/* src/app/components/message-table/message-table.component.scss */\n.ep-message-table {\n  padding: 0;\n  width: 100%;\n  max-width: 100%;\n  overflow: visible;\n  --ep-button-secondary-text: var(--ep-color-text-muted);\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n}\n.ep-message-table__header-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  margin-bottom: 8px;\n}\n.ep-message-table__header-bar-left,\n.ep-message-table__header-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.ep-message-table__header-bar-right {\n  position: relative;\n}\n.ep-message-table__manage {\n  position: relative;\n}\n.ep-message-table__manage-menu {\n  top: calc(100% + 4px);\n  right: 0;\n}\n.ep-message-table__footer {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message-table__selection-th {\n  width: 40px;\n  min-width: 40px;\n}\n.ep-message-table__scroll {\n  width: 100%;\n  overflow: auto;\n}\n.ep-message-table__container {\n  border-collapse: collapse;\n  font-size: 14px;\n  text-align: left;\n  width: max-content;\n  max-width: 100%;\n}\n.ep-message-table th {\n  color: var(--ep-table-header-text);\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-table-border);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table th:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table td {\n  max-width: 300px;\n  padding: 0 8px !important;\n  border: 1px solid var(--ep-table-border);\n  line-height: 20px;\n  font-size: 14px;\n  color: var(--ep-table-cell-text);\n  background: var(--ep-table-row-bg);\n  height: 40px;\n  vertical-align: middle;\n}\n.ep-message-table td:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table tbody tr:nth-child(even) td {\n  background: var(--ep-table-row-alt-bg);\n}\n.ep-message-table tbody tr:hover td {\n  background-color: var(--ep-table-row-hover-bg);\n}\n.ep-message-table__title {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  width: 100%;\n  height: 100%;\n  min-width: auto;\n  cursor: pointer;\n  font-weight: 600;\n}\n.ep-message-table__title-changed {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title-editor {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: 13px;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n}\n.ep-message-table__sort-arrow {\n  margin-left: auto;\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: opacity 0.2s ease;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n}\n.ep-message-table__sort-arrow img {\n  width: 16px;\n  height: 16px;\n}\n.ep-message-table__default-cell {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n}\n.ep-message-table__cell-disabled {\n  opacity: 0.7;\n  cursor: default;\n}\n.ep-message-table__cell-changed {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__union-error {\n  background-color: var(--ep-color-danger-soft);\n}\n.ep-message-table__cell-editor {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: inherit;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n  box-shadow: none;\n}\n.ep-message-table__settings {\n  border: 1px solid var(--ep-color-border);\n  background: var(--ep-color-surface);\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  cursor: pointer;\n}\n.ep-message-table__columns-trigger {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n}\n.ep-message-table__union-title {\n  text-align: center;\n  font-weight: 600;\n  font-size: 13px;\n  color: var(--ep-table-header-text);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table__align-right {\n  text-align: right;\n}\n.ep-message-table__show-more {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 4px;\n  cursor: pointer;\n  font-size: 13px;\n  color: var(--ep-color-accent);\n  padding: 8px;\n  justify-content: center;\n}\n.ep-message-table__show-more:hover {\n  text-decoration: underline;\n}\n.ep-message-table__delete-icon {\n  display: none;\n  cursor: pointer;\n  transition: opacity 0.2s ease;\n  justify-content: center;\n  align-items: center;\n  background: none;\n  border: none;\n  padding: 0;\n}\n.ep-message-table__delete-icon:hover {\n  opacity: 0.7;\n}\n.ep-message-table__selection-cell {\n  width: 40px;\n  min-width: 40px;\n  text-align: center;\n  position: relative;\n}\n.ep-message-table__selection-cell:hover .ep-message-table__delete-icon {\n  display: flex;\n}\n.ep-message-table__radio,\n.ep-message-table__checkbox {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.ep-message-table__columns-dropdown {\n  position: fixed;\n  top: 0;\n  left: 0;\n  z-index: 1000;\n}\n.ep-message-table__error {\n  padding: 10px;\n  color: var(--ep-color-danger);\n  font-size: 14px;\n  background-color: var(--ep-color-danger-soft);\n  border: 1px solid var(--ep-color-danger-border);\n  border-radius: 4px;\n  margin: 10px 0;\n}\n/*# sourceMappingURL=message-table.component.css.map */\n"] }]
   }], () => [{ type: TooltipService }, { type: ChangeDetectorRef }], { message: [{
     type: Input
   }], columns: [{
@@ -94864,6 +95110,7 @@ var ThinkingExpanderComponent = _ThinkingExpanderComponent;
 
 // src/app/components/message-item/message-item.component.ts
 var _c012 = () => [];
+var _forTrack05 = ($index, $item) => $item.action || $index;
 function MessageItemComponent_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 1);
@@ -94878,7 +95125,7 @@ function MessageItemComponent_Conditional_1_Template(rf, ctx) {
 }
 function MessageItemComponent_Conditional_2_Conditional_5_For_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 8);
+    \u0275\u0275elementStart(0, "div", 9);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -94890,8 +95137,8 @@ function MessageItemComponent_Conditional_2_Conditional_5_For_2_Template(rf, ctx
 }
 function MessageItemComponent_Conditional_2_Conditional_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 7);
-    \u0275\u0275repeaterCreate(1, MessageItemComponent_Conditional_2_Conditional_5_For_2_Template, 2, 1, "div", 8, \u0275\u0275repeaterTrackByIdentity);
+    \u0275\u0275elementStart(0, "div", 8);
+    \u0275\u0275repeaterCreate(1, MessageItemComponent_Conditional_2_Conditional_5_For_2_Template, 2, 1, "div", 9, \u0275\u0275repeaterTrackByIdentity);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -94902,13 +95149,13 @@ function MessageItemComponent_Conditional_2_Conditional_5_Template(rf, ctx) {
 }
 function MessageItemComponent_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 2)(1, "div", 5);
+    \u0275\u0275elementStart(0, "div", 2)(1, "div", 6);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 6);
+    \u0275\u0275elementStart(3, "div", 7);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(5, MessageItemComponent_Conditional_2_Conditional_5_Template, 3, 0, "div", 7);
+    \u0275\u0275conditionalCreate(5, MessageItemComponent_Conditional_2_Conditional_5_Template, 3, 0, "div", 8);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -94923,7 +95170,7 @@ function MessageItemComponent_Conditional_2_Template(rf, ctx) {
 }
 function MessageItemComponent_Conditional_3_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "ep-thinking-expander", 9);
+    \u0275\u0275element(0, "ep-thinking-expander", 10);
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
@@ -94932,20 +95179,20 @@ function MessageItemComponent_Conditional_3_Conditional_3_Template(rf, ctx) {
 }
 function MessageItemComponent_Conditional_3_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 6);
-    \u0275\u0275element(1, "markdown", 11);
+    \u0275\u0275elementStart(0, "div", 7);
+    \u0275\u0275element(1, "markdown", 12);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275property("data", ctx_r0.message.response.message);
+    \u0275\u0275property("data", ctx_r0.messageMarkdown);
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_5_For_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-message-table", 13);
+    \u0275\u0275elementStart(0, "ep-message-table", 14);
     \u0275\u0275listener("actionClick", function MessageItemComponent_Conditional_3_Conditional_5_For_1_Template_ep_message_table_actionClick_0_listener($event) {
       \u0275\u0275restoreView(_r3);
       const ctx_r0 = \u0275\u0275nextContext(3);
@@ -94961,7 +95208,7 @@ function MessageItemComponent_Conditional_3_Conditional_5_For_1_Template(rf, ctx
 }
 function MessageItemComponent_Conditional_3_Conditional_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275repeaterCreate(0, MessageItemComponent_Conditional_3_Conditional_5_For_1_Template, 1, 16, "ep-message-table", 12, \u0275\u0275componentInstance().trackTableById, true);
+    \u0275\u0275repeaterCreate(0, MessageItemComponent_Conditional_3_Conditional_5_For_1_Template, 1, 16, "ep-message-table", 13, \u0275\u0275componentInstance().trackTableById, true);
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
@@ -94970,20 +95217,20 @@ function MessageItemComponent_Conditional_3_Conditional_5_Template(rf, ctx) {
 }
 function MessageItemComponent_Conditional_3_Conditional_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 6);
-    \u0275\u0275element(1, "markdown", 11);
+    \u0275\u0275elementStart(0, "div", 7);
+    \u0275\u0275element(1, "markdown", 12);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275property("data", ctx_r0.message.response.second_message);
+    \u0275\u0275property("data", ctx_r0.secondMessageMarkdown);
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_7_For_2_For_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 16);
+    \u0275\u0275elementStart(0, "ep-button", 17);
     \u0275\u0275listener("buttonClick", function MessageItemComponent_Conditional_3_Conditional_7_For_2_For_2_Template_ep_button_buttonClick_0_listener() {
       const action_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(4);
@@ -95001,8 +95248,8 @@ function MessageItemComponent_Conditional_3_Conditional_7_For_2_For_2_Template(r
 }
 function MessageItemComponent_Conditional_3_Conditional_7_For_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 14);
-    \u0275\u0275repeaterCreate(1, MessageItemComponent_Conditional_3_Conditional_7_For_2_For_2_Template, 2, 2, "ep-button", 15, \u0275\u0275componentInstance().trackActionById, true);
+    \u0275\u0275elementStart(0, "div", 15);
+    \u0275\u0275repeaterCreate(1, MessageItemComponent_Conditional_3_Conditional_7_For_2_For_2_Template, 2, 2, "ep-button", 16, \u0275\u0275componentInstance().trackActionById, true);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -95013,8 +95260,8 @@ function MessageItemComponent_Conditional_3_Conditional_7_For_2_Template(rf, ctx
 }
 function MessageItemComponent_Conditional_3_Conditional_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 10);
-    \u0275\u0275repeaterCreate(1, MessageItemComponent_Conditional_3_Conditional_7_For_2_Template, 3, 0, "div", 14, \u0275\u0275repeaterTrackByIndex);
+    \u0275\u0275elementStart(0, "div", 11);
+    \u0275\u0275repeaterCreate(1, MessageItemComponent_Conditional_3_Conditional_7_For_2_Template, 3, 0, "div", 15, \u0275\u0275repeaterTrackByIndex);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -95025,14 +95272,14 @@ function MessageItemComponent_Conditional_3_Conditional_7_Template(rf, ctx) {
 }
 function MessageItemComponent_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 2)(1, "div", 5);
+    \u0275\u0275elementStart(0, "div", 2)(1, "div", 6);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(3, MessageItemComponent_Conditional_3_Conditional_3_Template, 1, 4, "ep-thinking-expander", 9);
-    \u0275\u0275conditionalCreate(4, MessageItemComponent_Conditional_3_Conditional_4_Template, 2, 1, "div", 6);
+    \u0275\u0275conditionalCreate(3, MessageItemComponent_Conditional_3_Conditional_3_Template, 1, 4, "ep-thinking-expander", 10);
+    \u0275\u0275conditionalCreate(4, MessageItemComponent_Conditional_3_Conditional_4_Template, 2, 1, "div", 7);
     \u0275\u0275conditionalCreate(5, MessageItemComponent_Conditional_3_Conditional_5_Template, 2, 0);
-    \u0275\u0275conditionalCreate(6, MessageItemComponent_Conditional_3_Conditional_6_Template, 2, 1, "div", 6);
-    \u0275\u0275conditionalCreate(7, MessageItemComponent_Conditional_3_Conditional_7_Template, 3, 0, "div", 10);
+    \u0275\u0275conditionalCreate(6, MessageItemComponent_Conditional_3_Conditional_6_Template, 2, 1, "div", 7);
+    \u0275\u0275conditionalCreate(7, MessageItemComponent_Conditional_3_Conditional_7_Template, 3, 0, "div", 11);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -95054,7 +95301,7 @@ function MessageItemComponent_Conditional_3_Template(rf, ctx) {
 function MessageItemComponent_Conditional_4_For_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r8 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "a", 18);
+    \u0275\u0275elementStart(0, "a", 19);
     \u0275\u0275listener("click", function MessageItemComponent_Conditional_4_For_2_Template_a_click_0_listener($event) {
       const action_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
@@ -95071,20 +95318,25 @@ function MessageItemComponent_Conditional_4_For_2_Template(rf, ctx) {
       ctx_r0.onActionClick(action_r9);
       return \u0275\u0275resetView($event.preventDefault());
     });
-    \u0275\u0275text(1);
+    \u0275\u0275elementStart(1, "span", 20);
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(3, "ep-icon", 21);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const action_r9 = ctx.$implicit;
     \u0275\u0275classProp("ep-message__link--disabled", action_r9.disabled);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(action_r9.text);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", action_r9.text, " ");
+    \u0275\u0275property("size", 8);
   }
 }
 function MessageItemComponent_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 3);
-    \u0275\u0275repeaterCreate(1, MessageItemComponent_Conditional_4_For_2_Template, 2, 3, "a", 17, \u0275\u0275componentInstance().trackActionById, true);
+    \u0275\u0275repeaterCreate(1, MessageItemComponent_Conditional_4_For_2_Template, 4, 4, "a", 18, \u0275\u0275componentInstance().trackActionById, true);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -95093,11 +95345,56 @@ function MessageItemComponent_Conditional_4_Template(rf, ctx) {
     \u0275\u0275repeater(ctx_r0.linkActions);
   }
 }
+function MessageItemComponent_Conditional_5_For_8_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r11 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 28);
+    \u0275\u0275listener("click", function MessageItemComponent_Conditional_5_For_8_Template_button_click_0_listener() {
+      const action_r12 = \u0275\u0275restoreView(_r11).$implicit;
+      const ctx_r0 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r0.onSuggestionClick(action_r12));
+    });
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const action_r12 = ctx.$implicit;
+    \u0275\u0275property("disabled", !!action_r12.disabled);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", action_r12.text, " ");
+  }
+}
 function MessageItemComponent_Conditional_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 4);
-    \u0275\u0275element(1, "img", 19);
-    \u0275\u0275elementStart(2, "div", 20);
+    const _r10 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "section", 4)(1, "div", 22)(2, "span", 23);
+    \u0275\u0275text(3, "Here are some quick suggestions for you");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "button", 24);
+    \u0275\u0275listener("click", function MessageItemComponent_Conditional_5_Template_button_click_4_listener() {
+      \u0275\u0275restoreView(_r10);
+      const ctx_r0 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r0.hideSuggestions());
+    });
+    \u0275\u0275element(5, "ep-icon", 25);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(6, "div", 26);
+    \u0275\u0275repeaterCreate(7, MessageItemComponent_Conditional_5_For_8_Template, 2, 2, "button", 27, _forTrack05);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r0 = \u0275\u0275nextContext();
+    \u0275\u0275advance(5);
+    \u0275\u0275property("size", 10);
+    \u0275\u0275advance(2);
+    \u0275\u0275repeater(ctx_r0.promptActions);
+  }
+}
+function MessageItemComponent_Conditional_6_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 5);
+    \u0275\u0275element(1, "img", 29);
+    \u0275\u0275elementStart(2, "div", 30);
     \u0275\u0275text(3);
     \u0275\u0275elementEnd()();
   }
@@ -95110,9 +95407,64 @@ function MessageItemComponent_Conditional_5_Template(rf, ctx) {
   }
 }
 var _MessageItemComponent = class _MessageItemComponent {
-  constructor() {
+  constructor(actionService) {
+    this.actionService = actionService;
+    this.isLast = false;
     this.actionClick = new EventEmitter();
     this.getImagePath = getImagePath;
+    this.isSuggestionsVisible = true;
+  }
+  ngOnChanges(changes) {
+    if (changes["isLast"] && this.isLast) {
+      this.isSuggestionsVisible = true;
+    }
+  }
+  get promptActions() {
+    const actions = this.message?.response?.action_message || [];
+    return actions.filter((a3) => a3.type === UserActionType.Prompt);
+  }
+  hideSuggestions() {
+    this.isSuggestionsVisible = false;
+  }
+  onSuggestionClick(action) {
+    this.isSuggestionsVisible = false;
+    this.onActionClick(action);
+  }
+  onHostClick(event) {
+    const rawTarget = event.target;
+    const targetElement = rawTarget instanceof Element ? rawTarget : rawTarget instanceof Node ? rawTarget.parentElement : null;
+    if (!targetElement) {
+      return;
+    }
+    const copyTrigger = targetElement.closest(".ep-md-code__copy-icon");
+    if (!copyTrigger) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const blockElement = copyTrigger.closest(".ep-md-code");
+    const blockText = blockElement?.querySelector("pre")?.textContent ?? "";
+    const fallbackCodeText = blockElement?.querySelector("code")?.textContent ?? "";
+    const textToCopy = blockText || fallbackCodeText;
+    if (!textToCopy) {
+      return;
+    }
+    void this.copyCodeToClipboard(textToCopy, copyTrigger);
+  }
+  onHostKeydown(event) {
+    const targetElement = event.target instanceof Element ? event.target : null;
+    if (!targetElement) {
+      return;
+    }
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    const copyTrigger = targetElement.closest(".ep-md-code__copy-icon");
+    if (!copyTrigger) {
+      return;
+    }
+    event.preventDefault();
+    copyTrigger.click();
   }
   get isUserMessage() {
     return !!this.message.request;
@@ -95153,19 +95505,31 @@ var _MessageItemComponent = class _MessageItemComponent {
   get displayDate() {
     return DateUtils.formatDate(this.messageDate);
   }
+  get messageMarkdown() {
+    return this.normalizeInlineFencedCode(this.message?.response?.message);
+  }
+  get secondMessageMarkdown() {
+    return this.normalizeInlineFencedCode(this.message?.response?.second_message);
+  }
   /**
-   * Get link actions to display in message (exclude Prompt actions - they are only for footer hints)
+   * Get link actions to display in message.
    */
   get linkActions() {
     const actions = this.message?.response?.action_message || [];
-    return actions.filter((action) => action.type === "link");
+    return actions.filter((action) => this.isRenderableAction(action, UserActionType.Link));
   }
   /**
-   * Get button actions to display in message (exclude Prompt actions - they are only for footer hints)
+   * Get button actions to display in message.
    */
   get buttonActions() {
     const actions = this.message?.response?.action_message || [];
-    return actions.filter((action) => action.type === "button");
+    return actions.filter((action) => this.isRenderableAction(action, UserActionType.Button));
+  }
+  isRenderableAction(action, expectedType) {
+    if (!action || action.type !== expectedType) {
+      return false;
+    }
+    return this.actionService.isActionHandled(action);
   }
   /**
    * Group button actions by sequence into rows.
@@ -95216,18 +95580,89 @@ var _MessageItemComponent = class _MessageItemComponent {
   trackActionById(index, action) {
     return action.id || `${action.action || "action"}_${index}`;
   }
+  normalizeInlineFencedCode(value) {
+    if (!value) {
+      return "";
+    }
+    return value.replace(/```([^`\n]+)```/g, (_full, code) => {
+      const normalizedCode = code.trim();
+      if (!normalizedCode) {
+        return _full;
+      }
+      return `
+
+\`\`\`
+${normalizedCode}
+\`\`\`
+
+`;
+    });
+  }
+  copyCodeToClipboard(text, copyTrigger) {
+    return __async(this, null, function* () {
+      let copied = false;
+      try {
+        if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+          yield navigator.clipboard.writeText(text);
+          copied = true;
+        }
+      } catch {
+        copied = false;
+      }
+      if (!copied) {
+        copied = this.copyWithTextareaFallback(text);
+      }
+      if (!copied) {
+        return;
+      }
+      const previousLabel = copyTrigger.getAttribute("aria-label") || "Copy code";
+      const previousTitle = copyTrigger.getAttribute("title") || "Copy code";
+      copyTrigger.setAttribute("aria-label", "Code copied");
+      copyTrigger.setAttribute("title", "Code copied");
+      setTimeout(() => {
+        copyTrigger.setAttribute("aria-label", previousLabel);
+        copyTrigger.setAttribute("title", previousTitle);
+      }, 1200);
+    });
+  }
+  copyWithTextareaFallback(text) {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      textarea.style.pointerEvents = "none";
+      document.body.appendChild(textarea);
+      textarea.select();
+      textarea.setSelectionRange(0, text.length);
+      const success = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return success;
+    } catch {
+      return false;
+    }
+  }
 };
 _MessageItemComponent.\u0275fac = function MessageItemComponent_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _MessageItemComponent)();
+  return new (__ngFactoryType__ || _MessageItemComponent)(\u0275\u0275directiveInject(ActionService));
 };
-_MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageItemComponent, selectors: [["ep-message-item"]], inputs: { message: "message" }, outputs: { actionClick: "actionClick" }, decls: 6, vars: 8, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [3, "entries", "isActive", "startedAtUnixSeconds", "endedAtUnixSeconds"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], [3, "disabled"], [3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], ["height", "80", "width", "80", "alt", "Epica sleeping", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
+_MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageItemComponent, selectors: [["ep-message-item"]], hostBindings: function MessageItemComponent_HostBindings(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275listener("click", function MessageItemComponent_click_HostBindingHandler($event) {
+      return ctx.onHostClick($event);
+    })("keydown", function MessageItemComponent_keydown_HostBindingHandler($event) {
+      return ctx.onHostKeydown($event);
+    });
+  }
+}, inputs: { message: "message", isLast: "isLast" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 7, vars: 9, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], ["aria-label", "Suggestions", 1, "ep-message__suggestions-panel"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [3, "entries", "isActive", "startedAtUnixSeconds", "endedAtUnixSeconds"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], ["variant", "primary", "size", "md", 3, "disabled"], ["variant", "primary", "size", "md", 3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], [1, "ep-message__link-text"], ["name", "external-link", 1, "ep-message__link-icon", 3, "size"], [1, "ep-message__suggestions-panel-header"], [1, "ep-message__suggestions-panel-title"], ["type", "button", "aria-label", "Hide suggestions", 1, "ep-message__suggestions-panel-close", 3, "click"], ["name", "close", 3, "size"], [1, "ep-message__suggestions-panel-list"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "disabled"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "click", "disabled"], ["height", "80", "width", "80", "alt", "Epica sleeping", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275conditionalCreate(1, MessageItemComponent_Conditional_1_Template, 2, 1, "div", 1);
     \u0275\u0275conditionalCreate(2, MessageItemComponent_Conditional_2_Template, 6, 3, "div", 2);
     \u0275\u0275conditionalCreate(3, MessageItemComponent_Conditional_3_Template, 8, 6, "div", 2);
     \u0275\u0275conditionalCreate(4, MessageItemComponent_Conditional_4_Template, 3, 0, "div", 3);
-    \u0275\u0275conditionalCreate(5, MessageItemComponent_Conditional_5_Template, 4, 2, "div", 4);
+    \u0275\u0275conditionalCreate(5, MessageItemComponent_Conditional_5_Template, 9, 1, "section", 4);
+    \u0275\u0275conditionalCreate(6, MessageItemComponent_Conditional_6_Template, 4, 2, "div", 5);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -95242,15 +95677,18 @@ _MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ 
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.linkActions.length > 0 ? 4 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.hasError ? 5 : -1);
+    \u0275\u0275conditional(ctx.isLast && ctx.isSuggestionsVisible && ctx.promptActions.length > 0 ? 5 : -1);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx.hasError ? 6 : -1);
   }
 }, dependencies: [
   CommonModule,
   MarkdownComponent,
   MessageTableComponent,
   ButtonComponent,
-  ThinkingExpanderComponent
-], styles: ['@charset "UTF-8";\n\n\n\n.ep-message[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message[_ngcontent-%COMP%]:hover   .ep-message__time[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message[_ngcontent-%COMP%]   .ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto 8px auto;\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 12px;\n  align-self: center;\n}\n.ep-message__text[_ngcontent-%COMP%] {\n  display: block;\n  padding: 8px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     markdown {\n  display: block;\n}\n.ep-message__text[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]     p:last-child, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text[_ngcontent-%COMP%]     em, \n.ep-message__text[_ngcontent-%COMP%]     i, \n.ep-message__text[_ngcontent-%COMP%]   em[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   i[_ngcontent-%COMP%] {\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]     a, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text[_ngcontent-%COMP%]     a:hover, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:first-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:last-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul   li p, \n.ep-message__text[_ngcontent-%COMP%]     ul li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 24px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li, \n.ep-message__text[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol   li p, \n.ep-message__text[_ngcontent-%COMP%]     ol li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     code, \n.ep-message__text[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family: monospace;\n  font-size: 13px;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre code, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: none;\n  padding: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  font-size: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 18px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%] {\n  font-size: 16px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  font-size: 14px;\n}\n.ep-message__text[_ngcontent-%COMP%]   hr[_ngcontent-%COMP%] {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   blockquote[_ngcontent-%COMP%] {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message[_ngcontent-%COMP%]:not(.ep-message--user)   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user[_ngcontent-%COMP%] {\n  align-items: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__content[_ngcontent-%COMP%] {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px 4px 0 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__time[_ngcontent-%COMP%] {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 8px;\n}\n.ep-message__link[_ngcontent-%COMP%] {\n  font-size: 13px;\n  text-align: left;\n  text-decoration: none;\n  cursor: pointer;\n  transition: text-decoration 0.2s;\n}\n.ep-message__link[_ngcontent-%COMP%]:hover:not(.ep-message__link--disabled) {\n  text-decoration: underline;\n}\n.ep-message__link.ep-message__link--disabled[_ngcontent-%COMP%] {\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.epica-error[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 16px 20px;\n  max-width: 380px;\n  align-items: center;\n  gap: 20px;\n  border-radius: 4px;\n  border: 2px solid var(--ep-color-danger-border);\n  background: var(--ep-color-danger-soft);\n}\n.epica-error__text[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n/*# sourceMappingURL=message-item.component.css.map */'] });
+  ThinkingExpanderComponent,
+  IconComponent
+], styles: ['@charset "UTF-8";\n\n\n\n.ep-message[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message[_ngcontent-%COMP%]:hover   .ep-message__time[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message[_ngcontent-%COMP%]   .ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  width: 100%;\n  margin: 0 auto 8px auto;\n  font-size: 11px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 0;\n  align-self: center;\n}\n.ep-message__date-divider[_ngcontent-%COMP%]::before, \n.ep-message__date-divider[_ngcontent-%COMP%]::after {\n  content: "";\n  flex: 1;\n  height: 1px;\n  background: var(--ep-color-border);\n}\n.ep-message__text[_ngcontent-%COMP%] {\n  display: block;\n  padding: 6px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     markdown {\n  display: block;\n}\n.ep-message__text[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]     p:last-child, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text[_ngcontent-%COMP%]     em, \n.ep-message__text[_ngcontent-%COMP%]     i, \n.ep-message__text[_ngcontent-%COMP%]   em[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   i[_ngcontent-%COMP%] {\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]     a, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text[_ngcontent-%COMP%]     a:hover, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:first-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:last-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul   li p, \n.ep-message__text[_ngcontent-%COMP%]     ul li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 24px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li, \n.ep-message__text[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol   li p, \n.ep-message__text[_ngcontent-%COMP%]     ol li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     code, \n.ep-message__text[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  font-size: 13px;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code {\n  margin: 8px 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ep-color-surface-alt) 70%, transparent);\n  overflow: hidden;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 32px;\n  padding: 0 10px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__lang {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: var(--ep-color-text-muted);\n  line-height: 1;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition:\n    color 0.15s,\n    border-color 0.15s,\n    background-color 0.15s;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:hover:not(:disabled) {\n  color: var(--ep-color-text);\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:disabled {\n  opacity: 0.75;\n  cursor: default;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code pre {\n  margin: 0;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  padding: 10px 12px;\n  overflow-x: auto;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code code {\n  display: block;\n  background: none;\n  border-radius: 0;\n  padding: 0;\n  color: var(--ep-color-text);\n  font-size: 12.5px;\n  line-height: 18px;\n  white-space: pre;\n  overflow-wrap: normal;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code--plain code {\n  color: var(--ep-color-text-muted);\n}\n.ep-message__text[_ngcontent-%COMP%]     pre, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre code, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: none;\n  padding: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  font-size: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 18px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%] {\n  font-size: 16px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  font-size: 14px;\n}\n.ep-message__text[_ngcontent-%COMP%]   hr[_ngcontent-%COMP%] {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   blockquote[_ngcontent-%COMP%] {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message[_ngcontent-%COMP%]:not(.ep-message--user)   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user[_ngcontent-%COMP%] {\n  align-items: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__content[_ngcontent-%COMP%] {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n  color: var(--ep-chat-text-question);\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  color: inherit;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__time[_ngcontent-%COMP%] {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 8px;\n}\n.ep-message__link[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n  min-height: 28px;\n  padding: 4px 10px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  background: transparent;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s,\n    border-color 0.15s,\n    color 0.15s;\n}\n.ep-message__link-text[_ngcontent-%COMP%] {\n  color: inherit;\n}\n.ep-message__link-icon[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  color: inherit;\n}\n.ep-message__link[_ngcontent-%COMP%]:hover:not(.ep-message__link--disabled) {\n  background: var(--ep-color-accent-soft);\n  border-color: var(--ep-color-accent);\n  color: var(--ep-color-accent);\n}\n.ep-message__link.ep-message__link--disabled[_ngcontent-%COMP%] {\n  border-color: var(--ep-color-border);\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.ep-message__suggestions-panel[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  max-width: 100%;\n  margin-top: 4px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  border-radius: 4px;\n  background: transparent;\n  overflow: hidden;\n}\n.ep-message__suggestions-panel-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 47px;\n  padding: 0 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n}\n.ep-message__suggestions-panel-title[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  line-height: 20px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 24px;\n  height: 24px;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  transition: opacity 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]:hover {\n  opacity: 1;\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 10px;\n  height: 10px;\n}\n.ep-message__suggestions-panel-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  min-height: 49px;\n  padding: 7px 14px;\n  font-size: 14px;\n  line-height: 20px;\n  text-align: left;\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  border: none;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  cursor: pointer;\n  transition: background-color 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-text) 4%, transparent);\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.epica-error[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 16px 20px;\n  max-width: 380px;\n  align-items: center;\n  gap: 20px;\n  border-radius: 4px;\n  border: 2px solid var(--ep-color-danger-border);\n  background: var(--ep-color-danger-soft);\n}\n.epica-error__text[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n[_nghost-%COMP%]     .ep-md-code__copy-icon {\n  font-size: 12px;\n  cursor: pointer;\n}\n/*# sourceMappingURL=message-item.component.css.map */'] });
 var MessageItemComponent = _MessageItemComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MessageItemComponent, [{
@@ -95260,132 +95698,175 @@ var MessageItemComponent = _MessageItemComponent;
       MarkdownComponent,
       MessageTableComponent,
       ButtonComponent,
-      ThinkingExpanderComponent
-    ], template: `<div\r
-  class="ep-message"\r
-  [class.ep-message--user]="isUserMessage"\r
-  [id]="'message_' + (message.id || message.time)"\r
->\r
-  @if (message._isFirstMessageOfDay) {\r
-    <div class="ep-message__date-divider" id="firstMessageOfDay">{{ displayDate }}</div>\r
-  }\r
-\r
-  @if (message.request) {\r
-    <div class="ep-message__content">\r
-      <div class="ep-message__time">{{ displayTimestamp }}</div>\r
-      <div class="ep-message__text">{{ message.request }}</div>\r
-      @if (message._attachedFileNames && message._attachedFileNames.length > 0) {\r
-        <div class="ep-message__attached-files">\r
-          @for (fileName of message._attachedFileNames; track fileName) {\r
-            <div class="ep-message__attached-file">{{ fileName }}</div>\r
-          }\r
-        </div>\r
-      }\r
-    </div>\r
-  }\r
-\r
-  @if (message.response) {\r
-    <div class="ep-message__content">\r
-      <div class="ep-message__time">{{ displayTimestamp }}</div>\r
-\r
-      @if (hasThinkingEntries) {\r
-        <ep-thinking-expander\r
-          [entries]="thinkingEntries"\r
-          [isActive]="isThinkingActive"\r
-          [startedAtUnixSeconds]="message._epicaThinkingStartedAt ?? message.time ?? null"\r
-          [endedAtUnixSeconds]="message._epicaThinkingEndedAt ?? null"\r
-        />\r
-      }\r
-\r
-      @if (message.response.message) {\r
-        <div class="ep-message__text">\r
-          <markdown [data]="message.response.message"></markdown>\r
-        </div>\r
-      }\r
-\r
-      @if (tables.length > 0) {\r
-        @for (table of tables; track trackTableById($index, table)) {\r
-          <ep-message-table\r
-            [message]="message"\r
-            [columns]="table.columns ?? []"\r
-            [rows]="table.rows"\r
-            [visibleRowsQuantity]="table.visibleRows ?? 10"\r
-            [isEditable]="table.isEditable ?? true"\r
-            [isTitleEditable]="table.isTitleEditable ?? true"\r
-            [isSortable]="table.isSortable ?? true"\r
-            [defaultSortField]="table.defaultSortField ?? null"\r
-            [tableActions]="table.tableActions ?? []"\r
-            [id]="table.id ?? null"\r
-            [rowsSelectionType]="table.rowsSelectionType"\r
-            [preselectedRows]="table.preselectedRows"\r
-            [unions]="table.unions ?? []"\r
-            (actionClick)="onActionClick($event.action)"\r
-          ></ep-message-table>\r
-        }\r
-      }\r
-\r
-      @if (message.response.second_message) {\r
-        <div class="ep-message__text">\r
-          <markdown [data]="message.response.second_message"></markdown>\r
-        </div>\r
-      }\r
-\r
-      @if (buttonActions.length > 0) {\r
-        <div class="ep-message__actions">\r
-          @for (actionRow of groupedButtonActionRows; track $index) {\r
-            <div class="ep-message__actions-row">\r
-              @for (action of actionRow; track trackActionById($index, action)) {\r
-                <ep-button [disabled]="!!action.disabled" (buttonClick)="onActionClick(action)">\r
-                  {{ action.text }}\r
-                </ep-button>\r
-              }\r
-            </div>\r
-          }\r
-        </div>\r
-      }\r
-    </div>\r
-  }\r
-\r
-  @if (linkActions.length > 0) {\r
-    <div class="ep-message__links">\r
-      @for (action of linkActions; track trackActionById($index, action)) {\r
-        <a\r
-          class="ep-message__link"\r
-          [class.ep-message__link--disabled]="action.disabled"\r
-          role="button"\r
-          tabindex="0"\r
-          (click)="onActionClick(action); $event.preventDefault()"\r
-          (keydown.enter)="onActionClick(action); $event.preventDefault()"\r
-          (keydown.space)="onActionClick(action); $event.preventDefault()"\r
-        >\r
-          {{ action.text }}\r
-        </a>\r
-      }\r
-    </div>\r
-  }\r
-\r
-  @if (hasError) {\r
-    <div class="epica-error">\r
-      <img [src]="getImagePath('epica-sleeping.svg')" height="80" width="80" alt="Epica sleeping" />\r
-      <div class="epica-error__text">\r
-        {{\r
-          message._epicaError === true\r
-            ? "Sorry, Epic stepped away for a moment. But promised to be back! Soon..."\r
-            : message._epicaError\r
-        }}\r
-      </div>\r
-    </div>\r
-  }\r
-</div>\r
-`, styles: ['@charset "UTF-8";\n\n/* src/app/components/message-item/message-item.component.scss */\n.ep-message {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message:hover .ep-message__time {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message .ep-message__date-divider {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider {\n  width: fit-content;\n  margin: 0 auto 8px auto;\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 12px;\n  align-self: center;\n}\n.ep-message__text {\n  display: block;\n  padding: 8px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep markdown {\n  display: block;\n}\n.ep-message__text ::ng-deep p,\n.ep-message__text p {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text ::ng-deep p:last-child,\n.ep-message__text p:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep strong,\n.ep-message__text ::ng-deep b,\n.ep-message__text strong,\n.ep-message__text b {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text ::ng-deep em,\n.ep-message__text ::ng-deep i,\n.ep-message__text em,\n.ep-message__text i {\n  font-style: italic;\n}\n.ep-message__text ::ng-deep a,\n.ep-message__text a {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text ::ng-deep a:hover,\n.ep-message__text a:hover {\n  text-decoration: underline;\n}\n.ep-message__text ::ng-deep ul,\n.ep-message__text ::ng-deep ol,\n.ep-message__text ul,\n.ep-message__text ol {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul:first-child,\n.ep-message__text ::ng-deep ol:first-child,\n.ep-message__text ul:first-child,\n.ep-message__text ol:first-child {\n  margin-top: 0;\n}\n.ep-message__text ::ng-deep ul:last-child,\n.ep-message__text ::ng-deep ol:last-child,\n.ep-message__text ul:last-child,\n.ep-message__text ol:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li,\n.ep-message__text ul li {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li::before,\n.ep-message__text ul li::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ul ::ng-deep li p,\n.ep-message__text ::ng-deep ul li ::ng-deep p,\n.ep-message__text ::ng-deep ul li p,\n.ep-message__text ul ::ng-deep li ::ng-deep p,\n.ep-message__text ul ::ng-deep li p,\n.ep-message__text ul li ::ng-deep p,\n.ep-message__text ul li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ::ng-deep ul ::ng-deep li ul,\n.ep-message__text ::ng-deep ul li ::ng-deep ul,\n.ep-message__text ::ng-deep ul li ul,\n.ep-message__text ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ul ::ng-deep li ul,\n.ep-message__text ul li ::ng-deep ul,\n.ep-message__text ul li ul {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul li ::ng-deep ul li,\n.ep-message__text ul li ul ::ng-deep li,\n.ep-message__text ul li ul li {\n  padding-left: 24px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul li ::ng-deep ul li::before,\n.ep-message__text ul li ul ::ng-deep li::before,\n.ep-message__text ul li ul li::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul li ::ng-deep ul ul li,\n.ep-message__text ul li ul ::ng-deep ul li,\n.ep-message__text ul li ul ul li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul li ::ng-deep ul ul li::before,\n.ep-message__text ul li ul ::ng-deep ul li::before,\n.ep-message__text ul li ul ul li::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text ::ng-deep ol,\n.ep-message__text ol {\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li,\n.ep-message__text ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li,\n.ep-message__text ol li {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li::before,\n.ep-message__text ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li::before,\n.ep-message__text ol li::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ol ::ng-deep li p,\n.ep-message__text ::ng-deep ol li ::ng-deep p,\n.ep-message__text ::ng-deep ol li p,\n.ep-message__text ol ::ng-deep li ::ng-deep p,\n.ep-message__text ol ::ng-deep li p,\n.ep-message__text ol li ::ng-deep p,\n.ep-message__text ol li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ::ng-deep ol ::ng-deep li ol,\n.ep-message__text ::ng-deep ol li ::ng-deep ol,\n.ep-message__text ::ng-deep ol li ol,\n.ep-message__text ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ol ::ng-deep li ol,\n.ep-message__text ol li ::ng-deep ol,\n.ep-message__text ol li ol {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol li ol li,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li ol li,\n.ep-message__text ol li ::ng-deep ol li,\n.ep-message__text ol li ol li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li::before,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol li ol li::before,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li ol li::before,\n.ep-message__text ol li ::ng-deep ol li::before,\n.ep-message__text ol li ol li::before {\n  left: 4px;\n}\n.ep-message__text ::ng-deep code,\n.ep-message__text code {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family: monospace;\n  font-size: 13px;\n}\n.ep-message__text ::ng-deep pre,\n.ep-message__text pre {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text ::ng-deep pre code,\n.ep-message__text pre code {\n  background: none;\n  padding: 0;\n}\n.ep-message__text h1,\n.ep-message__text h2,\n.ep-message__text h3,\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text h1:first-child,\n.ep-message__text h2:first-child,\n.ep-message__text h3:first-child,\n.ep-message__text h4:first-child,\n.ep-message__text h5:first-child,\n.ep-message__text h6:first-child {\n  margin-top: 0;\n}\n.ep-message__text h1 {\n  font-size: 20px;\n}\n.ep-message__text h2 {\n  font-size: 18px;\n}\n.ep-message__text h3 {\n  font-size: 16px;\n}\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  font-size: 14px;\n}\n.ep-message__text hr {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text blockquote {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text img {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message:not(.ep-message--user) .ep-message__text {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user {\n  align-items: flex-end;\n}\n.ep-message--user .ep-message__content {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user .ep-message__text {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px 4px 0 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n}\n.ep-message--user .ep-message__time {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 8px;\n}\n.ep-message__link {\n  font-size: 13px;\n  text-align: left;\n  text-decoration: none;\n  cursor: pointer;\n  transition: text-decoration 0.2s;\n}\n.ep-message__link:hover:not(.ep-message__link--disabled) {\n  text-decoration: underline;\n}\n.ep-message__link.ep-message__link--disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.epica-error {\n  display: flex;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 16px 20px;\n  max-width: 380px;\n  align-items: center;\n  gap: 20px;\n  border-radius: 4px;\n  border: 2px solid var(--ep-color-danger-border);\n  background: var(--ep-color-danger-soft);\n}\n.epica-error__text {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n/*# sourceMappingURL=message-item.component.css.map */\n'] }]
-  }], null, { message: [{
+      ThinkingExpanderComponent,
+      IconComponent
+    ], template: `<div
+  class="ep-message"
+  [class.ep-message--user]="isUserMessage"
+  [id]="'message_' + (message.id || message.time)"
+>
+  @if (message._isFirstMessageOfDay) {
+    <div class="ep-message__date-divider" id="firstMessageOfDay">{{ displayDate }}</div>
+  }
+
+  @if (message.request) {
+    <div class="ep-message__content">
+      <div class="ep-message__time">{{ displayTimestamp }}</div>
+      <div class="ep-message__text">{{ message.request }}</div>
+      @if (message._attachedFileNames && message._attachedFileNames.length > 0) {
+        <div class="ep-message__attached-files">
+          @for (fileName of message._attachedFileNames; track fileName) {
+            <div class="ep-message__attached-file">{{ fileName }}</div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (message.response) {
+    <div class="ep-message__content">
+      <div class="ep-message__time">{{ displayTimestamp }}</div>
+
+      @if (hasThinkingEntries) {
+        <ep-thinking-expander
+          [entries]="thinkingEntries"
+          [isActive]="isThinkingActive"
+          [startedAtUnixSeconds]="message._epicaThinkingStartedAt ?? message.time ?? null"
+          [endedAtUnixSeconds]="message._epicaThinkingEndedAt ?? null"
+        />
+      }
+
+      @if (message.response.message) {
+        <div class="ep-message__text">
+          <markdown [data]="messageMarkdown"></markdown>
+        </div>
+      }
+
+      @if (tables.length > 0) {
+        @for (table of tables; track trackTableById($index, table)) {
+          <ep-message-table
+            [message]="message"
+            [columns]="table.columns ?? []"
+            [rows]="table.rows"
+            [visibleRowsQuantity]="table.visibleRows ?? 10"
+            [isEditable]="table.isEditable ?? true"
+            [isTitleEditable]="table.isTitleEditable ?? true"
+            [isSortable]="table.isSortable ?? true"
+            [defaultSortField]="table.defaultSortField ?? null"
+            [tableActions]="table.tableActions ?? []"
+            [id]="table.id ?? null"
+            [rowsSelectionType]="table.rowsSelectionType"
+            [preselectedRows]="table.preselectedRows"
+            [unions]="table.unions ?? []"
+            (actionClick)="onActionClick($event.action)"
+          ></ep-message-table>
+        }
+      }
+
+      @if (message.response.second_message) {
+        <div class="ep-message__text">
+          <markdown [data]="secondMessageMarkdown"></markdown>
+        </div>
+      }
+
+      @if (buttonActions.length > 0) {
+        <div class="ep-message__actions">
+          @for (actionRow of groupedButtonActionRows; track $index) {
+            <div class="ep-message__actions-row">
+              @for (action of actionRow; track trackActionById($index, action)) {
+                <ep-button
+                  variant="primary"
+                  size="md"
+                  [disabled]="!!action.disabled"
+                  (buttonClick)="onActionClick(action)"
+                >
+                  {{ action.text }}
+                </ep-button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (linkActions.length > 0) {
+    <div class="ep-message__links">
+      @for (action of linkActions; track trackActionById($index, action)) {
+        <a
+          class="ep-message__link"
+          [class.ep-message__link--disabled]="action.disabled"
+          role="button"
+          tabindex="0"
+          (click)="onActionClick(action); $event.preventDefault()"
+          (keydown.enter)="onActionClick(action); $event.preventDefault()"
+          (keydown.space)="onActionClick(action); $event.preventDefault()"
+        >
+          <span class="ep-message__link-text">{{ action.text }}</span>
+          <ep-icon name="external-link" class="ep-message__link-icon" [size]="8"></ep-icon>
+        </a>
+      }
+    </div>
+  }
+
+  @if (isLast && isSuggestionsVisible && promptActions.length > 0) {
+    <section class="ep-message__suggestions-panel" aria-label="Suggestions">
+      <div class="ep-message__suggestions-panel-header">
+        <span class="ep-message__suggestions-panel-title">Here are some quick suggestions for you</span>
+        <button
+          class="ep-message__suggestions-panel-close"
+          type="button"
+          aria-label="Hide suggestions"
+          (click)="hideSuggestions()"
+        >
+          <ep-icon name="close" [size]="10"></ep-icon>
+        </button>
+      </div>
+      <div class="ep-message__suggestions-panel-list">
+        @for (action of promptActions; track action.action || $index) {
+          <button
+            class="ep-message__suggestions-panel-item"
+            type="button"
+            [disabled]="!!action.disabled"
+            (click)="onSuggestionClick(action)"
+          >
+            {{ action.text }}
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  @if (hasError) {
+    <div class="epica-error">
+      <img [src]="getImagePath('epica-sleeping.svg')" height="80" width="80" alt="Epica sleeping" />
+      <div class="epica-error__text">
+        {{
+          message._epicaError === true
+            ? "Sorry, Epic stepped away for a moment. But promised to be back! Soon..."
+            : message._epicaError
+        }}
+      </div>
+    </div>
+  }
+</div>
+`, styles: ['@charset "UTF-8";\n\n/* src/app/components/message-item/message-item.component.scss */\n.ep-message {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message:hover .ep-message__time {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message .ep-message__date-divider {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  width: 100%;\n  margin: 0 auto 8px auto;\n  font-size: 11px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 0;\n  align-self: center;\n}\n.ep-message__date-divider::before,\n.ep-message__date-divider::after {\n  content: "";\n  flex: 1;\n  height: 1px;\n  background: var(--ep-color-border);\n}\n.ep-message__text {\n  display: block;\n  padding: 6px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep markdown {\n  display: block;\n}\n.ep-message__text ::ng-deep p,\n.ep-message__text p {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text ::ng-deep p:last-child,\n.ep-message__text p:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep strong,\n.ep-message__text ::ng-deep b,\n.ep-message__text strong,\n.ep-message__text b {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text ::ng-deep em,\n.ep-message__text ::ng-deep i,\n.ep-message__text em,\n.ep-message__text i {\n  font-style: italic;\n}\n.ep-message__text ::ng-deep a,\n.ep-message__text a {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text ::ng-deep a:hover,\n.ep-message__text a:hover {\n  text-decoration: underline;\n}\n.ep-message__text ::ng-deep ul,\n.ep-message__text ::ng-deep ol,\n.ep-message__text ul,\n.ep-message__text ol {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul:first-child,\n.ep-message__text ::ng-deep ol:first-child,\n.ep-message__text ul:first-child,\n.ep-message__text ol:first-child {\n  margin-top: 0;\n}\n.ep-message__text ::ng-deep ul:last-child,\n.ep-message__text ::ng-deep ol:last-child,\n.ep-message__text ul:last-child,\n.ep-message__text ol:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li,\n.ep-message__text ul li {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li::before,\n.ep-message__text ul li::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ul ::ng-deep li p,\n.ep-message__text ::ng-deep ul li ::ng-deep p,\n.ep-message__text ::ng-deep ul li p,\n.ep-message__text ul ::ng-deep li ::ng-deep p,\n.ep-message__text ul ::ng-deep li p,\n.ep-message__text ul li ::ng-deep p,\n.ep-message__text ul li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ::ng-deep ul ::ng-deep li ul,\n.ep-message__text ::ng-deep ul li ::ng-deep ul,\n.ep-message__text ::ng-deep ul li ul,\n.ep-message__text ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ul ::ng-deep li ul,\n.ep-message__text ul li ::ng-deep ul,\n.ep-message__text ul li ul {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul li ::ng-deep ul li,\n.ep-message__text ul li ul ::ng-deep li,\n.ep-message__text ul li ul li {\n  padding-left: 24px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul li ::ng-deep ul li::before,\n.ep-message__text ul li ul ::ng-deep li::before,\n.ep-message__text ul li ul li::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul li ::ng-deep ul ul li,\n.ep-message__text ul li ul ::ng-deep ul li,\n.ep-message__text ul li ul ul li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul li ::ng-deep ul ul li::before,\n.ep-message__text ul li ul ::ng-deep ul li::before,\n.ep-message__text ul li ul ul li::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text ::ng-deep ol,\n.ep-message__text ol {\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li,\n.ep-message__text ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li,\n.ep-message__text ol li {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li::before,\n.ep-message__text ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li::before,\n.ep-message__text ol li::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ol ::ng-deep li p,\n.ep-message__text ::ng-deep ol li ::ng-deep p,\n.ep-message__text ::ng-deep ol li p,\n.ep-message__text ol ::ng-deep li ::ng-deep p,\n.ep-message__text ol ::ng-deep li p,\n.ep-message__text ol li ::ng-deep p,\n.ep-message__text ol li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ::ng-deep ol ::ng-deep li ol,\n.ep-message__text ::ng-deep ol li ::ng-deep ol,\n.ep-message__text ::ng-deep ol li ol,\n.ep-message__text ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ol ::ng-deep li ol,\n.ep-message__text ol li ::ng-deep ol,\n.ep-message__text ol li ol {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol li ol li,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li ol li,\n.ep-message__text ol li ::ng-deep ol li,\n.ep-message__text ol li ol li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li::before,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol li ol li::before,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li ol li::before,\n.ep-message__text ol li ::ng-deep ol li::before,\n.ep-message__text ol li ol li::before {\n  left: 4px;\n}\n.ep-message__text ::ng-deep code,\n.ep-message__text code {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  font-size: 13px;\n}\n.ep-message__text ::ng-deep .ep-md-code {\n  margin: 8px 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ep-color-surface-alt) 70%, transparent);\n  overflow: hidden;\n}\n.ep-message__text ::ng-deep .ep-md-code__header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 32px;\n  padding: 0 10px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n}\n.ep-message__text ::ng-deep .ep-md-code__lang {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: var(--ep-color-text-muted);\n  line-height: 1;\n}\n.ep-message__text ::ng-deep .ep-md-code__copy {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition:\n    color 0.15s,\n    border-color 0.15s,\n    background-color 0.15s;\n}\n.ep-message__text ::ng-deep .ep-md-code__copy:hover:not(:disabled) {\n  color: var(--ep-color-text);\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n}\n.ep-message__text ::ng-deep .ep-md-code__copy:disabled {\n  opacity: 0.75;\n  cursor: default;\n}\n.ep-message__text ::ng-deep .ep-md-code pre {\n  margin: 0;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  padding: 10px 12px;\n  overflow-x: auto;\n}\n.ep-message__text ::ng-deep .ep-md-code code {\n  display: block;\n  background: none;\n  border-radius: 0;\n  padding: 0;\n  color: var(--ep-color-text);\n  font-size: 12.5px;\n  line-height: 18px;\n  white-space: pre;\n  overflow-wrap: normal;\n}\n.ep-message__text ::ng-deep .ep-md-code--plain code {\n  color: var(--ep-color-text-muted);\n}\n.ep-message__text ::ng-deep pre,\n.ep-message__text pre {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text ::ng-deep pre code,\n.ep-message__text pre code {\n  background: none;\n  padding: 0;\n}\n.ep-message__text h1,\n.ep-message__text h2,\n.ep-message__text h3,\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text h1:first-child,\n.ep-message__text h2:first-child,\n.ep-message__text h3:first-child,\n.ep-message__text h4:first-child,\n.ep-message__text h5:first-child,\n.ep-message__text h6:first-child {\n  margin-top: 0;\n}\n.ep-message__text h1 {\n  font-size: 20px;\n}\n.ep-message__text h2 {\n  font-size: 18px;\n}\n.ep-message__text h3 {\n  font-size: 16px;\n}\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  font-size: 14px;\n}\n.ep-message__text hr {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text blockquote {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text img {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message:not(.ep-message--user) .ep-message__text {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user {\n  align-items: flex-end;\n}\n.ep-message--user .ep-message__content {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user .ep-message__text {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n  color: var(--ep-chat-text-question);\n}\n.ep-message--user .ep-message__text ::ng-deep strong,\n.ep-message--user .ep-message__text ::ng-deep b,\n.ep-message--user .ep-message__text strong,\n.ep-message--user .ep-message__text b,\n.ep-message--user .ep-message__text ::ng-deep ul li::before,\n.ep-message--user .ep-message__text ul li::before,\n.ep-message--user .ep-message__text ::ng-deep ol li::before,\n.ep-message--user .ep-message__text ol li::before {\n  color: inherit;\n}\n.ep-message--user .ep-message__time {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 8px;\n}\n.ep-message__link {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n  min-height: 28px;\n  padding: 4px 10px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  background: transparent;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s,\n    border-color 0.15s,\n    color 0.15s;\n}\n.ep-message__link-text {\n  color: inherit;\n}\n.ep-message__link-icon {\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  color: inherit;\n}\n.ep-message__link:hover:not(.ep-message__link--disabled) {\n  background: var(--ep-color-accent-soft);\n  border-color: var(--ep-color-accent);\n  color: var(--ep-color-accent);\n}\n.ep-message__link.ep-message__link--disabled {\n  border-color: var(--ep-color-border);\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.ep-message__suggestions-panel {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  max-width: 100%;\n  margin-top: 4px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  border-radius: 4px;\n  background: transparent;\n  overflow: hidden;\n}\n.ep-message__suggestions-panel-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 47px;\n  padding: 0 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n}\n.ep-message__suggestions-panel-title {\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  line-height: 20px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ep-message__suggestions-panel-close {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 24px;\n  height: 24px;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  transition: opacity 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-close:hover {\n  opacity: 1;\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-close svg {\n  width: 10px;\n  height: 10px;\n}\n.ep-message__suggestions-panel-list {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-message__suggestions-panel-item {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  min-height: 49px;\n  padding: 7px 14px;\n  font-size: 14px;\n  line-height: 20px;\n  text-align: left;\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  border: none;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  cursor: pointer;\n  transition: background-color 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-item:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-text) 4%, transparent);\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-item:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.epica-error {\n  display: flex;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 16px 20px;\n  max-width: 380px;\n  align-items: center;\n  gap: 20px;\n  border-radius: 4px;\n  border: 2px solid var(--ep-color-danger-border);\n  background: var(--ep-color-danger-soft);\n}\n.epica-error__text {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n:host ::ng-deep .ep-md-code__copy-icon {\n  font-size: 12px;\n  cursor: pointer;\n}\n/*# sourceMappingURL=message-item.component.css.map */\n'] }]
+  }], () => [{ type: ActionService }], { message: [{
+    type: Input
+  }], isLast: [{
     type: Input
   }], actionClick: [{
     type: Output
+  }], onHostClick: [{
+    type: HostListener,
+    args: ["click", ["$event"]]
+  }], onHostKeydown: [{
+    type: HostListener,
+    args: ["keydown", ["$event"]]
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageItemComponent, { className: "MessageItemComponent", filePath: "src/app/components/message-item/message-item.component.ts", lineNumber: 24 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageItemComponent, { className: "MessageItemComponent", filePath: "src/app/components/message-item/message-item.component.ts", lineNumber: 36 });
 })();
 
 // src/app/components/shared/typing-indicator/typing-indicator.component.ts
@@ -95415,7 +95896,7 @@ var TypingIndicatorComponent = _TypingIndicatorComponent;
 // src/app/components/chat-body/chat-body.component.ts
 var _c013 = ["bodyElement"];
 var _c19 = ["spacer"];
-var _forTrack05 = ($index, $item) => $item.id || $item.time;
+var _forTrack06 = ($index, $item) => $item.id || $item.time;
 function ChatBodyComponent_For_7_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
@@ -95429,7 +95910,9 @@ function ChatBodyComponent_For_7_Template(rf, ctx) {
   }
   if (rf & 2) {
     const message_r3 = ctx.$implicit;
-    \u0275\u0275property("message", message_r3);
+    const \u0275$index_10_r4 = ctx.$index;
+    const \u0275$count_10_r5 = ctx.$count;
+    \u0275\u0275property("message", message_r3)("isLast", \u0275$index_10_r4 === \u0275$count_10_r5 - 1);
   }
 }
 function ChatBodyComponent_Conditional_8_Template(rf, ctx) {
@@ -95730,13 +96213,13 @@ _ChatBodyComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.spacerEl = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.autoScrollDirective = _t.first);
   }
-}, inputs: { messages: "messages", isTyping: "isTyping", scrollMode: "scrollMode" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 11, vars: 7, consts: [["bodyElement", ""], ["spacer", ""], [1, "chat-body", 3, "epAutoScroll"], [1, "chat-body__upper-gradient-line"], [1, "chat-body__upper-date"], [1, "chat-body__messages"], [3, "message"], [1, "chat-body__typing"], [1, "chat-body__spacer"], [3, "actionClick", "message"]], template: function ChatBodyComponent_Template(rf, ctx) {
+}, inputs: { messages: "messages", isTyping: "isTyping", scrollMode: "scrollMode" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 11, vars: 7, consts: [["bodyElement", ""], ["spacer", ""], [1, "chat-body", 3, "epAutoScroll"], [1, "chat-body__upper-gradient-line"], [1, "chat-body__upper-date"], [1, "chat-body__messages"], [3, "message", "isLast"], [1, "chat-body__typing"], [1, "chat-body__spacer"], [3, "actionClick", "message", "isLast"]], template: function ChatBodyComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 2, 0)(2, "div", 3)(3, "div", 4);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(5, "div", 5);
-    \u0275\u0275repeaterCreate(6, ChatBodyComponent_For_7_Template, 1, 1, "ep-message-item", 6, _forTrack05);
+    \u0275\u0275repeaterCreate(6, ChatBodyComponent_For_7_Template, 1, 2, "ep-message-item", 6, _forTrack06);
     \u0275\u0275conditionalCreate(8, ChatBodyComponent_Conditional_8_Template, 2, 0, "div", 7);
     \u0275\u0275element(9, "div", 8, 1);
     \u0275\u0275elementEnd()();
@@ -95759,7 +96242,7 @@ var ChatBodyComponent = _ChatBodyComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatBodyComponent, [{
     type: Component,
-    args: [{ selector: "ep-chat-body", imports: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], template: '<div class="chat-body" #bodyElement [epAutoScroll]="shouldAutoScroll">\r\n  <div class="chat-body__upper-gradient-line" [class.visible]="upperDate && isUpperDateVisible">\r\n    <div class="chat-body__upper-date" [class.visible]="upperDate && isUpperDateVisible">\r\n      {{ upperDate }}\r\n    </div>\r\n  </div>\r\n  <div class="chat-body__messages">\r\n    @for (message of messages; track message.id || message.time) {\r\n      <ep-message-item [message]="message" (actionClick)="onActionClick($event)" />\r\n    }\r\n    @if (isTyping) {\r\n      <div class="chat-body__typing">\r\n        <ep-typing-indicator />\r\n      </div>\r\n    }\r\n    <div #spacer class="chat-body__spacer"></div>\r\n  </div>\r\n</div>\r\n', styles: ["/* src/app/components/chat-body/chat-body.component.scss */\n:host {\n  display: flex;\n  flex-direction: column;\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow: hidden;\n}\n.chat-body {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  background: var(--ep-color-surface);\n  display: flex;\n  flex-direction: column;\n  padding-bottom: 200px;\n  overflow-y: auto;\n}\n.chat-body__upper-gradient-line {\n  position: sticky;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 100;\n  pointer-events: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 4px;\n  transition: transform 0.3s ease, visibility 0s linear 0.3s;\n  transform: translateY(-100%);\n  visibility: hidden;\n}\n.chat-body__upper-gradient-line.visible {\n  transform: translateY(0);\n  visibility: visible;\n  transition: transform 0.3s ease, visibility 0s linear 0s;\n}\n.chat-body__upper-date {\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  border-radius: 4px;\n  -webkit-backdrop-filter: blur(12px) saturate(180%);\n  backdrop-filter: blur(12px) saturate(180%);\n  border: 1px solid var(--ep-color-border);\n  opacity: 0;\n  transform: translateY(-10px);\n  transition: opacity 0.25s ease, transform 0.3s ease;\n  white-space: nowrap;\n}\n.chat-body__upper-date.visible {\n  opacity: 1;\n  transform: translateY(0);\n  transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;\n}\n.chat-body__messages {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex: 1 0 auto;\n}\n.chat-body__typing {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 0 20px;\n}\n.chat-body__spacer {\n  flex-shrink: 0;\n  min-height: 0;\n}\n/*# sourceMappingURL=chat-body.component.css.map */\n"] }]
+    args: [{ selector: "ep-chat-body", imports: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], template: '<div class="chat-body" #bodyElement [epAutoScroll]="shouldAutoScroll">\r\n  <div class="chat-body__upper-gradient-line" [class.visible]="upperDate && isUpperDateVisible">\r\n    <div class="chat-body__upper-date" [class.visible]="upperDate && isUpperDateVisible">\r\n      {{ upperDate }}\r\n    </div>\r\n  </div>\r\n  <div class="chat-body__messages">\r\n    @for (message of messages; track message.id || message.time) {\r\n      <ep-message-item [message]="message" [isLast]="$last" (actionClick)="onActionClick($event)" />\r\n    }\r\n    @if (isTyping) {\r\n      <div class="chat-body__typing">\r\n        <ep-typing-indicator />\r\n      </div>\r\n    }\r\n    <div #spacer class="chat-body__spacer"></div>\r\n  </div>\r\n</div>\r\n', styles: ["/* src/app/components/chat-body/chat-body.component.scss */\n:host {\n  display: flex;\n  flex-direction: column;\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow: hidden;\n}\n.chat-body {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  background: var(--ep-color-surface);\n  display: flex;\n  flex-direction: column;\n  padding-bottom: 200px;\n  overflow-y: auto;\n}\n.chat-body__upper-gradient-line {\n  position: sticky;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 100;\n  pointer-events: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 4px;\n  transition: transform 0.3s ease, visibility 0s linear 0.3s;\n  transform: translateY(-100%);\n  visibility: hidden;\n}\n.chat-body__upper-gradient-line.visible {\n  transform: translateY(0);\n  visibility: visible;\n  transition: transform 0.3s ease, visibility 0s linear 0s;\n}\n.chat-body__upper-date {\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  border-radius: 4px;\n  -webkit-backdrop-filter: blur(12px) saturate(180%);\n  backdrop-filter: blur(12px) saturate(180%);\n  border: 1px solid var(--ep-color-border);\n  opacity: 0;\n  transform: translateY(-10px);\n  transition: opacity 0.25s ease, transform 0.3s ease;\n  white-space: nowrap;\n}\n.chat-body__upper-date.visible {\n  opacity: 1;\n  transform: translateY(0);\n  transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;\n}\n.chat-body__messages {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex: 1 0 auto;\n}\n.chat-body__typing {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 0 20px;\n}\n.chat-body__spacer {\n  flex-shrink: 0;\n  min-height: 0;\n}\n/*# sourceMappingURL=chat-body.component.css.map */\n"] }]
   }], null, { messages: [{
     type: Input
   }], isTyping: [{
@@ -96643,7 +97126,7 @@ var ApiService = _ApiService;
 
 // src/app/components/shared/recent-files-menu/recent-files-menu.component.ts
 var _c016 = ["attachFileMenuItem"];
-var _forTrack06 = ($index, $item) => $item.name;
+var _forTrack07 = ($index, $item) => $item.name;
 function RecentFilesMenuComponent_Conditional_1_For_3_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 9);
@@ -96712,7 +97195,7 @@ function RecentFilesMenuComponent_Conditional_1_Template(rf, ctx) {
     \u0275\u0275elementStart(0, "div", 4);
     \u0275\u0275text(1, "Recent files");
     \u0275\u0275elementEnd();
-    \u0275\u0275repeaterCreate(2, RecentFilesMenuComponent_Conditional_1_For_3_Template, 6, 7, "div", 5, _forTrack06);
+    \u0275\u0275repeaterCreate(2, RecentFilesMenuComponent_Conditional_1_For_3_Template, 6, 7, "div", 5, _forTrack07);
     \u0275\u0275element(4, "div", 6);
   }
   if (rf & 2) {
@@ -96938,87 +97421,15 @@ var RecentFilesMenuComponent = _RecentFilesMenuComponent;
 // src/app/components/chat-footer/chat-footer.component.ts
 var _c017 = ["messageInput"];
 var _c110 = () => ({ delay: 500 });
-var _c27 = (a0) => ({ "right.px": a0 });
-var _c35 = () => ({ delay: 500, position: "top" });
-var _c45 = (a0) => ({ opacity: a0 });
-var _forTrack07 = ($index, $item) => $item.value;
-function ChatFooterComponent_Conditional_1_For_3_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 20);
-    \u0275\u0275listener("buttonClick", function ChatFooterComponent_Conditional_1_For_3_Template_ep_button_buttonClick_0_listener() {
-      const action_r5 = \u0275\u0275restoreView(_r4).$implicit;
-      const ctx_r2 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r2.onFooterActionClick(action_r5));
-    });
-    \u0275\u0275text(1);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const action_r5 = ctx.$implicit;
-    const ctx_r2 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("disabled", ctx_r2.isTyping || (action_r5.disabled ?? false))("noBorder", true);
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", action_r5.text, " ");
-  }
-}
-function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
+var _c27 = () => ({ delay: 500, position: "top" });
+var _c35 = (a0) => ({ opacity: a0 });
+var _forTrack08 = ($index, $item) => $item.value;
+function ChatFooterComponent_Conditional_1_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 15);
-    \u0275\u0275listener("wheel", function ChatFooterComponent_Conditional_1_Template_div_wheel_0_listener($event) {
+    \u0275\u0275elementStart(0, "ep-button", 14);
+    \u0275\u0275listener("buttonClick", function ChatFooterComponent_Conditional_1_Conditional_1_Template_ep_button_buttonClick_0_listener() {
       \u0275\u0275restoreView(_r2);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.wheelQuickActions($event));
-    })("touchstart", function ChatFooterComponent_Conditional_1_Template_div_touchstart_0_listener($event) {
-      \u0275\u0275restoreView(_r2);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.onQuickActionsTouchStart($event));
-    })("touchmove", function ChatFooterComponent_Conditional_1_Template_div_touchmove_0_listener($event) {
-      \u0275\u0275restoreView(_r2);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.onQuickActionsTouchMove($event));
-    });
-    \u0275\u0275elementStart(1, "div", 16);
-    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_1_For_3_Template, 2, 3, "ep-button", 17, \u0275\u0275componentInstance().trackActionById, true);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 18);
-    \u0275\u0275listener("mouseover", function ChatFooterComponent_Conditional_1_Template_div_mouseover_4_listener() {
-      \u0275\u0275restoreView(_r2);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.shiftQuickActionsLeft());
-    })("focus", function ChatFooterComponent_Conditional_1_Template_div_focus_4_listener() {
-      \u0275\u0275restoreView(_r2);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.shiftQuickActionsLeft());
-    });
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div", 19);
-    \u0275\u0275listener("mouseover", function ChatFooterComponent_Conditional_1_Template_div_mouseover_5_listener() {
-      \u0275\u0275restoreView(_r2);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.shiftQuickActionsRight());
-    })("focus", function ChatFooterComponent_Conditional_1_Template_div_focus_5_listener() {
-      \u0275\u0275restoreView(_r2);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.shiftQuickActionsRight());
-    });
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const ctx_r2 = \u0275\u0275nextContext();
-    \u0275\u0275advance();
-    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction1(1, _c27, ctx_r2.shiftQuickActionsValue));
-    \u0275\u0275advance();
-    \u0275\u0275repeater(ctx_r2.promptActionsFromLastMessage);
-  }
-}
-function ChatFooterComponent_Conditional_2_Conditional_1_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r6 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 21);
-    \u0275\u0275listener("buttonClick", function ChatFooterComponent_Conditional_2_Conditional_1_Template_ep_button_buttonClick_0_listener() {
-      \u0275\u0275restoreView(_r6);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onRepeatFile());
     });
@@ -97031,79 +97442,79 @@ function ChatFooterComponent_Conditional_2_Conditional_1_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" Repeat last ", ctx_r2.isMultipleFilesMode() ? "files" : "file", " ");
   }
 }
-function ChatFooterComponent_Conditional_2_Conditional_2_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_1_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 22);
+    const _r4 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 15);
     \u0275\u0275text(1, "Attached file:");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 23)(3, "div", 24);
+    \u0275\u0275elementStart(2, "div", 16)(3, "div", 17);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div", 25);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_2_Conditional_2_Template_div_click_5_listener() {
-      \u0275\u0275restoreView(_r7);
+    \u0275\u0275elementStart(5, "div", 18);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_1_Conditional_2_Template_div_click_5_listener() {
+      \u0275\u0275restoreView(_r4);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onDeselectFile());
-    })("keydown.enter", function ChatFooterComponent_Conditional_2_Conditional_2_Template_div_keydown_enter_5_listener() {
-      \u0275\u0275restoreView(_r7);
+    })("keydown.enter", function ChatFooterComponent_Conditional_1_Conditional_2_Template_div_keydown_enter_5_listener() {
+      \u0275\u0275restoreView(_r4);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onDeselectFile());
-    })("keydown.space", function ChatFooterComponent_Conditional_2_Conditional_2_Template_div_keydown_space_5_listener() {
-      \u0275\u0275restoreView(_r7);
+    })("keydown.space", function ChatFooterComponent_Conditional_1_Conditional_2_Template_div_keydown_space_5_listener() {
+      \u0275\u0275restoreView(_r4);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onDeselectFile());
     });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(6, "svg", 26);
-    \u0275\u0275element(7, "path", 27);
-    \u0275\u0275elementEnd()()();
+    \u0275\u0275element(6, "ep-icon", 19);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
     let tmp_3_0;
     const ctx_r2 = \u0275\u0275nextContext(2);
     \u0275\u0275advance(4);
     \u0275\u0275textInterpolate((tmp_3_0 = ctx_r2.chatService.attachedFile()) == null ? null : tmp_3_0.name);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("size", 9);
   }
 }
-function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template(rf, ctx) {
   if (rf & 1) {
-    const _r8 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 29)(1, "div", 24);
+    const _r5 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 21)(1, "div", 17);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 25);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template_div_click_3_listener() {
-      const file_r9 = \u0275\u0275restoreView(_r8).$implicit;
+    \u0275\u0275elementStart(3, "div", 18);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template_div_click_3_listener() {
+      const file_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r9));
-    })("keydown.enter", function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template_div_keydown_enter_3_listener() {
-      const file_r9 = \u0275\u0275restoreView(_r8).$implicit;
+      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r6));
+    })("keydown.enter", function ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template_div_keydown_enter_3_listener() {
+      const file_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r9));
-    })("keydown.space", function ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template_div_keydown_space_3_listener() {
-      const file_r9 = \u0275\u0275restoreView(_r8).$implicit;
+      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r6));
+    })("keydown.space", function ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template_div_keydown_space_3_listener() {
+      const file_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r9));
+      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r6));
     });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(4, "svg", 26);
-    \u0275\u0275element(5, "path", 27);
-    \u0275\u0275elementEnd()()();
+    \u0275\u0275element(4, "ep-icon", 19);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const file_r9 = ctx.$implicit;
+    const file_r6 = ctx.$implicit;
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(file_r9.name);
+    \u0275\u0275textInterpolate(file_r6.name);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("size", 9);
   }
 }
-function ChatFooterComponent_Conditional_2_Conditional_3_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_1_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 22);
+    \u0275\u0275elementStart(0, "div", 15);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 28);
-    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_2_Conditional_3_For_4_Template, 6, 1, "div", 29, \u0275\u0275componentInstance().trackFileById, true);
+    \u0275\u0275elementStart(2, "div", 20);
+    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template, 5, 2, "div", 21, \u0275\u0275componentInstance().trackFileById, true);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97114,12 +97525,12 @@ function ChatFooterComponent_Conditional_2_Conditional_3_Template(rf, ctx) {
     \u0275\u0275repeater(ctx_r2.chatService.attachedFiles());
   }
 }
-function ChatFooterComponent_Conditional_2_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 3);
-    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_2_Conditional_1_Template, 2, 1, "ep-button");
-    \u0275\u0275conditionalCreate(2, ChatFooterComponent_Conditional_2_Conditional_2_Template, 8, 1);
-    \u0275\u0275conditionalCreate(3, ChatFooterComponent_Conditional_2_Conditional_3_Template, 5, 1);
+    \u0275\u0275elementStart(0, "div", 2);
+    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_1_Conditional_1_Template, 2, 1, "ep-button");
+    \u0275\u0275conditionalCreate(2, ChatFooterComponent_Conditional_1_Conditional_2_Template, 7, 2);
+    \u0275\u0275conditionalCreate(3, ChatFooterComponent_Conditional_1_Conditional_3_Template, 5, 1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97132,61 +97543,61 @@ function ChatFooterComponent_Conditional_2_Template(rf, ctx) {
     \u0275\u0275conditional(ctx_r2.isMultipleFilesMode() && ctx_r2.chatService.attachedFiles().length > 0 ? 3 : -1);
   }
 }
-function ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template(rf, ctx) {
   if (rf & 1) {
-    const _r12 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu-item", 35);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template_ep_menu_item_click_0_listener() {
-      const tool_r13 = \u0275\u0275restoreView(_r12).$implicit;
+    const _r9 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu-item", 26);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template_ep_menu_item_click_0_listener() {
+      const tool_r10 = \u0275\u0275restoreView(_r9).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r13));
-    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template_ep_menu_item_keydown_enter_0_listener() {
-      const tool_r13 = \u0275\u0275restoreView(_r12).$implicit;
+      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r10));
+    })("keydown.enter", function ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template_ep_menu_item_keydown_enter_0_listener() {
+      const tool_r10 = \u0275\u0275restoreView(_r9).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r13));
-    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template_ep_menu_item_keydown_space_0_listener() {
-      const tool_r13 = \u0275\u0275restoreView(_r12).$implicit;
+      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r10));
+    })("keydown.space", function ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template_ep_menu_item_keydown_space_0_listener() {
+      const tool_r10 = \u0275\u0275restoreView(_r9).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r13));
+      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r10));
     });
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const tool_r13 = ctx.$implicit;
+    const tool_r10 = ctx.$implicit;
     const ctx_r2 = \u0275\u0275nextContext(3);
-    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.effectiveSelectedTool === tool_r13);
-    \u0275\u0275attribute("aria-selected", ctx_r2.effectiveSelectedTool === tool_r13);
+    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.effectiveSelectedTool === tool_r10);
+    \u0275\u0275attribute("aria-selected", ctx_r2.effectiveSelectedTool === tool_r10);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(tool_r13);
+    \u0275\u0275textInterpolate(tool_r10);
   }
 }
-function ChatFooterComponent_Conditional_7_Conditional_5_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_6_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
-    const _r11 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu", 34);
-    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_7_Conditional_5_Template_ep_menu_closed_0_listener() {
-      \u0275\u0275restoreView(_r11);
+    const _r8 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu", 25);
+    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_6_Conditional_4_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.isToolMenuOpen = false);
     });
-    \u0275\u0275elementStart(1, "ep-menu-item", 35);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_5_Template_ep_menu_item_click_1_listener() {
-      \u0275\u0275restoreView(_r11);
+    \u0275\u0275elementStart(1, "ep-menu-item", 26);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_6_Conditional_4_Template_ep_menu_item_click_1_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.selectTool(null));
-    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_5_Template_ep_menu_item_keydown_enter_1_listener() {
-      \u0275\u0275restoreView(_r11);
+    })("keydown.enter", function ChatFooterComponent_Conditional_6_Conditional_4_Template_ep_menu_item_keydown_enter_1_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.selectTool(null));
-    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_5_Template_ep_menu_item_keydown_space_1_listener() {
-      \u0275\u0275restoreView(_r11);
+    })("keydown.space", function ChatFooterComponent_Conditional_6_Conditional_4_Template_ep_menu_item_keydown_space_1_listener() {
+      \u0275\u0275restoreView(_r8);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.selectTool(null));
     });
     \u0275\u0275text(2, "None");
     \u0275\u0275elementEnd();
-    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_7_Conditional_5_For_4_Template, 2, 4, "ep-menu-item", 36, \u0275\u0275repeaterTrackByIdentity);
+    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template, 2, 4, "ep-menu-item", 27, \u0275\u0275repeaterTrackByIdentity);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97198,22 +97609,20 @@ function ChatFooterComponent_Conditional_7_Conditional_5_Template(rf, ctx) {
     \u0275\u0275repeater(ctx_r2.availableTools);
   }
 }
-function ChatFooterComponent_Conditional_7_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_6_Template(rf, ctx) {
   if (rf & 1) {
-    const _r10 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 7)(1, "button", 30);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Template_button_click_1_listener($event) {
-      \u0275\u0275restoreView(_r10);
+    const _r7 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 6)(1, "button", 22);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_6_Template_button_click_1_listener($event) {
+      \u0275\u0275restoreView(_r7);
       const ctx_r2 = \u0275\u0275nextContext();
       ctx_r2.toggleToolMenu();
       return \u0275\u0275resetView($event.stopPropagation());
     });
     \u0275\u0275text(2);
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(3, "svg", 31);
-    \u0275\u0275element(4, "path", 32);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275conditionalCreate(5, ChatFooterComponent_Conditional_7_Conditional_5_Template, 5, 3, "ep-menu", 33);
+    \u0275\u0275element(3, "ep-icon", 23);
+    \u0275\u0275elementEnd();
+    \u0275\u0275conditionalCreate(4, ChatFooterComponent_Conditional_6_Conditional_4_Template, 5, 3, "ep-menu", 24);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97224,165 +97633,165 @@ function ChatFooterComponent_Conditional_7_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", ctx_r2.selectedTool || "Tools", " ");
     \u0275\u0275advance();
     \u0275\u0275classProp("chat-footer__tool-chevron--open", ctx_r2.isToolMenuOpen);
-    \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx_r2.isToolMenuOpen ? 5 : -1);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx_r2.isToolMenuOpen ? 4 : -1);
   }
 }
-function ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template(rf, ctx) {
   if (rf & 1) {
-    const _r16 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu-item", 41);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template_ep_menu_item_click_0_listener() {
-      const m_r17 = \u0275\u0275restoreView(_r16).$implicit;
+    const _r13 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu-item", 32);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template_ep_menu_item_click_0_listener() {
+      const m_r14 = \u0275\u0275restoreView(_r13).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r17.value));
-    })("keydown.enter", function ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template_ep_menu_item_keydown_enter_0_listener() {
-      const m_r17 = \u0275\u0275restoreView(_r16).$implicit;
+      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r14.value));
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template_ep_menu_item_keydown_enter_0_listener() {
+      const m_r14 = \u0275\u0275restoreView(_r13).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r17.value));
-    })("keydown.space", function ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template_ep_menu_item_keydown_space_0_listener() {
-      const m_r17 = \u0275\u0275restoreView(_r16).$implicit;
+      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r14.value));
+    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template_ep_menu_item_keydown_space_0_listener() {
+      const m_r14 = \u0275\u0275restoreView(_r13).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r17.value));
+      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r14.value));
     });
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const m_r17 = ctx.$implicit;
+    const m_r14 = ctx.$implicit;
     const ctx_r2 = \u0275\u0275nextContext(3);
-    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.webMode() === m_r17.value);
+    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.webMode() === m_r14.value);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(m_r17.label);
+    \u0275\u0275textInterpolate(m_r14.label);
   }
 }
-function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r17 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "input", 41);
+    \u0275\u0275listener("input", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template_input_input_0_listener($event) {
+      \u0275\u0275restoreView(_r17);
+      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.updateSite(\u0275$index_83_r18, $event));
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template_input_keydown_enter_0_listener($event) {
+      \u0275\u0275restoreView(_r17);
+      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.onSiteInputEnter(\u0275$index_83_r18, $event));
+    })("keydown", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template_input_keydown_0_listener($event) {
+      \u0275\u0275restoreView(_r17);
+      return \u0275\u0275resetView($event.stopPropagation());
+    })("click", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template_input_click_0_listener($event) {
+      \u0275\u0275restoreView(_r17);
+      return \u0275\u0275resetView($event.stopPropagation());
+    });
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const site_r19 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275attribute("value", site_r19);
+  }
+}
+function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r20 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "input", 51);
-    \u0275\u0275listener("input", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_input_0_listener($event) {
+    \u0275\u0275elementStart(0, "div", 42);
+    \u0275\u0275listener("dblclick", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template_div_dblclick_0_listener() {
       \u0275\u0275restoreView(_r20);
-      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
       const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.updateSite(\u0275$index_104_r21, $event));
-    })("keydown.enter", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_keydown_enter_0_listener($event) {
+      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_83_r18));
+    })("click", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template_div_click_0_listener($event) {
       \u0275\u0275restoreView(_r20);
-      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
       const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.onSiteInputEnter(\u0275$index_104_r21, $event));
-    })("keydown", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_keydown_0_listener($event) {
-      \u0275\u0275restoreView(_r20);
+      ctx_r2.startEditSite(\u0275$index_83_r18);
       return \u0275\u0275resetView($event.stopPropagation());
-    })("click", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_click_0_listener($event) {
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template_div_keydown_enter_0_listener() {
       \u0275\u0275restoreView(_r20);
-      return \u0275\u0275resetView($event.stopPropagation());
-    });
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const site_r22 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275attribute("value", site_r22);
-  }
-}
-function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r23 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 52);
-    \u0275\u0275listener("dblclick", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_dblclick_0_listener() {
-      \u0275\u0275restoreView(_r23);
-      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
       const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_104_r21));
-    })("click", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_click_0_listener($event) {
-      \u0275\u0275restoreView(_r23);
-      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
+      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_83_r18));
+    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r20);
+      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
       const ctx_r2 = \u0275\u0275nextContext(4);
-      ctx_r2.startEditSite(\u0275$index_104_r21);
-      return \u0275\u0275resetView($event.stopPropagation());
-    })("keydown.enter", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r23);
-      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
-      const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_104_r21));
-    })("keydown.space", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r23);
-      const \u0275$index_104_r21 = \u0275\u0275nextContext().$index;
-      const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_104_r21));
+      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_83_r18));
     });
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const site_r22 = \u0275\u0275nextContext().$implicit;
+    const site_r19 = \u0275\u0275nextContext().$implicit;
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", site_r22, " ");
+    \u0275\u0275textInterpolate1(" ", site_r19, " ");
   }
 }
-function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Template(rf, ctx) {
   if (rf & 1) {
-    const _r19 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 44);
-    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_1_Template, 1, 1, "input", 48)(2, ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Conditional_2_Template, 2, 1, "div", 49);
-    \u0275\u0275elementStart(3, "button", 50);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Template_button_click_3_listener($event) {
-      const \u0275$index_104_r21 = \u0275\u0275restoreView(_r19).$index;
+    const _r16 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 35);
+    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template, 1, 1, "input", 38)(2, ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template, 2, 1, "div", 39);
+    \u0275\u0275elementStart(3, "button", 40);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Template_button_click_3_listener($event) {
+      const \u0275$index_83_r18 = \u0275\u0275restoreView(_r16).$index;
       const ctx_r2 = \u0275\u0275nextContext(4);
-      ctx_r2.removeSite(\u0275$index_104_r21);
+      ctx_r2.removeSite(\u0275$index_83_r18);
       return \u0275\u0275resetView($event.stopPropagation());
     });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(4, "svg", 26);
-    \u0275\u0275element(5, "path", 27);
-    \u0275\u0275elementEnd()()();
+    \u0275\u0275element(4, "ep-icon", 19);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const \u0275$index_104_r21 = ctx.$index;
+    const \u0275$index_83_r18 = ctx.$index;
     const ctx_r2 = \u0275\u0275nextContext(4);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r2.editingSiteIndex === \u0275$index_104_r21 ? 1 : 2);
+    \u0275\u0275conditional(ctx_r2.editingSiteIndex === \u0275$index_83_r18 ? 1 : 2);
+    \u0275\u0275advance(3);
+    \u0275\u0275property("size", 9);
   }
 }
-function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    const _r18 = \u0275\u0275getCurrentView();
-    \u0275\u0275element(0, "div", 42);
-    \u0275\u0275elementStart(1, "div", 43);
-    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_For_3_Template, 6, 1, "div", 44, \u0275\u0275repeaterTrackByIndex);
-    \u0275\u0275elementStart(4, "button", 45);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_Template_button_click_4_listener($event) {
-      \u0275\u0275restoreView(_r18);
+    const _r15 = \u0275\u0275getCurrentView();
+    \u0275\u0275element(0, "div", 33);
+    \u0275\u0275elementStart(1, "div", 34);
+    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Template, 5, 2, "div", 35, \u0275\u0275repeaterTrackByIndex);
+    \u0275\u0275elementStart(4, "button", 36);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_Template_button_click_4_listener($event) {
+      \u0275\u0275restoreView(_r15);
       const ctx_r2 = \u0275\u0275nextContext(3);
       ctx_r2.addSite();
       return \u0275\u0275resetView($event.stopPropagation());
-    })("keydown.enter", function ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_Template_button_keydown_enter_4_listener($event) {
-      \u0275\u0275restoreView(_r18);
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_Template_button_keydown_enter_4_listener($event) {
+      \u0275\u0275restoreView(_r15);
       const ctx_r2 = \u0275\u0275nextContext(3);
       ctx_r2.addSite();
       return \u0275\u0275resetView($event.stopPropagation());
     });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(5, "svg", 46);
-    \u0275\u0275element(6, "path", 47);
-    \u0275\u0275elementEnd()()();
+    \u0275\u0275element(5, "ep-icon", 37);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext(3);
     \u0275\u0275advance(2);
     \u0275\u0275repeater(ctx_r2.sites());
+    \u0275\u0275advance(3);
+    \u0275\u0275property("size", 10);
   }
 }
-function ChatFooterComponent_Conditional_8_Conditional_5_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
-    const _r15 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu", 39);
-    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_8_Conditional_5_Template_ep_menu_closed_0_listener() {
-      \u0275\u0275restoreView(_r15);
+    const _r12 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu", 30);
+    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_7_Conditional_4_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r12);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.isWebMenuOpen = false);
     });
-    \u0275\u0275repeaterCreate(1, ChatFooterComponent_Conditional_8_Conditional_5_For_2_Template, 2, 3, "ep-menu-item", 40, _forTrack07);
-    \u0275\u0275conditionalCreate(3, ChatFooterComponent_Conditional_8_Conditional_5_Conditional_3_Template, 7, 0);
+    \u0275\u0275repeaterCreate(1, ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template, 2, 3, "ep-menu-item", 31, _forTrack08);
+    \u0275\u0275conditionalCreate(3, ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_Template, 6, 1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97393,22 +97802,20 @@ function ChatFooterComponent_Conditional_8_Conditional_5_Template(rf, ctx) {
     \u0275\u0275conditional(ctx_r2.webMode() === "restrict" || ctx_r2.webMode() === "prioritize" ? 3 : -1);
   }
 }
-function ChatFooterComponent_Conditional_8_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Template(rf, ctx) {
   if (rf & 1) {
-    const _r14 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 8)(1, "button", 37);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_8_Template_button_click_1_listener($event) {
-      \u0275\u0275restoreView(_r14);
+    const _r11 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 7)(1, "button", 28);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Template_button_click_1_listener($event) {
+      \u0275\u0275restoreView(_r11);
       const ctx_r2 = \u0275\u0275nextContext();
       ctx_r2.toggleWebMenu();
       return \u0275\u0275resetView($event.stopPropagation());
     });
     \u0275\u0275text(2);
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(3, "svg", 31);
-    \u0275\u0275element(4, "path", 32);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275conditionalCreate(5, ChatFooterComponent_Conditional_8_Conditional_5_Template, 4, 1, "ep-menu", 38);
+    \u0275\u0275element(3, "ep-icon", 23);
+    \u0275\u0275elementEnd();
+    \u0275\u0275conditionalCreate(4, ChatFooterComponent_Conditional_7_Conditional_4_Template, 4, 1, "ep-menu", 29);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97419,106 +97826,106 @@ function ChatFooterComponent_Conditional_8_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", ctx_r2.webModeLabel(), " ");
     \u0275\u0275advance();
     \u0275\u0275classProp("chat-footer__tool-chevron--open", ctx_r2.isWebMenuOpen);
-    \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx_r2.isWebMenuOpen ? 5 : -1);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx_r2.isWebMenuOpen ? 4 : -1);
   }
 }
-function ChatFooterComponent_Conditional_10_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_9_Template(rf, ctx) {
   if (rf & 1) {
-    const _r24 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 53);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_10_Template_div_click_0_listener($event) {
-      \u0275\u0275restoreView(_r24);
+    const _r21 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 43);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_9_Template_div_click_0_listener($event) {
+      \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       ctx_r2.toggleRecentFilesMenu();
       return \u0275\u0275resetView($event.stopPropagation());
-    })("keydown.enter", function ChatFooterComponent_Conditional_10_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r24);
+    })("keydown.enter", function ChatFooterComponent_Conditional_9_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
-    })("keydown.space", function ChatFooterComponent_Conditional_10_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r24);
+    })("keydown.space", function ChatFooterComponent_Conditional_9_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
     });
-    \u0275\u0275element(1, "img", 54);
+    \u0275\u0275element(1, "img", 44);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext();
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(2, _c35));
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(2, _c27));
     \u0275\u0275advance();
     \u0275\u0275property("src", ctx_r2.getImagePath("attach.svg"), \u0275\u0275sanitizeUrl);
   }
 }
-function ChatFooterComponent_Conditional_12_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_11_Template(rf, ctx) {
   if (rf & 1) {
-    const _r25 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 55);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_12_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r25);
+    const _r22 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 45);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_11_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r22);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
-    })("keydown.enter", function ChatFooterComponent_Conditional_12_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r25);
+    })("keydown.enter", function ChatFooterComponent_Conditional_11_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r22);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
-    })("keydown.space", function ChatFooterComponent_Conditional_12_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r25);
+    })("keydown.space", function ChatFooterComponent_Conditional_11_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r22);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
     });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 56);
-    \u0275\u0275element(2, "path", 57);
-    \u0275\u0275elementEnd()();
+    \u0275\u0275element(1, "ep-icon", 46);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext();
-    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction1(2, _c45, ctx_r2.isSendButtonEnabled() ? "1" : "0.4"));
+    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction1(3, _c35, ctx_r2.isSendButtonEnabled() ? "1" : "0.4"));
     \u0275\u0275attribute("aria-label", "Send message");
+    \u0275\u0275advance();
+    \u0275\u0275property("size", 16);
+  }
+}
+function ChatFooterComponent_Conditional_12_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r23 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 47);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_12_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r23);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.stopGenerating());
+    })("keydown.enter", function ChatFooterComponent_Conditional_12_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r23);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.stopGenerating());
+    })("keydown.space", function ChatFooterComponent_Conditional_12_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r23);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.stopGenerating());
+    });
+    \u0275\u0275element(1, "ep-icon", 48);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(2, _c110));
+    \u0275\u0275advance();
+    \u0275\u0275property("size", 16);
   }
 }
 function ChatFooterComponent_Conditional_13_Template(rf, ctx) {
   if (rf & 1) {
-    const _r26 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 58);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_13_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r26);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.stopGenerating());
-    })("keydown.enter", function ChatFooterComponent_Conditional_13_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r26);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.stopGenerating());
-    })("keydown.space", function ChatFooterComponent_Conditional_13_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r26);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.stopGenerating());
-    });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 56);
-    \u0275\u0275element(2, "rect", 59);
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c110));
-  }
-}
-function ChatFooterComponent_Conditional_14_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r27 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-recent-files-menu", 60);
-    \u0275\u0275listener("fileAttached", function ChatFooterComponent_Conditional_14_Template_ep_recent_files_menu_fileAttached_0_listener($event) {
-      \u0275\u0275restoreView(_r27);
+    const _r24 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-recent-files-menu", 49);
+    \u0275\u0275listener("fileAttached", function ChatFooterComponent_Conditional_13_Template_ep_recent_files_menu_fileAttached_0_listener($event) {
+      \u0275\u0275restoreView(_r24);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onFileAttached($event));
-    })("filesAttached", function ChatFooterComponent_Conditional_14_Template_ep_recent_files_menu_filesAttached_0_listener($event) {
-      \u0275\u0275restoreView(_r27);
+    })("filesAttached", function ChatFooterComponent_Conditional_13_Template_ep_recent_files_menu_filesAttached_0_listener($event) {
+      \u0275\u0275restoreView(_r24);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onFilesAttached($event));
-    })("hideRecentFilesMenu", function ChatFooterComponent_Conditional_14_Template_ep_recent_files_menu_hideRecentFilesMenu_0_listener() {
-      \u0275\u0275restoreView(_r27);
+    })("hideRecentFilesMenu", function ChatFooterComponent_Conditional_13_Template_ep_recent_files_menu_hideRecentFilesMenu_0_listener() {
+      \u0275\u0275restoreView(_r24);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.hideRecentFilesMenu());
     });
@@ -97538,7 +97945,6 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     this.currentAgent = null;
     this.fileAttachmentEnabled = true;
     this.sendMessage = new EventEmitter();
-    this.quickActionClick = new EventEmitter();
     this.stop = new EventEmitter();
     this.messageInputControl = new FormControl("", [
       Validators.maxLength(CHAT_CONSTANTS.MAX_INPUT_LENGTH)
@@ -97555,15 +97961,10 @@ var _ChatFooterComponent = class _ChatFooterComponent {
       { value: "restrict", label: "Restrict sites" },
       { value: "prioritize", label: "Prioritize sites" }
     ];
-    this.shiftQuickActionsValue = 0;
     this.manuallyEnteredText = "";
     this.isVoiceMessage = false;
     this.getImagePath = getImagePath;
     this.editingSiteIndex = null;
-    this.quickActionsLineWidth = 0;
-    this.assistantPopupWidth = 0;
-    this.touchStartX = 0;
-    this.touchStartShift = 0;
     this.subscriptions = new Subscription();
   }
   ngOnInit() {
@@ -97610,7 +98011,6 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     }
   }
   onKeydown(event) {
-    this.shiftQuickActionsLeft();
     if (event.key.length === 1 || event.key === "Backspace" || event.key === "Delete") {
       this.isVoiceMessage = false;
     }
@@ -97696,100 +98096,9 @@ var _ChatFooterComponent = class _ChatFooterComponent {
       this.manuallyEnteredText = this.messageInputControl.value?.replace(/\r?\n/g, "").trim() || "";
     }, 100);
   }
-  shiftQuickActionsRight() {
-    const lineElement = document.querySelector(".chat-footer__quick-actions-line");
-    const popupElement = document.querySelector(".chat-footer__quick-actions");
-    if (lineElement && popupElement) {
-      this.quickActionsLineWidth = lineElement.clientWidth;
-      this.assistantPopupWidth = popupElement.clientWidth;
-      if (this.shiftQuickActionsValue < this.quickActionsLineWidth - this.assistantPopupWidth + 50) {
-        this.shiftQuickActionsValue += 200;
-      }
-    }
-  }
-  shiftQuickActionsLeft() {
-    this.shiftQuickActionsValue = 0;
-  }
-  wheelQuickActions(event) {
-    const lineElement = document.querySelector(".chat-footer__quick-actions-line");
-    const popupElement = document.querySelector(".chat-footer__quick-actions");
-    if (!lineElement || !popupElement)
-      return;
-    this.quickActionsLineWidth = lineElement.clientWidth;
-    this.assistantPopupWidth = popupElement.clientWidth;
-    const maxShift = Math.max(0, this.quickActionsLineWidth - this.assistantPopupWidth + 50);
-    const isHorizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
-    if (!isHorizontal) {
-      const delta = event.deltaY;
-      if (delta > 0) {
-        this.shiftQuickActionsValue = Math.min(maxShift, (this.shiftQuickActionsValue || 0) + 100);
-      } else if (delta < 0) {
-        this.shiftQuickActionsValue = Math.max(0, (this.shiftQuickActionsValue || 0) - 100);
-      }
-      return;
-    }
-    let rawDelta = event.deltaX;
-    if (event.deltaMode === 1)
-      rawDelta *= 16;
-    else if (event.deltaMode === 2)
-      rawDelta *= this.assistantPopupWidth;
-    const target = (this.shiftQuickActionsValue || 0) + rawDelta;
-    this.shiftQuickActionsValue = Math.max(0, Math.min(maxShift, target));
-    event.preventDefault();
-  }
-  onQuickActionsTouchStart(event) {
-    if (!event.touches?.length)
-      return;
-    const lineElement = document.querySelector(".chat-footer__quick-actions-line");
-    const popupElement = document.querySelector(".chat-footer__quick-actions");
-    if (lineElement && popupElement) {
-      this.quickActionsLineWidth = lineElement.clientWidth;
-      this.assistantPopupWidth = popupElement.clientWidth;
-      this.touchStartX = event.touches[0].clientX;
-      this.touchStartShift = this.shiftQuickActionsValue || 0;
-    }
-  }
-  onQuickActionsTouchMove(event) {
-    if (!event.touches?.length)
-      return;
-    const maxShift = Math.max(0, this.quickActionsLineWidth - this.assistantPopupWidth + 50);
-    const dx = this.touchStartX - event.touches[0].clientX;
-    const target = this.touchStartShift + dx;
-    this.shiftQuickActionsValue = Math.max(0, Math.min(maxShift, target));
-    event.preventDefault();
-  }
   isSendButtonEnabled() {
     const value = this.messageInputControl.value?.trim();
     return !!value && value.length > 0 && value.length < CHAT_CONSTANTS.MAX_INPUT_LENGTH;
-  }
-  get promptActionsFromLastMessage() {
-    const lastMessage = this.messages?.[this.messages.length - 1];
-    const actions = lastMessage?.response?.action_message || [];
-    const promptActions = actions.filter((action) => action.type === "prompt");
-    return promptActions.map((action) => ({
-      id: action.action || "",
-      text: action.text || "",
-      action: action.action,
-      disabled: action.disabled
-    }));
-  }
-  onPromptActionClick(action) {
-    if (!action?.text)
-      return;
-    this.isVoiceMessage = false;
-    this.sendMessage.emit({
-      text: action.text,
-      isVoice: false,
-      tool: this.effectiveSelectedTool
-    });
-    this.shiftQuickActionsLeft();
-  }
-  isFooterActionsVisible() {
-    const hasPrompts = this.promptActionsFromLastMessage?.length > 0;
-    return hasPrompts;
-  }
-  onFooterActionClick(action) {
-    this.onPromptActionClick(action);
   }
   onVoiceStart() {
     this.isVoiceMessage = true;
@@ -97994,12 +98303,6 @@ var _ChatFooterComponent = class _ChatFooterComponent {
     }
   }
   /**
-   * Track function for actions
-   */
-  trackActionById(index, action) {
-    return action.id || `${action.action || "action"}_${index}`;
-  }
-  /**
    * Track function for files
    */
   trackFileById(index, file) {
@@ -98019,57 +98322,54 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.messageInput = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.microphoneComponent = _t.first);
   }
-}, inputs: { isTyping: "isTyping", messages: "messages", currentAgent: "currentAgent", fileAttachmentEnabled: "fileAttachmentEnabled" }, outputs: { sendMessage: "sendMessage", quickActionClick: "quickActionClick", stop: "stop" }, features: [\u0275\u0275NgOnChangesFeature], decls: 15, vars: 12, consts: [["messageInput", ""], [1, "chat-footer"], [1, "chat-footer__quick-actions"], [1, "chat-footer__choose-file-button-container"], ["epTooltip", "Make a request", 1, "chat-footer__input", 3, "tooltipOptions"], ["placeholder", "Make a request", "rows", "1", "id", "messageInput", 1, "chat-footer__textarea", 3, "keydown", "formControl"], [1, "chat-footer__bottom-bar"], [1, "chat-footer__tool-dropdown"], [1, "chat-footer__web-dropdown"], [1, "chat-footer__bottom-bar-right"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "tooltipOptions"], [1, "chat-footer__input-icon", 3, "voiceStart", "textRecognized", "formControl", "toStopOnClickSelector"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "ngStyle"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "tooltipOptions"], [3, "alreadyAttachedFiles", "multipleFilesAllowed"], [1, "chat-footer__quick-actions", 3, "wheel", "touchstart", "touchmove"], ["id", "quickActions", 1, "chat-footer__quick-actions-line", 3, "ngStyle"], [3, "disabled", "noBorder"], ["tabindex", "0", 1, "chat-footer__left-gradient", 3, "mouseover", "focus"], ["tabindex", "0", 1, "chat-footer__right-gradient", 3, "mouseover", "focus"], [3, "buttonClick", "disabled", "noBorder"], [3, "buttonClick"], [1, "chat-footer__attached-file-header"], [1, "chat-footer__single-file-item"], [1, "chat-footer__choose-file-label"], ["role", "button", "tabindex", "0", 1, "chat-footer__deselect-file", 3, "click", "keydown.enter", "keydown.space"], ["viewBox", "0 0 9 9", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M1 1L8 8M8 1L1 8", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-footer__multiple-files-container"], [1, "chat-footer__multiple-file-item"], ["type", "button", "aria-haspopup", "listbox", 1, "chat-footer__tool-trigger", 3, "click"], ["viewBox", "0 0 10 6", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M1 1L5 5L9 1", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["role", "listbox", 2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "120px"], ["role", "listbox", 2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "120px", 3, "closed"], ["role", "option", 3, "click", "keydown.enter", "keydown.space"], ["role", "option", 3, "ep-menu-item--active"], ["type", "button", 1, "chat-footer__tool-trigger", 3, "click"], [2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "160px", "max-width", "100%", "box-sizing", "border-box"], [2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "160px", "max-width", "100%", "box-sizing", "border-box", 3, "closed"], [3, "ep-menu-item--active"], [3, "click", "keydown.enter", "keydown.space"], [1, "web-menu__divider"], [1, "web-menu__sites"], [1, "web-menu__site-row"], ["type", "button", "aria-label", "Add site", 1, "web-menu__add-site", 3, "click", "keydown.enter"], ["viewBox", "0 0 10 10", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M5 1V9M1 5H9", "stroke", "currentColor", "stroke-width", "1.5", "stroke-linecap", "round"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input"], ["tabindex", "0", 1, "web-menu__site-label"], ["type", "button", "aria-label", "Remove", 1, "web-menu__site-remove", 3, "click"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input", 3, "input", "keydown.enter", "keydown", "click"], ["tabindex", "0", 1, "web-menu__site-label", 3, "dblclick", "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["draggable", "false", "alt", "Attach file", 2, "cursor", "pointer", 3, "src"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "ngStyle"], ["viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M2 8L14 2L10 14L8 8L2 8Z", "fill", "white", "stroke", "white", "stroke-width", "0.5", "stroke-linejoin", "round"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "4", "y", "4", "width", "8", "height", "8", "rx", "1", "fill", "white"], [3, "fileAttached", "filesAttached", "hideRecentFilesMenu", "alreadyAttachedFiles", "multipleFilesAllowed"]], template: function ChatFooterComponent_Template(rf, ctx) {
+}, inputs: { isTyping: "isTyping", messages: "messages", currentAgent: "currentAgent", fileAttachmentEnabled: "fileAttachmentEnabled" }, outputs: { sendMessage: "sendMessage", stop: "stop" }, features: [\u0275\u0275NgOnChangesFeature], decls: 14, vars: 11, consts: [["messageInput", ""], [1, "chat-footer"], [1, "chat-footer__choose-file-button-container"], ["epTooltip", "Make a request", 1, "chat-footer__input", 3, "tooltipOptions"], ["placeholder", "Make a request", "rows", "1", "id", "messageInput", 1, "chat-footer__textarea", 3, "keydown", "formControl"], [1, "chat-footer__bottom-bar"], [1, "chat-footer__tool-dropdown"], [1, "chat-footer__web-dropdown"], [1, "chat-footer__bottom-bar-right"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "tooltipOptions"], [1, "chat-footer__input-icon", 3, "voiceStart", "textRecognized", "formControl", "toStopOnClickSelector"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "ngStyle"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "tooltipOptions"], [3, "alreadyAttachedFiles", "multipleFilesAllowed"], [3, "buttonClick"], [1, "chat-footer__attached-file-header"], [1, "chat-footer__single-file-item"], [1, "chat-footer__choose-file-label"], ["role", "button", "tabindex", "0", 1, "chat-footer__deselect-file", 3, "click", "keydown.enter", "keydown.space"], ["name", "close", 3, "size"], [1, "chat-footer__multiple-files-container"], [1, "chat-footer__multiple-file-item"], ["type", "button", "aria-haspopup", "listbox", 1, "chat-footer__tool-trigger", 3, "click"], ["name", "chevron-sm", 2, "width", "10px", "height", "6px"], ["role", "listbox", 2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "120px"], ["role", "listbox", 2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "120px", 3, "closed"], ["role", "option", 3, "click", "keydown.enter", "keydown.space"], ["role", "option", 3, "ep-menu-item--active"], ["type", "button", 1, "chat-footer__tool-trigger", 3, "click"], [2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "160px", "max-width", "100%", "box-sizing", "border-box"], [2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "160px", "max-width", "100%", "box-sizing", "border-box", 3, "closed"], [3, "ep-menu-item--active"], [3, "click", "keydown.enter", "keydown.space"], [1, "web-menu__divider"], [1, "web-menu__sites"], [1, "web-menu__site-row"], ["type", "button", "aria-label", "Add site", 1, "web-menu__add-site", 3, "click", "keydown.enter"], ["name", "plus", 3, "size"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input"], ["tabindex", "0", 1, "web-menu__site-label"], ["type", "button", "aria-label", "Remove", 1, "web-menu__site-remove", 3, "click"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input", 3, "input", "keydown.enter", "keydown", "click"], ["tabindex", "0", 1, "web-menu__site-label", 3, "dblclick", "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["draggable", "false", "alt", "Attach file", 2, "cursor", "pointer", 3, "src"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "ngStyle"], ["name", "send", 3, "size"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["name", "stop", 3, "size"], [3, "fileAttached", "filesAttached", "hideRecentFilesMenu", "alreadyAttachedFiles", "multipleFilesAllowed"]], template: function ChatFooterComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 1);
-    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_1_Template, 6, 3, "div", 2);
-    \u0275\u0275conditionalCreate(2, ChatFooterComponent_Conditional_2_Template, 4, 3, "div", 3);
-    \u0275\u0275elementStart(3, "div", 4)(4, "textarea", 5, 0);
-    \u0275\u0275listener("keydown", function ChatFooterComponent_Template_textarea_keydown_4_listener($event) {
+    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_1_Template, 4, 3, "div", 2);
+    \u0275\u0275elementStart(2, "div", 3)(3, "textarea", 4, 0);
+    \u0275\u0275listener("keydown", function ChatFooterComponent_Template_textarea_keydown_3_listener($event) {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onKeydown($event));
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "div", 6);
-    \u0275\u0275conditionalCreate(7, ChatFooterComponent_Conditional_7_Template, 6, 5, "div", 7);
-    \u0275\u0275conditionalCreate(8, ChatFooterComponent_Conditional_8_Template, 6, 5, "div", 8);
-    \u0275\u0275elementStart(9, "div", 9);
-    \u0275\u0275conditionalCreate(10, ChatFooterComponent_Conditional_10_Template, 2, 3, "div", 10);
-    \u0275\u0275elementStart(11, "ep-microphone", 11);
-    \u0275\u0275listener("voiceStart", function ChatFooterComponent_Template_ep_microphone_voiceStart_11_listener() {
+    \u0275\u0275elementStart(5, "div", 5);
+    \u0275\u0275conditionalCreate(6, ChatFooterComponent_Conditional_6_Template, 5, 5, "div", 6);
+    \u0275\u0275conditionalCreate(7, ChatFooterComponent_Conditional_7_Template, 5, 5, "div", 7);
+    \u0275\u0275elementStart(8, "div", 8);
+    \u0275\u0275conditionalCreate(9, ChatFooterComponent_Conditional_9_Template, 2, 3, "div", 9);
+    \u0275\u0275elementStart(10, "ep-microphone", 10);
+    \u0275\u0275listener("voiceStart", function ChatFooterComponent_Template_ep_microphone_voiceStart_10_listener() {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onVoiceStart());
-    })("textRecognized", function ChatFooterComponent_Template_ep_microphone_textRecognized_11_listener() {
+    })("textRecognized", function ChatFooterComponent_Template_ep_microphone_textRecognized_10_listener() {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onTextRecognized());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(12, ChatFooterComponent_Conditional_12_Template, 3, 4, "div", 12)(13, ChatFooterComponent_Conditional_13_Template, 3, 2, "div", 13);
+    \u0275\u0275conditionalCreate(11, ChatFooterComponent_Conditional_11_Template, 2, 5, "div", 11)(12, ChatFooterComponent_Conditional_12_Template, 2, 3, "div", 12);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275conditionalCreate(14, ChatFooterComponent_Conditional_14_Template, 1, 2, "ep-recent-files-menu", 14);
+    \u0275\u0275conditionalCreate(13, ChatFooterComponent_Conditional_13_Template, 1, 2, "ep-recent-files-menu", 13);
   }
   if (rf & 2) {
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.isFooterActionsVisible() ? 1 : -1);
+    \u0275\u0275conditional(ctx.fileAttachmentEnabled && (ctx.chatService.isLastRequestUsedFile() && !ctx.hasAttachedFiles() || ctx.hasAttachedFiles()) ? 1 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.fileAttachmentEnabled && (ctx.chatService.isLastRequestUsedFile() && !ctx.hasAttachedFiles() || ctx.hasAttachedFiles()) ? 2 : -1);
-    \u0275\u0275advance();
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(11, _c110));
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(10, _c110));
     \u0275\u0275advance();
     \u0275\u0275property("formControl", ctx.messageInputControl);
     \u0275\u0275advance(3);
-    \u0275\u0275conditional(ctx.availableTools.length > 0 ? 7 : -1);
+    \u0275\u0275conditional(ctx.availableTools.length > 0 ? 6 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.allowWebFromResponse ? 8 : -1);
+    \u0275\u0275conditional(ctx.allowWebFromResponse ? 7 : -1);
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx.fileAttachmentEnabled && ctx.allowFilesFromResponse ? 10 : -1);
+    \u0275\u0275conditional(ctx.fileAttachmentEnabled && ctx.allowFilesFromResponse ? 9 : -1);
     \u0275\u0275advance();
     \u0275\u0275property("formControl", ctx.messageInputControl)("toStopOnClickSelector", "#messageInput");
     \u0275\u0275advance();
-    \u0275\u0275conditional(!ctx.isTyping ? 12 : 13);
+    \u0275\u0275conditional(!ctx.isTyping ? 11 : 12);
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx.fileAttachmentEnabled && ctx.chatService.isRecentFilesMenuShown() ? 14 : -1);
+    \u0275\u0275conditional(ctx.fileAttachmentEnabled && ctx.chatService.isRecentFilesMenuShown() ? 13 : -1);
   }
 }, dependencies: [
   FormsModule,
@@ -98084,8 +98384,9 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
   MenuComponent,
   MenuItemComponent,
   TooltipDirective,
-  RecentFilesMenuComponent
-], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions[_ngcontent-%COMP%] {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%], \n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient[_ngcontent-%COMP%] {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient[_ngcontent-%COMP%] {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-button[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input[_ngcontent-%COMP%]:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea[_ngcontent-%COMP%] {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 50vh;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__tool-dropdown[_ngcontent-%COMP%], \n.chat-footer__web-dropdown[_ngcontent-%COMP%] {\n  position: relative;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__tool-chevron--open[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%], \n.chat-footer__multiple-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider[_ngcontent-%COMP%] {\n  height: 1px;\n  background-color: var(--ep-color-border);\n  margin: 4px 0;\n}\n.web-menu__sites[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 4px 16px 6px;\n}\n.web-menu__site-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  padding-left: 6px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 60%, transparent);\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  background: var(--ep-color-surface);\n  color: var(--ep-color-text);\n  outline: none;\n}\n.web-menu__site-input[_ngcontent-%COMP%]:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input[_ngcontent-%COMP%]::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */'] });
+  RecentFilesMenuComponent,
+  IconComponent
+], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__send-button[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  color: white;\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input[_ngcontent-%COMP%]:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea[_ngcontent-%COMP%] {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 50vh;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__tool-dropdown[_ngcontent-%COMP%], \n.chat-footer__web-dropdown[_ngcontent-%COMP%] {\n  position: relative;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__tool-chevron--open[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%], \n.chat-footer__multiple-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider[_ngcontent-%COMP%] {\n  height: 1px;\n  background-color: var(--ep-color-border);\n  margin: 4px 0;\n}\n.web-menu__sites[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 4px 16px 6px;\n}\n.web-menu__site-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  padding-left: 6px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 60%, transparent);\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  background: var(--ep-color-surface);\n  color: var(--ep-color-text);\n  outline: none;\n}\n.web-menu__site-input[_ngcontent-%COMP%]:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input[_ngcontent-%COMP%]::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */'] });
 var ChatFooterComponent = _ChatFooterComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatFooterComponent, [{
@@ -98099,368 +98400,268 @@ var ChatFooterComponent = _ChatFooterComponent;
       MenuComponent,
       MenuItemComponent,
       TooltipDirective,
-      RecentFilesMenuComponent
-    ], template: `<div class="chat-footer">\r
-  @if (isFooterActionsVisible()) {\r
-    <div\r
-      class="chat-footer__quick-actions"\r
-      (wheel)="wheelQuickActions($event)"\r
-      (touchstart)="onQuickActionsTouchStart($event)"\r
-      (touchmove)="onQuickActionsTouchMove($event)"\r
-    >\r
-      <div\r
-        class="chat-footer__quick-actions-line"\r
-        [ngStyle]="{ 'right.px': shiftQuickActionsValue }"\r
-        id="quickActions"\r
-      >\r
-        @for (action of promptActionsFromLastMessage; track trackActionById($index, action)) {\r
-          <ep-button\r
-            [disabled]="isTyping || (action.disabled ?? false)"\r
-            (buttonClick)="onFooterActionClick(action)"\r
-            [noBorder]="true"\r
-          >\r
-            {{ action.text }}\r
-          </ep-button>\r
-        }\r
-      </div>\r
-      <div\r
-        class="chat-footer__left-gradient"\r
-        tabindex="0"\r
-        (mouseover)="shiftQuickActionsLeft()"\r
-        (focus)="shiftQuickActionsLeft()"\r
-      ></div>\r
-      <div\r
-        class="chat-footer__right-gradient"\r
-        tabindex="0"\r
-        (mouseover)="shiftQuickActionsRight()"\r
-        (focus)="shiftQuickActionsRight()"\r
-      ></div>\r
-    </div>\r
-  }\r
-\r
-  @if (\r
-    fileAttachmentEnabled &&\r
-    ((chatService.isLastRequestUsedFile() && !hasAttachedFiles()) || hasAttachedFiles())\r
-  ) {\r
-    <div class="chat-footer__choose-file-button-container">\r
-      @if (chatService.isLastRequestUsedFile() && !hasAttachedFiles()) {\r
-        <ep-button (buttonClick)="onRepeatFile()">\r
-          Repeat last {{ isMultipleFilesMode() ? "files" : "file" }}\r
-        </ep-button>\r
-      }\r
-      @if (!isMultipleFilesMode() && chatService.attachedFile()) {\r
-        <div class="chat-footer__attached-file-header">Attached file:</div>\r
-        <div class="chat-footer__single-file-item">\r
-          <div class="chat-footer__choose-file-label">{{ chatService.attachedFile()?.name }}</div>\r
-          <div\r
-            class="chat-footer__deselect-file"\r
-            role="button"\r
-            tabindex="0"\r
-            (click)="onDeselectFile()"\r
-            (keydown.enter)="onDeselectFile()"\r
-            (keydown.space)="onDeselectFile()"\r
-          >\r
-            <svg viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">\r
-              <path\r
-                d="M1 1L8 8M8 1L1 8"\r
-                stroke="currentColor"\r
-                stroke-width="1.5"\r
-                stroke-linecap="round"\r
-              />\r
-            </svg>\r
-          </div>\r
-        </div>\r
-      }\r
-      @if (isMultipleFilesMode() && chatService.attachedFiles().length > 0) {\r
-        <div class="chat-footer__attached-file-header">\r
-          Attached files ({{ chatService.attachedFiles().length }}):\r
-        </div>\r
-        <div class="chat-footer__multiple-files-container">\r
-          @for (file of chatService.attachedFiles(); track trackFileById($index, file)) {\r
-            <div class="chat-footer__multiple-file-item">\r
-              <div class="chat-footer__choose-file-label">{{ file.name }}</div>\r
-              <div\r
-                class="chat-footer__deselect-file"\r
-                role="button"\r
-                tabindex="0"\r
-                (click)="onDeselectFileFromMultiple(file)"\r
-                (keydown.enter)="onDeselectFileFromMultiple(file)"\r
-                (keydown.space)="onDeselectFileFromMultiple(file)"\r
-              >\r
-                <svg viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">\r
-                  <path\r
-                    d="M1 1L8 8M8 1L1 8"\r
-                    stroke="currentColor"\r
-                    stroke-width="1.5"\r
-                    stroke-linecap="round"\r
-                  />\r
-                </svg>\r
-              </div>\r
-            </div>\r
-          }\r
-        </div>\r
-      }\r
-    </div>\r
-  }\r
-\r
-  <div class="chat-footer__input" epTooltip="Make a request" [tooltipOptions]="{ delay: 500 }">\r
-    <textarea\r
-      #messageInput\r
-      [formControl]="messageInputControl"\r
-      (keydown)="onKeydown($event)"\r
-      placeholder="Make a request"\r
-      class="chat-footer__textarea"\r
-      rows="1"\r
-      id="messageInput"\r
-    ></textarea>\r
-    <div class="chat-footer__bottom-bar">\r
-      @if (availableTools.length > 0) {\r
-        <div class="chat-footer__tool-dropdown">\r
-          <button\r
-            class="chat-footer__tool-trigger"\r
-            type="button"\r
-            (click)="toggleToolMenu(); $event.stopPropagation()"\r
-            [attr.aria-expanded]="isToolMenuOpen"\r
-            aria-haspopup="listbox"\r
-          >\r
-            {{ selectedTool || "Tools" }}\r
-            <svg\r
-              viewBox="0 0 10 6"\r
-              fill="none"\r
-              xmlns="http://www.w3.org/2000/svg"\r
-              [class.chat-footer__tool-chevron--open]="isToolMenuOpen"\r
-            >\r
-              <path\r
-                d="M1 1L5 5L9 1"\r
-                stroke="currentColor"\r
-                stroke-width="1.5"\r
-                stroke-linecap="round"\r
-                stroke-linejoin="round"\r
-              />\r
-            </svg>\r
-          </button>\r
-          @if (isToolMenuOpen) {\r
-            <ep-menu\r
-              (closed)="isToolMenuOpen = false"\r
-              style="bottom: calc(100% + 4px); left: 0; min-width: 120px"\r
-              role="listbox"\r
-            >\r
-              <ep-menu-item\r
-                [class.ep-menu-item--active]="effectiveSelectedTool === null"\r
-                role="option"\r
-                [attr.aria-selected]="effectiveSelectedTool === null"\r
-                (click)="selectTool(null)"\r
-                (keydown.enter)="selectTool(null)"\r
-                (keydown.space)="selectTool(null)"\r
-                >None</ep-menu-item\r
-              >\r
-              @for (tool of availableTools; track tool) {\r
-                <ep-menu-item\r
-                  [class.ep-menu-item--active]="effectiveSelectedTool === tool"\r
-                  role="option"\r
-                  [attr.aria-selected]="effectiveSelectedTool === tool"\r
-                  (click)="selectTool(tool)"\r
-                  (keydown.enter)="selectTool(tool)"\r
-                  (keydown.space)="selectTool(tool)"\r
-                  >{{ tool }}</ep-menu-item\r
-                >\r
-              }\r
-            </ep-menu>\r
-          }\r
-        </div>\r
-      }\r
-      @if (allowWebFromResponse) {\r
-        <div class="chat-footer__web-dropdown">\r
-          <button\r
-            class="chat-footer__tool-trigger"\r
-            type="button"\r
-            (click)="toggleWebMenu(); $event.stopPropagation()"\r
-            [attr.aria-expanded]="isWebMenuOpen"\r
-          >\r
-            {{ webModeLabel() }}\r
-            <svg\r
-              viewBox="0 0 10 6"\r
-              fill="none"\r
-              xmlns="http://www.w3.org/2000/svg"\r
-              [class.chat-footer__tool-chevron--open]="isWebMenuOpen"\r
-            >\r
-              <path\r
-                d="M1 1L5 5L9 1"\r
-                stroke="currentColor"\r
-                stroke-width="1.5"\r
-                stroke-linecap="round"\r
-                stroke-linejoin="round"\r
-              />\r
-            </svg>\r
-          </button>\r
-          @if (isWebMenuOpen) {\r
-            <ep-menu\r
-              (closed)="isWebMenuOpen = false"\r
-              style="\r
-                bottom: calc(100% + 4px);\r
-                left: 0;\r
-                min-width: 160px;\r
-                max-width: 100%;\r
-                box-sizing: border-box;\r
-              "\r
-            >\r
-              @for (m of webModes; track m.value) {\r
-                <ep-menu-item\r
-                  [class.ep-menu-item--active]="webMode() === m.value"\r
-                  (click)="selectWebMode(m.value)"\r
-                  (keydown.enter)="selectWebMode(m.value)"\r
-                  (keydown.space)="selectWebMode(m.value)"\r
-                  >{{ m.label }}</ep-menu-item\r
-                >\r
-              }\r
-              @if (webMode() === "restrict" || webMode() === "prioritize") {\r
-                <div class="web-menu__divider"></div>\r
-                <div class="web-menu__sites">\r
-                  @for (site of sites(); track $index; let i = $index) {\r
-                    <div class="web-menu__site-row">\r
-                      @if (editingSiteIndex === i) {\r
-                        <input\r
-                          class="web-menu__site-input"\r
-                          type="text"\r
-                          [attr.value]="site"\r
-                          placeholder="example.com"\r
-                          (input)="updateSite(i, $event)"\r
-                          (keydown.enter)="onSiteInputEnter(i, $any($event))"\r
-                          (keydown)="$event.stopPropagation()"\r
-                          (click)="$event.stopPropagation()"\r
-                        />\r
-                      } @else {\r
-                        <div\r
-                          class="web-menu__site-label"\r
-                          tabindex="0"\r
-                          (dblclick)="startEditSite(i)"\r
-                          (click)="startEditSite(i); $event.stopPropagation()"\r
-                          (keydown.enter)="startEditSite(i)"\r
-                          (keydown.space)="startEditSite(i)"\r
-                        >\r
-                          {{ site }}\r
-                        </div>\r
-                      }\r
-                      <button\r
-                        class="web-menu__site-remove"\r
-                        type="button"\r
-                        (click)="removeSite(i); $event.stopPropagation()"\r
-                        aria-label="Remove"\r
-                      >\r
-                        <svg viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">\r
-                          <path\r
-                            d="M1 1L8 8M8 1L1 8"\r
-                            stroke="currentColor"\r
-                            stroke-width="1.5"\r
-                            stroke-linecap="round"\r
-                          />\r
-                        </svg>\r
-                      </button>\r
-                    </div>\r
-                  }\r
-                  <button\r
-                    class="web-menu__add-site"\r
-                    type="button"\r
-                    (click)="addSite(); $event.stopPropagation()"\r
-                    (keydown.enter)="addSite(); $event.stopPropagation()"\r
-                    aria-label="Add site"\r
-                  >\r
-                    <svg viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">\r
-                      <path\r
-                        d="M5 1V9M1 5H9"\r
-                        stroke="currentColor"\r
-                        stroke-width="1.5"\r
-                        stroke-linecap="round"\r
-                      />\r
-                    </svg>\r
-                  </button>\r
-                </div>\r
-              }\r
-            </ep-menu>\r
-          }\r
-        </div>\r
-      }\r
-\r
-      <div class="chat-footer__bottom-bar-right">\r
-        @if (fileAttachmentEnabled && allowFilesFromResponse) {\r
-          <div\r
-            class="chat-footer__input-icon"\r
-            role="button"\r
-            tabindex="0"\r
-            (click)="toggleRecentFilesMenu(); $event.stopPropagation()"\r
-            (keydown.enter)="toggleRecentFilesMenu()"\r
-            (keydown.space)="toggleRecentFilesMenu()"\r
-            epTooltip="Attach file"\r
-            [tooltipOptions]="{ delay: 500, position: 'top' }"\r
-          >\r
-            <img\r
-              [src]="getImagePath('attach.svg')"\r
-              style="cursor: pointer"\r
-              draggable="false"\r
-              alt="Attach file"\r
-            />\r
-          </div>\r
-        }\r
-        <ep-microphone\r
-          class="chat-footer__input-icon"\r
-          [formControl]="messageInputControl"\r
-          [toStopOnClickSelector]="'#messageInput'"\r
-          (voiceStart)="onVoiceStart()"\r
-          (textRecognized)="onTextRecognized()"\r
-        ></ep-microphone>\r
-        @if (!isTyping) {\r
-          <div\r
-            class="chat-footer__send-button"\r
-            [ngStyle]="{ opacity: isSendButtonEnabled() ? '1' : '0.4' }"\r
-            tabindex="0"\r
-            role="button"\r
-            [attr.aria-label]="'Send message'"\r
-            (click)="transmitMessageFromInput()"\r
-            (keydown.enter)="transmitMessageFromInput()"\r
-            (keydown.space)="transmitMessageFromInput()"\r
-          >\r
-            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\r
-              <path\r
-                d="M2 8L14 2L10 14L8 8L2 8Z"\r
-                fill="white"\r
-                stroke="white"\r
-                stroke-width="0.5"\r
-                stroke-linejoin="round"\r
-              />\r
-            </svg>\r
-          </div>\r
-        } @else {\r
-          <div\r
-            class="chat-footer__send-button"\r
-            tabindex="0"\r
-            role="button"\r
-            aria-label="Stop generating"\r
-            epTooltip="Stop generating"\r
-            [tooltipOptions]="{ delay: 500 }"\r
-            (click)="stopGenerating()"\r
-            (keydown.enter)="stopGenerating()"\r
-            (keydown.space)="stopGenerating()"\r
-          >\r
-            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\r
-              <rect x="4" y="4" width="8" height="8" rx="1" fill="white" />\r
-            </svg>\r
-          </div>\r
-        }\r
-      </div>\r
-    </div>\r
-  </div>\r
-</div>\r
-\r
-@if (fileAttachmentEnabled && chatService.isRecentFilesMenuShown()) {\r
-  <ep-recent-files-menu\r
-    [alreadyAttachedFiles]="chatService.attachedFiles()"\r
-    [multipleFilesAllowed]="isMultipleFilesMode()"\r
-    (fileAttached)="onFileAttached($event)"\r
-    (filesAttached)="onFilesAttached($event)"\r
-    (hideRecentFilesMenu)="hideRecentFilesMenu()"\r
-  ></ep-recent-files-menu>\r
-}\r
-`, styles: ['/* src/app/components/chat-footer/chat-footer.component.scss */\n:host {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__quick-actions {\n  position: relative;\n  overflow: hidden;\n  touch-action: pan-x;\n}\n.chat-footer__quick-actions-line {\n  position: relative;\n  display: flex;\n  flex-direction: row;\n  margin-left: 20px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  width: fit-content;\n  transition: 0.8s;\n  gap: 4px;\n}\n.chat-footer__left-gradient,\n.chat-footer__right-gradient {\n  position: absolute;\n  width: 20px;\n  height: 29px;\n  top: 0;\n  z-index: 2000;\n}\n.chat-footer__left-gradient {\n  left: 0;\n  background:\n    linear-gradient(\n      90deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__right-gradient {\n  right: 0;\n  background:\n    linear-gradient(\n      270deg,\n      color-mix(in srgb, var(--ep-color-surface) 30%, transparent) 9.37%,\n      transparent 100%);\n  -webkit-backdrop-filter: blur(12px);\n  backdrop-filter: blur(12px);\n}\n.chat-footer__send-button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button svg {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 50vh;\n}\n.chat-footer__textarea::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__tool-dropdown,\n.chat-footer__web-dropdown {\n  position: relative;\n}\n.chat-footer__tool-trigger {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__tool-trigger svg {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__tool-trigger:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__tool-chevron--open {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon img {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item .chat-footer__choose-file-label,\n.chat-footer__multiple-file-item .chat-footer__choose-file-label {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file svg {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider {\n  height: 1px;\n  background-color: var(--ep-color-border);\n  margin: 4px 0;\n}\n.web-menu__sites {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 4px 16px 6px;\n}\n.web-menu__site-row {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label {\n  flex: 1;\n  min-width: 0;\n  padding-left: 6px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 60%, transparent);\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  background: var(--ep-color-surface);\n  color: var(--ep-color-text);\n  outline: none;\n}\n.web-menu__site-input:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove svg {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site svg {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */\n'] }]
+      RecentFilesMenuComponent,
+      IconComponent
+    ], template: `<div class="chat-footer">
+  @if (
+    fileAttachmentEnabled &&
+    ((chatService.isLastRequestUsedFile() && !hasAttachedFiles()) || hasAttachedFiles())
+  ) {
+    <div class="chat-footer__choose-file-button-container">
+      @if (chatService.isLastRequestUsedFile() && !hasAttachedFiles()) {
+        <ep-button (buttonClick)="onRepeatFile()">
+          Repeat last {{ isMultipleFilesMode() ? "files" : "file" }}
+        </ep-button>
+      }
+      @if (!isMultipleFilesMode() && chatService.attachedFile()) {
+        <div class="chat-footer__attached-file-header">Attached file:</div>
+        <div class="chat-footer__single-file-item">
+          <div class="chat-footer__choose-file-label">{{ chatService.attachedFile()?.name }}</div>
+          <div
+            class="chat-footer__deselect-file"
+            role="button"
+            tabindex="0"
+            (click)="onDeselectFile()"
+            (keydown.enter)="onDeselectFile()"
+            (keydown.space)="onDeselectFile()"
+          >
+            <ep-icon name="close" [size]="9"></ep-icon>
+          </div>
+        </div>
+      }
+      @if (isMultipleFilesMode() && chatService.attachedFiles().length > 0) {
+        <div class="chat-footer__attached-file-header">
+          Attached files ({{ chatService.attachedFiles().length }}):
+        </div>
+        <div class="chat-footer__multiple-files-container">
+          @for (file of chatService.attachedFiles(); track trackFileById($index, file)) {
+            <div class="chat-footer__multiple-file-item">
+              <div class="chat-footer__choose-file-label">{{ file.name }}</div>
+              <div
+                class="chat-footer__deselect-file"
+                role="button"
+                tabindex="0"
+                (click)="onDeselectFileFromMultiple(file)"
+                (keydown.enter)="onDeselectFileFromMultiple(file)"
+                (keydown.space)="onDeselectFileFromMultiple(file)"
+              >
+                <ep-icon name="close" [size]="9"></ep-icon>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <div class="chat-footer__input" epTooltip="Make a request" [tooltipOptions]="{ delay: 500 }">
+    <textarea
+      #messageInput
+      [formControl]="messageInputControl"
+      (keydown)="onKeydown($event)"
+      placeholder="Make a request"
+      class="chat-footer__textarea"
+      rows="1"
+      id="messageInput"
+    ></textarea>
+    <div class="chat-footer__bottom-bar">
+      @if (availableTools.length > 0) {
+        <div class="chat-footer__tool-dropdown">
+          <button
+            class="chat-footer__tool-trigger"
+            type="button"
+            (click)="toggleToolMenu(); $event.stopPropagation()"
+            [attr.aria-expanded]="isToolMenuOpen"
+            aria-haspopup="listbox"
+          >
+            {{ selectedTool || "Tools" }}
+            <ep-icon name="chevron-sm" style="width:10px;height:6px" [class.chat-footer__tool-chevron--open]="isToolMenuOpen"></ep-icon>
+          </button>
+          @if (isToolMenuOpen) {
+            <ep-menu
+              (closed)="isToolMenuOpen = false"
+              style="bottom: calc(100% + 4px); left: 0; min-width: 120px"
+              role="listbox"
+            >
+              <ep-menu-item
+                [class.ep-menu-item--active]="effectiveSelectedTool === null"
+                role="option"
+                [attr.aria-selected]="effectiveSelectedTool === null"
+                (click)="selectTool(null)"
+                (keydown.enter)="selectTool(null)"
+                (keydown.space)="selectTool(null)"
+                >None</ep-menu-item
+              >
+              @for (tool of availableTools; track tool) {
+                <ep-menu-item
+                  [class.ep-menu-item--active]="effectiveSelectedTool === tool"
+                  role="option"
+                  [attr.aria-selected]="effectiveSelectedTool === tool"
+                  (click)="selectTool(tool)"
+                  (keydown.enter)="selectTool(tool)"
+                  (keydown.space)="selectTool(tool)"
+                  >{{ tool }}</ep-menu-item
+                >
+              }
+            </ep-menu>
+          }
+        </div>
+      }
+      @if (allowWebFromResponse) {
+        <div class="chat-footer__web-dropdown">
+          <button
+            class="chat-footer__tool-trigger"
+            type="button"
+            (click)="toggleWebMenu(); $event.stopPropagation()"
+            [attr.aria-expanded]="isWebMenuOpen"
+          >
+            {{ webModeLabel() }}
+            <ep-icon name="chevron-sm" style="width:10px;height:6px" [class.chat-footer__tool-chevron--open]="isWebMenuOpen"></ep-icon>
+          </button>
+          @if (isWebMenuOpen) {
+            <ep-menu
+              (closed)="isWebMenuOpen = false"
+              style="
+                bottom: calc(100% + 4px);
+                left: 0;
+                min-width: 160px;
+                max-width: 100%;
+                box-sizing: border-box;
+              "
+            >
+              @for (m of webModes; track m.value) {
+                <ep-menu-item
+                  [class.ep-menu-item--active]="webMode() === m.value"
+                  (click)="selectWebMode(m.value)"
+                  (keydown.enter)="selectWebMode(m.value)"
+                  (keydown.space)="selectWebMode(m.value)"
+                  >{{ m.label }}</ep-menu-item
+                >
+              }
+              @if (webMode() === "restrict" || webMode() === "prioritize") {
+                <div class="web-menu__divider"></div>
+                <div class="web-menu__sites">
+                  @for (site of sites(); track $index; let i = $index) {
+                    <div class="web-menu__site-row">
+                      @if (editingSiteIndex === i) {
+                        <input
+                          class="web-menu__site-input"
+                          type="text"
+                          [attr.value]="site"
+                          placeholder="example.com"
+                          (input)="updateSite(i, $event)"
+                          (keydown.enter)="onSiteInputEnter(i, $any($event))"
+                          (keydown)="$event.stopPropagation()"
+                          (click)="$event.stopPropagation()"
+                        />
+                      } @else {
+                        <div
+                          class="web-menu__site-label"
+                          tabindex="0"
+                          (dblclick)="startEditSite(i)"
+                          (click)="startEditSite(i); $event.stopPropagation()"
+                          (keydown.enter)="startEditSite(i)"
+                          (keydown.space)="startEditSite(i)"
+                        >
+                          {{ site }}
+                        </div>
+                      }
+                      <button
+                        class="web-menu__site-remove"
+                        type="button"
+                        (click)="removeSite(i); $event.stopPropagation()"
+                        aria-label="Remove"
+                      >
+                        <ep-icon name="close" [size]="9"></ep-icon>
+                      </button>
+                    </div>
+                  }
+                  <button
+                    class="web-menu__add-site"
+                    type="button"
+                    (click)="addSite(); $event.stopPropagation()"
+                    (keydown.enter)="addSite(); $event.stopPropagation()"
+                    aria-label="Add site"
+                  >
+                    <ep-icon name="plus" [size]="10"></ep-icon>
+                  </button>
+                </div>
+              }
+            </ep-menu>
+          }
+        </div>
+      }
+
+      <div class="chat-footer__bottom-bar-right">
+        @if (fileAttachmentEnabled && allowFilesFromResponse) {
+          <div
+            class="chat-footer__input-icon"
+            role="button"
+            tabindex="0"
+            (click)="toggleRecentFilesMenu(); $event.stopPropagation()"
+            (keydown.enter)="toggleRecentFilesMenu()"
+            (keydown.space)="toggleRecentFilesMenu()"
+            epTooltip="Attach file"
+            [tooltipOptions]="{ delay: 500, position: 'top' }"
+          >
+            <img
+              [src]="getImagePath('attach.svg')"
+              style="cursor: pointer"
+              draggable="false"
+              alt="Attach file"
+            />
+          </div>
+        }
+        <ep-microphone
+          class="chat-footer__input-icon"
+          [formControl]="messageInputControl"
+          [toStopOnClickSelector]="'#messageInput'"
+          (voiceStart)="onVoiceStart()"
+          (textRecognized)="onTextRecognized()"
+        ></ep-microphone>
+        @if (!isTyping) {
+          <div
+            class="chat-footer__send-button"
+            [ngStyle]="{ opacity: isSendButtonEnabled() ? '1' : '0.4' }"
+            tabindex="0"
+            role="button"
+            [attr.aria-label]="'Send message'"
+            (click)="transmitMessageFromInput()"
+            (keydown.enter)="transmitMessageFromInput()"
+            (keydown.space)="transmitMessageFromInput()"
+          >
+            <ep-icon name="send" [size]="16"></ep-icon>
+          </div>
+        } @else {
+          <div
+            class="chat-footer__send-button"
+            tabindex="0"
+            role="button"
+            aria-label="Stop generating"
+            epTooltip="Stop generating"
+            [tooltipOptions]="{ delay: 500 }"
+            (click)="stopGenerating()"
+            (keydown.enter)="stopGenerating()"
+            (keydown.space)="stopGenerating()"
+          >
+            <ep-icon name="stop" [size]="16"></ep-icon>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+@if (fileAttachmentEnabled && chatService.isRecentFilesMenuShown()) {
+  <ep-recent-files-menu
+    [alreadyAttachedFiles]="chatService.attachedFiles()"
+    [multipleFilesAllowed]="isMultipleFilesMode()"
+    (fileAttached)="onFileAttached($event)"
+    (filesAttached)="onFilesAttached($event)"
+    (hideRecentFilesMenu)="hideRecentFilesMenu()"
+  ></ep-recent-files-menu>
+}
+`, styles: ['/* src/app/components/chat-footer/chat-footer.component.scss */\n:host {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__send-button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  color: white;\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button svg {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 50vh;\n}\n.chat-footer__textarea::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__tool-dropdown,\n.chat-footer__web-dropdown {\n  position: relative;\n}\n.chat-footer__tool-trigger {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__tool-trigger svg {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__tool-trigger:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__tool-chevron--open {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon img {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item .chat-footer__choose-file-label,\n.chat-footer__multiple-file-item .chat-footer__choose-file-label {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file svg {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider {\n  height: 1px;\n  background-color: var(--ep-color-border);\n  margin: 4px 0;\n}\n.web-menu__sites {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 4px 16px 6px;\n}\n.web-menu__site-row {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label {\n  flex: 1;\n  min-width: 0;\n  padding-left: 6px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 60%, transparent);\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  background: var(--ep-color-surface);\n  color: var(--ep-color-text);\n  outline: none;\n}\n.web-menu__site-input:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove svg {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site svg {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */\n'] }]
   }], () => [{ type: ChatService }, { type: ApiService }], { isTyping: [{
     type: Input
   }], messages: [{
@@ -98470,8 +98671,6 @@ var ChatFooterComponent = _ChatFooterComponent;
   }], fileAttachmentEnabled: [{
     type: Input
   }], sendMessage: [{
-    type: Output
-  }], quickActionClick: [{
     type: Output
   }], stop: [{
     type: Output
@@ -98484,100 +98683,102 @@ var ChatFooterComponent = _ChatFooterComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatFooterComponent, { className: "ChatFooterComponent", filePath: "src/app/components/chat-footer/chat-footer.component.ts", lineNumber: 47 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatFooterComponent, { className: "ChatFooterComponent", filePath: "src/app/components/chat-footer/chat-footer.component.ts", lineNumber: 49 });
 })();
 
 // src/app/components/chat-header/chat-header.component.ts
 var _c018 = () => ({ delay: 500 });
 function ChatHeaderComponent_Conditional_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 19);
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 20);
-    \u0275\u0275element(2, "path", 21);
-    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(0, "div", 16);
+    \u0275\u0275element(1, "ep-icon", 17);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275classProp("chat-header__dropdown-icon--rotated", ctx_r0.isAgentMenuShown);
+    \u0275\u0275advance();
+    \u0275\u0275property("size", 16);
   }
 }
-function ChatHeaderComponent_Conditional_14_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_11_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 22);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_14_Template_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "button", 18);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_11_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onDockClick());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_14_Template_button_keydown_enter_0_listener() {
+      return \u0275\u0275resetView(ctx_r0.onToggleFullHeightClick());
+    })("keydown.enter", function ChatHeaderComponent_Conditional_11_Template_button_keydown_enter_0_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onDockClick());
-    })("keydown.space", function ChatHeaderComponent_Conditional_14_Template_button_keydown_space_0_listener() {
+      return \u0275\u0275resetView(ctx_r0.onToggleFullHeightClick());
+    })("keydown.space", function ChatHeaderComponent_Conditional_11_Template_button_keydown_space_0_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onDockClick());
+      return \u0275\u0275resetView(ctx_r0.onToggleFullHeightClick());
     });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 9);
-    \u0275\u0275element(2, "rect", 23)(3, "rect", 24);
-    \u0275\u0275elementEnd()();
+    \u0275\u0275element(1, "ep-icon", 19);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c018));
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(2, _c018));
+    \u0275\u0275advance();
+    \u0275\u0275property("size", 28);
   }
 }
-function ChatHeaderComponent_Conditional_15_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_12_Template(rf, ctx) {
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 25);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_15_Template_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "button", 20);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_12_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r3);
       const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onToggleFullHeightClick());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_15_Template_button_keydown_enter_0_listener() {
+      return \u0275\u0275resetView(ctx_r0.onDockClick());
+    })("keydown.enter", function ChatHeaderComponent_Conditional_12_Template_button_keydown_enter_0_listener() {
       \u0275\u0275restoreView(_r3);
       const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onToggleFullHeightClick());
-    })("keydown.space", function ChatHeaderComponent_Conditional_15_Template_button_keydown_space_0_listener() {
+      return \u0275\u0275resetView(ctx_r0.onDockClick());
+    })("keydown.space", function ChatHeaderComponent_Conditional_12_Template_button_keydown_space_0_listener() {
       \u0275\u0275restoreView(_r3);
       const ctx_r0 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r0.onToggleFullHeightClick());
+      return \u0275\u0275resetView(ctx_r0.onDockClick());
     });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 9);
-    \u0275\u0275element(2, "path", 26);
-    \u0275\u0275elementEnd()();
+    \u0275\u0275element(1, "ep-icon", 21);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(1, _c018));
+    const ctx_r0 = \u0275\u0275nextContext();
+    \u0275\u0275property("epTooltip", ctx_r0.isDockMode ? "Undock" : "Dock in parent")("tooltipOptions", \u0275\u0275pureFunction0(5, _c018));
+    \u0275\u0275attribute("aria-label", ctx_r0.isDockMode ? "Undock" : "Dock in parent");
+    \u0275\u0275advance();
+    \u0275\u0275property("name", ctx_r0.isDockMode ? "undock" : "dock")("size", 28);
   }
 }
-function ChatHeaderComponent_Conditional_19_For_2_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_15_For_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu-item", 29);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_19_For_2_Template_ep_menu_item_click_0_listener() {
+    \u0275\u0275elementStart(0, "ep-menu-item", 24);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_15_For_2_Template_ep_menu_item_click_0_listener() {
       const agent_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r6));
-    })("keydown.enter", function ChatHeaderComponent_Conditional_19_For_2_Template_ep_menu_item_keydown_enter_0_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_15_For_2_Template_ep_menu_item_keydown_enter_0_listener() {
       const agent_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r6));
-    })("keydown.space", function ChatHeaderComponent_Conditional_19_For_2_Template_ep_menu_item_keydown_space_0_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_15_For_2_Template_ep_menu_item_keydown_space_0_listener() {
       const agent_r6 = \u0275\u0275restoreView(_r5).$implicit;
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onAgentSelect(agent_r6));
     });
-    \u0275\u0275elementStart(1, "div", 30);
-    \u0275\u0275element(2, "img", 31);
+    \u0275\u0275elementStart(1, "div", 25);
+    \u0275\u0275element(2, "img", 26);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 32)(4, "div", 33);
+    \u0275\u0275elementStart(3, "div", 27)(4, "div", 28);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "div", 34);
+    \u0275\u0275elementStart(6, "div", 29);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()()();
   }
@@ -98594,16 +98795,16 @@ function ChatHeaderComponent_Conditional_19_For_2_Template(rf, ctx) {
     \u0275\u0275textInterpolate(agent_r6.description);
   }
 }
-function ChatHeaderComponent_Conditional_19_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_15_Template(rf, ctx) {
   if (rf & 1) {
     const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu", 27);
-    \u0275\u0275listener("closed", function ChatHeaderComponent_Conditional_19_Template_ep_menu_closed_0_listener() {
+    \u0275\u0275elementStart(0, "ep-menu", 22);
+    \u0275\u0275listener("closed", function ChatHeaderComponent_Conditional_15_Template_ep_menu_closed_0_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.closeAgentMenu());
     });
-    \u0275\u0275repeaterCreate(1, ChatHeaderComponent_Conditional_19_For_2_Template, 8, 6, "ep-menu-item", 28, \u0275\u0275repeaterTrackByIndex);
+    \u0275\u0275repeaterCreate(1, ChatHeaderComponent_Conditional_15_For_2_Template, 8, 6, "ep-menu-item", 23, \u0275\u0275repeaterTrackByIndex);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -98612,51 +98813,51 @@ function ChatHeaderComponent_Conditional_19_Template(rf, ctx) {
     \u0275\u0275repeater(ctx_r0.agents);
   }
 }
-function ChatHeaderComponent_Conditional_20_Conditional_3_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_16_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r8 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu-item", 38);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_click_0_listener() {
+    \u0275\u0275elementStart(0, "ep-menu-item", 33);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_click_0_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_enter_0_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_keydown_enter_0_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_space_0_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_keydown_space_0_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onCreateAgent());
     });
     \u0275\u0275text(1, "Create new Epicstaff agent");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "ep-menu-item", 39);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_click_2_listener() {
+    \u0275\u0275elementStart(2, "ep-menu-item", 34);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_click_2_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_enter_2_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_keydown_enter_2_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_space_2_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_keydown_space_2_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onEditAgent());
     });
     \u0275\u0275text(3, "Edit Epicstaff agent");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "ep-menu-item", 40);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_click_4_listener() {
+    \u0275\u0275elementStart(4, "ep-menu-item", 35);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_click_4_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_enter_4_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_keydown_enter_4_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Conditional_3_Template_ep_menu_item_keydown_space_4_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_keydown_space_4_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r0.onRemoveAgent());
@@ -98665,42 +98866,42 @@ function ChatHeaderComponent_Conditional_20_Conditional_3_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-function ChatHeaderComponent_Conditional_20_Template(rf, ctx) {
+function ChatHeaderComponent_Conditional_16_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu", 35);
-    \u0275\u0275listener("closed", function ChatHeaderComponent_Conditional_20_Template_ep_menu_closed_0_listener() {
+    \u0275\u0275elementStart(0, "ep-menu", 30);
+    \u0275\u0275listener("closed", function ChatHeaderComponent_Conditional_16_Template_ep_menu_closed_0_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.closeActionsMenu());
     });
-    \u0275\u0275elementStart(1, "ep-menu-item", 36);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_click_1_listener() {
+    \u0275\u0275elementStart(1, "ep-menu-item", 31);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Template_ep_menu_item_click_1_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_keydown_enter_1_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_16_Template_ep_menu_item_keydown_enter_1_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_keydown_space_1_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_16_Template_ep_menu_item_keydown_space_1_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onClearChatHistory());
     });
     \u0275\u0275text(2, "Clear chat history");
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(3, ChatHeaderComponent_Conditional_20_Conditional_3_Template, 6, 0);
-    \u0275\u0275elementStart(4, "ep-menu-item", 37);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_click_4_listener() {
+    \u0275\u0275conditionalCreate(3, ChatHeaderComponent_Conditional_16_Conditional_3_Template, 6, 0);
+    \u0275\u0275elementStart(4, "ep-menu-item", 32);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Template_ep_menu_item_click_4_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
-    })("keydown.enter", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_keydown_enter_4_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Conditional_16_Template_ep_menu_item_keydown_enter_4_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
-    })("keydown.space", function ChatHeaderComponent_Conditional_20_Template_ep_menu_item_keydown_space_4_listener() {
+    })("keydown.space", function ChatHeaderComponent_Conditional_16_Template_ep_menu_item_keydown_space_4_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.onSetDefaultPosition());
@@ -98816,7 +99017,7 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
 _ChatHeaderComponent.\u0275fac = function ChatHeaderComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _ChatHeaderComponent)();
 };
-_ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatHeaderComponent, selectors: [["ep-chat-header"]], inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent", dockEnabled: "dockEnabled", isDockMode: "isDockMode" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 21, vars: 14, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "16", "width", "16", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__title-text"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click"], ["width", "16", "height", "16", "viewBox", "0 0 16 16", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["cx", "8", "cy", "4", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "8", "r", "1.5", "fill", "white"], ["cx", "8", "cy", "12", "r", "1.5", "fill", "white"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 8H12", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round"], [1, "chat-header__menu--agents"], [1, "chat-header__menu--actions"], [1, "chat-header__dropdown-icon"], ["width", "12", "height", "12", "viewBox", "0 0 12 12", "fill", "none", "xmlns", "http://www.w3.org/2000/svg"], ["d", "M3 4.5L6 7.5L9 4.5", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], ["type", "button", "aria-label", "Dock in parent", "epTooltip", "Dock in parent", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["x", "2", "y", "2", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["x", "7", "y", "7", "width", "7", "height", "7", "rx", "1.2", "stroke", "white", "stroke-width", "1.3"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["d", "M4 6L8 2L12 6M4 10L8 14L12 10", "stroke", "white", "stroke-width", "1.5", "stroke-linecap", "round", "stroke-linejoin", "round"], [1, "chat-header__menu--agents", 3, "closed"], [3, "ep-menu-item--inactive"], [3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-text"], [1, "chat-header__agent-name"], [1, "chat-header__agent-description"], [1, "chat-header__menu--actions", 3, "closed"], ["aria-label", "Clear chat history", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Set default position", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Create new Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Edit Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Remove agent", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
+_ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatHeaderComponent, selectors: [["ep-chat-header"]], inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent", dockEnabled: "dockEnabled", isDockMode: "isDockMode" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 17, vars: 16, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "20", "width", "20", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__title-text"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click"], ["name", "kebab-menu", 3, "size"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", 1, "chat-header__control-btn", 3, "epTooltip", "tooltipOptions"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["name", "minimize", 3, "size"], [1, "chat-header__menu--agents"], [1, "chat-header__menu--actions"], [1, "chat-header__dropdown-icon"], ["name", "chevron-down", 3, "size"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["name", "expand", 3, "size"], ["type", "button", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "epTooltip", "tooltipOptions"], [3, "name", "size"], [1, "chat-header__menu--agents", 3, "closed"], [3, "ep-menu-item--inactive"], [3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-text"], [1, "chat-header__agent-name"], [1, "chat-header__agent-description"], [1, "chat-header__menu--actions", 3, "closed"], ["aria-label", "Clear chat history", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Set default position", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Create new Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Edit Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Remove agent", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "div", 2);
     \u0275\u0275element(3, "img", 3);
@@ -98833,34 +99034,29 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275elementStart(5, "span", 5);
     \u0275\u0275text(6);
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(7, ChatHeaderComponent_Conditional_7_Template, 3, 2, "div", 6);
+    \u0275\u0275conditionalCreate(7, ChatHeaderComponent_Conditional_7_Template, 2, 3, "div", 6);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(8, "div", 7)(9, "button", 8);
     \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_9_listener($event) {
       ctx.toggleActionsMenu();
       return $event.stopPropagation();
     });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(10, "svg", 9);
-    \u0275\u0275element(11, "circle", 10)(12, "circle", 11)(13, "circle", 12);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275conditionalCreate(14, ChatHeaderComponent_Conditional_14_Template, 4, 2, "button", 13);
-    \u0275\u0275conditionalCreate(15, ChatHeaderComponent_Conditional_15_Template, 3, 2, "button", 14);
-    \u0275\u0275namespaceHTML();
-    \u0275\u0275elementStart(16, "button", 15);
-    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_16_listener() {
+    \u0275\u0275element(10, "ep-icon", 9);
+    \u0275\u0275elementEnd();
+    \u0275\u0275conditionalCreate(11, ChatHeaderComponent_Conditional_11_Template, 2, 3, "button", 10);
+    \u0275\u0275conditionalCreate(12, ChatHeaderComponent_Conditional_12_Template, 2, 6, "button", 11);
+    \u0275\u0275elementStart(13, "button", 12);
+    \u0275\u0275listener("click", function ChatHeaderComponent_Template_button_click_13_listener() {
       return ctx.onCollapseClick();
-    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_16_listener() {
+    })("keydown.enter", function ChatHeaderComponent_Template_button_keydown_enter_13_listener() {
       return ctx.onCollapseClick();
-    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_16_listener() {
+    })("keydown.space", function ChatHeaderComponent_Template_button_keydown_space_13_listener() {
       return ctx.onCollapseClick();
     });
-    \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(17, "svg", 9);
-    \u0275\u0275element(18, "path", 16);
-    \u0275\u0275elementEnd()()()();
-    \u0275\u0275conditionalCreate(19, ChatHeaderComponent_Conditional_19_Template, 3, 0, "ep-menu", 17);
-    \u0275\u0275conditionalCreate(20, ChatHeaderComponent_Conditional_20_Template, 6, 1, "ep-menu", 18);
+    \u0275\u0275element(14, "ep-icon", 13);
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275conditionalCreate(15, ChatHeaderComponent_Conditional_15_Template, 3, 0, "ep-menu", 14);
+    \u0275\u0275conditionalCreate(16, ChatHeaderComponent_Conditional_16_Template, 6, 1, "ep-menu", 15);
   }
   if (rf & 2) {
     \u0275\u0275advance(3);
@@ -98872,26 +99068,30 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275textInterpolate(ctx.title);
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.hasMultipleAgents ? 7 : -1);
-    \u0275\u0275advance(7);
-    \u0275\u0275conditional(ctx.dockEnabled ? 14 : -1);
-    \u0275\u0275advance();
-    \u0275\u0275conditional(!ctx.isDockMode ? 15 : -1);
-    \u0275\u0275advance();
-    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(13, _c018));
     \u0275\u0275advance(3);
-    \u0275\u0275conditional(ctx.isAgentMenuShown && ctx.hasMultipleAgents ? 19 : -1);
+    \u0275\u0275property("size", 28);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.isActionsMenuShown ? 20 : -1);
+    \u0275\u0275conditional(!ctx.isDockMode ? 11 : -1);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx.dockEnabled ? 12 : -1);
+    \u0275\u0275advance();
+    \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(15, _c018));
+    \u0275\u0275advance();
+    \u0275\u0275property("size", 28);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx.isAgentMenuShown && ctx.hasMultipleAgents ? 15 : -1);
+    \u0275\u0275advance();
+    \u0275\u0275conditional(ctx.isActionsMenuShown ? 16 : -1);
   }
-}, dependencies: [TooltipDirective, MenuComponent, MenuItemComponent], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%] {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text[_ngcontent-%COMP%] {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-header__controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots[_ngcontent-%COMP%] {\n  margin-left: auto;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-text-item--active[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-text-item-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text-item-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-text-item-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.ep-menu-item--inactive[_ngcontent-%COMP%] {\n  pointer-events: none;\n  opacity: 0.5;\n}\n.chat-header__menu--agents[_ngcontent-%COMP%] {\n  top: 32px;\n  left: 12px;\n  max-width: 70%;\n  max-height: 60cqh;\n  overflow-y: auto;\n  overflow-x: hidden;\n}\n.chat-header__menu--actions[_ngcontent-%COMP%] {\n  top: 32px;\n  right: 12px;\n  min-width: 180px;\n}\n/*# sourceMappingURL=chat-header.component.css.map */"] });
+}, dependencies: [TooltipDirective, MenuComponent, MenuItemComponent, IconComponent], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 16px;\n  height: 52px;\n  box-sizing: border-box;\n  background: var(--ep-color-header-bg);\n  border-bottom: 1px solid var(--ep-color-header-border);\n  color: var(--ep-color-header-text);\n}\n.chat-header__left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 20px;\n  height: 20px;\n}\n.chat-header__icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n}\n.chat-header__title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  font-weight: 400;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-header-text);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%] {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text[_ngcontent-%COMP%] {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  opacity: 0.6;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-header__controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 28px;\n  height: 28px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-header-icon);\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:hover {\n  opacity: 1;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:active {\n  opacity: 0.7;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots[_ngcontent-%COMP%] {\n  margin-left: auto;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  display: block;\n}\n.chat-header__agent-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-text-item--active[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-text-item-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text-item-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-text-item-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.ep-menu-item--inactive[_ngcontent-%COMP%] {\n  pointer-events: none;\n  opacity: 0.5;\n}\n.chat-header__menu--agents[_ngcontent-%COMP%] {\n  top: 32px;\n  left: 12px;\n  max-width: 70%;\n  max-height: 60cqh;\n  overflow-y: auto;\n  overflow-x: hidden;\n}\n.chat-header__menu--actions[_ngcontent-%COMP%] {\n  top: 32px;\n  right: 12px;\n  min-width: 180px;\n}\n/*# sourceMappingURL=chat-header.component.css.map */"] });
 var ChatHeaderComponent = _ChatHeaderComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatHeaderComponent, [{
     type: Component,
-    args: [{ selector: "ep-chat-header", imports: [TooltipDirective, MenuComponent, MenuItemComponent], template: `<div class="chat-header">
+    args: [{ selector: "ep-chat-header", imports: [TooltipDirective, MenuComponent, MenuItemComponent, IconComponent], template: `<div class="chat-header">
   <div class="chat-header__left">
     <div class="chat-header__icon">
-      <img [src]="iconPath" height="16" width="16" alt="Assistant" />
+      <img [src]="iconPath" height="20" width="20" alt="Assistant" />
     </div>
     <div
       class="chat-header__title"
@@ -98909,21 +99109,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
           class="chat-header__dropdown-icon"
           [class.chat-header__dropdown-icon--rotated]="isAgentMenuShown"
         >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M3 4.5L6 7.5L9 4.5"
-              stroke="white"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <ep-icon name="chevron-down" [size]="16"></ep-icon>
         </div>
       }
     </div>
@@ -98935,42 +99121,8 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       (click)="toggleActionsMenu(); $event.stopPropagation()"
       aria-label="Menu"
     >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle cx="8" cy="4" r="1.5" fill="white" />
-        <circle cx="8" cy="8" r="1.5" fill="white" />
-        <circle cx="8" cy="12" r="1.5" fill="white" />
-      </svg>
+      <ep-icon name="kebab-menu" [size]="28"></ep-icon>
     </button>
-
-    @if (dockEnabled) {
-      <button
-        type="button"
-        class="chat-header__control-btn"
-        (click)="onDockClick()"
-        (keydown.enter)="onDockClick()"
-        (keydown.space)="onDockClick()"
-        aria-label="Dock in parent"
-        epTooltip="Dock in parent"
-        [tooltipOptions]="{ delay: 500 }"
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <rect x="2" y="2" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
-          <rect x="7" y="7" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.3" />
-        </svg>
-      </button>
-    }
 
     @if (!isDockMode) {
       <button
@@ -98983,21 +99135,22 @@ var ChatHeaderComponent = _ChatHeaderComponent;
         epTooltip="Toggle full height"
         [tooltipOptions]="{ delay: 500 }"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M4 6L8 2L12 6M4 10L8 14L12 10"
-            stroke="white"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <ep-icon name="expand" [size]="28"></ep-icon>
+      </button>
+    }
+
+    @if (dockEnabled) {
+      <button
+        type="button"
+        class="chat-header__control-btn"
+        (click)="onDockClick()"
+        (keydown.enter)="onDockClick()"
+        (keydown.space)="onDockClick()"
+        [attr.aria-label]="isDockMode ? 'Undock' : 'Dock in parent'"
+        [epTooltip]="isDockMode ? 'Undock' : 'Dock in parent'"
+        [tooltipOptions]="{ delay: 500 }"
+      >
+        <ep-icon [name]="isDockMode ? 'undock' : 'dock'" [size]="28"></ep-icon>
       </button>
     }
 
@@ -99011,15 +99164,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       epTooltip="Collapse"
       [tooltipOptions]="{ delay: 500 }"
     >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path d="M4 8H12" stroke="white" stroke-width="1.5" stroke-linecap="round" />
-      </svg>
+      <ep-icon name="minimize" [size]="28"></ep-icon>
     </button>
   </div>
 </div>
@@ -99087,7 +99232,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
     >
   </ep-menu>
 }
-`, styles: ["/* src/app/components/chat-header/chat-header.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 36px 10px 20px;\n  height: 40px;\n  box-sizing: border-box;\n  background: var(--ep-color-accent);\n}\n.chat-header__left {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__icon img {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n}\n.chat-header__title {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 14px;\n  font-weight: 600;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-accent-contrast);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated {\n  transform: rotate(180deg);\n}\n.chat-header__controls {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn:hover {\n  opacity: 0.8;\n}\n.chat-header__control-btn:active {\n  opacity: 0.6;\n}\n.chat-header__control-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots {\n  margin-left: auto;\n}\n.chat-header__control-btn svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n.chat-header__agent-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-text-item--active:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-text-item-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text-item-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-text-item-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.ep-menu-item--inactive {\n  pointer-events: none;\n  opacity: 0.5;\n}\n.chat-header__menu--agents {\n  top: 32px;\n  left: 12px;\n  max-width: 70%;\n  max-height: 60cqh;\n  overflow-y: auto;\n  overflow-x: hidden;\n}\n.chat-header__menu--actions {\n  top: 32px;\n  right: 12px;\n  min-width: 180px;\n}\n/*# sourceMappingURL=chat-header.component.css.map */\n"] }]
+`, styles: ["/* src/app/components/chat-header/chat-header.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 16px;\n  height: 52px;\n  box-sizing: border-box;\n  background: var(--ep-color-header-bg);\n  border-bottom: 1px solid var(--ep-color-header-border);\n  color: var(--ep-color-header-text);\n}\n.chat-header__left {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 20px;\n  height: 20px;\n}\n.chat-header__icon img {\n  display: block;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n}\n.chat-header__title {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  font-weight: 400;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-header-text);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  opacity: 0.6;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated {\n  transform: rotate(180deg);\n}\n.chat-header__controls {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 28px;\n  height: 28px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-header-icon);\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn:hover {\n  opacity: 1;\n}\n.chat-header__control-btn:active {\n  opacity: 0.7;\n}\n.chat-header__control-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots {\n  margin-left: auto;\n}\n.chat-header__control-btn svg {\n  display: block;\n}\n.chat-header__agent-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-text-item--active:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-text-item-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text-item-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-text-item-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.ep-menu-item--inactive {\n  pointer-events: none;\n  opacity: 0.5;\n}\n.chat-header__menu--agents {\n  top: 32px;\n  left: 12px;\n  max-width: 70%;\n  max-height: 60cqh;\n  overflow-y: auto;\n  overflow-x: hidden;\n}\n.chat-header__menu--actions {\n  top: 32px;\n  right: 12px;\n  min-width: 180px;\n}\n/*# sourceMappingURL=chat-header.component.css.map */\n"] }]
   }], null, { currentAgent: [{
     type: Input
   }], agents: [{
@@ -99125,7 +99270,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatHeaderComponent, { className: "ChatHeaderComponent", filePath: "src/app/components/chat-header/chat-header.component.ts", lineNumber: 14 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatHeaderComponent, { className: "ChatHeaderComponent", filePath: "src/app/components/chat-header/chat-header.component.ts", lineNumber: 15 });
 })();
 
 // src/app/components/chat-toggle-button/chat-toggle-button.component.ts
@@ -100438,10 +100583,6 @@ function ChatComponent_Conditional_2_Template(rf, ctx) {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onSendMessage($event));
-    })("quickActionClick", function ChatComponent_Conditional_2_Template_ep_chat_footer_quickActionClick_3_listener($event) {
-      \u0275\u0275restoreView(_r1);
-      const ctx_r1 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r1.onQuickActionClick($event));
     })("stop", function ChatComponent_Conditional_2_Template_ep_chat_footer_stop_3_listener() {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -100451,6 +100592,7 @@ function ChatComponent_Conditional_2_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275classProp("ep-popup--dock", ctx_r1.isDockMode);
     \u0275\u0275property("ngStyle", ctx_r1.chatStyle)("config", ctx_r1.getConfig())("resizeDisabled", ctx_r1.isDockMode);
     \u0275\u0275advance();
     \u0275\u0275property("currentAgent", ctx_r1.currentAgent)("agents", ctx_r1.agentService.visibleAgents())("isMonoAgent", ctx_r1.isMonoAgent)("dockEnabled", ctx_r1.dockEnabled)("isDockMode", ctx_r1.isDockMode);
@@ -100477,7 +100619,22 @@ function ChatComponent_Conditional_3_Template(rf, ctx) {
   }
 }
 var _ChatComponent = class _ChatComponent {
-  constructor(chatService, agentService, messageService, apiService, storageService, actionService, chatParentBridgeService, dateAdapter) {
+  set themePreset(value) {
+    this._themePreset = this.normalizeThemePreset(value);
+  }
+  get themePreset() {
+    return this._themePreset;
+  }
+  set theme(value) {
+    this._themePreset = this.normalizeThemePreset(value);
+  }
+  get theme() {
+    return this._themePreset;
+  }
+  get themeAttr() {
+    return this._themePreset;
+  }
+  constructor(chatService, agentService, messageService, apiService, storageService, actionService, chatParentBridgeService, dateAdapter, hostElementRef) {
     this.chatService = chatService;
     this.agentService = agentService;
     this.messageService = messageService;
@@ -100486,6 +100643,7 @@ var _ChatComponent = class _ChatComponent {
     this.actionService = actionService;
     this.chatParentBridgeService = chatParentBridgeService;
     this.dateAdapter = dateAdapter;
+    this.hostElementRef = hostElementRef;
     this.title = "EpicChat Agent";
     this.basePath = "";
     this.chatWidth = CHAT_CONSTANTS.DEFAULT_WIDTH;
@@ -100511,6 +100669,9 @@ var _ChatComponent = class _ChatComponent {
     this.basicAuthPassword = "";
     this.epChatCommand = null;
     this.messageTimeout = 12e4;
+    this.themeConfig = null;
+    this._themePreset = "default";
+    this.appliedThemeCssVars = /* @__PURE__ */ new Set();
     this.epChatCommandResult = new EventEmitter();
     this.epChatEvent = new EventEmitter();
     this.unreadMessagesCount = 0;
@@ -100565,6 +100726,7 @@ var _ChatComponent = class _ChatComponent {
   ngOnInit() {
     this.applyDateLocale();
     this.setGlobalBasePath();
+    this.applyThemeConfig();
     this.chatSessionId = Date.now();
     const userId = this.uniqueUserId?.trim() || null;
     this.storageService.setUserId(userId);
@@ -100602,6 +100764,9 @@ var _ChatComponent = class _ChatComponent {
     }
     if (changes["apiBaseUrl"]) {
       this.trySyncAgentsFromApi();
+    }
+    if (changes["themeConfig"]) {
+      this.applyThemeConfig();
     }
     if (changes["isDockMode"] || changes["chatWidth"] || changes["chatHeight"] || changes["chatTop"] || changes["chatLeft"] || changes["chatRight"] || changes["chatBottom"] || changes["chatPosition"]) {
       this.updateChatStyle();
@@ -100722,6 +100887,7 @@ var _ChatComponent = class _ChatComponent {
       if (!text.trim() || this.isTyping) {
         return;
       }
+      this.clearPromptSuggestions();
       const userParams = this.getUserParams();
       const currentTime = getCurrentTimestamp();
       const userMessage = {
@@ -100781,6 +100947,7 @@ var _ChatComponent = class _ChatComponent {
       if (!actionText.trim() && !contextExtras) {
         return;
       }
+      this.clearPromptSuggestions();
       const userParams = this.getUserParams();
       const currentTime = getCurrentTimestamp();
       const userMessage = {
@@ -100935,9 +101102,30 @@ var _ChatComponent = class _ChatComponent {
       break;
     }
   }
-  onQuickActionClick(action) {
-    if (action?.text) {
-      this.onSendMessage({ text: action.text, isVoice: false });
+  clearPromptSuggestions() {
+    const messages = this.chatService.getMessagesValue();
+    if (!messages.length) {
+      return;
+    }
+    let changed = false;
+    const updatedMessages = messages.map((message) => {
+      const actions = message.response?.action_message;
+      if (!Array.isArray(actions) || actions.length === 0) {
+        return message;
+      }
+      const filteredActions = actions.filter((action) => action.type !== UserActionType.Prompt);
+      if (filteredActions.length === actions.length) {
+        return message;
+      }
+      changed = true;
+      return __spreadProps(__spreadValues({}, message), {
+        response: __spreadProps(__spreadValues({}, message.response), {
+          action_message: filteredActions.length > 0 ? filteredActions : void 0
+        })
+      });
+    });
+    if (changed) {
+      this.chatService.setMessages(updatedMessages);
     }
   }
   onActionClick(event) {
@@ -101230,6 +101418,107 @@ var _ChatComponent = class _ChatComponent {
     const nextLocale = (this.dateLocale || "en-GB").trim() || "en-GB";
     this.dateAdapter.setLocale(nextLocale);
   }
+  normalizeThemePreset(value) {
+    if (value === "epicstaff" || value === "dark") {
+      return "epicstaff";
+    }
+    return "default";
+  }
+  parseThemeConfig(input2) {
+    if (!input2) {
+      return null;
+    }
+    if (typeof input2 === "string") {
+      try {
+        return JSON.parse(input2);
+      } catch {
+        return null;
+      }
+    }
+    return input2;
+  }
+  setThemeVar(cssVarName, value) {
+    if (!value) {
+      return;
+    }
+    const hostStyle = this.hostElementRef.nativeElement.style;
+    hostStyle.setProperty(cssVarName, value);
+    this.appliedThemeCssVars.add(cssVarName);
+  }
+  clearAppliedThemeConfig() {
+    const hostStyle = this.hostElementRef.nativeElement.style;
+    for (const cssVarName of this.appliedThemeCssVars) {
+      hostStyle.removeProperty(cssVarName);
+    }
+    this.appliedThemeCssVars.clear();
+  }
+  applyThemeConfig() {
+    this.clearAppliedThemeConfig();
+    const config2 = this.parseThemeConfig(this.themeConfig);
+    if (!config2) {
+      return;
+    }
+    this.setThemeVar("--ep-font-family", config2.foundation?.fontFamily);
+    this.setThemeVar("--ep-font-size-base", config2.foundation?.fontSizeBase);
+    this.setThemeVar("--ep-line-height-base", config2.foundation?.lineHeightBase);
+    this.setThemeVar("--ep-radius-sm", config2.foundation?.radiusSm);
+    this.setThemeVar("--ep-radius-md", config2.foundation?.radiusMd);
+    this.setThemeVar("--ep-radius-lg", config2.foundation?.radiusLg);
+    this.setThemeVar("--ep-color-shadow", config2.foundation?.shadowSm);
+    this.setThemeVar("--ep-color-shadow-strong", config2.foundation?.shadowMd);
+    this.setThemeVar("--ep-color-surface", config2.semantic?.surface);
+    this.setThemeVar("--ep-color-surface-alt", config2.semantic?.surfaceAlt);
+    this.setThemeVar("--ep-color-text", config2.semantic?.text);
+    this.setThemeVar("--ep-color-text-muted", config2.semantic?.textMuted);
+    this.setThemeVar("--ep-color-border", config2.semantic?.border);
+    this.setThemeVar("--ep-color-border-muted", config2.semantic?.borderMuted);
+    this.setThemeVar("--ep-color-border-subtle", config2.semantic?.borderSubtle);
+    this.setThemeVar("--ep-color-accent", config2.semantic?.accent);
+    this.setThemeVar("--ep-color-accent-contrast", config2.semantic?.accentContrast);
+    this.setThemeVar("--ep-color-accent-soft", config2.semantic?.accentSoft);
+    this.setThemeVar("--ep-color-danger", config2.semantic?.danger);
+    this.setThemeVar("--ep-color-danger-soft", config2.semantic?.dangerSoft);
+    this.setThemeVar("--ep-color-danger-border", config2.semantic?.dangerBorder);
+    this.setThemeVar("--ep-color-disabled-bg", config2.semantic?.disabledBg);
+    this.setThemeVar("--ep-color-disabled-text", config2.semantic?.disabledText);
+    this.setThemeVar("--ep-color-link", config2.semantic?.link);
+    this.setThemeVar("--ep-color-link-hover", config2.semantic?.linkHover);
+    this.setThemeVar("--ep-color-scrollbar", config2.semantic?.scrollbar);
+    this.setThemeVar("--ep-color-popup-bg", config2.semantic?.popupBg);
+    this.setThemeVar("--ep-color-popup-border", config2.semantic?.popupBorder);
+    this.setThemeVar("--ep-color-popup-shadow", config2.semantic?.popupShadow);
+    this.setThemeVar("--ep-color-overlay", config2.semantic?.overlay);
+    this.setThemeVar("--ep-chat-bg-answer", config2.components?.chat?.bgAnswer);
+    this.setThemeVar("--ep-chat-bg-question", config2.components?.chat?.bgQuestion);
+    this.setThemeVar("--ep-chat-text-question", config2.components?.chat?.textQuestion);
+    this.setThemeVar("--ep-color-header-icon", config2.components?.header?.iconColor);
+    this.setThemeVar("--ep-table-header-bg", config2.components?.table?.headerBg);
+    this.setThemeVar("--ep-table-header-text", config2.components?.table?.headerText);
+    this.setThemeVar("--ep-table-row-bg", config2.components?.table?.rowBg);
+    this.setThemeVar("--ep-table-row-alt-bg", config2.components?.table?.rowAltBg);
+    this.setThemeVar("--ep-table-row-hover-bg", config2.components?.table?.rowHoverBg);
+    this.setThemeVar("--ep-table-border", config2.components?.table?.border);
+    this.setThemeVar("--ep-table-column-divider", config2.components?.table?.columnDivider);
+    this.setThemeVar("--ep-table-cell-text", config2.components?.table?.cellText);
+    this.setThemeVar("--ep-button-radius", config2.components?.button?.radius);
+    this.setThemeVar("--ep-button-height-sm", config2.components?.button?.heightSm);
+    this.setThemeVar("--ep-button-height-md", config2.components?.button?.heightMd);
+    this.setThemeVar("--ep-button-padding-sm", config2.components?.button?.paddingSm);
+    this.setThemeVar("--ep-button-padding-md", config2.components?.button?.paddingMd);
+    this.setThemeVar("--ep-button-font-size-sm", config2.components?.button?.fontSizeSm);
+    this.setThemeVar("--ep-button-font-size-md", config2.components?.button?.fontSizeMd);
+    this.setThemeVar("--ep-button-secondary-bg", config2.components?.button?.secondaryBg);
+    this.setThemeVar("--ep-button-secondary-border", config2.components?.button?.secondaryBorder);
+    this.setThemeVar("--ep-button-secondary-text", config2.components?.button?.secondaryText);
+    this.setThemeVar("--ep-button-secondary-hover-bg", config2.components?.button?.secondaryHoverBg);
+    this.setThemeVar("--ep-button-primary-bg", config2.components?.button?.primaryBg);
+    this.setThemeVar("--ep-button-primary-border", config2.components?.button?.primaryBorder);
+    this.setThemeVar("--ep-button-primary-text", config2.components?.button?.primaryText);
+    this.setThemeVar("--ep-button-primary-hover-bg", config2.components?.button?.primaryHoverBg);
+    this.setThemeVar("--ep-button-ghost-bg", config2.components?.button?.ghostBg);
+    this.setThemeVar("--ep-button-ghost-text", config2.components?.button?.ghostText);
+    this.setThemeVar("--ep-button-ghost-hover-bg", config2.components?.button?.ghostHoverBg);
+  }
   getBasePath() {
     const globalBase = window?.__epicChatBasePath;
     return (this.basePath || globalBase || "").toString();
@@ -101288,7 +101577,7 @@ var _ChatComponent = class _ChatComponent {
   }
 };
 _ChatComponent.\u0275fac = function ChatComponent_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _ChatComponent)(\u0275\u0275directiveInject(ChatService), \u0275\u0275directiveInject(EpicstaffAgentService), \u0275\u0275directiveInject(MessageService), \u0275\u0275directiveInject(ApiService), \u0275\u0275directiveInject(StorageService), \u0275\u0275directiveInject(ActionService), \u0275\u0275directiveInject(ChatParentBridgeService), \u0275\u0275directiveInject(DateAdapter));
+  return new (__ngFactoryType__ || _ChatComponent)(\u0275\u0275directiveInject(ChatService), \u0275\u0275directiveInject(EpicstaffAgentService), \u0275\u0275directiveInject(MessageService), \u0275\u0275directiveInject(ApiService), \u0275\u0275directiveInject(StorageService), \u0275\u0275directiveInject(ActionService), \u0275\u0275directiveInject(ChatParentBridgeService), \u0275\u0275directiveInject(DateAdapter), \u0275\u0275directiveInject(ElementRef));
 };
 _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatComponent, selectors: [["epic-chat"]], viewQuery: function ChatComponent_Query(rf, ctx) {
   if (rf & 1) {
@@ -101302,7 +101591,11 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatBody = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.resizableChat = _t.first);
   }
-}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", dockEnabled: "dockEnabled", isDockMode: "isDockMode", apiBaseUrl: "apiBaseUrl", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand", messageTimeout: "messageTimeout" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "ngStyle", "config", "resizeDisabled"], [3, "popupState", "currentAgent", "newAgentParams"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config", "resizeDisabled"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "dockClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent", "dockEnabled", "isDockMode"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "quickActionClick", "stop", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], [3, "closed", "popupState", "currentAgent", "newAgentParams"]], template: function ChatComponent_Template(rf, ctx) {
+}, hostVars: 1, hostBindings: function ChatComponent_HostBindings(rf, ctx) {
+  if (rf & 2) {
+    \u0275\u0275attribute("data-theme", ctx.themeAttr);
+  }
+}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", dockEnabled: "dockEnabled", isDockMode: "isDockMode", apiBaseUrl: "apiBaseUrl", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand", messageTimeout: "messageTimeout", themeConfig: "themeConfig", themePreset: "themePreset", theme: "theme" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "ep-popup--dock", "ngStyle", "config", "resizeDisabled"], [3, "popupState", "currentAgent", "newAgentParams"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config", "resizeDisabled"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "dockClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent", "dockEnabled", "isDockMode"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "stop", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], [3, "closed", "popupState", "currentAgent", "newAgentParams"]], template: function ChatComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275listener("click", function ChatComponent_Template_div_click_0_listener() {
@@ -101314,7 +101607,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
       return ctx.toggleChat();
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(2, ChatComponent_Conditional_2_Template, 4, 15, "div", 2);
+    \u0275\u0275conditionalCreate(2, ChatComponent_Conditional_2_Template, 4, 17, "div", 2);
     \u0275\u0275conditionalCreate(3, ChatComponent_Conditional_3_Template, 1, 3, "ep-epicstaff-agent-config", 3);
   }
   if (rf & 2) {
@@ -101335,7 +101628,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
   EpicstaffAgentConfigComponent,
   ClickOutsideDirective,
   ResizableChatDirective
-], styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow: 0 2px 8px var(--ep-color-popup-shadow);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'], encapsulation: 3 });
+], styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: var(--ep-color-accent-soft);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: var(--ep-color-accent-soft);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-chat-bg-answer: transparent;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'], encapsulation: 3 });
 var ChatComponent = _ChatComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatComponent, [{
@@ -101349,8 +101642,8 @@ var ChatComponent = _ChatComponent;
       EpicstaffAgentConfigComponent,
       ClickOutsideDirective,
       ResizableChatDirective
-    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\r\n\r\n<ep-chat-toggle-button\r\n  [iconPath]="iconPath"\r\n  [chatIconSize]="chatIconSize"\r\n  [unreadCount]="chatService.unreadCount()"\r\n  (clicked)="toggleChat()"\r\n/>\r\n\r\n@if (chatService.isOpen()) {\r\n  <div\r\n    class="ep-popup"\r\n    [ngStyle]="chatStyle"\r\n    epClickOutside\r\n    epResizableChat\r\n    [config]="getConfig()"\r\n    [resizeDisabled]="isDockMode"\r\n    (epClickOutside)="onClickOutside()"\r\n  >\r\n    <ep-chat-header\r\n      [currentAgent]="currentAgent"\r\n      [agents]="agentService.visibleAgents()"\r\n      [isMonoAgent]="isMonoAgent"\r\n      [dockEnabled]="dockEnabled"\r\n      [isDockMode]="isDockMode"\r\n      (closed)="closeChat()"\r\n      (infoClicked)="onInfoClick()"\r\n      (dragClicked)="onDragClick()"\r\n      (collapseClicked)="onCollapseClick()"\r\n      (toggleFullHeightClicked)="onToggleFullHeight()"\r\n      (dockClicked)="onDockClick()"\r\n      (agentSelected)="onAgentSelected($event)"\r\n      (clearChatHistory)="onClearChatHistory()"\r\n      (createAgent)="onCreateAgent()"\r\n      (editAgent)="onEditAgent()"\r\n      (removeAgent)="onRemoveAgent()"\r\n      (setDefaultPosition)="onSetDefaultPosition()"\r\n    />\r\n\r\n    <ep-chat-body\r\n      [messages]="chatService.messages()"\r\n      [isTyping]="isTyping"\r\n      [scrollMode]="scrollMode"\r\n      (actionClick)="onActionClick($event)"\r\n    />\r\n\r\n    <ep-chat-footer\r\n      [isTyping]="isTyping"\r\n      [messages]="chatService.messages()"\r\n      [currentAgent]="currentAgent"\r\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\r\n      (sendMessage)="onSendMessage($event)"\r\n      (quickActionClick)="onQuickActionClick($event)"\r\n      (stop)="onStopGenerating()"\r\n    />\r\n  </div>\r\n\r\n  <!-- <div\r\n    class="ep-mat"\r\n    role="button"\r\n    tabindex="0"\r\n    (click)="closeChat()"\r\n    (keydown.enter)="closeChat()"\r\n    (keydown.space)="closeChat()"\r\n    aria-label="Close popup"\r\n  ></div> -->\r\n}\r\n\r\n@if (isAgentConfigOpen && !isMonoAgent) {\r\n  <ep-epicstaff-agent-config\r\n    [popupState]="agentConfigState"\r\n    [currentAgent]="currentAgent"\r\n    [newAgentParams]="newAgentParamsForConfig"\r\n    (closed)="onCloseAgentConfig()"\r\n  />\r\n}\r\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow: 0 2px 8px var(--ep-color-popup-shadow);\n  border-radius: 4px;\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
-  }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: ChatParentBridgeService }, { type: DateAdapter }], { uniqueUserId: [{
+    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\r\n\r\n<ep-chat-toggle-button\r\n  [iconPath]="iconPath"\r\n  [chatIconSize]="chatIconSize"\r\n  [unreadCount]="chatService.unreadCount()"\r\n  (clicked)="toggleChat()"\r\n/>\r\n\r\n@if (chatService.isOpen()) {\r\n  <div\r\n    class="ep-popup"\r\n    [class.ep-popup--dock]="isDockMode"\r\n    [ngStyle]="chatStyle"\r\n    epClickOutside\r\n    epResizableChat\r\n    [config]="getConfig()"\r\n    [resizeDisabled]="isDockMode"\r\n    (epClickOutside)="onClickOutside()"\r\n  >\r\n    <ep-chat-header\r\n      [currentAgent]="currentAgent"\r\n      [agents]="agentService.visibleAgents()"\r\n      [isMonoAgent]="isMonoAgent"\r\n      [dockEnabled]="dockEnabled"\r\n      [isDockMode]="isDockMode"\r\n      (closed)="closeChat()"\r\n      (infoClicked)="onInfoClick()"\r\n      (dragClicked)="onDragClick()"\r\n      (collapseClicked)="onCollapseClick()"\r\n      (toggleFullHeightClicked)="onToggleFullHeight()"\r\n      (dockClicked)="onDockClick()"\r\n      (agentSelected)="onAgentSelected($event)"\r\n      (clearChatHistory)="onClearChatHistory()"\r\n      (createAgent)="onCreateAgent()"\r\n      (editAgent)="onEditAgent()"\r\n      (removeAgent)="onRemoveAgent()"\r\n      (setDefaultPosition)="onSetDefaultPosition()"\r\n    />\r\n\r\n    <ep-chat-body\r\n      [messages]="chatService.messages()"\r\n      [isTyping]="isTyping"\r\n      [scrollMode]="scrollMode"\r\n      (actionClick)="onActionClick($event)"\r\n    />\r\n\r\n    <ep-chat-footer\r\n      [isTyping]="isTyping"\r\n      [messages]="chatService.messages()"\r\n      [currentAgent]="currentAgent"\r\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\r\n      (sendMessage)="onSendMessage($event)"\r\n      (stop)="onStopGenerating()"\r\n    />\r\n  </div>\r\n\r\n  <!-- <div\r\n    class="ep-mat"\r\n    role="button"\r\n    tabindex="0"\r\n    (click)="closeChat()"\r\n    (keydown.enter)="closeChat()"\r\n    (keydown.space)="closeChat()"\r\n    aria-label="Close popup"\r\n  ></div> -->\r\n}\r\n\r\n@if (isAgentConfigOpen && !isMonoAgent) {\r\n  <ep-epicstaff-agent-config\r\n    [popupState]="agentConfigState"\r\n    [currentAgent]="currentAgent"\r\n    [newAgentParams]="newAgentParamsForConfig"\r\n    (closed)="onCloseAgentConfig()"\r\n  />\r\n}\r\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: var(--ep-color-accent-soft);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: var(--ep-color-accent-soft);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-chat-bg-answer: transparent;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
+  }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: ChatParentBridgeService }, { type: DateAdapter }, { type: ElementRef }], { uniqueUserId: [{
     type: Input
   }], userData: [{
     type: Input
@@ -101404,6 +101697,15 @@ var ChatComponent = _ChatComponent;
     type: Input
   }], messageTimeout: [{
     type: Input
+  }], themeConfig: [{
+    type: Input
+  }], themePreset: [{
+    type: Input
+  }], theme: [{
+    type: Input
+  }], themeAttr: [{
+    type: HostBinding,
+    args: ["attr.data-theme"]
   }], epChatCommandResult: [{
     type: Output
   }], epChatEvent: [{
@@ -101420,12 +101722,58 @@ var ChatComponent = _ChatComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 67 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 72 });
 })();
 
 // src/app/config/markdown.config.ts
+var MAX_HIGHLIGHT_CODE_LENGTH = 12e3;
+var MAX_HIGHLIGHT_CODE_LINES = 400;
+function escapeHtml(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function normalizeLanguage(raw) {
+  return raw.trim().split(/\s+/)[0]?.toLowerCase() || "";
+}
+var HTML_TAG_RE = /<\/?[a-zA-Z][a-zA-Z0-9]*[\s>/]/;
+var CSS_RULE_RE = /[a-zA-Z#.:*[\]]+\s*\{[\s\S]*?\}/;
+var JSON_RE = /^\s*[{[]/;
+var PYTHON_RE = /^(?:def |class |import |from \w+ import |elif |async def |@\w+\n)/m;
+function autoDetectLanguage(code) {
+  if (HTML_TAG_RE.test(code))
+    return "html";
+  if (JSON_RE.test(code)) {
+    try {
+      JSON.parse(code);
+      return "json";
+    } catch {
+    }
+  }
+  if (PYTHON_RE.test(code))
+    return "python";
+  if (CSS_RULE_RE.test(code))
+    return "css";
+  return "text";
+}
+function resolveLanguage(raw, code) {
+  const normalized = normalizeLanguage(raw ?? "");
+  return normalized || autoDetectLanguage(code);
+}
+function parseCodeRendererArgs(tokenOrCode, languageOrOptions) {
+  if (typeof tokenOrCode === "string") {
+    const code = tokenOrCode;
+    const rawLang = typeof languageOrOptions === "string" ? languageOrOptions : "";
+    return { code, language: resolveLanguage(rawLang, code) };
+  }
+  if (tokenOrCode && typeof tokenOrCode === "object") {
+    const token = tokenOrCode;
+    const code = typeof token.text === "string" ? token.text : token.raw ?? "";
+    return { code, language: resolveLanguage(token.lang, code) };
+  }
+  return { code: "", language: "text" };
+}
 function markedOptionsFactory() {
   const renderer = new $2();
+  let codeBlockCounter = 0;
   renderer.link = ({ href, title, tokens }) => {
     if (!href) {
       return tokens ? tokens.map((t) => t.raw).join("") : "";
@@ -101434,6 +101782,33 @@ function markedOptionsFactory() {
     const text = tokens ? tokens.map((t) => t.raw).join("") : href;
     return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
   };
+  renderer.code = ((tokenOrCode, languageOrOptions) => {
+    const parsed = parseCodeRendererArgs(tokenOrCode, languageOrOptions);
+    const trimmedCode = parsed.code.replace(/\n$/, "");
+    const escapedCode = escapeHtml(trimmedCode);
+    const lines = trimmedCode.split("\n").length;
+    const isLargeCode = trimmedCode.length > MAX_HIGHLIGHT_CODE_LENGTH || lines > MAX_HIGHLIGHT_CODE_LINES;
+    const language = isLargeCode ? "text" : parsed.language;
+    const displayLanguage = language.toUpperCase();
+    const codeId = `ep-md-code-${codeBlockCounter++}`;
+    const blockClasses = isLargeCode ? "ep-md-code ep-md-code--plain" : "ep-md-code";
+    return `
+                <div class="${blockClasses}">
+                <div class="ep-md-code__header">
+                    <span class="ep-md-code__lang">${displayLanguage}</span>
+                    <span
+                    class="ep-md-code__copy-icon"
+                    data-copy-target="${codeId}"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Copy code"
+                    title="Copy code"
+                    >\u29C9</span>
+                </div>
+                <pre><code id="${codeId}" class="language-${language}">${escapedCode}</code></pre>
+                </div>
+                `;
+  });
   return {
     renderer,
     gfm: true,

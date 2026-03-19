@@ -47,6 +47,64 @@ export class LeftSidebarComponent implements AfterViewInit {
     public bottomNavItems: NavItem[];
     public isEpicChatEnabled: boolean;
     public apiBaseUrl: string;
+    public readonly epicChatThemeConfig = {
+        semantic: {
+            surface: 'var(--color-background-body)',
+            surfaceAlt: 'var(--color-nodes-background)',
+            text: 'var(--color-text-primary)',
+            textMuted: 'var(--color-text-secondary)',
+            border: 'var(--color-divider-regular)',
+            borderMuted: 'var(--color-divider-subtle)',
+            accent: 'var(--gray-700)',
+            accentContrast: 'var(--color-text-primary)',
+            accentSoft: 'var(--color-ghost-btn-hover)',
+            danger: 'var(--color-ks-status-failed)',
+            dangerSoft: 'var(--agent-node-accent-color)',
+            disabledBg: 'var(--gray-600)',
+            scrollbar: 'var(--color-scrollbar-thumb)',
+        },
+        components: {
+            chat: {
+                bgQuestion: 'var(--accent-color)',
+                bgAnswer: 'var(--color-nodes-background)',
+                textQuestion: 'var(--color-text-primary)',
+            },
+            header: {
+                iconColor: 'var(--accent-color)',
+            },
+            table: {
+                headerBg: 'transparent',
+                headerText: 'var(--color-text-secondary)',
+                rowBg: 'transparent',
+                rowAltBg: 'color-mix(in srgb, var(--color-nodes-background) 65%, transparent)',
+                rowHoverBg: 'var(--color-ghost-btn-hover)',
+                border: 'var(--color-divider-subtle)',
+                columnDivider: 'var(--color-divider-regular)',
+                cellText: 'var(--color-text-primary)',
+            },
+            button: {
+                radius: '6px',
+                heightMd: '28px',
+                paddingMd: '6px 10px',
+                fontSizeMd: '12px',
+                secondaryBg: 'transparent',
+                secondaryBorder: 'var(--color-divider-regular)',
+                secondaryText: 'var(--color-text-primary)',
+                secondaryHoverBg: 'var(--color-ghost-btn-hover)',
+                primaryBg: 'var(--color-nodes-background)',
+                primaryBorder: 'var(--accent-color)',
+                primaryText: 'var(--accent-color)',
+                primaryHoverBg:
+                    'color-mix(in srgb, var(--color-nodes-background) 70%, var(--accent-color) 30%)',
+                ghostBg: 'transparent',
+                ghostText: 'var(--color-text-secondary)',
+                ghostHoverBg: 'var(--color-ghost-btn-hover)',
+            },
+        },
+        foundation: {
+            shadowMd: 'rgba(0, 0, 0, 0.6)',
+        },
+    };
     @ViewChild('epicChat', { static: false })
     private epicChat?: ElementRef<HTMLElement>;
 

@@ -80,24 +80,8 @@
         <epic-chat
             #epicChat
             class="epic-chat-host"
-            style="
-                --ep-color-surface: var(--color-background-body);
-                --ep-color-surface-alt: var(--color-nodes-background);
-                --ep-chat-bg-question: var(--accent-color-active);
-                --ep-chat-bg-answer: var(--color-nodes-background);
-                --ep-color-text: var(--color-text-primary);
-                --ep-color-text-muted: var(--color-text-secondary);
-                --ep-color-border: var(--color-divider-regular);
-                --ep-color-border-muted: var(--color-divider-subtle);
-                --ep-color-accent: var(--gray-700);
-                --ep-color-accent-contrast: var(--color-text-primary);
-                --ep-color-accent-soft: var(--color-ghost-btn-hover);
-                --ep-color-danger: var(--color-ks-status-failed);
-                --ep-color-shadow: rgba(0, 0, 0, 0.6);
-                --ep-color-scrollbar: var(--color-scrollbar-thumb);
-                --ep-color-disabled-bg: var(--gray-600);
-                --ep-color-danger-soft: var(--agent-node-accent-color);
-            "
+            theme-preset="epicstaff"
+            [themeConfig]="epicChatThemeConfig"
             base-path="/epicchat-widget/"
             chat-icon-path=""
             message-timeout="180000"
