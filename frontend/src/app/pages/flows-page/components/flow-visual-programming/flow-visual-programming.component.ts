@@ -2,6 +2,7 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    ElementRef,
     signal,
     OnInit,
     OnDestroy,
@@ -81,11 +82,12 @@ import { SidePanelService } from '../../../../visual-programming/services/side-p
 import { buildFlowModelFromGraph } from '../../../../visual-programming/services/graph/load-graph.service';
 import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
 import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
+import { FlowMessagesPanelComponent } from '../../../../pages/running-graph/components/flow-messages-panel/flow-messages-panel.component';
 
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
-    imports: [FlowHeaderComponent, FlowGraphComponent, SpinnerComponent, ShortcutsModalComponent],
+    imports: [FlowHeaderComponent, FlowGraphComponent, SpinnerComponent, ShortcutsModalComponent, FlowMessagesPanelComponent],
     templateUrl: './flow-visual-programming.component.html',
     styleUrl: './flow-visual-programming.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -101,9 +103,16 @@ export class FlowVisualProgrammingComponent
     public isSaving = false;
     public isRunning = false;
 
+    public isPanelOpen = false;
+    public isPanelCollapsed = false;
+    public currentSessionId: string | null = null;
+    public panelWidthPx = 450;
+    public isDragging = false;
+    private readonly MIN_PANEL_WIDTH = 300;
+    private readonly MAX_PANEL_WIDTH_RATIO = 0.7;
+
     private initialState: FlowModel | undefined;
     private readonly destroy$ = new Subject<void>();
-    private isNavigatingToRun = false;
 
     @ViewChild(FlowGraphComponent)
     private flowGraphComponent?: FlowGraphComponent;
@@ -122,7 +131,8 @@ export class FlowVisualProgrammingComponent
         private readonly dialog: CdkDialog,
         private readonly unsavedChangesDialogService: UnsavedChangesDialogService,
         private readonly configService: ConfigService,
-        private readonly sidePanelService: SidePanelService
+        private readonly sidePanelService: SidePanelService,
+        private readonly elementRef: ElementRef,
     ) {}
 
     public ngOnInit(): void {
@@ -420,13 +430,9 @@ export class FlowVisualProgrammingComponent
             )
             .subscribe({
                 next: (response: any) => {
-                    this.isNavigatingToRun = true;
-                    this.router.navigate([
-                        'graph',
-                        this.graph.id,
-                        'session',
-                        response.session_id,
-                    ]);
+                    this.currentSessionId = response.session_id.toString();
+                    this.isPanelOpen = true;
+                    this.cdr.markForCheck();
                 },
                 error: (error: any) => {
                     this.toastService.error(
@@ -518,11 +524,6 @@ export class FlowVisualProgrammingComponent
     }
 
     public canDeactivate(): boolean | Observable<boolean> {
-        // Allow navigation if it's triggered by the run button
-        if (this.isNavigatingToRun) {
-            return true;
-        }
-
         if (this.hasUnsavedChanges()) {
             return this.unsavedChangesDialogService
                 .confirmUnsavedChanges(() => this.handleSaveFlow(false))
@@ -544,9 +545,50 @@ export class FlowVisualProgrammingComponent
         return true;
     }
 
+    public closeMessagesPanel(): void {
+        this.isPanelOpen = false;
+        this.isPanelCollapsed = false;
+        this.currentSessionId = null;
+        this.cdr.markForCheck();
+    }
+
+    public togglePanelCollapsed(): void {
+        this.isPanelCollapsed = !this.isPanelCollapsed;
+        this.cdr.markForCheck();
+        window.dispatchEvent(new Event('resize'));
+    }
+
+    public onSessionSelected(sessionId: string): void {
+        this.currentSessionId = sessionId;
+        this.cdr.markForCheck();
+    }
+
+    public onDragStart(event: MouseEvent): void {
+        event.preventDefault();
+        this.isDragging = true;
+    }
+
+    @HostListener('document:mousemove', ['$event'])
+    public onDragMove(event: MouseEvent): void {
+        if (!this.isDragging) return;
+        const hostRect = this.elementRef.nativeElement.getBoundingClientRect();
+        const maxWidth = hostRect.width * this.MAX_PANEL_WIDTH_RATIO;
+        const newWidth = hostRect.right - event.clientX;
+        this.panelWidthPx = Math.max(this.MIN_PANEL_WIDTH, Math.min(newWidth, maxWidth));
+        this.cdr.markForCheck();
+    }
+
+    @HostListener('document:mouseup')
+    public onDragEnd(): void {
+        if (this.isDragging) {
+            this.isDragging = false;
+            window.dispatchEvent(new Event('resize'));
+        }
+    }
+
     public ngOnDestroy(): void {
-        // this.destroy$.next();
-        // this.destroy$.complete();
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 
     private flushActiveSidePanelState(): void {

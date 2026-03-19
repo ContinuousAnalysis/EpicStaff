@@ -27,6 +27,34 @@
         [sections]="shortcutSections"
         (closed)="closeShortcutsModal()"
     ></app-shortcuts-modal>
+
+    @if (isPanelOpen) {
+        <div
+            class="drag-handle"
+            [class.dragging]="isDragging"
+            [class.collapsed]="isPanelCollapsed"
+            (mousedown)="onDragStart($event)"
+        >
+            <button
+                class="collapse-toggle"
+                (mousedown)="$event.stopPropagation()"
+                (click)="togglePanelCollapsed()"
+            >
+                <span class="collapse-toggle__icon">
+                    {{ isPanelCollapsed ? '◀' : '▶' }}
+                </span>
+            </button>
+        </div>
+        @if (!isPanelCollapsed) {
+            <app-flow-messages-panel
+                [style.width.px]="panelWidthPx"
+                [graphId]="graph.id"
+                [sessionId]="currentSessionId"
+                (close)="closeMessagesPanel()"
+                (sessionSelected)="onSessionSelected($event)"
+            ></app-flow-messages-panel>
+        }
+    }
 </div>
 } @else {
 

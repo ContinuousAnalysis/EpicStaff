@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(make dev:*)"
+      "Bash(make dev:*)",
+      "Bash(find c:ghPepicStaffEpicStafffrontendsrcapppagesrunning-graph -name *.component.ts -o -name *.component.html)"
     ]
   }
 }
