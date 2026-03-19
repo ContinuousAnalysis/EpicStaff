@@ -147,6 +147,16 @@ class ContentHashMixin(models.Model):
             return None
         return self.generate_hash()
 
+    @content_hash.setter
+    def content_hash(self, value):
+        """
+        Treat assignment as setting the expected hash for optimistic locking.
+        Serializer update() loops call setattr(instance, 'content_hash', client_value),
+        which flows into instance.save() → ContentHashConflictError on mismatch.
+        Works for both top-level nodes and nested objects (e.g. python_code).
+        """
+        self._expected_hash = value
+
     def generate_hash(self):
         """
         Generates a SHA-256 hash.

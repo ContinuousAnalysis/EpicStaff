@@ -4,6 +4,9 @@ from rest_framework import status
 
 from tables.exceptions import ContentHashConflictError
 from tables.models import CrewNode, Graph, StartNode
+from tables.models.graph_models import ConditionalEdge, WebhookTriggerNode
+from tables.models.python_models import PythonCode
+from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
 from tests.fixtures import *
 
 
@@ -184,3 +187,199 @@ class TestContentHashModelLevel:
         node.save()  # should not raise
 
         assert node.pk is not None
+
+
+# ---------------------------------------------------------------------------
+# Webhook node: nested python_code hash validation
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def python_code():
+    return PythonCode.objects.create(
+        code="def main(): return 1",
+        entrypoint="main",
+        libraries="",
+        global_kwargs={},
+    )
+
+
+@pytest.fixture
+def webhook_node(graph, python_code):
+    return WebhookTriggerNode.objects.create(
+        node_name="webhook_node",
+        graph=graph,
+        python_code=python_code,
+        webhook_trigger=None,
+    )
+
+
+@pytest.fixture
+def conditional_edge(graph, python_code):
+    return ConditionalEdge.objects.create(
+        graph=graph,
+        python_code=python_code,
+        source_node_id=None,
+        input_map={},
+    )
+
+
+@pytest.fixture
+def ngrok_config():
+    return NgrokWebhookConfig.objects.create(
+        name="test_ngrok",
+        auth_token="test_token_123",
+        region="eu",
+    )
+
+
+@pytest.mark.django_db
+class TestWebhookNodeNestedHashValidation:
+    def test_stale_python_code_hash_returns_409(self, api_client, webhook_node):
+        """Sending a stale python_code.content_hash must be rejected with 409."""
+        url = reverse("webhooktriggernode-detail", args=[webhook_node.id])
+        response = api_client.put(
+            url,
+            {
+                "node_name": webhook_node.node_name,
+                "graph": webhook_node.graph_id,
+                "python_code": {
+                    "code": "def main(): return 99",
+                    "entrypoint": "main",
+                    "libraries": "",
+                    "global_kwargs": {},
+                    "content_hash": "stale_python_code_hash",
+                },
+                "webhook_trigger": None,
+                "metadata": {},
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_409_CONFLICT, response.content
+
+    def test_correct_python_code_hash_succeeds(self, api_client, webhook_node):
+        """Sending the current python_code.content_hash succeeds."""
+        url = reverse("webhooktriggernode-detail", args=[webhook_node.id])
+        response = api_client.put(
+            url,
+            {
+                "node_name": webhook_node.node_name,
+                "graph": webhook_node.graph_id,
+                "python_code": {
+                    "code": "def main(): return 99",
+                    "entrypoint": "main",
+                    "libraries": "",
+                    "global_kwargs": {},
+                    "content_hash": webhook_node.python_code.content_hash,
+                },
+                "webhook_trigger": None,
+                "metadata": {},
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.content
+
+    def test_node_hash_changes_after_python_code_edit(self, api_client, webhook_node):
+        """Editing python_code must change the node's content_hash too."""
+        original_node_hash = webhook_node.content_hash
+        url = reverse("webhooktriggernode-detail", args=[webhook_node.id])
+        api_client.put(
+            url,
+            {
+                "node_name": webhook_node.node_name,
+                "graph": webhook_node.graph_id,
+                "python_code": {
+                    "code": "def main(): return 999",
+                    "entrypoint": "main",
+                    "libraries": "",
+                    "global_kwargs": {},
+                },
+                "webhook_trigger": None,
+                "metadata": {},
+            },
+            format="json",
+        )
+
+        webhook_node.python_code.refresh_from_db()
+        webhook_node.refresh_from_db()
+        assert webhook_node.content_hash != original_node_hash
+
+    def test_hash_changes_when_ngrok_config_set(
+        self, api_client, webhook_node, ngrok_config
+    ):
+        """Changing webhook_trigger.ngrok_webhook_config must change the node hash."""
+        # Create initial trigger with no ngrok
+        trigger = WebhookTrigger.objects.create(
+            path="mypath", ngrok_webhook_config=None
+        )
+        webhook_node.webhook_trigger = trigger
+        webhook_node.save()
+        hash_before = webhook_node.content_hash
+
+        url = reverse("webhooktriggernode-detail", args=[webhook_node.id])
+        api_client.patch(
+            url,
+            {
+                "webhook_trigger": {
+                    "path": "mypath",
+                    "ngrok_webhook_config": ngrok_config.id,
+                },
+            },
+            format="json",
+        )
+
+        webhook_node.refresh_from_db()
+        assert webhook_node.content_hash != hash_before
+
+
+# ---------------------------------------------------------------------------
+# ConditionalEdge: node hash propagates from python_code changes
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestConditionalEdgeHashPropagation:
+    def test_node_hash_changes_after_python_code_edit(
+        self, api_client, conditional_edge
+    ):
+        """Editing python_code on a conditional edge must change the edge hash."""
+        original_edge_hash = conditional_edge.content_hash
+        url = reverse("conditionaledge-detail", args=[conditional_edge.id])
+
+        api_client.patch(
+            url,
+            {
+                "python_code": {
+                    "code": "def main(): return 'changed'",
+                    "entrypoint": "main",
+                    "libraries": "",
+                    "global_kwargs": {},
+                },
+            },
+            format="json",
+        )
+
+        conditional_edge.python_code.refresh_from_db()
+        conditional_edge.refresh_from_db()
+        assert conditional_edge.content_hash != original_edge_hash
+
+    def test_stale_python_code_hash_returns_409(self, api_client, conditional_edge):
+        """Sending a stale python_code.content_hash must be rejected with 409."""
+        url = reverse("conditionaledge-detail", args=[conditional_edge.id])
+        response = api_client.patch(
+            url,
+            {
+                "python_code": {
+                    "code": "def main(): return 'changed'",
+                    "entrypoint": "main",
+                    "libraries": "",
+                    "global_kwargs": {},
+                    "content_hash": "stale_hash",
+                },
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_409_CONFLICT, response.content

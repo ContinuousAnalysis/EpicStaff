@@ -31,11 +31,6 @@ class ContentHashWritableMixin:
         fields["content_hash"] = serializers.CharField(required=False, allow_null=True)
         return fields
 
-    def validate(self, attrs):
-        attrs = super().validate(attrs)
-        attrs.pop("content_hash", None)
-        return attrs
-
 
 class MetadataMixin(serializers.Serializer):
     metadata = serializers.JSONField()
