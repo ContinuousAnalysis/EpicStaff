@@ -41,6 +41,7 @@ class GraphCopyService(BaseCopyService):
                 graph=new_graph,
                 start_node_id=node_id_map.get(edge.start_node_id, edge.start_node_id),
                 end_node_id=node_id_map.get(edge.end_node_id, edge.end_node_id),
+                metadata=edge.metadata,
             )
 
         for cond_edge in graph.conditional_edge_list.all():
@@ -52,6 +53,7 @@ class GraphCopyService(BaseCopyService):
                 ),
                 python_code=new_code,
                 input_map=cond_edge.input_map,
+                metadata=cond_edge.metadata,
             )
 
         self._remap_decision_table_references(new_graph, node_id_map)

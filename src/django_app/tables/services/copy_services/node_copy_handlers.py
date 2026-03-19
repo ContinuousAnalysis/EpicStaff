@@ -66,7 +66,9 @@ def copy_end_node(graph: Graph, node: EndNode) -> EndNode:
 
 
 def copy_note_node(graph: Graph, node: NoteNode) -> NoteNode:
-    return NoteNode.objects.create(graph=graph, content=node.content)
+    return NoteNode.objects.create(
+        graph=graph, content=node.content, metadata=node.metadata
+    )
 
 
 def copy_file_extractor_node(
