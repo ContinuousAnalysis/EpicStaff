@@ -1661,8 +1661,8 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
         return instance
 
 
-class NoteNodeSerializer(serializers.ModelSerializer):
-    class Meta:
+class NoteNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+    class Meta(BaseGraphEntityMixin.Meta):
         model = NoteNode
         fields = "__all__"
 
