@@ -5,6 +5,7 @@ from tables.models.crew_models import (
     AgentPythonCodeTools,
     AgentPythonCodeToolConfigs,
 )
+from tables.models.knowledge_models.naive_rag_models import NaiveRagSearchConfig
 from tables.models.realtime_models import RealtimeAgent
 from tables.services.copy_services.base_copy_service import BaseCopyService
 
@@ -71,6 +72,16 @@ class AgentCopyService(BaseCopyService):
                 realtime_transcription_config=realtime_agent.realtime_transcription_config,
             )
         except RealtimeAgent.DoesNotExist:
+            pass
+
+        try:
+            search_config = agent.naive_search_config
+            NaiveRagSearchConfig.objects.create(
+                agent=new_agent,
+                search_limit=search_config.search_limit,
+                similarity_threshold=search_config.similarity_threshold,
+            )
+        except NaiveRagSearchConfig.DoesNotExist:
             pass
 
         return new_agent
