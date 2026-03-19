@@ -57,7 +57,7 @@
                                 class="help-icon"
                             >help_outline</mat-icon>
                         </div>
-                        <app-segmented-switch formControlName="run_mode" [options]="runModeOptions" />
+                        <app-radio-button [mod]="'segmented'" formControlName="run_mode" [options]="runModeOptions" />
                     </div>
 
                     <!-- Repeat settings (visible when run_mode = repeat) -->
@@ -116,7 +116,7 @@
                                     class="help-icon"
                                 >help_outline</mat-icon>
                             </div>
-                            <app-segmented-switch formControlName="end_mode" [options]="endModeOptions" />
+                            <app-radio-button [mod]="'segmented'" formControlName="end_mode" [options]="endModeOptions" />
                         </div>
 
                         <!-- End date/time (visible when end_mode = on_date) -->

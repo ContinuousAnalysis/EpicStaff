@@ -7,11 +7,10 @@ import {
     CustomInputComponent,
     DatePickerComponent,
     NumberStepperComponent,
+    RadioButtonComponent,
     RoundButtonComponent,
-    SegmentedSwitchComponent,
     SelectComponent,
     SelectItem,
-    SwitchOption,
     TimePickerComponent,
     ToggleSwitchComponent,
 } from '@shared/components';
@@ -29,7 +28,7 @@ import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
         CustomInputComponent,
         DatePickerComponent,
         TimePickerComponent,
-        SegmentedSwitchComponent,
+        RadioButtonComponent,
         SelectComponent,
         NumberStepperComponent,
         RoundButtonComponent,
@@ -55,12 +54,12 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     showEndDateTime = computed(() => this.endMode() === 'on_date');
     showMaxRuns = computed(() => this.endMode() === 'after_runs');
 
-    readonly runModeOptions: SwitchOption<string>[] = [
+    readonly runModeOptions = [
         { label: 'Once', value: 'once' },
         { label: 'Repeat', value: 'repeat' },
     ];
 
-    readonly endModeOptions: SwitchOption<string>[] = [
+    readonly endModeOptions = [
         { label: 'Never', value: 'never' },
         { label: 'On date', value: 'on_date' },
         { label: 'After N runs', value: 'after_runs' },

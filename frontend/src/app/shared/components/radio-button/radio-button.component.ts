@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, forwardRef, input, model, output } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, forwardRef, input, model, output, signal } from "@angular/core";
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
-import { NgClass } from "@angular/common";
 import { TooltipComponent } from "../tooltip/tooltip.component";
 
 export interface SegmentedOption<T = unknown> {
@@ -19,10 +18,7 @@ export interface SegmentedOption<T = unknown> {
             multi: true,
         },
     ],
-    imports: [
-        NgClass,
-        TooltipComponent
-    ],
+    imports: [TooltipComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RadioButtonComponent<T> implements ControlValueAccessor {
@@ -31,13 +27,22 @@ export class RadioButtonComponent<T> implements ControlValueAccessor {
     required = input<boolean>(false);
     tooltipText = input<string>('');
 
-    mod = input<'default' | 'small'>('default');
-    equalWidth = input<boolean>(false);
+    mod = input<'default' | 'small' | 'segmented'>('default');
     options = input.required<SegmentedOption<T>[]>();
     disabled = input(false);
 
     value = model<T | null>(null);
     valueChange = output<T>();
+
+    private _disabled = signal(false);
+    isDisabled = computed(() => this.disabled() || this._disabled());
+
+    activeIndex = computed(() => {
+        const idx = this.options().findIndex((o) => o.value === this.value());
+        return idx === -1 ? 0 : idx;
+    });
+
+    sliderTransform = computed(() => `translateX(${this.activeIndex() * 100}%)`);
 
     private onChange: (value: T) => void = () => {};
     private onTouched: () => void = () => {};
@@ -54,16 +59,16 @@ export class RadioButtonComponent<T> implements ControlValueAccessor {
         this.onTouched = fn;
     }
 
-    setDisabledState(isDisabled: boolean): void {}
+    setDisabledState(isDisabled: boolean): void {
+        this._disabled.set(isDisabled);
+    }
 
     select(option: SegmentedOption<T>) {
-        if (this.disabled()) return;
+        if (this.isDisabled()) return;
 
         this.value.set(option.value);
-
         this.onChange(option.value);
         this.onTouched();
-
         this.valueChange.emit(option.value);
     }
 }

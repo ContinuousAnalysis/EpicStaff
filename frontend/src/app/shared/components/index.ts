@@ -31,7 +31,6 @@ export * from './radio-button/radio-button.component';
 export * from './range-slider/range-slider.component';
 export * from './round-button/round-button.component';
 export * from './search/search.component';
-export * from './segmented-switch/segmented-switch.component';
 export * from './select/select.component';
 export * from './slider-with-stepper/slider-with-stepper.component';
 export * from './spinner/spinner.component';
