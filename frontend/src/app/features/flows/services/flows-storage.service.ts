@@ -216,35 +216,8 @@ export class FlowsStorageService {
     }
 
     public copyFlow(sourceId: number, newName: string): Observable<GraphDto> {
-        return this.flowsApiService.getGraphById(sourceId).pipe(
-            switchMap((sourceFlow: GraphDto) => {
-                const payload: GraphDto = {
-                    id: sourceFlow.id,
-                    name: newName,
-                    description: sourceFlow.description,
-                    metadata: sourceFlow.metadata,
-                    tags: sourceFlow.tags || [],
-                    start_node_list: sourceFlow.start_node_list,
-                    crew_node_list: sourceFlow.crew_node_list,
-                    python_node_list: sourceFlow.python_node_list,
-                    edge_list: sourceFlow.edge_list,
-                    conditional_edge_list: sourceFlow.conditional_edge_list,
-                    llm_node_list: sourceFlow.llm_node_list,
-                    file_extractor_node_list:
-                        sourceFlow.file_extractor_node_list,
-                    webhook_trigger_node_list: sourceFlow.webhook_trigger_node_list,
-                    telegram_trigger_node_list: sourceFlow.telegram_trigger_node_list,
-                    schedule_trigger_node_list: [],
-                    end_node_list: sourceFlow.end_node_list,
-                    subgraph_node_list: sourceFlow.subgraph_node_list,
-                    audio_transcription_node_list: sourceFlow.audio_transcription_node_list,
-                    decision_table_node_list: sourceFlow.decision_table_node_list,
-                    note_node_list: sourceFlow.note_node_list ?? [],
-                };
-                return this.flowsApiService.copyGraph(payload).pipe(
-                    tap((created) => this.addFlowToCache(created))
-                );
-            })
+        return this.flowsApiService.copyGraph(sourceId, newName).pipe(
+            tap((created) => this.addFlowToCache(created))
         );
     }
 
