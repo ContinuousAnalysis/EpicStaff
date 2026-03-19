@@ -13,6 +13,7 @@ import { TemplatePortal } from '@angular/cdk/portal';
 import { NgClass } from "@angular/common";
 import { Overlay, OverlayPositionBuilder, OverlayRef, OverlayModule } from "@angular/cdk/overlay";
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
+import { AppIconComponent } from "../app-icon/app-icon.component";
 import { TooltipComponent } from "../tooltip/tooltip.component";
 
 export interface SelectItem {
@@ -20,11 +21,12 @@ export interface SelectItem {
     tip?: string;
     value: unknown;
     group?: string;
+    icon?: string;
 }
 
 @Component({
     selector: 'app-select',
-    imports: [NgClass, OverlayModule, TooltipComponent ],
+    imports: [NgClass, TooltipComponent, OverlayModule, AppIconComponent],
     templateUrl: './select.component.html',
     styleUrls: ['./select.component.scss'],
     providers: [

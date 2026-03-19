@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
+import { getProviderIconPath } from "@shared/utils";
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 import { CommonModule } from '@angular/common';
 import { MergedConfig } from '../../../../../features/staff/services/full-agent.service';
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
-import { getProviderIconPath } from '../../../../../features/settings-dialog/utils/get-provider-icon';
+import { AppIconComponent } from '@shared/components';
 
 @Component({
   selector: 'app-config-cell-renderer',

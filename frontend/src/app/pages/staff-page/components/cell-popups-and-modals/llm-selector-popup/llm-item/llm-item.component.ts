@@ -9,9 +9,9 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { NgClass, NgIf } from '@angular/common';
+import { getProviderIconPath } from "@shared/utils";
 import { MergedConfig } from '../../../../../../features/staff/services/full-agent.service';
-import { AppIconComponent } from '../../../../../../shared/components/app-icon/app-icon.component';
-import { getProviderIconPath } from '../../../../../../features/settings-dialog/utils/get-provider-icon';
+import { AppIconComponent } from '@shared/components';
 
 @Component({
   selector: 'app-llm-item',

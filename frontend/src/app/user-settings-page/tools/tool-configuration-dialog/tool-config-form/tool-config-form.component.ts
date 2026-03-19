@@ -23,8 +23,6 @@ import {
   CreateToolConfigRequest,
   ToolConfig,
 } from '../../../../features/tools/models/tool-config.model';
-import { GetLlmConfigRequest } from '../../../../features/settings-dialog/models/llms/LLM_config.model';
-import { EmbeddingConfig } from '../../../../features/settings-dialog/models/embeddings/embedding-config.model';
 import {
   NgIf,
   NgFor,
@@ -33,12 +31,9 @@ import {
   NgSwitchDefault,
 } from '@angular/common';
 import { ToolConfigService } from '../../../../features/tools/services/tool-config.service';
-import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
-import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
-import { EmbeddingModelSelectorComponent } from '../../../../shared/components/embedding-model-selector/embedding-model-selector.component';
-import { FullLLMConfig } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { FullEmbeddingConfig } from '../../../../features/settings-dialog/services/embeddings/full-embedding.service';
-import { ToastService } from '../../../../services/notifications/toast.service';
+import { LlmModelSelectorComponent, HelpTooltipComponent, EmbeddingModelSelectorComponent } from '@shared/components';
+import { FullEmbeddingConfig, FullLLMConfig } from '@shared/services';
+import { ToastService } from "../../../../services/notifications";
 
 @Component({
   selector: 'app-tool-config-form',

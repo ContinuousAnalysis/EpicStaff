@@ -192,6 +192,7 @@ function buildLLMNode(ln: GetLLMNodeRequest, idx: number): LLMNodeModel {
         seed: null,
         timeout: null,
         is_visible: true,
+        tags: [],
     };
     return {
         id: uuidv4(),

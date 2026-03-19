@@ -4,9 +4,6 @@
 
 .selector {
     position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     width: 100%;
 
     &__btn {
@@ -15,7 +12,7 @@
         height: 100%;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: 0.5rem;
         position: relative;
         border-radius: 0.5rem;
         border: 1px solid var(--color-input-border);
@@ -108,7 +105,16 @@
         white-space: nowrap;
     }
 
+    &__item-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        line-height: 1;
+    }
+
     &__option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         overflow: hidden;
         text-overflow: ellipsis;
 

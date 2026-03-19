@@ -3,7 +3,6 @@ import {
     Input,
     OnInit,
     ChangeDetectionStrategy,
-    ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,9 +13,6 @@ import {
     animate,
     transition,
 } from '@angular/animations';
-import { ToastService } from '../../../../services/notifications/toast.service';
-import { RealtimeModelConfigsService } from '../../../../features/settings-dialog/services/realtime-llms/real-time-model-config.service';
-import { ConsoleService } from '../../services/console.service';
 
 @Component({
     selector: 'app-chats-header',

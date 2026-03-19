@@ -11,24 +11,23 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Tool } from '../../../features/tools/models/tool.model';
 import {
   ToolConfig,
-  CreateToolConfigRequest,
   GetToolConfigRequest,
 } from '../../../features/tools/models/tool-config.model';
 import { ToolConfigService } from '../../../features/tools/services/tool-config.service';
 import { NgIf, NgFor, NgClass } from '@angular/common';
 import { ToolConfigFormComponent } from './tool-config-form/tool-config-form.component';
-import { ConfirmationDialogService } from '../../../shared/components/cofirm-dialog/confimation-dialog.service';
+import { ConfirmationDialogService } from '@shared/components';
 import { forkJoin, Observable, Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   FullLLMConfigService,
   FullLLMConfig,
-} from '../../../features/settings-dialog/services/llms/full-llm-config.service';
+} from '@shared/services';
 import {
   FullEmbeddingConfigService,
   FullEmbeddingConfig,
-} from '../../../features/settings-dialog/services/embeddings/full-embedding.service';
-import { ToastService } from '../../../services/notifications/toast.service';
+} from '@shared/services';
+import { ToastService } from '../../../services/notifications';
 
 @Component({
   selector: 'app-tool-configuration-dialog',

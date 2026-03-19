@@ -1,0 +1,70 @@
+<section class="llm-library">
+    @if (configsLoaded()) {
+        <header class="llm-library__header">
+            <div class="llm-library__header-left">
+                <h3 class="llm-library__title">LLM Library</h3>
+                <p class="llm-library__subtitle">
+                    Configure large language models for text generation and AI assistants.
+                </p>
+            </div>
+
+            <div class="llm-library__header-right">
+                <div class="llm-library__search">
+                    <i class="ti ti-search llm-library__search-icon" aria-hidden="true"></i>
+                    <input
+                        type="text"
+                        class="llm-library__search-input"
+                        placeholder="Search configurations..."
+                        [value]="searchQuery()"
+                        (input)="onSearchChange($any($event.target).value)"
+                    />
+                </div>
+
+                <div class="llm-library__filter">
+                    <app-select
+                        [items]="capabilities()"
+                        placeholder="All Capabilities"
+                        (changed)="selectedCapability.set($event)"
+                    />
+                </div>
+
+                <button
+                    type="button"
+                    class="llm-library__add-btn"
+                    (click)="onAddModel()"
+                >
+                    <i class="ti ti-plus" aria-hidden="true"></i>
+                    Add Configuration
+                </button>
+            </div>
+        </header>
+
+        @for (group of filteredGroups(); track group.id) {
+            <div class="llm-library__provider-group">
+                <div class="llm-library__provider-header">
+                    <app-icon
+                        [icon]="group.providerIconPath"
+                        [size]="'22px'"
+                        [ariaLabel]="group.providerName"
+                    ></app-icon>
+                    <span class="llm-library__provider-name">{{ group.providerName }}</span>
+                </div>
+
+                <div class="llm-library__grid">
+                    @for (model of group.models; track model.id) {
+                        <app-llm-library-card
+                            [model]="model"
+                            (editClick)="onEdit($event)"
+                            (deleteClick)="onDelete($event)"
+                        ></app-llm-library-card>
+                    }
+                </div>
+            </div>
+        }
+    } @else {
+        <app-loading-spinner
+            message="Loading Configurations data"
+        />
+    }
+</section>
+
