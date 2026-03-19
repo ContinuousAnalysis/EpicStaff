@@ -68,6 +68,7 @@ class AgentCopyService(BaseCopyService):
                 stop_prompt=realtime_agent.stop_prompt,
                 language=realtime_agent.language,
                 voice_recognition_prompt=realtime_agent.voice_recognition_prompt,
+                voice=realtime_agent.voice,
                 realtime_config=realtime_agent.realtime_config,
                 realtime_transcription_config=realtime_agent.realtime_transcription_config,
             )
