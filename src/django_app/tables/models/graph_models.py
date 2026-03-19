@@ -468,7 +468,7 @@ class WebhookTriggerNode(BaseGraphEntity, BaseGlobalNode):
         ]
 
         data = {
-            f.name: str(getattr(self, f.name))
+            f.name: str(getattr(self, f.attname))
             for f in self._meta.fields
             if f.name not in excluded_fields
         }
@@ -498,7 +498,7 @@ class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
     def generate_hash(self):
         excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
         data = {
-            f.name: str(getattr(self, f.name))
+            f.name: str(getattr(self, f.attname))
             for f in self._meta.fields
             if f.name not in excluded_fields
         }
