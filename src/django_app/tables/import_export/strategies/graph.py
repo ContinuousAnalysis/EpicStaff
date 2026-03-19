@@ -100,6 +100,9 @@ class GraphStrategy(EntityImportExportStrategy):
     ) -> None:
         for node_data in nodes_data:
             node_type = node_data.pop("node_type")
+            # Backwards compat: old exports used "NoteNode"
+            if node_type == "NoteNode":
+                node_type = "GraphNote"
             old_id = node_data.get("id")
 
             config = NODE_HANDLERS[node_type]

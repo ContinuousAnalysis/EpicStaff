@@ -21,7 +21,7 @@ from tables.models import (
     Condition,
     SubGraphNode,
 )
-from tables.models.graph_models import NoteNode
+from tables.models.graph_models import GraphNote
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 
 
@@ -155,9 +155,9 @@ class SubgraphNodeImportSerializer(BaseNodeImportSerializer):
         exclude = ["created_at", "updated_at", "content_hash"]
 
 
-class NoteNodeImportSerializer(BaseNodeImportSerializer):
+class GraphNoteImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
-        model = NoteNode
+        model = GraphNote
         exclude = ["created_at", "updated_at", "content_hash"]
 
 

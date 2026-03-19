@@ -9,7 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { NoteNodeModel } from '../../core/models/node.model';
+import { GraphNoteModel } from '../../core/models/node.model';
 
 @Component({
   selector: 'app-note-edit-dialog',
@@ -158,7 +158,7 @@ export class NoteEditDialogComponent implements OnInit {
 
   constructor(
     public dialogRef: DialogRef<{ content: string }>,
-    @Inject(DIALOG_DATA) public data: { node: NoteNodeModel },
+    @Inject(DIALOG_DATA) public data: { node: GraphNoteModel },
     private cdr: ChangeDetectorRef
   ) {}
 

@@ -68,7 +68,7 @@ from tables.models.graph_models import (
     GraphOrganization,
     GraphOrganizationUser,
     LLMNode,
-    NoteNode,
+    GraphNote,
     Organization,
     OrganizationUser,
     TelegramTriggerNode,
@@ -104,7 +104,7 @@ from tables.serializers.model_serializers import (
     AgentWriteSerializer,
     AudioTranscriptionNodeSerializer,
     ConditionalEdgeSerializer,
-    NoteNodeSerializer,
+    GraphNoteSerializer,
     ConditionGroupSerializer,
     ConditionSerializer,
     CrewNodeSerializer,
@@ -1172,9 +1172,9 @@ class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     serializer_class = TelegramTriggerNodeFieldSerializer
 
 
-class NoteNodeViewSet(ModelViewSet):
-    queryset = NoteNode.objects.all()
-    serializer_class = NoteNodeSerializer
+class GraphNoteViewSet(ModelViewSet):
+    queryset = GraphNote.objects.all()
+    serializer_class = GraphNoteSerializer
 
 
 class NgrokWebhookConfigViewSet(ModelViewSet):
