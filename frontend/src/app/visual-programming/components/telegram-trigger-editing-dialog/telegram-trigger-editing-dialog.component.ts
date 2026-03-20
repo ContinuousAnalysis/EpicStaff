@@ -1,24 +1,16 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-    OnInit,
-    signal
-} from "@angular/core";
-import {AppIconComponent} from "../../../shared/components/app-icon/app-icon.component";
-import {DIALOG_DATA, DialogRef} from "@angular/cdk/dialog";
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 
-import {SearchComponent} from "../../../shared/components/search/search.component";
-import {TelegramTriggerFieldsTableComponent} from "./fields-table/fields-table.component";
-import {JsonEditorComponent} from "../../../shared/components/json-editor/json-editor.component";
-import {
-    DisplayedTelegramField,
-} from "../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model";
-import {TELEGRAM_TRIGGER_FIELDS} from "../../core/constants/telegram-trigger-fields";
-import {ToastService} from "../../../services/notifications/toast.service";
-import {VARIABLE_PREFIX} from "../../core/constants/telegram-field-variable-path-prefix";
-import {MATERIAL_FORMS} from "../../../shared/material-forms";
+import { DisplayedTelegramField } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { ToastService } from '../../../services/notifications/toast.service';
+import { AppIconComponent } from '../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { JsonEditorComponent } from '../../../shared/components/json-editor/json-editor.component';
+import { SearchComponent } from '../../../shared/components/search/search.component';
+import { MATERIAL_FORMS } from '../../../shared/material-forms';
+import { VARIABLE_PREFIX } from '../../core/constants/telegram-field-variable-path-prefix';
+import { TELEGRAM_TRIGGER_FIELDS } from '../../core/constants/telegram-trigger-fields';
+import { TelegramTriggerFieldsTableComponent } from './fields-table/fields-table.component';
 
 export interface TableItem extends DisplayedTelegramField {
     checked: boolean;
@@ -30,12 +22,13 @@ export interface TableItem extends DisplayedTelegramField {
     styleUrls: ['./telegram-trigger-editing-dialog.component.scss'],
     imports: [
         AppIconComponent,
+        AppSvgIconComponent,
         SearchComponent,
         TelegramTriggerFieldsTableComponent,
         JsonEditorComponent,
         MATERIAL_FORMS,
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TelegramTriggerEditingDialogComponent implements OnInit {
     private dialogRef = inject(DialogRef);
@@ -47,17 +40,17 @@ export class TelegramTriggerEditingDialogComponent implements OnInit {
 
     checkedItems = computed<DisplayedTelegramField[]>(() => {
         return this.tableItems()
-            .filter(i => i.checked)
-            .map(({checked, ...rest}) => rest);
+            .filter((i) => i.checked)
+            .map(({ checked, ...rest }) => rest);
     });
 
     hasInvalidItems = computed(() => {
         const items = this.checkedItems();
-        return items.some(item => item.variable_path === VARIABLE_PREFIX);
+        return items.some((item) => item.variable_path === VARIABLE_PREFIX);
     });
 
     jsonValues = computed(() => {
-        const checkedItemsObj = this.checkedItems().reduce<Record<string, any>>((acc, field) => {
+        const checkedItemsObj = this.checkedItems().reduce<Record<string, unknown>>((acc, field) => {
             acc[field.field_name] = field.model;
             return acc;
         }, {});
@@ -65,12 +58,12 @@ export class TelegramTriggerEditingDialogComponent implements OnInit {
         return JSON.stringify(checkedItemsObj, null, 2);
     });
 
-    editorOptions: any = {
+    editorOptions: Record<string, unknown> = {
         lineNumbers: 'off',
         theme: 'vs-dark',
         language: 'json',
         automaticLayout: true,
-        minimap: {enabled: false},
+        minimap: { enabled: false },
         scrollBeyondLastLine: false,
         wordWrap: 'on',
         wrappingIndent: 'indent',
@@ -85,28 +78,26 @@ export class TelegramTriggerEditingDialogComponent implements OnInit {
     }
 
     setTableItems() {
-        const selectedFieldsMap = new Map(
-            this.selectedFields.map(f => [`${f.parent}:${f.field_name}`, f])
-        );
+        const selectedFieldsMap = new Map(this.selectedFields.map((f) => [`${f.parent}:${f.field_name}`, f]));
 
-        const messageFieldsTableItems: TableItem[] = TELEGRAM_TRIGGER_FIELDS.message.map(field => {
-            const selectedItem = selectedFieldsMap.get(`message:${field.field_name}`)
+        const messageFieldsTableItems: TableItem[] = TELEGRAM_TRIGGER_FIELDS.message.map((field) => {
+            const selectedItem = selectedFieldsMap.get(`message:${field.field_name}`);
             return {
                 ...field,
                 parent: 'message',
                 variable_path: selectedItem?.variable_path || VARIABLE_PREFIX,
                 checked: !!selectedItem,
-            }
+            };
         });
 
-        const callbackQueryFieldsTableItems: TableItem[] = TELEGRAM_TRIGGER_FIELDS.callback_query.map(field => {
-            const selectedItem = selectedFieldsMap.get(`callback_query:${field.field_name}`)
+        const callbackQueryFieldsTableItems: TableItem[] = TELEGRAM_TRIGGER_FIELDS.callback_query.map((field) => {
+            const selectedItem = selectedFieldsMap.get(`callback_query:${field.field_name}`);
             return {
                 ...field,
                 parent: 'callback_query',
                 variable_path: selectedItem?.variable_path || VARIABLE_PREFIX,
                 checked: !!selectedItem,
-            }
+            };
         });
         this.tableItems.set([...messageFieldsTableItems, ...callbackQueryFieldsTableItems]);
     }
@@ -121,7 +112,7 @@ export class TelegramTriggerEditingDialogComponent implements OnInit {
             return;
         }
 
-        const result = this.checkedItems().map(item => ({
+        const result = this.checkedItems().map((item) => ({
             parent: item.parent,
             field_name: item.field_name,
             variable_path: item.variable_path,
