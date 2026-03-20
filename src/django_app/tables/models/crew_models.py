@@ -113,15 +113,14 @@ class Agent(AbstractDefaultFillableModel):
     def fill_with_defaults(
         self, crew_id: int | None, crew_temperature: float | None = None
     ):
-        if self.llm_config is not None:
-            if self.default_temperature is not None:
-                self.llm_config.temperature = self.default_temperature
-            else:
-                if crew_temperature is None:
-                    crew_temperature = self.get_crew_temperature(crew_id=crew_id)
-                if crew_temperature is not None:
-                    self.llm_config.temperature = crew_temperature
-                # else uses llm temperature
+        if self.llm_config is not None and self.llm_config.temperature is None:
+            fallback = self.default_temperature
+            if fallback is None:
+                fallback = crew_temperature or self.get_crew_temperature(
+                    crew_id=crew_id
+                )
+            if fallback is not None:
+                self.llm_config.temperature = fallback
 
         super().fill_with_defaults()
 
