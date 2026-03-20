@@ -75,7 +75,7 @@ INSTALLED_APPS = [
     "tables",
     "rest_framework",
     "rest_framework_simplejwt",
-    "drf_yasg",
+    "drf_spectacular",
     "django_filters",
     "corsheaders",
     "django_redis",
@@ -97,6 +97,7 @@ MIDDLEWARE = [
 
 
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 500000,
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
@@ -262,3 +263,16 @@ TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
 
 WEBHOOK_HOST_NAME = os.getenv("WEBHOOK_HOST_NAME", "localhost")
 WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", 8009))
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "CrewAI SheetsUI API",
+    "VERSION": "v1",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,
+    },
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+        "django_app.spectacular_hooks.assign_tags_postprocessing_hook",
+    ],
+}

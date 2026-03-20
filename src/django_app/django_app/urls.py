@@ -23,6 +23,7 @@ from tables.views.auth_views import (
     TokenIntrospectView,
     ApiKeyValidateView,
     FirstSetupView,
+    SwaggerTokenView,
 )
 from .yasg import urlpatterns as doc_urls
 from django.conf import settings
@@ -43,6 +44,7 @@ urlpatterns = [
         name="api_key_validate",
     ),
     path("api/auth/first-setup/", FirstSetupView.as_view(), name="first_setup"),
+    path("api/auth/swagger-token/", SwaggerTokenView.as_view(), name="swagger_token"),
     path("api/", include("tables.urls")),
     path("ht/", include("health_check.urls")),
 ]

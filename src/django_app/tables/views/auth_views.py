@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 
 from tables.authentication import JwtOrApiKeyAuthentication
@@ -83,6 +84,28 @@ class ApiKeyValidateView(APIView):
                 else [],
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class SwaggerTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = TokenObtainPairSerializer(
+            data={
+                "username": request.data.get("username"),
+                "password": request.data.get("password"),
+            }
+        )
+        if not serializer.is_valid():
+            return Response(
+                {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+        return Response(
+            {
+                "access_token": serializer.validated_data["access"],
+                "token_type": "bearer",
+            }
         )
 
 

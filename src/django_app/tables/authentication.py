@@ -1,12 +1,29 @@
 from typing import Optional, Tuple
 
 from django.utils import timezone
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.request import Request
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from tables.models.auth_models import ApiKey
+
+
+class JwtOrApiKeyAuthenticationScheme(OpenApiAuthenticationExtension):
+    target_class = "tables.authentication.JwtOrApiKeyAuthentication"
+    name = "BearerAuth"
+
+    def get_security_definition(self, auto_schema):
+        return {
+            "type": "oauth2",
+            "flows": {
+                "password": {
+                    "tokenUrl": "/api/auth/swagger-token/",
+                    "scopes": {},
+                }
+            },
+        }
 
 
 def _get_header(request: Request, name: str) -> Optional[str]:
