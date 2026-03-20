@@ -69,3 +69,12 @@
         }
     }
 }
+
+.server-error {
+    color: var(--color-ks-status-failed);
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-ks-transparent-red);
+    border-radius: 6px;
+}

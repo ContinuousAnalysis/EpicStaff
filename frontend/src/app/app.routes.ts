@@ -1,39 +1,37 @@
 import { Routes } from '@angular/router';
-import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 
-import { CustomToolsComponent } from './features/tools/pages/tools-list-page/components/custom-tools/custom-tools.component';
-import { McpToolsComponent } from './features/tools/pages/tools-list-page/components/mcp-tools/mcp-tools.component';
-
-import { OpenProjectPageComponent } from './open-project-page/open-project-page.component';
-
-import { FlowVisualProgrammingComponent } from './pages/flows-page/components/flow-visual-programming/flow-visual-programming.component';
-import { StaffPageComponent } from './pages/staff-page/staff-page.component';
-import { RunningGraphComponent } from './pages/running-graph/pages/running-graph-page/running-graph-page.component';
-import { ChatsPageComponent } from './pages/chats-page/chats-page.component';
-
-import { ProjectsListPageComponent } from './features/projects/pages/projects-list-page/projects-list-page.component';
-import { MyProjectsComponent } from './features/projects/pages/projects-list-page/components/my-projects/my-projects.component';
-import { ProjectTemplatesComponent } from './features/projects/pages/projects-list-page/components/templates/project-templates.component';
-import { MyFlowsComponent } from './features/flows/pages/flows-list-page/components/my-flows/my-flows.component';
-import { FlowTemplatesComponent } from './features/flows/pages/flows-list-page/components/flow-templates/flow-templates.component';
-import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { authGuard } from './core/guards/auth.guard';
-import { ToolsListPageComponent } from './features/tools/pages/tools-list-page/tools-list-page.component';
-import { FlowsListPageComponent } from './features/flows/pages/flows-list-page/flows-list-page.component';
+import { guestGuard } from './core/guards/guest.guard';
+import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { LoginPageComponent } from './features/auth/components/login-page/login-page.component';
 import { SignUpPageComponent } from './features/auth/components/sign-up-page/sign-up-page.component';
-import {
-    CollectionsListPageComponent
-} from "./features/knowledge-sources/pages/collections-list-page/collections-list-page.component";
+import { FlowTemplatesComponent } from './features/flows/pages/flows-list-page/components/flow-templates/flow-templates.component';
+import { MyFlowsComponent } from './features/flows/pages/flows-list-page/components/my-flows/my-flows.component';
+import { FlowsListPageComponent } from './features/flows/pages/flows-list-page/flows-list-page.component';
+import { CollectionsListPageComponent } from './features/knowledge-sources/pages/collections-list-page/collections-list-page.component';
+import { MyProjectsComponent } from './features/projects/pages/projects-list-page/components/my-projects/my-projects.component';
+import { ProjectTemplatesComponent } from './features/projects/pages/projects-list-page/components/templates/project-templates.component';
+import { ProjectsListPageComponent } from './features/projects/pages/projects-list-page/projects-list-page.component';
+import { CustomToolsComponent } from './features/tools/pages/tools-list-page/components/custom-tools/custom-tools.component';
+import { McpToolsComponent } from './features/tools/pages/tools-list-page/components/mcp-tools/mcp-tools.component';
+import { ToolsListPageComponent } from './features/tools/pages/tools-list-page/tools-list-page.component';
+import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
+import { OpenProjectPageComponent } from './open-project-page/open-project-page.component';
+import { ChatsPageComponent } from './pages/chats-page/chats-page.component';
+import { FlowVisualProgrammingComponent } from './pages/flows-page/components/flow-visual-programming/flow-visual-programming.component';
+import { RunningGraphComponent } from './pages/running-graph/pages/running-graph-page/running-graph-page.component';
+import { StaffPageComponent } from './pages/staff-page/staff-page.component';
 
 export const routes: Routes = [
     {
         path: 'login',
         component: LoginPageComponent,
+        canActivate: [guestGuard],
     },
     {
         path: 'sign-up',
         component: SignUpPageComponent,
+        canActivate: [guestGuard],
     },
     {
         path: '',
