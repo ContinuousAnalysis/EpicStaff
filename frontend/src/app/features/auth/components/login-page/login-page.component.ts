@@ -1,56 +1,82 @@
-import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
     AppIconComponent,
     ButtonComponent,
+    CheckboxComponent,
     CustomInputComponent,
-    ValidationErrorsComponent
-} from "@shared/components";
+    ValidationErrorsComponent,
+} from '@shared/components';
+
 import { AuthService } from '../../../../services/auth/auth.service';
-import { CheckboxComponent } from "../../../../shared/components/checkbox/checkbox.component";
 
 @Component({
     selector: 'app-login-page',
-    standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, CustomInputComponent, ValidationErrorsComponent, ButtonComponent, AppIconComponent, CheckboxComponent],
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        CustomInputComponent,
+        ValidationErrorsComponent,
+        ButtonComponent,
+        AppIconComponent,
+        CheckboxComponent,
+    ],
     templateUrl: './login-page.component.html',
     styleUrls: ['./login-page.component.scss'],
 })
-export class LoginPageComponent {
+export class LoginPageComponent implements OnInit {
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
+    private readonly destroyRef = inject(DestroyRef);
 
     form = new FormGroup({
         username: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-        password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+        password: new FormControl('', {
+            nonNullable: true,
+            validators: [Validators.required, Validators.minLength(8)],
+        }),
+        rememberMe: new FormControl(false, { nonNullable: true }),
     });
 
     loading = false;
+    serverError = signal<string | null>('');
+
+    ngOnInit(): void {
+        this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.serverError.set(null);
+        });
+    }
 
     onSubmit(): void {
         if (this.form.invalid) return;
 
         this.loading = true;
+        this.serverError.set(null);
 
-        const { username, password } = this.form.getRawValue();
-        this.authService.login(username, password).subscribe({
-            next: () => {
-                const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/projects';
-                this.router.navigateByUrl(returnUrl);
-            },
-            error: () => {
-                this.loading = false;
-            },
-            complete: () => {
-                this.loading = false;
-            },
-        });
+        const { username, password, rememberMe } = this.form.getRawValue();
+        this.authService
+            .login(username, password, rememberMe)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/projects';
+                    void this.router.navigateByUrl(returnUrl);
+                },
+                error: (err) => {
+                    this.loading = false;
+                    this.serverError.set(err?.error?.message || 'Login failed. Please try again.');
+                },
+                complete: () => {
+                    this.loading = false;
+                },
+            });
     }
 
     navToSignUp(): void {
-        this.router.navigateByUrl('sign-up');
+        void this.router.navigateByUrl('sign-up');
     }
 }
