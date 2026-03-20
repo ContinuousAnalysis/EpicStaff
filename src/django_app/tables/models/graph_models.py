@@ -7,7 +7,12 @@ from django.db import models
 from django.utils import timezone
 from loguru import logger
 
-from tables.models.base_models import BaseGlobalNode, BaseGraphEntity, TimestampMixin
+from tables.models.base_models import (
+    BaseGlobalNode,
+    BaseGraphEntity,
+    TimestampMixin,
+    ContentHashMixin,
+)
 from tables.models.labels import Label
 
 
@@ -43,7 +48,7 @@ class Graph(TimestampMixin, models.Model):
     tags = models.ManyToManyField(to="GraphTag", blank=True, default=[])
     labels = models.ManyToManyField(Label, blank=True, related_name="flows")
 
-    name = models.CharField(max_length=255, blank=False)
+    name = models.CharField(max_length=255, blank=False, unique=True)
     description = models.TextField(blank=True)
     metadata = models.JSONField(default=dict)
     time_to_live = models.IntegerField(
@@ -86,6 +91,32 @@ class PythonNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="python_node_list"
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
+
+    def generate_hash(self):
+        """
+        Generates a SHA-256 hash.
+        """
+
+        excluded_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "content_hash",
+            "metadata",
+            "python_code",
+        ]
+
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        nested_python_code_hash = self.python_code.content_hash
+
+        data["python_code"] = nested_python_code_hash
+
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
 
 
 class FileExtractorNode(BaseNode):
@@ -191,6 +222,24 @@ class ConditionalEdge(BaseGraphEntity, BaseGlobalNode):
             )
         ]
 
+    def generate_hash(self):
+        excluded_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "content_hash",
+            "metadata",
+            "python_code",
+        ]
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        data["python_code"] = self.python_code.content_hash
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
+
     def clean(self):
         if not BaseGlobalNode.find_globally(self.source_node_id):
             raise ValidationError(
@@ -233,6 +282,19 @@ class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
     default_next_node_id = models.BigIntegerField(null=True, default=None)
     next_error_node_id = models.BigIntegerField(null=True, default=None)
 
+    def generate_hash(self):
+        excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        data["condition_groups"] = sorted(
+            cg.content_hash for cg in self.condition_groups.all() if cg.content_hash
+        )
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
+
     def clean(self):
         super().clean()
 
@@ -255,7 +317,7 @@ class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
                 )
 
 
-class ConditionGroup(models.Model):
+class ConditionGroup(ContentHashMixin, models.Model):
     decision_table_node = models.ForeignKey(
         "DecisionTableNode", on_delete=models.CASCADE, related_name="condition_groups"
     )
@@ -276,6 +338,19 @@ class ConditionGroup(models.Model):
         ]
         ordering = ["order"]
 
+    def generate_hash(self):
+        excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        data["conditions"] = sorted(
+            c.content_hash for c in self.conditions.all() if c.content_hash
+        )
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
+
     def clean(self):
         super().clean()
 
@@ -289,7 +364,7 @@ class ConditionGroup(models.Model):
                 )
 
 
-class Condition(models.Model):
+class Condition(ContentHashMixin, models.Model):
     condition_group = models.ForeignKey(
         "ConditionGroup", on_delete=models.CASCADE, related_name="conditions"
     )
@@ -408,6 +483,32 @@ class WebhookTriggerNode(BaseGraphEntity, BaseGlobalNode):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
 
+    def generate_hash(self):
+        """
+        Generates a SHA-256 hash.
+        """
+
+        excluded_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "content_hash",
+            "metadata",
+            "python_code",
+        ]
+
+        data = {
+            f.name: str(getattr(self, f.attname))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        nested_python_code_hash = self.python_code.content_hash
+
+        data["python_code"] = nested_python_code_hash
+
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
+
 
 class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
     node_name = models.CharField(max_length=255, blank=False)
@@ -424,8 +525,21 @@ class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
         related_name="telegram_trigger_nodes",
     )
 
+    def generate_hash(self):
+        excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
+        data = {
+            f.name: str(getattr(self, f.attname))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        data["fields"] = sorted(
+            field.content_hash for field in self.fields.all() if field.content_hash
+        )
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
 
-class TelegramTriggerNodeField(models.Model):
+
+class TelegramTriggerNodeField(ContentHashMixin, models.Model):
     telegram_trigger_node = models.ForeignKey(
         TelegramTriggerNode, on_delete=models.CASCADE, related_name="fields"
     )

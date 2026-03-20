@@ -4,7 +4,10 @@ from itertools import chain
 from django.db import transaction
 from loguru import logger
 
-from tables.serializers.base_serializer import BaseGraphEntityMixin
+from tables.serializers.base_serializer import (
+    BaseGraphEntityMixin,
+    ContentHashWritableMixin,
+)
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
 )
@@ -110,6 +113,7 @@ from tables.constants.variables_constants import (
     DOMAIN_USER_KEY,
     DOMAIN_PERSISTENT_KEY,
 )
+from tables.services.persistent_variables_service import PersistentVariablesService
 from tables.services.rag_assignment_service import (
     RagAssignmentService,
     SearchConfigService,
@@ -313,7 +317,7 @@ class ToolSerializer(serializers.ModelSerializer):
         ]
 
 
-class PythonCodeSerializer(serializers.ModelSerializer):
+class PythonCodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     libraries = serializers.ListField(
         child=serializers.CharField(),
         write_only=False,
@@ -1215,7 +1219,7 @@ class PythonCodeResultSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class CrewNodeSerializer(serializers.ModelSerializer):
+class CrewNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     crew = CrewSerializer(read_only=True)
     crew_id = serializers.IntegerField(write_only=True)
 
@@ -1235,7 +1239,7 @@ class CrewNodeSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class PythonNodeSerializer(serializers.ModelSerializer):
+class PythonNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
     class Meta:
@@ -1256,6 +1260,9 @@ class PythonNodeSerializer(serializers.ModelSerializer):
         # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
+            expected_hash = python_code_data.pop("content_hash", None)
+            if expected_hash is not None:
+                python_code._expected_hash = expected_hash
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
@@ -1272,19 +1279,23 @@ class PythonNodeSerializer(serializers.ModelSerializer):
         return self.update(instance, validated_data)
 
 
-class FileExtractorNodeSerializer(serializers.ModelSerializer):
+class FileExtractorNodeSerializer(
+    ContentHashWritableMixin, serializers.ModelSerializer
+):
     class Meta:
         model = FileExtractorNode
         fields = "__all__"
 
 
-class AudioTranscriptionNodeSerializer(serializers.ModelSerializer):
+class AudioTranscriptionNodeSerializer(
+    ContentHashWritableMixin, serializers.ModelSerializer
+):
     class Meta:
         model = AudioTranscriptionNode
         fields = "__all__"
 
 
-class LLMNodeSerializer(serializers.ModelSerializer):
+class LLMNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta:
         model = LLMNode
         fields = "__all__"
@@ -1295,13 +1306,13 @@ class LLMNodeSerializer(serializers.ModelSerializer):
         return data
 
 
-class EdgeSerializer(serializers.ModelSerializer):
+class EdgeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
         model = Edge
         fields = "__all__"
 
 
-class SubGraphNodeSerializer(serializers.ModelSerializer):
+class SubGraphNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
         model = SubGraphNode
         fields = "__all__"
@@ -1321,7 +1332,7 @@ class SubGraphNodeSerializer(serializers.ModelSerializer):
         return data
 
 
-class ConditionalEdgeSerializer(serializers.ModelSerializer):
+class ConditionalEdgeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1342,6 +1353,9 @@ class ConditionalEdgeSerializer(serializers.ModelSerializer):
         # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
+            expected_hash = python_code_data.pop("content_hash", None)
+            if expected_hash is not None:
+                python_code._expected_hash = expected_hash
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
@@ -1358,7 +1372,7 @@ class ConditionalEdgeSerializer(serializers.ModelSerializer):
         return self.update(instance, validated_data)
 
 
-class StartNodeSerializer(serializers.ModelSerializer):
+class StartNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1386,30 +1400,12 @@ class StartNodeSerializer(serializers.ModelSerializer):
             graph=instance.graph
         ).first()
 
-        if not graph_organization:
-            return instance
-
-        if self._should_update_persistent(
-            old_variables,
-            instance.variables,
-            graph_organization.persistent_variables or {},
-            DOMAIN_ORGANIZATION_KEY,
-        ):
-            graph_organization.persistent_variables = self._get_persistent_variables(
-                instance.variables, DOMAIN_ORGANIZATION_KEY
+        if graph_organization:
+            service = PersistentVariablesService()
+            service.sync_graph_organization(
+                graph_organization, old_variables, instance.variables
             )
 
-        if self._should_update_persistent(
-            old_variables,
-            instance.variables,
-            graph_organization.user_variables or {},
-            DOMAIN_USER_KEY,
-        ):
-            graph_organization.user_variables = self._get_persistent_variables(
-                instance.variables, DOMAIN_USER_KEY
-            )
-
-        graph_organization.save()
         return instance
 
     def validate(self, attrs):
@@ -1420,8 +1416,9 @@ class StartNodeSerializer(serializers.ModelSerializer):
         organization_variables = persistent_variables.get(DOMAIN_ORGANIZATION_KEY, [])
         user_variables = persistent_variables.get(DOMAIN_USER_KEY, [])
 
+        service = PersistentVariablesService()
         for path in organization_variables + user_variables:
-            value = self._get_by_path(actual_variables, path)
+            value = service.get_by_path(actual_variables, path)
             if value is None:
                 raise ValidationError(
                     f"Path {path} in {DOMAIN_PERSISTENT_KEY} does not exist in {DOMAIN_VARIABLES_KEY}."
@@ -1429,66 +1426,8 @@ class StartNodeSerializer(serializers.ModelSerializer):
 
         return super().validate(attrs)
 
-    def _should_update_persistent(
-        self, old_vars: dict, new_vars: dict, existing_persistent: dict, object_key: str
-    ) -> bool:
-        """
-        Check if we should update persistent storage:
-        1. If tracked paths changed
-        2. If persistent storage is empty but we have paths to track
-        """
-        old_paths = set(old_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
-        new_paths = set(new_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
 
-        if old_paths != new_paths:
-            return True
-        if new_paths and not existing_persistent:
-            return True
-
-        return False
-
-    def _get_persistent_variables(self, variables: dict, object_key: str) -> dict:
-        """
-        Extract multiple dot-paths from `variables` and merge them
-        into a single nested dict.
-        """
-        persistent_variables = variables.get(DOMAIN_PERSISTENT_KEY, {}).get(
-            object_key, []
-        )
-        if not persistent_variables:
-            return {}
-
-        result = {}
-        for path in persistent_variables:
-            actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
-            value = self._get_by_path(actual_variables, path)
-            if value is None:
-                continue
-            self._set_by_path(result, path, value)
-
-        return result
-
-    def _get_by_path(self, source: dict, path: str) -> dict | None:
-        """Get value from nested dict by dot-path. Returns None if path not found."""
-        current = source
-        try:
-            for key in path.split("."):
-                current = current[key]
-            return current
-        except (KeyError, TypeError):
-            return None
-
-    def _set_by_path(self, target: dict, path: str, value) -> None:
-        current = target
-        keys = path.split(".")
-
-        for key in keys[:-1]:
-            current = current.setdefault(key, {})
-
-        current[keys[-1]] = value
-
-
-class EndNodeSerializer(serializers.ModelSerializer):
+class EndNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1630,7 +1569,7 @@ class RealtimeAgentChatSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ConditionSerializer(serializers.ModelSerializer):
+class ConditionSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     condition_group = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -1638,7 +1577,7 @@ class ConditionSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ConditionGroupSerializer(serializers.ModelSerializer):
+class ConditionGroupSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     conditions = ConditionSerializer(many=True, required=False)
     decision_table_node = serializers.PrimaryKeyRelatedField(read_only=True)
 
@@ -1647,7 +1586,9 @@ class ConditionGroupSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class DecisionTableNodeSerializer(serializers.ModelSerializer):
+class DecisionTableNodeSerializer(
+    ContentHashWritableMixin, serializers.ModelSerializer
+):
     condition_groups = ConditionGroupSerializer(many=True, required=False)
 
     class Meta:

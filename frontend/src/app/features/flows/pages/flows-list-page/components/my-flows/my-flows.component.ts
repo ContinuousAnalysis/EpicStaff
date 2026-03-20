@@ -22,6 +22,7 @@ import { FlowsStorageService } from '../../../../services/flows-storage.service'
 import { LabelsStorageService } from '../../../../services/labels-storage.service';
 import { RunGraphService } from '../../../../services/run-graph-session.service';
 
+
 @Component({
     selector: 'app-my-flows',
     standalone: true,
@@ -32,7 +33,6 @@ import { RunGraphService } from '../../../../services/run-graph-session.service'
 })
 export class MyFlowsComponent {
     private readonly flowsService = inject(FlowsStorageService);
-    private readonly graphUpdateService = inject(GraphUpdateService);
     private readonly flowsApiService = inject(FlowsApiService);
     private readonly runGraphService = inject(RunGraphService);
     private readonly router = inject(Router);
@@ -114,7 +114,7 @@ export class MyFlowsComponent {
                 break;
 
             case 'copy':
-                this.openCopyDialog(flow);
+                // this.openCopyDialog(flow);
                 break;
 
             case 'export':
@@ -122,7 +122,7 @@ export class MyFlowsComponent {
                 break;
 
             default:
-                console.log(`Action '${action}' not implemented for flow:`, flow.id);
+                console.log(Action '${action}' not implemented for flow:, flow.id);
         }
     }
 
@@ -133,10 +133,10 @@ export class MyFlowsComponent {
                 if (result === true) {
                     this.flowsService.deleteFlow(flow.id).subscribe({
                         next: () => {
-                            console.log(`Flow ${flow.id} - ${flow.name} deleted successfully.`);
+                            console.log(Flow ${flow.id} - ${flow.name} deleted successfully.);
                         },
                         error: (err) => {
-                            console.error(`Error deleting flow ${flow.id} - ${flow.name}`, err);
+                            console.error(Error deleting flow ${flow.id} - ${flow.name}, err);
                         },
                     });
                 }
@@ -161,28 +161,16 @@ export class MyFlowsComponent {
             if (!result) return;
         });
     }
-    private saving(flowState: GraphDto['metadata'], graph: GraphDto): void {
-        this.graphUpdateService.saveGraph(flowState, graph).subscribe({
-            next: (result) => {
-                this.toastService.success(`Flow copied and saved as "${result.graph.name}"`);
-            },
-            error: (err) => {
-                this.toastService.error('Failed to save graph for copied flow');
-                console.error('Save graph error', err);
-            },
-        });
-    }
-
-    private openCopyDialog(flow: GetGraphLightRequest): void {
+    private openCopyDialog(flow: GraphDto): void {
         const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
-            data: { flowName: `${flow.name} Copy`, title: 'Copy Flow' },
+            data: { flowName: ${flow.name} Copy, title: 'Copy Flow' },
         });
 
         dialogRef.closed.subscribe((newName) => {
             if (newName && newName.trim().length > 0) {
                 this.flowsService.copyFlow(flow.id, newName.trim()).subscribe({
                     next: (graph) => {
-                        this.saving(graph.metadata, graph);
+                        this.toastService.success(Flow copied as "${graph.name}");
                     },
                     error: (err) => {
                         this.toastService.error('Failed to copy flow');
@@ -208,7 +196,7 @@ export class MyFlowsComponent {
                 }
             },
             error: (err) => {
-                console.error(`Error running flow ${flow.id}`, err);
+                console.error(Error running flow ${flow.id}, err);
 
                 // Extract error message from backend response
                 let errorMessage = 'Failed to run flow';
@@ -220,7 +208,7 @@ export class MyFlowsComponent {
                     errorMessage = err.message;
                 }
 
-                this.toastService.error(`Error running flow "${flow.name}": ${errorMessage}`);
+                this.toastService.error(Error running flow "${flow.name}": ${errorMessage});
             },
         });
     }
@@ -231,15 +219,15 @@ export class MyFlowsComponent {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${flow.name}_export_${Date.now()}.json`;
+                a.download = ${flow.name}_export_${Date.now()}.json;
                 a.click();
                 window.URL.revokeObjectURL(url);
 
-                this.toastService.success(`Flow "${flow.name}" exported successfully`);
+                this.toastService.success(Flow "${flow.name}" exported successfully);
             },
             error: (error) => {
                 console.error('Export failed:', error);
-                this.toastService.error(`Failed to export flow "${flow.name}"`);
+                this.toastService.error(Failed to export flow "${flow.name}");
             },
         });
     }
