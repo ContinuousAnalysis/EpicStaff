@@ -313,12 +313,11 @@
                             step="1"
                             discrete
                             [displayWith]="formatSearchLimitLabel"
-                            (input)="onSearchLimitChange($event)"
                         >
                             <input
                                 matSliderThumb
                                 [(ngModel)]="searchLimitControl.value"
-                                (ngModelChange)="searchLimitControl.setValue($event)"
+                                (ngModelChange)="onSearchLimitChange($event)"
                             />
                         </mat-slider>
                     </div>

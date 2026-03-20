@@ -290,8 +290,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         this.similarityThresholdControl.setValue(normalizedValue);
     }
 
-    public onSearchLimitChange(event: { value: number | null }): void {
-        const value = event.value;
+    public onSearchLimitChange(value: number | null): void {
         this.agentData.search_configs.naive.search_limit = value ?? null;
     }
 
