@@ -92222,13 +92222,25 @@ var ICONS = {
         <rect x="4" y="4" width="8" height="8" rx="1" fill="currentColor"/>
     </svg>`,
   "external-link": `<svg viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M4.22857 0C4.15284 0 4.08021 0.030102 4.02665 0.083659C3.97309 0.137216 3.94299 0.209846 3.94299 0.285577C3.94299 0.361309 3.97309 0.433939 4.02665 0.487496C4.08021 0.541053 4.15284 0.571155 4.22857 0.571155H4.87222L3.26454 2.17884C3.21393 2.23297 3.18649 2.30464 3.18781 2.37867C3.18913 2.4527 3.2191 2.52333 3.27162 2.57585C3.32414 2.62837 3.39477 2.65834 3.4688 2.65966C3.54284 2.66099 3.61451 2.63354 3.66864 2.58293L5.27633 0.975244V1.61889C5.27633 1.69462 5.30643 1.76725 5.35999 1.82081C5.41355 1.87436 5.48618 1.90446 5.56191 1.90446C5.63764 1.90446 5.71027 1.87436 5.76383 1.82081C5.81739 1.76725 5.84749 1.69462 5.84749 1.61889V0H4.22857ZM1.08578 1.14231V4.57116C1.08578 4.62167 1.10584 4.67011 1.14156 4.70583C1.17728 4.74155 1.22572 4.76161 1.27623 4.76161H4.70507C4.75558 4.76161 4.80402 4.74155 4.83974 4.70583C4.87546 4.67011 4.89552 4.62167 4.89552 4.57116V2.95224C4.89552 2.87651 4.92562 2.80388 4.97918 2.75032C5.03274 2.69677 5.10537 2.66666 5.1811 2.66666C5.25683 2.66666 5.32946 2.69677 5.38302 2.75032C5.43658 2.80388 5.46668 2.87651 5.46668 2.95224V4.57116C5.46668 4.77322 5.38642 4.96699 5.24355 5.10986C5.10069 5.25272 4.90691 5.33299 4.70485 5.33299H1.27623C1.07417 5.33299 0.880398 5.25272 0.737534 5.10986C0.59467 4.96699 0.514404 4.77322 0.514404 4.57116V1.14231C0.514404 0.940249 0.59467 0.746479 0.737534 0.603615C0.880398 0.460751 1.07417 0.380485 1.27623 0.380485H2.89515C2.97088 0.380485 3.04351 0.410586 3.09707 0.464143C3.15063 0.5177 3.18073 0.59033 3.18073 0.666062C3.18073 0.741794 3.15063 0.814424 3.09707 0.867981C3.04351 0.921538 2.97088 0.951639 2.89515 0.951639H1.27623C1.22572 0.951639 1.17728 0.971703 1.14156 1.00742C1.10584 1.04314 1.08578 1.0918 1.08578 1.14231Z" fill="currentColor"/>
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M5.57143 0C5.45776 1.69373e-09 5.34876 0.0451529 5.26838 0.125526C5.18801 0.205898 5.14286 0.314907 5.14286 0.428571C5.14286 0.542236 5.18801 0.651245 5.26838 0.731617C5.34876 0.81199 5.45776 0.857143 5.57143 0.857143H6.53714L4.12571 3.26857C4.05001 3.34981 4.0088 3.45727 4.01076 3.5683C4.01272 3.67933 4.05769 3.78526 4.13622 3.86378C4.21474 3.94231 4.32067 3.98728 4.4317 3.98924C4.54273 3.9912 4.65019 3.94999 4.73143 3.87429L7.14286 1.46286V2.42857C7.14286 2.54224 7.18801 2.65124 7.26838 2.73162C7.34876 2.81199 7.45776 2.85714 7.57143 2.85714C7.68509 2.85714 7.7941 2.81199 7.87447 2.73162C7.95485 2.65124 8 2.54224 8 2.42857V0H5.57143ZM0.857143 1.71429V6.85714C0.857143 6.93292 0.887245 7.00559 0.940827 7.05917C0.994409 7.11276 1.06708 7.14286 1.14286 7.14286H6.28571C6.36149 7.14286 6.43416 7.11276 6.48775 7.05917C6.54133 7.00559 6.57143 6.93292 6.57143 6.85714V4.42857C6.57143 4.31491 6.61658 4.2059 6.69695 4.12553C6.77733 4.04515 6.88634 4 7 4C7.11366 4 7.22267 4.04515 7.30305 4.12553C7.38342 4.2059 7.42857 4.31491 7.42857 4.42857V6.85714C7.42857 7.16025 7.30816 7.45094 7.09384 7.66527C6.87951 7.87959 6.58882 8 6.28571 8H1.14286C0.839753 8 0.549062 7.87959 0.334735 7.66527C0.120408 7.45094 0 7.16025 0 6.85714V1.71429C0 1.41118 0.120408 1.12049 0.334735 0.906164C0.549062 0.691836 0.839753 0.571429 1.14286 0.571429H3.57143C3.68509 0.571429 3.7941 0.616581 3.87447 0.696954C3.95485 0.777327 4 0.886336 4 1C4 1.11366 3.95485 1.22267 3.87447 1.30305C3.7941 1.38342 3.68509 1.42857 3.57143 1.42857H1.14286C1.06708 1.42857 0.994409 1.45867 0.940827 1.51226C0.887245 1.56584 0.857143 1.63851 0.857143 1.71429Z" fill="currentColor"/>
     </svg>`,
   reset: `<svg viewBox="0 0 9 10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M4.47858 1.70563V0.259888C4.47858 0.0267044 4.17356 -0.0872965 3.99846 0.078523L1.85201 2.04245C1.73904 2.14608 1.73904 2.30672 1.85201 2.41036L3.99281 4.37428C4.17356 4.53492 4.47858 4.42092 4.47858 4.18774V2.742C6.58549 2.742 8.25181 4.51419 7.78863 6.51957C7.52315 7.69585 6.48381 8.64413 5.20724 8.88768C3.19071 9.27632 1.39448 8.00677 1.12335 6.29157C1.08381 6.04284 0.846569 5.85111 0.56979 5.85111C0.230878 5.85111 -0.0402521 6.12575 0.00493622 6.43666C0.355146 8.7115 2.71624 10.3956 5.388 9.91887C7.15034 9.60278 8.56813 8.30213 8.91269 6.68539C9.47189 4.0271 7.26896 1.70563 4.47858 1.70563Z" fill="currentColor"/>
     </svg>`,
   download: `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M11.333 6.0957C11.6997 6.0957 12 6.39115 12 6.75195V10.6885C11.9997 11.4098 11.4 11.9998 10.667 12H1.33301C0.599988 11.9998 0.000270417 11.4098 0 10.6885V6.75195C9.25123e-07 6.39115 0.300326 6.0957 0.666992 6.0957C1.03351 6.09588 1.33301 6.39126 1.33301 6.75195V10.0322C1.33314 10.3929 1.63342 10.6885 2 10.6885H10C10.3666 10.6885 10.6669 10.3929 10.667 10.0322V6.75195C10.667 6.39126 10.9665 6.09588 11.333 6.0957ZM5.94531 0C6.31184 0.000168041 6.61133 0.295549 6.61133 0.65625V6.34375L7.86523 5.11035C8.12521 4.8546 8.5447 4.85463 8.80469 5.11035C9.06469 5.36619 9.06469 5.77931 8.80469 6.03516L6.41211 8.39062C6.15217 8.64641 5.73169 8.64629 5.47168 8.39062L3.07812 6.03516C2.81831 5.77936 2.81833 5.36616 3.07812 5.11035C3.33812 4.85451 3.75855 4.85451 4.01855 5.11035L5.27832 6.34375V0.65625C5.27832 0.295446 5.57865 0 5.94531 0Z" fill="currentColor"/>
+    </svg>`,
+  document: `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.2041 0.01074C11.2128 0.113 12 0.96435 12 2V10L11.9893 10.2041C11.8938 11.1457 11.1457 11.8938 10.2041 11.9893L10 12H2C0.9643 12 0.113 11.2128 0.0107 10.2041L0 10V2C0 0.89543 0.8954 0 2 0H10L10.2041 0.01074ZM2 1C1.4477 1 1 1.44772 1 2V10C1 10.5523 1.4477 11 2 11H10C10.5523 11 11 10.5523 11 10V2C11 1.44772 10.5523 1 10 1H2ZM6.9375 8.25H2.25V7.25H6.9375V8.25ZM9.75 6H2.25V5H9.75V6ZM9.75 3.75H2.25V2.75H9.75V3.75Z" fill="currentColor"/>
+    </svg>`,
+  tools: `<svg viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6.27734 4.44434C7.28968 4.44434 8.11104 5.26507 8.11133 6.27734C8.11133 7.28987 7.28987 8.11133 6.27734 8.11133C5.4385 8.11108 4.73332 7.54668 4.51562 6.77734H0.944336C0.668293 6.77723 0.444336 6.55341 0.444336 6.27734C0.444629 6.00152 0.668474 5.77746 0.944336 5.77734H4.51562C4.73356 5.00854 5.43878 4.44458 6.27734 4.44434ZM6.27734 5.44434C5.81754 5.44463 5.44463 5.81754 5.44434 6.27734C5.44434 6.7374 5.81736 7.11103 6.27734 7.11133C6.73758 7.11133 7.11133 6.73758 7.11133 6.27734C7.11103 5.81736 6.7374 5.44434 6.27734 5.44434ZM1.83301 0C2.67192 0 3.37863 0.563894 3.59668 1.33301H7.16699C7.44279 1.33324 7.66676 1.55721 7.66699 1.83301C7.66699 2.10901 7.44293 2.33277 7.16699 2.33301H3.59668C3.37881 3.10256 2.67212 3.66699 1.83301 3.66699C0.820685 3.66676 0 2.84539 0 1.83301C0.000234486 0.82083 0.82083 0.000234486 1.83301 0ZM1.83301 1C1.37311 1.00023 1.00023 1.37311 1 1.83301C1 2.2931 1.37297 2.66676 1.83301 2.66699C2.29325 2.66699 2.66699 2.29325 2.66699 1.83301C2.66676 1.37297 2.2931 1 1.83301 1Z" fill="currentColor"/>
+    </svg>`,
+  "web-lock": `<svg viewBox="0 0 6 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4.875 3.20221V2.00276C4.875 2.00276 4.875 0.00368282 3 0.00368282C2.56184 -0.0258186 2.12946 0.122753 1.78991 0.419487C1.45037 0.716222 1.22887 1.13908 1.17 1.60295H1.92C1.99125 1.17514 2.25 0.803315 3 0.803315C4.125 0.803315 4.125 1.60295 4.125 2.20267V3.20221H0.72375C0.5318 3.20221 0.347711 3.28351 0.211982 3.42822C0.0762521 3.57293 0 3.7692 0 3.97385V7.23235C0.000991205 7.43631 0.0776806 7.63156 0.213303 7.77541C0.348925 7.91925 0.532448 8 0.72375 8H5.27625C5.4682 8 5.65229 7.9187 5.78802 7.77399C5.92375 7.62928 6 7.43301 6 7.22836V3.97385C6 3.7692 5.92375 3.57293 5.78802 3.42822C5.65229 3.28351 5.4682 3.20221 5.27625 3.20221H4.875ZM3 6.40074C2.85166 6.40074 2.70666 6.35384 2.58332 6.26597C2.45999 6.17811 2.36386 6.05322 2.30709 5.90711C2.25032 5.761 2.23547 5.60022 2.26441 5.44511C2.29335 5.28999 2.36478 5.14751 2.46967 5.03568C2.57456 4.92385 2.7082 4.84769 2.85368 4.81684C2.99917 4.78598 3.14997 4.80182 3.287 4.86234C3.42406 4.92286 3.54119 5.02535 3.6236 5.15685C3.70601 5.28835 3.75 5.44295 3.75 5.60111C3.75 5.81318 3.67098 6.01657 3.53033 6.16653C3.38968 6.31649 3.19891 6.40074 3 6.40074Z" fill="currentColor"/>
+    </svg>`,
+  "triangle-right": `<svg viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 8V0L6 4L2 8Z" fill="currentColor"/>
     </svg>`
 };
 var _IconComponent = class _IconComponent {
@@ -92279,7 +92291,7 @@ var IconComponent = _IconComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(IconComponent, { className: "IconComponent", filePath: "src/app/components/shared/icon/icon.component.ts", lineNumber: 95 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(IconComponent, { className: "IconComponent", filePath: "src/app/components/shared/icon/icon.component.ts", lineNumber: 111 });
 })();
 
 // src/app/components/shared/button/button.component.ts
@@ -92569,7 +92581,7 @@ function MessageTableComponent_Conditional_0_ng_template_16_Conditional_2_Templa
   if (rf & 2) {
     const column_r8 = \u0275\u0275nextContext().column;
     const ctx_r2 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction1(2, _c44, ctx_r2.currentSortField === column_r8.key ? "var(--ep-color-accent)" : "var(--ep-color-text-muted)"));
+    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction1(2, _c44, ctx_r2.currentSortField === column_r8.key ? "var(--ep-color-accent)" : "var(--ep-table-cell-text)"));
     \u0275\u0275advance();
     \u0275\u0275textInterpolate1(" ", column_r8.title || column_r8.key, " ");
   }
@@ -94565,7 +94577,7 @@ _MessageTableComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
   ButtonComponent,
   MessageTableCellComponent,
   MessageTableColumnsConfigurationComponent
-], styles: ["\n\n.ep-message-table[_ngcontent-%COMP%] {\n  padding: 0;\n  width: 100%;\n  max-width: 100%;\n  overflow: visible;\n  --ep-button-secondary-text: var(--ep-color-text-muted);\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n}\n.ep-message-table__header-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  margin-bottom: 8px;\n}\n.ep-message-table__header-bar-left[_ngcontent-%COMP%], \n.ep-message-table__header-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.ep-message-table__header-bar-right[_ngcontent-%COMP%] {\n  position: relative;\n}\n.ep-message-table__manage[_ngcontent-%COMP%] {\n  position: relative;\n}\n.ep-message-table__manage-menu[_ngcontent-%COMP%] {\n  top: calc(100% + 4px);\n  right: 0;\n}\n.ep-message-table__footer[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message-table__selection-th[_ngcontent-%COMP%] {\n  width: 40px;\n  min-width: 40px;\n}\n.ep-message-table__scroll[_ngcontent-%COMP%] {\n  width: 100%;\n  overflow: auto;\n}\n.ep-message-table__container[_ngcontent-%COMP%] {\n  border-collapse: collapse;\n  font-size: 14px;\n  text-align: left;\n  width: max-content;\n  max-width: 100%;\n}\n.ep-message-table[_ngcontent-%COMP%]   th[_ngcontent-%COMP%] {\n  color: var(--ep-table-header-text);\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-table-border);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table[_ngcontent-%COMP%]   th[_ngcontent-%COMP%]:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table[_ngcontent-%COMP%]   td[_ngcontent-%COMP%] {\n  max-width: 300px;\n  padding: 0 8px !important;\n  border: 1px solid var(--ep-table-border);\n  line-height: 20px;\n  font-size: 14px;\n  color: var(--ep-table-cell-text);\n  background: var(--ep-table-row-bg);\n  height: 40px;\n  vertical-align: middle;\n}\n.ep-message-table[_ngcontent-%COMP%]   td[_ngcontent-%COMP%]:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table[_ngcontent-%COMP%]   tbody[_ngcontent-%COMP%]   tr[_ngcontent-%COMP%]:nth-child(even)   td[_ngcontent-%COMP%] {\n  background: var(--ep-table-row-alt-bg);\n}\n.ep-message-table[_ngcontent-%COMP%]   tbody[_ngcontent-%COMP%]   tr[_ngcontent-%COMP%]:hover   td[_ngcontent-%COMP%] {\n  background-color: var(--ep-table-row-hover-bg);\n}\n.ep-message-table__title[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  width: 100%;\n  height: 100%;\n  min-width: auto;\n  cursor: pointer;\n  font-weight: 600;\n}\n.ep-message-table__title-changed[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title-editor[_ngcontent-%COMP%] {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: 13px;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n}\n.ep-message-table__sort-arrow[_ngcontent-%COMP%] {\n  margin-left: auto;\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: opacity 0.2s ease;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n}\n.ep-message-table__sort-arrow[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.ep-message-table__default-cell[_ngcontent-%COMP%] {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n}\n.ep-message-table__cell-disabled[_ngcontent-%COMP%] {\n  opacity: 0.7;\n  cursor: default;\n}\n.ep-message-table__cell-changed[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__union-error[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-danger-soft);\n}\n.ep-message-table__cell-editor[_ngcontent-%COMP%] {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: inherit;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n  box-shadow: none;\n}\n.ep-message-table__settings[_ngcontent-%COMP%] {\n  border: 1px solid var(--ep-color-border);\n  background: var(--ep-color-surface);\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  cursor: pointer;\n}\n.ep-message-table__columns-trigger[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n}\n.ep-message-table__union-title[_ngcontent-%COMP%] {\n  text-align: center;\n  font-weight: 600;\n  font-size: 13px;\n  color: var(--ep-table-header-text);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table__align-right[_ngcontent-%COMP%] {\n  text-align: right;\n}\n.ep-message-table__show-more[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 4px;\n  cursor: pointer;\n  font-size: 13px;\n  color: var(--ep-color-accent);\n  padding: 8px;\n  justify-content: center;\n}\n.ep-message-table__show-more[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message-table__delete-icon[_ngcontent-%COMP%] {\n  display: none;\n  cursor: pointer;\n  transition: opacity 0.2s ease;\n  justify-content: center;\n  align-items: center;\n  background: none;\n  border: none;\n  padding: 0;\n}\n.ep-message-table__delete-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.ep-message-table__selection-cell[_ngcontent-%COMP%] {\n  width: 40px;\n  min-width: 40px;\n  text-align: center;\n  position: relative;\n}\n.ep-message-table__selection-cell[_ngcontent-%COMP%]:hover   .ep-message-table__delete-icon[_ngcontent-%COMP%] {\n  display: flex;\n}\n.ep-message-table__radio[_ngcontent-%COMP%], \n.ep-message-table__checkbox[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.ep-message-table__columns-dropdown[_ngcontent-%COMP%] {\n  position: fixed;\n  top: 0;\n  left: 0;\n  z-index: 1000;\n}\n.ep-message-table__error[_ngcontent-%COMP%] {\n  padding: 10px;\n  color: var(--ep-color-danger);\n  font-size: 14px;\n  background-color: var(--ep-color-danger-soft);\n  border: 1px solid var(--ep-color-danger-border);\n  border-radius: 4px;\n  margin: 10px 0;\n}\n/*# sourceMappingURL=message-table.component.css.map */"], changeDetection: 0 });
+], styles: ["\n\n.ep-message-table[_ngcontent-%COMP%] {\n  padding: 0;\n  width: 100%;\n  max-width: 100%;\n  overflow: visible;\n  --ep-button-secondary-text: var(--ep-color-text-muted);\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n}\n.ep-message-table__header-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  margin-bottom: 8px;\n}\n.ep-message-table__header-bar-left[_ngcontent-%COMP%], \n.ep-message-table__header-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.ep-message-table__header-bar-right[_ngcontent-%COMP%] {\n  position: relative;\n}\n.ep-message-table__manage[_ngcontent-%COMP%] {\n  position: relative;\n}\n.ep-message-table__manage-menu[_ngcontent-%COMP%] {\n  top: calc(100% + 4px);\n  right: 0;\n}\n.ep-message-table__footer[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message-table__selection-th[_ngcontent-%COMP%] {\n  width: 40px;\n  min-width: 40px;\n}\n.ep-message-table__scroll[_ngcontent-%COMP%] {\n  width: 100%;\n  overflow: auto;\n}\n.ep-message-table__container[_ngcontent-%COMP%] {\n  border-collapse: collapse;\n  font-size: 14px;\n  text-align: left;\n  width: max-content;\n  max-width: 100%;\n}\n.ep-message-table[_ngcontent-%COMP%]   th[_ngcontent-%COMP%] {\n  color: var(--ep-table-cell-text);\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-table-border);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table[_ngcontent-%COMP%]   th[_ngcontent-%COMP%]:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table[_ngcontent-%COMP%]   td[_ngcontent-%COMP%] {\n  max-width: 300px;\n  padding: 0 8px !important;\n  border: 1px solid var(--ep-table-border);\n  line-height: 20px;\n  font-size: 12px;\n  color: var(--ep-table-cell-text);\n  background: var(--ep-table-row-bg);\n  height: 40px;\n  vertical-align: middle;\n}\n.ep-message-table[_ngcontent-%COMP%]   td[_ngcontent-%COMP%]:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table[_ngcontent-%COMP%]   tbody[_ngcontent-%COMP%]   tr[_ngcontent-%COMP%]:nth-child(even)   td[_ngcontent-%COMP%] {\n  background: var(--ep-table-row-alt-bg);\n}\n.ep-message-table[_ngcontent-%COMP%]   tbody[_ngcontent-%COMP%]   tr[_ngcontent-%COMP%]:hover   td[_ngcontent-%COMP%] {\n  background-color: var(--ep-table-row-hover-bg);\n}\n.ep-message-table__title[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 8px;\n  font-size: 14px;\n  line-height: 18px;\n  text-align: left;\n  width: 100%;\n  height: 100%;\n  min-width: auto;\n  cursor: pointer;\n  font-weight: 400;\n}\n.ep-message-table__title-changed[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title-editor[_ngcontent-%COMP%] {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: 14px;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n}\n.ep-message-table__sort-arrow[_ngcontent-%COMP%] {\n  margin-left: auto;\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: opacity 0.2s ease;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n}\n.ep-message-table__sort-arrow[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.ep-message-table__default-cell[_ngcontent-%COMP%] {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n}\n.ep-message-table__cell-disabled[_ngcontent-%COMP%] {\n  opacity: 0.7;\n  cursor: default;\n}\n.ep-message-table__cell-changed[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__union-error[_ngcontent-%COMP%] {\n  background-color: var(--ep-color-danger-soft);\n}\n.ep-message-table__cell-editor[_ngcontent-%COMP%] {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: inherit;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n  box-shadow: none;\n}\n.ep-message-table__settings[_ngcontent-%COMP%] {\n  border: 1px solid var(--ep-color-border);\n  background: var(--ep-color-surface);\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  cursor: pointer;\n}\n.ep-message-table__columns-trigger[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n}\n.ep-message-table__union-title[_ngcontent-%COMP%] {\n  text-align: center;\n  font-size: 14px;\n  color: var(--ep-table-cell-text);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table__align-right[_ngcontent-%COMP%] {\n  text-align: right;\n}\n.ep-message-table__show-more[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 4px;\n  cursor: pointer;\n  font-size: 13px;\n  color: var(--ep-color-accent);\n  padding: 8px;\n  justify-content: center;\n}\n.ep-message-table__show-more[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message-table__delete-icon[_ngcontent-%COMP%] {\n  display: none;\n  cursor: pointer;\n  transition: opacity 0.2s ease;\n  justify-content: center;\n  align-items: center;\n  background: none;\n  border: none;\n  padding: 0;\n}\n.ep-message-table__delete-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.ep-message-table__selection-cell[_ngcontent-%COMP%] {\n  width: 40px;\n  min-width: 40px;\n  text-align: center;\n  position: relative;\n}\n.ep-message-table__selection-cell[_ngcontent-%COMP%]:hover   .ep-message-table__delete-icon[_ngcontent-%COMP%] {\n  display: flex;\n}\n.ep-message-table__radio[_ngcontent-%COMP%], \n.ep-message-table__checkbox[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.ep-message-table__columns-dropdown[_ngcontent-%COMP%] {\n  position: fixed;\n  top: 0;\n  left: 0;\n  z-index: 1000;\n}\n.ep-message-table__error[_ngcontent-%COMP%] {\n  padding: 10px;\n  color: var(--ep-color-danger);\n  font-size: 14px;\n  background-color: var(--ep-color-danger-soft);\n  border: 1px solid var(--ep-color-danger-border);\n  border-radius: 4px;\n  margin: 10px 0;\n}\n/*# sourceMappingURL=message-table.component.css.map */"], changeDetection: 0 });
 var MessageTableComponent = _MessageTableComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MessageTableComponent, [{
@@ -94652,7 +94664,7 @@ var MessageTableComponent = _MessageTableComponent;
                     color:
                       currentSortField === column.key
                         ? 'var(--ep-color-accent)'
-                        : 'var(--ep-color-text-muted)',
+                        : 'var(--ep-table-cell-text)',
                   }"
                 >
                   {{ column.title || column.key }}
@@ -94831,7 +94843,7 @@ var MessageTableComponent = _MessageTableComponent;
 } @else {
   <div class="ep-message-table__error">Table data is missing or invalid</div>
 }
-`, styles: ["/* src/app/components/message-table/message-table.component.scss */\n.ep-message-table {\n  padding: 0;\n  width: 100%;\n  max-width: 100%;\n  overflow: visible;\n  --ep-button-secondary-text: var(--ep-color-text-muted);\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n}\n.ep-message-table__header-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  margin-bottom: 8px;\n}\n.ep-message-table__header-bar-left,\n.ep-message-table__header-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.ep-message-table__header-bar-right {\n  position: relative;\n}\n.ep-message-table__manage {\n  position: relative;\n}\n.ep-message-table__manage-menu {\n  top: calc(100% + 4px);\n  right: 0;\n}\n.ep-message-table__footer {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message-table__selection-th {\n  width: 40px;\n  min-width: 40px;\n}\n.ep-message-table__scroll {\n  width: 100%;\n  overflow: auto;\n}\n.ep-message-table__container {\n  border-collapse: collapse;\n  font-size: 14px;\n  text-align: left;\n  width: max-content;\n  max-width: 100%;\n}\n.ep-message-table th {\n  color: var(--ep-table-header-text);\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-table-border);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table th:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table td {\n  max-width: 300px;\n  padding: 0 8px !important;\n  border: 1px solid var(--ep-table-border);\n  line-height: 20px;\n  font-size: 14px;\n  color: var(--ep-table-cell-text);\n  background: var(--ep-table-row-bg);\n  height: 40px;\n  vertical-align: middle;\n}\n.ep-message-table td:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table tbody tr:nth-child(even) td {\n  background: var(--ep-table-row-alt-bg);\n}\n.ep-message-table tbody tr:hover td {\n  background-color: var(--ep-table-row-hover-bg);\n}\n.ep-message-table__title {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  width: 100%;\n  height: 100%;\n  min-width: auto;\n  cursor: pointer;\n  font-weight: 600;\n}\n.ep-message-table__title-changed {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title-editor {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: 13px;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n}\n.ep-message-table__sort-arrow {\n  margin-left: auto;\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: opacity 0.2s ease;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n}\n.ep-message-table__sort-arrow img {\n  width: 16px;\n  height: 16px;\n}\n.ep-message-table__default-cell {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n}\n.ep-message-table__cell-disabled {\n  opacity: 0.7;\n  cursor: default;\n}\n.ep-message-table__cell-changed {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__union-error {\n  background-color: var(--ep-color-danger-soft);\n}\n.ep-message-table__cell-editor {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: inherit;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n  box-shadow: none;\n}\n.ep-message-table__settings {\n  border: 1px solid var(--ep-color-border);\n  background: var(--ep-color-surface);\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  cursor: pointer;\n}\n.ep-message-table__columns-trigger {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n}\n.ep-message-table__union-title {\n  text-align: center;\n  font-weight: 600;\n  font-size: 13px;\n  color: var(--ep-table-header-text);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table__align-right {\n  text-align: right;\n}\n.ep-message-table__show-more {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 4px;\n  cursor: pointer;\n  font-size: 13px;\n  color: var(--ep-color-accent);\n  padding: 8px;\n  justify-content: center;\n}\n.ep-message-table__show-more:hover {\n  text-decoration: underline;\n}\n.ep-message-table__delete-icon {\n  display: none;\n  cursor: pointer;\n  transition: opacity 0.2s ease;\n  justify-content: center;\n  align-items: center;\n  background: none;\n  border: none;\n  padding: 0;\n}\n.ep-message-table__delete-icon:hover {\n  opacity: 0.7;\n}\n.ep-message-table__selection-cell {\n  width: 40px;\n  min-width: 40px;\n  text-align: center;\n  position: relative;\n}\n.ep-message-table__selection-cell:hover .ep-message-table__delete-icon {\n  display: flex;\n}\n.ep-message-table__radio,\n.ep-message-table__checkbox {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.ep-message-table__columns-dropdown {\n  position: fixed;\n  top: 0;\n  left: 0;\n  z-index: 1000;\n}\n.ep-message-table__error {\n  padding: 10px;\n  color: var(--ep-color-danger);\n  font-size: 14px;\n  background-color: var(--ep-color-danger-soft);\n  border: 1px solid var(--ep-color-danger-border);\n  border-radius: 4px;\n  margin: 10px 0;\n}\n/*# sourceMappingURL=message-table.component.css.map */\n"] }]
+`, styles: ["/* src/app/components/message-table/message-table.component.scss */\n.ep-message-table {\n  padding: 0;\n  width: 100%;\n  max-width: 100%;\n  overflow: visible;\n  --ep-button-secondary-text: var(--ep-color-text-muted);\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n}\n.ep-message-table__header-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  margin-bottom: 8px;\n}\n.ep-message-table__header-bar-left,\n.ep-message-table__header-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.ep-message-table__header-bar-right {\n  position: relative;\n}\n.ep-message-table__manage {\n  position: relative;\n}\n.ep-message-table__manage-menu {\n  top: calc(100% + 4px);\n  right: 0;\n}\n.ep-message-table__footer {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message-table__selection-th {\n  width: 40px;\n  min-width: 40px;\n}\n.ep-message-table__scroll {\n  width: 100%;\n  overflow: auto;\n}\n.ep-message-table__container {\n  border-collapse: collapse;\n  font-size: 14px;\n  text-align: left;\n  width: max-content;\n  max-width: 100%;\n}\n.ep-message-table th {\n  color: var(--ep-table-cell-text);\n  padding: 6px 8px !important;\n  border: 1px solid var(--ep-table-border);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table th:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table td {\n  max-width: 300px;\n  padding: 0 8px !important;\n  border: 1px solid var(--ep-table-border);\n  line-height: 20px;\n  font-size: 12px;\n  color: var(--ep-table-cell-text);\n  background: var(--ep-table-row-bg);\n  height: 40px;\n  vertical-align: middle;\n}\n.ep-message-table td:not(:last-child) {\n  border-right: 1px solid var(--ep-table-column-divider);\n}\n.ep-message-table tbody tr:nth-child(even) td {\n  background: var(--ep-table-row-alt-bg);\n}\n.ep-message-table tbody tr:hover td {\n  background-color: var(--ep-table-row-hover-bg);\n}\n.ep-message-table__title {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 8px;\n  font-size: 14px;\n  line-height: 18px;\n  text-align: left;\n  width: 100%;\n  height: 100%;\n  min-width: auto;\n  cursor: pointer;\n  font-weight: 400;\n}\n.ep-message-table__title-changed {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__title-editor {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: 14px;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n}\n.ep-message-table__sort-arrow {\n  margin-left: auto;\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: opacity 0.2s ease;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n}\n.ep-message-table__sort-arrow img {\n  width: 16px;\n  height: 16px;\n}\n.ep-message-table__default-cell {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n}\n.ep-message-table__cell-disabled {\n  opacity: 0.7;\n  cursor: default;\n}\n.ep-message-table__cell-changed {\n  background-color: var(--ep-color-accent-soft);\n}\n.ep-message-table__union-error {\n  background-color: var(--ep-color-danger-soft);\n}\n.ep-message-table__cell-editor {\n  width: 100%;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  padding: 2px 4px;\n  font-size: inherit;\n  color: inherit;\n  background: var(--ep-color-surface);\n  box-sizing: border-box;\n  outline: none;\n  box-shadow: none;\n}\n.ep-message-table__settings {\n  border: 1px solid var(--ep-color-border);\n  background: var(--ep-color-surface);\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  cursor: pointer;\n}\n.ep-message-table__columns-trigger {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n}\n.ep-message-table__union-title {\n  text-align: center;\n  font-size: 14px;\n  color: var(--ep-table-cell-text);\n  background: var(--ep-table-header-bg);\n}\n.ep-message-table__align-right {\n  text-align: right;\n}\n.ep-message-table__show-more {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  gap: 4px;\n  cursor: pointer;\n  font-size: 13px;\n  color: var(--ep-color-accent);\n  padding: 8px;\n  justify-content: center;\n}\n.ep-message-table__show-more:hover {\n  text-decoration: underline;\n}\n.ep-message-table__delete-icon {\n  display: none;\n  cursor: pointer;\n  transition: opacity 0.2s ease;\n  justify-content: center;\n  align-items: center;\n  background: none;\n  border: none;\n  padding: 0;\n}\n.ep-message-table__delete-icon:hover {\n  opacity: 0.7;\n}\n.ep-message-table__selection-cell {\n  width: 40px;\n  min-width: 40px;\n  text-align: center;\n  position: relative;\n}\n.ep-message-table__selection-cell:hover .ep-message-table__delete-icon {\n  display: flex;\n}\n.ep-message-table__radio,\n.ep-message-table__checkbox {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.ep-message-table__columns-dropdown {\n  position: fixed;\n  top: 0;\n  left: 0;\n  z-index: 1000;\n}\n.ep-message-table__error {\n  padding: 10px;\n  color: var(--ep-color-danger);\n  font-size: 14px;\n  background-color: var(--ep-color-danger-soft);\n  border: 1px solid var(--ep-color-danger-border);\n  border-radius: 4px;\n  margin: 10px 0;\n}\n/*# sourceMappingURL=message-table.component.css.map */\n"] }]
   }], () => [{ type: TooltipService }, { type: ChangeDetectorRef }], { message: [{
     type: Input
   }], columns: [{
@@ -94879,9 +94891,9 @@ var MessageTableComponent = _MessageTableComponent;
 function ThinkingExpanderComponent_Conditional_0_Conditional_5_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275text(0);
-    \u0275\u0275domElementStart(1, "span", 6);
+    \u0275\u0275elementStart(1, "span", 7);
     \u0275\u0275text(2);
-    \u0275\u0275domElementEnd();
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext(2);
@@ -94901,9 +94913,9 @@ function ThinkingExpanderComponent_Conditional_0_Conditional_6_Template(rf, ctx)
 }
 function ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Conditional_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275domElementStart(0, "div", 11);
+    \u0275\u0275elementStart(0, "div", 12);
     \u0275\u0275text(1);
-    \u0275\u0275domElementEnd();
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const entry_r5 = \u0275\u0275nextContext().$implicit;
@@ -94914,27 +94926,29 @@ function ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Conditional
 function ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275domElementStart(0, "div", 7)(1, "button", 8);
-    \u0275\u0275domListener("click", function ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Template_button_click_1_listener() {
+    \u0275\u0275elementStart(0, "div", 8)(1, "button", 9);
+    \u0275\u0275listener("click", function ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Template_button_click_1_listener() {
       const $index_r4 = \u0275\u0275restoreView(_r3).$index;
       const ctx_r1 = \u0275\u0275nextContext(3);
       return \u0275\u0275resetView(ctx_r1.toggleItem($index_r4));
     });
-    \u0275\u0275domElementStart(2, "span", 9);
-    \u0275\u0275text(3);
-    \u0275\u0275domElementEnd();
-    \u0275\u0275domElementStart(4, "span", 10);
+    \u0275\u0275elementStart(2, "span", 10);
+    \u0275\u0275element(3, "ep-icon", 4);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "span", 11);
     \u0275\u0275text(5);
-    \u0275\u0275domElementEnd()();
-    \u0275\u0275conditionalCreate(6, ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Conditional_6_Template, 2, 1, "div", 11);
-    \u0275\u0275domElementEnd();
+    \u0275\u0275elementEnd()();
+    \u0275\u0275conditionalCreate(6, ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Conditional_6_Template, 2, 1, "div", 12);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const entry_r5 = ctx.$implicit;
     const $index_r4 = ctx.$index;
     const ctx_r1 = \u0275\u0275nextContext(3);
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1(" ", ctx_r1.isItemExpanded($index_r4) ? "\u25BE" : "\u25B8", " ");
+    \u0275\u0275advance(2);
+    \u0275\u0275classProp("ep-thinking__chevron-small--expanded", ctx_r1.isItemExpanded($index_r4));
+    \u0275\u0275advance();
+    \u0275\u0275property("size", 8);
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate1(" ", ctx_r1.summary(entry_r5), " ");
     \u0275\u0275advance();
@@ -94943,9 +94957,9 @@ function ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Template(rf
 }
 function ThinkingExpanderComponent_Conditional_0_Conditional_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275domElementStart(0, "div", 5);
-    \u0275\u0275repeaterCreate(1, ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Template, 7, 3, "div", 7, \u0275\u0275repeaterTrackByIndex);
-    \u0275\u0275domElementEnd();
+    \u0275\u0275elementStart(0, "div", 6);
+    \u0275\u0275repeaterCreate(1, ThinkingExpanderComponent_Conditional_0_Conditional_7_For_2_Template, 7, 5, "div", 8, \u0275\u0275repeaterTrackByIndex);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext(2);
@@ -94956,26 +94970,28 @@ function ThinkingExpanderComponent_Conditional_0_Conditional_7_Template(rf, ctx)
 function ThinkingExpanderComponent_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275domElementStart(0, "div", 1)(1, "button", 2);
-    \u0275\u0275domListener("click", function ThinkingExpanderComponent_Conditional_0_Template_button_click_1_listener() {
+    \u0275\u0275elementStart(0, "div", 1)(1, "button", 2);
+    \u0275\u0275listener("click", function ThinkingExpanderComponent_Conditional_0_Template_button_click_1_listener() {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.toggleExpanded());
     });
-    \u0275\u0275domElementStart(2, "span", 3);
-    \u0275\u0275text(3);
-    \u0275\u0275domElementEnd();
-    \u0275\u0275domElementStart(4, "span", 4);
+    \u0275\u0275elementStart(2, "span", 3);
+    \u0275\u0275element(3, "ep-icon", 4);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "span", 5);
     \u0275\u0275conditionalCreate(5, ThinkingExpanderComponent_Conditional_0_Conditional_5_Template, 3, 2)(6, ThinkingExpanderComponent_Conditional_0_Conditional_6_Template, 1, 1);
-    \u0275\u0275domElementEnd()();
-    \u0275\u0275conditionalCreate(7, ThinkingExpanderComponent_Conditional_0_Conditional_7_Template, 3, 0, "div", 5);
-    \u0275\u0275domElementEnd();
+    \u0275\u0275elementEnd()();
+    \u0275\u0275conditionalCreate(7, ThinkingExpanderComponent_Conditional_0_Conditional_7_Template, 3, 0, "div", 6);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext();
     \u0275\u0275classProp("ep-thinking--expanded", ctx_r1.expanded);
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(ctx_r1.expanded ? "\u25BE" : "\u25B8");
+    \u0275\u0275advance(2);
+    \u0275\u0275classProp("ep-thinking__chevron--expanded", ctx_r1.expanded);
+    \u0275\u0275advance();
+    \u0275\u0275property("size", 8);
     \u0275\u0275advance(2);
     \u0275\u0275conditional(ctx_r1.isActive ? 5 : 6);
     \u0275\u0275advance(2);
@@ -95081,19 +95097,19 @@ var _ThinkingExpanderComponent = class _ThinkingExpanderComponent {
 _ThinkingExpanderComponent.\u0275fac = function ThinkingExpanderComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _ThinkingExpanderComponent)();
 };
-_ThinkingExpanderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ThinkingExpanderComponent, selectors: [["ep-thinking-expander"]], inputs: { entries: "entries", isActive: "isActive", startedAtUnixSeconds: "startedAtUnixSeconds", endedAtUnixSeconds: "endedAtUnixSeconds" }, features: [\u0275\u0275NgOnChangesFeature], decls: 1, vars: 1, consts: [[1, "ep-thinking", 3, "ep-thinking--expanded"], [1, "ep-thinking"], ["type", "button", 1, "ep-thinking__header", 3, "click"], [1, "ep-thinking__chevron"], [1, "ep-thinking__summary"], [1, "ep-thinking__history"], [1, "ep-thinking__timer"], [1, "ep-thinking__item"], ["type", "button", 1, "ep-thinking__item-header", 3, "click"], [1, "ep-thinking__chevron-small"], [1, "ep-thinking__item-summary"], [1, "ep-thinking__item-body"]], template: function ThinkingExpanderComponent_Template(rf, ctx) {
+_ThinkingExpanderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ThinkingExpanderComponent, selectors: [["ep-thinking-expander"]], inputs: { entries: "entries", isActive: "isActive", startedAtUnixSeconds: "startedAtUnixSeconds", endedAtUnixSeconds: "endedAtUnixSeconds" }, features: [\u0275\u0275NgOnChangesFeature], decls: 1, vars: 1, consts: [[1, "ep-thinking", 3, "ep-thinking--expanded"], [1, "ep-thinking"], ["type", "button", 1, "ep-thinking__header", 3, "click"], [1, "ep-thinking__chevron"], ["name", "triangle-right", 3, "size"], [1, "ep-thinking__summary"], [1, "ep-thinking__history"], [1, "ep-thinking__timer"], [1, "ep-thinking__item"], ["type", "button", 1, "ep-thinking__item-header", 3, "click"], [1, "ep-thinking__chevron-small"], [1, "ep-thinking__item-summary"], [1, "ep-thinking__item-body"]], template: function ThinkingExpanderComponent_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275conditionalCreate(0, ThinkingExpanderComponent_Conditional_0_Template, 8, 5, "div", 0);
+    \u0275\u0275conditionalCreate(0, ThinkingExpanderComponent_Conditional_0_Template, 8, 7, "div", 0);
   }
   if (rf & 2) {
     \u0275\u0275conditional(ctx.hasEntries ? 0 : -1);
   }
-}, dependencies: [CommonModule], styles: ["\n\n.ep-thinking[_ngcontent-%COMP%] {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n  overflow: hidden;\n}\n.ep-thinking__header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron[_ngcontent-%COMP%] {\n  width: 12px;\n  text-align: center;\n}\n.ep-thinking__summary[_ngcontent-%COMP%] {\n  flex: 1;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer[_ngcontent-%COMP%] {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n}\n.ep-thinking__history[_ngcontent-%COMP%] {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  text-align: left;\n}\n.ep-thinking__chevron-small[_ngcontent-%COMP%] {\n  width: 10px;\n  text-align: center;\n}\n.ep-thinking__item-summary[_ngcontent-%COMP%] {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body[_ngcontent-%COMP%] {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text-muted);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */"], changeDetection: 0 });
+}, dependencies: [CommonModule, IconComponent], styles: ["\n\n.ep-thinking[_ngcontent-%COMP%] {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n  overflow: hidden;\n}\n.ep-thinking__header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 6px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.15s ease;\n}\n.ep-thinking__chevron--expanded[_ngcontent-%COMP%] {\n  transform: rotate(90deg);\n}\n.ep-thinking__summary[_ngcontent-%COMP%] {\n  flex: 1;\n  text-align: left;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer[_ngcontent-%COMP%] {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text);\n}\n.ep-thinking__history[_ngcontent-%COMP%] {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text);\n  text-align: left;\n}\n.ep-thinking__chevron-small[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.15s ease;\n}\n.ep-thinking__chevron-small--expanded[_ngcontent-%COMP%] {\n  transform: rotate(90deg);\n}\n.ep-thinking__item-summary[_ngcontent-%COMP%] {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body[_ngcontent-%COMP%] {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */"], changeDetection: 0 });
 var ThinkingExpanderComponent = _ThinkingExpanderComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ThinkingExpanderComponent, [{
     type: Component,
-    args: [{ selector: "ep-thinking-expander", standalone: true, imports: [CommonModule], changeDetection: ChangeDetectionStrategy.OnPush, template: '@if (hasEntries) {\r\n  <div class="ep-thinking" [class.ep-thinking--expanded]="expanded">\r\n    <button type="button" class="ep-thinking__header" (click)="toggleExpanded()">\r\n      <span class="ep-thinking__chevron">{{ expanded ? "\u25BE" : "\u25B8" }}</span>\r\n      <span class="ep-thinking__summary">\r\n        @if (isActive) {\r\n          {{ latestSummary }}\r\n          <span class="ep-thinking__timer">({{ elapsedSeconds }}s)</span>\r\n        } @else {\r\n          Thought for {{ elapsedSeconds }}s\r\n        }\r\n      </span>\r\n    </button>\r\n\r\n    @if (expanded) {\r\n      <div class="ep-thinking__history">\r\n        @for (entry of entries; track $index) {\r\n          <div class="ep-thinking__item">\r\n            <button type="button" class="ep-thinking__item-header" (click)="toggleItem($index)">\r\n              <span class="ep-thinking__chevron-small">\r\n                {{ isItemExpanded($index) ? "\u25BE" : "\u25B8" }}\r\n              </span>\r\n              <span class="ep-thinking__item-summary">\r\n                {{ summary(entry) }}\r\n              </span>\r\n            </button>\r\n\r\n            @if (isItemExpanded($index)) {\r\n              <div class="ep-thinking__item-body">\r\n                {{ entry }}\r\n              </div>\r\n            }\r\n          </div>\r\n        }\r\n      </div>\r\n    }\r\n  </div>\r\n}\r\n', styles: ["/* src/app/components/thinking-expander/thinking-expander.component.scss */\n.ep-thinking {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n  overflow: hidden;\n}\n.ep-thinking__header {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron {\n  width: 12px;\n  text-align: center;\n}\n.ep-thinking__summary {\n  flex: 1;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n}\n.ep-thinking__history {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  text-align: left;\n}\n.ep-thinking__chevron-small {\n  width: 10px;\n  text-align: center;\n}\n.ep-thinking__item-summary {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text-muted);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */\n"] }]
+    args: [{ selector: "ep-thinking-expander", standalone: true, imports: [CommonModule, IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, template: '@if (hasEntries) {\r\n  <div class="ep-thinking" [class.ep-thinking--expanded]="expanded">\r\n    <button type="button" class="ep-thinking__header" (click)="toggleExpanded()">\r\n      <span class="ep-thinking__chevron" [class.ep-thinking__chevron--expanded]="expanded">\r\n        <ep-icon name="triangle-right" [size]="8"></ep-icon>\r\n      </span>\r\n      <span class="ep-thinking__summary">\r\n        @if (isActive) {\r\n          {{ latestSummary }}\r\n          <span class="ep-thinking__timer">({{ elapsedSeconds }}s)</span>\r\n        } @else {\r\n          Thought for {{ elapsedSeconds }}s\r\n        }\r\n      </span>\r\n    </button>\r\n\r\n    @if (expanded) {\r\n      <div class="ep-thinking__history">\r\n        @for (entry of entries; track $index) {\r\n          <div class="ep-thinking__item">\r\n            <button type="button" class="ep-thinking__item-header" (click)="toggleItem($index)">\r\n              <span\r\n                class="ep-thinking__chevron-small"\r\n                [class.ep-thinking__chevron-small--expanded]="isItemExpanded($index)"\r\n              >\r\n                <ep-icon name="triangle-right" [size]="8"></ep-icon>\r\n              </span>\r\n              <span class="ep-thinking__item-summary">\r\n                {{ summary(entry) }}\r\n              </span>\r\n            </button>\r\n\r\n            @if (isItemExpanded($index)) {\r\n              <div class="ep-thinking__item-body">\r\n                {{ entry }}\r\n              </div>\r\n            }\r\n          </div>\r\n        }\r\n      </div>\r\n    }\r\n  </div>\r\n}\r\n', styles: ["/* src/app/components/thinking-expander/thinking-expander.component.scss */\n.ep-thinking {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n  overflow: hidden;\n}\n.ep-thinking__header {\n  display: flex;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 6px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron {\n  width: 8px;\n  height: 8px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.15s ease;\n}\n.ep-thinking__chevron--expanded {\n  transform: rotate(90deg);\n}\n.ep-thinking__summary {\n  flex: 1;\n  text-align: left;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text);\n}\n.ep-thinking__history {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text);\n  text-align: left;\n}\n.ep-thinking__chevron-small {\n  width: 8px;\n  height: 8px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.15s ease;\n}\n.ep-thinking__chevron-small--expanded {\n  transform: rotate(90deg);\n}\n.ep-thinking__item-summary {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */\n"] }]
   }], null, { entries: [{
     type: Input
   }], isActive: [{
@@ -95105,7 +95121,7 @@ var ThinkingExpanderComponent = _ThinkingExpanderComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ThinkingExpanderComponent, { className: "ThinkingExpanderComponent", filePath: "src/app/components/thinking-expander/thinking-expander.component.ts", lineNumber: 19 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ThinkingExpanderComponent, { className: "ThinkingExpanderComponent", filePath: "src/app/components/thinking-expander/thinking-expander.component.ts", lineNumber: 20 });
 })();
 
 // src/app/components/message-item/message-item.component.ts
@@ -95401,9 +95417,9 @@ function MessageItemComponent_Conditional_6_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275property("src", ctx_r0.getImagePath("epica-sleeping.svg"), \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", ctx_r0.getImagePath("epicstaff-logo.svg"), \u0275\u0275sanitizeUrl);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", ctx_r0.message._epicaError === true ? "Sorry, Epic stepped away for a moment. But promised to be back! Soon..." : ctx_r0.message._epicaError, " ");
+    \u0275\u0275textInterpolate1(" ", ctx_r0.message._epicaError === true ? "Oops! Something went wrong on our end. Please try refreshing the page or sending your message again in a moment." : ctx_r0.message._epicaError, " ");
   }
 }
 var _MessageItemComponent = class _MessageItemComponent {
@@ -95413,11 +95429,28 @@ var _MessageItemComponent = class _MessageItemComponent {
     this.actionClick = new EventEmitter();
     this.getImagePath = getImagePath;
     this.isSuggestionsVisible = true;
+    this.displayTimestamp = "";
+    this.timestampTimer = null;
+  }
+  ngOnInit() {
+    this.updateTimestamp();
+    this.timestampTimer = setInterval(() => this.updateTimestamp(), 6e4);
+  }
+  ngOnDestroy() {
+    if (this.timestampTimer) {
+      clearInterval(this.timestampTimer);
+    }
   }
   ngOnChanges(changes) {
     if (changes["isLast"] && this.isLast) {
       this.isSuggestionsVisible = true;
     }
+    if (changes["message"]) {
+      this.updateTimestamp();
+    }
+  }
+  updateTimestamp() {
+    this.displayTimestamp = this.computeTimestamp();
   }
   get promptActions() {
     const actions = this.message?.response?.action_message || [];
@@ -95491,16 +95524,31 @@ var _MessageItemComponent = class _MessageItemComponent {
   get messageDate() {
     return this.message.time ? new Date(this.message.time * 1e3) : /* @__PURE__ */ new Date();
   }
-  get displayTimestamp() {
+  computeTimestamp() {
     const date = this.messageDate;
-    if (DateUtils.isToday(date)) {
-      return DateUtils.formatTime(date);
+    const now = /* @__PURE__ */ new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 6e4);
+    let timeStr;
+    if (diffMin < 1) {
+      timeStr = "just now";
+    } else if (diffMin < 60) {
+      timeStr = `${diffMin} min ago`;
+    } else if (DateUtils.isToday(date)) {
+      timeStr = DateUtils.formatTime(date);
+    } else if (DateUtils.isYesterday(date)) {
+      timeStr = "Yesterday";
+    } else {
+      timeStr = date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
     }
-    const datePart = date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit"
-    });
-    return `${DateUtils.formatTime(date)} \xB7 ${datePart}`;
+    if (!this.isUserMessage) {
+      return `EpicChat \xB7 ${timeStr}`;
+    }
+    return timeStr;
   }
   get displayDate() {
     return DateUtils.formatDate(this.messageDate);
@@ -95654,7 +95702,7 @@ _MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ 
       return ctx.onHostKeydown($event);
     });
   }
-}, inputs: { message: "message", isLast: "isLast" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 7, vars: 9, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], ["aria-label", "Suggestions", 1, "ep-message__suggestions-panel"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [3, "entries", "isActive", "startedAtUnixSeconds", "endedAtUnixSeconds"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], ["variant", "primary", "size", "md", 3, "disabled"], ["variant", "primary", "size", "md", 3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], [1, "ep-message__link-text"], ["name", "external-link", 1, "ep-message__link-icon", 3, "size"], [1, "ep-message__suggestions-panel-header"], [1, "ep-message__suggestions-panel-title"], ["type", "button", "aria-label", "Hide suggestions", 1, "ep-message__suggestions-panel-close", 3, "click"], ["name", "close", 3, "size"], [1, "ep-message__suggestions-panel-list"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "disabled"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "click", "disabled"], ["height", "80", "width", "80", "alt", "Epica sleeping", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
+}, inputs: { message: "message", isLast: "isLast" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 7, vars: 9, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], ["aria-label", "Suggestions", 1, "ep-message__suggestions-panel"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [3, "entries", "isActive", "startedAtUnixSeconds", "endedAtUnixSeconds"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], ["variant", "primary", "size", "md", 3, "disabled"], ["variant", "primary", "size", "md", 3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], [1, "ep-message__link-text"], ["name", "external-link", 1, "ep-message__link-icon", 3, "size"], [1, "ep-message__suggestions-panel-header"], [1, "ep-message__suggestions-panel-title"], ["type", "button", "aria-label", "Hide suggestions", 1, "ep-message__suggestions-panel-close", 3, "click"], ["name", "close", 3, "size"], [1, "ep-message__suggestions-panel-list"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "disabled"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "click", "disabled"], ["height", "60", "width", "60", "alt", "EpicStaff", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275conditionalCreate(1, MessageItemComponent_Conditional_1_Template, 2, 1, "div", 1);
@@ -95688,7 +95736,7 @@ _MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ 
   ButtonComponent,
   ThinkingExpanderComponent,
   IconComponent
-], styles: ['@charset "UTF-8";\n\n\n\n.ep-message[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message[_ngcontent-%COMP%]:hover   .ep-message__time[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message[_ngcontent-%COMP%]   .ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  width: 100%;\n  margin: 0 auto 8px auto;\n  font-size: 11px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 0;\n  align-self: center;\n}\n.ep-message__date-divider[_ngcontent-%COMP%]::before, \n.ep-message__date-divider[_ngcontent-%COMP%]::after {\n  content: "";\n  flex: 1;\n  height: 1px;\n  background: var(--ep-color-border);\n}\n.ep-message__text[_ngcontent-%COMP%] {\n  display: block;\n  padding: 6px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     markdown {\n  display: block;\n}\n.ep-message__text[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]     p:last-child, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text[_ngcontent-%COMP%]     em, \n.ep-message__text[_ngcontent-%COMP%]     i, \n.ep-message__text[_ngcontent-%COMP%]   em[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   i[_ngcontent-%COMP%] {\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]     a, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text[_ngcontent-%COMP%]     a:hover, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:first-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:last-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul   li p, \n.ep-message__text[_ngcontent-%COMP%]     ul li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 24px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li, \n.ep-message__text[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol   li p, \n.ep-message__text[_ngcontent-%COMP%]     ol li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     code, \n.ep-message__text[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  font-size: 13px;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code {\n  margin: 8px 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ep-color-surface-alt) 70%, transparent);\n  overflow: hidden;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 32px;\n  padding: 0 10px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__lang {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: var(--ep-color-text-muted);\n  line-height: 1;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition:\n    color 0.15s,\n    border-color 0.15s,\n    background-color 0.15s;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:hover:not(:disabled) {\n  color: var(--ep-color-text);\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:disabled {\n  opacity: 0.75;\n  cursor: default;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code pre {\n  margin: 0;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  padding: 10px 12px;\n  overflow-x: auto;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code code {\n  display: block;\n  background: none;\n  border-radius: 0;\n  padding: 0;\n  color: var(--ep-color-text);\n  font-size: 12.5px;\n  line-height: 18px;\n  white-space: pre;\n  overflow-wrap: normal;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code--plain code {\n  color: var(--ep-color-text-muted);\n}\n.ep-message__text[_ngcontent-%COMP%]     pre, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre code, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: none;\n  padding: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  font-size: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 18px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%] {\n  font-size: 16px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  font-size: 14px;\n}\n.ep-message__text[_ngcontent-%COMP%]   hr[_ngcontent-%COMP%] {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   blockquote[_ngcontent-%COMP%] {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message[_ngcontent-%COMP%]:not(.ep-message--user)   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user[_ngcontent-%COMP%] {\n  align-items: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__content[_ngcontent-%COMP%] {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n  color: var(--ep-chat-text-question);\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  color: inherit;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__time[_ngcontent-%COMP%] {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 8px;\n}\n.ep-message__link[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n  min-height: 28px;\n  padding: 4px 10px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  background: transparent;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s,\n    border-color 0.15s,\n    color 0.15s;\n}\n.ep-message__link-text[_ngcontent-%COMP%] {\n  color: inherit;\n}\n.ep-message__link-icon[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  color: inherit;\n}\n.ep-message__link[_ngcontent-%COMP%]:hover:not(.ep-message__link--disabled) {\n  background: var(--ep-color-accent-soft);\n  border-color: var(--ep-color-accent);\n  color: var(--ep-color-accent);\n}\n.ep-message__link.ep-message__link--disabled[_ngcontent-%COMP%] {\n  border-color: var(--ep-color-border);\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.ep-message__suggestions-panel[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  max-width: 100%;\n  margin-top: 4px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  border-radius: 4px;\n  background: transparent;\n  overflow: hidden;\n}\n.ep-message__suggestions-panel-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 47px;\n  padding: 0 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n}\n.ep-message__suggestions-panel-title[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  line-height: 20px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 24px;\n  height: 24px;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  transition: opacity 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]:hover {\n  opacity: 1;\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 10px;\n  height: 10px;\n}\n.ep-message__suggestions-panel-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  min-height: 49px;\n  padding: 7px 14px;\n  font-size: 14px;\n  line-height: 20px;\n  text-align: left;\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  border: none;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  cursor: pointer;\n  transition: background-color 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-text) 4%, transparent);\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.epica-error[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 16px 20px;\n  max-width: 380px;\n  align-items: center;\n  gap: 20px;\n  border-radius: 4px;\n  border: 2px solid var(--ep-color-danger-border);\n  background: var(--ep-color-danger-soft);\n}\n.epica-error__text[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n[_nghost-%COMP%]     .ep-md-code__copy-icon {\n  font-size: 12px;\n  cursor: pointer;\n}\n/*# sourceMappingURL=message-item.component.css.map */'] });
+], styles: ['@charset "UTF-8";\n\n\n\n.ep-message[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message[_ngcontent-%COMP%]:hover   .ep-message__time[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message[_ngcontent-%COMP%]   .ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  width: 100%;\n  margin: 0 auto 8px auto;\n  font-size: 11px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 0;\n  align-self: center;\n}\n.ep-message__date-divider[_ngcontent-%COMP%]::before, \n.ep-message__date-divider[_ngcontent-%COMP%]::after {\n  content: "";\n  flex: 1;\n  height: 1px;\n  background: var(--ep-color-border);\n}\n.ep-message__text[_ngcontent-%COMP%] {\n  display: block;\n  padding: 6px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     markdown {\n  display: block;\n}\n.ep-message__text[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]     p:last-child, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text[_ngcontent-%COMP%]     em, \n.ep-message__text[_ngcontent-%COMP%]     i, \n.ep-message__text[_ngcontent-%COMP%]   em[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   i[_ngcontent-%COMP%] {\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]     a, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text[_ngcontent-%COMP%]     a:hover, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:first-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:last-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul   li p, \n.ep-message__text[_ngcontent-%COMP%]     ul li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 24px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li, \n.ep-message__text[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol   li p, \n.ep-message__text[_ngcontent-%COMP%]     ol li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     code, \n.ep-message__text[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  font-size: 13px;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code {\n  margin: 8px 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ep-color-surface-alt) 70%, transparent);\n  overflow: hidden;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 32px;\n  padding: 0 10px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__lang {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: var(--ep-color-text-muted);\n  line-height: 1;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition:\n    color 0.15s,\n    border-color 0.15s,\n    background-color 0.15s;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:hover:not(:disabled) {\n  color: var(--ep-color-text);\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:disabled {\n  opacity: 0.75;\n  cursor: default;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code pre {\n  margin: 0;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  padding: 10px 12px;\n  overflow-x: auto;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code code {\n  display: block;\n  background: none;\n  border-radius: 0;\n  padding: 0;\n  color: var(--ep-color-text);\n  font-size: 12.5px;\n  line-height: 18px;\n  white-space: pre;\n  overflow-wrap: normal;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code--plain code {\n  color: var(--ep-color-text-muted);\n}\n.ep-message__text[_ngcontent-%COMP%]     pre, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre code, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: none;\n  padding: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  font-size: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 18px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%] {\n  font-size: 16px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  font-size: 14px;\n}\n.ep-message__text[_ngcontent-%COMP%]   hr[_ngcontent-%COMP%] {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   blockquote[_ngcontent-%COMP%] {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message[_ngcontent-%COMP%]:not(.ep-message--user)   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user[_ngcontent-%COMP%] {\n  align-items: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__content[_ngcontent-%COMP%] {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n  color: var(--ep-chat-text-question);\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  color: inherit;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__time[_ngcontent-%COMP%] {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 8px;\n}\n.ep-message__link[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n  min-height: 28px;\n  padding: 4px 10px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  background: transparent;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s,\n    border-color 0.15s,\n    color 0.15s;\n}\n.ep-message__link-text[_ngcontent-%COMP%] {\n  color: inherit;\n}\n.ep-message__link-icon[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  color: inherit;\n}\n.ep-message__link[_ngcontent-%COMP%]:hover:not(.ep-message__link--disabled) {\n  background: var(--ep-color-accent-soft);\n  border-color: var(--ep-color-accent);\n  color: var(--ep-color-accent);\n}\n.ep-message__link.ep-message__link--disabled[_ngcontent-%COMP%] {\n  border-color: var(--ep-color-border);\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.ep-message__suggestions-panel[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  max-width: 100%;\n  margin-top: 4px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  border-radius: 4px;\n  background: transparent;\n  overflow: hidden;\n}\n.ep-message__suggestions-panel-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 47px;\n  padding: 0 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n}\n.ep-message__suggestions-panel-title[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  line-height: 20px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 24px;\n  height: 24px;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  transition: opacity 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]:hover {\n  opacity: 1;\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 10px;\n  height: 10px;\n}\n.ep-message__suggestions-panel-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  min-height: 49px;\n  padding: 7px 14px;\n  font-size: 14px;\n  line-height: 20px;\n  text-align: left;\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  border: none;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  cursor: pointer;\n  transition: background-color 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-text) 4%, transparent);\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.epica-error[_ngcontent-%COMP%] {\n  display: flex;\n  width: fit-content;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 18px 20px;\n  align-items: center;\n  gap: 16px;\n  border-radius: 4px;\n  border: 1px solid rgba(104, 95, 255, 0.0784313725);\n  background: rgba(104, 95, 255, 0.0784313725);\n}\n.epica-error__text[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-accent);\n}\n[_nghost-%COMP%]     .ep-md-code__copy-icon {\n  font-size: 12px;\n  cursor: pointer;\n}\n/*# sourceMappingURL=message-item.component.css.map */'] });
 var MessageItemComponent = _MessageItemComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MessageItemComponent, [{
@@ -95839,18 +95887,18 @@ var MessageItemComponent = _MessageItemComponent;
 
   @if (hasError) {
     <div class="epica-error">
-      <img [src]="getImagePath('epica-sleeping.svg')" height="80" width="80" alt="Epica sleeping" />
+      <img [src]="getImagePath('epicstaff-logo.svg')" height="60" width="60" alt="EpicStaff" />
       <div class="epica-error__text">
         {{
           message._epicaError === true
-            ? "Sorry, Epic stepped away for a moment. But promised to be back! Soon..."
+            ? "Oops! Something went wrong on our end. Please try refreshing the page or sending your message again in a moment."
             : message._epicaError
         }}
       </div>
     </div>
   }
 </div>
-`, styles: ['@charset "UTF-8";\n\n/* src/app/components/message-item/message-item.component.scss */\n.ep-message {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message:hover .ep-message__time {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message .ep-message__date-divider {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  width: 100%;\n  margin: 0 auto 8px auto;\n  font-size: 11px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 0;\n  align-self: center;\n}\n.ep-message__date-divider::before,\n.ep-message__date-divider::after {\n  content: "";\n  flex: 1;\n  height: 1px;\n  background: var(--ep-color-border);\n}\n.ep-message__text {\n  display: block;\n  padding: 6px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep markdown {\n  display: block;\n}\n.ep-message__text ::ng-deep p,\n.ep-message__text p {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text ::ng-deep p:last-child,\n.ep-message__text p:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep strong,\n.ep-message__text ::ng-deep b,\n.ep-message__text strong,\n.ep-message__text b {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text ::ng-deep em,\n.ep-message__text ::ng-deep i,\n.ep-message__text em,\n.ep-message__text i {\n  font-style: italic;\n}\n.ep-message__text ::ng-deep a,\n.ep-message__text a {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text ::ng-deep a:hover,\n.ep-message__text a:hover {\n  text-decoration: underline;\n}\n.ep-message__text ::ng-deep ul,\n.ep-message__text ::ng-deep ol,\n.ep-message__text ul,\n.ep-message__text ol {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul:first-child,\n.ep-message__text ::ng-deep ol:first-child,\n.ep-message__text ul:first-child,\n.ep-message__text ol:first-child {\n  margin-top: 0;\n}\n.ep-message__text ::ng-deep ul:last-child,\n.ep-message__text ::ng-deep ol:last-child,\n.ep-message__text ul:last-child,\n.ep-message__text ol:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li,\n.ep-message__text ul li {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li::before,\n.ep-message__text ul li::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ul ::ng-deep li p,\n.ep-message__text ::ng-deep ul li ::ng-deep p,\n.ep-message__text ::ng-deep ul li p,\n.ep-message__text ul ::ng-deep li ::ng-deep p,\n.ep-message__text ul ::ng-deep li p,\n.ep-message__text ul li ::ng-deep p,\n.ep-message__text ul li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ::ng-deep ul ::ng-deep li ul,\n.ep-message__text ::ng-deep ul li ::ng-deep ul,\n.ep-message__text ::ng-deep ul li ul,\n.ep-message__text ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ul ::ng-deep li ul,\n.ep-message__text ul li ::ng-deep ul,\n.ep-message__text ul li ul {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul li ::ng-deep ul li,\n.ep-message__text ul li ul ::ng-deep li,\n.ep-message__text ul li ul li {\n  padding-left: 24px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul li ::ng-deep ul li::before,\n.ep-message__text ul li ul ::ng-deep li::before,\n.ep-message__text ul li ul li::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul li ::ng-deep ul ul li,\n.ep-message__text ul li ul ::ng-deep ul li,\n.ep-message__text ul li ul ul li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul li ::ng-deep ul ul li::before,\n.ep-message__text ul li ul ::ng-deep ul li::before,\n.ep-message__text ul li ul ul li::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text ::ng-deep ol,\n.ep-message__text ol {\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li,\n.ep-message__text ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li,\n.ep-message__text ol li {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li::before,\n.ep-message__text ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li::before,\n.ep-message__text ol li::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ol ::ng-deep li p,\n.ep-message__text ::ng-deep ol li ::ng-deep p,\n.ep-message__text ::ng-deep ol li p,\n.ep-message__text ol ::ng-deep li ::ng-deep p,\n.ep-message__text ol ::ng-deep li p,\n.ep-message__text ol li ::ng-deep p,\n.ep-message__text ol li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ::ng-deep ol ::ng-deep li ol,\n.ep-message__text ::ng-deep ol li ::ng-deep ol,\n.ep-message__text ::ng-deep ol li ol,\n.ep-message__text ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ol ::ng-deep li ol,\n.ep-message__text ol li ::ng-deep ol,\n.ep-message__text ol li ol {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol li ol li,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li ol li,\n.ep-message__text ol li ::ng-deep ol li,\n.ep-message__text ol li ol li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li::before,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol li ol li::before,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li ol li::before,\n.ep-message__text ol li ::ng-deep ol li::before,\n.ep-message__text ol li ol li::before {\n  left: 4px;\n}\n.ep-message__text ::ng-deep code,\n.ep-message__text code {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  font-size: 13px;\n}\n.ep-message__text ::ng-deep .ep-md-code {\n  margin: 8px 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ep-color-surface-alt) 70%, transparent);\n  overflow: hidden;\n}\n.ep-message__text ::ng-deep .ep-md-code__header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 32px;\n  padding: 0 10px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n}\n.ep-message__text ::ng-deep .ep-md-code__lang {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: var(--ep-color-text-muted);\n  line-height: 1;\n}\n.ep-message__text ::ng-deep .ep-md-code__copy {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition:\n    color 0.15s,\n    border-color 0.15s,\n    background-color 0.15s;\n}\n.ep-message__text ::ng-deep .ep-md-code__copy:hover:not(:disabled) {\n  color: var(--ep-color-text);\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n}\n.ep-message__text ::ng-deep .ep-md-code__copy:disabled {\n  opacity: 0.75;\n  cursor: default;\n}\n.ep-message__text ::ng-deep .ep-md-code pre {\n  margin: 0;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  padding: 10px 12px;\n  overflow-x: auto;\n}\n.ep-message__text ::ng-deep .ep-md-code code {\n  display: block;\n  background: none;\n  border-radius: 0;\n  padding: 0;\n  color: var(--ep-color-text);\n  font-size: 12.5px;\n  line-height: 18px;\n  white-space: pre;\n  overflow-wrap: normal;\n}\n.ep-message__text ::ng-deep .ep-md-code--plain code {\n  color: var(--ep-color-text-muted);\n}\n.ep-message__text ::ng-deep pre,\n.ep-message__text pre {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text ::ng-deep pre code,\n.ep-message__text pre code {\n  background: none;\n  padding: 0;\n}\n.ep-message__text h1,\n.ep-message__text h2,\n.ep-message__text h3,\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text h1:first-child,\n.ep-message__text h2:first-child,\n.ep-message__text h3:first-child,\n.ep-message__text h4:first-child,\n.ep-message__text h5:first-child,\n.ep-message__text h6:first-child {\n  margin-top: 0;\n}\n.ep-message__text h1 {\n  font-size: 20px;\n}\n.ep-message__text h2 {\n  font-size: 18px;\n}\n.ep-message__text h3 {\n  font-size: 16px;\n}\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  font-size: 14px;\n}\n.ep-message__text hr {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text blockquote {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text img {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message:not(.ep-message--user) .ep-message__text {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user {\n  align-items: flex-end;\n}\n.ep-message--user .ep-message__content {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user .ep-message__text {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n  color: var(--ep-chat-text-question);\n}\n.ep-message--user .ep-message__text ::ng-deep strong,\n.ep-message--user .ep-message__text ::ng-deep b,\n.ep-message--user .ep-message__text strong,\n.ep-message--user .ep-message__text b,\n.ep-message--user .ep-message__text ::ng-deep ul li::before,\n.ep-message--user .ep-message__text ul li::before,\n.ep-message--user .ep-message__text ::ng-deep ol li::before,\n.ep-message--user .ep-message__text ol li::before {\n  color: inherit;\n}\n.ep-message--user .ep-message__time {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 8px;\n}\n.ep-message__link {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n  min-height: 28px;\n  padding: 4px 10px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  background: transparent;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s,\n    border-color 0.15s,\n    color 0.15s;\n}\n.ep-message__link-text {\n  color: inherit;\n}\n.ep-message__link-icon {\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  color: inherit;\n}\n.ep-message__link:hover:not(.ep-message__link--disabled) {\n  background: var(--ep-color-accent-soft);\n  border-color: var(--ep-color-accent);\n  color: var(--ep-color-accent);\n}\n.ep-message__link.ep-message__link--disabled {\n  border-color: var(--ep-color-border);\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.ep-message__suggestions-panel {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  max-width: 100%;\n  margin-top: 4px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  border-radius: 4px;\n  background: transparent;\n  overflow: hidden;\n}\n.ep-message__suggestions-panel-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 47px;\n  padding: 0 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n}\n.ep-message__suggestions-panel-title {\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  line-height: 20px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ep-message__suggestions-panel-close {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 24px;\n  height: 24px;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  transition: opacity 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-close:hover {\n  opacity: 1;\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-close svg {\n  width: 10px;\n  height: 10px;\n}\n.ep-message__suggestions-panel-list {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-message__suggestions-panel-item {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  min-height: 49px;\n  padding: 7px 14px;\n  font-size: 14px;\n  line-height: 20px;\n  text-align: left;\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  border: none;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  cursor: pointer;\n  transition: background-color 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-item:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-text) 4%, transparent);\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-item:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.epica-error {\n  display: flex;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 16px 20px;\n  max-width: 380px;\n  align-items: center;\n  gap: 20px;\n  border-radius: 4px;\n  border: 2px solid var(--ep-color-danger-border);\n  background: var(--ep-color-danger-soft);\n}\n.epica-error__text {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-text);\n}\n:host ::ng-deep .ep-md-code__copy-icon {\n  font-size: 12px;\n  cursor: pointer;\n}\n/*# sourceMappingURL=message-item.component.css.map */\n'] }]
+`, styles: ['@charset "UTF-8";\n\n/* src/app/components/message-item/message-item.component.scss */\n.ep-message {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message:hover .ep-message__time {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message .ep-message__date-divider {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  width: 100%;\n  margin: 0 auto 8px auto;\n  font-size: 11px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 0;\n  align-self: center;\n}\n.ep-message__date-divider::before,\n.ep-message__date-divider::after {\n  content: "";\n  flex: 1;\n  height: 1px;\n  background: var(--ep-color-border);\n}\n.ep-message__text {\n  display: block;\n  padding: 6px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep markdown {\n  display: block;\n}\n.ep-message__text ::ng-deep p,\n.ep-message__text p {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text ::ng-deep p:last-child,\n.ep-message__text p:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep strong,\n.ep-message__text ::ng-deep b,\n.ep-message__text strong,\n.ep-message__text b {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text ::ng-deep em,\n.ep-message__text ::ng-deep i,\n.ep-message__text em,\n.ep-message__text i {\n  font-style: italic;\n}\n.ep-message__text ::ng-deep a,\n.ep-message__text a {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text ::ng-deep a:hover,\n.ep-message__text a:hover {\n  text-decoration: underline;\n}\n.ep-message__text ::ng-deep ul,\n.ep-message__text ::ng-deep ol,\n.ep-message__text ul,\n.ep-message__text ol {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul:first-child,\n.ep-message__text ::ng-deep ol:first-child,\n.ep-message__text ul:first-child,\n.ep-message__text ol:first-child {\n  margin-top: 0;\n}\n.ep-message__text ::ng-deep ul:last-child,\n.ep-message__text ::ng-deep ol:last-child,\n.ep-message__text ul:last-child,\n.ep-message__text ol:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li,\n.ep-message__text ul li {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li::before,\n.ep-message__text ul li::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ul ::ng-deep li p,\n.ep-message__text ::ng-deep ul li ::ng-deep p,\n.ep-message__text ::ng-deep ul li p,\n.ep-message__text ul ::ng-deep li ::ng-deep p,\n.ep-message__text ul ::ng-deep li p,\n.ep-message__text ul li ::ng-deep p,\n.ep-message__text ul li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ::ng-deep ul ::ng-deep li ul,\n.ep-message__text ::ng-deep ul li ::ng-deep ul,\n.ep-message__text ::ng-deep ul li ul,\n.ep-message__text ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ul ::ng-deep li ul,\n.ep-message__text ul li ::ng-deep ul,\n.ep-message__text ul li ul {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul li ::ng-deep ul li,\n.ep-message__text ul li ul ::ng-deep li,\n.ep-message__text ul li ul li {\n  padding-left: 24px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul li ::ng-deep ul li::before,\n.ep-message__text ul li ul ::ng-deep li::before,\n.ep-message__text ul li ul li::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul li ::ng-deep ul ul li,\n.ep-message__text ul li ul ::ng-deep ul li,\n.ep-message__text ul li ul ul li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul li ::ng-deep ul ul li::before,\n.ep-message__text ul li ul ::ng-deep ul li::before,\n.ep-message__text ul li ul ul li::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text ::ng-deep ol,\n.ep-message__text ol {\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li,\n.ep-message__text ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li,\n.ep-message__text ol li {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li::before,\n.ep-message__text ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li::before,\n.ep-message__text ol li::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ol ::ng-deep li p,\n.ep-message__text ::ng-deep ol li ::ng-deep p,\n.ep-message__text ::ng-deep ol li p,\n.ep-message__text ol ::ng-deep li ::ng-deep p,\n.ep-message__text ol ::ng-deep li p,\n.ep-message__text ol li ::ng-deep p,\n.ep-message__text ol li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ::ng-deep ol ::ng-deep li ol,\n.ep-message__text ::ng-deep ol li ::ng-deep ol,\n.ep-message__text ::ng-deep ol li ol,\n.ep-message__text ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ol ::ng-deep li ol,\n.ep-message__text ol li ::ng-deep ol,\n.ep-message__text ol li ol {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol li ol li,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li ol li,\n.ep-message__text ol li ::ng-deep ol li,\n.ep-message__text ol li ol li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li::before,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol li ol li::before,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li ol li::before,\n.ep-message__text ol li ::ng-deep ol li::before,\n.ep-message__text ol li ol li::before {\n  left: 4px;\n}\n.ep-message__text ::ng-deep code,\n.ep-message__text code {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  font-size: 13px;\n}\n.ep-message__text ::ng-deep .ep-md-code {\n  margin: 8px 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ep-color-surface-alt) 70%, transparent);\n  overflow: hidden;\n}\n.ep-message__text ::ng-deep .ep-md-code__header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 32px;\n  padding: 0 10px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n}\n.ep-message__text ::ng-deep .ep-md-code__lang {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: var(--ep-color-text-muted);\n  line-height: 1;\n}\n.ep-message__text ::ng-deep .ep-md-code__copy {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition:\n    color 0.15s,\n    border-color 0.15s,\n    background-color 0.15s;\n}\n.ep-message__text ::ng-deep .ep-md-code__copy:hover:not(:disabled) {\n  color: var(--ep-color-text);\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n}\n.ep-message__text ::ng-deep .ep-md-code__copy:disabled {\n  opacity: 0.75;\n  cursor: default;\n}\n.ep-message__text ::ng-deep .ep-md-code pre {\n  margin: 0;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  padding: 10px 12px;\n  overflow-x: auto;\n}\n.ep-message__text ::ng-deep .ep-md-code code {\n  display: block;\n  background: none;\n  border-radius: 0;\n  padding: 0;\n  color: var(--ep-color-text);\n  font-size: 12.5px;\n  line-height: 18px;\n  white-space: pre;\n  overflow-wrap: normal;\n}\n.ep-message__text ::ng-deep .ep-md-code--plain code {\n  color: var(--ep-color-text-muted);\n}\n.ep-message__text ::ng-deep pre,\n.ep-message__text pre {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text ::ng-deep pre code,\n.ep-message__text pre code {\n  background: none;\n  padding: 0;\n}\n.ep-message__text h1,\n.ep-message__text h2,\n.ep-message__text h3,\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text h1:first-child,\n.ep-message__text h2:first-child,\n.ep-message__text h3:first-child,\n.ep-message__text h4:first-child,\n.ep-message__text h5:first-child,\n.ep-message__text h6:first-child {\n  margin-top: 0;\n}\n.ep-message__text h1 {\n  font-size: 20px;\n}\n.ep-message__text h2 {\n  font-size: 18px;\n}\n.ep-message__text h3 {\n  font-size: 16px;\n}\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  font-size: 14px;\n}\n.ep-message__text hr {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text blockquote {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text img {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message:not(.ep-message--user) .ep-message__text {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user {\n  align-items: flex-end;\n}\n.ep-message--user .ep-message__content {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user .ep-message__text {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n  color: var(--ep-chat-text-question);\n}\n.ep-message--user .ep-message__text ::ng-deep strong,\n.ep-message--user .ep-message__text ::ng-deep b,\n.ep-message--user .ep-message__text strong,\n.ep-message--user .ep-message__text b,\n.ep-message--user .ep-message__text ::ng-deep ul li::before,\n.ep-message--user .ep-message__text ul li::before,\n.ep-message--user .ep-message__text ::ng-deep ol li::before,\n.ep-message--user .ep-message__text ol li::before {\n  color: inherit;\n}\n.ep-message--user .ep-message__time {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 8px;\n}\n.ep-message__link {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n  min-height: 28px;\n  padding: 4px 10px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  background: transparent;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s,\n    border-color 0.15s,\n    color 0.15s;\n}\n.ep-message__link-text {\n  color: inherit;\n}\n.ep-message__link-icon {\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  color: inherit;\n}\n.ep-message__link:hover:not(.ep-message__link--disabled) {\n  background: var(--ep-color-accent-soft);\n  border-color: var(--ep-color-accent);\n  color: var(--ep-color-accent);\n}\n.ep-message__link.ep-message__link--disabled {\n  border-color: var(--ep-color-border);\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.ep-message__suggestions-panel {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  max-width: 100%;\n  margin-top: 4px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  border-radius: 4px;\n  background: transparent;\n  overflow: hidden;\n}\n.ep-message__suggestions-panel-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 47px;\n  padding: 0 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n}\n.ep-message__suggestions-panel-title {\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  line-height: 20px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ep-message__suggestions-panel-close {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 24px;\n  height: 24px;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  transition: opacity 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-close:hover {\n  opacity: 1;\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-close svg {\n  width: 10px;\n  height: 10px;\n}\n.ep-message__suggestions-panel-list {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-message__suggestions-panel-item {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  min-height: 49px;\n  padding: 7px 14px;\n  font-size: 14px;\n  line-height: 20px;\n  text-align: left;\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  border: none;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  cursor: pointer;\n  transition: background-color 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-item:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-text) 4%, transparent);\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-item:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.epica-error {\n  display: flex;\n  width: fit-content;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 18px 20px;\n  align-items: center;\n  gap: 16px;\n  border-radius: 4px;\n  border: 1px solid rgba(104, 95, 255, 0.0784313725);\n  background: rgba(104, 95, 255, 0.0784313725);\n}\n.epica-error__text {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-accent);\n}\n:host ::ng-deep .ep-md-code__copy-icon {\n  font-size: 12px;\n  cursor: pointer;\n}\n/*# sourceMappingURL=message-item.component.css.map */\n'] }]
   }], () => [{ type: ActionService }], { message: [{
     type: Input
   }], isLast: [{
@@ -95866,7 +95914,7 @@ var MessageItemComponent = _MessageItemComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageItemComponent, { className: "MessageItemComponent", filePath: "src/app/components/message-item/message-item.component.ts", lineNumber: 36 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageItemComponent, { className: "MessageItemComponent", filePath: "src/app/components/message-item/message-item.component.ts", lineNumber: 38 });
 })();
 
 // src/app/components/shared/typing-indicator/typing-indicator.component.ts
@@ -95897,35 +95945,77 @@ var TypingIndicatorComponent = _TypingIndicatorComponent;
 var _c013 = ["bodyElement"];
 var _c19 = ["spacer"];
 var _forTrack06 = ($index, $item) => $item.id || $item.time;
-function ChatBodyComponent_For_7_Template(rf, ctx) {
+function ChatBodyComponent_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-message-item", 9);
-    \u0275\u0275listener("actionClick", function ChatBodyComponent_For_7_Template_ep_message_item_actionClick_0_listener($event) {
-      \u0275\u0275restoreView(_r1);
-      const ctx_r1 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r1.onActionClick($event));
+    \u0275\u0275elementStart(0, "div", 3);
+    \u0275\u0275element(1, "img", 4);
+    \u0275\u0275elementStart(2, "div", 5);
+    \u0275\u0275text(3, "Ask questions or build Workflows");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 6);
+    \u0275\u0275text(5, " Use me to write content, get answers, systems insights or build Workflows ");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r0 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275property("src", ctx_r0.getImagePath("epicstaff-logo.svg"), \u0275\u0275sanitizeUrl);
+  }
+}
+function ChatBodyComponent_Conditional_3_For_5_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r2 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-message-item", 13);
+    \u0275\u0275listener("actionClick", function ChatBodyComponent_Conditional_3_For_5_Template_ep_message_item_actionClick_0_listener($event) {
+      \u0275\u0275restoreView(_r2);
+      const ctx_r0 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r0.onActionClick($event));
     });
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const message_r3 = ctx.$implicit;
-    const \u0275$index_10_r4 = ctx.$index;
-    const \u0275$count_10_r5 = ctx.$count;
-    \u0275\u0275property("message", message_r3)("isLast", \u0275$index_10_r4 === \u0275$count_10_r5 - 1);
+    const \u0275$index_22_r4 = ctx.$index;
+    const \u0275$count_22_r5 = ctx.$count;
+    \u0275\u0275property("message", message_r3)("isLast", \u0275$index_22_r4 === \u0275$count_22_r5 - 1);
   }
 }
-function ChatBodyComponent_Conditional_8_Template(rf, ctx) {
+function ChatBodyComponent_Conditional_3_Conditional_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 7);
+    \u0275\u0275elementStart(0, "div", 11);
     \u0275\u0275element(1, "ep-typing-indicator");
     \u0275\u0275elementEnd();
+  }
+}
+function ChatBodyComponent_Conditional_3_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 7)(1, "div", 8);
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(3, "div", 9);
+    \u0275\u0275repeaterCreate(4, ChatBodyComponent_Conditional_3_For_5_Template, 1, 2, "ep-message-item", 10, _forTrack06);
+    \u0275\u0275conditionalCreate(6, ChatBodyComponent_Conditional_3_Conditional_6_Template, 2, 0, "div", 11);
+    \u0275\u0275element(7, "div", 12, 1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r0 = \u0275\u0275nextContext();
+    \u0275\u0275classProp("visible", ctx_r0.upperDate && ctx_r0.isUpperDateVisible);
+    \u0275\u0275advance();
+    \u0275\u0275classProp("visible", ctx_r0.upperDate && ctx_r0.isUpperDateVisible);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", ctx_r0.upperDate, " ");
+    \u0275\u0275advance(2);
+    \u0275\u0275repeater(ctx_r0.messages);
+    \u0275\u0275advance(2);
+    \u0275\u0275conditional(ctx_r0.isTyping ? 6 : -1);
   }
 }
 var _ChatBodyComponent = class _ChatBodyComponent {
   constructor() {
     this.messages = [];
     this.isTyping = false;
+    this.getImagePath = getImagePath;
     this.scrollMode = "none";
     this.actionClick = new EventEmitter();
     this.shouldAutoScroll = true;
@@ -96213,36 +96303,61 @@ _ChatBodyComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.spacerEl = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.autoScrollDirective = _t.first);
   }
-}, inputs: { messages: "messages", isTyping: "isTyping", scrollMode: "scrollMode" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 11, vars: 7, consts: [["bodyElement", ""], ["spacer", ""], [1, "chat-body", 3, "epAutoScroll"], [1, "chat-body__upper-gradient-line"], [1, "chat-body__upper-date"], [1, "chat-body__messages"], [3, "message", "isLast"], [1, "chat-body__typing"], [1, "chat-body__spacer"], [3, "actionClick", "message", "isLast"]], template: function ChatBodyComponent_Template(rf, ctx) {
+}, inputs: { messages: "messages", isTyping: "isTyping", scrollMode: "scrollMode" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 4, vars: 4, consts: [["bodyElement", ""], ["spacer", ""], [1, "chat-body", 3, "epAutoScroll"], [1, "chat-body__empty"], ["draggable", "false", "alt", "", 1, "chat-body__empty-icon", 3, "src"], [1, "chat-body__empty-title"], [1, "chat-body__empty-subtitle"], [1, "chat-body__upper-gradient-line"], [1, "chat-body__upper-date"], [1, "chat-body__messages"], [3, "message", "isLast"], [1, "chat-body__typing"], [1, "chat-body__spacer"], [3, "actionClick", "message", "isLast"]], template: function ChatBodyComponent_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 2, 0)(2, "div", 3)(3, "div", 4);
-    \u0275\u0275text(4);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(5, "div", 5);
-    \u0275\u0275repeaterCreate(6, ChatBodyComponent_For_7_Template, 1, 2, "ep-message-item", 6, _forTrack06);
-    \u0275\u0275conditionalCreate(8, ChatBodyComponent_Conditional_8_Template, 2, 0, "div", 7);
-    \u0275\u0275element(9, "div", 8, 1);
-    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(0, "div", 2, 0);
+    \u0275\u0275conditionalCreate(2, ChatBodyComponent_Conditional_2_Template, 6, 1, "div", 3)(3, ChatBodyComponent_Conditional_3_Template, 9, 6);
+    \u0275\u0275elementEnd();
   }
   if (rf & 2) {
+    \u0275\u0275classProp("chat-body--empty", ctx.messages.length === 0 && !ctx.isTyping);
     \u0275\u0275property("epAutoScroll", ctx.shouldAutoScroll);
     \u0275\u0275advance(2);
-    \u0275\u0275classProp("visible", ctx.upperDate && ctx.isUpperDateVisible);
-    \u0275\u0275advance();
-    \u0275\u0275classProp("visible", ctx.upperDate && ctx.isUpperDateVisible);
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx.upperDate, " ");
-    \u0275\u0275advance(2);
-    \u0275\u0275repeater(ctx.messages);
-    \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx.isTyping ? 8 : -1);
+    \u0275\u0275conditional(ctx.messages.length === 0 && !ctx.isTyping ? 2 : 3);
   }
-}, dependencies: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], styles: ["\n\n[_nghost-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow: hidden;\n}\n.chat-body[_ngcontent-%COMP%] {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  background: var(--ep-color-surface);\n  display: flex;\n  flex-direction: column;\n  padding-bottom: 200px;\n  overflow-y: auto;\n}\n.chat-body__upper-gradient-line[_ngcontent-%COMP%] {\n  position: sticky;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 100;\n  pointer-events: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 4px;\n  transition: transform 0.3s ease, visibility 0s linear 0.3s;\n  transform: translateY(-100%);\n  visibility: hidden;\n}\n.chat-body__upper-gradient-line.visible[_ngcontent-%COMP%] {\n  transform: translateY(0);\n  visibility: visible;\n  transition: transform 0.3s ease, visibility 0s linear 0s;\n}\n.chat-body__upper-date[_ngcontent-%COMP%] {\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  border-radius: 4px;\n  -webkit-backdrop-filter: blur(12px) saturate(180%);\n  backdrop-filter: blur(12px) saturate(180%);\n  border: 1px solid var(--ep-color-border);\n  opacity: 0;\n  transform: translateY(-10px);\n  transition: opacity 0.25s ease, transform 0.3s ease;\n  white-space: nowrap;\n}\n.chat-body__upper-date.visible[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n  transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;\n}\n.chat-body__messages[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex: 1 0 auto;\n}\n.chat-body__typing[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 0 20px;\n}\n.chat-body__spacer[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  min-height: 0;\n}\n/*# sourceMappingURL=chat-body.component.css.map */"] });
+}, dependencies: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], styles: ["\n\n[_nghost-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow: hidden;\n}\n.chat-body[_ngcontent-%COMP%] {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  background: var(--ep-color-surface);\n  display: flex;\n  flex-direction: column;\n  overflow-y: auto;\n}\n.chat-body--empty[_ngcontent-%COMP%] {\n  overflow-y: hidden;\n}\n.chat-body__upper-gradient-line[_ngcontent-%COMP%] {\n  position: sticky;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 100;\n  pointer-events: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 4px;\n  transition: transform 0.3s ease, visibility 0s linear 0.3s;\n  transform: translateY(-100%);\n  visibility: hidden;\n}\n.chat-body__upper-gradient-line.visible[_ngcontent-%COMP%] {\n  transform: translateY(0);\n  visibility: visible;\n  transition: transform 0.3s ease, visibility 0s linear 0s;\n}\n.chat-body__upper-date[_ngcontent-%COMP%] {\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  border-radius: 4px;\n  -webkit-backdrop-filter: blur(12px) saturate(180%);\n  backdrop-filter: blur(12px) saturate(180%);\n  border: 1px solid var(--ep-color-border);\n  opacity: 0;\n  transform: translateY(-10px);\n  transition: opacity 0.25s ease, transform 0.3s ease;\n  white-space: nowrap;\n}\n.chat-body__upper-date.visible[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n  transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;\n}\n.chat-body__messages[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex: 1 0 auto;\n}\n.chat-body__typing[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 0 20px;\n}\n.chat-body__spacer[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  min-height: 0;\n}\n.chat-body__empty[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  flex: 1;\n  padding: 40px 32px;\n  text-align: center;\n  gap: 8px;\n}\n.chat-body__empty-icon[_ngcontent-%COMP%] {\n  width: 60px;\n  height: 60px;\n  margin-bottom: 4px;\n}\n.chat-body__empty-title[_ngcontent-%COMP%] {\n  font-size: 18px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  line-height: 1.4;\n}\n.chat-body__empty-subtitle[_ngcontent-%COMP%] {\n  font-size: 12px;\n  font-weight: 400;\n  color: var(--ep-color-text-muted);\n  line-height: 1.5;\n  max-width: 320px;\n}\n/*# sourceMappingURL=chat-body.component.css.map */"] });
 var ChatBodyComponent = _ChatBodyComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatBodyComponent, [{
     type: Component,
-    args: [{ selector: "ep-chat-body", imports: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], template: '<div class="chat-body" #bodyElement [epAutoScroll]="shouldAutoScroll">\r\n  <div class="chat-body__upper-gradient-line" [class.visible]="upperDate && isUpperDateVisible">\r\n    <div class="chat-body__upper-date" [class.visible]="upperDate && isUpperDateVisible">\r\n      {{ upperDate }}\r\n    </div>\r\n  </div>\r\n  <div class="chat-body__messages">\r\n    @for (message of messages; track message.id || message.time) {\r\n      <ep-message-item [message]="message" [isLast]="$last" (actionClick)="onActionClick($event)" />\r\n    }\r\n    @if (isTyping) {\r\n      <div class="chat-body__typing">\r\n        <ep-typing-indicator />\r\n      </div>\r\n    }\r\n    <div #spacer class="chat-body__spacer"></div>\r\n  </div>\r\n</div>\r\n', styles: ["/* src/app/components/chat-body/chat-body.component.scss */\n:host {\n  display: flex;\n  flex-direction: column;\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow: hidden;\n}\n.chat-body {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  background: var(--ep-color-surface);\n  display: flex;\n  flex-direction: column;\n  padding-bottom: 200px;\n  overflow-y: auto;\n}\n.chat-body__upper-gradient-line {\n  position: sticky;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 100;\n  pointer-events: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 4px;\n  transition: transform 0.3s ease, visibility 0s linear 0.3s;\n  transform: translateY(-100%);\n  visibility: hidden;\n}\n.chat-body__upper-gradient-line.visible {\n  transform: translateY(0);\n  visibility: visible;\n  transition: transform 0.3s ease, visibility 0s linear 0s;\n}\n.chat-body__upper-date {\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  border-radius: 4px;\n  -webkit-backdrop-filter: blur(12px) saturate(180%);\n  backdrop-filter: blur(12px) saturate(180%);\n  border: 1px solid var(--ep-color-border);\n  opacity: 0;\n  transform: translateY(-10px);\n  transition: opacity 0.25s ease, transform 0.3s ease;\n  white-space: nowrap;\n}\n.chat-body__upper-date.visible {\n  opacity: 1;\n  transform: translateY(0);\n  transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;\n}\n.chat-body__messages {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex: 1 0 auto;\n}\n.chat-body__typing {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 0 20px;\n}\n.chat-body__spacer {\n  flex-shrink: 0;\n  min-height: 0;\n}\n/*# sourceMappingURL=chat-body.component.css.map */\n"] }]
+    args: [{ selector: "ep-chat-body", imports: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], template: `<div class="chat-body" [class.chat-body--empty]="messages.length === 0 && !isTyping" #bodyElement [epAutoScroll]="shouldAutoScroll">\r
+  @if (messages.length === 0 && !isTyping) {\r
+    <div class="chat-body__empty">\r
+      <img\r
+        [src]="getImagePath('epicstaff-logo.svg')"\r
+        class="chat-body__empty-icon"\r
+        draggable="false"\r
+        alt=""\r
+      />\r
+      <div class="chat-body__empty-title">Ask questions or build Workflows</div>\r
+      <div class="chat-body__empty-subtitle">\r
+        Use me to write content, get answers, systems insights or build Workflows\r
+      </div>\r
+    </div>\r
+  } @else {\r
+    <div class="chat-body__upper-gradient-line" [class.visible]="upperDate && isUpperDateVisible">\r
+      <div class="chat-body__upper-date" [class.visible]="upperDate && isUpperDateVisible">\r
+        {{ upperDate }}\r
+      </div>\r
+    </div>\r
+    <div class="chat-body__messages">\r
+      @for (message of messages; track message.id || message.time) {\r
+        <ep-message-item\r
+          [message]="message"\r
+          [isLast]="$last"\r
+          (actionClick)="onActionClick($event)"\r
+        />\r
+      }\r
+      @if (isTyping) {\r
+        <div class="chat-body__typing">\r
+          <ep-typing-indicator />\r
+        </div>\r
+      }\r
+      <div #spacer class="chat-body__spacer"></div>\r
+    </div>\r
+  }\r
+</div>\r
+`, styles: ["/* src/app/components/chat-body/chat-body.component.scss */\n:host {\n  display: flex;\n  flex-direction: column;\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow: hidden;\n}\n.chat-body {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  background: var(--ep-color-surface);\n  display: flex;\n  flex-direction: column;\n  overflow-y: auto;\n}\n.chat-body--empty {\n  overflow-y: hidden;\n}\n.chat-body__upper-gradient-line {\n  position: sticky;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 100;\n  pointer-events: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 4px;\n  transition: transform 0.3s ease, visibility 0s linear 0.3s;\n  transform: translateY(-100%);\n  visibility: hidden;\n}\n.chat-body__upper-gradient-line.visible {\n  transform: translateY(0);\n  visibility: visible;\n  transition: transform 0.3s ease, visibility 0s linear 0s;\n}\n.chat-body__upper-date {\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  border-radius: 4px;\n  -webkit-backdrop-filter: blur(12px) saturate(180%);\n  backdrop-filter: blur(12px) saturate(180%);\n  border: 1px solid var(--ep-color-border);\n  opacity: 0;\n  transform: translateY(-10px);\n  transition: opacity 0.25s ease, transform 0.3s ease;\n  white-space: nowrap;\n}\n.chat-body__upper-date.visible {\n  opacity: 1;\n  transform: translateY(0);\n  transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;\n}\n.chat-body__messages {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex: 1 0 auto;\n}\n.chat-body__typing {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 0 20px;\n}\n.chat-body__spacer {\n  flex-shrink: 0;\n  min-height: 0;\n}\n.chat-body__empty {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  flex: 1;\n  padding: 40px 32px;\n  text-align: center;\n  gap: 8px;\n}\n.chat-body__empty-icon {\n  width: 60px;\n  height: 60px;\n  margin-bottom: 4px;\n}\n.chat-body__empty-title {\n  font-size: 18px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  line-height: 1.4;\n}\n.chat-body__empty-subtitle {\n  font-size: 12px;\n  font-weight: 400;\n  color: var(--ep-color-text-muted);\n  line-height: 1.5;\n  max-width: 320px;\n}\n/*# sourceMappingURL=chat-body.component.css.map */\n"] }]
   }], null, { messages: [{
     type: Input
   }], isTyping: [{
@@ -96263,7 +96378,7 @@ var ChatBodyComponent = _ChatBodyComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatBodyComponent, { className: "ChatBodyComponent", filePath: "src/app/components/chat-body/chat-body.component.ts", lineNumber: 27 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatBodyComponent, { className: "ChatBodyComponent", filePath: "src/app/components/chat-body/chat-body.component.ts", lineNumber: 28 });
 })();
 
 // src/app/components/shared/menu/menu-item.component.ts
@@ -96286,12 +96401,12 @@ _MenuItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275projectionDef();
     \u0275\u0275projection(0);
   }
-}, styles: ["\n\n[_nghost-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n  transition: background-color 0.15s;\n}\n[_nghost-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n[_nghost-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-menu-item--active[_nghost-%COMP%] {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n/*# sourceMappingURL=menu-item.component.css.map */"] });
+}, styles: ["\n\n[_nghost-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n  transition: background-color 0.15s;\n}\n[_nghost-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n[_nghost-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-menu-item--active[_nghost-%COMP%] {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n.ep-menu--panel[_nghost-%COMP%], .ep-menu--panel   [_nghost-%COMP%] {\n  padding: var(--ep-menu-panel-item-padding, 10px 16px);\n  align-items: center;\n  gap: 8px;\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 14px;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n}\n.ep-menu--panel.ep-menu--panel[_nghost-%COMP%], .ep-menu--panel.ep-menu--panel   [_nghost-%COMP%], .ep-menu--panel   .ep-menu--panel[_nghost-%COMP%], .ep-menu--panel   .ep-menu--panel   [_nghost-%COMP%], .ep-menu--panel   .ep-menu--panel[_nghost-%COMP%], .ep-menu--panel   .ep-menu--panel   [_nghost-%COMP%] {\n  border-top: 1px solid var(--ep-menu-panel-divider, var(--ep-color-border));\n}\n.ep-menu--panel[_nghost-%COMP%]:hover, .ep-menu--panel   [_nghost-%COMP%]:hover {\n  background-color: var(--ep-menu-panel-item-hover-bg, var(--ep-color-surface-alt));\n}\n.ep-menu--panel[_nghost-%COMP%]:focus-visible, .ep-menu--panel   [_nghost-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-menu-panel-item-hover-bg, var(--ep-color-surface-alt));\n}\n.ep-menu--panel.ep-menu-item--active[_nghost-%COMP%], .ep-menu--panel   .ep-menu-item--active[_nghost-%COMP%] {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n/*# sourceMappingURL=menu-item.component.css.map */"] });
 var MenuItemComponent = _MenuItemComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MenuItemComponent, [{
     type: Component,
-    args: [{ selector: "ep-menu-item", template: `<ng-content></ng-content>`, styles: ["/* src/app/components/shared/menu/menu-item.component.scss */\n:host {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n  transition: background-color 0.15s;\n}\n:host:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n:host:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n:host.ep-menu-item--active {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n/*# sourceMappingURL=menu-item.component.css.map */\n"] }]
+    args: [{ selector: "ep-menu-item", template: `<ng-content></ng-content>`, styles: ["/* src/app/components/shared/menu/menu-item.component.scss */\n:host {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  cursor: pointer;\n  transition: background-color 0.15s;\n}\n:host:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n:host:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-color-surface-alt);\n}\n:host.ep-menu-item--active {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n:host-context(.ep-menu--panel) {\n  padding: var(--ep-menu-panel-item-padding, 10px 16px);\n  align-items: center;\n  gap: 8px;\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 14px;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n}\n:host-context(.ep-menu--panel) + :host-context(.ep-menu--panel) {\n  border-top: 1px solid var(--ep-menu-panel-divider, var(--ep-color-border));\n}\n:host-context(.ep-menu--panel):hover {\n  background-color: var(--ep-menu-panel-item-hover-bg, var(--ep-color-surface-alt));\n}\n:host-context(.ep-menu--panel):focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: -2px;\n  background-color: var(--ep-menu-panel-item-hover-bg, var(--ep-color-surface-alt));\n}\n:host-context(.ep-menu--panel).ep-menu-item--active {\n  color: var(--ep-color-accent);\n  font-weight: 600;\n}\n/*# sourceMappingURL=menu-item.component.css.map */\n"] }]
   }], null, { role: [{
     type: HostBinding,
     args: ["attr.role"]
@@ -96373,12 +96488,12 @@ _MenuComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
     \u0275\u0275projectionDef();
     \u0275\u0275projection(0);
   }
-}, styles: ["\n\n[_nghost-%COMP%] {\n  position: absolute;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  padding: 12px 0;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n  min-width: 160px;\n}\n/*# sourceMappingURL=menu.component.css.map */"] });
+}, styles: ["\n\n[_nghost-%COMP%] {\n  position: absolute;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  padding: 12px 0;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n  min-width: 160px;\n}\n.ep-menu--panel[_nghost-%COMP%] {\n  padding: 0;\n  min-width: var(--ep-menu-panel-min-width, 170px);\n  background-color: var(--ep-menu-panel-bg, var(--ep-color-surface));\n  border: 1px solid var(--ep-menu-panel-border, var(--ep-color-border));\n  border-radius: var(--ep-menu-panel-radius, 8px);\n  box-shadow: var(--ep-menu-panel-shadow, 0 2px 4px 0 var(--ep-color-shadow));\n  overflow: hidden;\n}\n/*# sourceMappingURL=menu.component.css.map */"] });
 var MenuComponent = _MenuComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MenuComponent, [{
     type: Component,
-    args: [{ selector: "ep-menu", template: `<ng-content></ng-content>`, styles: ["/* src/app/components/shared/menu/menu.component.scss */\n:host {\n  position: absolute;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  padding: 12px 0;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n  min-width: 160px;\n}\n/*# sourceMappingURL=menu.component.css.map */\n"] }]
+    args: [{ selector: "ep-menu", template: `<ng-content></ng-content>`, styles: ["/* src/app/components/shared/menu/menu.component.scss */\n:host {\n  position: absolute;\n  display: flex;\n  flex-direction: column;\n  z-index: 1005;\n  padding: 12px 0;\n  background-color: var(--ep-color-surface);\n  box-shadow: 0px 2px 4px 0px var(--ep-color-shadow);\n  border-radius: 4px;\n  min-width: 160px;\n}\n:host(.ep-menu--panel) {\n  padding: 0;\n  min-width: var(--ep-menu-panel-min-width, 170px);\n  background-color: var(--ep-menu-panel-bg, var(--ep-color-surface));\n  border: 1px solid var(--ep-menu-panel-border, var(--ep-color-border));\n  border-radius: var(--ep-menu-panel-radius, 8px);\n  box-shadow: var(--ep-menu-panel-shadow, 0 2px 4px 0 var(--ep-color-shadow));\n  overflow: hidden;\n}\n/*# sourceMappingURL=menu.component.css.map */\n"] }]
   }], () => [{ type: ElementRef }], { closed: [{
     type: Output
   }], onMenuClick: [{
@@ -96792,7 +96907,7 @@ var _ApiService = class _ApiService {
         return yield this.subscribeToEpicstaffSseSession(agentUrl, sessionId, onStreamUpdate, timeout);
       } catch (error) {
         console.error("Error sending Epicstaff request:", error);
-        throw error;
+        throw new Error(this.extractHttpErrorMessage(error));
       }
     });
   }
@@ -97111,6 +97226,23 @@ var _ApiService = class _ApiService {
       }
     });
   }
+  extractHttpErrorMessage(error) {
+    if (error && typeof error === "object") {
+      const err = error;
+      if (err["error"] && typeof err["error"] === "object") {
+        const body = err["error"];
+        if (typeof body["message"] === "string")
+          return body["message"];
+        if (typeof body["detail"] === "string")
+          return body["detail"];
+      }
+      if (typeof err["error"] === "string")
+        return err["error"];
+      if (typeof err["message"] === "string")
+        return err["message"];
+    }
+    return "Something went wrong";
+  }
 };
 _ApiService.\u0275fac = function ApiService_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient), \u0275\u0275inject(ActionService), \u0275\u0275inject(StorageService));
@@ -97127,106 +97259,131 @@ var ApiService = _ApiService;
 // src/app/components/shared/recent-files-menu/recent-files-menu.component.ts
 var _c016 = ["attachFileMenuItem"];
 var _forTrack07 = ($index, $item) => $item.name;
-function RecentFilesMenuComponent_Conditional_1_For_3_Conditional_3_Template(rf, ctx) {
+function RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 9);
+    \u0275\u0275elementStart(0, "span", 11);
     \u0275\u0275text(1, "(attached)");
     \u0275\u0275elementEnd();
   }
 }
-function RecentFilesMenuComponent_Conditional_1_For_3_Template(rf, ctx) {
+function RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Template(rf, ctx) {
   if (rf & 1) {
-    const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 7);
-    \u0275\u0275listener("click", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_click_0_listener() {
-      const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.attachRecentFile(file_r3));
-    })("keydown.enter", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_keydown_enter_0_listener() {
-      const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.attachRecentFile(file_r3));
-    })("keydown.space", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_keydown_space_0_listener() {
-      const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.attachRecentFile(file_r3));
-    })("mouseenter", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_mouseenter_0_listener() {
-      const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onFileHover(file_r3));
-    })("mouseleave", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_mouseleave_0_listener() {
-      \u0275\u0275restoreView(_r2);
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onFileHover(null));
+    const _r3 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 8);
+    \u0275\u0275listener("click", function RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Template_div_click_0_listener() {
+      const file_r4 = \u0275\u0275restoreView(_r3).$implicit;
+      const ctx_r1 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r1.attachRecentFile(file_r4));
+    })("keydown.enter", function RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Template_div_keydown_enter_0_listener() {
+      const file_r4 = \u0275\u0275restoreView(_r3).$implicit;
+      const ctx_r1 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r1.attachRecentFile(file_r4));
+    })("keydown.space", function RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Template_div_keydown_space_0_listener() {
+      const file_r4 = \u0275\u0275restoreView(_r3).$implicit;
+      const ctx_r1 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r1.attachRecentFile(file_r4));
+    })("mouseenter", function RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Template_div_mouseenter_0_listener() {
+      const file_r4 = \u0275\u0275restoreView(_r3).$implicit;
+      const ctx_r1 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r1.onFileHover(file_r4));
+    })("mouseleave", function RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Template_div_mouseleave_0_listener() {
+      \u0275\u0275restoreView(_r3);
+      const ctx_r1 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r1.onFileHover(null));
     });
-    \u0275\u0275elementStart(1, "div", 8);
-    \u0275\u0275text(2);
-    \u0275\u0275conditionalCreate(3, RecentFilesMenuComponent_Conditional_1_For_3_Conditional_3_Template, 2, 0, "span", 9);
+    \u0275\u0275element(1, "ep-icon", 9);
+    \u0275\u0275elementStart(2, "div", 10);
+    \u0275\u0275text(3);
+    \u0275\u0275conditionalCreate(4, RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Conditional_4_Template, 2, 0, "span", 11);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 10);
-    \u0275\u0275listener("click", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_click_4_listener($event) {
-      const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.removeFileFromRecentFiles($event, file_r3));
-    })("keydown", function RecentFilesMenuComponent_Conditional_1_For_3_Template_div_keydown_4_listener($event) {
-      const file_r3 = \u0275\u0275restoreView(_r2).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.onRemoveFileKeydown($event, file_r3));
+    \u0275\u0275elementStart(5, "div", 12);
+    \u0275\u0275listener("click", function RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Template_div_click_5_listener($event) {
+      const file_r4 = \u0275\u0275restoreView(_r3).$implicit;
+      const ctx_r1 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r1.removeFileFromRecentFiles($event, file_r4));
+    })("keydown", function RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Template_div_keydown_5_listener($event) {
+      const file_r4 = \u0275\u0275restoreView(_r3).$implicit;
+      const ctx_r1 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r1.onRemoveFileKeydown($event, file_r4));
     });
-    \u0275\u0275element(5, "img", 11);
+    \u0275\u0275element(6, "ep-icon", 13);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const file_r3 = ctx.$implicit;
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275classProp("disabled", ctx_r3.isFileAlreadyAttached(file_r3));
+    const file_r4 = ctx.$implicit;
+    const ctx_r1 = \u0275\u0275nextContext(3);
+    \u0275\u0275classProp("disabled", ctx_r1.isFileAlreadyAttached(file_r4));
+    \u0275\u0275advance();
+    \u0275\u0275property("size", 12);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", file_r3.name, " ");
+    \u0275\u0275textInterpolate1(" ", file_r4.name, " ");
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r3.isFileAlreadyAttached(file_r3) ? 3 : -1);
+    \u0275\u0275conditional(ctx_r1.isFileAlreadyAttached(file_r4) ? 4 : -1);
     \u0275\u0275advance();
-    \u0275\u0275classProp("visible", ctx_r3.hoveredFile === file_r3);
+    \u0275\u0275classProp("visible", ctx_r1.hoveredFile === file_r4);
     \u0275\u0275advance();
-    \u0275\u0275property("src", ctx_r3.getImagePath("x.svg"), \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("size", 8);
   }
 }
-function RecentFilesMenuComponent_Conditional_1_Template(rf, ctx) {
+function RecentFilesMenuComponent_Conditional_0_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 4);
+    \u0275\u0275elementStart(0, "div", 5);
     \u0275\u0275text(1, "Recent files");
     \u0275\u0275elementEnd();
-    \u0275\u0275repeaterCreate(2, RecentFilesMenuComponent_Conditional_1_For_3_Template, 6, 7, "div", 5, _forTrack07);
-    \u0275\u0275element(4, "div", 6);
+    \u0275\u0275element(2, "div", 6);
+    \u0275\u0275repeaterCreate(3, RecentFilesMenuComponent_Conditional_0_Conditional_1_For_4_Template, 7, 8, "div", 7, _forTrack07);
+    \u0275\u0275element(5, "div", 6);
   }
   if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext();
-    \u0275\u0275advance(2);
-    \u0275\u0275repeater(ctx_r3.recentFiles);
+    const ctx_r1 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance(3);
+    \u0275\u0275repeater(ctx_r1.recentFiles);
   }
 }
-function RecentFilesMenuComponent_Conditional_4_Template(rf, ctx) {
+function RecentFilesMenuComponent_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div");
-    \u0275\u0275text(1);
+    const _r1 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu", 2);
+    \u0275\u0275listener("closed", function RecentFilesMenuComponent_Conditional_0_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.hideRecentFilesMenu.emit());
+    });
+    \u0275\u0275conditionalCreate(1, RecentFilesMenuComponent_Conditional_0_Conditional_1_Template, 6, 0);
+    \u0275\u0275elementStart(2, "label", 3, 0)(4, "div");
+    \u0275\u0275text(5);
     \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(6, "input", 4);
+    \u0275\u0275listener("change", function RecentFilesMenuComponent_Conditional_0_Template_input_change_6_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.onNewFileSelect($event));
+    });
+    \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext();
+    const ctx_r1 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1("Attach file", ctx_r3.multipleFilesAllowed ? "s" : "");
+    \u0275\u0275conditional(ctx_r1.recentFiles.length ? 1 : -1);
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate1("Attach file", ctx_r1.multipleFilesAllowed ? "s" : "");
+    \u0275\u0275advance();
+    \u0275\u0275property("multiple", ctx_r1.multipleFilesAllowed);
+    \u0275\u0275attribute("accept", ctx_r1.multipleFilesAllowed ? null : ctx_r1.singleModeAccept);
   }
 }
 var _RecentFilesMenuComponent = class _RecentFilesMenuComponent {
-  constructor(apiService) {
+  constructor(apiService, cdr) {
     this.apiService = apiService;
+    this.cdr = cdr;
     this.alreadyAttachedFiles = [];
     this.multipleFilesAllowed = true;
     this.fileAttached = new EventEmitter();
     this.filesAttached = new EventEmitter();
     this.hideRecentFilesMenu = new EventEmitter();
     this.recentFiles = [];
+    this.loaded = false;
     this.hoveredFile = null;
-    this.getImagePath = getImagePath;
     this.singleModeAccept = [
       "application/pdf",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -97240,7 +97397,7 @@ var _RecentFilesMenuComponent = class _RecentFilesMenuComponent {
       "application/vnd.oasis.opendocument.text"
     ].join(",");
   }
-  ngOnInit() {
+  ngAfterViewInit() {
     this.getRecentFiles();
   }
   getRecentFiles() {
@@ -97248,10 +97405,19 @@ var _RecentFilesMenuComponent = class _RecentFilesMenuComponent {
       const files = yield this.apiService.getRecentFilesFromIndexedDB();
       if (files.length) {
         this.recentFiles = files;
+        this.loaded = true;
+        this.cdr.detectChanges();
       } else {
-        this.attachFileMenuItem?.nativeElement.click();
+        this.openFilePicker();
       }
     });
+  }
+  openFilePicker() {
+    if (this.attachFileMenuItem?.nativeElement) {
+      this.attachFileMenuItem.nativeElement.click();
+    } else {
+      this.hideRecentFilesMenu.emit();
+    }
   }
   attachRecentFile(file) {
     if (this.multipleFilesAllowed && this.isFileAlreadyAttached(file)) {
@@ -97303,7 +97469,7 @@ var _RecentFilesMenuComponent = class _RecentFilesMenuComponent {
   }
 };
 _RecentFilesMenuComponent.\u0275fac = function RecentFilesMenuComponent_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _RecentFilesMenuComponent)(\u0275\u0275directiveInject(ApiService));
+  return new (__ngFactoryType__ || _RecentFilesMenuComponent)(\u0275\u0275directiveInject(ApiService), \u0275\u0275directiveInject(ChangeDetectorRef));
 };
 _RecentFilesMenuComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _RecentFilesMenuComponent, selectors: [["ep-recent-files-menu"]], viewQuery: function RecentFilesMenuComponent_Query(rf, ctx) {
   if (rf & 1) {
@@ -97313,93 +97479,20 @@ _RecentFilesMenuComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponen
     let _t;
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.attachFileMenuItem = _t.first);
   }
-}, inputs: { alreadyAttachedFiles: "alreadyAttachedFiles", multipleFilesAllowed: "multipleFilesAllowed" }, outputs: { fileAttached: "fileAttached", filesAttached: "filesAttached", hideRecentFilesMenu: "hideRecentFilesMenu" }, decls: 6, vars: 4, consts: [["attachFileMenuItem", ""], [2, "bottom", "100%", "right", "12px", "margin-bottom", "8px", "min-width", "220px", "max-width", "80%", 3, "closed"], [1, "ep-recent-files__menu-item"], ["type", "file", 3, "change", "multiple"], [1, "ep-recent-files__header"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__menu-item", 3, "disabled"], [1, "ep-recent-files__menu_divider"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__menu-item", 3, "click", "keydown.enter", "keydown.space", "mouseenter", "mouseleave"], [1, "ep-recent-files__file-name"], [2, "opacity", "0.6", "margin-left", "4px"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__remove", 3, "click", "keydown"], ["width", "9", "draggable", "false", "alt", "Remove", 3, "src"]], template: function RecentFilesMenuComponent_Template(rf, ctx) {
+}, inputs: { alreadyAttachedFiles: "alreadyAttachedFiles", multipleFilesAllowed: "multipleFilesAllowed" }, outputs: { fileAttached: "fileAttached", filesAttached: "filesAttached", hideRecentFilesMenu: "hideRecentFilesMenu" }, decls: 1, vars: 1, consts: [["attachFileMenuItem", ""], [2, "bottom", "100%", "right", "12px", "margin-bottom", "8px", "min-width", "220px", "max-width", "80%"], [2, "bottom", "100%", "right", "12px", "margin-bottom", "8px", "min-width", "220px", "max-width", "80%", 3, "closed"], [1, "ep-recent-files__menu-item"], ["type", "file", 3, "change", "multiple"], [1, "ep-recent-files__header"], [1, "ep-recent-files__divider"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__menu-item", 3, "disabled"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__menu-item", 3, "click", "keydown.enter", "keydown.space", "mouseenter", "mouseleave"], ["name", "document", 1, "ep-recent-files__file-icon", 3, "size"], [1, "ep-recent-files__file-name"], [1, "ep-recent-files__attached-label"], ["role", "button", "tabindex", "0", 1, "ep-recent-files__remove", 3, "click", "keydown"], ["name", "close", 3, "size"]], template: function RecentFilesMenuComponent_Template(rf, ctx) {
   if (rf & 1) {
-    const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu", 1);
-    \u0275\u0275listener("closed", function RecentFilesMenuComponent_Template_ep_menu_closed_0_listener() {
-      \u0275\u0275restoreView(_r1);
-      return \u0275\u0275resetView(ctx.hideRecentFilesMenu.emit());
-    });
-    \u0275\u0275conditionalCreate(1, RecentFilesMenuComponent_Conditional_1_Template, 5, 0);
-    \u0275\u0275elementStart(2, "label", 2, 0);
-    \u0275\u0275conditionalCreate(4, RecentFilesMenuComponent_Conditional_4_Template, 2, 1, "div");
-    \u0275\u0275elementStart(5, "input", 3);
-    \u0275\u0275listener("change", function RecentFilesMenuComponent_Template_input_change_5_listener($event) {
-      \u0275\u0275restoreView(_r1);
-      return \u0275\u0275resetView(ctx.onNewFileSelect($event));
-    });
-    \u0275\u0275elementEnd()()();
+    \u0275\u0275conditionalCreate(0, RecentFilesMenuComponent_Conditional_0_Template, 7, 4, "ep-menu", 1);
   }
   if (rf & 2) {
-    \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.recentFiles.length ? 1 : -1);
-    \u0275\u0275advance(3);
-    \u0275\u0275conditional(ctx.recentFiles.length ? 4 : -1);
-    \u0275\u0275advance();
-    \u0275\u0275property("multiple", ctx.multipleFilesAllowed);
-    \u0275\u0275attribute("accept", ctx.multipleFilesAllowed ? null : ctx.singleModeAccept);
+    \u0275\u0275conditional(ctx.loaded ? 0 : -1);
   }
-}, dependencies: [CommonModule, MenuComponent], styles: ["\n\n[_nghost-%COMP%] {\n  pointer-events: auto;\n}\n.ep-recent-files__header[_ngcontent-%COMP%] {\n  padding: 4px 20px 8px;\n  justify-content: space-between;\n  align-items: center;\n  align-self: stretch;\n  width: 100%;\n  height: 32px;\n  font-size: 14px;\n  font-weight: 600;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-recent-files__menu-item.disabled[_ngcontent-%COMP%] {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled[_ngcontent-%COMP%]:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%]   input[type=file][_ngcontent-%COMP%] {\n  display: none;\n}\n.ep-recent-files__file-name[_ngcontent-%COMP%] {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n}\n.ep-recent-files__menu_divider[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 1px;\n  margin: 8px 0;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__remove[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n}\n.ep-recent-files__remove.visible[_ngcontent-%COMP%] {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */"] });
+}, dependencies: [CommonModule, MenuComponent, IconComponent], styles: ["\n\n[_nghost-%COMP%] {\n  pointer-events: auto;\n}\n.ep-recent-files__header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  height: 28px;\n  padding: 0 16px;\n  align-self: stretch;\n  width: 100%;\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 12px;\n  color: var(--ep-color-text-muted);\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 12px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-recent-files__menu-item.disabled[_ngcontent-%COMP%] {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled[_ngcontent-%COMP%]:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item[_ngcontent-%COMP%]   input[type=file][_ngcontent-%COMP%] {\n  display: none;\n}\n.ep-recent-files__file-name[_ngcontent-%COMP%] {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n}\n.ep-recent-files__divider[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 1px;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__file-icon[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  color: var(--ep-color-text-muted);\n}\n.ep-recent-files__attached-label[_ngcontent-%COMP%] {\n  opacity: 0.6;\n  margin-left: 4px;\n}\n.ep-recent-files__remove[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n  color: var(--ep-color-text-muted);\n}\n.ep-recent-files__remove.visible[_ngcontent-%COMP%] {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */"] });
 var RecentFilesMenuComponent = _RecentFilesMenuComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(RecentFilesMenuComponent, [{
     type: Component,
-    args: [{ selector: "ep-recent-files-menu", imports: [CommonModule, MenuComponent], template: `<ep-menu\r
-  (closed)="hideRecentFilesMenu.emit()"\r
-  style="bottom: 100%; right: 12px; margin-bottom: 8px; min-width: 220px; max-width: 80%"\r
->\r
-  @if (recentFiles.length) {\r
-    <div class="ep-recent-files__header">Recent files</div>\r
-\r
-    @for (file of recentFiles; track file.name) {\r
-      <div\r
-        class="ep-recent-files__menu-item"\r
-        [class.disabled]="isFileAlreadyAttached(file)"\r
-        role="button"\r
-        tabindex="0"\r
-        (click)="attachRecentFile(file)"\r
-        (keydown.enter)="attachRecentFile(file)"\r
-        (keydown.space)="attachRecentFile(file)"\r
-        (mouseenter)="onFileHover(file)"\r
-        (mouseleave)="onFileHover(null)"\r
-      >\r
-        <div class="ep-recent-files__file-name">\r
-          {{ file.name }}\r
-          @if (isFileAlreadyAttached(file)) {\r
-            <span style="opacity: 0.6; margin-left: 4px">(attached)</span>\r
-          }\r
-        </div>\r
-        <div\r
-          class="ep-recent-files__remove"\r
-          [class.visible]="hoveredFile === file"\r
-          role="button"\r
-          tabindex="0"\r
-          (click)="removeFileFromRecentFiles($event, file)"\r
-          (keydown)="onRemoveFileKeydown($event, file)"\r
-        >\r
-          <img [src]="getImagePath('x.svg')" width="9" draggable="false" alt="Remove" />\r
-        </div>\r
-      </div>\r
-    }\r
-\r
-    <div class="ep-recent-files__menu_divider"></div>\r
-  }\r
-\r
-  <label #attachFileMenuItem class="ep-recent-files__menu-item">\r
-    @if (recentFiles.length) {\r
-      <div>Attach file{{ multipleFilesAllowed ? "s" : "" }}</div>\r
-    }\r
-    <input\r
-      type="file"\r
-      [multiple]="multipleFilesAllowed"\r
-      (change)="onNewFileSelect($event)"\r
-      [attr.accept]="multipleFilesAllowed ? null : singleModeAccept"\r
-    />\r
-  </label>\r
-</ep-menu>\r
-`, styles: ["/* src/app/components/shared/recent-files-menu/recent-files-menu.component.scss */\n:host {\n  pointer-events: auto;\n}\n.ep-recent-files__header {\n  padding: 4px 20px 8px;\n  justify-content: space-between;\n  align-items: center;\n  align-self: stretch;\n  width: 100%;\n  height: 32px;\n  font-size: 14px;\n  font-weight: 600;\n}\n.ep-recent-files__menu-item {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-recent-files__menu-item.disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item input[type=file] {\n  display: none;\n}\n.ep-recent-files__file-name {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n}\n.ep-recent-files__menu_divider {\n  width: 100%;\n  height: 1px;\n  margin: 8px 0;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__remove {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n}\n.ep-recent-files__remove.visible {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */\n"] }]
-  }], () => [{ type: ApiService }], { alreadyAttachedFiles: [{
+    args: [{ selector: "ep-recent-files-menu", imports: [CommonModule, MenuComponent, IconComponent], template: '@if (loaded) {\r\n  <ep-menu\r\n    (closed)="hideRecentFilesMenu.emit()"\r\n    style="bottom: 100%; right: 12px; margin-bottom: 8px; min-width: 220px; max-width: 80%"\r\n  >\r\n    @if (recentFiles.length) {\r\n      <div class="ep-recent-files__header">Recent files</div>\r\n      <div class="ep-recent-files__divider"></div>\r\n\r\n      @for (file of recentFiles; track file.name) {\r\n        <div\r\n          class="ep-recent-files__menu-item"\r\n          [class.disabled]="isFileAlreadyAttached(file)"\r\n          role="button"\r\n          tabindex="0"\r\n          (click)="attachRecentFile(file)"\r\n          (keydown.enter)="attachRecentFile(file)"\r\n          (keydown.space)="attachRecentFile(file)"\r\n          (mouseenter)="onFileHover(file)"\r\n          (mouseleave)="onFileHover(null)"\r\n        >\r\n          <ep-icon name="document" [size]="12" class="ep-recent-files__file-icon"></ep-icon>\r\n          <div class="ep-recent-files__file-name">\r\n            {{ file.name }}\r\n            @if (isFileAlreadyAttached(file)) {\r\n              <span class="ep-recent-files__attached-label">(attached)</span>\r\n            }\r\n          </div>\r\n          <div\r\n            class="ep-recent-files__remove"\r\n            [class.visible]="hoveredFile === file"\r\n            role="button"\r\n            tabindex="0"\r\n            (click)="removeFileFromRecentFiles($event, file)"\r\n            (keydown)="onRemoveFileKeydown($event, file)"\r\n          >\r\n            <ep-icon name="close" [size]="8"></ep-icon>\r\n          </div>\r\n        </div>\r\n      }\r\n\r\n      <div class="ep-recent-files__divider"></div>\r\n    }\r\n\r\n    <label #attachFileMenuItem class="ep-recent-files__menu-item">\r\n      <div>Attach file{{ multipleFilesAllowed ? "s" : "" }}</div>\r\n      <input\r\n        type="file"\r\n        [multiple]="multipleFilesAllowed"\r\n        (change)="onNewFileSelect($event)"\r\n        [attr.accept]="multipleFilesAllowed ? null : singleModeAccept"\r\n      />\r\n    </label>\r\n  </ep-menu>\r\n}\r\n', styles: ["/* src/app/components/shared/recent-files-menu/recent-files-menu.component.scss */\n:host {\n  pointer-events: auto;\n}\n.ep-recent-files__header {\n  display: flex;\n  align-items: center;\n  height: 28px;\n  padding: 0 16px;\n  align-self: stretch;\n  width: 100%;\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 12px;\n  color: var(--ep-color-text-muted);\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 12px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-recent-files__menu-item.disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item input[type=file] {\n  display: none;\n}\n.ep-recent-files__file-name {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n}\n.ep-recent-files__divider {\n  width: 100%;\n  height: 1px;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__file-icon {\n  flex-shrink: 0;\n  color: var(--ep-color-text-muted);\n}\n.ep-recent-files__attached-label {\n  opacity: 0.6;\n  margin-left: 4px;\n}\n.ep-recent-files__remove {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n  color: var(--ep-color-text-muted);\n}\n.ep-recent-files__remove.visible {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */\n"] }]
+  }], () => [{ type: ApiService }, { type: ChangeDetectorRef }], { alreadyAttachedFiles: [{
     type: Input
   }], multipleFilesAllowed: [{
     type: Input
@@ -97415,7 +97508,7 @@ var RecentFilesMenuComponent = _RecentFilesMenuComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(RecentFilesMenuComponent, { className: "RecentFilesMenuComponent", filePath: "src/app/components/shared/recent-files-menu/recent-files-menu.component.ts", lineNumber: 21 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(RecentFilesMenuComponent, { className: "RecentFilesMenuComponent", filePath: "src/app/components/shared/recent-files-menu/recent-files-menu.component.ts", lineNumber: 22 });
 })();
 
 // src/app/components/chat-footer/chat-footer.component.ts
@@ -97427,177 +97520,152 @@ var _forTrack08 = ($index, $item) => $item.value;
 function ChatFooterComponent_Conditional_1_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 14);
-    \u0275\u0275listener("buttonClick", function ChatFooterComponent_Conditional_1_Conditional_1_Template_ep_button_buttonClick_0_listener() {
+    \u0275\u0275elementStart(0, "div", 13);
+    \u0275\u0275element(1, "ep-icon", 14);
+    \u0275\u0275elementStart(2, "span", 15);
+    \u0275\u0275text(3);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 16);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_1_Conditional_1_Template_div_click_4_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r2.onRepeatFile());
+      return \u0275\u0275resetView(ctx_r2.onDeselectFile());
+    })("keydown.enter", function ChatFooterComponent_Conditional_1_Conditional_1_Template_div_keydown_enter_4_listener() {
+      \u0275\u0275restoreView(_r2);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onDeselectFile());
+    })("keydown.space", function ChatFooterComponent_Conditional_1_Conditional_1_Template_div_keydown_space_4_listener() {
+      \u0275\u0275restoreView(_r2);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.onDeselectFile());
     });
-    \u0275\u0275text(1);
-    \u0275\u0275elementEnd();
+    \u0275\u0275element(5, "ep-icon", 17);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const ctx_r2 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" Repeat last ", ctx_r2.isMultipleFilesMode() ? "files" : "file", " ");
+    \u0275\u0275property("size", 12);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(ctx.name);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("size", 8);
+  }
+}
+function ChatFooterComponent_Conditional_1_Conditional_2_For_1_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r4 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 13);
+    \u0275\u0275element(1, "ep-icon", 14);
+    \u0275\u0275elementStart(2, "span", 15);
+    \u0275\u0275text(3);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 16);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_1_Conditional_2_For_1_Template_div_click_4_listener() {
+      const file_r5 = \u0275\u0275restoreView(_r4).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r5));
+    })("keydown.enter", function ChatFooterComponent_Conditional_1_Conditional_2_For_1_Template_div_keydown_enter_4_listener() {
+      const file_r5 = \u0275\u0275restoreView(_r4).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r5));
+    })("keydown.space", function ChatFooterComponent_Conditional_1_Conditional_2_For_1_Template_div_keydown_space_4_listener() {
+      const file_r5 = \u0275\u0275restoreView(_r4).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r5));
+    });
+    \u0275\u0275element(5, "ep-icon", 17);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const file_r5 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275property("size", 12);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(file_r5.name);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("size", 8);
   }
 }
 function ChatFooterComponent_Conditional_1_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 15);
-    \u0275\u0275text(1, "Attached file:");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 16)(3, "div", 17);
-    \u0275\u0275text(4);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div", 18);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_1_Conditional_2_Template_div_click_5_listener() {
-      \u0275\u0275restoreView(_r4);
-      const ctx_r2 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r2.onDeselectFile());
-    })("keydown.enter", function ChatFooterComponent_Conditional_1_Conditional_2_Template_div_keydown_enter_5_listener() {
-      \u0275\u0275restoreView(_r4);
-      const ctx_r2 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r2.onDeselectFile());
-    })("keydown.space", function ChatFooterComponent_Conditional_1_Conditional_2_Template_div_keydown_space_5_listener() {
-      \u0275\u0275restoreView(_r4);
-      const ctx_r2 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r2.onDeselectFile());
-    });
-    \u0275\u0275element(6, "ep-icon", 19);
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    let tmp_3_0;
-    const ctx_r2 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate((tmp_3_0 = ctx_r2.chatService.attachedFile()) == null ? null : tmp_3_0.name);
-    \u0275\u0275advance(2);
-    \u0275\u0275property("size", 9);
-  }
-}
-function ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 21)(1, "div", 17);
-    \u0275\u0275text(2);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 18);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template_div_click_3_listener() {
-      const file_r6 = \u0275\u0275restoreView(_r5).$implicit;
-      const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r6));
-    })("keydown.enter", function ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template_div_keydown_enter_3_listener() {
-      const file_r6 = \u0275\u0275restoreView(_r5).$implicit;
-      const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r6));
-    })("keydown.space", function ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template_div_keydown_space_3_listener() {
-      const file_r6 = \u0275\u0275restoreView(_r5).$implicit;
-      const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.onDeselectFileFromMultiple(file_r6));
-    });
-    \u0275\u0275element(4, "ep-icon", 19);
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const file_r6 = ctx.$implicit;
-    \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(file_r6.name);
-    \u0275\u0275advance(2);
-    \u0275\u0275property("size", 9);
-  }
-}
-function ChatFooterComponent_Conditional_1_Conditional_3_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 15);
-    \u0275\u0275text(1);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "div", 20);
-    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_1_Conditional_3_For_4_Template, 5, 2, "div", 21, \u0275\u0275componentInstance().trackFileById, true);
-    \u0275\u0275elementEnd();
+    \u0275\u0275repeaterCreate(0, ChatFooterComponent_Conditional_1_Conditional_2_For_1_Template, 6, 3, "div", 13, \u0275\u0275componentInstance().trackFileById, true);
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" Attached files (", ctx_r2.chatService.attachedFiles().length, "): ");
-    \u0275\u0275advance(2);
     \u0275\u0275repeater(ctx_r2.chatService.attachedFiles());
   }
 }
 function ChatFooterComponent_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 2);
-    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_1_Conditional_1_Template, 2, 1, "ep-button");
-    \u0275\u0275conditionalCreate(2, ChatFooterComponent_Conditional_1_Conditional_2_Template, 7, 2);
-    \u0275\u0275conditionalCreate(3, ChatFooterComponent_Conditional_1_Conditional_3_Template, 5, 1);
+    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_1_Conditional_1_Template, 6, 3, "div", 13);
+    \u0275\u0275conditionalCreate(2, ChatFooterComponent_Conditional_1_Conditional_2_Template, 2, 0);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
+    let tmp_2_0;
     const ctx_r2 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r2.chatService.isLastRequestUsedFile() && !ctx_r2.hasAttachedFiles() ? 1 : -1);
+    \u0275\u0275conditional((tmp_2_0 = !ctx_r2.isMultipleFilesMode() && ctx_r2.chatService.attachedFile()) ? 1 : -1, tmp_2_0);
     \u0275\u0275advance();
-    \u0275\u0275conditional(!ctx_r2.isMultipleFilesMode() && ctx_r2.chatService.attachedFile() ? 2 : -1);
-    \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r2.isMultipleFilesMode() && ctx_r2.chatService.attachedFiles().length > 0 ? 3 : -1);
+    \u0275\u0275conditional(ctx_r2.isMultipleFilesMode() ? 2 : -1);
   }
 }
-function ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_6_Conditional_5_For_4_Template(rf, ctx) {
   if (rf & 1) {
-    const _r9 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu-item", 26);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template_ep_menu_item_click_0_listener() {
-      const tool_r10 = \u0275\u0275restoreView(_r9).$implicit;
+    const _r8 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu-item", 23);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_6_Conditional_5_For_4_Template_ep_menu_item_click_0_listener() {
+      const tool_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r10));
-    })("keydown.enter", function ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template_ep_menu_item_keydown_enter_0_listener() {
-      const tool_r10 = \u0275\u0275restoreView(_r9).$implicit;
+      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r9));
+    })("keydown.enter", function ChatFooterComponent_Conditional_6_Conditional_5_For_4_Template_ep_menu_item_keydown_enter_0_listener() {
+      const tool_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r10));
-    })("keydown.space", function ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template_ep_menu_item_keydown_space_0_listener() {
-      const tool_r10 = \u0275\u0275restoreView(_r9).$implicit;
+      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r9));
+    })("keydown.space", function ChatFooterComponent_Conditional_6_Conditional_5_For_4_Template_ep_menu_item_keydown_space_0_listener() {
+      const tool_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r10));
+      return \u0275\u0275resetView(ctx_r2.selectTool(tool_r9));
     });
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const tool_r10 = ctx.$implicit;
+    const tool_r9 = ctx.$implicit;
     const ctx_r2 = \u0275\u0275nextContext(3);
-    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.effectiveSelectedTool === tool_r10);
-    \u0275\u0275attribute("aria-selected", ctx_r2.effectiveSelectedTool === tool_r10);
+    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.effectiveSelectedTool === tool_r9);
+    \u0275\u0275attribute("aria-selected", ctx_r2.effectiveSelectedTool === tool_r9);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(tool_r10);
+    \u0275\u0275textInterpolate(tool_r9);
   }
 }
-function ChatFooterComponent_Conditional_6_Conditional_4_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_6_Conditional_5_Template(rf, ctx) {
   if (rf & 1) {
-    const _r8 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu", 25);
-    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_6_Conditional_4_Template_ep_menu_closed_0_listener() {
-      \u0275\u0275restoreView(_r8);
+    const _r7 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu", 22);
+    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_6_Conditional_5_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.isToolMenuOpen = false);
     });
-    \u0275\u0275elementStart(1, "ep-menu-item", 26);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_6_Conditional_4_Template_ep_menu_item_click_1_listener() {
-      \u0275\u0275restoreView(_r8);
+    \u0275\u0275elementStart(1, "ep-menu-item", 23);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_6_Conditional_5_Template_ep_menu_item_click_1_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.selectTool(null));
-    })("keydown.enter", function ChatFooterComponent_Conditional_6_Conditional_4_Template_ep_menu_item_keydown_enter_1_listener() {
-      \u0275\u0275restoreView(_r8);
+    })("keydown.enter", function ChatFooterComponent_Conditional_6_Conditional_5_Template_ep_menu_item_keydown_enter_1_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.selectTool(null));
-    })("keydown.space", function ChatFooterComponent_Conditional_6_Conditional_4_Template_ep_menu_item_keydown_space_1_listener() {
-      \u0275\u0275restoreView(_r8);
+    })("keydown.space", function ChatFooterComponent_Conditional_6_Conditional_5_Template_ep_menu_item_keydown_space_1_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.selectTool(null));
     });
     \u0275\u0275text(2, "None");
     \u0275\u0275elementEnd();
-    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_6_Conditional_4_For_4_Template, 2, 4, "ep-menu-item", 27, \u0275\u0275repeaterTrackByIdentity);
+    \u0275\u0275repeaterCreate(3, ChatFooterComponent_Conditional_6_Conditional_5_For_4_Template, 2, 4, "ep-menu-item", 24, \u0275\u0275repeaterTrackByIdentity);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97611,166 +97679,168 @@ function ChatFooterComponent_Conditional_6_Conditional_4_Template(rf, ctx) {
 }
 function ChatFooterComponent_Conditional_6_Template(rf, ctx) {
   if (rf & 1) {
-    const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 6)(1, "button", 22);
+    const _r6 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 6)(1, "button", 18);
     \u0275\u0275listener("click", function ChatFooterComponent_Conditional_6_Template_button_click_1_listener($event) {
-      \u0275\u0275restoreView(_r7);
+      \u0275\u0275restoreView(_r6);
       const ctx_r2 = \u0275\u0275nextContext();
       ctx_r2.toggleToolMenu();
       return \u0275\u0275resetView($event.stopPropagation());
     });
-    \u0275\u0275text(2);
-    \u0275\u0275element(3, "ep-icon", 23);
-    \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(4, ChatFooterComponent_Conditional_6_Conditional_4_Template, 5, 3, "ep-menu", 24);
+    \u0275\u0275element(2, "ep-icon", 19);
+    \u0275\u0275elementStart(3, "span", 20);
+    \u0275\u0275text(4);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275conditionalCreate(5, ChatFooterComponent_Conditional_6_Conditional_5_Template, 5, 3, "ep-menu", 21);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext();
     \u0275\u0275advance();
+    \u0275\u0275classProp("chat-footer__tool-trigger--open", ctx_r2.isToolMenuOpen);
     \u0275\u0275attribute("aria-expanded", ctx_r2.isToolMenuOpen);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx_r2.selectedTool || "Tools", " ");
+    \u0275\u0275property("size", 9);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(ctx_r2.selectedTool || "Tools");
     \u0275\u0275advance();
-    \u0275\u0275classProp("chat-footer__tool-chevron--open", ctx_r2.isToolMenuOpen);
-    \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r2.isToolMenuOpen ? 4 : -1);
+    \u0275\u0275conditional(ctx_r2.isToolMenuOpen ? 5 : -1);
   }
 }
-function ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_5_For_2_Template(rf, ctx) {
   if (rf & 1) {
-    const _r13 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu-item", 32);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template_ep_menu_item_click_0_listener() {
-      const m_r14 = \u0275\u0275restoreView(_r13).$implicit;
+    const _r12 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu-item", 30);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_5_For_2_Template_ep_menu_item_click_0_listener() {
+      const m_r13 = \u0275\u0275restoreView(_r12).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r14.value));
-    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template_ep_menu_item_keydown_enter_0_listener() {
-      const m_r14 = \u0275\u0275restoreView(_r13).$implicit;
+      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r13.value));
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_5_For_2_Template_ep_menu_item_keydown_enter_0_listener() {
+      const m_r13 = \u0275\u0275restoreView(_r12).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r14.value));
-    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template_ep_menu_item_keydown_space_0_listener() {
-      const m_r14 = \u0275\u0275restoreView(_r13).$implicit;
+      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r13.value));
+    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_5_For_2_Template_ep_menu_item_keydown_space_0_listener() {
+      const m_r13 = \u0275\u0275restoreView(_r12).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r14.value));
+      return \u0275\u0275resetView(ctx_r2.selectWebMode(m_r13.value));
     });
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const m_r14 = ctx.$implicit;
+    const m_r13 = ctx.$implicit;
     const ctx_r2 = \u0275\u0275nextContext(3);
-    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.webMode() === m_r14.value);
+    \u0275\u0275classProp("ep-menu-item--active", ctx_r2.webMode() === m_r13.value);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(m_r14.label);
+    \u0275\u0275textInterpolate(m_r13.label);
   }
 }
-function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r17 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "input", 41);
-    \u0275\u0275listener("input", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template_input_input_0_listener($event) {
-      \u0275\u0275restoreView(_r17);
-      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
-      const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.updateSite(\u0275$index_83_r18, $event));
-    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template_input_keydown_enter_0_listener($event) {
-      \u0275\u0275restoreView(_r17);
-      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
-      const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.onSiteInputEnter(\u0275$index_83_r18, $event));
-    })("keydown", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template_input_keydown_0_listener($event) {
-      \u0275\u0275restoreView(_r17);
-      return \u0275\u0275resetView($event.stopPropagation());
-    })("click", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template_input_click_0_listener($event) {
-      \u0275\u0275restoreView(_r17);
-      return \u0275\u0275resetView($event.stopPropagation());
-    });
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const site_r19 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275attribute("value", site_r19);
-  }
-}
-function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r20 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 42);
-    \u0275\u0275listener("dblclick", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template_div_dblclick_0_listener() {
-      \u0275\u0275restoreView(_r20);
-      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
-      const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_83_r18));
-    })("click", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template_div_click_0_listener($event) {
-      \u0275\u0275restoreView(_r20);
-      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
-      const ctx_r2 = \u0275\u0275nextContext(4);
-      ctx_r2.startEditSite(\u0275$index_83_r18);
-      return \u0275\u0275resetView($event.stopPropagation());
-    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r20);
-      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
-      const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_83_r18));
-    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r20);
-      const \u0275$index_83_r18 = \u0275\u0275nextContext().$index;
-      const ctx_r2 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_83_r18));
-    });
-    \u0275\u0275text(1);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const site_r19 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", site_r19, " ");
-  }
-}
-function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r16 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 35);
-    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_1_Template, 1, 1, "input", 38)(2, ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Conditional_2_Template, 2, 1, "div", 39);
-    \u0275\u0275elementStart(3, "button", 40);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Template_button_click_3_listener($event) {
-      const \u0275$index_83_r18 = \u0275\u0275restoreView(_r16).$index;
+    \u0275\u0275elementStart(0, "input", 39);
+    \u0275\u0275listener("input", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_input_0_listener($event) {
+      \u0275\u0275restoreView(_r16);
+      const \u0275$index_79_r17 = \u0275\u0275nextContext().$index;
       const ctx_r2 = \u0275\u0275nextContext(4);
-      ctx_r2.removeSite(\u0275$index_83_r18);
+      return \u0275\u0275resetView(ctx_r2.updateSite(\u0275$index_79_r17, $event));
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_keydown_enter_0_listener($event) {
+      \u0275\u0275restoreView(_r16);
+      const \u0275$index_79_r17 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.onSiteInputEnter(\u0275$index_79_r17, $event));
+    })("keydown", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_keydown_0_listener($event) {
+      \u0275\u0275restoreView(_r16);
+      return \u0275\u0275resetView($event.stopPropagation());
+    })("click", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_1_Template_input_click_0_listener($event) {
+      \u0275\u0275restoreView(_r16);
       return \u0275\u0275resetView($event.stopPropagation());
     });
-    \u0275\u0275element(4, "ep-icon", 19);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const site_r18 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275attribute("value", site_r18);
+  }
+}
+function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_2_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r19 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 40);
+    \u0275\u0275listener("dblclick", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_dblclick_0_listener() {
+      \u0275\u0275restoreView(_r19);
+      const \u0275$index_79_r17 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_79_r17));
+    })("click", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_click_0_listener($event) {
+      \u0275\u0275restoreView(_r19);
+      const \u0275$index_79_r17 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      ctx_r2.startEditSite(\u0275$index_79_r17);
+      return \u0275\u0275resetView($event.stopPropagation());
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_keydown_enter_0_listener() {
+      \u0275\u0275restoreView(_r19);
+      const \u0275$index_79_r17 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_79_r17));
+    })("keydown.space", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_2_Template_div_keydown_space_0_listener() {
+      \u0275\u0275restoreView(_r19);
+      const \u0275$index_79_r17 = \u0275\u0275nextContext().$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      return \u0275\u0275resetView(ctx_r2.startEditSite(\u0275$index_79_r17));
+    });
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const site_r18 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", site_r18, " ");
+  }
+}
+function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r15 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 33);
+    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_1_Template, 1, 1, "input", 36)(2, ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Conditional_2_Template, 2, 1, "div", 37);
+    \u0275\u0275elementStart(3, "button", 38);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Template_button_click_3_listener($event) {
+      const \u0275$index_79_r17 = \u0275\u0275restoreView(_r15).$index;
+      const ctx_r2 = \u0275\u0275nextContext(4);
+      ctx_r2.removeSite(\u0275$index_79_r17);
+      return \u0275\u0275resetView($event.stopPropagation());
+    });
+    \u0275\u0275element(4, "ep-icon", 17);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const \u0275$index_83_r18 = ctx.$index;
+    const \u0275$index_79_r17 = ctx.$index;
     const ctx_r2 = \u0275\u0275nextContext(4);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r2.editingSiteIndex === \u0275$index_83_r18 ? 1 : 2);
+    \u0275\u0275conditional(ctx_r2.editingSiteIndex === \u0275$index_79_r17 ? 1 : 2);
     \u0275\u0275advance(3);
     \u0275\u0275property("size", 9);
   }
 }
-function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
-    const _r15 = \u0275\u0275getCurrentView();
-    \u0275\u0275element(0, "div", 33);
-    \u0275\u0275elementStart(1, "div", 34);
-    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_For_3_Template, 5, 2, "div", 35, \u0275\u0275repeaterTrackByIndex);
-    \u0275\u0275elementStart(4, "button", 36);
-    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_Template_button_click_4_listener($event) {
-      \u0275\u0275restoreView(_r15);
+    const _r14 = \u0275\u0275getCurrentView();
+    \u0275\u0275element(0, "div", 31);
+    \u0275\u0275elementStart(1, "div", 32);
+    \u0275\u0275repeaterCreate(2, ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_For_3_Template, 5, 2, "div", 33, \u0275\u0275repeaterTrackByIndex);
+    \u0275\u0275elementStart(4, "button", 34);
+    \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_Template_button_click_4_listener($event) {
+      \u0275\u0275restoreView(_r14);
       const ctx_r2 = \u0275\u0275nextContext(3);
       ctx_r2.addSite();
       return \u0275\u0275resetView($event.stopPropagation());
-    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_Template_button_keydown_enter_4_listener($event) {
-      \u0275\u0275restoreView(_r15);
+    })("keydown.enter", function ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_Template_button_keydown_enter_4_listener($event) {
+      \u0275\u0275restoreView(_r14);
       const ctx_r2 = \u0275\u0275nextContext(3);
       ctx_r2.addSite();
       return \u0275\u0275resetView($event.stopPropagation());
     });
-    \u0275\u0275element(5, "ep-icon", 37);
+    \u0275\u0275element(5, "ep-icon", 35);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -97781,17 +97851,17 @@ function ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_Template(
     \u0275\u0275property("size", 10);
   }
 }
-function ChatFooterComponent_Conditional_7_Conditional_4_Template(rf, ctx) {
+function ChatFooterComponent_Conditional_7_Conditional_5_Template(rf, ctx) {
   if (rf & 1) {
-    const _r12 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu", 30);
-    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_7_Conditional_4_Template_ep_menu_closed_0_listener() {
-      \u0275\u0275restoreView(_r12);
+    const _r11 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-menu", 28);
+    \u0275\u0275listener("closed", function ChatFooterComponent_Conditional_7_Conditional_5_Template_ep_menu_closed_0_listener() {
+      \u0275\u0275restoreView(_r11);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.isWebMenuOpen = false);
     });
-    \u0275\u0275repeaterCreate(1, ChatFooterComponent_Conditional_7_Conditional_4_For_2_Template, 2, 3, "ep-menu-item", 31, _forTrack08);
-    \u0275\u0275conditionalCreate(3, ChatFooterComponent_Conditional_7_Conditional_4_Conditional_3_Template, 6, 1);
+    \u0275\u0275repeaterCreate(1, ChatFooterComponent_Conditional_7_Conditional_5_For_2_Template, 2, 3, "ep-menu-item", 29, _forTrack08);
+    \u0275\u0275conditionalCreate(3, ChatFooterComponent_Conditional_7_Conditional_5_Conditional_3_Template, 6, 1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97804,51 +97874,51 @@ function ChatFooterComponent_Conditional_7_Conditional_4_Template(rf, ctx) {
 }
 function ChatFooterComponent_Conditional_7_Template(rf, ctx) {
   if (rf & 1) {
-    const _r11 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 7)(1, "button", 28);
+    const _r10 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 6)(1, "button", 25);
     \u0275\u0275listener("click", function ChatFooterComponent_Conditional_7_Template_button_click_1_listener($event) {
-      \u0275\u0275restoreView(_r11);
+      \u0275\u0275restoreView(_r10);
       const ctx_r2 = \u0275\u0275nextContext();
       ctx_r2.toggleWebMenu();
       return \u0275\u0275resetView($event.stopPropagation());
     });
-    \u0275\u0275text(2);
-    \u0275\u0275element(3, "ep-icon", 23);
-    \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(4, ChatFooterComponent_Conditional_7_Conditional_4_Template, 4, 1, "ep-menu", 29);
+    \u0275\u0275element(2, "ep-icon", 26);
+    \u0275\u0275elementStart(3, "span", 20);
+    \u0275\u0275text(4);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275conditionalCreate(5, ChatFooterComponent_Conditional_7_Conditional_5_Template, 4, 1, "ep-menu", 27);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext();
     \u0275\u0275advance();
+    \u0275\u0275classProp("chat-footer__tool-trigger--open", ctx_r2.isWebMenuOpen);
     \u0275\u0275attribute("aria-expanded", ctx_r2.isWebMenuOpen);
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(ctx_r2.webModeLabel());
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx_r2.webModeLabel(), " ");
-    \u0275\u0275advance();
-    \u0275\u0275classProp("chat-footer__tool-chevron--open", ctx_r2.isWebMenuOpen);
-    \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r2.isWebMenuOpen ? 4 : -1);
+    \u0275\u0275conditional(ctx_r2.isWebMenuOpen ? 5 : -1);
   }
 }
 function ChatFooterComponent_Conditional_9_Template(rf, ctx) {
   if (rf & 1) {
-    const _r21 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 43);
+    const _r20 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 41);
     \u0275\u0275listener("click", function ChatFooterComponent_Conditional_9_Template_div_click_0_listener($event) {
-      \u0275\u0275restoreView(_r21);
+      \u0275\u0275restoreView(_r20);
       const ctx_r2 = \u0275\u0275nextContext();
       ctx_r2.toggleRecentFilesMenu();
       return \u0275\u0275resetView($event.stopPropagation());
     })("keydown.enter", function ChatFooterComponent_Conditional_9_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r21);
+      \u0275\u0275restoreView(_r20);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
     })("keydown.space", function ChatFooterComponent_Conditional_9_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r21);
+      \u0275\u0275restoreView(_r20);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.toggleRecentFilesMenu());
     });
-    \u0275\u0275element(1, "img", 44);
+    \u0275\u0275element(1, "img", 42);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97860,22 +97930,22 @@ function ChatFooterComponent_Conditional_9_Template(rf, ctx) {
 }
 function ChatFooterComponent_Conditional_11_Template(rf, ctx) {
   if (rf & 1) {
-    const _r22 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 45);
+    const _r21 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 43);
     \u0275\u0275listener("click", function ChatFooterComponent_Conditional_11_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r22);
+      \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
     })("keydown.enter", function ChatFooterComponent_Conditional_11_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r22);
+      \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
     })("keydown.space", function ChatFooterComponent_Conditional_11_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r22);
+      \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.transmitMessageFromInput());
     });
-    \u0275\u0275element(1, "ep-icon", 46);
+    \u0275\u0275element(1, "ep-icon", 44);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97888,22 +97958,22 @@ function ChatFooterComponent_Conditional_11_Template(rf, ctx) {
 }
 function ChatFooterComponent_Conditional_12_Template(rf, ctx) {
   if (rf & 1) {
-    const _r23 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 47);
+    const _r22 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 45);
     \u0275\u0275listener("click", function ChatFooterComponent_Conditional_12_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r23);
+      \u0275\u0275restoreView(_r22);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.stopGenerating());
     })("keydown.enter", function ChatFooterComponent_Conditional_12_Template_div_keydown_enter_0_listener() {
-      \u0275\u0275restoreView(_r23);
+      \u0275\u0275restoreView(_r22);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.stopGenerating());
     })("keydown.space", function ChatFooterComponent_Conditional_12_Template_div_keydown_space_0_listener() {
-      \u0275\u0275restoreView(_r23);
+      \u0275\u0275restoreView(_r22);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.stopGenerating());
     });
-    \u0275\u0275element(1, "ep-icon", 48);
+    \u0275\u0275element(1, "ep-icon", 46);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -97914,18 +97984,18 @@ function ChatFooterComponent_Conditional_12_Template(rf, ctx) {
 }
 function ChatFooterComponent_Conditional_13_Template(rf, ctx) {
   if (rf & 1) {
-    const _r24 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-recent-files-menu", 49);
+    const _r23 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "ep-recent-files-menu", 47);
     \u0275\u0275listener("fileAttached", function ChatFooterComponent_Conditional_13_Template_ep_recent_files_menu_fileAttached_0_listener($event) {
-      \u0275\u0275restoreView(_r24);
+      \u0275\u0275restoreView(_r23);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onFileAttached($event));
     })("filesAttached", function ChatFooterComponent_Conditional_13_Template_ep_recent_files_menu_filesAttached_0_listener($event) {
-      \u0275\u0275restoreView(_r24);
+      \u0275\u0275restoreView(_r23);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.onFilesAttached($event));
     })("hideRecentFilesMenu", function ChatFooterComponent_Conditional_13_Template_ep_recent_files_menu_hideRecentFilesMenu_0_listener() {
-      \u0275\u0275restoreView(_r24);
+      \u0275\u0275restoreView(_r23);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.hideRecentFilesMenu());
     });
@@ -98322,11 +98392,11 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.messageInput = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.microphoneComponent = _t.first);
   }
-}, inputs: { isTyping: "isTyping", messages: "messages", currentAgent: "currentAgent", fileAttachmentEnabled: "fileAttachmentEnabled" }, outputs: { sendMessage: "sendMessage", stop: "stop" }, features: [\u0275\u0275NgOnChangesFeature], decls: 14, vars: 11, consts: [["messageInput", ""], [1, "chat-footer"], [1, "chat-footer__choose-file-button-container"], ["epTooltip", "Make a request", 1, "chat-footer__input", 3, "tooltipOptions"], ["placeholder", "Make a request", "rows", "1", "id", "messageInput", 1, "chat-footer__textarea", 3, "keydown", "formControl"], [1, "chat-footer__bottom-bar"], [1, "chat-footer__tool-dropdown"], [1, "chat-footer__web-dropdown"], [1, "chat-footer__bottom-bar-right"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "tooltipOptions"], [1, "chat-footer__input-icon", 3, "voiceStart", "textRecognized", "formControl", "toStopOnClickSelector"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "ngStyle"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "tooltipOptions"], [3, "alreadyAttachedFiles", "multipleFilesAllowed"], [3, "buttonClick"], [1, "chat-footer__attached-file-header"], [1, "chat-footer__single-file-item"], [1, "chat-footer__choose-file-label"], ["role", "button", "tabindex", "0", 1, "chat-footer__deselect-file", 3, "click", "keydown.enter", "keydown.space"], ["name", "close", 3, "size"], [1, "chat-footer__multiple-files-container"], [1, "chat-footer__multiple-file-item"], ["type", "button", "aria-haspopup", "listbox", 1, "chat-footer__tool-trigger", 3, "click"], ["name", "chevron-sm", 2, "width", "10px", "height", "6px"], ["role", "listbox", 2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "120px"], ["role", "listbox", 2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "120px", 3, "closed"], ["role", "option", 3, "click", "keydown.enter", "keydown.space"], ["role", "option", 3, "ep-menu-item--active"], ["type", "button", 1, "chat-footer__tool-trigger", 3, "click"], [2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "160px", "max-width", "100%", "box-sizing", "border-box"], [2, "bottom", "calc(100% + 4px)", "left", "0", "min-width", "160px", "max-width", "100%", "box-sizing", "border-box", 3, "closed"], [3, "ep-menu-item--active"], [3, "click", "keydown.enter", "keydown.space"], [1, "web-menu__divider"], [1, "web-menu__sites"], [1, "web-menu__site-row"], ["type", "button", "aria-label", "Add site", 1, "web-menu__add-site", 3, "click", "keydown.enter"], ["name", "plus", 3, "size"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input"], ["tabindex", "0", 1, "web-menu__site-label"], ["type", "button", "aria-label", "Remove", 1, "web-menu__site-remove", 3, "click"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input", 3, "input", "keydown.enter", "keydown", "click"], ["tabindex", "0", 1, "web-menu__site-label", 3, "dblclick", "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["draggable", "false", "alt", "Attach file", 2, "cursor", "pointer", 3, "src"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "ngStyle"], ["name", "send", 3, "size"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["name", "stop", 3, "size"], [3, "fileAttached", "filesAttached", "hideRecentFilesMenu", "alreadyAttachedFiles", "multipleFilesAllowed"]], template: function ChatFooterComponent_Template(rf, ctx) {
+}, inputs: { isTyping: "isTyping", messages: "messages", currentAgent: "currentAgent", fileAttachmentEnabled: "fileAttachmentEnabled" }, outputs: { sendMessage: "sendMessage", stop: "stop" }, features: [\u0275\u0275NgOnChangesFeature], decls: 14, vars: 11, consts: [["messageInput", ""], [1, "chat-footer"], [1, "chat-footer__file-chips"], ["epTooltip", "Make a request", 1, "chat-footer__input", 3, "tooltipOptions"], ["placeholder", "Make a request", "rows", "1", "id", "messageInput", 1, "chat-footer__textarea", 3, "keydown", "formControl"], [1, "chat-footer__bottom-bar"], [1, "chat-footer__select-dropdown"], [1, "chat-footer__bottom-bar-right"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "tooltipOptions"], [1, "chat-footer__input-icon", 3, "voiceStart", "textRecognized", "formControl", "toStopOnClickSelector"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "ngStyle"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "tooltipOptions"], [3, "alreadyAttachedFiles", "multipleFilesAllowed"], [1, "chat-footer__file-chip"], ["name", "document", 1, "chat-footer__file-chip-icon", 3, "size"], [1, "chat-footer__file-chip-name"], ["role", "button", "tabindex", "0", 1, "chat-footer__file-chip-close", 3, "click", "keydown.enter", "keydown.space"], ["name", "close", 3, "size"], ["type", "button", "aria-haspopup", "listbox", 1, "chat-footer__tool-trigger", 3, "click"], ["name", "tools", 3, "size"], [1, "chat-footer__tool-trigger-label"], ["role", "listbox", 1, "ep-menu--panel", 2, "bottom", "calc(100% + 4px)", "left", "0"], ["role", "listbox", 1, "ep-menu--panel", 2, "bottom", "calc(100% + 4px)", "left", "0", 3, "closed"], ["role", "option", 3, "click", "keydown.enter", "keydown.space"], ["role", "option", 3, "ep-menu-item--active"], ["type", "button", 1, "chat-footer__tool-trigger", 3, "click"], ["name", "web-lock", 1, "chat-footer__tool-trigger-icon-web"], [1, "ep-menu--panel", 2, "bottom", "calc(100% + 4px)", "left", "0", "max-width", "100%", "box-sizing", "border-box"], [1, "ep-menu--panel", 2, "bottom", "calc(100% + 4px)", "left", "0", "max-width", "100%", "box-sizing", "border-box", 3, "closed"], [3, "ep-menu-item--active"], [3, "click", "keydown.enter", "keydown.space"], [1, "web-menu__divider"], [1, "web-menu__sites"], [1, "web-menu__site-row"], ["type", "button", "aria-label", "Add site", 1, "web-menu__add-site", 3, "click", "keydown.enter"], ["name", "plus", 3, "size"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input"], ["tabindex", "0", 1, "web-menu__site-label"], ["type", "button", "aria-label", "Remove", 1, "web-menu__site-remove", 3, "click"], ["type", "text", "placeholder", "example.com", 1, "web-menu__site-input", 3, "input", "keydown.enter", "keydown", "click"], ["tabindex", "0", 1, "web-menu__site-label", 3, "dblclick", "click", "keydown.enter", "keydown.space"], ["role", "button", "tabindex", "0", "epTooltip", "Attach file", 1, "chat-footer__input-icon", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["draggable", "false", "alt", "Attach file", 2, "cursor", "pointer", 3, "src"], ["tabindex", "0", "role", "button", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "ngStyle"], ["name", "send", 3, "size"], ["tabindex", "0", "role", "button", "aria-label", "Stop generating", "epTooltip", "Stop generating", 1, "chat-footer__send-button", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["name", "stop", 3, "size"], [3, "fileAttached", "filesAttached", "hideRecentFilesMenu", "alreadyAttachedFiles", "multipleFilesAllowed"]], template: function ChatFooterComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 1);
-    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_1_Template, 4, 3, "div", 2);
+    \u0275\u0275conditionalCreate(1, ChatFooterComponent_Conditional_1_Template, 3, 2, "div", 2);
     \u0275\u0275elementStart(2, "div", 3)(3, "textarea", 4, 0);
     \u0275\u0275listener("keydown", function ChatFooterComponent_Template_textarea_keydown_3_listener($event) {
       \u0275\u0275restoreView(_r1);
@@ -98334,11 +98404,11 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     });
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(5, "div", 5);
-    \u0275\u0275conditionalCreate(6, ChatFooterComponent_Conditional_6_Template, 5, 5, "div", 6);
-    \u0275\u0275conditionalCreate(7, ChatFooterComponent_Conditional_7_Template, 5, 5, "div", 7);
-    \u0275\u0275elementStart(8, "div", 8);
-    \u0275\u0275conditionalCreate(9, ChatFooterComponent_Conditional_9_Template, 2, 3, "div", 9);
-    \u0275\u0275elementStart(10, "ep-microphone", 10);
+    \u0275\u0275conditionalCreate(6, ChatFooterComponent_Conditional_6_Template, 6, 6, "div", 6);
+    \u0275\u0275conditionalCreate(7, ChatFooterComponent_Conditional_7_Template, 6, 5, "div", 6);
+    \u0275\u0275elementStart(8, "div", 7);
+    \u0275\u0275conditionalCreate(9, ChatFooterComponent_Conditional_9_Template, 2, 3, "div", 8);
+    \u0275\u0275elementStart(10, "ep-microphone", 9);
     \u0275\u0275listener("voiceStart", function ChatFooterComponent_Template_ep_microphone_voiceStart_10_listener() {
       \u0275\u0275restoreView(_r1);
       return \u0275\u0275resetView(ctx.onVoiceStart());
@@ -98347,13 +98417,13 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return \u0275\u0275resetView(ctx.onTextRecognized());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(11, ChatFooterComponent_Conditional_11_Template, 2, 5, "div", 11)(12, ChatFooterComponent_Conditional_12_Template, 2, 3, "div", 12);
+    \u0275\u0275conditionalCreate(11, ChatFooterComponent_Conditional_11_Template, 2, 5, "div", 10)(12, ChatFooterComponent_Conditional_12_Template, 2, 3, "div", 11);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275conditionalCreate(13, ChatFooterComponent_Conditional_13_Template, 1, 2, "ep-recent-files-menu", 13);
+    \u0275\u0275conditionalCreate(13, ChatFooterComponent_Conditional_13_Template, 1, 2, "ep-recent-files-menu", 12);
   }
   if (rf & 2) {
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.fileAttachmentEnabled && (ctx.chatService.isLastRequestUsedFile() && !ctx.hasAttachedFiles() || ctx.hasAttachedFiles()) ? 1 : -1);
+    \u0275\u0275conditional(ctx.hasAttachedFiles() ? 1 : -1);
     \u0275\u0275advance();
     \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(10, _c110));
     \u0275\u0275advance();
@@ -98380,13 +98450,12 @@ _ChatFooterComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
   CommonModule,
   NgStyle,
   MicrophoneComponent,
-  ButtonComponent,
   MenuComponent,
   MenuItemComponent,
   TooltipDirective,
   RecentFilesMenuComponent,
   IconComponent
-], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__send-button[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  color: white;\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input[_ngcontent-%COMP%]:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea[_ngcontent-%COMP%] {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 50vh;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__tool-dropdown[_ngcontent-%COMP%], \n.chat-footer__web-dropdown[_ngcontent-%COMP%] {\n  position: relative;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__tool-chevron--open[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%], \n.chat-footer__multiple-file-item[_ngcontent-%COMP%]   .chat-footer__choose-file-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider[_ngcontent-%COMP%] {\n  height: 1px;\n  background-color: var(--ep-color-border);\n  margin: 4px 0;\n}\n.web-menu__sites[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 4px 16px 6px;\n}\n.web-menu__site-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  padding-left: 6px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 60%, transparent);\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  background: var(--ep-color-surface);\n  color: var(--ep-color-text);\n  outline: none;\n}\n.web-menu__site-input[_ngcontent-%COMP%]:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input[_ngcontent-%COMP%]::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */'] });
+], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n}\n.chat-footer[_ngcontent-%COMP%] {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  background: var(--ep-color-surface);\n}\n.chat-footer__send-button[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  color: white;\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  background: var(--ep-color-surface);\n}\n.chat-footer__input[_ngcontent-%COMP%]:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n}\n.chat-footer__textarea[_ngcontent-%COMP%] {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 50vh;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea[_ngcontent-%COMP%]:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__select-dropdown[_ngcontent-%COMP%] {\n  position: relative;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  height: 28px;\n  padding: 0 10px;\n  box-sizing: border-box;\n  border: 1px solid transparent;\n  border-radius: 3.5px;\n  background: transparent;\n  color: var(--ep-footer-select-text, var(--ep-color-text));\n  font-family: var(--ep-font-family);\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 1;\n  cursor: pointer;\n  transition:\n    border-color 0.15s,\n    background-color 0.15s,\n    color 0.15s;\n}\n.chat-footer__tool-trigger-label[_ngcontent-%COMP%] {\n  max-width: 140px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__tool-trigger-icon-web[_ngcontent-%COMP%] {\n  width: 6px;\n  height: 8px;\n  flex-shrink: 0;\n}\n.chat-footer__tool-trigger-chevron[_ngcontent-%COMP%] {\n  width: 10px;\n  height: 6px;\n  flex-shrink: 0;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]   ep-icon[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  color: currentColor;\n}\n.chat-footer__tool-trigger[_ngcontent-%COMP%]:hover {\n  filter: brightness(1.05);\n}\n.chat-footer__tool-trigger--open[_ngcontent-%COMP%] {\n  border-color: var(--ep-color-accent);\n}\n.chat-footer__tool-trigger--open[_ngcontent-%COMP%] {\n  background: var(--ep-footer-select-open-bg, var(--ep-color-surface-alt));\n  border-color: var(--ep-footer-select-open-border, var(--ep-color-border));\n}\n.chat-footer__tool-chevron--open[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon[_ngcontent-%COMP%]:hover {\n  opacity: 0.7;\n}\n.chat-footer__file-chips[_ngcontent-%COMP%] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin: 0 20px;\n}\n.chat-footer__file-chip[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  padding: 4px 8px;\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.chat-footer__file-chip-icon[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__file-chip-name[_ngcontent-%COMP%] {\n  font-size: 10px;\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  min-width: 0;\n}\n.chat-footer__file-chip-close[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  padding: 2px;\n}\n.chat-footer__file-chip-close[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider[_ngcontent-%COMP%] {\n  height: 1px;\n  background-color: var(--ep-menu-panel-divider, var(--ep-color-border));\n  margin: 0;\n}\n.web-menu__sites[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 8px 16px 10px;\n}\n.web-menu__site-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  padding-left: 0;\n  font-size: 12px;\n  font-family: var(--ep-font-family);\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid var(--ep-menu-panel-border, var(--ep-color-border));\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: var(--ep-font-family);\n  background: var(--ep-menu-panel-bg, var(--ep-color-surface));\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n  outline: none;\n}\n.web-menu__site-input[_ngcontent-%COMP%]:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input[_ngcontent-%COMP%]::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site[_ngcontent-%COMP%]:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */"] });
 var ChatFooterComponent = _ChatFooterComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatFooterComponent, [{
@@ -98396,60 +98465,47 @@ var ChatFooterComponent = _ChatFooterComponent;
       ReactiveFormsModule,
       CommonModule,
       MicrophoneComponent,
-      ButtonComponent,
       MenuComponent,
       MenuItemComponent,
       TooltipDirective,
       RecentFilesMenuComponent,
       IconComponent
     ], template: `<div class="chat-footer">
-  @if (
-    fileAttachmentEnabled &&
-    ((chatService.isLastRequestUsedFile() && !hasAttachedFiles()) || hasAttachedFiles())
-  ) {
-    <div class="chat-footer__choose-file-button-container">
-      @if (chatService.isLastRequestUsedFile() && !hasAttachedFiles()) {
-        <ep-button (buttonClick)="onRepeatFile()">
-          Repeat last {{ isMultipleFilesMode() ? "files" : "file" }}
-        </ep-button>
-      }
-      @if (!isMultipleFilesMode() && chatService.attachedFile()) {
-        <div class="chat-footer__attached-file-header">Attached file:</div>
-        <div class="chat-footer__single-file-item">
-          <div class="chat-footer__choose-file-label">{{ chatService.attachedFile()?.name }}</div>
+  @if (hasAttachedFiles()) {
+    <div class="chat-footer__file-chips">
+      @if (!isMultipleFilesMode() && chatService.attachedFile(); as file) {
+        <div class="chat-footer__file-chip">
+          <ep-icon name="document" [size]="12" class="chat-footer__file-chip-icon"></ep-icon>
+          <span class="chat-footer__file-chip-name">{{ file.name }}</span>
           <div
-            class="chat-footer__deselect-file"
+            class="chat-footer__file-chip-close"
             role="button"
             tabindex="0"
             (click)="onDeselectFile()"
             (keydown.enter)="onDeselectFile()"
             (keydown.space)="onDeselectFile()"
           >
-            <ep-icon name="close" [size]="9"></ep-icon>
+            <ep-icon name="close" [size]="8"></ep-icon>
           </div>
         </div>
       }
-      @if (isMultipleFilesMode() && chatService.attachedFiles().length > 0) {
-        <div class="chat-footer__attached-file-header">
-          Attached files ({{ chatService.attachedFiles().length }}):
-        </div>
-        <div class="chat-footer__multiple-files-container">
-          @for (file of chatService.attachedFiles(); track trackFileById($index, file)) {
-            <div class="chat-footer__multiple-file-item">
-              <div class="chat-footer__choose-file-label">{{ file.name }}</div>
-              <div
-                class="chat-footer__deselect-file"
-                role="button"
-                tabindex="0"
-                (click)="onDeselectFileFromMultiple(file)"
-                (keydown.enter)="onDeselectFileFromMultiple(file)"
-                (keydown.space)="onDeselectFileFromMultiple(file)"
-              >
-                <ep-icon name="close" [size]="9"></ep-icon>
-              </div>
+      @if (isMultipleFilesMode()) {
+        @for (file of chatService.attachedFiles(); track trackFileById($index, file)) {
+          <div class="chat-footer__file-chip">
+            <ep-icon name="document" [size]="12" class="chat-footer__file-chip-icon"></ep-icon>
+            <span class="chat-footer__file-chip-name">{{ file.name }}</span>
+            <div
+              class="chat-footer__file-chip-close"
+              role="button"
+              tabindex="0"
+              (click)="onDeselectFileFromMultiple(file)"
+              (keydown.enter)="onDeselectFileFromMultiple(file)"
+              (keydown.space)="onDeselectFileFromMultiple(file)"
+            >
+              <ep-icon name="close" [size]="8"></ep-icon>
             </div>
-          }
-        </div>
+          </div>
+        }
       }
     </div>
   }
@@ -98466,21 +98522,23 @@ var ChatFooterComponent = _ChatFooterComponent;
     ></textarea>
     <div class="chat-footer__bottom-bar">
       @if (availableTools.length > 0) {
-        <div class="chat-footer__tool-dropdown">
+        <div class="chat-footer__select-dropdown">
           <button
             class="chat-footer__tool-trigger"
             type="button"
             (click)="toggleToolMenu(); $event.stopPropagation()"
             [attr.aria-expanded]="isToolMenuOpen"
+            [class.chat-footer__tool-trigger--open]="isToolMenuOpen"
             aria-haspopup="listbox"
           >
-            {{ selectedTool || "Tools" }}
-            <ep-icon name="chevron-sm" style="width:10px;height:6px" [class.chat-footer__tool-chevron--open]="isToolMenuOpen"></ep-icon>
+            <ep-icon name="tools" [size]="9"></ep-icon>
+            <span class="chat-footer__tool-trigger-label">{{ selectedTool || "Tools" }}</span>
           </button>
           @if (isToolMenuOpen) {
             <ep-menu
+              class="ep-menu--panel"
               (closed)="isToolMenuOpen = false"
-              style="bottom: calc(100% + 4px); left: 0; min-width: 120px"
+              style="bottom: calc(100% + 4px); left: 0"
               role="listbox"
             >
               <ep-menu-item
@@ -98508,26 +98566,22 @@ var ChatFooterComponent = _ChatFooterComponent;
         </div>
       }
       @if (allowWebFromResponse) {
-        <div class="chat-footer__web-dropdown">
+        <div class="chat-footer__select-dropdown">
           <button
             class="chat-footer__tool-trigger"
             type="button"
             (click)="toggleWebMenu(); $event.stopPropagation()"
             [attr.aria-expanded]="isWebMenuOpen"
+            [class.chat-footer__tool-trigger--open]="isWebMenuOpen"
           >
-            {{ webModeLabel() }}
-            <ep-icon name="chevron-sm" style="width:10px;height:6px" [class.chat-footer__tool-chevron--open]="isWebMenuOpen"></ep-icon>
+            <ep-icon class="chat-footer__tool-trigger-icon-web" name="web-lock"></ep-icon>
+            <span class="chat-footer__tool-trigger-label">{{ webModeLabel() }}</span>
           </button>
           @if (isWebMenuOpen) {
             <ep-menu
+              class="ep-menu--panel"
               (closed)="isWebMenuOpen = false"
-              style="
-                bottom: calc(100% + 4px);
-                left: 0;
-                min-width: 160px;
-                max-width: 100%;
-                box-sizing: border-box;
-              "
+              style="bottom: calc(100% + 4px); left: 0; max-width: 100%; box-sizing: border-box"
             >
               @for (m of webModes; track m.value) {
                 <ep-menu-item
@@ -98661,7 +98715,7 @@ var ChatFooterComponent = _ChatFooterComponent;
     (hideRecentFilesMenu)="hideRecentFilesMenu()"
   ></ep-recent-files-menu>
 }
-`, styles: ['/* src/app/components/chat-footer/chat-footer.component.scss */\n:host {\n  display: block;\n  position: absolute;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 10;\n  pointer-events: none;\n}\n.chat-footer {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  height: fit-content;\n  -webkit-backdrop-filter: blur(10px) saturate(180%);\n  backdrop-filter: blur(10px) saturate(180%);\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-border) 30%, transparent);\n  pointer-events: auto;\n}\n.chat-footer__send-button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  color: white;\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button svg {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 50%, transparent);\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--ep-color-surface) 85%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n}\n.chat-footer__input:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n  background: color-mix(in srgb, var(--ep-color-surface) 90%, transparent);\n}\n.chat-footer__textarea {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 50vh;\n}\n.chat-footer__textarea::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__tool-dropdown,\n.chat-footer__web-dropdown {\n  position: relative;\n}\n.chat-footer__tool-trigger {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  border: none;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  font-family: "Open Sans", sans-serif;\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.chat-footer__tool-trigger svg {\n  width: 8px;\n  height: 8px;\n  transition: transform 0.2s;\n}\n.chat-footer__tool-trigger:hover {\n  color: var(--ep-color-accent);\n  background: color-mix(in srgb, var(--ep-color-accent) 8%, transparent);\n}\n.chat-footer__tool-chevron--open {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon img {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon:hover {\n  opacity: 0.7;\n}\n.chat-footer__choose-file-button-container {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 8px;\n  margin: 0 20px;\n  padding: 8px 12px;\n  font-size: 14px;\n  width: calc(100% - 40px);\n  box-sizing: border-box;\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border-radius: 4px;\n}\n.chat-footer__attached-file-header {\n  color: var(--ep-color-text);\n  font-weight: 500;\n  width: 100%;\n  margin-bottom: 4px;\n}\n.chat-footer__choose-file-label {\n  color: var(--ep-color-text);\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-footer__multiple-files-container {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  width: 100%;\n  max-height: 120px;\n  overflow-y: auto;\n}\n.chat-footer__multiple-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__multiple-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item {\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding: 4px 8px;\n  border-radius: 4px;\n  width: 100%;\n  min-width: 0;\n  box-sizing: border-box;\n  transition: background-color 0.2s ease;\n}\n.chat-footer__single-file-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.chat-footer__single-file-item .chat-footer__choose-file-label,\n.chat-footer__multiple-file-item .chat-footer__choose-file-label {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__deselect-file {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__deselect-file svg {\n  width: 9px;\n  height: 9px;\n}\n.chat-footer__deselect-file:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider {\n  height: 1px;\n  background-color: var(--ep-color-border);\n  margin: 4px 0;\n}\n.web-menu__sites {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 4px 16px 6px;\n}\n.web-menu__site-row {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label {\n  flex: 1;\n  min-width: 0;\n  padding-left: 6px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 60%, transparent);\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: "Open Sans", sans-serif;\n  background: var(--ep-color-surface);\n  color: var(--ep-color-text);\n  outline: none;\n}\n.web-menu__site-input:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove svg {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site svg {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */\n'] }]
+`, styles: ["/* src/app/components/chat-footer/chat-footer.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n}\n.chat-footer {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  padding: 8px 0 16px;\n  gap: 8px;\n  background: var(--ep-color-surface);\n}\n.chat-footer__send-button {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 4px;\n  background: var(--ep-color-accent);\n  color: white;\n  height: 28px;\n  width: 28px;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: background-color 0.2s;\n}\n.chat-footer__send-button:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 85%, black);\n}\n.chat-footer__send-button:active:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-accent) 75%, black);\n}\n.chat-footer__send-button svg {\n  width: 14px;\n  height: 14px;\n}\n.chat-footer__input {\n  position: relative;\n  z-index: 100;\n  display: flex;\n  flex-direction: column;\n  margin: 0 20px;\n  padding: 6px 8px 6px;\n  min-height: fit-content;\n  height: fit-content;\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  background: var(--ep-color-surface);\n}\n.chat-footer__input:focus-within {\n  border: 1px solid var(--ep-color-accent);\n  outline: none;\n}\n.chat-footer__textarea {\n  width: 100%;\n  display: block;\n  border: none;\n  outline: none;\n  resize: none;\n  background: transparent;\n  color: var(--ep-color-text);\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n  overflow-y: auto;\n  field-sizing: content;\n  min-height: 20px;\n  max-height: 50vh;\n}\n.chat-footer__textarea::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n}\n.chat-footer__textarea:disabled {\n  background: transparent;\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n.chat-footer__bottom-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 8px;\n  padding-top: 4px;\n  margin-top: 4px;\n}\n.chat-footer__bottom-bar-right {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-left: auto;\n}\n.chat-footer__select-dropdown {\n  position: relative;\n}\n.chat-footer__tool-trigger {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  height: 28px;\n  padding: 0 10px;\n  box-sizing: border-box;\n  border: 1px solid transparent;\n  border-radius: 3.5px;\n  background: transparent;\n  color: var(--ep-footer-select-text, var(--ep-color-text));\n  font-family: var(--ep-font-family);\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 1;\n  cursor: pointer;\n  transition:\n    border-color 0.15s,\n    background-color 0.15s,\n    color 0.15s;\n}\n.chat-footer__tool-trigger-label {\n  max-width: 140px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.chat-footer__tool-trigger-icon-web {\n  width: 6px;\n  height: 8px;\n  flex-shrink: 0;\n}\n.chat-footer__tool-trigger-chevron {\n  width: 10px;\n  height: 6px;\n  flex-shrink: 0;\n}\n.chat-footer__tool-trigger ep-icon {\n  flex-shrink: 0;\n  color: currentColor;\n}\n.chat-footer__tool-trigger:hover {\n  filter: brightness(1.05);\n}\n.chat-footer__tool-trigger--open {\n  border-color: var(--ep-color-accent);\n}\n.chat-footer__tool-trigger--open {\n  background: var(--ep-footer-select-open-bg, var(--ep-color-surface-alt));\n  border-color: var(--ep-footer-select-open-border, var(--ep-color-border));\n}\n.chat-footer__tool-chevron--open {\n  transform: rotate(180deg);\n}\n.chat-footer__tool-trigger--active {\n  color: var(--ep-color-accent);\n}\n.chat-footer__input-icons {\n  display: flex;\n  flex-direction: row;\n  gap: 4px;\n  align-items: center;\n}\n.chat-footer__input-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  padding: 4px;\n}\n.chat-footer__input-icon img {\n  width: 16px;\n  height: 16px;\n}\n.chat-footer__input-icon:hover {\n  opacity: 0.7;\n}\n.chat-footer__file-chips {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin: 0 20px;\n}\n.chat-footer__file-chip {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  padding: 4px 8px;\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.chat-footer__file-chip-icon {\n  flex-shrink: 0;\n  color: var(--ep-color-text);\n}\n.chat-footer__file-chip-name {\n  font-size: 10px;\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  min-width: 0;\n}\n.chat-footer__file-chip-close {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  padding: 2px;\n}\n.chat-footer__file-chip-close:hover {\n  color: var(--ep-color-text);\n}\n.web-menu__divider {\n  height: 1px;\n  background-color: var(--ep-menu-panel-divider, var(--ep-color-border));\n  margin: 0;\n}\n.web-menu__sites {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 8px 16px 10px;\n}\n.web-menu__site-row {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.web-menu__site-label {\n  flex: 1;\n  min-width: 0;\n  padding-left: 0;\n  font-size: 12px;\n  font-family: var(--ep-font-family);\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: text;\n}\n.web-menu__site-input {\n  flex: 1;\n  min-width: 0;\n  border: 1px solid var(--ep-menu-panel-border, var(--ep-color-border));\n  border-radius: 3px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-family: var(--ep-font-family);\n  background: var(--ep-menu-panel-bg, var(--ep-color-surface));\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n  outline: none;\n}\n.web-menu__site-input:focus {\n  border-color: var(--ep-color-accent);\n}\n.web-menu__site-input::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.web-menu__site-remove {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n  padding: 0;\n  border: none;\n  border-radius: 3px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, background-color 0.15s;\n}\n.web-menu__site-remove svg {\n  width: 8px;\n  height: 8px;\n}\n.web-menu__site-remove:hover {\n  color: var(--ep-color-text);\n  background-color: var(--ep-color-surface-alt);\n}\n.web-menu__add-site {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex-shrink: 0;\n  padding: 0;\n  border: 1.5px dashed var(--ep-color-border);\n  border-radius: 50%;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition: color 0.15s, border-color 0.15s;\n}\n.web-menu__add-site svg {\n  width: 9px;\n  height: 9px;\n}\n.web-menu__add-site:hover {\n  color: var(--ep-color-accent);\n  border-color: var(--ep-color-accent);\n}\n/*# sourceMappingURL=chat-footer.component.css.map */\n"] }]
   }], () => [{ type: ChatService }, { type: ApiService }], { isTyping: [{
     type: Input
   }], messages: [{
@@ -98683,7 +98737,7 @@ var ChatFooterComponent = _ChatFooterComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatFooterComponent, { className: "ChatFooterComponent", filePath: "src/app/components/chat-footer/chat-footer.component.ts", lineNumber: 49 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatFooterComponent, { className: "ChatFooterComponent", filePath: "src/app/components/chat-footer/chat-footer.component.ts", lineNumber: 47 });
 })();
 
 // src/app/components/chat-header/chat-header.component.ts
@@ -98942,10 +98996,10 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
     return this.currentAgent?.name || "Virtual Assistant";
   }
   get iconPath() {
-    return this.currentAgent?.imagePath || getImagePath("epicstaff.svg");
+    return this.currentAgent?.imagePath || getImagePath("epicstaff-logo.svg");
   }
   getAgentIconPath(agent) {
-    return agent.imagePath || getImagePath("epicstaff.svg");
+    return agent.imagePath || getImagePath("epicstaff-logo.svg");
   }
   get hasMultipleAgents() {
     return this.agents.length > 1;
@@ -99706,71 +99760,160 @@ _EpicstaffAgentConfigComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCom
       return ctx.onKeyPress($event);
     }, \u0275\u0275resolveWindow);
   }
-}, inputs: { popupState: "popupState", currentAgent: "currentAgent", newAgentParams: "newAgentParams" }, outputs: { closed: "closed" }, features: [\u0275\u0275NgOnChangesFeature], decls: 28, vars: 6, consts: [["styleClass", "ep-agent-config", 3, "closed", "closable", "closableOverlay"], ["type", "button", "modal-actions", "", 1, "import-btn", 3, "click"], [1, "agent-config-header"], [1, "agent-config-title"], [1, "agent-config-content", 3, "formGroup"], [1, "agent-config-field"], [1, "agent-config-label"], ["type", "text", "formControlName", "name", "placeholder", "Enter agent name", 1, "agent-config-input"], ["rows", "3", "formControlName", "description", 1, "agent-config-input"], ["type", "text", "formControlName", "flowUrl", "placeholder", "Enter flow url", 1, "agent-config-input"], ["type", "number", "formControlName", "flowId", "placeholder", "Enter flow id", 1, "agent-config-input"], [1, "agent-config-footer"], [3, "buttonClick"], [3, "buttonClick", "disabled"]], template: function EpicstaffAgentConfigComponent_Template(rf, ctx) {
+}, inputs: { popupState: "popupState", currentAgent: "currentAgent", newAgentParams: "newAgentParams" }, outputs: { closed: "closed" }, features: [\u0275\u0275NgOnChangesFeature], decls: 35, vars: 6, consts: [["styleClass", "ep-agent-config", 3, "closed", "closable", "closableOverlay"], [1, "agent-config-header"], [1, "agent-config-title"], [1, "agent-config-content", 3, "formGroup"], [1, "agent-config-field"], [1, "agent-config-label"], [1, "agent-config-required"], ["type", "text", "formControlName", "name", "placeholder", "Enter agent name", 1, "agent-config-input", 3, "keydown"], ["type", "text", "formControlName", "flowUrl", "placeholder", "Enter flow url", 1, "agent-config-input", 3, "keydown"], ["type", "number", "formControlName", "flowId", "placeholder", "Enter flow id", 1, "agent-config-input", 3, "keydown"], ["rows", "3", "formControlName", "description", "placeholder", "Enter agent description", 1, "agent-config-input", 3, "keydown"], [1, "agent-config-footer"], ["type", "button", 1, "agent-config-import", 3, "click"], [1, "agent-config-footer-right"], [3, "buttonClick"], ["variant", "primary", 3, "buttonClick", "disabled"]], template: function EpicstaffAgentConfigComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "ep-modal", 0);
     \u0275\u0275listener("closed", function EpicstaffAgentConfigComponent_Template_ep_modal_closed_0_listener() {
       return ctx.cancel();
     });
-    \u0275\u0275elementStart(1, "button", 1);
-    \u0275\u0275listener("click", function EpicstaffAgentConfigComponent_Template_button_click_1_listener() {
+    \u0275\u0275elementStart(1, "div", 1)(2, "p", 2);
+    \u0275\u0275text(3);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(4, "div", 3)(5, "div", 4)(6, "div", 5);
+    \u0275\u0275text(7, "Agent Name ");
+    \u0275\u0275elementStart(8, "span", 6);
+    \u0275\u0275text(9, "*");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(10, "input", 7);
+    \u0275\u0275listener("keydown", function EpicstaffAgentConfigComponent_Template_input_keydown_10_listener($event) {
+      return $event.stopPropagation();
+    });
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(11, "div", 4)(12, "div", 5);
+    \u0275\u0275text(13, " Epicstaff flow URL ");
+    \u0275\u0275elementStart(14, "span", 6);
+    \u0275\u0275text(15, "*");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(16, "input", 8);
+    \u0275\u0275listener("keydown", function EpicstaffAgentConfigComponent_Template_input_keydown_16_listener($event) {
+      return $event.stopPropagation();
+    });
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(17, "div", 4)(18, "div", 5);
+    \u0275\u0275text(19, "Epicstaff flow id ");
+    \u0275\u0275elementStart(20, "span", 6);
+    \u0275\u0275text(21, "*");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(22, "input", 9);
+    \u0275\u0275listener("keydown", function EpicstaffAgentConfigComponent_Template_input_keydown_22_listener($event) {
+      return $event.stopPropagation();
+    });
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(23, "div", 4)(24, "div", 5);
+    \u0275\u0275text(25, "Agent description");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(26, "textarea", 10);
+    \u0275\u0275listener("keydown", function EpicstaffAgentConfigComponent_Template_textarea_keydown_26_listener($event) {
+      return $event.stopPropagation();
+    });
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(27, "div", 11)(28, "button", 12);
+    \u0275\u0275listener("click", function EpicstaffAgentConfigComponent_Template_button_click_28_listener() {
       return ctx.importFromClipboard();
     });
-    \u0275\u0275text(2, " Import ");
+    \u0275\u0275text(29, " Import ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 2)(4, "p", 3);
-    \u0275\u0275text(5);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(6, "div", 4)(7, "div", 5)(8, "div", 6);
-    \u0275\u0275text(9, "Agent name:");
-    \u0275\u0275elementEnd();
-    \u0275\u0275element(10, "input", 7);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(11, "div", 5)(12, "div", 6);
-    \u0275\u0275text(13, "Agent description:");
-    \u0275\u0275elementEnd();
-    \u0275\u0275element(14, "textarea", 8);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(15, "div", 5)(16, "div", 6);
-    \u0275\u0275text(17, "Epicstaff flow url:");
-    \u0275\u0275elementEnd();
-    \u0275\u0275element(18, "input", 9);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(19, "div", 5)(20, "div", 6);
-    \u0275\u0275text(21, "Epicstaff flow id:");
-    \u0275\u0275elementEnd();
-    \u0275\u0275element(22, "input", 10);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(23, "div", 11)(24, "ep-button", 12);
-    \u0275\u0275listener("buttonClick", function EpicstaffAgentConfigComponent_Template_ep_button_buttonClick_24_listener() {
+    \u0275\u0275elementStart(30, "div", 13)(31, "ep-button", 14);
+    \u0275\u0275listener("buttonClick", function EpicstaffAgentConfigComponent_Template_ep_button_buttonClick_31_listener() {
       return ctx.cancel();
     });
-    \u0275\u0275text(25, "Cancel");
+    \u0275\u0275text(32, "Cancel");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(26, "ep-button", 13);
-    \u0275\u0275listener("buttonClick", function EpicstaffAgentConfigComponent_Template_ep_button_buttonClick_26_listener() {
+    \u0275\u0275elementStart(33, "ep-button", 15);
+    \u0275\u0275listener("buttonClick", function EpicstaffAgentConfigComponent_Template_ep_button_buttonClick_33_listener() {
       return ctx.apply();
     });
-    \u0275\u0275text(27);
-    \u0275\u0275elementEnd()()();
+    \u0275\u0275text(34);
+    \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
     \u0275\u0275property("closable", true)("closableOverlay", true);
-    \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate1("", ctx.isEdit ? "Edit" : "Create", " Agent");
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1("", ctx.isEdit ? "Edit" : "Create New", " Agent");
     \u0275\u0275advance();
     \u0275\u0275property("formGroup", ctx.form);
-    \u0275\u0275advance(20);
+    \u0275\u0275advance(29);
     \u0275\u0275property("disabled", !ctx.isValidForm);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx.isEdit ? "Edit" : "Create", " ");
+    \u0275\u0275textInterpolate1(" ", ctx.isEdit ? "Save" : "Create", " ");
   }
-}, dependencies: [CommonModule, ReactiveFormsModule, DefaultValueAccessor, NumberValueAccessor, NgControlStatus, NgControlStatusGroup, FormGroupDirective, FormControlName, ButtonComponent, ModalComponent], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n}\n.agent-config-header[_ngcontent-%COMP%] {\n  padding: 12px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-title[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.agent-config-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  padding: 16px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-field[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n}\n.agent-config-field[_ngcontent-%COMP%]   textarea.agent-config-input[_ngcontent-%COMP%] {\n  resize: none;\n  height: auto;\n}\n.agent-config-footer[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n  padding: 16px 20px;\n  gap: 12px;\n}\n.import-btn[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 12px;\n  right: 50px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-link);\n  cursor: pointer;\n  font-size: 13px;\n  text-decoration: none;\n}\n.import-btn[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n  text-decoration: underline;\n}\n.import-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n/*# sourceMappingURL=epicstaff-agent-config.component.css.map */"] });
+}, dependencies: [CommonModule, ReactiveFormsModule, DefaultValueAccessor, NumberValueAccessor, NgControlStatus, NgControlStatusGroup, FormGroupDirective, FormControlName, ButtonComponent, ModalComponent], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n}\n.agent-config-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  padding: 20px 20px;\n  border-bottom: 1px solid #2b2d30;\n}\n.agent-config-title[_ngcontent-%COMP%] {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.agent-config-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  padding: 20px;\n}\n.agent-config-field[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n}\n.agent-config-label[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  font-size: 12px;\n  font-weight: 400;\n  color: var(--ep-color-text-muted);\n}\n.agent-config-required[_ngcontent-%COMP%] {\n  color: #685fff;\n}\n.agent-config-input[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 40px;\n  padding: 0 12px;\n  border: 1px solid rgba(217, 217, 222, 0.16);\n  border-radius: 4px;\n  background: #2b2d30;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  box-sizing: border-box;\n  outline: none;\n}\n.agent-config-input[_ngcontent-%COMP%]::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.agent-config-input[_ngcontent-%COMP%]:focus {\n  border-color: var(--ep-color-accent);\n}\n.agent-config-field[_ngcontent-%COMP%]   textarea.agent-config-input[_ngcontent-%COMP%] {\n  resize: none;\n  height: auto;\n  padding: 10px 12px;\n}\n.agent-config-footer[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding: 16px 20px;\n  border-top: 1px solid #2b2d30;\n}\n.agent-config-footer-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n.agent-config-import[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-accent);\n  cursor: pointer;\n  font-family: "Open Sans", sans-serif;\n  font-size: 13px;\n  font-weight: 500;\n}\n.agent-config-import[_ngcontent-%COMP%]:hover {\n  opacity: 0.8;\n  text-decoration: underline;\n}\n.agent-config-import[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n[_nghost-%COMP%]     .ep-modal-container.ep-agent-config {\n  min-width: 480px;\n  border-radius: 10px;\n  background: #212325;\n}\n[_nghost-%COMP%]     .ep-modal-container.ep-agent-config .ep-modal-close-icon {\n  top: 22px;\n  right: 20px;\n}\n/*# sourceMappingURL=epicstaff-agent-config.component.css.map */'] });
 var EpicstaffAgentConfigComponent = _EpicstaffAgentConfigComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(EpicstaffAgentConfigComponent, [{
     type: Component,
-    args: [{ selector: "ep-epicstaff-agent-config", imports: [CommonModule, ReactiveFormsModule, ButtonComponent, ModalComponent], template: '<ep-modal\r\n  [closable]="true"\r\n  [closableOverlay]="true"\r\n  styleClass="ep-agent-config"\r\n  (closed)="cancel()"\r\n>\r\n  <button type="button" class="import-btn" modal-actions (click)="importFromClipboard()">\r\n    Import\r\n  </button>\r\n  <div class="agent-config-header">\r\n    <p class="agent-config-title">{{ isEdit ? "Edit" : "Create" }} Agent</p>\r\n  </div>\r\n\r\n  <div class="agent-config-content" [formGroup]="form">\r\n    <div class="agent-config-field">\r\n      <div class="agent-config-label">Agent name:</div>\r\n      <input\r\n        type="text"\r\n        class="agent-config-input"\r\n        formControlName="name"\r\n        placeholder="Enter agent name"\r\n      />\r\n    </div>\r\n\r\n    <div class="agent-config-field">\r\n      <div class="agent-config-label">Agent description:</div>\r\n      <textarea class="agent-config-input" rows="3" formControlName="description"></textarea>\r\n    </div>\r\n\r\n    <div class="agent-config-field">\r\n      <div class="agent-config-label">Epicstaff flow url:</div>\r\n      <input\r\n        type="text"\r\n        class="agent-config-input"\r\n        formControlName="flowUrl"\r\n        placeholder="Enter flow url"\r\n      />\r\n    </div>\r\n\r\n    <div class="agent-config-field">\r\n      <div class="agent-config-label">Epicstaff flow id:</div>\r\n      <input\r\n        type="number"\r\n        class="agent-config-input"\r\n        formControlName="flowId"\r\n        placeholder="Enter flow id"\r\n      />\r\n    </div>\r\n  </div>\r\n\r\n  <div class="agent-config-footer">\r\n    <ep-button (buttonClick)="cancel()">Cancel</ep-button>\r\n    <ep-button (buttonClick)="apply()" [disabled]="!isValidForm">\r\n      {{ isEdit ? "Edit" : "Create" }}\r\n    </ep-button>\r\n  </div>\r\n</ep-modal>\r\n', styles: ["/* src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.scss */\n:host {\n  display: block;\n}\n.agent-config-header {\n  padding: 12px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-title {\n  margin: 0;\n}\n.agent-config-content {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  padding: 16px 20px;\n  border-bottom: 1px solid var(--ep-color-border);\n}\n.agent-config-field {\n  display: flex;\n  flex-direction: column;\n}\n.agent-config-field textarea.agent-config-input {\n  resize: none;\n  height: auto;\n}\n.agent-config-footer {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n  padding: 16px 20px;\n  gap: 12px;\n}\n.import-btn {\n  position: absolute;\n  top: 12px;\n  right: 50px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-link);\n  cursor: pointer;\n  font-size: 13px;\n  text-decoration: none;\n}\n.import-btn:hover {\n  opacity: 0.8;\n  text-decoration: underline;\n}\n.import-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n/*# sourceMappingURL=epicstaff-agent-config.component.css.map */\n"] }]
+    args: [{ selector: "ep-epicstaff-agent-config", imports: [CommonModule, ReactiveFormsModule, ButtonComponent, ModalComponent, TooltipDirective], template: `<ep-modal\r
+  [closable]="true"\r
+  [closableOverlay]="true"\r
+  styleClass="ep-agent-config"\r
+  (closed)="cancel()"\r
+>\r
+  <div class="agent-config-header">\r
+    <p class="agent-config-title">{{ isEdit ? "Edit" : "Create New" }} Agent</p>\r
+  </div>\r
+\r
+  <div class="agent-config-content" [formGroup]="form">\r
+    <div class="agent-config-field">\r
+      <div class="agent-config-label">Agent Name <span class="agent-config-required">*</span></div>\r
+      <input\r
+        type="text"\r
+        class="agent-config-input"\r
+        formControlName="name"\r
+        placeholder="Enter agent name"\r
+        (keydown)="$event.stopPropagation()"\r
+      />\r
+    </div>\r
+\r
+    <div class="agent-config-field">\r
+      <div class="agent-config-label">\r
+        Epicstaff flow URL <span class="agent-config-required">*</span>\r
+        <!-- <span class="agent-config-help" epTooltip="Base URL of the Epicstaff flow endpoint" [tooltipOptions]="{ position: 'top' }">?</span> -->\r
+      </div>\r
+      <input\r
+        type="text"\r
+        class="agent-config-input"\r
+        formControlName="flowUrl"\r
+        placeholder="Enter flow url"\r
+        (keydown)="$event.stopPropagation()"\r
+      />\r
+    </div>\r
+\r
+    <div class="agent-config-field">\r
+      <div class="agent-config-label">Epicstaff flow id <span class="agent-config-required">*</span></div>\r
+      <input\r
+        type="number"\r
+        class="agent-config-input"\r
+        formControlName="flowId"\r
+        placeholder="Enter flow id"\r
+        (keydown)="$event.stopPropagation()"\r
+      />\r
+    </div>\r
+\r
+    <div class="agent-config-field">\r
+      <div class="agent-config-label">Agent description</div>\r
+      <textarea\r
+        class="agent-config-input"\r
+        rows="3"\r
+        formControlName="description"\r
+        placeholder="Enter agent description"\r
+        (keydown)="$event.stopPropagation()"\r
+      ></textarea>\r
+    </div>\r
+  </div>\r
+\r
+  <div class="agent-config-footer">\r
+    <button type="button" class="agent-config-import" (click)="importFromClipboard()">\r
+      Import\r
+    </button>\r
+    <div class="agent-config-footer-right">\r
+      <ep-button (buttonClick)="cancel()">Cancel</ep-button>\r
+      <ep-button (buttonClick)="apply()" [disabled]="!isValidForm" variant="primary">\r
+        {{ isEdit ? "Save" : "Create" }}\r
+      </ep-button>\r
+    </div>\r
+  </div>\r
+</ep-modal>\r
+`, styles: ['/* src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.scss */\n:host {\n  display: block;\n}\n.agent-config-header {\n  display: flex;\n  align-items: center;\n  padding: 20px 20px;\n  border-bottom: 1px solid #2b2d30;\n}\n.agent-config-title {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.agent-config-content {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  padding: 20px;\n}\n.agent-config-field {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n}\n.agent-config-label {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  font-size: 12px;\n  font-weight: 400;\n  color: var(--ep-color-text-muted);\n}\n.agent-config-required {\n  color: #685fff;\n}\n.agent-config-input {\n  width: 100%;\n  height: 40px;\n  padding: 0 12px;\n  border: 1px solid rgba(217, 217, 222, 0.16);\n  border-radius: 4px;\n  background: #2b2d30;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  box-sizing: border-box;\n  outline: none;\n}\n.agent-config-input::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.agent-config-input:focus {\n  border-color: var(--ep-color-accent);\n}\n.agent-config-field textarea.agent-config-input {\n  resize: none;\n  height: auto;\n  padding: 10px 12px;\n}\n.agent-config-footer {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding: 16px 20px;\n  border-top: 1px solid #2b2d30;\n}\n.agent-config-footer-right {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n.agent-config-import {\n  display: inline-flex;\n  align-items: center;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-accent);\n  cursor: pointer;\n  font-family: "Open Sans", sans-serif;\n  font-size: 13px;\n  font-weight: 500;\n}\n.agent-config-import:hover {\n  opacity: 0.8;\n  text-decoration: underline;\n}\n.agent-config-import:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n:host ::ng-deep .ep-modal-container.ep-agent-config {\n  min-width: 480px;\n  border-radius: 10px;\n  background: #212325;\n}\n:host ::ng-deep .ep-modal-container.ep-agent-config .ep-modal-close-icon {\n  top: 22px;\n  right: 20px;\n}\n/*# sourceMappingURL=epicstaff-agent-config.component.css.map */\n'] }]
   }], () => [{ type: FormBuilder }, { type: EpicstaffAgentService }], { popupState: [{
     type: Input
   }], currentAgent: [{
@@ -99785,7 +99928,7 @@ var EpicstaffAgentConfigComponent = _EpicstaffAgentConfigComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(EpicstaffAgentConfigComponent, { className: "EpicstaffAgentConfigComponent", filePath: "src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.ts", lineNumber: 26 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(EpicstaffAgentConfigComponent, { className: "EpicstaffAgentConfigComponent", filePath: "src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.ts", lineNumber: 27 });
 })();
 
 // src/app/directives/click-outside.directive.ts
@@ -100923,9 +101066,9 @@ var _ChatComponent = class _ChatComponent {
       } catch (error) {
         console.error("Error sending message:", error);
         if (error instanceof Error && error.message === "EPICCHAT_STREAM_CANCELLED") {
-          this.cancelInterimMessage(interimMessage.id);
+          this.removeInterimMessage(interimMessage.id);
         } else {
-          this.failInterimMessage(interimMessage.id, error instanceof Error ? error.message : "Failed to send message");
+          this.failInterimMessage(interimMessage.id, error instanceof Error ? error.message : void 0);
         }
         this.scrollMode = "question-answer";
       } finally {
@@ -100978,9 +101121,9 @@ var _ChatComponent = class _ChatComponent {
       } catch (error) {
         console.error("Error sending action message:", error);
         if (error instanceof Error && error.message === "EPICCHAT_STREAM_CANCELLED") {
-          this.cancelInterimMessage(interimMessage.id);
+          this.removeInterimMessage(interimMessage.id);
         } else {
-          this.failInterimMessage(interimMessage.id, error instanceof Error ? error.message : "Failed to send action message");
+          this.failInterimMessage(interimMessage.id, error instanceof Error ? error.message : void 0);
         }
         this.scrollMode = "question-answer";
       } finally {
@@ -101037,18 +101180,16 @@ var _ChatComponent = class _ChatComponent {
   failInterimMessage(interimId, errorText) {
     this.chatService.updateMessage(interimId, (prev) => __spreadProps(__spreadValues({}, prev), {
       response: __spreadProps(__spreadValues({}, prev.response || {}), {
-        message: errorText
+        message: ""
       }),
-      _epicaError: true,
+      _epicaError: errorText || true,
       _epicaThinkingActive: false,
       _interim: false
     }));
   }
-  cancelInterimMessage(interimId) {
-    this.chatService.updateMessage(interimId, (prev) => __spreadProps(__spreadValues({}, prev), {
-      _epicaThinkingActive: false,
-      _interim: false
-    }));
+  removeInterimMessage(interimId) {
+    const messages = this.chatService.messages().filter((m2) => m2.id !== interimId);
+    this.chatService.setMessages(messages);
   }
   formatThinkingChunk(update) {
     const text = (update.text || "").trim();
@@ -101534,7 +101675,7 @@ var _ChatComponent = class _ChatComponent {
     }
     const base = this.getBasePath();
     const normalized = base ? base.endsWith("/") ? base : base + "/" : "";
-    return normalized + "assets/images/shared/epicstaff.svg";
+    return normalized + "assets/images/shared/epicstaff-logo.svg";
   }
   getChatStyle(position) {
     const style = {
@@ -101628,7 +101769,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
   EpicstaffAgentConfigComponent,
   ClickOutsideDirective,
   ResizableChatDirective
-], styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: var(--ep-color-accent-soft);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: var(--ep-color-accent-soft);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-chat-bg-answer: transparent;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'], encapsulation: 3 });
+], styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  --ep-font-family:\n    "Inter",\n    "Inter var",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Arial,\n    sans-serif;\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-menu-panel-min-width: 170px;\n  --ep-menu-panel-radius: 8px;\n  --ep-menu-panel-bg: var(--ep-color-surface);\n  --ep-menu-panel-border: var(--ep-color-border);\n  --ep-menu-panel-divider: var(--ep-color-border);\n  --ep-menu-panel-item-text: var(--ep-color-text);\n  --ep-menu-panel-item-hover-bg: var(--ep-color-surface-alt);\n  --ep-menu-panel-item-padding: 10px 16px;\n  --ep-menu-panel-shadow: 0 2px 4px 0 var(--ep-color-shadow);\n  --ep-footer-select-open-bg: var(--ep-color-surface-alt);\n  --ep-footer-select-open-border: var(--ep-color-border);\n  --ep-footer-select-text: var(--ep-color-text);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: var(--ep-color-accent-soft);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: var(--ep-color-accent-soft);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-menu-panel-bg: #212325;\n  --ep-menu-panel-border: #2b2d30;\n  --ep-menu-panel-divider: #2b2d30;\n  --ep-menu-panel-item-text: #d9d9de;\n  --ep-menu-panel-item-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-menu-panel-shadow:\n    0 0 1px rgba(0, 0, 0, 0.04),\n    0 9px 18px rgba(0, 0, 0, 0.16),\n    0 6px 10px rgba(0, 0, 0, 0.12);\n  --ep-footer-select-open-bg: #2b2d30;\n  --ep-footer-select-open-border: #2b2d30;\n  --ep-footer-select-text: #d9d9de;\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-chat-bg-answer: #2b2d30;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'], encapsulation: 3 });
 var ChatComponent = _ChatComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatComponent, [{
@@ -101642,7 +101783,7 @@ var ChatComponent = _ChatComponent;
       EpicstaffAgentConfigComponent,
       ClickOutsideDirective,
       ResizableChatDirective
-    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\r\n\r\n<ep-chat-toggle-button\r\n  [iconPath]="iconPath"\r\n  [chatIconSize]="chatIconSize"\r\n  [unreadCount]="chatService.unreadCount()"\r\n  (clicked)="toggleChat()"\r\n/>\r\n\r\n@if (chatService.isOpen()) {\r\n  <div\r\n    class="ep-popup"\r\n    [class.ep-popup--dock]="isDockMode"\r\n    [ngStyle]="chatStyle"\r\n    epClickOutside\r\n    epResizableChat\r\n    [config]="getConfig()"\r\n    [resizeDisabled]="isDockMode"\r\n    (epClickOutside)="onClickOutside()"\r\n  >\r\n    <ep-chat-header\r\n      [currentAgent]="currentAgent"\r\n      [agents]="agentService.visibleAgents()"\r\n      [isMonoAgent]="isMonoAgent"\r\n      [dockEnabled]="dockEnabled"\r\n      [isDockMode]="isDockMode"\r\n      (closed)="closeChat()"\r\n      (infoClicked)="onInfoClick()"\r\n      (dragClicked)="onDragClick()"\r\n      (collapseClicked)="onCollapseClick()"\r\n      (toggleFullHeightClicked)="onToggleFullHeight()"\r\n      (dockClicked)="onDockClick()"\r\n      (agentSelected)="onAgentSelected($event)"\r\n      (clearChatHistory)="onClearChatHistory()"\r\n      (createAgent)="onCreateAgent()"\r\n      (editAgent)="onEditAgent()"\r\n      (removeAgent)="onRemoveAgent()"\r\n      (setDefaultPosition)="onSetDefaultPosition()"\r\n    />\r\n\r\n    <ep-chat-body\r\n      [messages]="chatService.messages()"\r\n      [isTyping]="isTyping"\r\n      [scrollMode]="scrollMode"\r\n      (actionClick)="onActionClick($event)"\r\n    />\r\n\r\n    <ep-chat-footer\r\n      [isTyping]="isTyping"\r\n      [messages]="chatService.messages()"\r\n      [currentAgent]="currentAgent"\r\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\r\n      (sendMessage)="onSendMessage($event)"\r\n      (stop)="onStopGenerating()"\r\n    />\r\n  </div>\r\n\r\n  <!-- <div\r\n    class="ep-mat"\r\n    role="button"\r\n    tabindex="0"\r\n    (click)="closeChat()"\r\n    (keydown.enter)="closeChat()"\r\n    (keydown.space)="closeChat()"\r\n    aria-label="Close popup"\r\n  ></div> -->\r\n}\r\n\r\n@if (isAgentConfigOpen && !isMonoAgent) {\r\n  <ep-epicstaff-agent-config\r\n    [popupState]="agentConfigState"\r\n    [currentAgent]="currentAgent"\r\n    [newAgentParams]="newAgentParamsForConfig"\r\n    (closed)="onCloseAgentConfig()"\r\n  />\r\n}\r\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  font-family:\n    "Open Sans",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: var(--ep-color-accent-soft);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: var(--ep-color-accent-soft);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-chat-bg-answer: transparent;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: "Open Sans", sans-serif;\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
+    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\r\n\r\n<ep-chat-toggle-button\r\n  [iconPath]="iconPath"\r\n  [chatIconSize]="chatIconSize"\r\n  [unreadCount]="chatService.unreadCount()"\r\n  (clicked)="toggleChat()"\r\n/>\r\n\r\n@if (chatService.isOpen()) {\r\n  <div\r\n    class="ep-popup"\r\n    [class.ep-popup--dock]="isDockMode"\r\n    [ngStyle]="chatStyle"\r\n    epClickOutside\r\n    epResizableChat\r\n    [config]="getConfig()"\r\n    [resizeDisabled]="isDockMode"\r\n    (epClickOutside)="onClickOutside()"\r\n  >\r\n    <ep-chat-header\r\n      [currentAgent]="currentAgent"\r\n      [agents]="agentService.visibleAgents()"\r\n      [isMonoAgent]="isMonoAgent"\r\n      [dockEnabled]="dockEnabled"\r\n      [isDockMode]="isDockMode"\r\n      (closed)="closeChat()"\r\n      (infoClicked)="onInfoClick()"\r\n      (dragClicked)="onDragClick()"\r\n      (collapseClicked)="onCollapseClick()"\r\n      (toggleFullHeightClicked)="onToggleFullHeight()"\r\n      (dockClicked)="onDockClick()"\r\n      (agentSelected)="onAgentSelected($event)"\r\n      (clearChatHistory)="onClearChatHistory()"\r\n      (createAgent)="onCreateAgent()"\r\n      (editAgent)="onEditAgent()"\r\n      (removeAgent)="onRemoveAgent()"\r\n      (setDefaultPosition)="onSetDefaultPosition()"\r\n    />\r\n\r\n    <ep-chat-body\r\n      [messages]="chatService.messages()"\r\n      [isTyping]="isTyping"\r\n      [scrollMode]="scrollMode"\r\n      (actionClick)="onActionClick($event)"\r\n    />\r\n\r\n    <ep-chat-footer\r\n      [isTyping]="isTyping"\r\n      [messages]="chatService.messages()"\r\n      [currentAgent]="currentAgent"\r\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\r\n      (sendMessage)="onSendMessage($event)"\r\n      (stop)="onStopGenerating()"\r\n    />\r\n  </div>\r\n\r\n  <!-- <div\r\n    class="ep-mat"\r\n    role="button"\r\n    tabindex="0"\r\n    (click)="closeChat()"\r\n    (keydown.enter)="closeChat()"\r\n    (keydown.space)="closeChat()"\r\n    aria-label="Close popup"\r\n  ></div> -->\r\n}\r\n\r\n@if (isAgentConfigOpen && !isMonoAgent) {\r\n  <ep-epicstaff-agent-config\r\n    [popupState]="agentConfigState"\r\n    [currentAgent]="currentAgent"\r\n    [newAgentParams]="newAgentParamsForConfig"\r\n    (closed)="onCloseAgentConfig()"\r\n  />\r\n}\r\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  --ep-font-family:\n    "Inter",\n    "Inter var",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Arial,\n    sans-serif;\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-menu-panel-min-width: 170px;\n  --ep-menu-panel-radius: 8px;\n  --ep-menu-panel-bg: var(--ep-color-surface);\n  --ep-menu-panel-border: var(--ep-color-border);\n  --ep-menu-panel-divider: var(--ep-color-border);\n  --ep-menu-panel-item-text: var(--ep-color-text);\n  --ep-menu-panel-item-hover-bg: var(--ep-color-surface-alt);\n  --ep-menu-panel-item-padding: 10px 16px;\n  --ep-menu-panel-shadow: 0 2px 4px 0 var(--ep-color-shadow);\n  --ep-footer-select-open-bg: var(--ep-color-surface-alt);\n  --ep-footer-select-open-border: var(--ep-color-border);\n  --ep-footer-select-text: var(--ep-color-text);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: var(--ep-color-accent-soft);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: var(--ep-color-accent-soft);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-menu-panel-bg: #212325;\n  --ep-menu-panel-border: #2b2d30;\n  --ep-menu-panel-divider: #2b2d30;\n  --ep-menu-panel-item-text: #d9d9de;\n  --ep-menu-panel-item-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-menu-panel-shadow:\n    0 0 1px rgba(0, 0, 0, 0.04),\n    0 9px 18px rgba(0, 0, 0, 0.16),\n    0 6px 10px rgba(0, 0, 0, 0.12);\n  --ep-footer-select-open-bg: #2b2d30;\n  --ep-footer-select-open-border: #2b2d30;\n  --ep-footer-select-text: #d9d9de;\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-chat-bg-answer: #2b2d30;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
   }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: ChatParentBridgeService }, { type: DateAdapter }, { type: ElementRef }], { uniqueUserId: [{
     type: Input
   }], userData: [{

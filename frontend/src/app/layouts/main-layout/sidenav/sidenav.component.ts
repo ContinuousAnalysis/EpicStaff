@@ -55,7 +55,7 @@ export class LeftSidebarComponent implements AfterViewInit {
             textMuted: 'var(--color-text-secondary)',
             border: 'var(--color-divider-regular)',
             borderMuted: 'var(--color-divider-subtle)',
-            accent: 'var(--gray-700)',
+            accent: 'var(--accent-color)',
             accentContrast: 'var(--color-text-primary)',
             accentSoft: 'var(--color-ghost-btn-hover)',
             danger: 'var(--color-ks-status-failed)',
@@ -66,7 +66,8 @@ export class LeftSidebarComponent implements AfterViewInit {
         components: {
             chat: {
                 bgQuestion: 'var(--accent-color)',
-                bgAnswer: 'var(--color-nodes-background)',
+                // bgAnswer: 'var(--color-nodes-background)',
+                bgAnswer: '#2b2d30',
                 textQuestion: 'var(--color-text-primary)',
             },
             header: {
