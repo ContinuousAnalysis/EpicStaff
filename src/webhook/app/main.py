@@ -1,6 +1,5 @@
 import asyncio
 import json
-import sys
 
 from fastapi import Depends, FastAPI
 from fastapi.concurrency import asynccontextmanager
@@ -9,7 +8,7 @@ from loguru import logger
 
 from app.controllers import webhook_routes
 from app.core.settings import settings
-from app.request_models import WebhookConfigData
+from src.shared.models import WebhookConfigData
 from app.services.redis_service import (
     RedisService,
     close_redis_connection,
@@ -54,12 +53,16 @@ async def lifespan(app: FastAPI):
     redis_listener_task = asyncio.create_task(
         listen_redis(redis_service, tunnel_registry)
     )
-    n_received = await redis_service.client.publish(
-        settings.REQUEST_WEBHOOK_UPDATE_CHANNEL, ""
-    )
-    if n_received < 1:
-        logger.error("CRITICAL: No django running, stopping instance...")
-        sys.exit(1)
+
+    while True:
+        n_received = await redis_service.client.publish(
+            settings.REQUEST_WEBHOOK_UPDATE_CHANNEL, ""
+        )
+        if n_received >= 1:
+            break
+        logger.warning("No Django instance detected, retrying in 5 seconds...")
+        await asyncio.sleep(5)
+
     yield
 
     logger.info("Application shutting down...")

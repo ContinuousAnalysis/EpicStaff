@@ -29,6 +29,7 @@ import {
 } from '../../models/mcp-tool.model';
 import { Observable, of, timer } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 interface DialogData {
   selectedTool?: GetMcpToolRequest;
@@ -46,6 +47,7 @@ interface DialogData {
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+    AppSvgIconComponent
   ],
   templateUrl: './mcp-tool-dialog.component.html',
   styleUrls: ['./mcp-tool-dialog.component.scss'],
