@@ -359,7 +359,7 @@ function buildGraphNote(nn: GraphNote, idx: number): GraphNoteModel {
         backendId: nn.id,
         category: 'web',
         type: NodeType.NOTE,
-        node_name: nn.node_name,
+        node_name: (nn as any).node_name ?? `Note (#${idx + 1})`,
         data: {
             content: nn.content,
             backgroundColor: nn.metadata?.['backgroundColor'] ?? undefined,
