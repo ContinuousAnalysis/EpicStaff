@@ -100870,7 +100870,10 @@ var _ChatComponent = class _ChatComponent {
       }
     });
     effect(() => {
-      this.saveChatHistory();
+      const messages = this.chatService.messages();
+      untracked2(() => {
+        this.saveChatHistory(messages);
+      });
     });
     effect(() => {
       const previousAgent = this.previousAgentRef;
@@ -101350,6 +101353,8 @@ var _ChatComponent = class _ChatComponent {
     const savedMessages = this.messageService.loadMessages(chatId);
     if (savedMessages && savedMessages.length > 0) {
       this.chatService.setMessages(savedMessages);
+    } else {
+      this.chatService.setMessages([]);
     }
   }
   /**
@@ -101552,9 +101557,9 @@ var _ChatComponent = class _ChatComponent {
   /**
    * Save current chat history to storage
    */
-  saveChatHistory() {
+  saveChatHistory(messagesOverride) {
     const chatId = this.messageService.getChatId(this.agentService.currentAgent(), this.isMonoAgent);
-    const msgs = this.chatService.messages();
+    const msgs = messagesOverride ?? this.chatService.messages();
     if (chatId && msgs.length > 0) {
       this.messageService.saveMessages(chatId, msgs);
     }
@@ -101891,7 +101896,7 @@ var ChatComponent = _ChatComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 73 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 74 });
 })();
 
 // src/app/config/markdown.config.ts
