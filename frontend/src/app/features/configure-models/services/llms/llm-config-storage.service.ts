@@ -67,6 +67,10 @@ export class LlmConfigStorageService {
         );
     }
 
+    markConfigsOutdated(): void {
+        this.configsLoaded.set(false);
+    }
+
     private mergeConfigsIntoCache(incoming: GetLlmConfigRequest[]): void {
         this.configsSignal.update((current) => {
             const map = new Map(current.map((c) => [c.id, c]));

@@ -23,6 +23,7 @@ import { ConfigureModelsTabId } from "../../enums/configure-models-tab-id.enum";
 
 import { CreateQuickstartRequest } from "../../models/quickstart.model";
 import { DefaultModelsStorageService } from "../../services/default-models-storage.service";
+import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
 import { LlmProvidersStorageService } from "../../services/llms/llm-providers-storage.service";
 import { QuickstartService } from "../../services/quickstart.service";
 import { getProviderIconPath } from "@shared/utils";
@@ -44,6 +45,7 @@ import { getProviderIconPath } from "@shared/utils";
 export class QuickstartSectionComponent implements OnInit {
     private readonly fb = inject(FormBuilder);
     private readonly providersStorageService = inject(LlmProvidersStorageService);
+    private readonly llmConfigStorageService = inject(LlmConfigStorageService);
     private readonly quickstartService =  inject(QuickstartService);
     private readonly defaultModelsStorageService = inject(DefaultModelsStorageService);
     private readonly destroyRef = inject(DestroyRef);
@@ -167,7 +169,11 @@ export class QuickstartSectionComponent implements OnInit {
                 this.toast.error('Failed to create/apply quickstart.');
                 return EMPTY;
             }),
-            finalize(() => this.isSaving.set(false)),
+            finalize(() => {
+                this.defaultModelsStorageService.markDefaultModelsOutdated();
+                this.llmConfigStorageService.markConfigsOutdated();
+                this.isSaving.set(false)
+            }),
             takeUntilDestroyed(this.destroyRef)
         ).subscribe();
     }

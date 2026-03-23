@@ -91,7 +91,7 @@
                                         type="button"
                                         class="model-selector__model"
                                         [class.model-selector__model--selected]="isModelSelected(model.id)"
-                                        (click)="selectModel(model)"
+                                        (click)="selectModel(model, providerData.provider)"
                                     >
                                         <span class="model-selector__model-name">{{ model.name }}</span>
                                     </button>

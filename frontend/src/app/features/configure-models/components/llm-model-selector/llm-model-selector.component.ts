@@ -20,7 +20,7 @@ import { Overlay, OverlayModule, OverlayPositionBuilder, OverlayRef } from '@ang
 import { TemplatePortal } from '@angular/cdk/portal';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppIconComponent, ButtonComponent, TooltipComponent } from "@shared/components";
-import { LLMModel } from "@shared/models";
+import { LLMModel, LLMProvider } from "@shared/models";
 import { finalize } from "rxjs/operators";
 import { LLMLibraryService, ProviderWithModels } from "../../services/llms/llm-library.service";
 import { getProviderIconPath } from "@shared/utils";
@@ -72,7 +72,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     isLoading = signal(true);
     searchQuery = signal('');
     selectedValue = model<number | null>(null);
-    modelChanged = output<LLMModel>();
+    modelChanged = output<{ model: LLMModel, provider: LLMProvider }>();
     configAdded = output<void>();
 
     readonly COLLAPSED_COUNT = 3;
@@ -189,10 +189,10 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         this.searchQuery.set(target.value);
     }
 
-    selectModel(model: LLMModel): void {
+    selectModel(model: LLMModel, provider: LLMProvider): void {
         this.selectedValue.set(model.id);
         this.onChange(model.id);
-        this.modelChanged.emit(model);
+        this.modelChanged.emit({ model, provider });
         this.close();
     }
 

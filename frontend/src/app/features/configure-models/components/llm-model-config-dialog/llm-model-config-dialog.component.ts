@@ -8,6 +8,7 @@ import {
     IconButtonComponent, InputNumberComponent, JsonEditorFormFieldComponent,
     KeyValueListComponent, SliderWithStepperComponent, ValidationErrorsComponent
 } from "@shared/components";
+import { LLMModel, LLMProvider } from "@shared/models";
 import { ToastService } from "../../../../services/notifications";
 import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
 import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selector.component";
@@ -94,6 +95,16 @@ export class LlmModelConfigDialogComponent implements OnInit {
                     this.isLoading.set(false);
                 },
             });
+    }
+
+    onModelChanged(data: { model: LLMModel, provider: LLMProvider}): void {
+        const nameControl = this.form.get('custom_name');
+
+        if (!nameControl) return;
+
+        if (!nameControl.value) {
+            nameControl.setValue(`${data.provider.name}/${data.model.name}`);
+        }
     }
 
     onCancel(): void {
