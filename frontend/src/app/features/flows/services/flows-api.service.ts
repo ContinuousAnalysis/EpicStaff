@@ -73,8 +73,8 @@ export class FlowsApiService {
     return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
 
-  copyGraph(graph: GraphDto): Observable<GraphDto> {
-    return this.http.post<GraphDto>(`${this.apiUrl}${graph.id}/copy/`, graph, {
+  copyGraph(id: number, name: string): Observable<GraphDto> {
+    return this.http.post<GraphDto>(`${this.apiUrl}${id}/copy/`, { name }, {
       headers: this.httpHeaders,
     });
   }
