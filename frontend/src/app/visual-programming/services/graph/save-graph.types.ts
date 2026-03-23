@@ -1,33 +1,33 @@
-import { CrewNode } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
-import { PythonNode } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
-import { GetLLMNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
-import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
-import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
-import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
-import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
 import { GetCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
+import { CrewNode } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
+import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
 import { Edge } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
-import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
+import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
+import { GetLLMNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
 import { NoteNode } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
+import { PythonNode } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
+import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
+import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import {
+    AudioToTextNodeModel,
     BaseNodeModel,
+    CodeAgentNodeModel,
+    DecisionTableNodeModel,
+    EdgeNodeModel,
+    EndNodeModel,
+    FileExtractorNodeModel,
+    LLMNodeModel,
+    NodeModel,
+    NoteNodeModel,
     ProjectNodeModel,
     PythonNodeModel,
-    LLMNodeModel,
-    FileExtractorNodeModel,
-    AudioToTextNodeModel,
     SubGraphNodeModel,
-    WebhookTriggerNodeModel,
     TelegramTriggerNodeModel,
-    EndNodeModel,
-    EdgeNodeModel,
-    DecisionTableNodeModel,
-    NoteNodeModel,
-    CodeAgentNodeModel,
-    NodeModel,
+    WebhookTriggerNodeModel,
 } from '../../core/models/node.model';
 
 // ---- UI metadata stored in each node's backend `metadata` JSON field ----
@@ -37,7 +37,6 @@ export interface NodeUIMetadata {
     color: string;
     icon: string;
     size: { width: number; height: number };
-    parentId: string | null;
 }
 
 /**
@@ -51,7 +50,6 @@ export function getUIMetadataForComparison(node: BaseNodeModel): NodeUIMetadata 
         color: node.color,
         icon: node.icon,
         size: node.size,
-        parentId: node.parentId,
     };
 }
 
@@ -71,7 +69,7 @@ export interface CreatedNodeMapping {
 
 /** Result of executing a diff: raw HTTP results + mappings for created nodes. */
 export interface NodeDiffResult {
-    results: any[];
+    results: unknown[];
     createdMappings: CreatedNodeMapping[];
 }
 

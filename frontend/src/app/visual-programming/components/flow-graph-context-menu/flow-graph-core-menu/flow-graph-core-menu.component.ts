@@ -1,8 +1,9 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output,} from '@angular/core';
-import {NgFor} from '@angular/common';
-import {NodeType} from '../../../core/enums/node-type';
-import {NODE_COLORS, NODE_ICONS} from '../../../core/enums/node-config';
-import {FlowService} from '../../../services/flow.service';
+import { NgFor } from '@angular/common';
+import { ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output } from '@angular/core';
+
+import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
+import { NodeType } from '../../../core/enums/node-type';
+import { FlowService } from '../../../services/flow.service';
 
 interface FlowGraphBlock {
     label: string;
@@ -62,7 +63,9 @@ interface FlowGraphBlock {
                 font-size: 18px;
                 color: #bbb;
                 opacity: 0;
-                transition: opacity 0.2s ease, color 0.2s ease;
+                transition:
+                    opacity 0.2s ease,
+                    color 0.2s ease;
             }
             li:hover .plus-icon {
                 opacity: 1;
@@ -83,7 +86,7 @@ export class FlowGraphCoreMenuComponent {
 
     @Output() public nodeSelected: EventEmitter<{
         type: NodeType;
-        data: any;
+        data: unknown;
     }> = new EventEmitter();
 
     private flowService = inject(FlowService);
@@ -121,12 +124,6 @@ export class FlowGraphCoreMenuComponent {
             color: NODE_COLORS[NodeType.EDGE],
         },
         {
-            label: 'Group',
-            type: NodeType.GROUP,
-            icon: NODE_ICONS[NodeType.GROUP],
-            color: '#ffffff',
-        },
-        {
             label: 'Note',
             type: NodeType.NOTE,
             icon: NODE_ICONS[NodeType.NOTE],
@@ -159,13 +156,11 @@ export class FlowGraphCoreMenuComponent {
     ];
 
     public get filteredBlocks(): FlowGraphBlock[] {
-        return this.blocks.filter((block) =>
-            block.label.toLowerCase().includes(this.searchTerm.toLowerCase())
-        );
+        return this.blocks.filter((block) => block.label.toLowerCase().includes(this.searchTerm.toLowerCase()));
     }
 
     public onBlockClicked(type: NodeType): void {
-        let data: any = null;
+        let data: unknown = null;
 
         if (type === NodeType.EDGE) {
             data = {
@@ -184,8 +179,6 @@ export class FlowGraphCoreMenuComponent {
                 code: 'def main(arg1: str, arg2: str) -> dict:\n    return {\n        "result": arg1 + arg2,\n    }\n',
                 entrypoint: 'main',
             };
-        } else if (type === NodeType.GROUP) {
-            data = 'group'; // Assign "group" if NodeType is GROUP
         } else if (type === NodeType.TABLE) {
             data = {
                 name: 'Decision Table',
@@ -201,7 +194,7 @@ export class FlowGraphCoreMenuComponent {
                             next_node: null,
                             order: 1,
                             valid: false,
-                        }
+                        },
                     ],
                     node_name: '',
                     default_next_node: null,
@@ -215,11 +208,9 @@ export class FlowGraphCoreMenuComponent {
             };
         } else if (type === NodeType.FILE_EXTRACTOR) {
             data = null; // File extractor data is unknown as specified
-
         } else if (type === NodeType.AUDIO_TO_TEXT) {
             data = null; // audio to text data is unknown as specified
-        }
-        else if (type === NodeType.WEBHOOK_TRIGGER) {
+        } else if (type === NodeType.WEBHOOK_TRIGGER) {
             data = {
                 webhook_trigger: 0,
                 python_code: {
@@ -227,19 +218,16 @@ export class FlowGraphCoreMenuComponent {
                     libraries: [],
                     code: 'def main(trigger_payload: dict, **kwargs: dict) -> dict:\n    """\n    Main handler for processing webhook-triggered events.\n\n    Parameters\n    ----------\n    trigger_payload : dict\n        The data received from a third-party service via a webhook.\n    **kwargs : dict\n        Additional domain variables passed to the function.\n\n    Returns\n    -------\n    dict\n        A dictionary containing the updated values for domain variables.\n        The returned structure must include all changes that should be\n        applied to the domain.\n    """\n    return {\n        "new_data": trigger_payload,\n    }\n',
                     entrypoint: 'main',
-                }
+                },
             };
-        }
-        else if (type === NodeType.TELEGRAM_TRIGGER) {
+        } else if (type === NodeType.TELEGRAM_TRIGGER) {
             data = {
                 telegram_bot_api_key: '',
                 fields: [],
-            }
-        }
-        else if (type === NodeType.END) {
+            };
+        } else if (type === NodeType.END) {
             data = null; // End node data is unknown as specified
-        }
-        else if (type === NodeType.CODE_AGENT) {
+        } else if (type === NodeType.CODE_AGENT) {
             data = {
                 agent_mode: 'build',
                 session_id: 'variables.chat_id',
@@ -281,9 +269,6 @@ export class FlowGraphCoreMenuComponent {
     public isDisabled(type: NodeType): boolean {
         if (type === NodeType.END) {
             return this.flowService.hasEndNode();
-        }
-        if (type === NodeType.GROUP) {
-            return true;
         }
         return false;
     }
