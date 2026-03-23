@@ -28,7 +28,7 @@ import {
     NodeModel,
     ProjectNodeModel,
     PythonNodeModel,
-    NoteNodeModel,
+    GraphNoteModel,
 } from '../../core/models/node.model';
 import { NodeType } from '../../core/enums/node-type';
 import { FlowService } from '../../services/flow.service';
@@ -36,7 +36,7 @@ import { CustomPortId } from '../../core/models/port.model';
 
 import { ConditionalEdgeNodeComponent } from '../nodes-components/conditional-edge/conditional-edge.component';
 import { DecisionTableNodeComponent } from '../nodes-components/decision-table-node/decision-table-node.component';
-import { NoteNodeComponent } from '../nodes-components/note-node/note-node.component';
+import { GraphNoteComponent } from '../nodes-components/graph-note/graph-note.component';
 import { getNodeTitle } from '../../core/enums/node-title.util';
 import { ResizeHandleComponent } from '../resize-handle/resize-handle.component';
 import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay.component';
@@ -56,7 +56,7 @@ import { flowUrl } from '../../../shared/utils/flow-links';
         ClickOrDragDirective,
         ConditionalEdgeNodeComponent,
         DecisionTableNodeComponent,
-        NoteNodeComponent,
+        GraphNoteComponent,
         FlowNodeVariablesOverlayComponent,
         GoToButtonComponent,
     ],
@@ -182,7 +182,7 @@ export class FlowBaseNodeComponent {
     }
     public get noteNode() {
         return this.node.type === NodeType.NOTE
-            ? (this.node as NoteNodeModel)
+            ? (this.node as GraphNoteModel)
             : null;
     }
     public get isBlockedSubgraph(): boolean {

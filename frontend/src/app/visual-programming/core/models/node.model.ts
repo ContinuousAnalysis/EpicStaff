@@ -88,7 +88,7 @@ export interface DecisionTableNodeModel extends BaseNodeModel {
     };
 }
 
-export interface NoteNodeModel extends BaseNodeModel {
+export interface GraphNoteModel extends BaseNodeModel {
     type: NodeType.NOTE;
     data: {
         content: string;
@@ -148,7 +148,7 @@ export type NodeModel =
     | EdgeNodeModel
     | StartNodeModel
     | DecisionTableNodeModel
-    | NoteNodeModel
+    | GraphNoteModel
     | FileExtractorNodeModel
     | AudioToTextNodeModel
     | SubGraphNodeModel

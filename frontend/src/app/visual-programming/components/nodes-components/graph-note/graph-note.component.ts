@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NoteNodeModel } from '../../../core/models/node.model';
+import { GraphNoteModel } from '../../../core/models/node.model';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { FlowService } from '../../../services/flow.service';
@@ -18,7 +18,7 @@ import { FFlowModule, EFResizeHandleType } from '@foblex/flow';
 import { ResizeHandleComponent } from '../../resize-handle/resize-handle.component';
 
 @Component({
-    selector: 'app-note-node',
+    selector: 'app-graph-note',
     standalone: true,
     imports: [CommonModule, FFlowModule, FormsModule, ResizeHandleComponent],
     template: `
@@ -62,8 +62,8 @@ import { ResizeHandleComponent } from '../../resize-handle/resize-handle.compone
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NoteNodeComponent implements OnDestroy {
-    @Input() node!: NoteNodeModel;
+export class GraphNoteComponent implements OnDestroy {
+    @Input() node!: GraphNoteModel;
 
     private destroy$ = new Subject<void>();
 

@@ -39,10 +39,11 @@ function getNextAvailableNumber(
     type: NodeType,
     namePrefix: string
 ): number {
-    // Get all existing node names of this type
+    // Get all existing node names of this type (filter out undefined for nodes like GraphNote that lack node_name)
     const existingNames = currentNodes
         .filter((n) => n.type === type)
-        .map((n) => n.node_name);
+        .map((n) => n.node_name)
+        .filter((name): name is string => !!name);
 
     // Extract numbers from existing names that match our prefix pattern
     const usedNumbers = new Set<number>();

@@ -3,7 +3,7 @@ import {
     NodeModel,
     ProjectNodeModel,
     PythonNodeModel,
-    NoteNodeModel,
+    GraphNoteModel,
     SubGraphNodeModel,
 } from '../models/node.model';
 

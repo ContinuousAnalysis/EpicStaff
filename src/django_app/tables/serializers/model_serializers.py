@@ -16,7 +16,7 @@ from tables.validators.python_code_tool_config_validator import (
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import WebhookTrigger, NgrokWebhookConfig
-from tables.models.graph_models import NoteNode, WebhookTriggerNode
+from tables.models.graph_models import GraphNote, WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
@@ -1694,9 +1694,9 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
         return instance
 
 
-class NoteNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+class GraphNoteSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
-        model = NoteNode
+        model = GraphNote
         fields = "__all__"
 
 
@@ -1719,10 +1719,10 @@ class GraphSerializer(serializers.ModelSerializer):
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
     )
-    note_node_list = NoteNodeSerializer(many=True, read_only=True)
     label_ids = serializers.PrimaryKeyRelatedField(
         many=True, source="labels", queryset=Label.objects.all(), required=False
     )
+    graph_note_list = GraphNoteSerializer(many=True, read_only=True)
 
     class Meta:
         model = Graph
@@ -1746,8 +1746,8 @@ class GraphSerializer(serializers.ModelSerializer):
             "time_to_live",
             "persistent_variables",
             "telegram_trigger_node_list",
-            "note_node_list",
             "label_ids",
+            "graph_note_list",
         ]
 
     def create(self, validated_data):

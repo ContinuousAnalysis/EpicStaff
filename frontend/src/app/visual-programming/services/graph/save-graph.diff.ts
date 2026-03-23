@@ -28,7 +28,7 @@ import {
     EndNodeModel,
     EdgeNodeModel,
     DecisionTableNodeModel,
-    NoteNodeModel,
+    GraphNoteModel,
     NodeModel,
 } from '../../core/models/node.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
@@ -47,7 +47,7 @@ import {
     CreateConditionGroupRequest,
     CreateDecisionTableNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
-import { NoteNode, CreateNoteNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
+import { GraphNote, CreateGraphNoteRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
 
 import {
     NodeDiff,
@@ -85,8 +85,8 @@ import {
     getDecisionTableNodeForComparisonFromUI,
     getEndNodeForComparisonFromBackend,
     getEndNodeForComparisonFromUI,
-    getNoteNodeForComparisonFromBackend,
-    getNoteNodeForComparisonFromUI,
+    getGraphNoteForComparisonFromBackend,
+    getGraphNoteForComparisonFromUI,
 } from './save-graph.comparators';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -166,7 +166,7 @@ export function extractPreviousState(graph: GraphDto): GraphPreviousState {
         edges: graph.edge_list ?? [],
         endNodes: graph.end_node_list ?? [],
         decisionTableNodes: graph.decision_table_node_list ?? [],
-        noteNodes: graph.note_node_list ?? [],
+        graphNotes: graph.graph_note_list ?? [],
     };
 }
 
@@ -254,7 +254,7 @@ export function extractNewState(flowState: FlowModel): GraphNewState {
         telegramTriggerNodes: nodes.filter(n => n.type === NodeType.TELEGRAM_TRIGGER) as TelegramTriggerNodeModel[],
         conditionalEdges: resolveConditionalEdges(edgeNodeModels, connections, nodes),
         edges: resolveEdges(connections, nodes),
-        noteNodes: nodes.filter(n => n.type === NodeType.NOTE) as NoteNodeModel[],
+        graphNotes: nodes.filter(n => n.type === NodeType.NOTE) as GraphNoteModel[],
         endNodes: nodes.filter(n => n.type === NodeType.END) as EndNodeModel[],
         decisionTableNodes: nodes.filter(n => n.type === NodeType.TABLE) as DecisionTableNodeModel[],
         allNodes: nodes,
@@ -342,11 +342,11 @@ export function getNodeOnlyDiff(
         'EndNode'
     );
 
-    const noteNodes = diffByKey(
-        previous.noteNodes, current.noteNodes,
+    const graphNotes = diffByKey(
+        previous.graphNotes, current.graphNotes,
         n => n.backendId,
-        getNoteNodeForComparisonFromBackend, getNoteNodeForComparisonFromUI,
-        'NoteNode'
+        getGraphNoteForComparisonFromBackend, getGraphNoteForComparisonFromUI,
+        'GraphNote'
     );
 
     return {
@@ -360,7 +360,7 @@ export function getNodeOnlyDiff(
         telegramTriggerNodes,
         decisionTableNodes,
         endNodes,
-        noteNodes,
+        graphNotes,
     };
 }
 
@@ -613,7 +613,7 @@ export function buildDecisionTablePayload(
     };
 }
 
-export function buildNoteNodePayload(n: NoteNodeModel, graphId: number): CreateNoteNodeRequest {
+export function buildGraphNotePayload(n: GraphNoteModel, graphId: number): CreateGraphNoteRequest {
     return {
         node_name: n.node_name,
         graph: graphId,

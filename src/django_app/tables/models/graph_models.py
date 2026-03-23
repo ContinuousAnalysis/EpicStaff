@@ -556,8 +556,8 @@ class TelegramTriggerNodeField(ContentHashMixin, models.Model):
         ]
 
 
-class NoteNode(BaseGraphEntity, BaseGlobalNode):
+class GraphNote(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
-        "Graph", on_delete=models.CASCADE, related_name="note_node_list"
+        "Graph", on_delete=models.CASCADE, related_name="graph_note_list"
     )
     content = models.TextField()
