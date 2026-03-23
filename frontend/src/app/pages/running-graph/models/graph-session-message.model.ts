@@ -1,6 +1,6 @@
-import { Agent, GetAgentRequest } from '../../../shared/models/agent.model';
+import { Agent, GetAgentRequest } from '../../../features/staff/models/agent.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { GetTaskRequest } from '../../../shared/models/task.model';
+import { GetTaskRequest } from '../../../features/tasks/models/task.model';
 
 // Base GraphMessage interface
 export interface GraphMessage {
@@ -11,6 +11,7 @@ export interface GraphMessage {
   created_at: string; // This is the timestamp
   message_data: MessageData; // Snake case from API - This will be one of the specific message types
   uuid?: string;
+  metadata: Record<string, any>;
 }
 
 // Message type constants

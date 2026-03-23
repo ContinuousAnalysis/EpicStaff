@@ -8,6 +8,8 @@ import {
   HostBinding,
   OnChanges,
   SimpleChanges,
+  Output, 
+  EventEmitter,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +18,7 @@ import { Subscription, combineLatest } from 'rxjs';
 import {
   FullAgent,
   FullAgentService,
-} from '../../../../services/full-agent.service';
+} from '../../../../features/staff/services/full-agent.service';
 import { StaffAgentCardComponent } from './staff-agent-card/staff-agent-card.component';
 import { ProjectStateService } from '../../../services/project-state.service';
 
@@ -34,6 +36,7 @@ export class SearchDropdownComponent implements OnInit, OnChanges, OnDestroy {
   public currentSize: 'small' | 'medium' | 'large' = 'small';
 
   @Input() searchTerm: string = '';
+  @Output() staffAgentAdded = new EventEmitter<FullAgent>();
 
   public staffAgents: FullAgent[] = [];
   public filteredStaffAgents: FullAgent[] = [];
@@ -116,7 +119,7 @@ export class SearchDropdownComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public onAddStaffAgent(staffAgent: FullAgent): void {
-    this.projectStateService.addAgent(staffAgent);
+    this.staffAgentAdded.emit(staffAgent);
   }
 
   public trackStaffAgentById(

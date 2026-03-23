@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ConfigService } from '../../../services/config/config.service';
-import { ApiGetRequest } from '../../../shared/models/api-request.model';
+import { ApiGetRequest } from '../../../core/models/api-request.model';
 import {
   GraphDto,
   CreateGraphDtoRequest,
@@ -57,8 +57,8 @@ export class FlowsApiService {
     return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
 
-  copyGraph(graph: GraphDto): Observable<GraphDto> {
-    return this.http.post<GraphDto>(`${this.apiUrl}${graph.id}/copy/`, graph, {
+  copyGraph(id: number, name: string): Observable<GraphDto> {
+    return this.http.post<GraphDto>(`${this.apiUrl}${id}/copy/`, { name }, {
       headers: this.httpHeaders,
     });
   }
