@@ -72,6 +72,8 @@ export function getPortsForType(nodeType: NodeType): BasePort[] {
             return DEFAULT_END_NODE_PORTS;
         case NodeType.SUBGRAPH:
             return DEFAULT_SUBGRAPH_NODE_PORTS;
+        case NodeType.NOTE:
+            return [];
         default:
             console.warn(`Unsupported node type: ${nodeType}`);
             return [];

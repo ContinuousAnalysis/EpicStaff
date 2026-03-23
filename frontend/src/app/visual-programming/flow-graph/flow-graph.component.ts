@@ -46,7 +46,7 @@ import {
     NodeModel,
     ProjectNodeModel,
     StartNodeModel,
-    NoteNodeModel,
+    GraphNoteModel,
 } from '../core/models/node.model';
 import { ConnectionModel } from '../core/models/connection.model';
 
@@ -78,7 +78,7 @@ import { NodesSearchComponent } from '../components/nodes-search/nodes-search.co
 import { generateNodeDisplayName } from '../core/helpers/generate-node-display-name.util';
 import { Dialog } from '@angular/cdk/dialog';
 import { ProjectDialogComponent } from '../components/project-dialog/project-dialog.component';
-import { NoteNodeComponent } from '../components/nodes-components/note-node/note-node.component';
+import { GraphNoteComponent } from '../components/nodes-components/graph-note/graph-note.component';
 import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edit-dialog.component';
 import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util'; // Adjust path
 import { ToastService } from '../../services/notifications/toast.service';
@@ -662,7 +662,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
         }
 
         if (node.type === NodeType.NOTE) {
-            const noteNode = node as NoteNodeModel;
+            const noteNode = node as GraphNoteModel;
 
             const dialogRef = this.dialog.open(NoteEditDialogComponent, {
                 data: { node: noteNode },
@@ -671,7 +671,7 @@ export class FlowGraphComponent implements OnInit, OnDestroy {
 
             dialogRef.closed.subscribe((result: any) => {
                 if (result && result.content !== undefined) {
-                    const updatedNode: NoteNodeModel = {
+                    const updatedNode: GraphNoteModel = {
                         ...noteNode,
                         data: {
                             ...noteNode.data,

@@ -10,7 +10,7 @@ import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visua
 import { Edge } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
-import { NoteNode } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
+import { GraphNote } from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
 import {
     BaseNodeModel,
     ProjectNodeModel,
@@ -24,7 +24,7 @@ import {
     EndNodeModel,
     EdgeNodeModel,
     DecisionTableNodeModel,
-    NoteNodeModel,
+    GraphNoteModel,
     NodeModel,
 } from '../../core/models/node.model';
 
@@ -116,7 +116,7 @@ export interface GraphPreviousState {
     edges: Edge[];
     endNodes: EndNode[];
     decisionTableNodes: GetDecisionTableNodeRequest[];
-    noteNodes: NoteNode[];
+    graphNotes: GraphNote[];
 }
 
 // ---- New state (what the UI currently shows) ----
@@ -136,7 +136,7 @@ export interface GraphNewState {
     edges: UiEdge[];
     endNodes: EndNodeModel[];
     decisionTableNodes: DecisionTableNodeModel[];
-    noteNodes: NoteNodeModel[];
+    graphNotes: GraphNoteModel[];
     /** All UI nodes — used to resolve UUID → backendId for decision tables/edges. */
     allNodes: NodeModel[];
 }
@@ -154,7 +154,7 @@ export interface NodeOnlyDiff {
     telegramTriggerNodes: NodeDiff<GetTelegramTriggerNodeRequest, TelegramTriggerNodeModel>;
     decisionTableNodes: NodeDiff<GetDecisionTableNodeRequest, DecisionTableNodeModel>;
     endNodes: NodeDiff<EndNode, EndNodeModel>;
-    noteNodes: NodeDiff<NoteNode, NoteNodeModel>;
+    graphNotes: NodeDiff<GraphNote, GraphNoteModel>;
 }
 
 // ---- Connection diff (Phase 2 — after node IDs are known) ----

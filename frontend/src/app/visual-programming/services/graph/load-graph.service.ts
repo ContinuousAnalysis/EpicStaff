@@ -31,7 +31,7 @@ import {
     EndNodeModel,
     EdgeNodeModel,
     DecisionTableNodeModel,
-    NoteNodeModel,
+    GraphNoteModel,
 } from '../../core/models/node.model';
 
 import { CrewNode } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
@@ -47,7 +47,7 @@ import { Edge } from '../../../pages/flows-page/components/flow-visual-programmi
 import { StartNode } from '../../../pages/flows-page/components/flow-visual-programming/models/start-node.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
-import { NoteNode } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
+import { GraphNote } from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
 
 import { NodeUIMetadata } from './save-graph.types';
 
@@ -352,14 +352,14 @@ function buildEndNode(en: EndNode, idx: number): EndNodeModel {
     };
 }
 
-function buildNoteNode(nn: NoteNode, idx: number): NoteNodeModel {
+function buildGraphNote(nn: GraphNote, idx: number): GraphNoteModel {
     const ui = readUIMetadata(nn.metadata, NodeType.NOTE, idx);
     return {
         id: uuidv4(),
         backendId: nn.id,
         category: 'web',
         type: NodeType.NOTE,
-        node_name: nn.node_name,
+        node_name: (nn as any).node_name ?? `Note (#${idx + 1})`,
         data: {
             content: nn.content,
             backgroundColor: nn.metadata?.['backgroundColor'] ?? undefined,
@@ -778,7 +778,7 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     const fileExtractorNodes = (graph.file_extractor_node_list ?? []).map(n => buildFileExtractorNode(n, idx++));
     const audioToTextNodes = (graph.audio_transcription_node_list ?? []).map(n => buildAudioToTextNode(n, idx++));
     const subGraphNodes = (graph.subgraph_node_list ?? []).map(sn => buildSubGraphNode(sn, idx++));
-    const noteNodes = (graph.note_node_list ?? []).map(nn => buildNoteNode(nn, idx++));
+    const noteNodes = (graph.graph_note_list ?? []).map(nn => buildGraphNote(nn, idx++));
     const webhookTriggerNodes = (graph.webhook_trigger_node_list ?? []).map(wn => buildWebhookTriggerNode(wn, idx++));
     const telegramTriggerNodes = (graph.telegram_trigger_node_list ?? []).map(tn => buildTelegramTriggerNode(tn, idx++));
     const endNodes = (graph.end_node_list ?? []).map(en => buildEndNode(en, idx++));

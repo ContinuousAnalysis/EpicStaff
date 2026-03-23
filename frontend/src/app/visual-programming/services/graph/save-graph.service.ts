@@ -20,7 +20,7 @@ import { TelegramTriggerNodeService } from '../../../pages/flows-page/components
 import { EndNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/end-node.service';
 import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
 import { DecisionTableNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/decision-table-node.service';
-import { NoteNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/note-node.service';
+import { GraphNoteService } from '../../../pages/flows-page/components/flow-visual-programming/services/graph-note.service';
 
 import { NodeDiff, NodeDiffResult, CreatedNodeMapping, NodeOnlyDiff, ConnectionDiff } from './save-graph.types';
 import {
@@ -41,7 +41,7 @@ import {
     buildEdgePayload,
     buildEndNodePayload,
     buildDecisionTablePayload,
-    buildNoteNodePayload,
+    buildGraphNotePayload,
 } from './save-graph.diff';
 
 @Injectable({
@@ -62,7 +62,7 @@ export class GraphUpdateService {
         private endNodeService: EndNodeService,
         private subGraphNodeService: SubGraphNodeService,
         private decisionTableNodeService: DecisionTableNodeService,
-        private noteNodeService: NoteNodeService,
+        private graphNoteService: GraphNoteService,
         private toastService: ToastService
     ) {}
 
@@ -274,11 +274,11 @@ export class GraphUpdateService {
                 (id, n) => this.endNodeService.updateEndNode(id, buildEndNodePayload(n, graphId)),
                 n => n.id
             ),
-            noteNodes: this.executeNodeDiff(
-                diff.noteNodes,
-                n => this.noteNodeService.deleteNoteNode(n.id.toString()),
-                n => this.noteNodeService.createNoteNode(buildNoteNodePayload(n, graphId)),
-                (id, n) => this.noteNodeService.updateNoteNode(id, buildNoteNodePayload(n, graphId)),
+            graphNotes: this.executeNodeDiff(
+                diff.graphNotes,
+                n => this.graphNoteService.deleteGraphNote(n.id.toString()),
+                n => this.graphNoteService.createGraphNote(buildGraphNotePayload(n, graphId)),
+                (id, n) => this.graphNoteService.updateGraphNote(id, buildGraphNotePayload(n, graphId)),
                 n => n.id
             ),
         });
