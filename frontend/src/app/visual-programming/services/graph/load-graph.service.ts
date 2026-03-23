@@ -61,11 +61,20 @@ function readUIMetadata(
     fallbackIndex: number
 ): NodeUIMetadata {
     const m = metadata ?? {};
+    const position = m['position'] as { x?: number; y?: number } | undefined;
+    const size = m['size'] as { width?: number; height?: number } | undefined;
+
     return {
-        position: m['position'] ?? { x: 100 + (fallbackIndex % 5) * 400, y: 100 + Math.floor(fallbackIndex / 5) * 200 },
-        color: m['color'] ?? NODE_COLORS[nodeType] ?? '#685fff',
-        icon: m['icon'] ?? NODE_ICONS[nodeType] ?? 'ti ti-code',
-        size: m['size'] ?? getDefaultSize(nodeType),
+        position: {
+            x: position?.x ?? 100 + (fallbackIndex % 5) * 400,
+            y: position?.y ?? 100 + Math.floor(fallbackIndex / 5) * 200,
+        },
+        color: typeof m['color'] === 'string' ? m['color'] : (NODE_COLORS[nodeType] ?? '#685fff'),
+        icon: typeof m['icon'] === 'string' ? m['icon'] : (NODE_ICONS[nodeType] ?? 'ti ti-code'),
+        size: {
+            width: size?.width ?? getDefaultSize(nodeType).width,
+            height: size?.height ?? getDefaultSize(nodeType).height,
+        },
     };
 }
 

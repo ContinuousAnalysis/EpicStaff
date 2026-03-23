@@ -60,7 +60,7 @@ import {
 } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
 import { FlowModel } from '../core/models/flow.model';
-import { NodeModel, NoteNodeModel,ProjectNodeModel, StartNodeModel } from '../core/models/node.model';
+import { NodeModel, NoteNodeModel, ProjectNodeModel, StartNodeModel } from '../core/models/node.model';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
 import { ClipboardService } from '../services/clipboard.service';
 import { FlowService } from '../services/flow.service';
@@ -601,19 +601,20 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         const newNodeName = generateNodeDisplayName(event.type, event.data, currentNodes);
 
         // Create and add a regular node
-        let nodeData = event.data;
+        let nodeData = event.data as NodeModel['data'];
 
         // Add default output_map for end nodes
         if (event.type === NodeType.END) {
+            const baseData = event.data && typeof event.data === 'object' ? event.data : {};
             nodeData = {
-                ...event.data,
+                ...baseData,
                 output_map: {
                     context: 'variables',
                 },
-            };
+            } as NodeModel['data'];
         }
 
-        const nodeBounds = this.getCollisionBounds({
+        const nodePreview = {
             id: newNodeId,
             backendId: null,
             category: 'web',
@@ -630,9 +631,11 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             input_map: {},
             output_variable_path: null,
             size: nodeSize,
-        });
+        } as NodeModel;
 
-        const newNode: NodeModel = {
+        const nodeBounds = this.getCollisionBounds(nodePreview);
+
+        const newNode = {
             id: newNodeId,
             backendId: null,
             category: 'web',
@@ -653,7 +656,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             input_map: {},
             output_variable_path: null,
             size: nodeSize,
-        };
+        } as NodeModel;
         this.flowService.addNode(newNode);
 
         const freePos = this.findNearestFreePosition(

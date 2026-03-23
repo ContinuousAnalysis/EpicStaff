@@ -1,21 +1,10 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { computed, inject,Injectable, signal } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import {
-    tap,
-    map,
-    delay,
-    shareReplay,
-    catchError,
-    switchMap,
-} from 'rxjs/operators';
+import { catchError, delay, map, shareReplay, switchMap,tap } from 'rxjs/operators';
 
-import {
-    GraphDto,
-    CreateGraphDtoRequest,
-    UpdateGraphDtoRequest,
-} from '../models/graph.model';
-import { FlowsApiService } from './flows-api.service';
 import { SearchFilterChange } from '../../../shared/components/filters-list/filters-list.component';
+import { CreateGraphDtoRequest, GraphDto, UpdateGraphDtoRequest } from '../models/graph.model';
+import { FlowsApiService } from './flows-api.service';
 
 const TEMPLATE_FLOWS: GraphDto[] = [];
 
@@ -45,11 +34,7 @@ export class FlowsStorageService {
         let filtered = flows;
         if (filter) {
             if (filter.searchTerm) {
-                filtered = filtered.filter((f) =>
-                    f.name
-                        .toLowerCase()
-                        .includes(filter.searchTerm.toLowerCase())
-                );
+                filtered = filtered.filter((f) => f.name.toLowerCase().includes(filter.searchTerm.toLowerCase()));
             }
         }
         // Always sort by id descending
@@ -62,9 +47,7 @@ export class FlowsStorageService {
         if (!filter) return templates;
         let filtered = templates;
         if (filter.searchTerm) {
-            filtered = filtered.filter((t) =>
-                t.name.toLowerCase().includes(filter.searchTerm.toLowerCase())
-            );
+            filtered = filtered.filter((t) => t.name.toLowerCase().includes(filter.searchTerm.toLowerCase()));
         }
         return filtered;
     });
@@ -96,8 +79,7 @@ export class FlowsStorageService {
         }
 
         // Compare searchTerm
-        const searchTermChanged =
-            currentFilter.searchTerm !== filter.searchTerm;
+        const searchTermChanged = currentFilter.searchTerm !== filter.searchTerm;
 
         // Only update if there's a change
         if (searchTermChanged) {
@@ -119,7 +101,7 @@ export class FlowsStorageService {
             tap((flows) => {
                 this.setFlows(flows);
             }),
-        
+
             shareReplay(1),
             catchError(() => {
                 this.flowsLoaded.set(false);
@@ -142,15 +124,11 @@ export class FlowsStorageService {
     }
 
     public getFlowById(id: number): Observable<GraphDto | undefined> {
-        const cachedFlow: GraphDto | undefined = this.flowsSignal().find(
-            (flow) => flow.id === id
-        );
+        const cachedFlow: GraphDto | undefined = this.flowsSignal().find((flow) => flow.id === id);
         if (cachedFlow) {
             return of(cachedFlow);
         }
-        return this.flowsApiService
-            .getGraphById(id)
-            .pipe(catchError(() => of(undefined)));
+        return this.flowsApiService.getGraphById(id).pipe(catchError(() => of(undefined)));
     }
 
     // --- CRUD Methods ---
@@ -166,9 +144,7 @@ export class FlowsStorageService {
         return this.flowsApiService.updateGraph(flowData.id, flowData).pipe(
             tap((updatedFlow) => {
                 const currentFlows = this.flowsSignal();
-                const index = currentFlows.findIndex(
-                    (f) => f.id === updatedFlow.id
-                );
+                const index = currentFlows.findIndex((f) => f.id === updatedFlow.id);
                 if (index !== -1) {
                     const updatedFlowsList = [...currentFlows];
                     updatedFlowsList[index] = updatedFlow;
@@ -178,19 +154,14 @@ export class FlowsStorageService {
         );
     }
 
-    public patchUpdateFlow(
-        id: number,
-        updateData: Partial<GraphDto>
-    ): Observable<GraphDto> {
+    public patchUpdateFlow(id: number, updateData: Partial<GraphDto>): Observable<GraphDto> {
         return this.getFlowById(id).pipe(
             switchMap((currentFlow: GraphDto | undefined) => {
-                if (!currentFlow)
-                    throw new Error('Flow not found for patching');
+                if (!currentFlow) throw new Error('Flow not found for patching');
                 const updatedPayload: UpdateGraphDtoRequest = {
                     id: currentFlow.id,
                     name: updateData.name || currentFlow.name,
-                    description:
-                        updateData.description || currentFlow.description,
+                    description: updateData.description || currentFlow.description,
                     metadata: updateData.metadata || currentFlow.metadata,
                     tags: updateData.tags || currentFlow.tags || [],
                 };
@@ -207,9 +178,7 @@ export class FlowsStorageService {
                 // Remove deleted flow from export selection
                 const currentSelected = this.selectedFlowIds();
                 if (currentSelected.includes(id)) {
-                    this.selectedFlowIds.set(
-                        currentSelected.filter((selectedId) => selectedId !== id)
-                    );
+                    this.selectedFlowIds.set(currentSelected.filter((selectedId) => selectedId !== id));
                 }
             })
         );
@@ -218,32 +187,9 @@ export class FlowsStorageService {
     public copyFlow(sourceId: number, newName: string): Observable<GraphDto> {
         return this.flowsApiService.getGraphById(sourceId).pipe(
             switchMap((sourceFlow: GraphDto) => {
-                const payload: GraphDto = {
-                    id: sourceFlow.id,
-                    name: newName,
-                    description: sourceFlow.description,
-                    metadata: sourceFlow.metadata,
-                    tags: sourceFlow.tags || [],
-                    start_node_list: sourceFlow.start_node_list,
-                    crew_node_list: sourceFlow.crew_node_list,
-                    python_node_list: sourceFlow.python_node_list,
-                    edge_list: sourceFlow.edge_list,
-                    conditional_edge_list: sourceFlow.conditional_edge_list,
-                    llm_node_list: sourceFlow.llm_node_list,
-                    file_extractor_node_list:
-                        sourceFlow.file_extractor_node_list,
-                    webhook_trigger_node_list: sourceFlow.webhook_trigger_node_list,
-                    telegram_trigger_node_list: sourceFlow.telegram_trigger_node_list,
-                    end_node_list: sourceFlow.end_node_list,
-                    subgraph_node_list: sourceFlow.subgraph_node_list,
-                    audio_transcription_node_list: sourceFlow.audio_transcription_node_list,
-                    decision_table_node_list: sourceFlow.decision_table_node_list,
-                    note_node_list: sourceFlow.note_node_list ?? [],
-                    code_agent_node_list: sourceFlow.code_agent_node_list ?? [],
-                };
-                return this.flowsApiService.copyGraph(payload).pipe(
-                    tap((created) => this.addFlowToCache(created))
-                );
+                return this.flowsApiService
+                    .copyGraph(sourceFlow.id, newName)
+                    .pipe(tap((created) => this.addFlowToCache(created)));
             })
         );
     }
@@ -266,9 +212,9 @@ export class FlowsStorageService {
     public toggleFlowSelection(id: number): void {
         const current = this.selectedFlowIds();
         if (current.includes(id)) {
-            this.selectedFlowIds.set(current.filter(item => item !== id));
+            this.selectedFlowIds.set(current.filter((item) => item !== id));
         } else {
-            this.selectedFlowIds.set([...current, id])
+            this.selectedFlowIds.set([...current, id]);
         }
     }
 
@@ -277,7 +223,7 @@ export class FlowsStorageService {
     }
 
     public selectAllFlows(): void {
-        const allFlowIds = this.filteredFlows().map(flow => flow.id);
+        const allFlowIds = this.filteredFlows().map((flow) => flow.id);
         this.selectedFlowIds.set(allFlowIds);
     }
 
@@ -286,9 +232,9 @@ export class FlowsStorageService {
     }
 
     public isAllFlowsSelected(): boolean {
-        const allFlowIds = this.filteredFlows().map(flow => flow.id);
+        const allFlowIds = this.filteredFlows().map((flow) => flow.id);
         const selectedIds = this.selectedFlowIds();
-        return allFlowIds.length > 0 && allFlowIds.every(id => selectedIds.includes(id));
+        return allFlowIds.length > 0 && allFlowIds.every((id) => selectedIds.includes(id));
     }
 
     public toggleSelectAllFlows(): void {
