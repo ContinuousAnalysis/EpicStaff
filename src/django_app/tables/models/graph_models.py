@@ -13,7 +13,7 @@ from tables.models.base_models import (
     TimestampMixin,
     ContentHashMixin,
 )
-from tables.models.labels import Label
+from tables.models.label_models import Label
 
 
 class GraphManager(models.Manager):

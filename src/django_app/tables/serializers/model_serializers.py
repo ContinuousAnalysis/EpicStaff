@@ -96,7 +96,7 @@ from tables.models.tag_models import (
     LLMModelTag,
 )
 from tables.models.vector_models import MemoryDatabase
-from tables.models.labels import Label
+from tables.models.label_models import Label
 from tables.validators.tool_config_validator import ToolConfigValidator, eval_any
 from tables.models import (
     AgentSessionMessage,

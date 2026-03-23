@@ -95,7 +95,7 @@ from tables.filters import (
 )
 from tables.utils.helpers import natural_sort_key
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
-from tables.models.labels import Label
+from tables.models.label_models import Label
 from tables.models.vector_models import MemoryDatabase
 from tables.models.mcp_models import McpTool
 from utils.logger import logger
