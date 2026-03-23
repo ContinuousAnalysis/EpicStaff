@@ -15,7 +15,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
-import { ICONS } from '../../../../shared/constants/icons.constants';
+import { ENTITY_ICONS, DEFAULT_ENTITY_ICON } from '../../../../shared/constants/entity-icons.constants';
 import {
   ImportResult,
   ImportResultDialogData,
@@ -51,7 +51,7 @@ export class ImportResultDialogComponent implements AfterViewInit {
     Object.values(this.importResult).forEach((result) => {
       total += result.total;
     });
-    
+
     return total;
   });
 
@@ -71,19 +71,21 @@ export class ImportResultDialogComponent implements AfterViewInit {
    */
   public getEntityTypeLabel(entityType: string): string {
     const labelMap: { [key: string]: string } = {
-      GRAPH: 'Flow',
-      CREW: 'Project',
-      AGENT: 'Agent',
-      TOOL_CONFIG: 'Tool Config',
-      PYTHON_TOOL: 'Python Tool',
-      LLM_CONFIG: 'LLM Config',
-      LLM_MODEL_TAG: 'LLM Model Tag',
-      EMBEDDING_MODEL: 'Embedding Model',
-      WEBHOOK_TRIGGER: 'Webhook Trigger',
-      TELEGRAM_TRIGGER: 'Telegram Trigger',
-      FILE_EXTRACTOR: 'File Extractor',
-      DECISION_TABLE: 'Decision Table',
-      AUDIO_TRANSCRIPTION: 'Audio Transcription',
+      Agent: 'Agent',
+      EmbeddingConfig: 'Embedding Config',
+      EmbeddingModel: 'Embedding Model',
+      EmbeddingModelTag: 'Embedding Model Tag',
+      Flow: 'Flow',
+      LLMConfig: 'LLM Config',
+      LLMModel: 'LLM Model',
+      LLMModelTag: 'LLM Model Tag',
+      MCPTool: 'MCP Tool',
+      Project: 'Project',
+      PythonCodeTool: 'Python Code Tool',
+      RealtimeConfig: 'Realtime Config',
+      RealtimeModel: 'Realtime Model',
+      RealtimeTranscriptionConfig: 'Realtime Transcription Config',
+      RealtimeTranscriptionModel: 'Realtime Transcription Model',
     };
 
     return labelMap[entityType] || entityType;
@@ -93,29 +95,24 @@ export class ImportResultDialogComponent implements AfterViewInit {
    * Get icon for entity type (e.g., "GRAPH" -> flows icon)
    */
   public getIconColorForEntityType(entityType: string): string {
-    const grayTypes = ['FLOW', 'PROJECT'];
-    return grayTypes.includes(entityType.toUpperCase()) ? 'var(--gray-400)' : 'var(--accent-color)';
+    if (entityType === 'PythonCodeTool') return '#FFCF3F';
+    const grayTypes = ['Flow', 'Project'];
+
+    return grayTypes.includes(entityType) ? 'var(--gray-400)' : 'var(--accent-color)';
   }
 
-  public getIconForEntityType(entityType: string): SafeHtml {
-    const iconMap: { [key: string]: string } = {
-      FLOW: ICONS.flows,
-      PROJECT: ICONS.projects,
-      AGENT: ICONS.staff,
-      TOOL_CONFIG: ICONS.tools,
-      PYTHON_TOOL: ICONS.tools,
-      LLM_CONFIG: ICONS.models,
-      LLM_MODEL_TAG: ICONS.models,
-      EMBEDDING_MODEL: ICONS.models,
-      WEBHOOK_TRIGGER: ICONS.sources,
-      TELEGRAM_TRIGGER: ICONS.sources,
-      FILE_EXTRACTOR: ICONS.sources,
-      DECISION_TABLE: ICONS.tools,
-      AUDIO_TRANSCRIPTION: ICONS.tools,
-    };
-    
-    const iconSvg = iconMap[entityType.toUpperCase()] || ICONS.staff;
-    return this.sanitizer.bypassSecurityTrustHtml(iconSvg);
+  public getIconForEntityType(entityType: string): string {
+    return ENTITY_ICONS[entityType] || DEFAULT_ENTITY_ICON;
+  }
+
+  public isInlineSvgIcon(entityType: string): boolean {
+    const iconValue = this.getIconForEntityType(entityType);
+    return iconValue.startsWith('<svg');
+  }
+
+  public getInlineSvgIcon(entityType: string): SafeHtml {
+    const iconValue = this.getIconForEntityType(entityType);
+    return this.sanitizer.bypassSecurityTrustHtml(iconValue);
   }
 
   /**
@@ -144,12 +141,12 @@ export class ImportResultDialogComponent implements AfterViewInit {
    */
   public navigateToEntity(entityType: string, id: number | string): void {
     const routeMap: { [key: string]: string } = {
-      FLOW: '/flows',
-      PROJECT: '/projects',
-      AGENT: '/agents',
+      Flow: '/flows',
+      Project: '/projects',
+      Agent: '/agents',
     };
 
-    const basePath = routeMap[entityType.toUpperCase()];
+    const basePath = routeMap[entityType];
     if (basePath) {
       const urlTree = this.router.createUrlTree([basePath, id]);
       const url = this.router.serializeUrl(urlTree);
@@ -161,8 +158,8 @@ export class ImportResultDialogComponent implements AfterViewInit {
    * Check if entity has navigable route
    */
   public isNavigable(entityType: string): boolean {
-    const navigableTypes = ['FLOW', 'PROJECT', 'AGENT'];
-    return navigableTypes.includes(entityType.toUpperCase());
+    const navigableTypes = ['Flow', 'Project', 'Agent'];
+    return navigableTypes.includes(entityType);
   }
 
   public ngAfterViewInit(): void {

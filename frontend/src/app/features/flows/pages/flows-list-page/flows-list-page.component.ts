@@ -39,6 +39,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { ImportExportService } from '../../../../core/services/import-export.service';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
+import { ToastService } from '../../../../services/notifications/toast.service';
 
 @Component({
     selector: 'app-flows-list-page',
@@ -72,6 +73,7 @@ export class FlowsListPageComponent implements OnDestroy {
     private router = inject(Router);
     private cdr = inject(ChangeDetectorRef);
     private importExportService = inject(ImportExportService);
+    private toastService = inject(ToastService);
 
     public selectMode = this.flowStorageService.selectMode;
     public selectedFlowIds = this.flowStorageService.selectedFlowIds;
@@ -150,7 +152,8 @@ export class FlowsListPageComponent implements OnDestroy {
                     },
                     error: (error) => {
                         console.error('Import failed:', error);
-                        // TODO: Show error message to user
+                        const message = error?.error?.detail || error?.error?.message || 'Failed to import flow. Please check the file and try again.';
+                        this.toastService.error(message);
                     },
                 });
             }

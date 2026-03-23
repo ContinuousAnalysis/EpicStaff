@@ -168,10 +168,17 @@
             min-width: 0;
             padding: 12px 0;
             margin: -12px 0;
-            justify-content: center;
             &::-webkit-scrollbar {
                 display: none;
             }
+        }
+
+        .summary-item:first-child {
+            margin-inline-start: auto;
+        }
+
+        .summary-item:last-child {
+            margin-inline-end: auto;
         }
 
         .summary-item {
@@ -193,7 +200,6 @@
                 width: 1.25rem;
                 height: 1.25rem;
                 flex-shrink: 0;
-                color: var(--accent-color);
 
                 svg {
                     width: 100%;
@@ -247,7 +253,6 @@
                 width: 1.25rem;
                 height: 1.25rem;
                 flex-shrink: 0;
-                color: var(--accent-color);
 
                 svg {
                     width: 100%;
@@ -326,16 +331,6 @@
                     --color-input-background,
                     rgba(0, 0, 0, 0.05)
                 );
-            }
-
-            .item-icon {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 1rem;
-                height: 1rem;
-                flex-shrink: 0;
-                color: var(--color-text-secondary);
             }
 
             .item-name {

@@ -39,7 +39,11 @@
             @if(getEntityTypeCount(entityType) > 0 )
               {
                 <div class="summary-item">
-                  <div class="item-icon" [innerHTML]="getIconForEntityType(entityType)" [style.color]="getIconColorForEntityType(entityType)"></div>
+                  @if(isInlineSvgIcon(entityType)) {
+                    <div class="item-icon" [innerHTML]="getInlineSvgIcon(entityType)" [style.color]="getIconColorForEntityType(entityType)"></div>
+                  } @else {
+                    <app-icon [icon]="getIconForEntityType(entityType)" size="1.25rem" [style.color]="getIconColorForEntityType(entityType)"></app-icon>
+                  }
                   <p class="summary-label">
                     <span class="summary-count">
                       {{ getEntityTypeCount(entityType) }}
@@ -71,7 +75,11 @@
       <div class="entity-group">
         <!-- Entity Type Header -->
         <h4 class="entity-type-title">
-          <div class="item-icon" [innerHTML]="getIconForEntityType(entityType)" [style.color]="getIconColorForEntityType(entityType)"></div>
+          @if(isInlineSvgIcon(entityType)) {
+            <div class="item-icon" [innerHTML]="getInlineSvgIcon(entityType)" [style.color]="getIconColorForEntityType(entityType)"></div>
+          } @else {
+            <app-icon [icon]="getIconForEntityType(entityType)" size="1.25rem" [style.color]="getIconColorForEntityType(entityType)"></app-icon>
+          }
           {{ getEntityTypeLabel(entityType) }}
           <span class="summary-count">{{ result!.total }}</span>
         </h4>
