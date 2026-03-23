@@ -61,6 +61,7 @@
                         class="tree-row"
                         [class.selected]="isSelected(item.node.id)"
                         [style.paddingLeft]="getIndentPadding(item.depth)"
+                        (mouseenter)="onTreeRowHover($event)"
                     >
                         <button
                             type="button"

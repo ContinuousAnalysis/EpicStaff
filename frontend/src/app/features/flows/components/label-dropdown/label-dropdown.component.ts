@@ -64,7 +64,7 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
     });
 
     get triggerLabel(): string {
-        const count = this.localSelectedIds().size;
+        const count = this.selectedLabelIds.length;
         if (count === 0) return 'Select label';
         return `${count} label${count !== 1 ? 's' : ''} selected`;
     }
@@ -161,6 +161,7 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
         this.newLabelName.set('');
         this.addLabelError.set('');
         this.expandedIds.update((s) => new Set([...s, parentId]));
+        this.scrollChildAddRowIntoView();
     }
 
     cancelAdd(): void {
@@ -196,6 +197,30 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
 
     getIndentPadding(depth: number): string {
         return `${depth * 1 + 0.25}rem`;
+    }
+
+    onTreeRowHover(event: MouseEvent): void {
+        const treeRow = event.currentTarget as HTMLElement;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const btn = treeRow.querySelector('.add-child-btn') as HTMLElement;
+                if (btn) {
+                    btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                }
+            });
+        });
+    }
+
+    private scrollChildAddRowIntoView(): void {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const row = this.elementRef.nativeElement.querySelector('.add-label-row.child-add') as HTMLElement;
+                if (!row) return;
+                const buttons = row.querySelectorAll('button');
+                const lastBtn = buttons[buttons.length - 1] as HTMLElement;
+                if (lastBtn) lastBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            });
+        });
     }
 
     private parseError(err: HttpErrorResponse): string {

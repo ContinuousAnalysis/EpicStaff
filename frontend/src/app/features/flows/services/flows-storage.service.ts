@@ -1,6 +1,6 @@
-import { computed, inject,Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { catchError, delay, map, shareReplay, switchMap,tap } from 'rxjs/operators';
+import { catchError, delay, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 
 import { SearchFilterChange } from '../../../shared/components/filters-list/filters-list.component';
 import { CreateGraphDtoRequest, GraphDto, UpdateGraphDtoRequest } from '../models/graph.model';
@@ -173,7 +173,10 @@ export class FlowsStorageService {
                 const index = currentFlows.findIndex((f) => f.id === updatedFlow.id);
                 if (index !== -1) {
                     const updatedFlowsList = [...currentFlows];
-                    updatedFlowsList[index] = updatedFlow;
+                    const cleanUpdate = Object.fromEntries(
+                        Object.entries(updatedFlow).filter(([, v]) => v !== undefined)
+                    ) as GraphDto;
+                    updatedFlowsList[index] = { ...currentFlows[index], ...cleanUpdate };
                     this.flowsSignal.set(updatedFlowsList);
                 }
             })
@@ -203,7 +206,10 @@ export class FlowsStorageService {
                 const index = currentFlows.findIndex((f) => f.id === updatedFlow.id);
                 if (index !== -1) {
                     const updatedFlowsList = [...currentFlows];
-                    updatedFlowsList[index] = updatedFlow;
+                    const cleanUpdate = Object.fromEntries(
+                        Object.entries(updatedFlow).filter(([, v]) => v !== undefined)
+                    ) as GraphDto;
+                    updatedFlowsList[index] = { ...currentFlows[index], ...cleanUpdate };
                     this.flowsSignal.set(updatedFlowsList);
                 }
             })
@@ -214,7 +220,16 @@ export class FlowsStorageService {
         return this.flowsApiService.deleteGraph(id).pipe(
             tap(() => {
                 const currentFlows = this.flowsSignal();
-                this.flowsSignal.set(currentFlows.filter((f) => f.id !== id));
+                this.flowsSignal.set(
+                    currentFlows
+                        .filter((f) => f.id !== id)
+                        .map((f) => {
+                            if (!f.subflows?.length) return f;
+                            const updatedSubflows = f.subflows.filter((s) => s.id !== id);
+                            if (updatedSubflows.length === f.subflows.length) return f;
+                            return { ...f, subflows: updatedSubflows };
+                        })
+                );
                 // Remove deleted flow from export selection
                 const currentSelected = this.selectedFlowIds();
                 if (currentSelected.includes(id)) {
@@ -225,9 +240,7 @@ export class FlowsStorageService {
     }
 
     public copyFlow(sourceId: number, newName: string): Observable<GraphDto> {
-        return this.flowsApiService.copyGraph(sourceId, newName).pipe(
-            tap((created) => this.addFlowToCache(created))
-        );
+        return this.flowsApiService.copyGraph(sourceId, newName).pipe(tap((created) => this.addFlowToCache(created)));
     }
 
     // --- Cache Management ---

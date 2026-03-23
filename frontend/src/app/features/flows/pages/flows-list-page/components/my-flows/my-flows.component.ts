@@ -134,6 +134,7 @@ export class MyFlowsComponent {
                     this.flowsService.deleteFlow(flow.id).subscribe({
                         next: () => {
                             console.log(`Flow ${flow.id} - ${flow.name} deleted successfully.`);
+                            this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe();
                         },
                         error: (err) => {
                             console.error(`Error deleting flow ${flow.id} - ${flow.name}`, err);
@@ -159,6 +160,7 @@ export class MyFlowsComponent {
 
         dialogRef.closed.subscribe((result) => {
             if (!result) return;
+            this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe();
         });
     }
     private saving(flowState: GraphDto['metadata'], graph: GraphDto): void {
