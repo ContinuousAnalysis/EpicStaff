@@ -1,17 +1,24 @@
 import hashlib
 import json
 import uuid
-from django.db import models
-from loguru import logger
-from django.utils import timezone
 
-from tables.models.base_models import BaseGraphEntity, BaseGlobalNode, TimestampMixin
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db import models
+from django.utils import timezone
+from loguru import logger
+
+from tables.models.base_models import (
+    BaseGlobalNode,
+    BaseGraphEntity,
+    ContentHashMixin,
+    TimestampMixin,
+)
 
 
 class Graph(TimestampMixin, models.Model):
     tags = models.ManyToManyField(to="GraphTag", blank=True, default=[])
 
-    name = models.CharField(max_length=255, blank=False)
+    name = models.CharField(max_length=255, blank=False, unique=True)
     description = models.TextField(blank=True)
     metadata = models.JSONField(default=dict)
     time_to_live = models.IntegerField(
@@ -48,14 +55,6 @@ class CrewNode(BaseNode):
     )
     crew = models.ForeignKey("Crew", on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_crew_node",
-            )
-        ]
-
 
 class PythonNode(BaseNode):
     graph = models.ForeignKey(
@@ -63,13 +62,31 @@ class PythonNode(BaseNode):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_python_node",
-            )
+    def generate_hash(self):
+        """
+        Generates a SHA-256 hash.
+        """
+
+        excluded_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "content_hash",
+            "metadata",
+            "python_code",
         ]
+
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        nested_python_code_hash = self.python_code.content_hash
+
+        data["python_code"] = nested_python_code_hash
+
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
 
 
 class FileExtractorNode(BaseNode):
@@ -77,27 +94,11 @@ class FileExtractorNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="file_extractor_node_list"
     )
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_file_extractor_node",
-            )
-        ]
-
 
 class AudioTranscriptionNode(BaseNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="audio_transcription_node_list"
     )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_audio_transcriotion_node",
-            )
-        ]
 
 
 class LLMNode(BaseNode):
@@ -106,14 +107,6 @@ class LLMNode(BaseNode):
     )
     llm_config = models.ForeignKey("LLMConfig", blank=False, on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_llm_node",
-            )
-        ]
-
 
 class EndNode(BaseGraphEntity, BaseGlobalNode):
     # TODO: can be OneToOne field
@@ -121,6 +114,10 @@ class EndNode(BaseGraphEntity, BaseGlobalNode):
         "Graph", on_delete=models.CASCADE, related_name="end_node"
     )
     output_map = models.JSONField()
+
+    @property
+    def node_name(self):
+        return "__end_node__"
 
     class Meta:
         constraints = [
@@ -149,47 +146,77 @@ class SubGraphNode(BaseNode):
     )
     # TODO: maybe SET_NULL on delete?
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_subgraph_node",
-            )
-        ]
-
 
 class Edge(BaseGraphEntity, models.Model):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="edge_list"
     )
-    start_key = models.CharField(max_length=255, blank=False)
-    end_key = models.CharField(max_length=255, blank=False)
+    start_node_id = models.BigIntegerField(null=False, default=0)
+    end_node_id = models.BigIntegerField(null=False, default=0)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["graph", "start_key", "end_key"], name="unique_graph_edge"
+                fields=["graph", "start_node_id", "end_node_id"],
+                name="unique_graph_edge",
             )
         ]
 
+    def clean(self):
+        # Using the unified class method to find any node type by ID
+        start_node = BaseGlobalNode.find_globally(self.start_node_id)
+        if not start_node:
+            raise ObjectDoesNotExist(
+                f"Start node with ID {self.start_node_id} not found."
+            )
 
-class ConditionalEdge(BaseGraphEntity, models.Model):
+        end_node = BaseGlobalNode.find_globally(self.end_node_id)
+        if not end_node:
+            raise ObjectDoesNotExist(f"End node with ID {self.end_node_id} not found.")
+
+
+class ConditionalEdge(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="conditional_edge_list"
     )
-    source = models.CharField(max_length=255, blank=True, default="")
+
+    source_node_id = models.BigIntegerField(null=True, default=None)
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
-    then = models.CharField(max_length=255, null=True, default=None)
     input_map = models.JSONField(default=dict)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["graph", "source"],
-                condition=~models.Q(source=""),
+                fields=["graph", "source_node_id"],
                 name="unique_graph_conditional_edge_source",
             )
         ]
+
+    def generate_hash(self):
+        excluded_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "content_hash",
+            "metadata",
+            "python_code",
+        ]
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        data["python_code"] = self.python_code.content_hash
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
+
+    def clean(self):
+        if not BaseGlobalNode.find_globally(self.source_node_id):
+            raise ValidationError(
+                {
+                    "source_node_id": f"Node with ID {self.source_node_id} does not exist."
+                }
+            )
 
 
 class GraphSessionMessage(models.Model):
@@ -207,6 +234,10 @@ class StartNode(BaseGraphEntity, BaseGlobalNode):
     )
     variables = models.JSONField(default=dict)
 
+    @property
+    def node_name(self):
+        return "__start__"
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["graph"], name="unique_graph_start_node")
@@ -218,29 +249,55 @@ class DecisionTableNode(BaseGraphEntity, BaseGlobalNode):
         "Graph", on_delete=models.CASCADE, related_name="decision_table_node_list"
     )
     node_name = models.CharField(max_length=255, blank=True)
-    default_next_node = models.CharField(max_length=255, null=True, default=None)
-    next_error_node = models.CharField(max_length=255, null=True, default=None)
+    default_next_node_id = models.BigIntegerField(null=True, default=None)
+    next_error_node_id = models.BigIntegerField(null=True, default=None)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_decision_table_node",
-            )
-        ]
+    def generate_hash(self):
+        excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        data["condition_groups"] = sorted(
+            cg.content_hash for cg in self.condition_groups.all() if cg.content_hash
+        )
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
+
+    def clean(self):
+        super().clean()
+
+        if self.default_next_node_id:
+            default_next_node = BaseGlobalNode.find_globally(self.default_next_node_id)
+            if not default_next_node:
+                raise ValidationError(
+                    {
+                        "default_next_node_id": f"Default next node with ID '{self.default_next_node_id}' not found."
+                    }
+                )
+
+        if self.next_error_node_id:
+            next_error_node = BaseGlobalNode.find_globally(self.next_error_node_id)
+            if not next_error_node:
+                raise ValidationError(
+                    {
+                        "next_error_node_id": f"Error node with ID '{self.next_error_node_id}' not found."
+                    }
+                )
 
 
-class ConditionGroup(models.Model):
+class ConditionGroup(ContentHashMixin, models.Model):
     decision_table_node = models.ForeignKey(
         "DecisionTableNode", on_delete=models.CASCADE, related_name="condition_groups"
     )
     group_name = models.CharField(max_length=255, blank=False)
-
     group_type = models.CharField(max_length=255, blank=False)  # simple, complex
     order = models.PositiveIntegerField(blank=False, default=0)
-    expression = models.CharField(max_length=255, null=True, default=None)
-    manipulation = models.CharField(max_length=255, null=True, default=None)
-    next_node = models.CharField(max_length=255, null=True, default=None)
+    expression = models.CharField(max_length=255, null=True, blank=True, default=None)
+    manipulation = models.CharField(max_length=255, null=True, blank=True, default=None)
+
+    next_node_id = models.BigIntegerField(null=True, default=None)
 
     class Meta:
         constraints = [
@@ -251,8 +308,33 @@ class ConditionGroup(models.Model):
         ]
         ordering = ["order"]
 
+    def generate_hash(self):
+        excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
+        data = {
+            f.name: str(getattr(self, f.name))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        data["conditions"] = sorted(
+            c.content_hash for c in self.conditions.all() if c.content_hash
+        )
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
 
-class Condition(models.Model):
+    def clean(self):
+        super().clean()
+
+        if self.next_node_id:
+            next_node = BaseGlobalNode.find_globally(self.next_node_id)
+            if not next_node:
+                raise ValidationError(
+                    {
+                        "next_node_id": f"Next node with ID '{self.next_node_id}' not found."
+                    }
+                )
+
+
+class Condition(ContentHashMixin, models.Model):
     condition_group = models.ForeignKey(
         "ConditionGroup", on_delete=models.CASCADE, related_name="conditions"
     )
@@ -371,13 +453,31 @@ class WebhookTriggerNode(BaseGraphEntity, BaseGlobalNode):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_webhook_nodes",
-            )
+    def generate_hash(self):
+        """
+        Generates a SHA-256 hash.
+        """
+
+        excluded_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "content_hash",
+            "metadata",
+            "python_code",
         ]
+
+        data = {
+            f.name: str(getattr(self, f.attname))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        nested_python_code_hash = self.python_code.content_hash
+
+        data["python_code"] = nested_python_code_hash
+
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
 
 
 class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
@@ -395,16 +495,21 @@ class TelegramTriggerNode(BaseGraphEntity, BaseGlobalNode):
         related_name="telegram_trigger_nodes",
     )
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "node_name"],
-                name="unique_graph_node_name_for_telegram_trigger_nodes",
-            )
-        ]
+    def generate_hash(self):
+        excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
+        data = {
+            f.name: str(getattr(self, f.attname))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        data["fields"] = sorted(
+            field.content_hash for field in self.fields.all() if field.content_hash
+        )
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
 
 
-class TelegramTriggerNodeField(models.Model):
+class TelegramTriggerNodeField(ContentHashMixin, models.Model):
     telegram_trigger_node = models.ForeignKey(
         TelegramTriggerNode, on_delete=models.CASCADE, related_name="fields"
     )
