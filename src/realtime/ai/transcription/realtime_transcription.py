@@ -1,7 +1,7 @@
 from loguru import logger
 import websockets
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable, Awaitable
 
 from ai.transcription.event_handlers.transcription_client_event_handler import (
     TranscriptionClientEventHandler,
@@ -9,8 +9,6 @@ from ai.transcription.event_handlers.transcription_client_event_handler import (
 from ai.transcription.event_handlers.transcription_server_event_handler import (
     TranscriptionServerEventHandler,
 )
-
-from fastapi import WebSocket
 
 from services.chat_buffer import ChatSummarizedBuffer
 
@@ -20,16 +18,16 @@ class OpenaiRealtimeTranscriptionClient:
         self,
         api_key: str,
         connection_key: str,
-        client_websocket: WebSocket,
-        model: str,
-        language: str | None,
-        voice_recognition_prompt: str | None,
-        buffer: ChatSummarizedBuffer,
+        on_server_event: Optional[Callable[[dict], Awaitable[None]]] = None,
+        model: str = "whisper-1",
+        language: str | None = None,
+        voice_recognition_prompt: str | None = None,
+        buffer: ChatSummarizedBuffer = None,
         temperature: float = 0.8,
     ):
         self.api_key = api_key
         self.connection_key = connection_key
-        self.client_websocket = client_websocket
+        self.on_server_event = on_server_event
         self.model = model
         self.ws = None
         self.language = language
@@ -60,7 +58,8 @@ class OpenaiRealtimeTranscriptionClient:
         await self.update_session()
 
     async def send_client(self, data):
-        await self.client_websocket.send_json(data)
+        if self.on_server_event:
+            await self.on_server_event(data)
 
     async def update_session(self) -> None:
         """Update session configuration."""

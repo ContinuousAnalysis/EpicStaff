@@ -33,6 +33,20 @@ class Settings(BaseSettings):
     DB_REALTIME_USER: str
     DB_REALTIME_PASSWORD: str
 
+    # --- Twilio ---
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    VOICE_AGENT_ID: int = 2
+    VOICE_STREAM_URL: str = ""
+
+    # --- Django (for init-realtime HTTP call) ---
+    DJANGO_HOST: str = "django_app"
+    DJANGO_PORT: int = 8000
+
+    @property
+    def INIT_API_URL(self) -> str:
+        return f"http://{self.DJANGO_HOST}:{self.DJANGO_PORT}/api/init-realtime/"
+
     @property
     def DATABASE_URL(self) -> str:
         db_url = (

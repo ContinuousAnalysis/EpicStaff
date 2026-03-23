@@ -1,14 +1,13 @@
 from models.ai_models import RealtimeTool
 import websockets
 import json
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Callable, Awaitable
 from enum import Enum
 
 from ai.agent.event_handlers.agent_client_event_handler import ClientEventHandler
 from ai.agent.event_handlers.agent_server_event_handler import ServerEventHandler
 
 from services.tool_manager_service import ToolManagerService
-from fastapi import WebSocket
 from loguru import logger
 
 
@@ -29,8 +28,8 @@ class OpenaiRealtimeAgentClient:
         self,
         api_key: str,
         connection_key: str,
-        client_websocket: WebSocket,
-        tool_manager_service: ToolManagerService,
+        on_server_event: Optional[Callable[[dict], Awaitable[None]]] = None,
+        tool_manager_service: ToolManagerService = None,
         rt_tools: Optional[List[RealtimeTool]] = None,
         model: str = "gpt-4o-mini-realtime-preview-2024-12-17",
         voice: str = "alloy",
@@ -42,7 +41,7 @@ class OpenaiRealtimeAgentClient:
     ):
         self.api_key = api_key
         self.connection_key = connection_key
-        self.client_websocket = client_websocket
+        self.on_server_event = on_server_event
         self.tool_manager_service = tool_manager_service
         self.model = model
         self.voice = voice
@@ -103,7 +102,8 @@ class OpenaiRealtimeAgentClient:
         )
 
     async def send_client(self, data):
-        await self.client_websocket.send_json(data)
+        if self.on_server_event:
+            await self.on_server_event(data)
 
     async def update_session(self, config: Dict[str, Any]) -> None:
         """Update session configuration."""

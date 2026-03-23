@@ -86,7 +86,7 @@ class ChatExecutor:
         rt_agent_client = OpenaiRealtimeAgentClient(
             api_key=self.realtime_agent_chat_data.rt_api_key,
             connection_key=self.realtime_agent_chat_data.connection_key,
-            client_websocket=self.client_websocket,
+            on_server_event=self.client_websocket.send_json,
             tool_manager_service=self.tool_manager_service,
             rt_tools=rt_tools,
             model=self.realtime_agent_chat_data.rt_model_name,
@@ -101,7 +101,7 @@ class ChatExecutor:
         rt_transcription_client = OpenaiRealtimeTranscriptionClient(
             api_key=self.realtime_agent_chat_data.transcript_api_key,
             connection_key=self.realtime_agent_chat_data.connection_key,
-            client_websocket=self.client_websocket,
+            on_server_event=self.client_websocket.send_json,
             model="whisper-1",
             temperature=self.realtime_agent_chat_data.temperature,
             language=self.realtime_agent_chat_data.language,

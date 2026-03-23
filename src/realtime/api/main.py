@@ -1,14 +1,16 @@
 from typing import Dict
 import json
 import asyncio
+import httpx
 from loguru import logger
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from src.shared.models import RealtimeAgentChatData
 from services.chat_executor import ChatExecutor
 from services.python_code_executor_service import PythonCodeExecutorService
 from services.redis_service import RedisService
 from services.tool_manager_service import ToolManagerService
+from services.voice_stream_handler import VoiceStreamHandler
 from utils.instructions_concatenator import generate_instruction
 from ai.agent.openai_realtime_agent_client import OpenaiRealtimeAgentClient
 
@@ -150,3 +152,74 @@ async def healthcheck_endpoint(websocket: WebSocket):
             await websocket.send_text(f"Message received: {data}")
     except WebSocketDisconnect:
         logger.info("Client disconnected")
+
+
+@app.post("/voice")
+async def twilio_voice_webhook(request: Request):
+    """Twilio calls this on incoming call. Returns TwiML directing audio to /voice/stream."""
+    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Connect>
+    <Stream url="{settings.VOICE_STREAM_URL}" />
+  </Connect>
+</Response>"""
+    return Response(content=twiml, media_type="application/xml")
+
+
+@app.websocket("/voice/stream")
+async def voice_stream(twilio_ws: WebSocket):
+    """Twilio MediaStream WebSocket. Bridges audio directly to OpenAI Realtime API."""
+    await twilio_ws.accept()
+    logger.info("Twilio MediaStream WebSocket accepted")
+
+    # 1. Call Django init-realtime to get connection_key and publish agent config to Redis
+    async with httpx.AsyncClient() as http_client:
+        try:
+            resp = await http_client.post(
+                settings.INIT_API_URL,
+                json={
+                    "agent_id": settings.VOICE_AGENT_ID,
+                    "config": {
+                        "input_audio_format": "g711_ulaw",
+                        "output_audio_format": "g711_ulaw",
+                    },
+                },
+                timeout=10.0,
+            )
+            if resp.status_code >= 400:
+                logger.error(f"Init realtime failed: {resp.status_code} {resp.text}")
+                await twilio_ws.close()
+                return
+            conn_key = resp.json().get("connection_key")
+        except Exception as e:
+            logger.error(f"Failed to init realtime session: {e}")
+            await twilio_ws.close()
+            return
+
+    # 2. Wait for Redis listener to store agent config (delivered asynchronously)
+    realtime_agent_chat_data = None
+    for _ in range(20):  # up to 2 seconds
+        realtime_agent_chat_data = connection_repository.get_connection(conn_key)
+        if realtime_agent_chat_data:
+            break
+        await asyncio.sleep(0.1)
+
+    if realtime_agent_chat_data is None:
+        logger.error(f"No agent data found for connection_key={conn_key}")
+        await twilio_ws.close()
+        return
+
+    # 3. Build instructions and hand off to VoiceStreamHandler (no WebSocket hop)
+    instructions = generate_instruction(
+        role=realtime_agent_chat_data.role,
+        goal=realtime_agent_chat_data.goal,
+        backstory=realtime_agent_chat_data.backstory,
+    )
+    handler = VoiceStreamHandler(
+        twilio_ws=twilio_ws,
+        realtime_agent_chat_data=realtime_agent_chat_data,
+        instructions=instructions,
+        tool_manager_service=tool_manager_service,
+        connections=connections,
+    )
+    await handler.execute()
