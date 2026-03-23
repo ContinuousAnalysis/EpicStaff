@@ -108,18 +108,18 @@ class SubGraphNode:
 
             updated_state = self._process_subgraph_result(state, subgraph_input, result)
 
+            self._send_finish_message(
+                updated_state,
+                result["variables"].model_dump(),
+                writer,
+                subgraph_execution_id,
+            )
+
         except Exception as e:
             self._send_finish_message(
                 state, {}, writer, subgraph_execution_id, error=str(e)
             )
             raise
-
-        self._send_finish_message(
-            updated_state,
-            result["variables"].model_dump(),
-            writer,
-            subgraph_execution_id,
-        )
 
         return {
             "variables": updated_state["variables"],

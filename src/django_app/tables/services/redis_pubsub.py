@@ -228,7 +228,8 @@ class RedisPubSub:
 
                 token_usage = None
 
-                if "output" in message_data and "token_usage" in message_data["output"]:
+                output = message_data.get("output")
+                if isinstance(output, dict) and "token_usage" in message_data["output"]:
                     token_usage = message_data["output"]["token_usage"]
                 elif "token_usage" in message_data:
                     token_usage = message_data["token_usage"]
@@ -567,7 +568,8 @@ class RedisPubSub:
             msg_data = msg.message_data or {}
             token_usage = None
 
-            if "output" in msg_data and "token_usage" in msg_data.get("output", {}):
+            output = msg_data.get("output")
+            if isinstance(output, dict) and "token_usage" in output:
                 token_usage = msg_data["output"]["token_usage"]
             elif "token_usage" in msg_data:
                 token_usage = msg_data["token_usage"]
