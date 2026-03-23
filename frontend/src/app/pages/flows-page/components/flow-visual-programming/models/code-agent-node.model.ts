@@ -40,6 +40,7 @@ export interface CreateCodeAgentNodeRequest {
     output_variable_path: string | null;
     stream_config?: Record<string, boolean>;
     output_schema?: Record<string, any>;
+    metadata?: Record<string, any>;
 }
 
 export interface CodeAgentNodeData {

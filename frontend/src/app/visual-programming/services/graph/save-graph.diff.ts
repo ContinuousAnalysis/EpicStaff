@@ -661,5 +661,6 @@ export function buildCodeAgentPayload(node: CodeAgentNodeModel, graphId: number)
         output_variable_path: node.output_variable_path,
         stream_config: node.stream_config ?? {},
         output_schema: node.data?.output_schema ?? {},
+        metadata: getUIMetadataForComparison(node),
     };
 }
