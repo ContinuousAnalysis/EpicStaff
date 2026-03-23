@@ -12989,11 +12989,11 @@ function listenToOutput(tNode, lView, directiveIndex, lookupName, eventName, lis
   const tView = lView[TVIEW];
   const def = tView.data[directiveIndex];
   const propertyName = def.outputs[lookupName];
-  const output = instance[propertyName];
-  if (ngDevMode && !isOutputSubscribable(output)) {
+  const output2 = instance[propertyName];
+  if (ngDevMode && !isOutputSubscribable(output2)) {
     throw new Error(`@Output ${propertyName} not initialized in '${instance.constructor.name}'.`);
   }
-  const subscription = output.subscribe(listenerFn);
+  const subscription = output2.subscribe(listenerFn);
   storeListenerCleanup(tNode.index, tView, lView, eventName, listenerFn, subscription, true);
 }
 function isOutputSubscribable(value) {
@@ -23544,6 +23544,10 @@ function getDevModeNodeName(tNode) {
   } else {
     return "a node";
   }
+}
+function output(opts) {
+  ngDevMode && assertInInjectionContext(output);
+  return new OutputEmitterRef();
 }
 function inputFunction(initialValue, opts) {
   ngDevMode && assertInInjectionContext(input);
@@ -57622,9 +57626,11 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
   initializeCurrentAgent() {
     this.loadCurrentAgent();
   }
-  getAgents() {
-    return of([]);
-  }
+  // getAgents(): Observable<EpicstaffAgent[]> {
+  //     // TODO: Заменить на реальный API endpoint если агенты хранятся на беке (как в  Эпике)
+  //     // return this.http.get<EpicstaffAgent[]>('/api/epicstaff-agents');
+  //     return of([]);
+  // }
   createAgent(agent, options) {
     const agentId = agent.id ?? generateAgentId();
     const assistantMode = {
@@ -57642,13 +57648,12 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
     if (options?.selectAfterCreate) {
       this.setCurrentAgent(assistantMode);
     }
-    return of(agent);
   }
   updateAgent(agent) {
     const existingAgent = this.agents().find((a3) => a3.epicstaffAgentId === agent.id);
     if (!existingAgent) {
       console.warn("Agent not found for update:", agent.id);
-      return of(agent);
+      return;
     }
     const updatedAgent = __spreadProps(__spreadValues({}, existingAgent), {
       name: agent.agent_name,
@@ -57671,14 +57676,13 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
       this.setCurrentAgent(updatedAgent);
     }
     this.saveAgentsToStorage();
-    return of(agent);
   }
   deleteAgent(agentId) {
     const numericId = typeof agentId === "string" ? Number(agentId) : agentId;
     const agentToDelete = this.agents().find((a3) => a3.epicstaffAgentId === numericId);
     if (!agentToDelete) {
       console.warn("Agent not found for deletion:", agentId);
-      return of(void 0);
+      return;
     }
     this.agentsSignal.update((current) => current.filter((a3) => a3.epicstaffAgentId !== agentToDelete.epicstaffAgentId));
     if (this.currentAgent()?.epicstaffAgentId === agentToDelete.epicstaffAgentId) {
@@ -57687,7 +57691,6 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
       this.setCurrentAgent(nextAgent);
     }
     this.saveAgentsToStorage();
-    return of(void 0);
   }
   setAgents(agents) {
     this.agentsSignal.set(agents);
@@ -57721,9 +57724,10 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
    * Agents with epicstaffFlowId === null are not managed by the API and are left untouched.
    */
   syncAgentsFromApi(apiBaseUrl) {
-    const url = apiBaseUrl.endsWith("/") ? `${apiBaseUrl}graph-light/?epicchat_enabled=true` : `${apiBaseUrl}/graph-light/?epicchat_enabled=true`;
-    this.http.get(url).subscribe({
-      next: (response) => {
+    return __async(this, null, function* () {
+      const url = apiBaseUrl.endsWith("/") ? `${apiBaseUrl}graph-light/?epicchat_enabled=true` : `${apiBaseUrl}/graph-light/?epicchat_enabled=true`;
+      try {
+        const response = yield firstValueFrom(this.http.get(url));
         const flows = response?.results || [];
         const flowIds = new Set(flows.map((f) => f.id));
         const existingAgents = this.agents();
@@ -57751,8 +57755,7 @@ var _EpicstaffAgentService = class _EpicstaffAgentService {
           this.deleteAgent(agent.epicstaffAgentId);
         }
         this.saveAgentsToStorage();
-      },
-      error: (error) => {
+      } catch (error) {
         console.error("Failed to sync agents from API:", error);
       }
     });
@@ -57915,7 +57918,7 @@ var _ActionService = class _ActionService {
     this.agentService = agentService;
     this.chatService = chatService;
     this.dropdownSelectionPrefix = "__va_selected__";
-    this.openAgentConfig$ = new EventEmitter();
+    this.openAgentConfigRequest = signal(null, ...ngDevMode ? [{ debugName: "openAgentConfigRequest" }] : []);
   }
   handleParentCommand(command, runtimeContext, onCommandSuccess, onCommandError) {
     if (!command?.requestId || !command.action) {
@@ -57965,15 +57968,9 @@ var _ActionService = class _ActionService {
     this.agentService.createAgent(requestPayload, {
       selectAfterCreate: data.selectAfterCreate !== false,
       source: "manual"
-    }).subscribe({
-      next: () => {
-        this.agentService.loadAgents();
-        onCommandSuccess(command, { agentId });
-      },
-      error: (error) => {
-        onCommandError(command, error instanceof Error ? error.message : "Failed to create agent");
-      }
     });
+    this.agentService.loadAgents();
+    onCommandSuccess(command, { agentId });
   }
   handleSelectAgentCommand(payload, command, onCommandSuccess, onCommandError) {
     const data = payload;
@@ -58001,10 +57998,8 @@ var _ActionService = class _ActionService {
       onCommandError(command, `Agent with flowId=${flowId} not found`);
       return;
     }
-    this.agentService.deleteAgent(agent.epicstaffAgentId).subscribe({
-      next: () => onCommandSuccess(command, { flowId }),
-      error: (error) => onCommandError(command, error instanceof Error ? error.message : "Failed to remove agent")
-    });
+    this.agentService.deleteAgent(agent.epicstaffAgentId);
+    onCommandSuccess(command, { flowId });
   }
   handleSyncAgentsCommand(payload, command, onCommandSuccess, onCommandError) {
     const data = payload;
@@ -58226,7 +58221,7 @@ var _ActionService = class _ActionService {
           url
         });
         if (normalizedFlowId !== null && url) {
-          this.openAgentConfig$.emit({ flowId: normalizedFlowId, url });
+          this.openAgentConfigRequest.set({ flowId: normalizedFlowId, url });
         }
       }
     });
@@ -58641,1612 +58636,6 @@ var DateUtils = class {
   static formatDateFromTimestamp(timestamp) {
     return this.formatDate(new Date(timestamp * 1e3));
   }
-};
-
-// node_modules/expr-eval/dist/index.mjs
-var INUMBER = "INUMBER";
-var IOP1 = "IOP1";
-var IOP2 = "IOP2";
-var IOP3 = "IOP3";
-var IVAR = "IVAR";
-var IVARNAME = "IVARNAME";
-var IFUNCALL = "IFUNCALL";
-var IFUNDEF = "IFUNDEF";
-var IEXPR = "IEXPR";
-var IEXPREVAL = "IEXPREVAL";
-var IMEMBER = "IMEMBER";
-var IENDSTATEMENT = "IENDSTATEMENT";
-var IARRAY = "IARRAY";
-function Instruction(type, value) {
-  this.type = type;
-  this.value = value !== void 0 && value !== null ? value : 0;
-}
-Instruction.prototype.toString = function() {
-  switch (this.type) {
-    case INUMBER:
-    case IOP1:
-    case IOP2:
-    case IOP3:
-    case IVAR:
-    case IVARNAME:
-    case IENDSTATEMENT:
-      return this.value;
-    case IFUNCALL:
-      return "CALL " + this.value;
-    case IFUNDEF:
-      return "DEF " + this.value;
-    case IARRAY:
-      return "ARRAY " + this.value;
-    case IMEMBER:
-      return "." + this.value;
-    default:
-      return "Invalid Instruction";
-  }
-};
-function unaryInstruction(value) {
-  return new Instruction(IOP1, value);
-}
-function binaryInstruction(value) {
-  return new Instruction(IOP2, value);
-}
-function ternaryInstruction(value) {
-  return new Instruction(IOP3, value);
-}
-function simplify(tokens, unaryOps, binaryOps, ternaryOps, values) {
-  var nstack = [];
-  var newexpression = [];
-  var n1, n2, n3;
-  var f;
-  for (var i = 0; i < tokens.length; i++) {
-    var item = tokens[i];
-    var type = item.type;
-    if (type === INUMBER || type === IVARNAME) {
-      if (Array.isArray(item.value)) {
-        nstack.push.apply(nstack, simplify(item.value.map(function(x) {
-          return new Instruction(INUMBER, x);
-        }).concat(new Instruction(IARRAY, item.value.length)), unaryOps, binaryOps, ternaryOps, values));
-      } else {
-        nstack.push(item);
-      }
-    } else if (type === IVAR && values.hasOwnProperty(item.value)) {
-      item = new Instruction(INUMBER, values[item.value]);
-      nstack.push(item);
-    } else if (type === IOP2 && nstack.length > 1) {
-      n2 = nstack.pop();
-      n1 = nstack.pop();
-      f = binaryOps[item.value];
-      item = new Instruction(INUMBER, f(n1.value, n2.value));
-      nstack.push(item);
-    } else if (type === IOP3 && nstack.length > 2) {
-      n3 = nstack.pop();
-      n2 = nstack.pop();
-      n1 = nstack.pop();
-      if (item.value === "?") {
-        nstack.push(n1.value ? n2.value : n3.value);
-      } else {
-        f = ternaryOps[item.value];
-        item = new Instruction(INUMBER, f(n1.value, n2.value, n3.value));
-        nstack.push(item);
-      }
-    } else if (type === IOP1 && nstack.length > 0) {
-      n1 = nstack.pop();
-      f = unaryOps[item.value];
-      item = new Instruction(INUMBER, f(n1.value));
-      nstack.push(item);
-    } else if (type === IEXPR) {
-      while (nstack.length > 0) {
-        newexpression.push(nstack.shift());
-      }
-      newexpression.push(new Instruction(IEXPR, simplify(item.value, unaryOps, binaryOps, ternaryOps, values)));
-    } else if (type === IMEMBER && nstack.length > 0) {
-      n1 = nstack.pop();
-      nstack.push(new Instruction(INUMBER, n1.value[item.value]));
-    } else {
-      while (nstack.length > 0) {
-        newexpression.push(nstack.shift());
-      }
-      newexpression.push(item);
-    }
-  }
-  while (nstack.length > 0) {
-    newexpression.push(nstack.shift());
-  }
-  return newexpression;
-}
-function substitute(tokens, variable, expr) {
-  var newexpression = [];
-  for (var i = 0; i < tokens.length; i++) {
-    var item = tokens[i];
-    var type = item.type;
-    if (type === IVAR && item.value === variable) {
-      for (var j2 = 0; j2 < expr.tokens.length; j2++) {
-        var expritem = expr.tokens[j2];
-        var replitem;
-        if (expritem.type === IOP1) {
-          replitem = unaryInstruction(expritem.value);
-        } else if (expritem.type === IOP2) {
-          replitem = binaryInstruction(expritem.value);
-        } else if (expritem.type === IOP3) {
-          replitem = ternaryInstruction(expritem.value);
-        } else {
-          replitem = new Instruction(expritem.type, expritem.value);
-        }
-        newexpression.push(replitem);
-      }
-    } else if (type === IEXPR) {
-      newexpression.push(new Instruction(IEXPR, substitute(item.value, variable, expr)));
-    } else {
-      newexpression.push(item);
-    }
-  }
-  return newexpression;
-}
-function evaluate(tokens, expr, values) {
-  var nstack = [];
-  var n1, n2, n3;
-  var f, args, argCount;
-  if (isExpressionEvaluator(tokens)) {
-    return resolveExpression(tokens, values);
-  }
-  var numTokens = tokens.length;
-  for (var i = 0; i < numTokens; i++) {
-    var item = tokens[i];
-    var type = item.type;
-    if (type === INUMBER || type === IVARNAME) {
-      nstack.push(item.value);
-    } else if (type === IOP2) {
-      n2 = nstack.pop();
-      n1 = nstack.pop();
-      if (item.value === "and") {
-        nstack.push(n1 ? !!evaluate(n2, expr, values) : false);
-      } else if (item.value === "or") {
-        nstack.push(n1 ? true : !!evaluate(n2, expr, values));
-      } else if (item.value === "=") {
-        f = expr.binaryOps[item.value];
-        nstack.push(f(n1, evaluate(n2, expr, values), values));
-      } else {
-        f = expr.binaryOps[item.value];
-        nstack.push(f(resolveExpression(n1, values), resolveExpression(n2, values)));
-      }
-    } else if (type === IOP3) {
-      n3 = nstack.pop();
-      n2 = nstack.pop();
-      n1 = nstack.pop();
-      if (item.value === "?") {
-        nstack.push(evaluate(n1 ? n2 : n3, expr, values));
-      } else {
-        f = expr.ternaryOps[item.value];
-        nstack.push(f(resolveExpression(n1, values), resolveExpression(n2, values), resolveExpression(n3, values)));
-      }
-    } else if (type === IVAR) {
-      if (item.value in expr.functions) {
-        nstack.push(expr.functions[item.value]);
-      } else if (item.value in expr.unaryOps && expr.parser.isOperatorEnabled(item.value)) {
-        nstack.push(expr.unaryOps[item.value]);
-      } else {
-        var v2 = values[item.value];
-        if (v2 !== void 0) {
-          nstack.push(v2);
-        } else {
-          throw new Error("undefined variable: " + item.value);
-        }
-      }
-    } else if (type === IOP1) {
-      n1 = nstack.pop();
-      f = expr.unaryOps[item.value];
-      nstack.push(f(resolveExpression(n1, values)));
-    } else if (type === IFUNCALL) {
-      argCount = item.value;
-      args = [];
-      while (argCount-- > 0) {
-        args.unshift(resolveExpression(nstack.pop(), values));
-      }
-      f = nstack.pop();
-      if (f.apply && f.call) {
-        nstack.push(f.apply(void 0, args));
-      } else {
-        throw new Error(f + " is not a function");
-      }
-    } else if (type === IFUNDEF) {
-      nstack.push((function() {
-        var n22 = nstack.pop();
-        var args2 = [];
-        var argCount2 = item.value;
-        while (argCount2-- > 0) {
-          args2.unshift(nstack.pop());
-        }
-        var n12 = nstack.pop();
-        var f2 = function() {
-          var scope = Object.assign({}, values);
-          for (var i2 = 0, len = args2.length; i2 < len; i2++) {
-            scope[args2[i2]] = arguments[i2];
-          }
-          return evaluate(n22, expr, scope);
-        };
-        Object.defineProperty(f2, "name", {
-          value: n12,
-          writable: false
-        });
-        values[n12] = f2;
-        return f2;
-      })());
-    } else if (type === IEXPR) {
-      nstack.push(createExpressionEvaluator(item, expr));
-    } else if (type === IEXPREVAL) {
-      nstack.push(item);
-    } else if (type === IMEMBER) {
-      n1 = nstack.pop();
-      nstack.push(n1[item.value]);
-    } else if (type === IENDSTATEMENT) {
-      nstack.pop();
-    } else if (type === IARRAY) {
-      argCount = item.value;
-      args = [];
-      while (argCount-- > 0) {
-        args.unshift(nstack.pop());
-      }
-      nstack.push(args);
-    } else {
-      throw new Error("invalid Expression");
-    }
-  }
-  if (nstack.length > 1) {
-    throw new Error("invalid Expression (parity)");
-  }
-  return nstack[0] === 0 ? 0 : resolveExpression(nstack[0], values);
-}
-function createExpressionEvaluator(token, expr, values) {
-  if (isExpressionEvaluator(token)) return token;
-  return {
-    type: IEXPREVAL,
-    value: function(scope) {
-      return evaluate(token.value, expr, scope);
-    }
-  };
-}
-function isExpressionEvaluator(n) {
-  return n && n.type === IEXPREVAL;
-}
-function resolveExpression(n, values) {
-  return isExpressionEvaluator(n) ? n.value(values) : n;
-}
-function expressionToString(tokens, toJS) {
-  var nstack = [];
-  var n1, n2, n3;
-  var f, args, argCount;
-  for (var i = 0; i < tokens.length; i++) {
-    var item = tokens[i];
-    var type = item.type;
-    if (type === INUMBER) {
-      if (typeof item.value === "number" && item.value < 0) {
-        nstack.push("(" + item.value + ")");
-      } else if (Array.isArray(item.value)) {
-        nstack.push("[" + item.value.map(escapeValue).join(", ") + "]");
-      } else {
-        nstack.push(escapeValue(item.value));
-      }
-    } else if (type === IOP2) {
-      n2 = nstack.pop();
-      n1 = nstack.pop();
-      f = item.value;
-      if (toJS) {
-        if (f === "^") {
-          nstack.push("Math.pow(" + n1 + ", " + n2 + ")");
-        } else if (f === "and") {
-          nstack.push("(!!" + n1 + " && !!" + n2 + ")");
-        } else if (f === "or") {
-          nstack.push("(!!" + n1 + " || !!" + n2 + ")");
-        } else if (f === "||") {
-          nstack.push("(function(a,b){ return Array.isArray(a) && Array.isArray(b) ? a.concat(b) : String(a) + String(b); }((" + n1 + "),(" + n2 + ")))");
-        } else if (f === "==") {
-          nstack.push("(" + n1 + " === " + n2 + ")");
-        } else if (f === "!=") {
-          nstack.push("(" + n1 + " !== " + n2 + ")");
-        } else if (f === "[") {
-          nstack.push(n1 + "[(" + n2 + ") | 0]");
-        } else {
-          nstack.push("(" + n1 + " " + f + " " + n2 + ")");
-        }
-      } else {
-        if (f === "[") {
-          nstack.push(n1 + "[" + n2 + "]");
-        } else {
-          nstack.push("(" + n1 + " " + f + " " + n2 + ")");
-        }
-      }
-    } else if (type === IOP3) {
-      n3 = nstack.pop();
-      n2 = nstack.pop();
-      n1 = nstack.pop();
-      f = item.value;
-      if (f === "?") {
-        nstack.push("(" + n1 + " ? " + n2 + " : " + n3 + ")");
-      } else {
-        throw new Error("invalid Expression");
-      }
-    } else if (type === IVAR || type === IVARNAME) {
-      nstack.push(item.value);
-    } else if (type === IOP1) {
-      n1 = nstack.pop();
-      f = item.value;
-      if (f === "-" || f === "+") {
-        nstack.push("(" + f + n1 + ")");
-      } else if (toJS) {
-        if (f === "not") {
-          nstack.push("(!" + n1 + ")");
-        } else if (f === "!") {
-          nstack.push("fac(" + n1 + ")");
-        } else {
-          nstack.push(f + "(" + n1 + ")");
-        }
-      } else if (f === "!") {
-        nstack.push("(" + n1 + "!)");
-      } else {
-        nstack.push("(" + f + " " + n1 + ")");
-      }
-    } else if (type === IFUNCALL) {
-      argCount = item.value;
-      args = [];
-      while (argCount-- > 0) {
-        args.unshift(nstack.pop());
-      }
-      f = nstack.pop();
-      nstack.push(f + "(" + args.join(", ") + ")");
-    } else if (type === IFUNDEF) {
-      n2 = nstack.pop();
-      argCount = item.value;
-      args = [];
-      while (argCount-- > 0) {
-        args.unshift(nstack.pop());
-      }
-      n1 = nstack.pop();
-      if (toJS) {
-        nstack.push("(" + n1 + " = function(" + args.join(", ") + ") { return " + n2 + " })");
-      } else {
-        nstack.push("(" + n1 + "(" + args.join(", ") + ") = " + n2 + ")");
-      }
-    } else if (type === IMEMBER) {
-      n1 = nstack.pop();
-      nstack.push(n1 + "." + item.value);
-    } else if (type === IARRAY) {
-      argCount = item.value;
-      args = [];
-      while (argCount-- > 0) {
-        args.unshift(nstack.pop());
-      }
-      nstack.push("[" + args.join(", ") + "]");
-    } else if (type === IEXPR) {
-      nstack.push("(" + expressionToString(item.value, toJS) + ")");
-    } else if (type === IENDSTATEMENT) ;
-    else {
-      throw new Error("invalid Expression");
-    }
-  }
-  if (nstack.length > 1) {
-    if (toJS) {
-      nstack = [nstack.join(",")];
-    } else {
-      nstack = [nstack.join(";")];
-    }
-  }
-  return String(nstack[0]);
-}
-function escapeValue(v2) {
-  if (typeof v2 === "string") {
-    return JSON.stringify(v2).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
-  }
-  return v2;
-}
-function contains(array, obj) {
-  for (var i = 0; i < array.length; i++) {
-    if (array[i] === obj) {
-      return true;
-    }
-  }
-  return false;
-}
-function getSymbols(tokens, symbols, options) {
-  options = options || {};
-  var withMembers = !!options.withMembers;
-  var prevVar = null;
-  for (var i = 0; i < tokens.length; i++) {
-    var item = tokens[i];
-    if (item.type === IVAR || item.type === IVARNAME) {
-      if (!withMembers && !contains(symbols, item.value)) {
-        symbols.push(item.value);
-      } else if (prevVar !== null) {
-        if (!contains(symbols, prevVar)) {
-          symbols.push(prevVar);
-        }
-        prevVar = item.value;
-      } else {
-        prevVar = item.value;
-      }
-    } else if (item.type === IMEMBER && withMembers && prevVar !== null) {
-      prevVar += "." + item.value;
-    } else if (item.type === IEXPR) {
-      getSymbols(item.value, symbols, options);
-    } else if (prevVar !== null) {
-      if (!contains(symbols, prevVar)) {
-        symbols.push(prevVar);
-      }
-      prevVar = null;
-    }
-  }
-  if (prevVar !== null && !contains(symbols, prevVar)) {
-    symbols.push(prevVar);
-  }
-}
-function Expression(tokens, parser) {
-  this.tokens = tokens;
-  this.parser = parser;
-  this.unaryOps = parser.unaryOps;
-  this.binaryOps = parser.binaryOps;
-  this.ternaryOps = parser.ternaryOps;
-  this.functions = parser.functions;
-}
-Expression.prototype.simplify = function(values) {
-  values = values || {};
-  return new Expression(simplify(this.tokens, this.unaryOps, this.binaryOps, this.ternaryOps, values), this.parser);
-};
-Expression.prototype.substitute = function(variable, expr) {
-  if (!(expr instanceof Expression)) {
-    expr = this.parser.parse(String(expr));
-  }
-  return new Expression(substitute(this.tokens, variable, expr), this.parser);
-};
-Expression.prototype.evaluate = function(values) {
-  values = values || {};
-  return evaluate(this.tokens, this, values);
-};
-Expression.prototype.toString = function() {
-  return expressionToString(this.tokens, false);
-};
-Expression.prototype.symbols = function(options) {
-  options = options || {};
-  var vars = [];
-  getSymbols(this.tokens, vars, options);
-  return vars;
-};
-Expression.prototype.variables = function(options) {
-  options = options || {};
-  var vars = [];
-  getSymbols(this.tokens, vars, options);
-  var functions = this.functions;
-  return vars.filter(function(name) {
-    return !(name in functions);
-  });
-};
-Expression.prototype.toJSFunction = function(param, variables) {
-  var expr = this;
-  var f = new Function(param, "with(this.functions) with (this.ternaryOps) with (this.binaryOps) with (this.unaryOps) { return " + expressionToString(this.simplify(variables).tokens, true) + "; }");
-  return function() {
-    return f.apply(expr, arguments);
-  };
-};
-var TEOF = "TEOF";
-var TOP = "TOP";
-var TNUMBER = "TNUMBER";
-var TSTRING = "TSTRING";
-var TPAREN = "TPAREN";
-var TBRACKET = "TBRACKET";
-var TCOMMA = "TCOMMA";
-var TNAME = "TNAME";
-var TSEMICOLON = "TSEMICOLON";
-function Token(type, value, index) {
-  this.type = type;
-  this.value = value;
-  this.index = index;
-}
-Token.prototype.toString = function() {
-  return this.type + ": " + this.value;
-};
-function TokenStream(parser, expression) {
-  this.pos = 0;
-  this.current = null;
-  this.unaryOps = parser.unaryOps;
-  this.binaryOps = parser.binaryOps;
-  this.ternaryOps = parser.ternaryOps;
-  this.consts = parser.consts;
-  this.expression = expression;
-  this.savedPosition = 0;
-  this.savedCurrent = null;
-  this.options = parser.options;
-  this.parser = parser;
-}
-TokenStream.prototype.newToken = function(type, value, pos) {
-  return new Token(type, value, pos != null ? pos : this.pos);
-};
-TokenStream.prototype.save = function() {
-  this.savedPosition = this.pos;
-  this.savedCurrent = this.current;
-};
-TokenStream.prototype.restore = function() {
-  this.pos = this.savedPosition;
-  this.current = this.savedCurrent;
-};
-TokenStream.prototype.next = function() {
-  if (this.pos >= this.expression.length) {
-    return this.newToken(TEOF, "EOF");
-  }
-  if (this.isWhitespace() || this.isComment()) {
-    return this.next();
-  } else if (this.isRadixInteger() || this.isNumber() || this.isOperator() || this.isString() || this.isParen() || this.isBracket() || this.isComma() || this.isSemicolon() || this.isNamedOp() || this.isConst() || this.isName()) {
-    return this.current;
-  } else {
-    this.parseError('Unknown character "' + this.expression.charAt(this.pos) + '"');
-  }
-};
-TokenStream.prototype.isString = function() {
-  var r = false;
-  var startPos = this.pos;
-  var quote = this.expression.charAt(startPos);
-  if (quote === "'" || quote === '"') {
-    var index = this.expression.indexOf(quote, startPos + 1);
-    while (index >= 0 && this.pos < this.expression.length) {
-      this.pos = index + 1;
-      if (this.expression.charAt(index - 1) !== "\\") {
-        var rawString = this.expression.substring(startPos + 1, index);
-        this.current = this.newToken(TSTRING, this.unescape(rawString), startPos);
-        r = true;
-        break;
-      }
-      index = this.expression.indexOf(quote, index + 1);
-    }
-  }
-  return r;
-};
-TokenStream.prototype.isParen = function() {
-  var c = this.expression.charAt(this.pos);
-  if (c === "(" || c === ")") {
-    this.current = this.newToken(TPAREN, c);
-    this.pos++;
-    return true;
-  }
-  return false;
-};
-TokenStream.prototype.isBracket = function() {
-  var c = this.expression.charAt(this.pos);
-  if ((c === "[" || c === "]") && this.isOperatorEnabled("[")) {
-    this.current = this.newToken(TBRACKET, c);
-    this.pos++;
-    return true;
-  }
-  return false;
-};
-TokenStream.prototype.isComma = function() {
-  var c = this.expression.charAt(this.pos);
-  if (c === ",") {
-    this.current = this.newToken(TCOMMA, ",");
-    this.pos++;
-    return true;
-  }
-  return false;
-};
-TokenStream.prototype.isSemicolon = function() {
-  var c = this.expression.charAt(this.pos);
-  if (c === ";") {
-    this.current = this.newToken(TSEMICOLON, ";");
-    this.pos++;
-    return true;
-  }
-  return false;
-};
-TokenStream.prototype.isConst = function() {
-  var startPos = this.pos;
-  var i = startPos;
-  for (; i < this.expression.length; i++) {
-    var c = this.expression.charAt(i);
-    if (c.toUpperCase() === c.toLowerCase()) {
-      if (i === this.pos || c !== "_" && c !== "." && (c < "0" || c > "9")) {
-        break;
-      }
-    }
-  }
-  if (i > startPos) {
-    var str = this.expression.substring(startPos, i);
-    if (str in this.consts) {
-      this.current = this.newToken(TNUMBER, this.consts[str]);
-      this.pos += str.length;
-      return true;
-    }
-  }
-  return false;
-};
-TokenStream.prototype.isNamedOp = function() {
-  var startPos = this.pos;
-  var i = startPos;
-  for (; i < this.expression.length; i++) {
-    var c = this.expression.charAt(i);
-    if (c.toUpperCase() === c.toLowerCase()) {
-      if (i === this.pos || c !== "_" && (c < "0" || c > "9")) {
-        break;
-      }
-    }
-  }
-  if (i > startPos) {
-    var str = this.expression.substring(startPos, i);
-    if (this.isOperatorEnabled(str) && (str in this.binaryOps || str in this.unaryOps || str in this.ternaryOps)) {
-      this.current = this.newToken(TOP, str);
-      this.pos += str.length;
-      return true;
-    }
-  }
-  return false;
-};
-TokenStream.prototype.isName = function() {
-  var startPos = this.pos;
-  var i = startPos;
-  var hasLetter = false;
-  for (; i < this.expression.length; i++) {
-    var c = this.expression.charAt(i);
-    if (c.toUpperCase() === c.toLowerCase()) {
-      if (i === this.pos && (c === "$" || c === "_")) {
-        if (c === "_") {
-          hasLetter = true;
-        }
-        continue;
-      } else if (i === this.pos || !hasLetter || c !== "_" && (c < "0" || c > "9")) {
-        break;
-      }
-    } else {
-      hasLetter = true;
-    }
-  }
-  if (hasLetter) {
-    var str = this.expression.substring(startPos, i);
-    this.current = this.newToken(TNAME, str);
-    this.pos += str.length;
-    return true;
-  }
-  return false;
-};
-TokenStream.prototype.isWhitespace = function() {
-  var r = false;
-  var c = this.expression.charAt(this.pos);
-  while (c === " " || c === "	" || c === "\n" || c === "\r") {
-    r = true;
-    this.pos++;
-    if (this.pos >= this.expression.length) {
-      break;
-    }
-    c = this.expression.charAt(this.pos);
-  }
-  return r;
-};
-var codePointPattern = /^[0-9a-f]{4}$/i;
-TokenStream.prototype.unescape = function(v2) {
-  var index = v2.indexOf("\\");
-  if (index < 0) {
-    return v2;
-  }
-  var buffer = v2.substring(0, index);
-  while (index >= 0) {
-    var c = v2.charAt(++index);
-    switch (c) {
-      case "'":
-        buffer += "'";
-        break;
-      case '"':
-        buffer += '"';
-        break;
-      case "\\":
-        buffer += "\\";
-        break;
-      case "/":
-        buffer += "/";
-        break;
-      case "b":
-        buffer += "\b";
-        break;
-      case "f":
-        buffer += "\f";
-        break;
-      case "n":
-        buffer += "\n";
-        break;
-      case "r":
-        buffer += "\r";
-        break;
-      case "t":
-        buffer += "	";
-        break;
-      case "u":
-        var codePoint = v2.substring(index + 1, index + 5);
-        if (!codePointPattern.test(codePoint)) {
-          this.parseError("Illegal escape sequence: \\u" + codePoint);
-        }
-        buffer += String.fromCharCode(parseInt(codePoint, 16));
-        index += 4;
-        break;
-      default:
-        throw this.parseError('Illegal escape sequence: "\\' + c + '"');
-    }
-    ++index;
-    var backslash = v2.indexOf("\\", index);
-    buffer += v2.substring(index, backslash < 0 ? v2.length : backslash);
-    index = backslash;
-  }
-  return buffer;
-};
-TokenStream.prototype.isComment = function() {
-  var c = this.expression.charAt(this.pos);
-  if (c === "/" && this.expression.charAt(this.pos + 1) === "*") {
-    this.pos = this.expression.indexOf("*/", this.pos) + 2;
-    if (this.pos === 1) {
-      this.pos = this.expression.length;
-    }
-    return true;
-  }
-  return false;
-};
-TokenStream.prototype.isRadixInteger = function() {
-  var pos = this.pos;
-  if (pos >= this.expression.length - 2 || this.expression.charAt(pos) !== "0") {
-    return false;
-  }
-  ++pos;
-  var radix;
-  var validDigit;
-  if (this.expression.charAt(pos) === "x") {
-    radix = 16;
-    validDigit = /^[0-9a-f]$/i;
-    ++pos;
-  } else if (this.expression.charAt(pos) === "b") {
-    radix = 2;
-    validDigit = /^[01]$/i;
-    ++pos;
-  } else {
-    return false;
-  }
-  var valid = false;
-  var startPos = pos;
-  while (pos < this.expression.length) {
-    var c = this.expression.charAt(pos);
-    if (validDigit.test(c)) {
-      pos++;
-      valid = true;
-    } else {
-      break;
-    }
-  }
-  if (valid) {
-    this.current = this.newToken(TNUMBER, parseInt(this.expression.substring(startPos, pos), radix));
-    this.pos = pos;
-  }
-  return valid;
-};
-TokenStream.prototype.isNumber = function() {
-  var valid = false;
-  var pos = this.pos;
-  var startPos = pos;
-  var resetPos = pos;
-  var foundDot = false;
-  var foundDigits = false;
-  var c;
-  while (pos < this.expression.length) {
-    c = this.expression.charAt(pos);
-    if (c >= "0" && c <= "9" || !foundDot && c === ".") {
-      if (c === ".") {
-        foundDot = true;
-      } else {
-        foundDigits = true;
-      }
-      pos++;
-      valid = foundDigits;
-    } else {
-      break;
-    }
-  }
-  if (valid) {
-    resetPos = pos;
-  }
-  if (c === "e" || c === "E") {
-    pos++;
-    var acceptSign = true;
-    var validExponent = false;
-    while (pos < this.expression.length) {
-      c = this.expression.charAt(pos);
-      if (acceptSign && (c === "+" || c === "-")) {
-        acceptSign = false;
-      } else if (c >= "0" && c <= "9") {
-        validExponent = true;
-        acceptSign = false;
-      } else {
-        break;
-      }
-      pos++;
-    }
-    if (!validExponent) {
-      pos = resetPos;
-    }
-  }
-  if (valid) {
-    this.current = this.newToken(TNUMBER, parseFloat(this.expression.substring(startPos, pos)));
-    this.pos = pos;
-  } else {
-    this.pos = resetPos;
-  }
-  return valid;
-};
-TokenStream.prototype.isOperator = function() {
-  var startPos = this.pos;
-  var c = this.expression.charAt(this.pos);
-  if (c === "+" || c === "-" || c === "*" || c === "/" || c === "%" || c === "^" || c === "?" || c === ":" || c === ".") {
-    this.current = this.newToken(TOP, c);
-  } else if (c === "\u2219" || c === "\u2022") {
-    this.current = this.newToken(TOP, "*");
-  } else if (c === ">") {
-    if (this.expression.charAt(this.pos + 1) === "=") {
-      this.current = this.newToken(TOP, ">=");
-      this.pos++;
-    } else {
-      this.current = this.newToken(TOP, ">");
-    }
-  } else if (c === "<") {
-    if (this.expression.charAt(this.pos + 1) === "=") {
-      this.current = this.newToken(TOP, "<=");
-      this.pos++;
-    } else {
-      this.current = this.newToken(TOP, "<");
-    }
-  } else if (c === "|") {
-    if (this.expression.charAt(this.pos + 1) === "|") {
-      this.current = this.newToken(TOP, "||");
-      this.pos++;
-    } else {
-      return false;
-    }
-  } else if (c === "=") {
-    if (this.expression.charAt(this.pos + 1) === "=") {
-      this.current = this.newToken(TOP, "==");
-      this.pos++;
-    } else {
-      this.current = this.newToken(TOP, c);
-    }
-  } else if (c === "!") {
-    if (this.expression.charAt(this.pos + 1) === "=") {
-      this.current = this.newToken(TOP, "!=");
-      this.pos++;
-    } else {
-      this.current = this.newToken(TOP, c);
-    }
-  } else {
-    return false;
-  }
-  this.pos++;
-  if (this.isOperatorEnabled(this.current.value)) {
-    return true;
-  } else {
-    this.pos = startPos;
-    return false;
-  }
-};
-TokenStream.prototype.isOperatorEnabled = function(op) {
-  return this.parser.isOperatorEnabled(op);
-};
-TokenStream.prototype.getCoordinates = function() {
-  var line = 0;
-  var column;
-  var newline = -1;
-  do {
-    line++;
-    column = this.pos - newline;
-    newline = this.expression.indexOf("\n", newline + 1);
-  } while (newline >= 0 && newline < this.pos);
-  return {
-    line,
-    column
-  };
-};
-TokenStream.prototype.parseError = function(msg) {
-  var coords = this.getCoordinates();
-  throw new Error("parse error [" + coords.line + ":" + coords.column + "]: " + msg);
-};
-function ParserState(parser, tokenStream, options) {
-  this.parser = parser;
-  this.tokens = tokenStream;
-  this.current = null;
-  this.nextToken = null;
-  this.next();
-  this.savedCurrent = null;
-  this.savedNextToken = null;
-  this.allowMemberAccess = options.allowMemberAccess !== false;
-}
-ParserState.prototype.next = function() {
-  this.current = this.nextToken;
-  return this.nextToken = this.tokens.next();
-};
-ParserState.prototype.tokenMatches = function(token, value) {
-  if (typeof value === "undefined") {
-    return true;
-  } else if (Array.isArray(value)) {
-    return contains(value, token.value);
-  } else if (typeof value === "function") {
-    return value(token);
-  } else {
-    return token.value === value;
-  }
-};
-ParserState.prototype.save = function() {
-  this.savedCurrent = this.current;
-  this.savedNextToken = this.nextToken;
-  this.tokens.save();
-};
-ParserState.prototype.restore = function() {
-  this.tokens.restore();
-  this.current = this.savedCurrent;
-  this.nextToken = this.savedNextToken;
-};
-ParserState.prototype.accept = function(type, value) {
-  if (this.nextToken.type === type && this.tokenMatches(this.nextToken, value)) {
-    this.next();
-    return true;
-  }
-  return false;
-};
-ParserState.prototype.expect = function(type, value) {
-  if (!this.accept(type, value)) {
-    var coords = this.tokens.getCoordinates();
-    throw new Error("parse error [" + coords.line + ":" + coords.column + "]: Expected " + (value || type));
-  }
-};
-ParserState.prototype.parseAtom = function(instr) {
-  var unaryOps = this.tokens.unaryOps;
-  function isPrefixOperator(token) {
-    return token.value in unaryOps;
-  }
-  if (this.accept(TNAME) || this.accept(TOP, isPrefixOperator)) {
-    instr.push(new Instruction(IVAR, this.current.value));
-  } else if (this.accept(TNUMBER)) {
-    instr.push(new Instruction(INUMBER, this.current.value));
-  } else if (this.accept(TSTRING)) {
-    instr.push(new Instruction(INUMBER, this.current.value));
-  } else if (this.accept(TPAREN, "(")) {
-    this.parseExpression(instr);
-    this.expect(TPAREN, ")");
-  } else if (this.accept(TBRACKET, "[")) {
-    if (this.accept(TBRACKET, "]")) {
-      instr.push(new Instruction(IARRAY, 0));
-    } else {
-      var argCount = this.parseArrayList(instr);
-      instr.push(new Instruction(IARRAY, argCount));
-    }
-  } else {
-    throw new Error("unexpected " + this.nextToken);
-  }
-};
-ParserState.prototype.parseExpression = function(instr) {
-  var exprInstr = [];
-  if (this.parseUntilEndStatement(instr, exprInstr)) {
-    return;
-  }
-  this.parseVariableAssignmentExpression(exprInstr);
-  if (this.parseUntilEndStatement(instr, exprInstr)) {
-    return;
-  }
-  this.pushExpression(instr, exprInstr);
-};
-ParserState.prototype.pushExpression = function(instr, exprInstr) {
-  for (var i = 0, len = exprInstr.length; i < len; i++) {
-    instr.push(exprInstr[i]);
-  }
-};
-ParserState.prototype.parseUntilEndStatement = function(instr, exprInstr) {
-  if (!this.accept(TSEMICOLON)) return false;
-  if (this.nextToken && this.nextToken.type !== TEOF && !(this.nextToken.type === TPAREN && this.nextToken.value === ")")) {
-    exprInstr.push(new Instruction(IENDSTATEMENT));
-  }
-  if (this.nextToken.type !== TEOF) {
-    this.parseExpression(exprInstr);
-  }
-  instr.push(new Instruction(IEXPR, exprInstr));
-  return true;
-};
-ParserState.prototype.parseArrayList = function(instr) {
-  var argCount = 0;
-  while (!this.accept(TBRACKET, "]")) {
-    this.parseExpression(instr);
-    ++argCount;
-    while (this.accept(TCOMMA)) {
-      this.parseExpression(instr);
-      ++argCount;
-    }
-  }
-  return argCount;
-};
-ParserState.prototype.parseVariableAssignmentExpression = function(instr) {
-  this.parseConditionalExpression(instr);
-  while (this.accept(TOP, "=")) {
-    var varName = instr.pop();
-    var varValue = [];
-    var lastInstrIndex = instr.length - 1;
-    if (varName.type === IFUNCALL) {
-      if (!this.tokens.isOperatorEnabled("()=")) {
-        throw new Error("function definition is not permitted");
-      }
-      for (var i = 0, len = varName.value + 1; i < len; i++) {
-        var index = lastInstrIndex - i;
-        if (instr[index].type === IVAR) {
-          instr[index] = new Instruction(IVARNAME, instr[index].value);
-        }
-      }
-      this.parseVariableAssignmentExpression(varValue);
-      instr.push(new Instruction(IEXPR, varValue));
-      instr.push(new Instruction(IFUNDEF, varName.value));
-      continue;
-    }
-    if (varName.type !== IVAR && varName.type !== IMEMBER) {
-      throw new Error("expected variable for assignment");
-    }
-    this.parseVariableAssignmentExpression(varValue);
-    instr.push(new Instruction(IVARNAME, varName.value));
-    instr.push(new Instruction(IEXPR, varValue));
-    instr.push(binaryInstruction("="));
-  }
-};
-ParserState.prototype.parseConditionalExpression = function(instr) {
-  this.parseOrExpression(instr);
-  while (this.accept(TOP, "?")) {
-    var trueBranch = [];
-    var falseBranch = [];
-    this.parseConditionalExpression(trueBranch);
-    this.expect(TOP, ":");
-    this.parseConditionalExpression(falseBranch);
-    instr.push(new Instruction(IEXPR, trueBranch));
-    instr.push(new Instruction(IEXPR, falseBranch));
-    instr.push(ternaryInstruction("?"));
-  }
-};
-ParserState.prototype.parseOrExpression = function(instr) {
-  this.parseAndExpression(instr);
-  while (this.accept(TOP, "or")) {
-    var falseBranch = [];
-    this.parseAndExpression(falseBranch);
-    instr.push(new Instruction(IEXPR, falseBranch));
-    instr.push(binaryInstruction("or"));
-  }
-};
-ParserState.prototype.parseAndExpression = function(instr) {
-  this.parseComparison(instr);
-  while (this.accept(TOP, "and")) {
-    var trueBranch = [];
-    this.parseComparison(trueBranch);
-    instr.push(new Instruction(IEXPR, trueBranch));
-    instr.push(binaryInstruction("and"));
-  }
-};
-var COMPARISON_OPERATORS = ["==", "!=", "<", "<=", ">=", ">", "in"];
-ParserState.prototype.parseComparison = function(instr) {
-  this.parseAddSub(instr);
-  while (this.accept(TOP, COMPARISON_OPERATORS)) {
-    var op = this.current;
-    this.parseAddSub(instr);
-    instr.push(binaryInstruction(op.value));
-  }
-};
-var ADD_SUB_OPERATORS = ["+", "-", "||"];
-ParserState.prototype.parseAddSub = function(instr) {
-  this.parseTerm(instr);
-  while (this.accept(TOP, ADD_SUB_OPERATORS)) {
-    var op = this.current;
-    this.parseTerm(instr);
-    instr.push(binaryInstruction(op.value));
-  }
-};
-var TERM_OPERATORS = ["*", "/", "%"];
-ParserState.prototype.parseTerm = function(instr) {
-  this.parseFactor(instr);
-  while (this.accept(TOP, TERM_OPERATORS)) {
-    var op = this.current;
-    this.parseFactor(instr);
-    instr.push(binaryInstruction(op.value));
-  }
-};
-ParserState.prototype.parseFactor = function(instr) {
-  var unaryOps = this.tokens.unaryOps;
-  function isPrefixOperator(token) {
-    return token.value in unaryOps;
-  }
-  this.save();
-  if (this.accept(TOP, isPrefixOperator)) {
-    if (this.current.value !== "-" && this.current.value !== "+") {
-      if (this.nextToken.type === TPAREN && this.nextToken.value === "(") {
-        this.restore();
-        this.parseExponential(instr);
-        return;
-      } else if (this.nextToken.type === TSEMICOLON || this.nextToken.type === TCOMMA || this.nextToken.type === TEOF || this.nextToken.type === TPAREN && this.nextToken.value === ")") {
-        this.restore();
-        this.parseAtom(instr);
-        return;
-      }
-    }
-    var op = this.current;
-    this.parseFactor(instr);
-    instr.push(unaryInstruction(op.value));
-  } else {
-    this.parseExponential(instr);
-  }
-};
-ParserState.prototype.parseExponential = function(instr) {
-  this.parsePostfixExpression(instr);
-  while (this.accept(TOP, "^")) {
-    this.parseFactor(instr);
-    instr.push(binaryInstruction("^"));
-  }
-};
-ParserState.prototype.parsePostfixExpression = function(instr) {
-  this.parseFunctionCall(instr);
-  while (this.accept(TOP, "!")) {
-    instr.push(unaryInstruction("!"));
-  }
-};
-ParserState.prototype.parseFunctionCall = function(instr) {
-  var unaryOps = this.tokens.unaryOps;
-  function isPrefixOperator(token) {
-    return token.value in unaryOps;
-  }
-  if (this.accept(TOP, isPrefixOperator)) {
-    var op = this.current;
-    this.parseAtom(instr);
-    instr.push(unaryInstruction(op.value));
-  } else {
-    this.parseMemberExpression(instr);
-    while (this.accept(TPAREN, "(")) {
-      if (this.accept(TPAREN, ")")) {
-        instr.push(new Instruction(IFUNCALL, 0));
-      } else {
-        var argCount = this.parseArgumentList(instr);
-        instr.push(new Instruction(IFUNCALL, argCount));
-      }
-    }
-  }
-};
-ParserState.prototype.parseArgumentList = function(instr) {
-  var argCount = 0;
-  while (!this.accept(TPAREN, ")")) {
-    this.parseExpression(instr);
-    ++argCount;
-    while (this.accept(TCOMMA)) {
-      this.parseExpression(instr);
-      ++argCount;
-    }
-  }
-  return argCount;
-};
-ParserState.prototype.parseMemberExpression = function(instr) {
-  this.parseAtom(instr);
-  while (this.accept(TOP, ".") || this.accept(TBRACKET, "[")) {
-    var op = this.current;
-    if (op.value === ".") {
-      if (!this.allowMemberAccess) {
-        throw new Error('unexpected ".", member access is not permitted');
-      }
-      this.expect(TNAME);
-      instr.push(new Instruction(IMEMBER, this.current.value));
-    } else if (op.value === "[") {
-      if (!this.tokens.isOperatorEnabled("[")) {
-        throw new Error('unexpected "[]", arrays are disabled');
-      }
-      this.parseExpression(instr);
-      this.expect(TBRACKET, "]");
-      instr.push(binaryInstruction("["));
-    } else {
-      throw new Error("unexpected symbol: " + op.value);
-    }
-  }
-};
-function add(a3, b2) {
-  return Number(a3) + Number(b2);
-}
-function sub(a3, b2) {
-  return a3 - b2;
-}
-function mul(a3, b2) {
-  return a3 * b2;
-}
-function div(a3, b2) {
-  return a3 / b2;
-}
-function mod(a3, b2) {
-  return a3 % b2;
-}
-function concat2(a3, b2) {
-  if (Array.isArray(a3) && Array.isArray(b2)) {
-    return a3.concat(b2);
-  }
-  return "" + a3 + b2;
-}
-function equal(a3, b2) {
-  return a3 === b2;
-}
-function notEqual(a3, b2) {
-  return a3 !== b2;
-}
-function greaterThan(a3, b2) {
-  return a3 > b2;
-}
-function lessThan(a3, b2) {
-  return a3 < b2;
-}
-function greaterThanEqual(a3, b2) {
-  return a3 >= b2;
-}
-function lessThanEqual(a3, b2) {
-  return a3 <= b2;
-}
-function andOperator(a3, b2) {
-  return Boolean(a3 && b2);
-}
-function orOperator(a3, b2) {
-  return Boolean(a3 || b2);
-}
-function inOperator(a3, b2) {
-  return contains(b2, a3);
-}
-function sinh(a3) {
-  return (Math.exp(a3) - Math.exp(-a3)) / 2;
-}
-function cosh(a3) {
-  return (Math.exp(a3) + Math.exp(-a3)) / 2;
-}
-function tanh(a3) {
-  if (a3 === Infinity) return 1;
-  if (a3 === -Infinity) return -1;
-  return (Math.exp(a3) - Math.exp(-a3)) / (Math.exp(a3) + Math.exp(-a3));
-}
-function asinh(a3) {
-  if (a3 === -Infinity) return a3;
-  return Math.log(a3 + Math.sqrt(a3 * a3 + 1));
-}
-function acosh(a3) {
-  return Math.log(a3 + Math.sqrt(a3 * a3 - 1));
-}
-function atanh(a3) {
-  return Math.log((1 + a3) / (1 - a3)) / 2;
-}
-function log10(a3) {
-  return Math.log(a3) * Math.LOG10E;
-}
-function neg(a3) {
-  return -a3;
-}
-function not(a3) {
-  return !a3;
-}
-function trunc(a3) {
-  return a3 < 0 ? Math.ceil(a3) : Math.floor(a3);
-}
-function random(a3) {
-  return Math.random() * (a3 || 1);
-}
-function factorial(a3) {
-  return gamma(a3 + 1);
-}
-function isInteger(value) {
-  return isFinite(value) && value === Math.round(value);
-}
-var GAMMA_G = 4.7421875;
-var GAMMA_P = [
-  0.9999999999999971,
-  57.15623566586292,
-  -59.59796035547549,
-  14.136097974741746,
-  -0.4919138160976202,
-  3399464998481189e-20,
-  4652362892704858e-20,
-  -9837447530487956e-20,
-  1580887032249125e-19,
-  -21026444172410488e-20,
-  21743961811521265e-20,
-  -1643181065367639e-19,
-  8441822398385275e-20,
-  -26190838401581408e-21,
-  36899182659531625e-22
-];
-function gamma(n) {
-  var t, x;
-  if (isInteger(n)) {
-    if (n <= 0) {
-      return isFinite(n) ? Infinity : NaN;
-    }
-    if (n > 171) {
-      return Infinity;
-    }
-    var value = n - 2;
-    var res = n - 1;
-    while (value > 1) {
-      res *= value;
-      value--;
-    }
-    if (res === 0) {
-      res = 1;
-    }
-    return res;
-  }
-  if (n < 0.5) {
-    return Math.PI / (Math.sin(Math.PI * n) * gamma(1 - n));
-  }
-  if (n >= 171.35) {
-    return Infinity;
-  }
-  if (n > 85) {
-    var twoN = n * n;
-    var threeN = twoN * n;
-    var fourN = threeN * n;
-    var fiveN = fourN * n;
-    return Math.sqrt(2 * Math.PI / n) * Math.pow(n / Math.E, n) * (1 + 1 / (12 * n) + 1 / (288 * twoN) - 139 / (51840 * threeN) - 571 / (2488320 * fourN) + 163879 / (209018880 * fiveN) + 5246819 / (75246796800 * fiveN * n));
-  }
-  --n;
-  x = GAMMA_P[0];
-  for (var i = 1; i < GAMMA_P.length; ++i) {
-    x += GAMMA_P[i] / (n + i);
-  }
-  t = n + GAMMA_G + 0.5;
-  return Math.sqrt(2 * Math.PI) * Math.pow(t, n + 0.5) * Math.exp(-t) * x;
-}
-function stringOrArrayLength(s) {
-  if (Array.isArray(s)) {
-    return s.length;
-  }
-  return String(s).length;
-}
-function hypot() {
-  var sum = 0;
-  var larg = 0;
-  for (var i = 0; i < arguments.length; i++) {
-    var arg = Math.abs(arguments[i]);
-    var div2;
-    if (larg < arg) {
-      div2 = larg / arg;
-      sum = sum * div2 * div2 + 1;
-      larg = arg;
-    } else if (arg > 0) {
-      div2 = arg / larg;
-      sum += div2 * div2;
-    } else {
-      sum += arg;
-    }
-  }
-  return larg === Infinity ? Infinity : larg * Math.sqrt(sum);
-}
-function condition(cond, yep, nope) {
-  return cond ? yep : nope;
-}
-function roundTo(value, exp) {
-  if (typeof exp === "undefined" || +exp === 0) {
-    return Math.round(value);
-  }
-  value = +value;
-  exp = -+exp;
-  if (isNaN(value) || !(typeof exp === "number" && exp % 1 === 0)) {
-    return NaN;
-  }
-  value = value.toString().split("e");
-  value = Math.round(+(value[0] + "e" + (value[1] ? +value[1] - exp : -exp)));
-  value = value.toString().split("e");
-  return +(value[0] + "e" + (value[1] ? +value[1] + exp : exp));
-}
-function setVar(name, value, variables) {
-  if (variables) variables[name] = value;
-  return value;
-}
-function arrayIndex(array, index) {
-  return array[index | 0];
-}
-function max(array) {
-  if (arguments.length === 1 && Array.isArray(array)) {
-    return Math.max.apply(Math, array);
-  } else {
-    return Math.max.apply(Math, arguments);
-  }
-}
-function min(array) {
-  if (arguments.length === 1 && Array.isArray(array)) {
-    return Math.min.apply(Math, array);
-  } else {
-    return Math.min.apply(Math, arguments);
-  }
-}
-function arrayMap(f, a3) {
-  if (typeof f !== "function") {
-    throw new Error("First argument to map is not a function");
-  }
-  if (!Array.isArray(a3)) {
-    throw new Error("Second argument to map is not an array");
-  }
-  return a3.map(function(x, i) {
-    return f(x, i);
-  });
-}
-function arrayFold(f, init, a3) {
-  if (typeof f !== "function") {
-    throw new Error("First argument to fold is not a function");
-  }
-  if (!Array.isArray(a3)) {
-    throw new Error("Second argument to fold is not an array");
-  }
-  return a3.reduce(function(acc, x, i) {
-    return f(acc, x, i);
-  }, init);
-}
-function arrayFilter(f, a3) {
-  if (typeof f !== "function") {
-    throw new Error("First argument to filter is not a function");
-  }
-  if (!Array.isArray(a3)) {
-    throw new Error("Second argument to filter is not an array");
-  }
-  return a3.filter(function(x, i) {
-    return f(x, i);
-  });
-}
-function stringOrArrayIndexOf(target, s) {
-  if (!(Array.isArray(s) || typeof s === "string")) {
-    throw new Error("Second argument to indexOf is not a string or array");
-  }
-  return s.indexOf(target);
-}
-function arrayJoin(sep, a3) {
-  if (!Array.isArray(a3)) {
-    throw new Error("Second argument to join is not an array");
-  }
-  return a3.join(sep);
-}
-function sign(x) {
-  return (x > 0) - (x < 0) || +x;
-}
-var ONE_THIRD = 1 / 3;
-function cbrt(x) {
-  return x < 0 ? -Math.pow(-x, ONE_THIRD) : Math.pow(x, ONE_THIRD);
-}
-function expm1(x) {
-  return Math.exp(x) - 1;
-}
-function log1p(x) {
-  return Math.log(1 + x);
-}
-function log2(x) {
-  return Math.log(x) / Math.LN2;
-}
-function Parser(options) {
-  this.options = options || {};
-  this.unaryOps = {
-    sin: Math.sin,
-    cos: Math.cos,
-    tan: Math.tan,
-    asin: Math.asin,
-    acos: Math.acos,
-    atan: Math.atan,
-    sinh: Math.sinh || sinh,
-    cosh: Math.cosh || cosh,
-    tanh: Math.tanh || tanh,
-    asinh: Math.asinh || asinh,
-    acosh: Math.acosh || acosh,
-    atanh: Math.atanh || atanh,
-    sqrt: Math.sqrt,
-    cbrt: Math.cbrt || cbrt,
-    log: Math.log,
-    log2: Math.log2 || log2,
-    ln: Math.log,
-    lg: Math.log10 || log10,
-    log10: Math.log10 || log10,
-    expm1: Math.expm1 || expm1,
-    log1p: Math.log1p || log1p,
-    abs: Math.abs,
-    ceil: Math.ceil,
-    floor: Math.floor,
-    round: Math.round,
-    trunc: Math.trunc || trunc,
-    "-": neg,
-    "+": Number,
-    exp: Math.exp,
-    not,
-    length: stringOrArrayLength,
-    "!": factorial,
-    sign: Math.sign || sign
-  };
-  this.binaryOps = {
-    "+": add,
-    "-": sub,
-    "*": mul,
-    "/": div,
-    "%": mod,
-    "^": Math.pow,
-    "||": concat2,
-    "==": equal,
-    "!=": notEqual,
-    ">": greaterThan,
-    "<": lessThan,
-    ">=": greaterThanEqual,
-    "<=": lessThanEqual,
-    and: andOperator,
-    or: orOperator,
-    "in": inOperator,
-    "=": setVar,
-    "[": arrayIndex
-  };
-  this.ternaryOps = {
-    "?": condition
-  };
-  this.functions = {
-    random,
-    fac: factorial,
-    min,
-    max,
-    hypot: Math.hypot || hypot,
-    pyt: Math.hypot || hypot,
-    // backward compat
-    pow: Math.pow,
-    atan2: Math.atan2,
-    "if": condition,
-    gamma,
-    roundTo,
-    map: arrayMap,
-    fold: arrayFold,
-    filter: arrayFilter,
-    indexOf: stringOrArrayIndexOf,
-    join: arrayJoin
-  };
-  this.consts = {
-    E: Math.E,
-    PI: Math.PI,
-    "true": true,
-    "false": false
-  };
-}
-Parser.prototype.parse = function(expr) {
-  var instr = [];
-  var parserState2 = new ParserState(
-    this,
-    new TokenStream(this, expr),
-    { allowMemberAccess: this.options.allowMemberAccess }
-  );
-  parserState2.parseExpression(instr);
-  parserState2.expect(TEOF, "EOF");
-  return new Expression(instr, this);
-};
-Parser.prototype.evaluate = function(expr, variables) {
-  return this.parse(expr).evaluate(variables);
-};
-var sharedParser = new Parser();
-Parser.parse = function(expr) {
-  return sharedParser.parse(expr);
-};
-Parser.evaluate = function(expr, variables) {
-  return sharedParser.parse(expr).evaluate(variables);
-};
-var optionNameMap = {
-  "+": "add",
-  "-": "subtract",
-  "*": "multiply",
-  "/": "divide",
-  "%": "remainder",
-  "^": "power",
-  "!": "factorial",
-  "<": "comparison",
-  ">": "comparison",
-  "<=": "comparison",
-  ">=": "comparison",
-  "==": "comparison",
-  "!=": "comparison",
-  "||": "concatenate",
-  "and": "logical",
-  "or": "logical",
-  "not": "logical",
-  "?": "conditional",
-  ":": "conditional",
-  "=": "assignment",
-  "[": "array",
-  "()=": "fndef"
-};
-function getOptionName(op) {
-  return optionNameMap.hasOwnProperty(op) ? optionNameMap[op] : op;
-}
-Parser.prototype.isOperatorEnabled = function(op) {
-  var optionName = getOptionName(op);
-  var operators = this.options.operators || {};
-  return !(optionName in operators) || !!operators[optionName];
 };
 
 // node_modules/@angular/forms/fesm2022/forms.mjs
@@ -67085,6 +65474,1612 @@ var ReactiveFormsModule = class _ReactiveFormsModule {
   }], null, null);
 })();
 
+// node_modules/expr-eval/dist/index.mjs
+var INUMBER = "INUMBER";
+var IOP1 = "IOP1";
+var IOP2 = "IOP2";
+var IOP3 = "IOP3";
+var IVAR = "IVAR";
+var IVARNAME = "IVARNAME";
+var IFUNCALL = "IFUNCALL";
+var IFUNDEF = "IFUNDEF";
+var IEXPR = "IEXPR";
+var IEXPREVAL = "IEXPREVAL";
+var IMEMBER = "IMEMBER";
+var IENDSTATEMENT = "IENDSTATEMENT";
+var IARRAY = "IARRAY";
+function Instruction(type, value) {
+  this.type = type;
+  this.value = value !== void 0 && value !== null ? value : 0;
+}
+Instruction.prototype.toString = function() {
+  switch (this.type) {
+    case INUMBER:
+    case IOP1:
+    case IOP2:
+    case IOP3:
+    case IVAR:
+    case IVARNAME:
+    case IENDSTATEMENT:
+      return this.value;
+    case IFUNCALL:
+      return "CALL " + this.value;
+    case IFUNDEF:
+      return "DEF " + this.value;
+    case IARRAY:
+      return "ARRAY " + this.value;
+    case IMEMBER:
+      return "." + this.value;
+    default:
+      return "Invalid Instruction";
+  }
+};
+function unaryInstruction(value) {
+  return new Instruction(IOP1, value);
+}
+function binaryInstruction(value) {
+  return new Instruction(IOP2, value);
+}
+function ternaryInstruction(value) {
+  return new Instruction(IOP3, value);
+}
+function simplify(tokens, unaryOps, binaryOps, ternaryOps, values) {
+  var nstack = [];
+  var newexpression = [];
+  var n1, n2, n3;
+  var f;
+  for (var i = 0; i < tokens.length; i++) {
+    var item = tokens[i];
+    var type = item.type;
+    if (type === INUMBER || type === IVARNAME) {
+      if (Array.isArray(item.value)) {
+        nstack.push.apply(nstack, simplify(item.value.map(function(x) {
+          return new Instruction(INUMBER, x);
+        }).concat(new Instruction(IARRAY, item.value.length)), unaryOps, binaryOps, ternaryOps, values));
+      } else {
+        nstack.push(item);
+      }
+    } else if (type === IVAR && values.hasOwnProperty(item.value)) {
+      item = new Instruction(INUMBER, values[item.value]);
+      nstack.push(item);
+    } else if (type === IOP2 && nstack.length > 1) {
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      f = binaryOps[item.value];
+      item = new Instruction(INUMBER, f(n1.value, n2.value));
+      nstack.push(item);
+    } else if (type === IOP3 && nstack.length > 2) {
+      n3 = nstack.pop();
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      if (item.value === "?") {
+        nstack.push(n1.value ? n2.value : n3.value);
+      } else {
+        f = ternaryOps[item.value];
+        item = new Instruction(INUMBER, f(n1.value, n2.value, n3.value));
+        nstack.push(item);
+      }
+    } else if (type === IOP1 && nstack.length > 0) {
+      n1 = nstack.pop();
+      f = unaryOps[item.value];
+      item = new Instruction(INUMBER, f(n1.value));
+      nstack.push(item);
+    } else if (type === IEXPR) {
+      while (nstack.length > 0) {
+        newexpression.push(nstack.shift());
+      }
+      newexpression.push(new Instruction(IEXPR, simplify(item.value, unaryOps, binaryOps, ternaryOps, values)));
+    } else if (type === IMEMBER && nstack.length > 0) {
+      n1 = nstack.pop();
+      nstack.push(new Instruction(INUMBER, n1.value[item.value]));
+    } else {
+      while (nstack.length > 0) {
+        newexpression.push(nstack.shift());
+      }
+      newexpression.push(item);
+    }
+  }
+  while (nstack.length > 0) {
+    newexpression.push(nstack.shift());
+  }
+  return newexpression;
+}
+function substitute(tokens, variable, expr) {
+  var newexpression = [];
+  for (var i = 0; i < tokens.length; i++) {
+    var item = tokens[i];
+    var type = item.type;
+    if (type === IVAR && item.value === variable) {
+      for (var j2 = 0; j2 < expr.tokens.length; j2++) {
+        var expritem = expr.tokens[j2];
+        var replitem;
+        if (expritem.type === IOP1) {
+          replitem = unaryInstruction(expritem.value);
+        } else if (expritem.type === IOP2) {
+          replitem = binaryInstruction(expritem.value);
+        } else if (expritem.type === IOP3) {
+          replitem = ternaryInstruction(expritem.value);
+        } else {
+          replitem = new Instruction(expritem.type, expritem.value);
+        }
+        newexpression.push(replitem);
+      }
+    } else if (type === IEXPR) {
+      newexpression.push(new Instruction(IEXPR, substitute(item.value, variable, expr)));
+    } else {
+      newexpression.push(item);
+    }
+  }
+  return newexpression;
+}
+function evaluate(tokens, expr, values) {
+  var nstack = [];
+  var n1, n2, n3;
+  var f, args, argCount;
+  if (isExpressionEvaluator(tokens)) {
+    return resolveExpression(tokens, values);
+  }
+  var numTokens = tokens.length;
+  for (var i = 0; i < numTokens; i++) {
+    var item = tokens[i];
+    var type = item.type;
+    if (type === INUMBER || type === IVARNAME) {
+      nstack.push(item.value);
+    } else if (type === IOP2) {
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      if (item.value === "and") {
+        nstack.push(n1 ? !!evaluate(n2, expr, values) : false);
+      } else if (item.value === "or") {
+        nstack.push(n1 ? true : !!evaluate(n2, expr, values));
+      } else if (item.value === "=") {
+        f = expr.binaryOps[item.value];
+        nstack.push(f(n1, evaluate(n2, expr, values), values));
+      } else {
+        f = expr.binaryOps[item.value];
+        nstack.push(f(resolveExpression(n1, values), resolveExpression(n2, values)));
+      }
+    } else if (type === IOP3) {
+      n3 = nstack.pop();
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      if (item.value === "?") {
+        nstack.push(evaluate(n1 ? n2 : n3, expr, values));
+      } else {
+        f = expr.ternaryOps[item.value];
+        nstack.push(f(resolveExpression(n1, values), resolveExpression(n2, values), resolveExpression(n3, values)));
+      }
+    } else if (type === IVAR) {
+      if (item.value in expr.functions) {
+        nstack.push(expr.functions[item.value]);
+      } else if (item.value in expr.unaryOps && expr.parser.isOperatorEnabled(item.value)) {
+        nstack.push(expr.unaryOps[item.value]);
+      } else {
+        var v2 = values[item.value];
+        if (v2 !== void 0) {
+          nstack.push(v2);
+        } else {
+          throw new Error("undefined variable: " + item.value);
+        }
+      }
+    } else if (type === IOP1) {
+      n1 = nstack.pop();
+      f = expr.unaryOps[item.value];
+      nstack.push(f(resolveExpression(n1, values)));
+    } else if (type === IFUNCALL) {
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(resolveExpression(nstack.pop(), values));
+      }
+      f = nstack.pop();
+      if (f.apply && f.call) {
+        nstack.push(f.apply(void 0, args));
+      } else {
+        throw new Error(f + " is not a function");
+      }
+    } else if (type === IFUNDEF) {
+      nstack.push((function() {
+        var n22 = nstack.pop();
+        var args2 = [];
+        var argCount2 = item.value;
+        while (argCount2-- > 0) {
+          args2.unshift(nstack.pop());
+        }
+        var n12 = nstack.pop();
+        var f2 = function() {
+          var scope = Object.assign({}, values);
+          for (var i2 = 0, len = args2.length; i2 < len; i2++) {
+            scope[args2[i2]] = arguments[i2];
+          }
+          return evaluate(n22, expr, scope);
+        };
+        Object.defineProperty(f2, "name", {
+          value: n12,
+          writable: false
+        });
+        values[n12] = f2;
+        return f2;
+      })());
+    } else if (type === IEXPR) {
+      nstack.push(createExpressionEvaluator(item, expr));
+    } else if (type === IEXPREVAL) {
+      nstack.push(item);
+    } else if (type === IMEMBER) {
+      n1 = nstack.pop();
+      nstack.push(n1[item.value]);
+    } else if (type === IENDSTATEMENT) {
+      nstack.pop();
+    } else if (type === IARRAY) {
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(nstack.pop());
+      }
+      nstack.push(args);
+    } else {
+      throw new Error("invalid Expression");
+    }
+  }
+  if (nstack.length > 1) {
+    throw new Error("invalid Expression (parity)");
+  }
+  return nstack[0] === 0 ? 0 : resolveExpression(nstack[0], values);
+}
+function createExpressionEvaluator(token, expr, values) {
+  if (isExpressionEvaluator(token)) return token;
+  return {
+    type: IEXPREVAL,
+    value: function(scope) {
+      return evaluate(token.value, expr, scope);
+    }
+  };
+}
+function isExpressionEvaluator(n) {
+  return n && n.type === IEXPREVAL;
+}
+function resolveExpression(n, values) {
+  return isExpressionEvaluator(n) ? n.value(values) : n;
+}
+function expressionToString(tokens, toJS) {
+  var nstack = [];
+  var n1, n2, n3;
+  var f, args, argCount;
+  for (var i = 0; i < tokens.length; i++) {
+    var item = tokens[i];
+    var type = item.type;
+    if (type === INUMBER) {
+      if (typeof item.value === "number" && item.value < 0) {
+        nstack.push("(" + item.value + ")");
+      } else if (Array.isArray(item.value)) {
+        nstack.push("[" + item.value.map(escapeValue).join(", ") + "]");
+      } else {
+        nstack.push(escapeValue(item.value));
+      }
+    } else if (type === IOP2) {
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      f = item.value;
+      if (toJS) {
+        if (f === "^") {
+          nstack.push("Math.pow(" + n1 + ", " + n2 + ")");
+        } else if (f === "and") {
+          nstack.push("(!!" + n1 + " && !!" + n2 + ")");
+        } else if (f === "or") {
+          nstack.push("(!!" + n1 + " || !!" + n2 + ")");
+        } else if (f === "||") {
+          nstack.push("(function(a,b){ return Array.isArray(a) && Array.isArray(b) ? a.concat(b) : String(a) + String(b); }((" + n1 + "),(" + n2 + ")))");
+        } else if (f === "==") {
+          nstack.push("(" + n1 + " === " + n2 + ")");
+        } else if (f === "!=") {
+          nstack.push("(" + n1 + " !== " + n2 + ")");
+        } else if (f === "[") {
+          nstack.push(n1 + "[(" + n2 + ") | 0]");
+        } else {
+          nstack.push("(" + n1 + " " + f + " " + n2 + ")");
+        }
+      } else {
+        if (f === "[") {
+          nstack.push(n1 + "[" + n2 + "]");
+        } else {
+          nstack.push("(" + n1 + " " + f + " " + n2 + ")");
+        }
+      }
+    } else if (type === IOP3) {
+      n3 = nstack.pop();
+      n2 = nstack.pop();
+      n1 = nstack.pop();
+      f = item.value;
+      if (f === "?") {
+        nstack.push("(" + n1 + " ? " + n2 + " : " + n3 + ")");
+      } else {
+        throw new Error("invalid Expression");
+      }
+    } else if (type === IVAR || type === IVARNAME) {
+      nstack.push(item.value);
+    } else if (type === IOP1) {
+      n1 = nstack.pop();
+      f = item.value;
+      if (f === "-" || f === "+") {
+        nstack.push("(" + f + n1 + ")");
+      } else if (toJS) {
+        if (f === "not") {
+          nstack.push("(!" + n1 + ")");
+        } else if (f === "!") {
+          nstack.push("fac(" + n1 + ")");
+        } else {
+          nstack.push(f + "(" + n1 + ")");
+        }
+      } else if (f === "!") {
+        nstack.push("(" + n1 + "!)");
+      } else {
+        nstack.push("(" + f + " " + n1 + ")");
+      }
+    } else if (type === IFUNCALL) {
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(nstack.pop());
+      }
+      f = nstack.pop();
+      nstack.push(f + "(" + args.join(", ") + ")");
+    } else if (type === IFUNDEF) {
+      n2 = nstack.pop();
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(nstack.pop());
+      }
+      n1 = nstack.pop();
+      if (toJS) {
+        nstack.push("(" + n1 + " = function(" + args.join(", ") + ") { return " + n2 + " })");
+      } else {
+        nstack.push("(" + n1 + "(" + args.join(", ") + ") = " + n2 + ")");
+      }
+    } else if (type === IMEMBER) {
+      n1 = nstack.pop();
+      nstack.push(n1 + "." + item.value);
+    } else if (type === IARRAY) {
+      argCount = item.value;
+      args = [];
+      while (argCount-- > 0) {
+        args.unshift(nstack.pop());
+      }
+      nstack.push("[" + args.join(", ") + "]");
+    } else if (type === IEXPR) {
+      nstack.push("(" + expressionToString(item.value, toJS) + ")");
+    } else if (type === IENDSTATEMENT) ;
+    else {
+      throw new Error("invalid Expression");
+    }
+  }
+  if (nstack.length > 1) {
+    if (toJS) {
+      nstack = [nstack.join(",")];
+    } else {
+      nstack = [nstack.join(";")];
+    }
+  }
+  return String(nstack[0]);
+}
+function escapeValue(v2) {
+  if (typeof v2 === "string") {
+    return JSON.stringify(v2).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+  }
+  return v2;
+}
+function contains(array, obj) {
+  for (var i = 0; i < array.length; i++) {
+    if (array[i] === obj) {
+      return true;
+    }
+  }
+  return false;
+}
+function getSymbols(tokens, symbols, options) {
+  options = options || {};
+  var withMembers = !!options.withMembers;
+  var prevVar = null;
+  for (var i = 0; i < tokens.length; i++) {
+    var item = tokens[i];
+    if (item.type === IVAR || item.type === IVARNAME) {
+      if (!withMembers && !contains(symbols, item.value)) {
+        symbols.push(item.value);
+      } else if (prevVar !== null) {
+        if (!contains(symbols, prevVar)) {
+          symbols.push(prevVar);
+        }
+        prevVar = item.value;
+      } else {
+        prevVar = item.value;
+      }
+    } else if (item.type === IMEMBER && withMembers && prevVar !== null) {
+      prevVar += "." + item.value;
+    } else if (item.type === IEXPR) {
+      getSymbols(item.value, symbols, options);
+    } else if (prevVar !== null) {
+      if (!contains(symbols, prevVar)) {
+        symbols.push(prevVar);
+      }
+      prevVar = null;
+    }
+  }
+  if (prevVar !== null && !contains(symbols, prevVar)) {
+    symbols.push(prevVar);
+  }
+}
+function Expression(tokens, parser) {
+  this.tokens = tokens;
+  this.parser = parser;
+  this.unaryOps = parser.unaryOps;
+  this.binaryOps = parser.binaryOps;
+  this.ternaryOps = parser.ternaryOps;
+  this.functions = parser.functions;
+}
+Expression.prototype.simplify = function(values) {
+  values = values || {};
+  return new Expression(simplify(this.tokens, this.unaryOps, this.binaryOps, this.ternaryOps, values), this.parser);
+};
+Expression.prototype.substitute = function(variable, expr) {
+  if (!(expr instanceof Expression)) {
+    expr = this.parser.parse(String(expr));
+  }
+  return new Expression(substitute(this.tokens, variable, expr), this.parser);
+};
+Expression.prototype.evaluate = function(values) {
+  values = values || {};
+  return evaluate(this.tokens, this, values);
+};
+Expression.prototype.toString = function() {
+  return expressionToString(this.tokens, false);
+};
+Expression.prototype.symbols = function(options) {
+  options = options || {};
+  var vars = [];
+  getSymbols(this.tokens, vars, options);
+  return vars;
+};
+Expression.prototype.variables = function(options) {
+  options = options || {};
+  var vars = [];
+  getSymbols(this.tokens, vars, options);
+  var functions = this.functions;
+  return vars.filter(function(name) {
+    return !(name in functions);
+  });
+};
+Expression.prototype.toJSFunction = function(param, variables) {
+  var expr = this;
+  var f = new Function(param, "with(this.functions) with (this.ternaryOps) with (this.binaryOps) with (this.unaryOps) { return " + expressionToString(this.simplify(variables).tokens, true) + "; }");
+  return function() {
+    return f.apply(expr, arguments);
+  };
+};
+var TEOF = "TEOF";
+var TOP = "TOP";
+var TNUMBER = "TNUMBER";
+var TSTRING = "TSTRING";
+var TPAREN = "TPAREN";
+var TBRACKET = "TBRACKET";
+var TCOMMA = "TCOMMA";
+var TNAME = "TNAME";
+var TSEMICOLON = "TSEMICOLON";
+function Token(type, value, index) {
+  this.type = type;
+  this.value = value;
+  this.index = index;
+}
+Token.prototype.toString = function() {
+  return this.type + ": " + this.value;
+};
+function TokenStream(parser, expression) {
+  this.pos = 0;
+  this.current = null;
+  this.unaryOps = parser.unaryOps;
+  this.binaryOps = parser.binaryOps;
+  this.ternaryOps = parser.ternaryOps;
+  this.consts = parser.consts;
+  this.expression = expression;
+  this.savedPosition = 0;
+  this.savedCurrent = null;
+  this.options = parser.options;
+  this.parser = parser;
+}
+TokenStream.prototype.newToken = function(type, value, pos) {
+  return new Token(type, value, pos != null ? pos : this.pos);
+};
+TokenStream.prototype.save = function() {
+  this.savedPosition = this.pos;
+  this.savedCurrent = this.current;
+};
+TokenStream.prototype.restore = function() {
+  this.pos = this.savedPosition;
+  this.current = this.savedCurrent;
+};
+TokenStream.prototype.next = function() {
+  if (this.pos >= this.expression.length) {
+    return this.newToken(TEOF, "EOF");
+  }
+  if (this.isWhitespace() || this.isComment()) {
+    return this.next();
+  } else if (this.isRadixInteger() || this.isNumber() || this.isOperator() || this.isString() || this.isParen() || this.isBracket() || this.isComma() || this.isSemicolon() || this.isNamedOp() || this.isConst() || this.isName()) {
+    return this.current;
+  } else {
+    this.parseError('Unknown character "' + this.expression.charAt(this.pos) + '"');
+  }
+};
+TokenStream.prototype.isString = function() {
+  var r = false;
+  var startPos = this.pos;
+  var quote = this.expression.charAt(startPos);
+  if (quote === "'" || quote === '"') {
+    var index = this.expression.indexOf(quote, startPos + 1);
+    while (index >= 0 && this.pos < this.expression.length) {
+      this.pos = index + 1;
+      if (this.expression.charAt(index - 1) !== "\\") {
+        var rawString = this.expression.substring(startPos + 1, index);
+        this.current = this.newToken(TSTRING, this.unescape(rawString), startPos);
+        r = true;
+        break;
+      }
+      index = this.expression.indexOf(quote, index + 1);
+    }
+  }
+  return r;
+};
+TokenStream.prototype.isParen = function() {
+  var c = this.expression.charAt(this.pos);
+  if (c === "(" || c === ")") {
+    this.current = this.newToken(TPAREN, c);
+    this.pos++;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isBracket = function() {
+  var c = this.expression.charAt(this.pos);
+  if ((c === "[" || c === "]") && this.isOperatorEnabled("[")) {
+    this.current = this.newToken(TBRACKET, c);
+    this.pos++;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isComma = function() {
+  var c = this.expression.charAt(this.pos);
+  if (c === ",") {
+    this.current = this.newToken(TCOMMA, ",");
+    this.pos++;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isSemicolon = function() {
+  var c = this.expression.charAt(this.pos);
+  if (c === ";") {
+    this.current = this.newToken(TSEMICOLON, ";");
+    this.pos++;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isConst = function() {
+  var startPos = this.pos;
+  var i = startPos;
+  for (; i < this.expression.length; i++) {
+    var c = this.expression.charAt(i);
+    if (c.toUpperCase() === c.toLowerCase()) {
+      if (i === this.pos || c !== "_" && c !== "." && (c < "0" || c > "9")) {
+        break;
+      }
+    }
+  }
+  if (i > startPos) {
+    var str = this.expression.substring(startPos, i);
+    if (str in this.consts) {
+      this.current = this.newToken(TNUMBER, this.consts[str]);
+      this.pos += str.length;
+      return true;
+    }
+  }
+  return false;
+};
+TokenStream.prototype.isNamedOp = function() {
+  var startPos = this.pos;
+  var i = startPos;
+  for (; i < this.expression.length; i++) {
+    var c = this.expression.charAt(i);
+    if (c.toUpperCase() === c.toLowerCase()) {
+      if (i === this.pos || c !== "_" && (c < "0" || c > "9")) {
+        break;
+      }
+    }
+  }
+  if (i > startPos) {
+    var str = this.expression.substring(startPos, i);
+    if (this.isOperatorEnabled(str) && (str in this.binaryOps || str in this.unaryOps || str in this.ternaryOps)) {
+      this.current = this.newToken(TOP, str);
+      this.pos += str.length;
+      return true;
+    }
+  }
+  return false;
+};
+TokenStream.prototype.isName = function() {
+  var startPos = this.pos;
+  var i = startPos;
+  var hasLetter = false;
+  for (; i < this.expression.length; i++) {
+    var c = this.expression.charAt(i);
+    if (c.toUpperCase() === c.toLowerCase()) {
+      if (i === this.pos && (c === "$" || c === "_")) {
+        if (c === "_") {
+          hasLetter = true;
+        }
+        continue;
+      } else if (i === this.pos || !hasLetter || c !== "_" && (c < "0" || c > "9")) {
+        break;
+      }
+    } else {
+      hasLetter = true;
+    }
+  }
+  if (hasLetter) {
+    var str = this.expression.substring(startPos, i);
+    this.current = this.newToken(TNAME, str);
+    this.pos += str.length;
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isWhitespace = function() {
+  var r = false;
+  var c = this.expression.charAt(this.pos);
+  while (c === " " || c === "	" || c === "\n" || c === "\r") {
+    r = true;
+    this.pos++;
+    if (this.pos >= this.expression.length) {
+      break;
+    }
+    c = this.expression.charAt(this.pos);
+  }
+  return r;
+};
+var codePointPattern = /^[0-9a-f]{4}$/i;
+TokenStream.prototype.unescape = function(v2) {
+  var index = v2.indexOf("\\");
+  if (index < 0) {
+    return v2;
+  }
+  var buffer = v2.substring(0, index);
+  while (index >= 0) {
+    var c = v2.charAt(++index);
+    switch (c) {
+      case "'":
+        buffer += "'";
+        break;
+      case '"':
+        buffer += '"';
+        break;
+      case "\\":
+        buffer += "\\";
+        break;
+      case "/":
+        buffer += "/";
+        break;
+      case "b":
+        buffer += "\b";
+        break;
+      case "f":
+        buffer += "\f";
+        break;
+      case "n":
+        buffer += "\n";
+        break;
+      case "r":
+        buffer += "\r";
+        break;
+      case "t":
+        buffer += "	";
+        break;
+      case "u":
+        var codePoint = v2.substring(index + 1, index + 5);
+        if (!codePointPattern.test(codePoint)) {
+          this.parseError("Illegal escape sequence: \\u" + codePoint);
+        }
+        buffer += String.fromCharCode(parseInt(codePoint, 16));
+        index += 4;
+        break;
+      default:
+        throw this.parseError('Illegal escape sequence: "\\' + c + '"');
+    }
+    ++index;
+    var backslash = v2.indexOf("\\", index);
+    buffer += v2.substring(index, backslash < 0 ? v2.length : backslash);
+    index = backslash;
+  }
+  return buffer;
+};
+TokenStream.prototype.isComment = function() {
+  var c = this.expression.charAt(this.pos);
+  if (c === "/" && this.expression.charAt(this.pos + 1) === "*") {
+    this.pos = this.expression.indexOf("*/", this.pos) + 2;
+    if (this.pos === 1) {
+      this.pos = this.expression.length;
+    }
+    return true;
+  }
+  return false;
+};
+TokenStream.prototype.isRadixInteger = function() {
+  var pos = this.pos;
+  if (pos >= this.expression.length - 2 || this.expression.charAt(pos) !== "0") {
+    return false;
+  }
+  ++pos;
+  var radix;
+  var validDigit;
+  if (this.expression.charAt(pos) === "x") {
+    radix = 16;
+    validDigit = /^[0-9a-f]$/i;
+    ++pos;
+  } else if (this.expression.charAt(pos) === "b") {
+    radix = 2;
+    validDigit = /^[01]$/i;
+    ++pos;
+  } else {
+    return false;
+  }
+  var valid = false;
+  var startPos = pos;
+  while (pos < this.expression.length) {
+    var c = this.expression.charAt(pos);
+    if (validDigit.test(c)) {
+      pos++;
+      valid = true;
+    } else {
+      break;
+    }
+  }
+  if (valid) {
+    this.current = this.newToken(TNUMBER, parseInt(this.expression.substring(startPos, pos), radix));
+    this.pos = pos;
+  }
+  return valid;
+};
+TokenStream.prototype.isNumber = function() {
+  var valid = false;
+  var pos = this.pos;
+  var startPos = pos;
+  var resetPos = pos;
+  var foundDot = false;
+  var foundDigits = false;
+  var c;
+  while (pos < this.expression.length) {
+    c = this.expression.charAt(pos);
+    if (c >= "0" && c <= "9" || !foundDot && c === ".") {
+      if (c === ".") {
+        foundDot = true;
+      } else {
+        foundDigits = true;
+      }
+      pos++;
+      valid = foundDigits;
+    } else {
+      break;
+    }
+  }
+  if (valid) {
+    resetPos = pos;
+  }
+  if (c === "e" || c === "E") {
+    pos++;
+    var acceptSign = true;
+    var validExponent = false;
+    while (pos < this.expression.length) {
+      c = this.expression.charAt(pos);
+      if (acceptSign && (c === "+" || c === "-")) {
+        acceptSign = false;
+      } else if (c >= "0" && c <= "9") {
+        validExponent = true;
+        acceptSign = false;
+      } else {
+        break;
+      }
+      pos++;
+    }
+    if (!validExponent) {
+      pos = resetPos;
+    }
+  }
+  if (valid) {
+    this.current = this.newToken(TNUMBER, parseFloat(this.expression.substring(startPos, pos)));
+    this.pos = pos;
+  } else {
+    this.pos = resetPos;
+  }
+  return valid;
+};
+TokenStream.prototype.isOperator = function() {
+  var startPos = this.pos;
+  var c = this.expression.charAt(this.pos);
+  if (c === "+" || c === "-" || c === "*" || c === "/" || c === "%" || c === "^" || c === "?" || c === ":" || c === ".") {
+    this.current = this.newToken(TOP, c);
+  } else if (c === "\u2219" || c === "\u2022") {
+    this.current = this.newToken(TOP, "*");
+  } else if (c === ">") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, ">=");
+      this.pos++;
+    } else {
+      this.current = this.newToken(TOP, ">");
+    }
+  } else if (c === "<") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, "<=");
+      this.pos++;
+    } else {
+      this.current = this.newToken(TOP, "<");
+    }
+  } else if (c === "|") {
+    if (this.expression.charAt(this.pos + 1) === "|") {
+      this.current = this.newToken(TOP, "||");
+      this.pos++;
+    } else {
+      return false;
+    }
+  } else if (c === "=") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, "==");
+      this.pos++;
+    } else {
+      this.current = this.newToken(TOP, c);
+    }
+  } else if (c === "!") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, "!=");
+      this.pos++;
+    } else {
+      this.current = this.newToken(TOP, c);
+    }
+  } else {
+    return false;
+  }
+  this.pos++;
+  if (this.isOperatorEnabled(this.current.value)) {
+    return true;
+  } else {
+    this.pos = startPos;
+    return false;
+  }
+};
+TokenStream.prototype.isOperatorEnabled = function(op) {
+  return this.parser.isOperatorEnabled(op);
+};
+TokenStream.prototype.getCoordinates = function() {
+  var line = 0;
+  var column;
+  var newline = -1;
+  do {
+    line++;
+    column = this.pos - newline;
+    newline = this.expression.indexOf("\n", newline + 1);
+  } while (newline >= 0 && newline < this.pos);
+  return {
+    line,
+    column
+  };
+};
+TokenStream.prototype.parseError = function(msg) {
+  var coords = this.getCoordinates();
+  throw new Error("parse error [" + coords.line + ":" + coords.column + "]: " + msg);
+};
+function ParserState(parser, tokenStream, options) {
+  this.parser = parser;
+  this.tokens = tokenStream;
+  this.current = null;
+  this.nextToken = null;
+  this.next();
+  this.savedCurrent = null;
+  this.savedNextToken = null;
+  this.allowMemberAccess = options.allowMemberAccess !== false;
+}
+ParserState.prototype.next = function() {
+  this.current = this.nextToken;
+  return this.nextToken = this.tokens.next();
+};
+ParserState.prototype.tokenMatches = function(token, value) {
+  if (typeof value === "undefined") {
+    return true;
+  } else if (Array.isArray(value)) {
+    return contains(value, token.value);
+  } else if (typeof value === "function") {
+    return value(token);
+  } else {
+    return token.value === value;
+  }
+};
+ParserState.prototype.save = function() {
+  this.savedCurrent = this.current;
+  this.savedNextToken = this.nextToken;
+  this.tokens.save();
+};
+ParserState.prototype.restore = function() {
+  this.tokens.restore();
+  this.current = this.savedCurrent;
+  this.nextToken = this.savedNextToken;
+};
+ParserState.prototype.accept = function(type, value) {
+  if (this.nextToken.type === type && this.tokenMatches(this.nextToken, value)) {
+    this.next();
+    return true;
+  }
+  return false;
+};
+ParserState.prototype.expect = function(type, value) {
+  if (!this.accept(type, value)) {
+    var coords = this.tokens.getCoordinates();
+    throw new Error("parse error [" + coords.line + ":" + coords.column + "]: Expected " + (value || type));
+  }
+};
+ParserState.prototype.parseAtom = function(instr) {
+  var unaryOps = this.tokens.unaryOps;
+  function isPrefixOperator(token) {
+    return token.value in unaryOps;
+  }
+  if (this.accept(TNAME) || this.accept(TOP, isPrefixOperator)) {
+    instr.push(new Instruction(IVAR, this.current.value));
+  } else if (this.accept(TNUMBER)) {
+    instr.push(new Instruction(INUMBER, this.current.value));
+  } else if (this.accept(TSTRING)) {
+    instr.push(new Instruction(INUMBER, this.current.value));
+  } else if (this.accept(TPAREN, "(")) {
+    this.parseExpression(instr);
+    this.expect(TPAREN, ")");
+  } else if (this.accept(TBRACKET, "[")) {
+    if (this.accept(TBRACKET, "]")) {
+      instr.push(new Instruction(IARRAY, 0));
+    } else {
+      var argCount = this.parseArrayList(instr);
+      instr.push(new Instruction(IARRAY, argCount));
+    }
+  } else {
+    throw new Error("unexpected " + this.nextToken);
+  }
+};
+ParserState.prototype.parseExpression = function(instr) {
+  var exprInstr = [];
+  if (this.parseUntilEndStatement(instr, exprInstr)) {
+    return;
+  }
+  this.parseVariableAssignmentExpression(exprInstr);
+  if (this.parseUntilEndStatement(instr, exprInstr)) {
+    return;
+  }
+  this.pushExpression(instr, exprInstr);
+};
+ParserState.prototype.pushExpression = function(instr, exprInstr) {
+  for (var i = 0, len = exprInstr.length; i < len; i++) {
+    instr.push(exprInstr[i]);
+  }
+};
+ParserState.prototype.parseUntilEndStatement = function(instr, exprInstr) {
+  if (!this.accept(TSEMICOLON)) return false;
+  if (this.nextToken && this.nextToken.type !== TEOF && !(this.nextToken.type === TPAREN && this.nextToken.value === ")")) {
+    exprInstr.push(new Instruction(IENDSTATEMENT));
+  }
+  if (this.nextToken.type !== TEOF) {
+    this.parseExpression(exprInstr);
+  }
+  instr.push(new Instruction(IEXPR, exprInstr));
+  return true;
+};
+ParserState.prototype.parseArrayList = function(instr) {
+  var argCount = 0;
+  while (!this.accept(TBRACKET, "]")) {
+    this.parseExpression(instr);
+    ++argCount;
+    while (this.accept(TCOMMA)) {
+      this.parseExpression(instr);
+      ++argCount;
+    }
+  }
+  return argCount;
+};
+ParserState.prototype.parseVariableAssignmentExpression = function(instr) {
+  this.parseConditionalExpression(instr);
+  while (this.accept(TOP, "=")) {
+    var varName = instr.pop();
+    var varValue = [];
+    var lastInstrIndex = instr.length - 1;
+    if (varName.type === IFUNCALL) {
+      if (!this.tokens.isOperatorEnabled("()=")) {
+        throw new Error("function definition is not permitted");
+      }
+      for (var i = 0, len = varName.value + 1; i < len; i++) {
+        var index = lastInstrIndex - i;
+        if (instr[index].type === IVAR) {
+          instr[index] = new Instruction(IVARNAME, instr[index].value);
+        }
+      }
+      this.parseVariableAssignmentExpression(varValue);
+      instr.push(new Instruction(IEXPR, varValue));
+      instr.push(new Instruction(IFUNDEF, varName.value));
+      continue;
+    }
+    if (varName.type !== IVAR && varName.type !== IMEMBER) {
+      throw new Error("expected variable for assignment");
+    }
+    this.parseVariableAssignmentExpression(varValue);
+    instr.push(new Instruction(IVARNAME, varName.value));
+    instr.push(new Instruction(IEXPR, varValue));
+    instr.push(binaryInstruction("="));
+  }
+};
+ParserState.prototype.parseConditionalExpression = function(instr) {
+  this.parseOrExpression(instr);
+  while (this.accept(TOP, "?")) {
+    var trueBranch = [];
+    var falseBranch = [];
+    this.parseConditionalExpression(trueBranch);
+    this.expect(TOP, ":");
+    this.parseConditionalExpression(falseBranch);
+    instr.push(new Instruction(IEXPR, trueBranch));
+    instr.push(new Instruction(IEXPR, falseBranch));
+    instr.push(ternaryInstruction("?"));
+  }
+};
+ParserState.prototype.parseOrExpression = function(instr) {
+  this.parseAndExpression(instr);
+  while (this.accept(TOP, "or")) {
+    var falseBranch = [];
+    this.parseAndExpression(falseBranch);
+    instr.push(new Instruction(IEXPR, falseBranch));
+    instr.push(binaryInstruction("or"));
+  }
+};
+ParserState.prototype.parseAndExpression = function(instr) {
+  this.parseComparison(instr);
+  while (this.accept(TOP, "and")) {
+    var trueBranch = [];
+    this.parseComparison(trueBranch);
+    instr.push(new Instruction(IEXPR, trueBranch));
+    instr.push(binaryInstruction("and"));
+  }
+};
+var COMPARISON_OPERATORS = ["==", "!=", "<", "<=", ">=", ">", "in"];
+ParserState.prototype.parseComparison = function(instr) {
+  this.parseAddSub(instr);
+  while (this.accept(TOP, COMPARISON_OPERATORS)) {
+    var op = this.current;
+    this.parseAddSub(instr);
+    instr.push(binaryInstruction(op.value));
+  }
+};
+var ADD_SUB_OPERATORS = ["+", "-", "||"];
+ParserState.prototype.parseAddSub = function(instr) {
+  this.parseTerm(instr);
+  while (this.accept(TOP, ADD_SUB_OPERATORS)) {
+    var op = this.current;
+    this.parseTerm(instr);
+    instr.push(binaryInstruction(op.value));
+  }
+};
+var TERM_OPERATORS = ["*", "/", "%"];
+ParserState.prototype.parseTerm = function(instr) {
+  this.parseFactor(instr);
+  while (this.accept(TOP, TERM_OPERATORS)) {
+    var op = this.current;
+    this.parseFactor(instr);
+    instr.push(binaryInstruction(op.value));
+  }
+};
+ParserState.prototype.parseFactor = function(instr) {
+  var unaryOps = this.tokens.unaryOps;
+  function isPrefixOperator(token) {
+    return token.value in unaryOps;
+  }
+  this.save();
+  if (this.accept(TOP, isPrefixOperator)) {
+    if (this.current.value !== "-" && this.current.value !== "+") {
+      if (this.nextToken.type === TPAREN && this.nextToken.value === "(") {
+        this.restore();
+        this.parseExponential(instr);
+        return;
+      } else if (this.nextToken.type === TSEMICOLON || this.nextToken.type === TCOMMA || this.nextToken.type === TEOF || this.nextToken.type === TPAREN && this.nextToken.value === ")") {
+        this.restore();
+        this.parseAtom(instr);
+        return;
+      }
+    }
+    var op = this.current;
+    this.parseFactor(instr);
+    instr.push(unaryInstruction(op.value));
+  } else {
+    this.parseExponential(instr);
+  }
+};
+ParserState.prototype.parseExponential = function(instr) {
+  this.parsePostfixExpression(instr);
+  while (this.accept(TOP, "^")) {
+    this.parseFactor(instr);
+    instr.push(binaryInstruction("^"));
+  }
+};
+ParserState.prototype.parsePostfixExpression = function(instr) {
+  this.parseFunctionCall(instr);
+  while (this.accept(TOP, "!")) {
+    instr.push(unaryInstruction("!"));
+  }
+};
+ParserState.prototype.parseFunctionCall = function(instr) {
+  var unaryOps = this.tokens.unaryOps;
+  function isPrefixOperator(token) {
+    return token.value in unaryOps;
+  }
+  if (this.accept(TOP, isPrefixOperator)) {
+    var op = this.current;
+    this.parseAtom(instr);
+    instr.push(unaryInstruction(op.value));
+  } else {
+    this.parseMemberExpression(instr);
+    while (this.accept(TPAREN, "(")) {
+      if (this.accept(TPAREN, ")")) {
+        instr.push(new Instruction(IFUNCALL, 0));
+      } else {
+        var argCount = this.parseArgumentList(instr);
+        instr.push(new Instruction(IFUNCALL, argCount));
+      }
+    }
+  }
+};
+ParserState.prototype.parseArgumentList = function(instr) {
+  var argCount = 0;
+  while (!this.accept(TPAREN, ")")) {
+    this.parseExpression(instr);
+    ++argCount;
+    while (this.accept(TCOMMA)) {
+      this.parseExpression(instr);
+      ++argCount;
+    }
+  }
+  return argCount;
+};
+ParserState.prototype.parseMemberExpression = function(instr) {
+  this.parseAtom(instr);
+  while (this.accept(TOP, ".") || this.accept(TBRACKET, "[")) {
+    var op = this.current;
+    if (op.value === ".") {
+      if (!this.allowMemberAccess) {
+        throw new Error('unexpected ".", member access is not permitted');
+      }
+      this.expect(TNAME);
+      instr.push(new Instruction(IMEMBER, this.current.value));
+    } else if (op.value === "[") {
+      if (!this.tokens.isOperatorEnabled("[")) {
+        throw new Error('unexpected "[]", arrays are disabled');
+      }
+      this.parseExpression(instr);
+      this.expect(TBRACKET, "]");
+      instr.push(binaryInstruction("["));
+    } else {
+      throw new Error("unexpected symbol: " + op.value);
+    }
+  }
+};
+function add(a3, b2) {
+  return Number(a3) + Number(b2);
+}
+function sub(a3, b2) {
+  return a3 - b2;
+}
+function mul(a3, b2) {
+  return a3 * b2;
+}
+function div(a3, b2) {
+  return a3 / b2;
+}
+function mod(a3, b2) {
+  return a3 % b2;
+}
+function concat2(a3, b2) {
+  if (Array.isArray(a3) && Array.isArray(b2)) {
+    return a3.concat(b2);
+  }
+  return "" + a3 + b2;
+}
+function equal(a3, b2) {
+  return a3 === b2;
+}
+function notEqual(a3, b2) {
+  return a3 !== b2;
+}
+function greaterThan(a3, b2) {
+  return a3 > b2;
+}
+function lessThan(a3, b2) {
+  return a3 < b2;
+}
+function greaterThanEqual(a3, b2) {
+  return a3 >= b2;
+}
+function lessThanEqual(a3, b2) {
+  return a3 <= b2;
+}
+function andOperator(a3, b2) {
+  return Boolean(a3 && b2);
+}
+function orOperator(a3, b2) {
+  return Boolean(a3 || b2);
+}
+function inOperator(a3, b2) {
+  return contains(b2, a3);
+}
+function sinh(a3) {
+  return (Math.exp(a3) - Math.exp(-a3)) / 2;
+}
+function cosh(a3) {
+  return (Math.exp(a3) + Math.exp(-a3)) / 2;
+}
+function tanh(a3) {
+  if (a3 === Infinity) return 1;
+  if (a3 === -Infinity) return -1;
+  return (Math.exp(a3) - Math.exp(-a3)) / (Math.exp(a3) + Math.exp(-a3));
+}
+function asinh(a3) {
+  if (a3 === -Infinity) return a3;
+  return Math.log(a3 + Math.sqrt(a3 * a3 + 1));
+}
+function acosh(a3) {
+  return Math.log(a3 + Math.sqrt(a3 * a3 - 1));
+}
+function atanh(a3) {
+  return Math.log((1 + a3) / (1 - a3)) / 2;
+}
+function log10(a3) {
+  return Math.log(a3) * Math.LOG10E;
+}
+function neg(a3) {
+  return -a3;
+}
+function not(a3) {
+  return !a3;
+}
+function trunc(a3) {
+  return a3 < 0 ? Math.ceil(a3) : Math.floor(a3);
+}
+function random(a3) {
+  return Math.random() * (a3 || 1);
+}
+function factorial(a3) {
+  return gamma(a3 + 1);
+}
+function isInteger(value) {
+  return isFinite(value) && value === Math.round(value);
+}
+var GAMMA_G = 4.7421875;
+var GAMMA_P = [
+  0.9999999999999971,
+  57.15623566586292,
+  -59.59796035547549,
+  14.136097974741746,
+  -0.4919138160976202,
+  3399464998481189e-20,
+  4652362892704858e-20,
+  -9837447530487956e-20,
+  1580887032249125e-19,
+  -21026444172410488e-20,
+  21743961811521265e-20,
+  -1643181065367639e-19,
+  8441822398385275e-20,
+  -26190838401581408e-21,
+  36899182659531625e-22
+];
+function gamma(n) {
+  var t, x;
+  if (isInteger(n)) {
+    if (n <= 0) {
+      return isFinite(n) ? Infinity : NaN;
+    }
+    if (n > 171) {
+      return Infinity;
+    }
+    var value = n - 2;
+    var res = n - 1;
+    while (value > 1) {
+      res *= value;
+      value--;
+    }
+    if (res === 0) {
+      res = 1;
+    }
+    return res;
+  }
+  if (n < 0.5) {
+    return Math.PI / (Math.sin(Math.PI * n) * gamma(1 - n));
+  }
+  if (n >= 171.35) {
+    return Infinity;
+  }
+  if (n > 85) {
+    var twoN = n * n;
+    var threeN = twoN * n;
+    var fourN = threeN * n;
+    var fiveN = fourN * n;
+    return Math.sqrt(2 * Math.PI / n) * Math.pow(n / Math.E, n) * (1 + 1 / (12 * n) + 1 / (288 * twoN) - 139 / (51840 * threeN) - 571 / (2488320 * fourN) + 163879 / (209018880 * fiveN) + 5246819 / (75246796800 * fiveN * n));
+  }
+  --n;
+  x = GAMMA_P[0];
+  for (var i = 1; i < GAMMA_P.length; ++i) {
+    x += GAMMA_P[i] / (n + i);
+  }
+  t = n + GAMMA_G + 0.5;
+  return Math.sqrt(2 * Math.PI) * Math.pow(t, n + 0.5) * Math.exp(-t) * x;
+}
+function stringOrArrayLength(s) {
+  if (Array.isArray(s)) {
+    return s.length;
+  }
+  return String(s).length;
+}
+function hypot() {
+  var sum = 0;
+  var larg = 0;
+  for (var i = 0; i < arguments.length; i++) {
+    var arg = Math.abs(arguments[i]);
+    var div2;
+    if (larg < arg) {
+      div2 = larg / arg;
+      sum = sum * div2 * div2 + 1;
+      larg = arg;
+    } else if (arg > 0) {
+      div2 = arg / larg;
+      sum += div2 * div2;
+    } else {
+      sum += arg;
+    }
+  }
+  return larg === Infinity ? Infinity : larg * Math.sqrt(sum);
+}
+function condition(cond, yep, nope) {
+  return cond ? yep : nope;
+}
+function roundTo(value, exp) {
+  if (typeof exp === "undefined" || +exp === 0) {
+    return Math.round(value);
+  }
+  value = +value;
+  exp = -+exp;
+  if (isNaN(value) || !(typeof exp === "number" && exp % 1 === 0)) {
+    return NaN;
+  }
+  value = value.toString().split("e");
+  value = Math.round(+(value[0] + "e" + (value[1] ? +value[1] - exp : -exp)));
+  value = value.toString().split("e");
+  return +(value[0] + "e" + (value[1] ? +value[1] + exp : exp));
+}
+function setVar(name, value, variables) {
+  if (variables) variables[name] = value;
+  return value;
+}
+function arrayIndex(array, index) {
+  return array[index | 0];
+}
+function max(array) {
+  if (arguments.length === 1 && Array.isArray(array)) {
+    return Math.max.apply(Math, array);
+  } else {
+    return Math.max.apply(Math, arguments);
+  }
+}
+function min(array) {
+  if (arguments.length === 1 && Array.isArray(array)) {
+    return Math.min.apply(Math, array);
+  } else {
+    return Math.min.apply(Math, arguments);
+  }
+}
+function arrayMap(f, a3) {
+  if (typeof f !== "function") {
+    throw new Error("First argument to map is not a function");
+  }
+  if (!Array.isArray(a3)) {
+    throw new Error("Second argument to map is not an array");
+  }
+  return a3.map(function(x, i) {
+    return f(x, i);
+  });
+}
+function arrayFold(f, init, a3) {
+  if (typeof f !== "function") {
+    throw new Error("First argument to fold is not a function");
+  }
+  if (!Array.isArray(a3)) {
+    throw new Error("Second argument to fold is not an array");
+  }
+  return a3.reduce(function(acc, x, i) {
+    return f(acc, x, i);
+  }, init);
+}
+function arrayFilter(f, a3) {
+  if (typeof f !== "function") {
+    throw new Error("First argument to filter is not a function");
+  }
+  if (!Array.isArray(a3)) {
+    throw new Error("Second argument to filter is not an array");
+  }
+  return a3.filter(function(x, i) {
+    return f(x, i);
+  });
+}
+function stringOrArrayIndexOf(target, s) {
+  if (!(Array.isArray(s) || typeof s === "string")) {
+    throw new Error("Second argument to indexOf is not a string or array");
+  }
+  return s.indexOf(target);
+}
+function arrayJoin(sep, a3) {
+  if (!Array.isArray(a3)) {
+    throw new Error("Second argument to join is not an array");
+  }
+  return a3.join(sep);
+}
+function sign(x) {
+  return (x > 0) - (x < 0) || +x;
+}
+var ONE_THIRD = 1 / 3;
+function cbrt(x) {
+  return x < 0 ? -Math.pow(-x, ONE_THIRD) : Math.pow(x, ONE_THIRD);
+}
+function expm1(x) {
+  return Math.exp(x) - 1;
+}
+function log1p(x) {
+  return Math.log(1 + x);
+}
+function log2(x) {
+  return Math.log(x) / Math.LN2;
+}
+function Parser(options) {
+  this.options = options || {};
+  this.unaryOps = {
+    sin: Math.sin,
+    cos: Math.cos,
+    tan: Math.tan,
+    asin: Math.asin,
+    acos: Math.acos,
+    atan: Math.atan,
+    sinh: Math.sinh || sinh,
+    cosh: Math.cosh || cosh,
+    tanh: Math.tanh || tanh,
+    asinh: Math.asinh || asinh,
+    acosh: Math.acosh || acosh,
+    atanh: Math.atanh || atanh,
+    sqrt: Math.sqrt,
+    cbrt: Math.cbrt || cbrt,
+    log: Math.log,
+    log2: Math.log2 || log2,
+    ln: Math.log,
+    lg: Math.log10 || log10,
+    log10: Math.log10 || log10,
+    expm1: Math.expm1 || expm1,
+    log1p: Math.log1p || log1p,
+    abs: Math.abs,
+    ceil: Math.ceil,
+    floor: Math.floor,
+    round: Math.round,
+    trunc: Math.trunc || trunc,
+    "-": neg,
+    "+": Number,
+    exp: Math.exp,
+    not,
+    length: stringOrArrayLength,
+    "!": factorial,
+    sign: Math.sign || sign
+  };
+  this.binaryOps = {
+    "+": add,
+    "-": sub,
+    "*": mul,
+    "/": div,
+    "%": mod,
+    "^": Math.pow,
+    "||": concat2,
+    "==": equal,
+    "!=": notEqual,
+    ">": greaterThan,
+    "<": lessThan,
+    ">=": greaterThanEqual,
+    "<=": lessThanEqual,
+    and: andOperator,
+    or: orOperator,
+    "in": inOperator,
+    "=": setVar,
+    "[": arrayIndex
+  };
+  this.ternaryOps = {
+    "?": condition
+  };
+  this.functions = {
+    random,
+    fac: factorial,
+    min,
+    max,
+    hypot: Math.hypot || hypot,
+    pyt: Math.hypot || hypot,
+    // backward compat
+    pow: Math.pow,
+    atan2: Math.atan2,
+    "if": condition,
+    gamma,
+    roundTo,
+    map: arrayMap,
+    fold: arrayFold,
+    filter: arrayFilter,
+    indexOf: stringOrArrayIndexOf,
+    join: arrayJoin
+  };
+  this.consts = {
+    E: Math.E,
+    PI: Math.PI,
+    "true": true,
+    "false": false
+  };
+}
+Parser.prototype.parse = function(expr) {
+  var instr = [];
+  var parserState2 = new ParserState(
+    this,
+    new TokenStream(this, expr),
+    { allowMemberAccess: this.options.allowMemberAccess }
+  );
+  parserState2.parseExpression(instr);
+  parserState2.expect(TEOF, "EOF");
+  return new Expression(instr, this);
+};
+Parser.prototype.evaluate = function(expr, variables) {
+  return this.parse(expr).evaluate(variables);
+};
+var sharedParser = new Parser();
+Parser.parse = function(expr) {
+  return sharedParser.parse(expr);
+};
+Parser.evaluate = function(expr, variables) {
+  return sharedParser.parse(expr).evaluate(variables);
+};
+var optionNameMap = {
+  "+": "add",
+  "-": "subtract",
+  "*": "multiply",
+  "/": "divide",
+  "%": "remainder",
+  "^": "power",
+  "!": "factorial",
+  "<": "comparison",
+  ">": "comparison",
+  "<=": "comparison",
+  ">=": "comparison",
+  "==": "comparison",
+  "!=": "comparison",
+  "||": "concatenate",
+  "and": "logical",
+  "or": "logical",
+  "not": "logical",
+  "?": "conditional",
+  ":": "conditional",
+  "=": "assignment",
+  "[": "array",
+  "()=": "fndef"
+};
+function getOptionName(op) {
+  return optionNameMap.hasOwnProperty(op) ? optionNameMap[op] : op;
+}
+Parser.prototype.isOperatorEnabled = function(op) {
+  var optionName = getOptionName(op);
+  var operators = this.options.operators || {};
+  return !(optionName in operators) || !!operators[optionName];
+};
+
 // node_modules/@angular/cdk/fesm2022/platform2.mjs
 var hasV8BreakIterator;
 try {
@@ -67295,12 +67290,12 @@ var BreakpointObserver = class _BreakpointObserver {
       query,
       matches
     })), takeUntil(this._destroySubject));
-    const output = {
+    const output2 = {
       observable: queryObservable,
       mql
     };
-    this._queries.set(query, output);
-    return output;
+    this._queries.set(query, output2);
+    return output2;
   }
   static \u0275fac = function BreakpointObserver_Factory(__ngFactoryType__) {
     return new (__ngFactoryType__ || _BreakpointObserver)();
@@ -71870,14 +71865,14 @@ var ViewportRuler = class _ViewportRuler {
     if (!this._viewportSize) {
       this._updateViewportSize();
     }
-    const output = {
+    const output2 = {
       width: this._viewportSize.width,
       height: this._viewportSize.height
     };
     if (!this._platform.isBrowser) {
       this._viewportSize = null;
     }
-    return output;
+    return output2;
   }
   /** Gets a DOMRect for the viewport's bounds. */
   getViewportRect() {
@@ -92409,43 +92404,43 @@ var ButtonComponent = _ButtonComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ButtonComponent, [{
     type: Component,
-    args: [{ selector: "ep-button", changeDetection: ChangeDetectionStrategy.OnPush, standalone: true, imports: [CommonModule, IconComponent], template: `<button\r
-  class="ep-button"\r
-  [id]="id"\r
-  [type]="type"\r
-  [disabled]="disabled"\r
-  [class.ep-button--no-border]="noBorder"\r
-  [class.ep-button--primary]="variant === 'primary'"\r
-  [class.ep-button--ghost]="variant === 'ghost'"\r
-  [class.ep-button--md]="size === 'md'"\r
-  (click)="onClick($event)"\r
-  (mouseenter)="onMouseEnter($event)"\r
-  (mouseleave)="onMouseLeave($event)"\r
->\r
-  @if (iconName && resolvedIconPos === "left") {\r
-    <span class="icon">\r
-      <ep-icon [name]="iconName" [size]="iconSize"></ep-icon>\r
-    </span>\r
-  } @else if (imgSrc && resolvedIconPos === "left") {\r
-    <span class="icon">\r
-      <img [src]="imgSrc" alt="" />\r
-    </span>\r
-  }\r
-\r
-  <span class="text">\r
-    <ng-content></ng-content>\r
-  </span>\r
-\r
-  @if (iconName && resolvedIconPos === "right") {\r
-    <span class="icon">\r
-      <ep-icon [name]="iconName" [size]="iconSize"></ep-icon>\r
-    </span>\r
-  } @else if (imgSrc && resolvedIconPos === "right") {\r
-    <span class="icon">\r
-      <img [src]="imgSrc" alt="" />\r
-    </span>\r
-  }\r
-</button>\r
+    args: [{ selector: "ep-button", changeDetection: ChangeDetectionStrategy.OnPush, standalone: true, imports: [CommonModule, IconComponent], template: `<button
+  class="ep-button"
+  [id]="id"
+  [type]="type"
+  [disabled]="disabled"
+  [class.ep-button--no-border]="noBorder"
+  [class.ep-button--primary]="variant === 'primary'"
+  [class.ep-button--ghost]="variant === 'ghost'"
+  [class.ep-button--md]="size === 'md'"
+  (click)="onClick($event)"
+  (mouseenter)="onMouseEnter($event)"
+  (mouseleave)="onMouseLeave($event)"
+>
+  @if (iconName && resolvedIconPos === "left") {
+    <span class="icon">
+      <ep-icon [name]="iconName" [size]="iconSize"></ep-icon>
+    </span>
+  } @else if (imgSrc && resolvedIconPos === "left") {
+    <span class="icon">
+      <img [src]="imgSrc" alt="" />
+    </span>
+  }
+
+  <span class="text">
+    <ng-content></ng-content>
+  </span>
+
+  @if (iconName && resolvedIconPos === "right") {
+    <span class="icon">
+      <ep-icon [name]="iconName" [size]="iconSize"></ep-icon>
+    </span>
+  } @else if (imgSrc && resolvedIconPos === "right") {
+    <span class="icon">
+      <img [src]="imgSrc" alt="" />
+    </span>
+  }
+</button>
 `, styles: ["/* src/app/components/shared/button/button.component.scss */\n:host {\n  display: inline-block;\n}\nbutton,\n.ep-button {\n  all: unset;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  height: var(--ep-button-height-sm, 26px);\n  min-width: 40px;\n  padding: var(--ep-button-padding-sm, 3px 10px);\n  font-size: var(--ep-button-font-size-sm, 12px);\n  line-height: 14px;\n  border: 1px solid var(--ep-button-secondary-border, var(--ep-color-border));\n  border-radius: var(--ep-button-radius, 12px);\n  box-sizing: border-box;\n  color: var(--ep-button-secondary-text, var(--ep-color-text));\n  background: var(--ep-button-secondary-bg, transparent);\n  -webkit-user-select: none;\n  user-select: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s ease,\n    border-color 0.15s ease,\n    color 0.15s ease;\n}\nbutton:hover,\n.ep-button:hover {\n  background: var(--ep-button-secondary-hover-bg, var(--ep-color-accent-soft));\n}\nbutton:disabled,\n.ep-button:disabled {\n  pointer-events: none;\n  background: var(--ep-color-disabled-bg);\n  color: var(--ep-color-disabled-text);\n  cursor: default;\n}\nbutton:disabled .icon,\n.ep-button:disabled .icon {\n  filter: grayscale(1) brightness(1.5) opacity(0.5);\n}\nbutton .icon,\n.ep-button .icon {\n  pointer-events: none;\n  display: inline-block;\n}\nbutton .icon img,\n.ep-button .icon img {\n  width: 16px;\n  height: 16px;\n  display: block;\n}\nbutton .text,\n.ep-button .text {\n  pointer-events: none;\n  display: inline-block;\n  white-space: nowrap;\n}\nbutton .text:empty,\n.ep-button .text:empty {\n  display: none;\n}\nbutton--no-border,\n.ep-button--no-border {\n  border: none;\n}\nbutton--md,\n.ep-button--md {\n  height: var(--ep-button-height-md, 28px);\n  padding: var(--ep-button-padding-md, 6px 12px);\n  font-size: var(--ep-button-font-size-md, 12px);\n}\nbutton--primary,\n.ep-button--primary {\n  border-color: var(--ep-button-primary-border, transparent);\n  color: var(--ep-button-primary-text, var(--ep-color-accent-contrast));\n  background: var(--ep-button-primary-bg, var(--ep-color-accent));\n}\nbutton--primary:hover:not(:disabled),\n.ep-button--primary:hover:not(:disabled) {\n  background: var(--ep-button-primary-hover-bg, color-mix(in srgb, var(--ep-color-accent) 88%, black));\n}\nbutton--ghost,\n.ep-button--ghost {\n  border-color: transparent;\n  color: var(--ep-button-ghost-text, var(--ep-color-text));\n  background: var(--ep-button-ghost-bg, transparent);\n}\nbutton--ghost:hover:not(:disabled),\n.ep-button--ghost:hover:not(:disabled) {\n  background: var(--ep-button-ghost-hover-bg, var(--ep-color-accent-soft));\n}\n/*# sourceMappingURL=button.component.css.map */\n"] }]
   }], null, { disabled: [{
     type: Input
@@ -92484,16 +92479,17 @@ var ButtonComponent = _ButtonComponent;
 // src/app/components/message-table/message-table.component.ts
 var _c011 = ["tableContainer"];
 var _c18 = ["columnsToggle"];
-var _c26 = (a0) => ({ "ep-message-table__title-changed": a0 });
-var _c34 = (a0, a1) => ({ opacity: a0, rotate: a1 });
-var _c44 = (a0) => ({ color: a0 });
-var _c54 = (a0) => ({ column: a0 });
-var _c63 = (a0, a1) => ({ "ep-message-table__cell-changed": a0, "ep-message-table__union-error": a1 });
+var _c26 = ["columnsDropdown"];
+var _c34 = (a0) => ({ "ep-message-table__title-changed": a0 });
+var _c44 = (a0, a1) => ({ opacity: a0, rotate: a1 });
+var _c54 = (a0) => ({ color: a0 });
+var _c63 = (a0) => ({ column: a0 });
+var _c72 = (a0, a1) => ({ "ep-message-table__cell-changed": a0, "ep-message-table__union-error": a1 });
 var _forTrack04 = ($index, $item) => $item.action;
 function MessageTableComponent_Conditional_0_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 18);
+    \u0275\u0275elementStart(0, "ep-button", 19);
     \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_Conditional_4_Template_ep_button_buttonClick_0_listener($event) {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -92509,7 +92505,7 @@ function MessageTableComponent_Conditional_0_Conditional_4_Template(rf, ctx) {
 function MessageTableComponent_Conditional_0_For_6_Template(rf, ctx) {
   if (rf & 1) {
     const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-button", 19);
+    \u0275\u0275elementStart(0, "ep-button", 20);
     \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_For_6_Template_ep_button_buttonClick_0_listener($event) {
       const action_r5 = \u0275\u0275restoreView(_r4).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -92529,8 +92525,8 @@ function MessageTableComponent_Conditional_0_For_6_Template(rf, ctx) {
 function MessageTableComponent_Conditional_0_Conditional_12_Template(rf, ctx) {
   if (rf & 1) {
     const _r6 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 12)(1, "ep-message-table-columns-configuration", 20);
-    \u0275\u0275listener("updateShownColumns", function MessageTableComponent_Conditional_0_Conditional_12_Template_ep_message_table_columns_configuration_updateShownColumns_1_listener($event) {
+    \u0275\u0275elementStart(0, "div", 21, 3)(2, "ep-message-table-columns-configuration", 22);
+    \u0275\u0275listener("updateShownColumns", function MessageTableComponent_Conditional_0_Conditional_12_Template_ep_message_table_columns_configuration_updateShownColumns_2_listener($event) {
       \u0275\u0275restoreView(_r6);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onColumnsUpdated($event));
@@ -92539,15 +92535,16 @@ function MessageTableComponent_Conditional_0_Conditional_12_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275styleProp("visibility", ctx_r2.isColumnsDropdownPositioned ? "visible" : "hidden");
     \u0275\u0275property("ngStyle", ctx_r2.columnsDropdownStyles);
-    \u0275\u0275advance();
+    \u0275\u0275advance(2);
     \u0275\u0275property("columns", ctx_r2.dynamicColumns)("maxHeight", 400)("isEmbedded", true);
   }
 }
 function MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r9 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "input", 26);
+    \u0275\u0275elementStart(0, "input", 28);
     \u0275\u0275twoWayListener("ngModelChange", function MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Template_input_ngModelChange_0_listener($event) {
       \u0275\u0275restoreView(_r9);
       const ctx_r2 = \u0275\u0275nextContext(3);
@@ -92574,14 +92571,14 @@ function MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Templa
 }
 function MessageTableComponent_Conditional_0_ng_template_16_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 23);
+    \u0275\u0275elementStart(0, "span", 25);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const column_r8 = \u0275\u0275nextContext().column;
     const ctx_r2 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction1(2, _c44, ctx_r2.currentSortField === column_r8.key ? "var(--ep-color-accent)" : "var(--ep-table-cell-text)"));
+    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction1(2, _c54, ctx_r2.currentSortField === column_r8.key ? "var(--ep-color-accent)" : "var(--ep-table-cell-text)"));
     \u0275\u0275advance();
     \u0275\u0275textInterpolate1(" ", column_r8.title || column_r8.key, " ");
   }
@@ -92589,7 +92586,7 @@ function MessageTableComponent_Conditional_0_ng_template_16_Conditional_2_Templa
 function MessageTableComponent_Conditional_0_ng_template_16_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 21);
+    \u0275\u0275elementStart(0, "div", 23);
     \u0275\u0275listener("mouseenter", function MessageTableComponent_Conditional_0_ng_template_16_Template_div_mouseenter_0_listener() {
       const column_r8 = \u0275\u0275restoreView(_r7).column;
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -92603,31 +92600,31 @@ function MessageTableComponent_Conditional_0_ng_template_16_Template(rf, ctx) {
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onColumnTitleDblClick(column_r8, $event));
     });
-    \u0275\u0275conditionalCreate(1, MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Template, 1, 1, "input", 22)(2, MessageTableComponent_Conditional_0_ng_template_16_Conditional_2_Template, 2, 4, "span", 23);
-    \u0275\u0275elementStart(3, "button", 24);
+    \u0275\u0275conditionalCreate(1, MessageTableComponent_Conditional_0_ng_template_16_Conditional_1_Template, 1, 1, "input", 24)(2, MessageTableComponent_Conditional_0_ng_template_16_Conditional_2_Template, 2, 4, "span", 25);
+    \u0275\u0275elementStart(3, "button", 26);
     \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_ng_template_16_Template_button_click_3_listener() {
       const column_r8 = \u0275\u0275restoreView(_r7).column;
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onColumnHeaderClick(column_r8));
     });
-    \u0275\u0275element(4, "img", 25);
+    \u0275\u0275element(4, "img", 27);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
     const column_r8 = ctx.column;
     const ctx_r2 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("ngClass", \u0275\u0275pureFunction1(4, _c26, ctx_r2.isColumnTitleChanged(column_r8)));
+    \u0275\u0275property("ngClass", \u0275\u0275pureFunction1(4, _c34, ctx_r2.isColumnTitleChanged(column_r8)));
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx_r2.isEditingColumnTitle(column_r8) ? 1 : 2);
     \u0275\u0275advance(2);
-    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction2(6, _c34, ctx_r2.isSortable && (ctx_r2.currentSortField === column_r8.key || ctx_r2.hoveredColumn === column_r8.key) ? "1" : "0", ctx_r2.currentSortOrder === "desc" ? "180deg" : "0deg"));
+    \u0275\u0275property("ngStyle", \u0275\u0275pureFunction2(6, _c44, ctx_r2.isSortable && (ctx_r2.currentSortField === column_r8.key || ctx_r2.hoveredColumn === column_r8.key) ? "1" : "0", ctx_r2.currentSortOrder === "desc" ? "180deg" : "0deg"));
     \u0275\u0275advance();
     \u0275\u0275property("src", ctx_r2.getSortIcon(column_r8), \u0275\u0275sanitizeUrl);
   }
 }
 function MessageTableComponent_Conditional_0_For_21_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "th", 27);
+    \u0275\u0275elementStart(0, "th", 29);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -92647,7 +92644,7 @@ function MessageTableComponent_Conditional_0_For_21_Conditional_1_ng_container_1
 function MessageTableComponent_Conditional_0_For_21_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "th");
-    \u0275\u0275template(1, MessageTableComponent_Conditional_0_For_21_Conditional_1_ng_container_1_Template, 1, 0, "ng-container", 28);
+    \u0275\u0275template(1, MessageTableComponent_Conditional_0_For_21_Conditional_1_ng_container_1_Template, 1, 0, "ng-container", 30);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -92657,12 +92654,12 @@ function MessageTableComponent_Conditional_0_For_21_Conditional_1_Template(rf, c
     const ctx_r2 = \u0275\u0275nextContext();
     \u0275\u0275attribute("rowspan", ctx_r2.hasUnions ? 2 : 1);
     \u0275\u0275advance();
-    \u0275\u0275property("ngTemplateOutlet", columnHeader_r11)("ngTemplateOutletContext", \u0275\u0275pureFunction1(3, _c54, column_r10));
+    \u0275\u0275property("ngTemplateOutlet", columnHeader_r11)("ngTemplateOutletContext", \u0275\u0275pureFunction1(3, _c63, column_r10));
   }
 }
 function MessageTableComponent_Conditional_0_For_21_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_For_21_Conditional_0_Template, 2, 2, "th", 27);
+    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_For_21_Conditional_0_Template, 2, 2, "th", 29);
     \u0275\u0275conditionalCreate(1, MessageTableComponent_Conditional_0_For_21_Conditional_1_Template, 2, 5, "th");
   }
   if (rf & 2) {
@@ -92681,7 +92678,7 @@ function MessageTableComponent_Conditional_0_Conditional_22_For_2_Conditional_0_
 function MessageTableComponent_Conditional_0_Conditional_22_For_2_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "th");
-    \u0275\u0275template(1, MessageTableComponent_Conditional_0_Conditional_22_For_2_Conditional_0_ng_container_1_Template, 1, 0, "ng-container", 28);
+    \u0275\u0275template(1, MessageTableComponent_Conditional_0_Conditional_22_For_2_Conditional_0_ng_container_1_Template, 1, 0, "ng-container", 30);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -92689,7 +92686,7 @@ function MessageTableComponent_Conditional_0_Conditional_22_For_2_Conditional_0_
     \u0275\u0275nextContext(2);
     const columnHeader_r11 = \u0275\u0275reference(17);
     \u0275\u0275advance();
-    \u0275\u0275property("ngTemplateOutlet", columnHeader_r11)("ngTemplateOutletContext", \u0275\u0275pureFunction1(2, _c54, column_r12));
+    \u0275\u0275property("ngTemplateOutlet", columnHeader_r11)("ngTemplateOutletContext", \u0275\u0275pureFunction1(2, _c63, column_r12));
   }
 }
 function MessageTableComponent_Conditional_0_Conditional_22_For_2_Template(rf, ctx) {
@@ -92717,14 +92714,14 @@ function MessageTableComponent_Conditional_0_Conditional_22_Template(rf, ctx) {
 function MessageTableComponent_Conditional_0_For_25_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r13 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 34);
+    \u0275\u0275elementStart(0, "button", 36);
     \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_For_25_Conditional_2_Template_button_click_0_listener($event) {
       \u0275\u0275restoreView(_r13);
       const row_r14 = \u0275\u0275nextContext().$implicit;
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onDeleteRowClick(row_r14, $event));
     });
-    \u0275\u0275element(1, "img", 35);
+    \u0275\u0275element(1, "img", 37);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -92736,7 +92733,7 @@ function MessageTableComponent_Conditional_0_For_25_Conditional_2_Template(rf, c
 function MessageTableComponent_Conditional_0_For_25_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r15 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 31)(1, "input", 36);
+    \u0275\u0275elementStart(0, "div", 33)(1, "input", 38);
     \u0275\u0275listener("change", function MessageTableComponent_Conditional_0_For_25_Conditional_3_Template_input_change_1_listener($event) {
       \u0275\u0275restoreView(_r15);
       const row_r14 = \u0275\u0275nextContext().$implicit;
@@ -92755,7 +92752,7 @@ function MessageTableComponent_Conditional_0_For_25_Conditional_3_Template(rf, c
 function MessageTableComponent_Conditional_0_For_25_Conditional_4_Template(rf, ctx) {
   if (rf & 1) {
     const _r16 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 32)(1, "input", 37);
+    \u0275\u0275elementStart(0, "div", 34)(1, "input", 39);
     \u0275\u0275listener("change", function MessageTableComponent_Conditional_0_For_25_Conditional_4_Template_input_change_1_listener($event) {
       \u0275\u0275restoreView(_r16);
       const row_r14 = \u0275\u0275nextContext().$implicit;
@@ -92774,14 +92771,14 @@ function MessageTableComponent_Conditional_0_For_25_Conditional_4_Template(rf, c
 function MessageTableComponent_Conditional_0_For_25_For_6_Template(rf, ctx) {
   if (rf & 1) {
     const _r17 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "td", 38);
+    \u0275\u0275elementStart(0, "td", 40);
     \u0275\u0275listener("dblclick", function MessageTableComponent_Conditional_0_For_25_For_6_Template_td_dblclick_0_listener() {
       const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
       const row_r14 = \u0275\u0275nextContext().$implicit;
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onCellDblClick(row_r14, column_r18));
     });
-    \u0275\u0275elementStart(1, "ep-message-table-cell", 39);
+    \u0275\u0275elementStart(1, "ep-message-table-cell", 41);
     \u0275\u0275listener("cellMouseOver", function MessageTableComponent_Conditional_0_For_25_For_6_Template_ep_message_table_cell_cellMouseOver_1_listener($event) {
       const column_r18 = \u0275\u0275restoreView(_r17).$implicit;
       const row_r14 = \u0275\u0275nextContext().$implicit;
@@ -92842,19 +92839,19 @@ function MessageTableComponent_Conditional_0_For_25_For_6_Template(rf, ctx) {
     const column_r18 = ctx.$implicit;
     const row_r14 = \u0275\u0275nextContext().$implicit;
     const ctx_r2 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("ngClass", \u0275\u0275pureFunction2(10, _c63, ctx_r2.isCellChanged(row_r14, column_r18), ctx_r2.hasUnionError(row_r14, column_r18)));
+    \u0275\u0275property("ngClass", \u0275\u0275pureFunction2(10, _c72, ctx_r2.isCellChanged(row_r14, column_r18), ctx_r2.hasUnionError(row_r14, column_r18)));
     \u0275\u0275advance();
     \u0275\u0275property("column", column_r18)("isColumnEditable", ctx_r2.isColumnEditable(column_r18))("isEditing", ctx_r2.isEditingCell(row_r14, column_r18))("displayValue", ctx_r2.getCellValue(row_r14, column_r18))("booleanValue", ctx_r2.getBooleanCellValue(row_r14, column_r18))("editingDate", ctx_r2.editingDate)("datePickerMinDate", ctx_r2.getDatePickerMinDate(row_r14, column_r18))("dropdownOptions", ctx_r2.getDropdownOptions(row_r14, column_r18))("dropdownSelection", ctx_r2.getDropdownSelection(row_r14, column_r18));
   }
 }
 function MessageTableComponent_Conditional_0_For_25_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "tr")(1, "td", 29);
-    \u0275\u0275conditionalCreate(2, MessageTableComponent_Conditional_0_For_25_Conditional_2_Template, 2, 1, "button", 30);
-    \u0275\u0275conditionalCreate(3, MessageTableComponent_Conditional_0_For_25_Conditional_3_Template, 2, 3, "div", 31);
-    \u0275\u0275conditionalCreate(4, MessageTableComponent_Conditional_0_For_25_Conditional_4_Template, 2, 2, "div", 32);
+    \u0275\u0275elementStart(0, "tr")(1, "td", 31);
+    \u0275\u0275conditionalCreate(2, MessageTableComponent_Conditional_0_For_25_Conditional_2_Template, 2, 1, "button", 32);
+    \u0275\u0275conditionalCreate(3, MessageTableComponent_Conditional_0_For_25_Conditional_3_Template, 2, 3, "div", 33);
+    \u0275\u0275conditionalCreate(4, MessageTableComponent_Conditional_0_For_25_Conditional_4_Template, 2, 2, "div", 34);
     \u0275\u0275elementEnd();
-    \u0275\u0275repeaterCreate(5, MessageTableComponent_Conditional_0_For_25_For_6_Template, 2, 13, "td", 33, \u0275\u0275componentInstance().trackByColumn, true);
+    \u0275\u0275repeaterCreate(5, MessageTableComponent_Conditional_0_For_25_For_6_Template, 2, 13, "td", 35, \u0275\u0275componentInstance().trackByColumn, true);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -92872,7 +92869,7 @@ function MessageTableComponent_Conditional_0_For_25_Template(rf, ctx) {
 function MessageTableComponent_Conditional_0_Conditional_26_Template(rf, ctx) {
   if (rf & 1) {
     const _r19 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "tr")(1, "td")(2, "div", 40);
+    \u0275\u0275elementStart(0, "tr")(1, "td")(2, "div", 42);
     \u0275\u0275listener("click", function MessageTableComponent_Conditional_0_Conditional_26_Template_div_click_2_listener() {
       \u0275\u0275restoreView(_r19);
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -92901,11 +92898,11 @@ function MessageTableComponent_Conditional_0_Conditional_26_Template(rf, ctx) {
 function MessageTableComponent_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 3, 0)(2, "div", 5)(3, "div", 6);
-    \u0275\u0275conditionalCreate(4, MessageTableComponent_Conditional_0_Conditional_4_Template, 2, 1, "ep-button", 7);
-    \u0275\u0275repeaterCreate(5, MessageTableComponent_Conditional_0_For_6_Template, 2, 2, "ep-button", 8, _forTrack04);
+    \u0275\u0275elementStart(0, "div", 4, 0)(2, "div", 6)(3, "div", 7);
+    \u0275\u0275conditionalCreate(4, MessageTableComponent_Conditional_0_Conditional_4_Template, 2, 1, "ep-button", 8);
+    \u0275\u0275repeaterCreate(5, MessageTableComponent_Conditional_0_For_6_Template, 2, 2, "ep-button", 9, _forTrack04);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(7, "div", 9)(8, "div", 10, 1)(10, "ep-button", 11);
+    \u0275\u0275elementStart(7, "div", 10)(8, "div", 11, 1)(10, "ep-button", 12);
     \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_Template_ep_button_buttonClick_10_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r2 = \u0275\u0275nextContext();
@@ -92914,12 +92911,12 @@ function MessageTableComponent_Conditional_0_Template(rf, ctx) {
     });
     \u0275\u0275text(11, " Manage ");
     \u0275\u0275elementEnd()();
-    \u0275\u0275conditionalCreate(12, MessageTableComponent_Conditional_0_Conditional_12_Template, 2, 4, "div", 12);
+    \u0275\u0275conditionalCreate(12, MessageTableComponent_Conditional_0_Conditional_12_Template, 3, 6, "div", 13);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(13, "div", 13)(14, "table", 14)(15, "thead");
+    \u0275\u0275elementStart(13, "div", 14)(14, "table", 15)(15, "thead");
     \u0275\u0275template(16, MessageTableComponent_Conditional_0_ng_template_16_Template, 5, 9, "ng-template", null, 2, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementStart(18, "tr");
-    \u0275\u0275element(19, "th", 15);
+    \u0275\u0275element(19, "th", 16);
     \u0275\u0275repeaterCreate(20, MessageTableComponent_Conditional_0_For_21_Template, 2, 2, null, null, \u0275\u0275componentInstance().trackByColumn, true);
     \u0275\u0275elementEnd();
     \u0275\u0275conditionalCreate(22, MessageTableComponent_Conditional_0_Conditional_22_Template, 3, 0, "tr");
@@ -92928,7 +92925,7 @@ function MessageTableComponent_Conditional_0_Template(rf, ctx) {
     \u0275\u0275repeaterCreate(24, MessageTableComponent_Conditional_0_For_25_Template, 7, 3, "tr", null, \u0275\u0275componentInstance().trackByRow, true);
     \u0275\u0275conditionalCreate(26, MessageTableComponent_Conditional_0_Conditional_26_Template, 4, 2, "tr");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(27, "div", 16)(28, "ep-button", 17);
+    \u0275\u0275elementStart(27, "div", 17)(28, "ep-button", 18);
     \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_Template_ep_button_buttonClick_28_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r2 = \u0275\u0275nextContext();
@@ -92936,7 +92933,7 @@ function MessageTableComponent_Conditional_0_Template(rf, ctx) {
     });
     \u0275\u0275text(29, " CSV ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(30, "ep-button", 17);
+    \u0275\u0275elementStart(30, "ep-button", 18);
     \u0275\u0275listener("buttonClick", function MessageTableComponent_Conditional_0_Template_ep_button_buttonClick_30_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r2 = \u0275\u0275nextContext();
@@ -92973,7 +92970,7 @@ function MessageTableComponent_Conditional_0_Template(rf, ctx) {
 }
 function MessageTableComponent_Conditional_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 4);
+    \u0275\u0275elementStart(0, "div", 5);
     \u0275\u0275text(1, "Table data is missing or invalid");
     \u0275\u0275elementEnd();
   }
@@ -92992,7 +92989,7 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.tableActions = [];
     this.id = null;
     this.unions = [];
-    this.actionClick = new EventEmitter();
+    this.actionClick = output();
     this.displayedRows = [];
     this.showAll = false;
     this.currentSortField = null;
@@ -93001,6 +92998,7 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.dynamicColumns = [];
     this.visibleColumns = [];
     this.showColumnsDropdown = false;
+    this.isColumnsDropdownPositioned = false;
     this.columnsDropdownStyles = {};
     this.columnAccessors = {};
     this.editingKey = null;
@@ -93071,7 +93069,6 @@ var _MessageTableComponent = class _MessageTableComponent {
     if (changes["unions"]) {
       this.initializeUnions();
       this.initializeColumns();
-      this.cdr.markForCheck();
     }
   }
   initializeTable() {
@@ -93412,7 +93409,6 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.dropdownStatesPrepared = false;
     this.prepareAllDropdownStates();
     this.initializeUnions();
-    this.cdr.markForCheck();
   }
   cancelEdit(revertToOriginal = false) {
     if (revertToOriginal && this.editingRow && this.editingKey) {
@@ -93423,7 +93419,6 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.editingValue = null;
     this.editingDate = null;
     this.editingOriginalValue = null;
-    this.cdr.markForCheck();
   }
   setNestedValue(obj, path, value) {
     if (!obj || !path)
@@ -93680,7 +93675,6 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.setNestedValue(row, column.key, dateString);
     this.recalculateMathColumnsForRow(row);
     this.markTableAsChanged();
-    this.cdr.detectChanges();
     this.applyEdit(row, column);
   }
   onCellMouseOver(event, row, column) {
@@ -93756,7 +93750,6 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.applyDropdownValueToRow(row, column, isCleared ? null : option);
     this.recalculateMathColumnsForRow(row);
     this.markTableAsChanged();
-    this.cdr.markForCheck();
   }
   onMultiSelectChange(selection, row, column) {
     let rowMap = this.dropdownState.get(row);
@@ -93775,7 +93768,6 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.applyDropdownValueToRow(row, column, state.selected);
     this.recalculateMathColumnsForRow(row);
     this.markTableAsChanged();
-    this.cdr.markForCheck();
   }
   applyDropdownValueToRow(row, column, selected) {
     if (!this.isColumnEditable(column))
@@ -94112,7 +94104,6 @@ var _MessageTableComponent = class _MessageTableComponent {
       if (index >= 0 && index < this.rows.length) {
         this.selectedRow = this.rows[index];
         this.updateSelectedRowIndices();
-        this.cdr.markForCheck();
       }
     } else if (this.rowsSelectionType === "multiSelect") {
       this.selectedRows.clear();
@@ -94122,7 +94113,6 @@ var _MessageTableComponent = class _MessageTableComponent {
         }
       });
       this.updateSelectedRowIndices();
-      this.cdr.markForCheck();
     }
   }
   applyPreselectedRows() {
@@ -94134,7 +94124,6 @@ var _MessageTableComponent = class _MessageTableComponent {
       if (!isNaN(index) && index >= 0 && index < this.rows.length) {
         this.selectedRow = this.rows[index];
         this.updateSelectedRowIndices();
-        this.cdr.markForCheck();
       }
     } else if (this.rowsSelectionType === "multiSelect") {
       this.selectedRows.clear();
@@ -94145,7 +94134,6 @@ var _MessageTableComponent = class _MessageTableComponent {
         }
       });
       this.updateSelectedRowIndices();
-      this.cdr.markForCheck();
     }
   }
   initializeUnions() {
@@ -94189,7 +94177,6 @@ var _MessageTableComponent = class _MessageTableComponent {
         }
       }
     }
-    this.cdr.markForCheck();
   }
   isUnionColumn(column) {
     return !!column?.key && this.unionIndexByKey.has(column.key);
@@ -94521,11 +94508,28 @@ var _MessageTableComponent = class _MessageTableComponent {
     this.updateDisplayedValues();
   }
   toggleColumnsDropdown() {
-    this.showColumnsDropdown = !this.showColumnsDropdown;
+    if (this.showColumnsDropdown) {
+      this.showColumnsDropdown = false;
+      this.isColumnsDropdownPositioned = false;
+      this.columnsDropdownStyles = {};
+      return;
+    }
+    this.isColumnsDropdownPositioned = false;
+    this.updateColumnsDropdownPosition();
+    this.showColumnsDropdown = true;
+    this.cdr.markForCheck();
+    setTimeout(() => {
+      if (!this.showColumnsDropdown) {
+        return;
+      }
+      this.updateColumnsDropdownPosition();
+      this.isColumnsDropdownPositioned = true;
+      this.cdr.markForCheck();
+    });
+  }
+  onWindowResize() {
     if (this.showColumnsDropdown) {
       this.updateColumnsDropdownPosition();
-    } else {
-      this.columnsDropdownStyles = {};
     }
   }
   updateColumnsDropdownPosition() {
@@ -94533,9 +94537,34 @@ var _MessageTableComponent = class _MessageTableComponent {
     if (!toggleEl)
       return;
     const rect = toggleEl.getBoundingClientRect();
+    const dropdownEl = this.columnsDropdown?.nativeElement;
+    const dropdownRect = dropdownEl?.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const spacing = 4;
+    const viewportPadding = 8;
+    const estimatedWidth = 360;
+    const estimatedHeight = 400;
+    const dropdownWidth = dropdownRect?.width || estimatedWidth;
+    const dropdownHeight = dropdownRect?.height || estimatedHeight;
+    let left = rect.left;
+    let top = rect.bottom + spacing;
+    if (left + dropdownWidth + viewportPadding > viewportWidth) {
+      left = viewportWidth - dropdownWidth - viewportPadding;
+    }
+    if (left < viewportPadding) {
+      left = viewportPadding;
+    }
+    if (top + dropdownHeight + viewportPadding > viewportHeight) {
+      const topAbove = rect.top - dropdownHeight - spacing;
+      top = topAbove >= viewportPadding ? topAbove : viewportHeight - dropdownHeight - viewportPadding;
+    }
+    if (top < viewportPadding) {
+      top = viewportPadding;
+    }
     this.columnsDropdownStyles = {
-      top: `${rect.bottom}px`,
-      left: `${rect.left}px`
+      top: `${Math.round(top)}px`,
+      left: `${Math.round(left)}px`
     };
   }
 };
@@ -94546,21 +94575,25 @@ _MessageTableComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
   if (rf & 1) {
     \u0275\u0275viewQuery(_c011, 5);
     \u0275\u0275viewQuery(_c18, 5);
+    \u0275\u0275viewQuery(_c26, 5);
   }
   if (rf & 2) {
     let _t;
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.tableContainer = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.columnsToggle = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.columnsDropdown = _t.first);
   }
 }, hostBindings: function MessageTableComponent_HostBindings(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275listener("click", function MessageTableComponent_click_HostBindingHandler($event) {
       return ctx.onDocumentClick($event);
-    }, \u0275\u0275resolveDocument);
+    }, \u0275\u0275resolveDocument)("resize", function MessageTableComponent_resize_HostBindingHandler() {
+      return ctx.onWindowResize();
+    }, \u0275\u0275resolveWindow);
   }
-}, inputs: { message: "message", columns: "columns", rows: "rows", visibleRowsQuantity: "visibleRowsQuantity", isEditable: "isEditable", isTitleEditable: "isTitleEditable", isSortable: "isSortable", defaultSortField: "defaultSortField", tableActions: "tableActions", id: "id", rowsSelectionType: "rowsSelectionType", preselectedRows: "preselectedRows", unions: "unions" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 2, vars: 1, consts: [["tableContainer", ""], ["columnsToggle", ""], ["columnHeader", ""], [1, "ep-message-table"], [1, "ep-message-table__error"], [1, "ep-message-table__header-bar"], [1, "ep-message-table__header-bar-left"], ["variant", "secondary", "size", "md", "iconName", "reset", 3, "iconSize"], ["variant", "secondary", "size", "md", 3, "imgSrc"], [1, "ep-message-table__header-bar-right"], [1, "ep-message-table__manage"], ["variant", "ghost", "size", "md", "iconName", "chevron-xs", "iconPos", "right", 3, "buttonClick", "iconSize"], [1, "ep-message-table__columns-dropdown", 3, "ngStyle"], [1, "ep-message-table__scroll"], [1, "ep-message-table__container"], [1, "ep-message-table__selection-th"], [1, "ep-message-table__footer"], ["variant", "secondary", "size", "md", "iconName", "download", 3, "buttonClick", "iconSize"], ["variant", "secondary", "size", "md", "iconName", "reset", 3, "buttonClick", "iconSize"], ["variant", "secondary", "size", "md", 3, "buttonClick", "imgSrc"], [3, "updateShownColumns", "columns", "maxHeight", "isEmbedded"], [1, "ep-message-table__title", 3, "mouseenter", "mouseleave", "dblclick", "ngClass"], [1, "ep-message-table__title-editor", 3, "ngModel"], [3, "ngStyle"], ["type", "button", 1, "ep-message-table__sort-arrow", 3, "click", "ngStyle"], ["alt", "Sort icon", 2, "vertical-align", "top", 3, "src"], [1, "ep-message-table__title-editor", 3, "ngModelChange", "keydown", "blur", "ngModel"], [1, "ep-message-table__union-title"], [4, "ngTemplateOutlet", "ngTemplateOutletContext"], [1, "ep-message-table__selection-cell"], ["type", "button", "title", "Delete row", 1, "ep-message-table__delete-icon"], [1, "ep-message-table__radio"], [1, "ep-message-table__checkbox"], [3, "ngClass"], ["type", "button", "title", "Delete row", 1, "ep-message-table__delete-icon", 3, "click"], ["width", "16", "height", "16", "alt", "Delete row", 3, "src"], ["type", "radio", 3, "change", "name", "checked", "disabled"], ["type", "checkbox", 3, "change", "checked", "disabled"], [3, "dblclick", "ngClass"], [3, "cellMouseOver", "cellMouseLeave", "booleanToggle", "dateChanged", "dateBlur", "dropdownFocus", "selectChanged", "multiChanged", "editorInput", "editorKeydown", "editorBlur", "column", "isColumnEditable", "isEditing", "displayValue", "booleanValue", "editingDate", "datePickerMinDate", "dropdownOptions", "dropdownSelection"], ["role", "button", "tabindex", "0", 1, "ep-message-table__show-more", 3, "click", "keydown.enter", "keydown.space"]], template: function MessageTableComponent_Template(rf, ctx) {
+}, inputs: { message: "message", columns: "columns", rows: "rows", visibleRowsQuantity: "visibleRowsQuantity", isEditable: "isEditable", isTitleEditable: "isTitleEditable", isSortable: "isSortable", defaultSortField: "defaultSortField", tableActions: "tableActions", id: "id", rowsSelectionType: "rowsSelectionType", preselectedRows: "preselectedRows", unions: "unions" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 2, vars: 1, consts: [["tableContainer", ""], ["columnsToggle", ""], ["columnHeader", ""], ["columnsDropdown", ""], [1, "ep-message-table"], [1, "ep-message-table__error"], [1, "ep-message-table__header-bar"], [1, "ep-message-table__header-bar-left"], ["variant", "secondary", "size", "md", "iconName", "reset", 3, "iconSize"], ["variant", "secondary", "size", "md", 3, "imgSrc"], [1, "ep-message-table__header-bar-right"], [1, "ep-message-table__manage"], ["variant", "ghost", "size", "md", "iconName", "chevron-xs", "iconPos", "right", 3, "buttonClick", "iconSize"], [1, "ep-message-table__columns-dropdown", 3, "ngStyle", "visibility"], [1, "ep-message-table__scroll"], [1, "ep-message-table__container"], [1, "ep-message-table__selection-th"], [1, "ep-message-table__footer"], ["variant", "secondary", "size", "md", "iconName", "download", 3, "buttonClick", "iconSize"], ["variant", "secondary", "size", "md", "iconName", "reset", 3, "buttonClick", "iconSize"], ["variant", "secondary", "size", "md", 3, "buttonClick", "imgSrc"], [1, "ep-message-table__columns-dropdown", 3, "ngStyle"], [3, "updateShownColumns", "columns", "maxHeight", "isEmbedded"], [1, "ep-message-table__title", 3, "mouseenter", "mouseleave", "dblclick", "ngClass"], [1, "ep-message-table__title-editor", 3, "ngModel"], [3, "ngStyle"], ["type", "button", 1, "ep-message-table__sort-arrow", 3, "click", "ngStyle"], ["alt", "Sort icon", 2, "vertical-align", "top", 3, "src"], [1, "ep-message-table__title-editor", 3, "ngModelChange", "keydown", "blur", "ngModel"], [1, "ep-message-table__union-title"], [4, "ngTemplateOutlet", "ngTemplateOutletContext"], [1, "ep-message-table__selection-cell"], ["type", "button", "title", "Delete row", 1, "ep-message-table__delete-icon"], [1, "ep-message-table__radio"], [1, "ep-message-table__checkbox"], [3, "ngClass"], ["type", "button", "title", "Delete row", 1, "ep-message-table__delete-icon", 3, "click"], ["width", "16", "height", "16", "alt", "Delete row", 3, "src"], ["type", "radio", 3, "change", "name", "checked", "disabled"], ["type", "checkbox", 3, "change", "checked", "disabled"], [3, "dblclick", "ngClass"], [3, "cellMouseOver", "cellMouseLeave", "booleanToggle", "dateChanged", "dateBlur", "dropdownFocus", "selectChanged", "multiChanged", "editorInput", "editorKeydown", "editorBlur", "column", "isColumnEditable", "isEditing", "displayValue", "booleanValue", "editingDate", "datePickerMinDate", "dropdownOptions", "dropdownSelection"], ["role", "button", "tabindex", "0", 1, "ep-message-table__show-more", 3, "click", "keydown.enter", "keydown.space"]], template: function MessageTableComponent_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_Template, 32, 8, "div", 3)(1, MessageTableComponent_Conditional_1_Template, 2, 0, "div", 4);
+    \u0275\u0275conditionalCreate(0, MessageTableComponent_Conditional_0_Template, 32, 8, "div", 4)(1, MessageTableComponent_Conditional_1_Template, 2, 0, "div", 5);
   }
   if (rf & 2) {
     \u0275\u0275conditional(ctx.rows && ctx.rows.length > 0 && ctx.columns && ctx.columns.length > 0 ? 0 : 1);
@@ -94628,7 +94661,12 @@ var MessageTableComponent = _MessageTableComponent;
           </ep-button>
         </div>
         @if (showColumnsDropdown) {
-          <div class="ep-message-table__columns-dropdown" [ngStyle]="columnsDropdownStyles">
+          <div
+            #columnsDropdown
+            class="ep-message-table__columns-dropdown"
+            [ngStyle]="columnsDropdownStyles"
+            [style.visibility]="isColumnsDropdownPositioned ? 'visible' : 'hidden'"
+          >
             <ep-message-table-columns-configuration
               [columns]="dynamicColumns"
               [maxHeight]="400"
@@ -94870,21 +94908,25 @@ var MessageTableComponent = _MessageTableComponent;
     type: Input
   }], unions: [{
     type: Input
-  }], actionClick: [{
-    type: Output
-  }], tableContainer: [{
+  }], actionClick: [{ type: Output, args: ["actionClick"] }], tableContainer: [{
     type: ViewChild,
     args: ["tableContainer", { static: false }]
   }], columnsToggle: [{
     type: ViewChild,
     args: ["columnsToggle", { static: false }]
+  }], columnsDropdown: [{
+    type: ViewChild,
+    args: ["columnsDropdown", { static: false }]
   }], onDocumentClick: [{
     type: HostListener,
     args: ["document:click", ["$event"]]
+  }], onWindowResize: [{
+    type: HostListener,
+    args: ["window:resize"]
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageTableComponent, { className: "MessageTableComponent", filePath: "src/app/components/message-table/message-table.component.ts", lineNumber: 57 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageTableComponent, { className: "MessageTableComponent", filePath: "src/app/components/message-table/message-table.component.ts", lineNumber: 56 });
 })();
 
 // src/app/components/thinking-expander/thinking-expander.component.ts
@@ -95109,7 +95151,7 @@ var ThinkingExpanderComponent = _ThinkingExpanderComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ThinkingExpanderComponent, [{
     type: Component,
-    args: [{ selector: "ep-thinking-expander", standalone: true, imports: [CommonModule, IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, template: '@if (hasEntries) {\r\n  <div class="ep-thinking" [class.ep-thinking--expanded]="expanded">\r\n    <button type="button" class="ep-thinking__header" (click)="toggleExpanded()">\r\n      <span class="ep-thinking__chevron" [class.ep-thinking__chevron--expanded]="expanded">\r\n        <ep-icon name="triangle-right" [size]="8"></ep-icon>\r\n      </span>\r\n      <span class="ep-thinking__summary">\r\n        @if (isActive) {\r\n          {{ latestSummary }}\r\n          <span class="ep-thinking__timer">({{ elapsedSeconds }}s)</span>\r\n        } @else {\r\n          Thought for {{ elapsedSeconds }}s\r\n        }\r\n      </span>\r\n    </button>\r\n\r\n    @if (expanded) {\r\n      <div class="ep-thinking__history">\r\n        @for (entry of entries; track $index) {\r\n          <div class="ep-thinking__item">\r\n            <button type="button" class="ep-thinking__item-header" (click)="toggleItem($index)">\r\n              <span\r\n                class="ep-thinking__chevron-small"\r\n                [class.ep-thinking__chevron-small--expanded]="isItemExpanded($index)"\r\n              >\r\n                <ep-icon name="triangle-right" [size]="8"></ep-icon>\r\n              </span>\r\n              <span class="ep-thinking__item-summary">\r\n                {{ summary(entry) }}\r\n              </span>\r\n            </button>\r\n\r\n            @if (isItemExpanded($index)) {\r\n              <div class="ep-thinking__item-body">\r\n                {{ entry }}\r\n              </div>\r\n            }\r\n          </div>\r\n        }\r\n      </div>\r\n    }\r\n  </div>\r\n}\r\n', styles: ["/* src/app/components/thinking-expander/thinking-expander.component.scss */\n.ep-thinking {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n  overflow: hidden;\n}\n.ep-thinking__header {\n  display: flex;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 6px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron {\n  width: 8px;\n  height: 8px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.15s ease;\n}\n.ep-thinking__chevron--expanded {\n  transform: rotate(90deg);\n}\n.ep-thinking__summary {\n  flex: 1;\n  text-align: left;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text);\n}\n.ep-thinking__history {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text);\n  text-align: left;\n}\n.ep-thinking__chevron-small {\n  width: 8px;\n  height: 8px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.15s ease;\n}\n.ep-thinking__chevron-small--expanded {\n  transform: rotate(90deg);\n}\n.ep-thinking__item-summary {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */\n"] }]
+    args: [{ selector: "ep-thinking-expander", standalone: true, imports: [CommonModule, IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, template: '@if (hasEntries) {\n  <div class="ep-thinking" [class.ep-thinking--expanded]="expanded">\n    <button type="button" class="ep-thinking__header" (click)="toggleExpanded()">\n      <span class="ep-thinking__chevron" [class.ep-thinking__chevron--expanded]="expanded">\n        <ep-icon name="triangle-right" [size]="8"></ep-icon>\n      </span>\n      <span class="ep-thinking__summary">\n        @if (isActive) {\n          {{ latestSummary }}\n          <span class="ep-thinking__timer">({{ elapsedSeconds }}s)</span>\n        } @else {\n          Thought for {{ elapsedSeconds }}s\n        }\n      </span>\n    </button>\n\n    @if (expanded) {\n      <div class="ep-thinking__history">\n        @for (entry of entries; track $index) {\n          <div class="ep-thinking__item">\n            <button type="button" class="ep-thinking__item-header" (click)="toggleItem($index)">\n              <span\n                class="ep-thinking__chevron-small"\n                [class.ep-thinking__chevron-small--expanded]="isItemExpanded($index)"\n              >\n                <ep-icon name="triangle-right" [size]="8"></ep-icon>\n              </span>\n              <span class="ep-thinking__item-summary">\n                {{ summary(entry) }}\n              </span>\n            </button>\n\n            @if (isItemExpanded($index)) {\n              <div class="ep-thinking__item-body">\n                {{ entry }}\n              </div>\n            }\n          </div>\n        }\n      </div>\n    }\n  </div>\n}\n', styles: ["/* src/app/components/thinking-expander/thinking-expander.component.scss */\n.ep-thinking {\n  border: 1px solid var(--ep-color-border);\n  border-radius: 6px;\n  background: var(--ep-color-surface-alt);\n  padding: 8px;\n  max-width: 100%;\n  overflow: hidden;\n}\n.ep-thinking__header {\n  display: flex;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 6px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text);\n  font-size: 12px;\n  line-height: 1.4;\n}\n.ep-thinking__chevron {\n  width: 8px;\n  height: 8px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.15s ease;\n}\n.ep-thinking__chevron--expanded {\n  transform: rotate(90deg);\n}\n.ep-thinking__summary {\n  flex: 1;\n  text-align: left;\n  font-size: 12px;\n  line-height: 1.5;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__timer {\n  margin-left: 4px;\n  font-size: 12px;\n  color: var(--ep-color-text);\n}\n.ep-thinking__history {\n  margin-top: 8px;\n  padding-top: 8px;\n  border-top: 1px dashed var(--ep-color-border);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-left: 18px;\n  max-height: 220px;\n  overflow-y: auto;\n}\n.ep-thinking__item {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ep-thinking__item-header {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  padding: 0;\n  cursor: pointer;\n  font-size: 12px;\n  color: var(--ep-color-text);\n  text-align: left;\n}\n.ep-thinking__chevron-small {\n  width: 8px;\n  height: 8px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  transition: transform 0.15s ease;\n}\n.ep-thinking__chevron-small--expanded {\n  transform: rotate(90deg);\n}\n.ep-thinking__item-summary {\n  flex: 1;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.ep-thinking__item-body {\n  font-size: 12px;\n  line-height: 1.45;\n  color: var(--ep-color-text);\n  white-space: pre-wrap;\n  word-break: break-word;\n  margin-left: 18px;\n}\n/*# sourceMappingURL=thinking-expander.component.css.map */\n"] }]
   }], null, { entries: [{
     type: Input
   }], isActive: [{
@@ -95136,7 +95178,7 @@ function MessageItemComponent_Conditional_1_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(ctx_r0.displayDate);
+    \u0275\u0275textInterpolate(ctx_r0.displayDate());
   }
 }
 function MessageItemComponent_Conditional_2_Conditional_5_For_2_Template(rf, ctx) {
@@ -95160,7 +95202,7 @@ function MessageItemComponent_Conditional_2_Conditional_5_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275repeater(ctx_r0.message._attachedFileNames);
+    \u0275\u0275repeater(ctx_r0.message()._attachedFileNames);
   }
 }
 function MessageItemComponent_Conditional_2_Template(rf, ctx) {
@@ -95177,11 +95219,11 @@ function MessageItemComponent_Conditional_2_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(ctx_r0.displayTimestamp);
+    \u0275\u0275textInterpolate(ctx_r0.displayTimestamp());
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(ctx_r0.message.request);
+    \u0275\u0275textInterpolate(ctx_r0.message().request);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r0.message._attachedFileNames && ctx_r0.message._attachedFileNames.length > 0 ? 5 : -1);
+    \u0275\u0275conditional(ctx_r0.message()._attachedFileNames && ctx_r0.message()._attachedFileNames.length > 0 ? 5 : -1);
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_3_Template(rf, ctx) {
@@ -95190,7 +95232,7 @@ function MessageItemComponent_Conditional_3_Conditional_3_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("entries", ctx_r0.thinkingEntries)("isActive", ctx_r0.isThinkingActive)("startedAtUnixSeconds", ctx_r0.message._epicaThinkingStartedAt ?? ctx_r0.message.time ?? null)("endedAtUnixSeconds", ctx_r0.message._epicaThinkingEndedAt ?? null);
+    \u0275\u0275property("entries", ctx_r0.thinkingEntries())("isActive", ctx_r0.isThinkingActive())("startedAtUnixSeconds", ctx_r0.message()._epicaThinkingStartedAt ?? ctx_r0.message().time ?? null)("endedAtUnixSeconds", ctx_r0.message()._epicaThinkingEndedAt ?? null);
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_4_Template(rf, ctx) {
@@ -95202,7 +95244,7 @@ function MessageItemComponent_Conditional_3_Conditional_4_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275property("data", ctx_r0.messageMarkdown);
+    \u0275\u0275property("data", ctx_r0.messageMarkdown());
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_5_For_1_Template(rf, ctx) {
@@ -95219,7 +95261,7 @@ function MessageItemComponent_Conditional_3_Conditional_5_For_1_Template(rf, ctx
   if (rf & 2) {
     const table_r4 = ctx.$implicit;
     const ctx_r0 = \u0275\u0275nextContext(3);
-    \u0275\u0275property("message", ctx_r0.message)("columns", table_r4.columns ?? \u0275\u0275pureFunction0(13, _c012))("rows", table_r4.rows)("visibleRowsQuantity", table_r4.visibleRows ?? 10)("isEditable", table_r4.isEditable ?? true)("isTitleEditable", table_r4.isTitleEditable ?? true)("isSortable", table_r4.isSortable ?? true)("defaultSortField", table_r4.defaultSortField ?? null)("tableActions", table_r4.tableActions ?? \u0275\u0275pureFunction0(14, _c012))("id", table_r4.id ?? null)("rowsSelectionType", table_r4.rowsSelectionType)("preselectedRows", table_r4.preselectedRows)("unions", table_r4.unions ?? \u0275\u0275pureFunction0(15, _c012));
+    \u0275\u0275property("message", ctx_r0.message())("columns", table_r4.columns ?? \u0275\u0275pureFunction0(13, _c012))("rows", table_r4.rows)("visibleRowsQuantity", table_r4.visibleRows ?? 10)("isEditable", table_r4.isEditable ?? true)("isTitleEditable", table_r4.isTitleEditable ?? true)("isSortable", table_r4.isSortable ?? true)("defaultSortField", table_r4.defaultSortField ?? null)("tableActions", table_r4.tableActions ?? \u0275\u0275pureFunction0(14, _c012))("id", table_r4.id ?? null)("rowsSelectionType", table_r4.rowsSelectionType)("preselectedRows", table_r4.preselectedRows)("unions", table_r4.unions ?? \u0275\u0275pureFunction0(15, _c012));
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_5_Template(rf, ctx) {
@@ -95228,7 +95270,7 @@ function MessageItemComponent_Conditional_3_Conditional_5_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
-    \u0275\u0275repeater(ctx_r0.tables);
+    \u0275\u0275repeater(ctx_r0.tables());
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_6_Template(rf, ctx) {
@@ -95240,7 +95282,7 @@ function MessageItemComponent_Conditional_3_Conditional_6_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275property("data", ctx_r0.secondMessageMarkdown);
+    \u0275\u0275property("data", ctx_r0.secondMessageMarkdown());
   }
 }
 function MessageItemComponent_Conditional_3_Conditional_7_For_2_For_2_Template(rf, ctx) {
@@ -95283,7 +95325,7 @@ function MessageItemComponent_Conditional_3_Conditional_7_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext(2);
     \u0275\u0275advance();
-    \u0275\u0275repeater(ctx_r0.groupedButtonActionRows);
+    \u0275\u0275repeater(ctx_r0.groupedButtonActionRows());
   }
 }
 function MessageItemComponent_Conditional_3_Template(rf, ctx) {
@@ -95301,17 +95343,17 @@ function MessageItemComponent_Conditional_3_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(ctx_r0.displayTimestamp);
+    \u0275\u0275textInterpolate(ctx_r0.displayTimestamp());
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r0.hasThinkingEntries ? 3 : -1);
+    \u0275\u0275conditional(ctx_r0.hasThinkingEntries() ? 3 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r0.message.response.message ? 4 : -1);
+    \u0275\u0275conditional(ctx_r0.message().response.message ? 4 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r0.tables.length > 0 ? 5 : -1);
+    \u0275\u0275conditional(ctx_r0.tables().length > 0 ? 5 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r0.message.response.second_message ? 6 : -1);
+    \u0275\u0275conditional(ctx_r0.message().response.second_message ? 6 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx_r0.buttonActions.length > 0 ? 7 : -1);
+    \u0275\u0275conditional(ctx_r0.buttonActions().length > 0 ? 7 : -1);
   }
 }
 function MessageItemComponent_Conditional_4_For_2_Template(rf, ctx) {
@@ -95358,7 +95400,7 @@ function MessageItemComponent_Conditional_4_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275repeater(ctx_r0.linkActions);
+    \u0275\u0275repeater(ctx_r0.linkActions());
   }
 }
 function MessageItemComponent_Conditional_5_For_8_Template(rf, ctx) {
@@ -95403,7 +95445,7 @@ function MessageItemComponent_Conditional_5_Template(rf, ctx) {
     \u0275\u0275advance(5);
     \u0275\u0275property("size", 10);
     \u0275\u0275advance(2);
-    \u0275\u0275repeater(ctx_r0.promptActions);
+    \u0275\u0275repeater(ctx_r0.promptActions());
   }
 }
 function MessageItemComponent_Conditional_6_Template(rf, ctx) {
@@ -95419,42 +95461,143 @@ function MessageItemComponent_Conditional_6_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("src", ctx_r0.getImagePath("epicstaff-logo.svg"), \u0275\u0275sanitizeUrl);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", ctx_r0.message._epicaError === true ? "Oops! Something went wrong on our end. Please try refreshing the page or sending your message again in a moment." : ctx_r0.message._epicaError, " ");
+    \u0275\u0275textInterpolate1(" ", ctx_r0.message()._epicaError === true ? "Oops! Something went wrong on our end. Please try refreshing the page or sending your message again in a moment." : ctx_r0.message()._epicaError, " ");
   }
 }
+var _TimestampTickService = class _TimestampTickService {
+  constructor() {
+    this.tick = signal(0, ...ngDevMode ? [{ debugName: "tick" }] : []);
+    this.ticker = null;
+    this.refCount = 0;
+  }
+  register() {
+    this.refCount++;
+    if (!this.ticker) {
+      this.ticker = setInterval(() => {
+        this.tick.update((v2) => v2 + 1);
+      }, 6e4);
+    }
+  }
+  unregister() {
+    this.refCount--;
+    if (this.refCount <= 0 && this.ticker) {
+      clearInterval(this.ticker);
+      this.ticker = null;
+      this.refCount = 0;
+    }
+  }
+};
+_TimestampTickService.\u0275fac = function TimestampTickService_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _TimestampTickService)();
+};
+_TimestampTickService.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _TimestampTickService, factory: _TimestampTickService.\u0275fac, providedIn: "root" });
+var TimestampTickService = _TimestampTickService;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TimestampTickService, [{
+    type: Injectable,
+    args: [{ providedIn: "root" }]
+  }], null, null);
+})();
 var _MessageItemComponent = class _MessageItemComponent {
-  constructor(actionService) {
+  constructor(actionService, timestampTick) {
     this.actionService = actionService;
-    this.isLast = false;
-    this.actionClick = new EventEmitter();
+    this.timestampTick = timestampTick;
+    this.message = input.required(...ngDevMode ? [{ debugName: "message" }] : []);
+    this.isLast = input(false, ...ngDevMode ? [{ debugName: "isLast" }] : []);
+    this.actionClick = output();
     this.getImagePath = getImagePath;
     this.isSuggestionsVisible = true;
-    this.displayTimestamp = "";
-    this.timestampTimer = null;
+    this.displayTimestamp = computed(() => {
+      this.timestampTick.tick();
+      return this.computeTimestamp();
+    }, ...ngDevMode ? [{ debugName: "displayTimestamp" }] : []);
+    this.promptActions = computed(() => {
+      const actions = this.message()?.response?.action_message || [];
+      return actions.filter((a3) => a3.type === UserActionType.Prompt);
+    }, ...ngDevMode ? [{ debugName: "promptActions" }] : []);
+    this.isUserMessage = computed(() => {
+      return !!this.message().request;
+    }, ...ngDevMode ? [{ debugName: "isUserMessage" }] : []);
+    this.hasError = computed(() => {
+      return !!this.message()._epicaError;
+    }, ...ngDevMode ? [{ debugName: "hasError" }] : []);
+    this.thinkingEntries = computed(() => {
+      const msg = this.message();
+      if (Array.isArray(msg._epicaThinkingTrail) && msg._epicaThinkingTrail.length) {
+        return msg._epicaThinkingTrail;
+      }
+      const current = (msg._epicaIsThinkingAbout || "").trim();
+      return current ? [current] : [];
+    }, ...ngDevMode ? [{ debugName: "thinkingEntries" }] : []);
+    this.hasThinkingEntries = computed(() => {
+      return this.thinkingEntries().length > 0;
+    }, ...ngDevMode ? [{ debugName: "hasThinkingEntries" }] : []);
+    this.isThinkingActive = computed(() => {
+      const msg = this.message();
+      if (typeof msg._epicaThinkingActive === "boolean") {
+        return msg._epicaThinkingActive;
+      }
+      return !msg.response?.message && this.hasThinkingEntries();
+    }, ...ngDevMode ? [{ debugName: "isThinkingActive" }] : []);
+    this.messageDate = computed(() => {
+      const msg = this.message();
+      return msg.time ? new Date(msg.time * 1e3) : /* @__PURE__ */ new Date();
+    }, ...ngDevMode ? [{ debugName: "messageDate" }] : []);
+    this.displayDate = computed(() => {
+      return DateUtils.formatDate(this.messageDate());
+    }, ...ngDevMode ? [{ debugName: "displayDate" }] : []);
+    this.messageMarkdown = computed(() => {
+      return this.normalizeInlineFencedCode(this.message()?.response?.message);
+    }, ...ngDevMode ? [{ debugName: "messageMarkdown" }] : []);
+    this.secondMessageMarkdown = computed(() => {
+      return this.normalizeInlineFencedCode(this.message()?.response?.second_message);
+    }, ...ngDevMode ? [{ debugName: "secondMessageMarkdown" }] : []);
+    this.linkActions = computed(() => {
+      const actions = this.message()?.response?.action_message || [];
+      return actions.filter((action) => this.isRenderableAction(action, UserActionType.Link));
+    }, ...ngDevMode ? [{ debugName: "linkActions" }] : []);
+    this.buttonActions = computed(() => {
+      const actions = this.message()?.response?.action_message || [];
+      return actions.filter((action) => this.isRenderableAction(action, UserActionType.Button));
+    }, ...ngDevMode ? [{ debugName: "buttonActions" }] : []);
+    this.groupedButtonActionRows = computed(() => {
+      const buttonActions = this.buttonActions();
+      const grouped = {};
+      for (const action of buttonActions) {
+        const raw = action.sequence !== void 0 && action.sequence !== null ? action.sequence : 1;
+        const key = String(raw);
+        if (!grouped[key]) {
+          grouped[key] = [];
+        }
+        grouped[key].push(action);
+      }
+      const keys2 = Object.keys(grouped);
+      keys2.sort((a3, b2) => {
+        const na = Number(a3);
+        const nb = Number(b2);
+        if (!Number.isNaN(na) && !Number.isNaN(nb))
+          return na - nb;
+        return a3.localeCompare(b2);
+      });
+      return keys2.map((k2) => grouped[k2]);
+    }, ...ngDevMode ? [{ debugName: "groupedButtonActionRows" }] : []);
+    this.tables = computed(() => {
+      const response = this.message()?.response;
+      if (!response)
+        return [];
+      return response._tables || [];
+    }, ...ngDevMode ? [{ debugName: "tables" }] : []);
+    effect(() => {
+      if (this.isLast()) {
+        this.isSuggestionsVisible = true;
+      }
+    });
   }
   ngOnInit() {
-    this.updateTimestamp();
-    this.timestampTimer = setInterval(() => this.updateTimestamp(), 6e4);
+    this.timestampTick.register();
   }
   ngOnDestroy() {
-    if (this.timestampTimer) {
-      clearInterval(this.timestampTimer);
-    }
-  }
-  ngOnChanges(changes) {
-    if (changes["isLast"] && this.isLast) {
-      this.isSuggestionsVisible = true;
-    }
-    if (changes["message"]) {
-      this.updateTimestamp();
-    }
-  }
-  updateTimestamp() {
-    this.displayTimestamp = this.computeTimestamp();
-  }
-  get promptActions() {
-    const actions = this.message?.response?.action_message || [];
-    return actions.filter((a3) => a3.type === UserActionType.Prompt);
+    this.timestampTick.unregister();
   }
   hideSuggestions() {
     this.isSuggestionsVisible = false;
@@ -95499,33 +95642,25 @@ var _MessageItemComponent = class _MessageItemComponent {
     event.preventDefault();
     copyTrigger.click();
   }
-  get isUserMessage() {
-    return !!this.message.request;
-  }
-  get hasError() {
-    return !!this.message._epicaError;
-  }
-  get thinkingEntries() {
-    if (Array.isArray(this.message._epicaThinkingTrail) && this.message._epicaThinkingTrail.length) {
-      return this.message._epicaThinkingTrail;
+  onActionClick(action) {
+    if (!action.disabled) {
+      this.actionClick.emit({ action, message: this.message() });
     }
-    const current = (this.message._epicaIsThinkingAbout || "").trim();
-    return current ? [current] : [];
   }
-  get hasThinkingEntries() {
-    return this.thinkingEntries.length > 0;
+  trackTableById(index, table) {
+    return table.id || index.toString();
   }
-  get isThinkingActive() {
-    if (typeof this.message._epicaThinkingActive === "boolean") {
-      return this.message._epicaThinkingActive;
+  trackActionById(index, action) {
+    return action.id || `${action.action || "action"}_${index}`;
+  }
+  isRenderableAction(action, expectedType) {
+    if (!action || action.type !== expectedType) {
+      return false;
     }
-    return !this.message.response?.message && this.hasThinkingEntries;
-  }
-  get messageDate() {
-    return this.message.time ? new Date(this.message.time * 1e3) : /* @__PURE__ */ new Date();
+    return this.actionService.isActionHandled(action);
   }
   computeTimestamp() {
-    const date = this.messageDate;
+    const date = this.messageDate();
     const now = /* @__PURE__ */ new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMin = Math.floor(diffMs / 6e4);
@@ -95545,88 +95680,10 @@ var _MessageItemComponent = class _MessageItemComponent {
         year: "numeric"
       });
     }
-    if (!this.isUserMessage) {
+    if (!this.isUserMessage()) {
       return `EpicChat \xB7 ${timeStr}`;
     }
     return timeStr;
-  }
-  get displayDate() {
-    return DateUtils.formatDate(this.messageDate);
-  }
-  get messageMarkdown() {
-    return this.normalizeInlineFencedCode(this.message?.response?.message);
-  }
-  get secondMessageMarkdown() {
-    return this.normalizeInlineFencedCode(this.message?.response?.second_message);
-  }
-  /**
-   * Get link actions to display in message.
-   */
-  get linkActions() {
-    const actions = this.message?.response?.action_message || [];
-    return actions.filter((action) => this.isRenderableAction(action, UserActionType.Link));
-  }
-  /**
-   * Get button actions to display in message.
-   */
-  get buttonActions() {
-    const actions = this.message?.response?.action_message || [];
-    return actions.filter((action) => this.isRenderableAction(action, UserActionType.Button));
-  }
-  isRenderableAction(action, expectedType) {
-    if (!action || action.type !== expectedType) {
-      return false;
-    }
-    return this.actionService.isActionHandled(action);
-  }
-  /**
-   * Group button actions by sequence into rows.
-   * Only actions with exactly the same sequence value (string or number) are in one row.
-   */
-  get groupedButtonActionRows() {
-    const buttonActions = this.buttonActions;
-    const grouped = {};
-    for (const action of buttonActions) {
-      const raw = action.sequence !== void 0 && action.sequence !== null ? action.sequence : 1;
-      const key = String(raw);
-      if (!grouped[key]) {
-        grouped[key] = [];
-      }
-      grouped[key].push(action);
-    }
-    const keys2 = Object.keys(grouped);
-    keys2.sort((a3, b2) => {
-      const na = Number(a3);
-      const nb = Number(b2);
-      if (!Number.isNaN(na) && !Number.isNaN(nb))
-        return na - nb;
-      return a3.localeCompare(b2);
-    });
-    return keys2.map((k2) => grouped[k2]);
-  }
-  onActionClick(action) {
-    if (!action.disabled) {
-      this.actionClick.emit({ action, message: this.message });
-    }
-  }
-  get tables() {
-    const response = this.message?.response;
-    if (!response)
-      return [];
-    const tables = response._tables || [];
-    return tables;
-  }
-  /**
-   * Track function for tables
-   */
-  trackTableById(index, table) {
-    return table.id || index.toString();
-  }
-  /**
-   * Track function for actions
-   */
-  trackActionById(index, action) {
-    return action.id || `${action.action || "action"}_${index}`;
   }
   normalizeInlineFencedCode(value) {
     if (!value) {
@@ -95692,7 +95749,7 @@ ${normalizedCode}
   }
 };
 _MessageItemComponent.\u0275fac = function MessageItemComponent_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _MessageItemComponent)(\u0275\u0275directiveInject(ActionService));
+  return new (__ngFactoryType__ || _MessageItemComponent)(\u0275\u0275directiveInject(ActionService), \u0275\u0275directiveInject(TimestampTickService));
 };
 _MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageItemComponent, selectors: [["ep-message-item"]], hostBindings: function MessageItemComponent_HostBindings(rf, ctx) {
   if (rf & 1) {
@@ -95702,7 +95759,7 @@ _MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ 
       return ctx.onHostKeydown($event);
     });
   }
-}, inputs: { message: "message", isLast: "isLast" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 7, vars: 9, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], ["aria-label", "Suggestions", 1, "ep-message__suggestions-panel"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [3, "entries", "isActive", "startedAtUnixSeconds", "endedAtUnixSeconds"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], ["variant", "primary", "size", "md", 3, "disabled"], ["variant", "primary", "size", "md", 3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], [1, "ep-message__link-text"], ["name", "external-link", 1, "ep-message__link-icon", 3, "size"], [1, "ep-message__suggestions-panel-header"], [1, "ep-message__suggestions-panel-title"], ["type", "button", "aria-label", "Hide suggestions", 1, "ep-message__suggestions-panel-close", 3, "click"], ["name", "close", 3, "size"], [1, "ep-message__suggestions-panel-list"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "disabled"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "click", "disabled"], ["height", "60", "width", "60", "alt", "EpicStaff", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
+}, inputs: { message: [1, "message"], isLast: [1, "isLast"] }, outputs: { actionClick: "actionClick" }, decls: 7, vars: 9, consts: [[1, "ep-message", 3, "id"], ["id", "firstMessageOfDay", 1, "ep-message__date-divider"], [1, "ep-message__content"], [1, "ep-message__links"], ["aria-label", "Suggestions", 1, "ep-message__suggestions-panel"], [1, "epica-error"], [1, "ep-message__time"], [1, "ep-message__text"], [1, "ep-message__attached-files"], [1, "ep-message__attached-file"], [3, "entries", "isActive", "startedAtUnixSeconds", "endedAtUnixSeconds"], [1, "ep-message__actions"], [3, "data"], [3, "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [3, "actionClick", "message", "columns", "rows", "visibleRowsQuantity", "isEditable", "isTitleEditable", "isSortable", "defaultSortField", "tableActions", "id", "rowsSelectionType", "preselectedRows", "unions"], [1, "ep-message__actions-row"], ["variant", "primary", "size", "md", 3, "disabled"], ["variant", "primary", "size", "md", 3, "buttonClick", "disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "ep-message__link--disabled"], ["role", "button", "tabindex", "0", 1, "ep-message__link", 3, "click", "keydown.enter", "keydown.space"], [1, "ep-message__link-text"], ["name", "external-link", 1, "ep-message__link-icon", 3, "size"], [1, "ep-message__suggestions-panel-header"], [1, "ep-message__suggestions-panel-title"], ["type", "button", "aria-label", "Hide suggestions", 1, "ep-message__suggestions-panel-close", 3, "click"], ["name", "close", 3, "size"], [1, "ep-message__suggestions-panel-list"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "disabled"], ["type", "button", 1, "ep-message__suggestions-panel-item", 3, "click", "disabled"], ["height", "60", "width", "60", "alt", "EpicStaff", 3, "src"], [1, "epica-error__text"]], template: function MessageItemComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0);
     \u0275\u0275conditionalCreate(1, MessageItemComponent_Conditional_1_Template, 2, 1, "div", 1);
@@ -95714,20 +95771,20 @@ _MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ 
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    \u0275\u0275classProp("ep-message--user", ctx.isUserMessage);
-    \u0275\u0275property("id", "message_" + (ctx.message.id || ctx.message.time));
+    \u0275\u0275classProp("ep-message--user", ctx.isUserMessage());
+    \u0275\u0275property("id", "message_" + (ctx.message().id || ctx.message().time));
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.message._isFirstMessageOfDay ? 1 : -1);
+    \u0275\u0275conditional(ctx.message()._isFirstMessageOfDay ? 1 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.message.request ? 2 : -1);
+    \u0275\u0275conditional(ctx.message().request ? 2 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.message.response ? 3 : -1);
+    \u0275\u0275conditional(ctx.message().response ? 3 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.linkActions.length > 0 ? 4 : -1);
+    \u0275\u0275conditional(ctx.linkActions().length > 0 ? 4 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.isLast && ctx.isSuggestionsVisible && ctx.promptActions.length > 0 ? 5 : -1);
+    \u0275\u0275conditional(ctx.isLast() && ctx.isSuggestionsVisible && ctx.promptActions().length > 0 ? 5 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.hasError ? 6 : -1);
+    \u0275\u0275conditional(ctx.hasError() ? 6 : -1);
   }
 }, dependencies: [
   CommonModule,
@@ -95736,7 +95793,7 @@ _MessageItemComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ 
   ButtonComponent,
   ThinkingExpanderComponent,
   IconComponent
-], styles: ['@charset "UTF-8";\n\n\n\n.ep-message[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message[_ngcontent-%COMP%]:hover   .ep-message__time[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message[_ngcontent-%COMP%]   .ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  width: 100%;\n  margin: 0 auto 8px auto;\n  font-size: 11px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 0;\n  align-self: center;\n}\n.ep-message__date-divider[_ngcontent-%COMP%]::before, \n.ep-message__date-divider[_ngcontent-%COMP%]::after {\n  content: "";\n  flex: 1;\n  height: 1px;\n  background: var(--ep-color-border);\n}\n.ep-message__text[_ngcontent-%COMP%] {\n  display: block;\n  padding: 6px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     markdown {\n  display: block;\n}\n.ep-message__text[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]     p:last-child, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text[_ngcontent-%COMP%]     em, \n.ep-message__text[_ngcontent-%COMP%]     i, \n.ep-message__text[_ngcontent-%COMP%]   em[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   i[_ngcontent-%COMP%] {\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]     a, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text[_ngcontent-%COMP%]     a:hover, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:first-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:last-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul   li p, \n.ep-message__text[_ngcontent-%COMP%]     ul li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 24px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li, \n.ep-message__text[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol   li p, \n.ep-message__text[_ngcontent-%COMP%]     ol li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     code, \n.ep-message__text[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  font-size: 13px;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code {\n  margin: 8px 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ep-color-surface-alt) 70%, transparent);\n  overflow: hidden;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 32px;\n  padding: 0 10px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__lang {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: var(--ep-color-text-muted);\n  line-height: 1;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition:\n    color 0.15s,\n    border-color 0.15s,\n    background-color 0.15s;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:hover:not(:disabled) {\n  color: var(--ep-color-text);\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:disabled {\n  opacity: 0.75;\n  cursor: default;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code pre {\n  margin: 0;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  padding: 10px 12px;\n  overflow-x: auto;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code code {\n  display: block;\n  background: none;\n  border-radius: 0;\n  padding: 0;\n  color: var(--ep-color-text);\n  font-size: 12.5px;\n  line-height: 18px;\n  white-space: pre;\n  overflow-wrap: normal;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code--plain code {\n  color: var(--ep-color-text-muted);\n}\n.ep-message__text[_ngcontent-%COMP%]     pre, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre code, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: none;\n  padding: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  font-size: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 18px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%] {\n  font-size: 16px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  font-size: 14px;\n}\n.ep-message__text[_ngcontent-%COMP%]   hr[_ngcontent-%COMP%] {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   blockquote[_ngcontent-%COMP%] {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message[_ngcontent-%COMP%]:not(.ep-message--user)   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user[_ngcontent-%COMP%] {\n  align-items: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__content[_ngcontent-%COMP%] {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n  color: var(--ep-chat-text-question);\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  color: inherit;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__time[_ngcontent-%COMP%] {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 8px;\n}\n.ep-message__link[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n  min-height: 28px;\n  padding: 4px 10px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  background: transparent;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s,\n    border-color 0.15s,\n    color 0.15s;\n}\n.ep-message__link-text[_ngcontent-%COMP%] {\n  color: inherit;\n}\n.ep-message__link-icon[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  color: inherit;\n}\n.ep-message__link[_ngcontent-%COMP%]:hover:not(.ep-message__link--disabled) {\n  background: var(--ep-color-accent-soft);\n  border-color: var(--ep-color-accent);\n  color: var(--ep-color-accent);\n}\n.ep-message__link.ep-message__link--disabled[_ngcontent-%COMP%] {\n  border-color: var(--ep-color-border);\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.ep-message__suggestions-panel[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  max-width: 100%;\n  margin-top: 4px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  border-radius: 4px;\n  background: transparent;\n  overflow: hidden;\n}\n.ep-message__suggestions-panel-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 47px;\n  padding: 0 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n}\n.ep-message__suggestions-panel-title[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  line-height: 20px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 24px;\n  height: 24px;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  transition: opacity 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]:hover {\n  opacity: 1;\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 10px;\n  height: 10px;\n}\n.ep-message__suggestions-panel-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  min-height: 49px;\n  padding: 7px 14px;\n  font-size: 14px;\n  line-height: 20px;\n  text-align: left;\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  border: none;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  cursor: pointer;\n  transition: background-color 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-text) 4%, transparent);\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.epica-error[_ngcontent-%COMP%] {\n  display: flex;\n  width: fit-content;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 18px 20px;\n  align-items: center;\n  gap: 16px;\n  border-radius: 4px;\n  border: 1px solid rgba(104, 95, 255, 0.0784313725);\n  background: rgba(104, 95, 255, 0.0784313725);\n}\n.epica-error__text[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-accent);\n}\n[_nghost-%COMP%]     .ep-md-code__copy-icon {\n  font-size: 12px;\n  cursor: pointer;\n}\n/*# sourceMappingURL=message-item.component.css.map */'] });
+], styles: ['@charset "UTF-8";\n\n\n\n.ep-message[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message[_ngcontent-%COMP%]:hover   .ep-message__time[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message[_ngcontent-%COMP%]   .ep-message__date-divider[_ngcontent-%COMP%] {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  width: 100%;\n  margin: 0 auto 8px auto;\n  font-size: 11px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 0;\n  align-self: center;\n}\n.ep-message__date-divider[_ngcontent-%COMP%]::before, \n.ep-message__date-divider[_ngcontent-%COMP%]::after {\n  content: "";\n  flex: 1;\n  height: 1px;\n  background: var(--ep-color-border);\n}\n.ep-message__text[_ngcontent-%COMP%] {\n  display: block;\n  padding: 6px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     markdown {\n  display: block;\n}\n.ep-message__text[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]     p:last-child, \n.ep-message__text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text[_ngcontent-%COMP%]     em, \n.ep-message__text[_ngcontent-%COMP%]     i, \n.ep-message__text[_ngcontent-%COMP%]   em[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   i[_ngcontent-%COMP%] {\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]     a, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text[_ngcontent-%COMP%]     a:hover, \n.ep-message__text[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  text-decoration: underline;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:first-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul:last-child, \n.ep-message__text[_ngcontent-%COMP%]     ol:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]:last-child, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul   li p, \n.ep-message__text[_ngcontent-%COMP%]     ul li   p, \n.ep-message__text[_ngcontent-%COMP%]     ul li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 24px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul   li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]     ul li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li   ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     li ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul   ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ul ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]     ul li::before, \n.ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li, \n.ep-message__text[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol   li p, \n.ep-message__text[_ngcontent-%COMP%]     ol li   p, \n.ep-message__text[_ngcontent-%COMP%]     ol li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     p, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%] {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  padding-left: 28px;\n}\n.ep-message__text[_ngcontent-%COMP%]     ol   li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol   li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]     ol li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li   ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]     li ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]     ol li::before, \n.ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  left: 4px;\n}\n.ep-message__text[_ngcontent-%COMP%]     code, \n.ep-message__text[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  font-size: 13px;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code {\n  margin: 8px 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ep-color-surface-alt) 70%, transparent);\n  overflow: hidden;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 32px;\n  padding: 0 10px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__lang {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: var(--ep-color-text-muted);\n  line-height: 1;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition:\n    color 0.15s,\n    border-color 0.15s,\n    background-color 0.15s;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:hover:not(:disabled) {\n  color: var(--ep-color-text);\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code__copy:disabled {\n  opacity: 0.75;\n  cursor: default;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code pre {\n  margin: 0;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  padding: 10px 12px;\n  overflow-x: auto;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code code {\n  display: block;\n  background: none;\n  border-radius: 0;\n  padding: 0;\n  color: var(--ep-color-text);\n  font-size: 12.5px;\n  line-height: 18px;\n  white-space: pre;\n  overflow-wrap: normal;\n}\n.ep-message__text[_ngcontent-%COMP%]     .ep-md-code--plain code {\n  color: var(--ep-color-text-muted);\n}\n.ep-message__text[_ngcontent-%COMP%]     pre, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]     pre code, \n.ep-message__text[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: none;\n  padding: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%]:first-child, \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%]:first-child {\n  margin-top: 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  font-size: 20px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 18px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%] {\n  font-size: 16px;\n}\n.ep-message__text[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h5[_ngcontent-%COMP%], \n.ep-message__text[_ngcontent-%COMP%]   h6[_ngcontent-%COMP%] {\n  font-size: 14px;\n}\n.ep-message__text[_ngcontent-%COMP%]   hr[_ngcontent-%COMP%] {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text[_ngcontent-%COMP%]   blockquote[_ngcontent-%COMP%] {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message[_ngcontent-%COMP%]:not(.ep-message--user)   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user[_ngcontent-%COMP%] {\n  align-items: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__content[_ngcontent-%COMP%] {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%] {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n  color: var(--ep-chat-text-question);\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     strong, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     b, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   strong[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   b[_ngcontent-%COMP%], \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ul li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ul[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]     ol li::before, \n.ep-message--user[_ngcontent-%COMP%]   .ep-message__text[_ngcontent-%COMP%]   ol[_ngcontent-%COMP%]   li[_ngcontent-%COMP%]::before {\n  color: inherit;\n}\n.ep-message--user[_ngcontent-%COMP%]   .ep-message__time[_ngcontent-%COMP%] {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 8px;\n}\n.ep-message__link[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n  min-height: 28px;\n  padding: 4px 10px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  background: transparent;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s,\n    border-color 0.15s,\n    color 0.15s;\n}\n.ep-message__link-text[_ngcontent-%COMP%] {\n  color: inherit;\n}\n.ep-message__link-icon[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  color: inherit;\n}\n.ep-message__link[_ngcontent-%COMP%]:hover:not(.ep-message__link--disabled) {\n  background: var(--ep-color-accent-soft);\n  border-color: var(--ep-color-accent);\n  color: var(--ep-color-accent);\n}\n.ep-message__link.ep-message__link--disabled[_ngcontent-%COMP%] {\n  border-color: var(--ep-color-border);\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.ep-message__suggestions-panel[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  max-width: 100%;\n  margin-top: 4px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  border-radius: 4px;\n  background: transparent;\n  overflow: hidden;\n}\n.ep-message__suggestions-panel-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 47px;\n  padding: 0 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n}\n.ep-message__suggestions-panel-title[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  line-height: 20px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 24px;\n  height: 24px;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  transition: opacity 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]:hover {\n  opacity: 1;\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-close[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  width: 10px;\n  height: 10px;\n}\n.ep-message__suggestions-panel-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  min-height: 49px;\n  padding: 7px 14px;\n  font-size: 14px;\n  line-height: 20px;\n  text-align: left;\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  border: none;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  cursor: pointer;\n  transition: background-color 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-text) 4%, transparent);\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-item[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.epica-error[_ngcontent-%COMP%] {\n  display: flex;\n  width: fit-content;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 18px 20px;\n  align-items: center;\n  gap: 16px;\n  border-radius: 4px;\n  border: 1px solid rgba(104, 95, 255, 0.0784313725);\n  background: rgba(104, 95, 255, 0.0784313725);\n}\n.epica-error__text[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-accent);\n}\n[_nghost-%COMP%]     .ep-md-code__copy-icon {\n  font-size: 12px;\n  cursor: pointer;\n}\n/*# sourceMappingURL=message-item.component.css.map */'], changeDetection: 0 });
 var MessageItemComponent = _MessageItemComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MessageItemComponent, [{
@@ -95748,22 +95805,22 @@ var MessageItemComponent = _MessageItemComponent;
       ButtonComponent,
       ThinkingExpanderComponent,
       IconComponent
-    ], template: `<div
+    ], changeDetection: ChangeDetectionStrategy.OnPush, template: `<div
   class="ep-message"
-  [class.ep-message--user]="isUserMessage"
-  [id]="'message_' + (message.id || message.time)"
+  [class.ep-message--user]="isUserMessage()"
+  [id]="'message_' + (message().id || message().time)"
 >
-  @if (message._isFirstMessageOfDay) {
-    <div class="ep-message__date-divider" id="firstMessageOfDay">{{ displayDate }}</div>
+  @if (message()._isFirstMessageOfDay) {
+    <div class="ep-message__date-divider" id="firstMessageOfDay">{{ displayDate() }}</div>
   }
 
-  @if (message.request) {
+  @if (message().request) {
     <div class="ep-message__content">
-      <div class="ep-message__time">{{ displayTimestamp }}</div>
-      <div class="ep-message__text">{{ message.request }}</div>
-      @if (message._attachedFileNames && message._attachedFileNames.length > 0) {
+      <div class="ep-message__time">{{ displayTimestamp() }}</div>
+      <div class="ep-message__text">{{ message().request }}</div>
+      @if (message()._attachedFileNames && message()._attachedFileNames!.length > 0) {
         <div class="ep-message__attached-files">
-          @for (fileName of message._attachedFileNames; track fileName) {
+          @for (fileName of message()._attachedFileNames!; track fileName) {
             <div class="ep-message__attached-file">{{ fileName }}</div>
           }
         </div>
@@ -95771,29 +95828,29 @@ var MessageItemComponent = _MessageItemComponent;
     </div>
   }
 
-  @if (message.response) {
+  @if (message().response) {
     <div class="ep-message__content">
-      <div class="ep-message__time">{{ displayTimestamp }}</div>
+      <div class="ep-message__time">{{ displayTimestamp() }}</div>
 
-      @if (hasThinkingEntries) {
+      @if (hasThinkingEntries()) {
         <ep-thinking-expander
-          [entries]="thinkingEntries"
-          [isActive]="isThinkingActive"
-          [startedAtUnixSeconds]="message._epicaThinkingStartedAt ?? message.time ?? null"
-          [endedAtUnixSeconds]="message._epicaThinkingEndedAt ?? null"
+          [entries]="thinkingEntries()"
+          [isActive]="isThinkingActive()"
+          [startedAtUnixSeconds]="message()._epicaThinkingStartedAt ?? message().time ?? null"
+          [endedAtUnixSeconds]="message()._epicaThinkingEndedAt ?? null"
         />
       }
 
-      @if (message.response.message) {
+      @if (message().response!.message) {
         <div class="ep-message__text">
-          <markdown [data]="messageMarkdown"></markdown>
+          <markdown [data]="messageMarkdown()"></markdown>
         </div>
       }
 
-      @if (tables.length > 0) {
-        @for (table of tables; track trackTableById($index, table)) {
+      @if (tables().length > 0) {
+        @for (table of tables(); track trackTableById($index, table)) {
           <ep-message-table
-            [message]="message"
+            [message]="message()"
             [columns]="table.columns ?? []"
             [rows]="table.rows"
             [visibleRowsQuantity]="table.visibleRows ?? 10"
@@ -95811,15 +95868,15 @@ var MessageItemComponent = _MessageItemComponent;
         }
       }
 
-      @if (message.response.second_message) {
+      @if (message().response!.second_message) {
         <div class="ep-message__text">
-          <markdown [data]="secondMessageMarkdown"></markdown>
+          <markdown [data]="secondMessageMarkdown()"></markdown>
         </div>
       }
 
-      @if (buttonActions.length > 0) {
+      @if (buttonActions().length > 0) {
         <div class="ep-message__actions">
-          @for (actionRow of groupedButtonActionRows; track $index) {
+          @for (actionRow of groupedButtonActionRows(); track $index) {
             <div class="ep-message__actions-row">
               @for (action of actionRow; track trackActionById($index, action)) {
                 <ep-button
@@ -95838,9 +95895,9 @@ var MessageItemComponent = _MessageItemComponent;
     </div>
   }
 
-  @if (linkActions.length > 0) {
+  @if (linkActions().length > 0) {
     <div class="ep-message__links">
-      @for (action of linkActions; track trackActionById($index, action)) {
+      @for (action of linkActions(); track trackActionById($index, action)) {
         <a
           class="ep-message__link"
           [class.ep-message__link--disabled]="action.disabled"
@@ -95857,10 +95914,12 @@ var MessageItemComponent = _MessageItemComponent;
     </div>
   }
 
-  @if (isLast && isSuggestionsVisible && promptActions.length > 0) {
+  @if (isLast() && isSuggestionsVisible && promptActions().length > 0) {
     <section class="ep-message__suggestions-panel" aria-label="Suggestions">
       <div class="ep-message__suggestions-panel-header">
-        <span class="ep-message__suggestions-panel-title">Here are some quick suggestions for you</span>
+        <span class="ep-message__suggestions-panel-title"
+          >Here are some quick suggestions for you</span
+        >
         <button
           class="ep-message__suggestions-panel-close"
           type="button"
@@ -95871,7 +95930,7 @@ var MessageItemComponent = _MessageItemComponent;
         </button>
       </div>
       <div class="ep-message__suggestions-panel-list">
-        @for (action of promptActions; track action.action || $index) {
+        @for (action of promptActions(); track action.action || $index) {
           <button
             class="ep-message__suggestions-panel-item"
             type="button"
@@ -95885,27 +95944,21 @@ var MessageItemComponent = _MessageItemComponent;
     </section>
   }
 
-  @if (hasError) {
+  @if (hasError()) {
     <div class="epica-error">
       <img [src]="getImagePath('epicstaff-logo.svg')" height="60" width="60" alt="EpicStaff" />
       <div class="epica-error__text">
         {{
-          message._epicaError === true
+          message()._epicaError === true
             ? "Oops! Something went wrong on our end. Please try refreshing the page or sending your message again in a moment."
-            : message._epicaError
+            : message()._epicaError
         }}
       </div>
     </div>
   }
 </div>
 `, styles: ['@charset "UTF-8";\n\n/* src/app/components/message-item/message-item.component.scss */\n.ep-message {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  padding: 0 20px;\n  position: relative;\n  margin-bottom: 16px;\n}\n.ep-message:hover .ep-message__time {\n  opacity: 1;\n  transform: translateY(0);\n}\n.ep-message .ep-message__date-divider {\n  width: fit-content;\n  margin: 0 auto;\n  padding: 4px 12px;\n}\n.ep-message__content {\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  gap: 8px;\n  width: 100%;\n  align-self: flex-start;\n}\n.ep-message__date-divider {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  width: 100%;\n  margin: 0 auto 8px auto;\n  font-size: 11px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 0;\n  align-self: center;\n}\n.ep-message__date-divider::before,\n.ep-message__date-divider::after {\n  content: "";\n  flex: 1;\n  height: 1px;\n  background: var(--ep-color-border);\n}\n.ep-message__text {\n  display: block;\n  padding: 6px 12px;\n  overflow: hidden;\n  overflow-wrap: break-word;\n  word-wrap: break-word;\n  line-height: 20px;\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  max-width: 100%;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep markdown {\n  display: block;\n}\n.ep-message__text ::ng-deep p,\n.ep-message__text p {\n  margin: 0 0 8px 0;\n  line-height: 20px;\n}\n.ep-message__text ::ng-deep p:last-child,\n.ep-message__text p:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep strong,\n.ep-message__text ::ng-deep b,\n.ep-message__text strong,\n.ep-message__text b {\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.ep-message__text ::ng-deep em,\n.ep-message__text ::ng-deep i,\n.ep-message__text em,\n.ep-message__text i {\n  font-style: italic;\n}\n.ep-message__text ::ng-deep a,\n.ep-message__text a {\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  transition: text-decoration 0.2s;\n}\n.ep-message__text ::ng-deep a:hover,\n.ep-message__text a:hover {\n  text-decoration: underline;\n}\n.ep-message__text ::ng-deep ul,\n.ep-message__text ::ng-deep ol,\n.ep-message__text ul,\n.ep-message__text ol {\n  margin: 8px 0;\n  padding-left: 0;\n  list-style: none;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul:first-child,\n.ep-message__text ::ng-deep ol:first-child,\n.ep-message__text ul:first-child,\n.ep-message__text ol:first-child {\n  margin-top: 0;\n}\n.ep-message__text ::ng-deep ul:last-child,\n.ep-message__text ::ng-deep ol:last-child,\n.ep-message__text ul:last-child,\n.ep-message__text ol:last-child {\n  margin-bottom: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li,\n.ep-message__text ul li {\n  position: relative;\n  padding-left: 20px;\n  margin: 4px 0;\n  line-height: 20px;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li::before,\n.ep-message__text ul li::before {\n  content: "\\2022";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 600;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ul ::ng-deep li p,\n.ep-message__text ::ng-deep ul li ::ng-deep p,\n.ep-message__text ::ng-deep ul li p,\n.ep-message__text ul ::ng-deep li ::ng-deep p,\n.ep-message__text ul ::ng-deep li p,\n.ep-message__text ul li ::ng-deep p,\n.ep-message__text ul li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ::ng-deep ul ::ng-deep li ul,\n.ep-message__text ::ng-deep ul li ::ng-deep ul,\n.ep-message__text ::ng-deep ul li ul,\n.ep-message__text ul ::ng-deep li ::ng-deep ul,\n.ep-message__text ul ::ng-deep li ul,\n.ep-message__text ul li ::ng-deep ul,\n.ep-message__text ul li ul {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li,\n.ep-message__text ::ng-deep ul li ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li,\n.ep-message__text ul ::ng-deep li ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li,\n.ep-message__text ul li ::ng-deep ul li,\n.ep-message__text ul li ul ::ng-deep li,\n.ep-message__text ul li ul li {\n  padding-left: 24px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep li::before,\n.ep-message__text ::ng-deep ul li ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep li::before,\n.ep-message__text ul ::ng-deep li ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep li::before,\n.ep-message__text ul li ::ng-deep ul li::before,\n.ep-message__text ul li ul ::ng-deep li::before,\n.ep-message__text ul li ul li::before {\n  content: "\\25e6";\n  left: 4px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li,\n.ep-message__text ::ng-deep ul li ul ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li,\n.ep-message__text ul ::ng-deep li ul ul li,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li,\n.ep-message__text ul li ::ng-deep ul ul li,\n.ep-message__text ul li ul ::ng-deep ul li,\n.ep-message__text ul li ul ul li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul ::ng-deep li ul ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ::ng-deep ul ul li::before,\n.ep-message__text ::ng-deep ul li ul ::ng-deep ul li::before,\n.ep-message__text ::ng-deep ul li ul ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ::ng-deep ul ul li::before,\n.ep-message__text ul ::ng-deep li ul ::ng-deep ul li::before,\n.ep-message__text ul ::ng-deep li ul ul li::before,\n.ep-message__text ul li ::ng-deep ul ::ng-deep ul li::before,\n.ep-message__text ul li ::ng-deep ul ul li::before,\n.ep-message__text ul li ul ::ng-deep ul li::before,\n.ep-message__text ul li ul ul li::before {\n  content: "\\25aa";\n  left: 8px;\n}\n.ep-message__text ::ng-deep ol,\n.ep-message__text ol {\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li,\n.ep-message__text ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li,\n.ep-message__text ol li {\n  position: relative;\n  padding-left: 24px;\n  margin: 4px 0;\n  line-height: 20px;\n  counter-increment: list-counter;\n  box-sizing: border-box;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li::before,\n.ep-message__text ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li::before,\n.ep-message__text ol li::before {\n  content: counter(list-counter) ".";\n  position: absolute;\n  left: 0;\n  color: var(--ep-color-text);\n  font-weight: 500;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep p,\n.ep-message__text ::ng-deep ol ::ng-deep li p,\n.ep-message__text ::ng-deep ol li ::ng-deep p,\n.ep-message__text ::ng-deep ol li p,\n.ep-message__text ol ::ng-deep li ::ng-deep p,\n.ep-message__text ol ::ng-deep li p,\n.ep-message__text ol li ::ng-deep p,\n.ep-message__text ol li p {\n  margin: 0;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ::ng-deep ol ::ng-deep li ol,\n.ep-message__text ::ng-deep ol li ::ng-deep ol,\n.ep-message__text ::ng-deep ol li ol,\n.ep-message__text ol ::ng-deep li ::ng-deep ol,\n.ep-message__text ol ::ng-deep li ol,\n.ep-message__text ol li ::ng-deep ol,\n.ep-message__text ol li ol {\n  margin: 4px 0 4px 0;\n  padding-left: 0;\n  counter-reset: list-counter;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li,\n.ep-message__text ::ng-deep ol li ol li,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li,\n.ep-message__text ol ::ng-deep li ol li,\n.ep-message__text ol li ::ng-deep ol li,\n.ep-message__text ol li ol li {\n  padding-left: 28px;\n}\n.ep-message__text ::ng-deep ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol ::ng-deep li ol li::before,\n.ep-message__text ::ng-deep ol li ::ng-deep ol li::before,\n.ep-message__text ::ng-deep ol li ol li::before,\n.ep-message__text ol ::ng-deep li ::ng-deep ol li::before,\n.ep-message__text ol ::ng-deep li ol li::before,\n.ep-message__text ol li ::ng-deep ol li::before,\n.ep-message__text ol li ol li::before {\n  left: 4px;\n}\n.ep-message__text ::ng-deep code,\n.ep-message__text code {\n  background: var(--ep-color-surface-alt);\n  padding: 2px 4px;\n  border-radius: 3px;\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  font-size: 13px;\n}\n.ep-message__text ::ng-deep .ep-md-code {\n  margin: 8px 0;\n  border: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ep-color-surface-alt) 70%, transparent);\n  overflow: hidden;\n}\n.ep-message__text ::ng-deep .ep-md-code__header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 32px;\n  padding: 0 10px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-border) 70%, transparent);\n  background: color-mix(in srgb, var(--ep-color-surface) 50%, transparent);\n}\n.ep-message__text ::ng-deep .ep-md-code__lang {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: var(--ep-color-text-muted);\n  line-height: 1;\n}\n.ep-message__text ::ng-deep .ep-md-code__copy {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--ep-color-text-muted);\n  cursor: pointer;\n  transition:\n    color 0.15s,\n    border-color 0.15s,\n    background-color 0.15s;\n}\n.ep-message__text ::ng-deep .ep-md-code__copy:hover:not(:disabled) {\n  color: var(--ep-color-text);\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n}\n.ep-message__text ::ng-deep .ep-md-code__copy:disabled {\n  opacity: 0.75;\n  cursor: default;\n}\n.ep-message__text ::ng-deep .ep-md-code pre {\n  margin: 0;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  padding: 10px 12px;\n  overflow-x: auto;\n}\n.ep-message__text ::ng-deep .ep-md-code code {\n  display: block;\n  background: none;\n  border-radius: 0;\n  padding: 0;\n  color: var(--ep-color-text);\n  font-size: 12.5px;\n  line-height: 18px;\n  white-space: pre;\n  overflow-wrap: normal;\n}\n.ep-message__text ::ng-deep .ep-md-code--plain code {\n  color: var(--ep-color-text-muted);\n}\n.ep-message__text ::ng-deep pre,\n.ep-message__text pre {\n  background: var(--ep-color-surface-alt);\n  padding: 8px 12px;\n  border-radius: 4px;\n  overflow-x: auto;\n  margin: 8px 0;\n}\n.ep-message__text ::ng-deep pre code,\n.ep-message__text pre code {\n  background: none;\n  padding: 0;\n}\n.ep-message__text h1,\n.ep-message__text h2,\n.ep-message__text h3,\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  margin: 12px 0 8px 0;\n  font-weight: 600;\n  line-height: 1.4;\n}\n.ep-message__text h1:first-child,\n.ep-message__text h2:first-child,\n.ep-message__text h3:first-child,\n.ep-message__text h4:first-child,\n.ep-message__text h5:first-child,\n.ep-message__text h6:first-child {\n  margin-top: 0;\n}\n.ep-message__text h1 {\n  font-size: 20px;\n}\n.ep-message__text h2 {\n  font-size: 18px;\n}\n.ep-message__text h3 {\n  font-size: 16px;\n}\n.ep-message__text h4,\n.ep-message__text h5,\n.ep-message__text h6 {\n  font-size: 14px;\n}\n.ep-message__text hr {\n  border: none;\n  border-top: 1px solid var(--ep-color-border);\n  margin: 12px 0;\n}\n.ep-message__text blockquote {\n  border-left: 3px solid var(--ep-color-border);\n  padding-left: 12px;\n  margin: 8px 0;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n}\n.ep-message__text img {\n  max-width: 100%;\n  height: auto;\n  border-radius: 4px;\n  margin: 8px 0;\n}\n.ep-message:not(.ep-message--user) .ep-message__text {\n  background: var(--ep-chat-bg-answer);\n  border-radius: 0 4px 4px 4px;\n  width: fit-content;\n  max-width: 100%;\n}\n.ep-message--user {\n  align-items: flex-end;\n}\n.ep-message--user .ep-message__content {\n  align-items: flex-end;\n  align-self: flex-end;\n}\n.ep-message--user .ep-message__text {\n  background: var(--ep-chat-bg-question);\n  border-radius: 4px;\n  margin-left: 30px;\n  width: fit-content;\n  max-width: calc(100% - 20px);\n  color: var(--ep-chat-text-question);\n}\n.ep-message--user .ep-message__text ::ng-deep strong,\n.ep-message--user .ep-message__text ::ng-deep b,\n.ep-message--user .ep-message__text strong,\n.ep-message--user .ep-message__text b,\n.ep-message--user .ep-message__text ::ng-deep ul li::before,\n.ep-message--user .ep-message__text ul li::before,\n.ep-message--user .ep-message__text ::ng-deep ol li::before,\n.ep-message--user .ep-message__text ol li::before {\n  color: inherit;\n}\n.ep-message--user .ep-message__time {\n  left: auto;\n  right: 0;\n  text-align: right;\n}\n.ep-message__attached-files {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 4px;\n}\n.ep-message__attached-file {\n  font-size: 12px;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  background: var(--ep-color-surface-alt);\n  border-radius: 4px;\n  display: inline-block;\n}\n.ep-message__thinking {\n  font-size: 13px;\n  color: var(--ep-color-text-muted);\n  font-style: italic;\n  padding: 4px 0;\n}\n.ep-message__links {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 8px;\n}\n.ep-message__link {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n  min-height: 28px;\n  padding: 4px 10px;\n  border: 1px solid var(--ep-color-accent);\n  border-radius: 4px;\n  background: transparent;\n  font-size: 13px;\n  line-height: 18px;\n  text-align: left;\n  color: var(--ep-color-accent);\n  text-decoration: none;\n  cursor: pointer;\n  transition:\n    background-color 0.15s,\n    border-color 0.15s,\n    color 0.15s;\n}\n.ep-message__link-text {\n  color: inherit;\n}\n.ep-message__link-icon {\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  color: inherit;\n}\n.ep-message__link:hover:not(.ep-message__link--disabled) {\n  background: var(--ep-color-accent-soft);\n  border-color: var(--ep-color-accent);\n  color: var(--ep-color-accent);\n}\n.ep-message__link.ep-message__link--disabled {\n  border-color: var(--ep-color-border);\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  opacity: 0.5;\n  cursor: not-allowed;\n  pointer-events: none;\n}\n.ep-message__actions {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  margin-top: 8px;\n}\n.ep-message__actions-row {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  gap: 8px;\n  justify-content: flex-end;\n}\n.ep-message__time {\n  position: absolute;\n  top: -16px;\n  left: 0;\n  font-size: 11px;\n  line-height: 1;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  white-space: nowrap;\n  min-width: fit-content;\n}\n.ep-message__suggestions-panel {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  max-width: 100%;\n  margin-top: 4px;\n  border: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  border-radius: 4px;\n  background: transparent;\n  overflow: hidden;\n}\n.ep-message__suggestions-panel-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 47px;\n  padding: 0 14px;\n  border-bottom: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n}\n.ep-message__suggestions-panel-title {\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  line-height: 20px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ep-message__suggestions-panel-close {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 24px;\n  height: 24px;\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  color: var(--ep-color-text-muted);\n  opacity: 0.6;\n  transition: opacity 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-close:hover {\n  opacity: 1;\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-close svg {\n  width: 10px;\n  height: 10px;\n}\n.ep-message__suggestions-panel-list {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n}\n.ep-message__suggestions-panel-item {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  min-height: 49px;\n  padding: 7px 14px;\n  font-size: 14px;\n  line-height: 20px;\n  text-align: left;\n  color: var(--ep-color-text-muted);\n  background: transparent;\n  border: none;\n  border-top: 1px solid color-mix(in srgb, var(--ep-color-text) 8%, transparent);\n  cursor: pointer;\n  transition: background-color 0.15s, color 0.15s;\n}\n.ep-message__suggestions-panel-item:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ep-color-text) 4%, transparent);\n  color: var(--ep-color-text);\n}\n.ep-message__suggestions-panel-item:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.epica-error {\n  display: flex;\n  width: fit-content;\n  flex-direction: row;\n  margin: 0 30px 0 0;\n  padding: 18px 20px;\n  align-items: center;\n  gap: 16px;\n  border-radius: 4px;\n  border: 1px solid rgba(104, 95, 255, 0.0784313725);\n  background: rgba(104, 95, 255, 0.0784313725);\n}\n.epica-error__text {\n  font-size: 14px;\n  font-style: normal;\n  font-weight: 400;\n  line-height: 20px;\n  color: var(--ep-color-accent);\n}\n:host ::ng-deep .ep-md-code__copy-icon {\n  font-size: 12px;\n  cursor: pointer;\n}\n/*# sourceMappingURL=message-item.component.css.map */\n'] }]
-  }], () => [{ type: ActionService }], { message: [{
-    type: Input
-  }], isLast: [{
-    type: Input
-  }], actionClick: [{
-    type: Output
-  }], onHostClick: [{
+  }], () => [{ type: ActionService }, { type: TimestampTickService }], { message: [{ type: Input, args: [{ isSignal: true, alias: "message", required: true }] }], isLast: [{ type: Input, args: [{ isSignal: true, alias: "isLast", required: false }] }], actionClick: [{ type: Output, args: ["actionClick"] }], onHostClick: [{
     type: HostListener,
     args: ["click", ["$event"]]
   }], onHostKeydown: [{
@@ -95914,7 +95967,7 @@ var MessageItemComponent = _MessageItemComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageItemComponent, { className: "MessageItemComponent", filePath: "src/app/components/message-item/message-item.component.ts", lineNumber: 38 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageItemComponent, { className: "MessageItemComponent", filePath: "src/app/components/message-item/message-item.component.ts", lineNumber: 70 });
 })();
 
 // src/app/components/shared/typing-indicator/typing-indicator.component.ts
@@ -96000,31 +96053,52 @@ function ChatBodyComponent_Conditional_3_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
-    \u0275\u0275classProp("visible", ctx_r0.upperDate && ctx_r0.isUpperDateVisible);
+    \u0275\u0275classProp("visible", ctx_r0.upperDate() && ctx_r0.isUpperDateVisible());
     \u0275\u0275advance();
-    \u0275\u0275classProp("visible", ctx_r0.upperDate && ctx_r0.isUpperDateVisible);
+    \u0275\u0275classProp("visible", ctx_r0.upperDate() && ctx_r0.isUpperDateVisible());
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx_r0.upperDate, " ");
+    \u0275\u0275textInterpolate1(" ", ctx_r0.upperDate(), " ");
     \u0275\u0275advance(2);
-    \u0275\u0275repeater(ctx_r0.messages);
+    \u0275\u0275repeater(ctx_r0.messages());
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx_r0.isTyping ? 6 : -1);
+    \u0275\u0275conditional(ctx_r0.isTyping() ? 6 : -1);
   }
 }
 var _ChatBodyComponent = class _ChatBodyComponent {
   constructor() {
-    this.messages = [];
-    this.isTyping = false;
+    this.messages = input([], ...ngDevMode ? [{ debugName: "messages" }] : []);
+    this.isTyping = input(false, ...ngDevMode ? [{ debugName: "isTyping" }] : []);
+    this.scrollMode = input("none", ...ngDevMode ? [{ debugName: "scrollMode" }] : []);
+    this.actionClick = output();
     this.getImagePath = getImagePath;
-    this.scrollMode = "none";
-    this.actionClick = new EventEmitter();
-    this.shouldAutoScroll = true;
-    this.upperDate = "";
-    this.isUpperDateVisible = false;
+    this.shouldAutoScroll = signal(true, ...ngDevMode ? [{ debugName: "shouldAutoScroll" }] : []);
+    this.upperDate = signal("", ...ngDevMode ? [{ debugName: "upperDate" }] : []);
+    this.isUpperDateVisible = signal(false, ...ngDevMode ? [{ debugName: "isUpperDateVisible" }] : []);
     this.lastMessageCount = 0;
     this.lastScrollTop = 0;
     this.pendingStreamScroll = false;
     this.pendingScrollMode = null;
+    effect(() => {
+      const msgs = this.messages();
+      const _typing = this.isTyping();
+      const mode = this.scrollMode();
+      const currentMessageCount = msgs.length;
+      const messageAdded = currentMessageCount > this.lastMessageCount;
+      this.lastMessageCount = currentMessageCount;
+      if (messageAdded && mode !== "none") {
+        this.pendingScrollMode = mode;
+      } else if (mode === "bottom") {
+        this.pendingStreamScroll = true;
+      }
+    });
+    effect(() => {
+      const mode = this.scrollMode();
+      if (mode !== "none") {
+        setTimeout(() => {
+          this.performScroll();
+        }, 100);
+      }
+    });
   }
   ngAfterViewInit() {
     setTimeout(() => {
@@ -96071,37 +96145,22 @@ var _ChatBodyComponent = class _ChatBodyComponent {
     return Array.from(root.querySelectorAll(selector));
   }
   getLastUserMessage() {
-    for (let i = this.messages.length - 1; i >= 0; i--) {
-      if (this.messages[i]?.request) {
-        return this.messages[i];
+    const msgs = this.messages();
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i]?.request) {
+        return msgs[i];
       }
     }
     return void 0;
   }
   getTargetMessageForMode(mode) {
-    if (!this.messages.length)
+    const msgs = this.messages();
+    if (!msgs.length)
       return void 0;
     if (mode === "question-answer" || mode === "user-message") {
-      return this.getLastUserMessage() ?? this.messages[this.messages.length - 1];
+      return this.getLastUserMessage() ?? msgs[msgs.length - 1];
     }
-    return this.messages[this.messages.length - 1];
-  }
-  ngOnChanges(changes) {
-    if (changes["messages"] || changes["isTyping"]) {
-      const currentMessageCount = this.messages.length;
-      const messageAdded = currentMessageCount > this.lastMessageCount;
-      this.lastMessageCount = currentMessageCount;
-      if (messageAdded && this.scrollMode !== "none") {
-        this.pendingScrollMode = this.scrollMode;
-      } else if (this.scrollMode === "bottom") {
-        this.pendingStreamScroll = true;
-      }
-    }
-    if (changes["scrollMode"] && this.scrollMode !== "none") {
-      setTimeout(() => {
-        this.performScroll();
-      }, 100);
-    }
+    return msgs[msgs.length - 1];
   }
   onScroll() {
     const element = this.getScrollElement();
@@ -96133,20 +96192,20 @@ var _ChatBodyComponent = class _ChatBodyComponent {
       }).map((date) => date.innerText);
       const lastDateUpperThenDialog = datesUpperThenDialog[datesUpperThenDialog.length - 1];
       if (lastDateUpperThenDialog) {
-        this.upperDate = lastDateUpperThenDialog;
-        this.isUpperDateVisible = true;
+        this.upperDate.set(lastDateUpperThenDialog);
+        this.isUpperDateVisible.set(true);
         this.upperDateVisibilityTimeout = setTimeout(() => {
-          this.isUpperDateVisible = false;
+          this.isUpperDateVisible.set(false);
         }, 2e3);
       } else {
-        this.isUpperDateVisible = false;
-        this.upperDate = "";
+        this.isUpperDateVisible.set(false);
+        this.upperDate.set("");
       }
     }, 0);
   }
   onScrollDown() {
     clearTimeout(this.upperDateVisibilityTimeout);
-    this.isUpperDateVisible = false;
+    this.isUpperDateVisible.set(false);
   }
   ngAfterViewChecked() {
     if (this.pendingScrollMode) {
@@ -96180,7 +96239,8 @@ var _ChatBodyComponent = class _ChatBodyComponent {
     this.scrollToLastMessageTop("question-answer");
   }
   scrollToLastMessageTop(retryMode = "question-answer") {
-    if (!this.messages.length)
+    const msgs = this.messages();
+    if (!msgs.length)
       return;
     const element = this.getScrollElement();
     if (!element)
@@ -96209,10 +96269,11 @@ var _ChatBodyComponent = class _ChatBodyComponent {
     });
   }
   performScroll(modeOverride) {
-    if (!this.bodyElement?.nativeElement || !this.messages.length) {
+    const msgs = this.messages();
+    if (!this.bodyElement?.nativeElement || !msgs.length) {
       return;
     }
-    const mode = modeOverride ?? this.scrollMode;
+    const mode = modeOverride ?? this.scrollMode();
     const dialogWindowHeight = this.bodyElement.nativeElement.getBoundingClientRect().height;
     switch (mode) {
       case "user-message":
@@ -96235,13 +96296,14 @@ var _ChatBodyComponent = class _ChatBodyComponent {
     }
   }
   scrollToUserMessage(dialogWindowHeight) {
-    if (!this.messages.length) {
+    const msgs = this.messages();
+    if (!msgs.length) {
       return;
     }
     const element = this.getScrollElement();
     if (!element)
       return;
-    const lastMessage = this.messages[this.messages.length - 1];
+    const lastMessage = this.getLastUserMessage();
     if (!lastMessage || !lastMessage.request) {
       return;
     }
@@ -96303,70 +96365,70 @@ _ChatBodyComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.spacerEl = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.autoScrollDirective = _t.first);
   }
-}, inputs: { messages: "messages", isTyping: "isTyping", scrollMode: "scrollMode" }, outputs: { actionClick: "actionClick" }, features: [\u0275\u0275NgOnChangesFeature], decls: 4, vars: 4, consts: [["bodyElement", ""], ["spacer", ""], [1, "chat-body", 3, "epAutoScroll"], [1, "chat-body__empty"], ["draggable", "false", "alt", "", 1, "chat-body__empty-icon", 3, "src"], [1, "chat-body__empty-title"], [1, "chat-body__empty-subtitle"], [1, "chat-body__upper-gradient-line"], [1, "chat-body__upper-date"], [1, "chat-body__messages"], [3, "message", "isLast"], [1, "chat-body__typing"], [1, "chat-body__spacer"], [3, "actionClick", "message", "isLast"]], template: function ChatBodyComponent_Template(rf, ctx) {
+}, inputs: { messages: [1, "messages"], isTyping: [1, "isTyping"], scrollMode: [1, "scrollMode"] }, outputs: { actionClick: "actionClick" }, decls: 4, vars: 4, consts: [["bodyElement", ""], ["spacer", ""], [1, "chat-body", 3, "epAutoScroll"], [1, "chat-body__empty"], ["draggable", "false", "alt", "", 1, "chat-body__empty-icon", 3, "src"], [1, "chat-body__empty-title"], [1, "chat-body__empty-subtitle"], [1, "chat-body__upper-gradient-line"], [1, "chat-body__upper-date"], [1, "chat-body__messages"], [3, "message", "isLast"], [1, "chat-body__typing"], [1, "chat-body__spacer"], [3, "actionClick", "message", "isLast"]], template: function ChatBodyComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 2, 0);
     \u0275\u0275conditionalCreate(2, ChatBodyComponent_Conditional_2_Template, 6, 1, "div", 3)(3, ChatBodyComponent_Conditional_3_Template, 9, 6);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    \u0275\u0275classProp("chat-body--empty", ctx.messages.length === 0 && !ctx.isTyping);
-    \u0275\u0275property("epAutoScroll", ctx.shouldAutoScroll);
+    \u0275\u0275classProp("chat-body--empty", ctx.messages().length === 0 && !ctx.isTyping());
+    \u0275\u0275property("epAutoScroll", ctx.shouldAutoScroll());
     \u0275\u0275advance(2);
-    \u0275\u0275conditional(ctx.messages.length === 0 && !ctx.isTyping ? 2 : 3);
+    \u0275\u0275conditional(ctx.messages().length === 0 && !ctx.isTyping() ? 2 : 3);
   }
-}, dependencies: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], styles: ["\n\n[_nghost-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow: hidden;\n}\n.chat-body[_ngcontent-%COMP%] {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  background: var(--ep-color-surface);\n  display: flex;\n  flex-direction: column;\n  overflow-y: auto;\n}\n.chat-body--empty[_ngcontent-%COMP%] {\n  overflow-y: hidden;\n}\n.chat-body__upper-gradient-line[_ngcontent-%COMP%] {\n  position: sticky;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 100;\n  pointer-events: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 4px;\n  transition: transform 0.3s ease, visibility 0s linear 0.3s;\n  transform: translateY(-100%);\n  visibility: hidden;\n}\n.chat-body__upper-gradient-line.visible[_ngcontent-%COMP%] {\n  transform: translateY(0);\n  visibility: visible;\n  transition: transform 0.3s ease, visibility 0s linear 0s;\n}\n.chat-body__upper-date[_ngcontent-%COMP%] {\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  border-radius: 4px;\n  -webkit-backdrop-filter: blur(12px) saturate(180%);\n  backdrop-filter: blur(12px) saturate(180%);\n  border: 1px solid var(--ep-color-border);\n  opacity: 0;\n  transform: translateY(-10px);\n  transition: opacity 0.25s ease, transform 0.3s ease;\n  white-space: nowrap;\n}\n.chat-body__upper-date.visible[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n  transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;\n}\n.chat-body__messages[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex: 1 0 auto;\n}\n.chat-body__typing[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 0 20px;\n}\n.chat-body__spacer[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  min-height: 0;\n}\n.chat-body__empty[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  flex: 1;\n  padding: 40px 32px;\n  text-align: center;\n  gap: 8px;\n}\n.chat-body__empty-icon[_ngcontent-%COMP%] {\n  width: 60px;\n  height: 60px;\n  margin-bottom: 4px;\n}\n.chat-body__empty-title[_ngcontent-%COMP%] {\n  font-size: 18px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  line-height: 1.4;\n}\n.chat-body__empty-subtitle[_ngcontent-%COMP%] {\n  font-size: 12px;\n  font-weight: 400;\n  color: var(--ep-color-text-muted);\n  line-height: 1.5;\n  max-width: 320px;\n}\n/*# sourceMappingURL=chat-body.component.css.map */"] });
+}, dependencies: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], styles: ["\n\n[_nghost-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow: hidden;\n}\n.chat-body[_ngcontent-%COMP%] {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  background: var(--ep-color-surface);\n  display: flex;\n  flex-direction: column;\n  overflow-y: auto;\n}\n.chat-body--empty[_ngcontent-%COMP%] {\n  overflow-y: hidden;\n}\n.chat-body__upper-gradient-line[_ngcontent-%COMP%] {\n  position: sticky;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 100;\n  pointer-events: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 4px;\n  transition: transform 0.3s ease, visibility 0s linear 0.3s;\n  transform: translateY(-100%);\n  visibility: hidden;\n}\n.chat-body__upper-gradient-line.visible[_ngcontent-%COMP%] {\n  transform: translateY(0);\n  visibility: visible;\n  transition: transform 0.3s ease, visibility 0s linear 0s;\n}\n.chat-body__upper-date[_ngcontent-%COMP%] {\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  border-radius: 4px;\n  -webkit-backdrop-filter: blur(12px) saturate(180%);\n  backdrop-filter: blur(12px) saturate(180%);\n  border: 1px solid var(--ep-color-border);\n  opacity: 0;\n  transform: translateY(-10px);\n  transition: opacity 0.25s ease, transform 0.3s ease;\n  white-space: nowrap;\n}\n.chat-body__upper-date.visible[_ngcontent-%COMP%] {\n  opacity: 1;\n  transform: translateY(0);\n  transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;\n}\n.chat-body__messages[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex: 1 0 auto;\n}\n.chat-body__typing[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 0 20px;\n}\n.chat-body__spacer[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  min-height: 0;\n}\n.chat-body__empty[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  flex: 1;\n  padding: 40px 32px;\n  text-align: center;\n  gap: 8px;\n}\n.chat-body__empty-icon[_ngcontent-%COMP%] {\n  width: 60px;\n  height: 60px;\n  margin-bottom: 4px;\n}\n.chat-body__empty-title[_ngcontent-%COMP%] {\n  font-size: 18px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  line-height: 1.4;\n}\n.chat-body__empty-subtitle[_ngcontent-%COMP%] {\n  font-size: 12px;\n  font-weight: 400;\n  color: var(--ep-color-text-muted);\n  line-height: 1.5;\n  max-width: 320px;\n}\n/*# sourceMappingURL=chat-body.component.css.map */"], changeDetection: 0 });
 var ChatBodyComponent = _ChatBodyComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatBodyComponent, [{
     type: Component,
-    args: [{ selector: "ep-chat-body", imports: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], template: `<div class="chat-body" [class.chat-body--empty]="messages.length === 0 && !isTyping" #bodyElement [epAutoScroll]="shouldAutoScroll">\r
-  @if (messages.length === 0 && !isTyping) {\r
-    <div class="chat-body__empty">\r
-      <img\r
-        [src]="getImagePath('epicstaff-logo.svg')"\r
-        class="chat-body__empty-icon"\r
-        draggable="false"\r
-        alt=""\r
-      />\r
-      <div class="chat-body__empty-title">Ask questions or build Workflows</div>\r
-      <div class="chat-body__empty-subtitle">\r
-        Use me to write content, get answers, systems insights or build Workflows\r
-      </div>\r
-    </div>\r
-  } @else {\r
-    <div class="chat-body__upper-gradient-line" [class.visible]="upperDate && isUpperDateVisible">\r
-      <div class="chat-body__upper-date" [class.visible]="upperDate && isUpperDateVisible">\r
-        {{ upperDate }}\r
-      </div>\r
-    </div>\r
-    <div class="chat-body__messages">\r
-      @for (message of messages; track message.id || message.time) {\r
-        <ep-message-item\r
-          [message]="message"\r
-          [isLast]="$last"\r
-          (actionClick)="onActionClick($event)"\r
-        />\r
-      }\r
-      @if (isTyping) {\r
-        <div class="chat-body__typing">\r
-          <ep-typing-indicator />\r
-        </div>\r
-      }\r
-      <div #spacer class="chat-body__spacer"></div>\r
-    </div>\r
-  }\r
-</div>\r
+    args: [{ selector: "ep-chat-body", imports: [MessageItemComponent, TypingIndicatorComponent, AutoScrollDirective], changeDetection: ChangeDetectionStrategy.OnPush, template: `<div
+  class="chat-body"
+  [class.chat-body--empty]="messages().length === 0 && !isTyping()"
+  #bodyElement
+  [epAutoScroll]="shouldAutoScroll()"
+>
+  @if (messages().length === 0 && !isTyping()) {
+    <div class="chat-body__empty">
+      <img
+        [src]="getImagePath('epicstaff-logo.svg')"
+        class="chat-body__empty-icon"
+        draggable="false"
+        alt=""
+      />
+      <div class="chat-body__empty-title">Ask questions or build Workflows</div>
+      <div class="chat-body__empty-subtitle">
+        Use me to write content, get answers, systems insights or build Workflows
+      </div>
+    </div>
+  } @else {
+    <div
+      class="chat-body__upper-gradient-line"
+      [class.visible]="upperDate() && isUpperDateVisible()"
+    >
+      <div class="chat-body__upper-date" [class.visible]="upperDate() && isUpperDateVisible()">
+        {{ upperDate() }}
+      </div>
+    </div>
+    <div class="chat-body__messages">
+      @for (message of messages(); track message.id || message.time) {
+        <ep-message-item
+          [message]="message"
+          [isLast]="$last"
+          (actionClick)="onActionClick($event)"
+        />
+      }
+      @if (isTyping()) {
+        <div class="chat-body__typing">
+          <ep-typing-indicator />
+        </div>
+      }
+      <div #spacer class="chat-body__spacer"></div>
+    </div>
+  }
+</div>
 `, styles: ["/* src/app/components/chat-body/chat-body.component.scss */\n:host {\n  display: flex;\n  flex-direction: column;\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow: hidden;\n}\n.chat-body {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 0;\n  background: var(--ep-color-surface);\n  display: flex;\n  flex-direction: column;\n  overflow-y: auto;\n}\n.chat-body--empty {\n  overflow-y: hidden;\n}\n.chat-body__upper-gradient-line {\n  position: sticky;\n  top: 0;\n  left: 0;\n  right: 0;\n  z-index: 100;\n  pointer-events: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n  padding: 4px;\n  transition: transform 0.3s ease, visibility 0s linear 0.3s;\n  transform: translateY(-100%);\n  visibility: hidden;\n}\n.chat-body__upper-gradient-line.visible {\n  transform: translateY(0);\n  visibility: visible;\n  transition: transform 0.3s ease, visibility 0s linear 0s;\n}\n.chat-body__upper-date {\n  font-size: 13px;\n  text-align: center;\n  color: var(--ep-color-text-muted);\n  padding: 4px 8px;\n  border-radius: 4px;\n  -webkit-backdrop-filter: blur(12px) saturate(180%);\n  backdrop-filter: blur(12px) saturate(180%);\n  border: 1px solid var(--ep-color-border);\n  opacity: 0;\n  transform: translateY(-10px);\n  transition: opacity 0.25s ease, transform 0.3s ease;\n  white-space: nowrap;\n}\n.chat-body__upper-date.visible {\n  opacity: 1;\n  transform: translateY(0);\n  transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;\n}\n.chat-body__messages {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex: 1 0 auto;\n}\n.chat-body__typing {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 0 20px;\n}\n.chat-body__spacer {\n  flex-shrink: 0;\n  min-height: 0;\n}\n.chat-body__empty {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  flex: 1;\n  padding: 40px 32px;\n  text-align: center;\n  gap: 8px;\n}\n.chat-body__empty-icon {\n  width: 60px;\n  height: 60px;\n  margin-bottom: 4px;\n}\n.chat-body__empty-title {\n  font-size: 18px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  line-height: 1.4;\n}\n.chat-body__empty-subtitle {\n  font-size: 12px;\n  font-weight: 400;\n  color: var(--ep-color-text-muted);\n  line-height: 1.5;\n  max-width: 320px;\n}\n/*# sourceMappingURL=chat-body.component.css.map */\n"] }]
-  }], null, { messages: [{
-    type: Input
-  }], isTyping: [{
-    type: Input
-  }], scrollMode: [{
-    type: Input
-  }], actionClick: [{
-    type: Output
-  }], bodyElement: [{
+  }], () => [], { messages: [{ type: Input, args: [{ isSignal: true, alias: "messages", required: false }] }], isTyping: [{ type: Input, args: [{ isSignal: true, alias: "isTyping", required: false }] }], scrollMode: [{ type: Input, args: [{ isSignal: true, alias: "scrollMode", required: false }] }], actionClick: [{ type: Output, args: ["actionClick"] }], bodyElement: [{
     type: ViewChild,
     args: ["bodyElement"]
   }], spacerEl: [{
@@ -96378,7 +96440,7 @@ var ChatBodyComponent = _ChatBodyComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatBodyComponent, { className: "ChatBodyComponent", filePath: "src/app/components/chat-body/chat-body.component.ts", lineNumber: 28 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatBodyComponent, { className: "ChatBodyComponent", filePath: "src/app/components/chat-body/chat-body.component.ts", lineNumber: 29 });
 })();
 
 // src/app/components/shared/menu/menu-item.component.ts
@@ -97002,8 +97064,8 @@ var _ApiService = class _ApiService {
                 });
               }
               if (isFinishMessageData(messageData)) {
-                const output = extractOutputFromFinishMessage(messageData);
-                parsedFinalOutput = this.parseOutputIfString(output);
+                const output2 = extractOutputFromFinishMessage(messageData);
+                parsedFinalOutput = this.parseOutputIfString(output2);
               }
             }
           } catch (error) {
@@ -97062,12 +97124,12 @@ var _ApiService = class _ApiService {
   /**
    * Парсит output если он является строкой JSON
    */
-  parseOutputIfString(output) {
-    if (!output) {
+  parseOutputIfString(output2) {
+    if (!output2) {
       return null;
     }
-    if (typeof output === "string") {
-      const trimmed = output.trim();
+    if (typeof output2 === "string") {
+      const trimmed = output2.trim();
       if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
         try {
           const parsed = JSON.parse(trimmed);
@@ -97078,7 +97140,7 @@ var _ApiService = class _ApiService {
       }
       return null;
     }
-    return output;
+    return output2;
   }
   /**
    * Преобразует EpicstaffResponse в EpResponse для использования в UI
@@ -97491,7 +97553,7 @@ var RecentFilesMenuComponent = _RecentFilesMenuComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(RecentFilesMenuComponent, [{
     type: Component,
-    args: [{ selector: "ep-recent-files-menu", imports: [CommonModule, MenuComponent, IconComponent], template: '@if (loaded) {\r\n  <ep-menu\r\n    (closed)="hideRecentFilesMenu.emit()"\r\n    style="bottom: 100%; right: 12px; margin-bottom: 8px; min-width: 220px; max-width: 80%"\r\n  >\r\n    @if (recentFiles.length) {\r\n      <div class="ep-recent-files__header">Recent files</div>\r\n      <div class="ep-recent-files__divider"></div>\r\n\r\n      @for (file of recentFiles; track file.name) {\r\n        <div\r\n          class="ep-recent-files__menu-item"\r\n          [class.disabled]="isFileAlreadyAttached(file)"\r\n          role="button"\r\n          tabindex="0"\r\n          (click)="attachRecentFile(file)"\r\n          (keydown.enter)="attachRecentFile(file)"\r\n          (keydown.space)="attachRecentFile(file)"\r\n          (mouseenter)="onFileHover(file)"\r\n          (mouseleave)="onFileHover(null)"\r\n        >\r\n          <ep-icon name="document" [size]="12" class="ep-recent-files__file-icon"></ep-icon>\r\n          <div class="ep-recent-files__file-name">\r\n            {{ file.name }}\r\n            @if (isFileAlreadyAttached(file)) {\r\n              <span class="ep-recent-files__attached-label">(attached)</span>\r\n            }\r\n          </div>\r\n          <div\r\n            class="ep-recent-files__remove"\r\n            [class.visible]="hoveredFile === file"\r\n            role="button"\r\n            tabindex="0"\r\n            (click)="removeFileFromRecentFiles($event, file)"\r\n            (keydown)="onRemoveFileKeydown($event, file)"\r\n          >\r\n            <ep-icon name="close" [size]="8"></ep-icon>\r\n          </div>\r\n        </div>\r\n      }\r\n\r\n      <div class="ep-recent-files__divider"></div>\r\n    }\r\n\r\n    <label #attachFileMenuItem class="ep-recent-files__menu-item">\r\n      <div>Attach file{{ multipleFilesAllowed ? "s" : "" }}</div>\r\n      <input\r\n        type="file"\r\n        [multiple]="multipleFilesAllowed"\r\n        (change)="onNewFileSelect($event)"\r\n        [attr.accept]="multipleFilesAllowed ? null : singleModeAccept"\r\n      />\r\n    </label>\r\n  </ep-menu>\r\n}\r\n', styles: ["/* src/app/components/shared/recent-files-menu/recent-files-menu.component.scss */\n:host {\n  pointer-events: auto;\n}\n.ep-recent-files__header {\n  display: flex;\n  align-items: center;\n  height: 28px;\n  padding: 0 16px;\n  align-self: stretch;\n  width: 100%;\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 12px;\n  color: var(--ep-color-text-muted);\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 12px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-recent-files__menu-item.disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item input[type=file] {\n  display: none;\n}\n.ep-recent-files__file-name {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n}\n.ep-recent-files__divider {\n  width: 100%;\n  height: 1px;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__file-icon {\n  flex-shrink: 0;\n  color: var(--ep-color-text-muted);\n}\n.ep-recent-files__attached-label {\n  opacity: 0.6;\n  margin-left: 4px;\n}\n.ep-recent-files__remove {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n  color: var(--ep-color-text-muted);\n}\n.ep-recent-files__remove.visible {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */\n"] }]
+    args: [{ selector: "ep-recent-files-menu", imports: [CommonModule, MenuComponent, IconComponent], template: '@if (loaded) {\n  <ep-menu\n    (closed)="hideRecentFilesMenu.emit()"\n    style="bottom: 100%; right: 12px; margin-bottom: 8px; min-width: 220px; max-width: 80%"\n  >\n    @if (recentFiles.length) {\n      <div class="ep-recent-files__header">Recent files</div>\n      <div class="ep-recent-files__divider"></div>\n\n      @for (file of recentFiles; track file.name) {\n        <div\n          class="ep-recent-files__menu-item"\n          [class.disabled]="isFileAlreadyAttached(file)"\n          role="button"\n          tabindex="0"\n          (click)="attachRecentFile(file)"\n          (keydown.enter)="attachRecentFile(file)"\n          (keydown.space)="attachRecentFile(file)"\n          (mouseenter)="onFileHover(file)"\n          (mouseleave)="onFileHover(null)"\n        >\n          <ep-icon name="document" [size]="12" class="ep-recent-files__file-icon"></ep-icon>\n          <div class="ep-recent-files__file-name">\n            {{ file.name }}\n            @if (isFileAlreadyAttached(file)) {\n              <span class="ep-recent-files__attached-label">(attached)</span>\n            }\n          </div>\n          <div\n            class="ep-recent-files__remove"\n            [class.visible]="hoveredFile === file"\n            role="button"\n            tabindex="0"\n            (click)="removeFileFromRecentFiles($event, file)"\n            (keydown)="onRemoveFileKeydown($event, file)"\n          >\n            <ep-icon name="close" [size]="8"></ep-icon>\n          </div>\n        </div>\n      }\n\n      <div class="ep-recent-files__divider"></div>\n    }\n\n    <label #attachFileMenuItem class="ep-recent-files__menu-item">\n      <div>Attach file{{ multipleFilesAllowed ? "s" : "" }}</div>\n      <input\n        type="file"\n        [multiple]="multipleFilesAllowed"\n        (change)="onNewFileSelect($event)"\n        [attr.accept]="multipleFilesAllowed ? null : singleModeAccept"\n      />\n    </label>\n  </ep-menu>\n}\n', styles: ["/* src/app/components/shared/recent-files-menu/recent-files-menu.component.scss */\n:host {\n  pointer-events: auto;\n}\n.ep-recent-files__header {\n  display: flex;\n  align-items: center;\n  height: 28px;\n  padding: 0 16px;\n  align-self: stretch;\n  width: 100%;\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 12px;\n  color: var(--ep-color-text-muted);\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item {\n  display: flex;\n  flex-direction: row;\n  gap: 10px;\n  padding: 4px 20px;\n  align-items: center;\n  width: 100%;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n  font-size: 10px;\n  font-weight: 400;\n  line-height: 12px;\n  margin-bottom: 0;\n  position: relative;\n  cursor: pointer;\n  box-sizing: border-box;\n}\n.ep-recent-files__menu-item:hover {\n  background-color: var(--ep-color-surface-alt);\n}\n.ep-recent-files__menu-item.disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.ep-recent-files__menu-item.disabled:hover {\n  background-color: transparent;\n}\n.ep-recent-files__menu-item input[type=file] {\n  display: none;\n}\n.ep-recent-files__file-name {\n  height: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  cursor: pointer;\n  flex: 1;\n  color: var(--ep-menu-panel-item-text, var(--ep-color-text));\n}\n.ep-recent-files__divider {\n  width: 100%;\n  height: 1px;\n  background-color: var(--ep-color-border);\n}\n.ep-recent-files__file-icon {\n  flex-shrink: 0;\n  color: var(--ep-color-text-muted);\n}\n.ep-recent-files__attached-label {\n  opacity: 0.6;\n  margin-left: 4px;\n}\n.ep-recent-files__remove {\n  display: flex;\n  padding: 5px;\n  margin-left: auto;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.2s;\n  color: var(--ep-color-text-muted);\n}\n.ep-recent-files__remove.visible {\n  opacity: 1;\n  cursor: pointer;\n  pointer-events: auto;\n}\n/*# sourceMappingURL=recent-files-menu.component.css.map */\n"] }]
   }], () => [{ type: ApiService }, { type: ChangeDetectorRef }], { alreadyAttachedFiles: [{
     type: Input
   }], multipleFilesAllowed: [{
@@ -98803,10 +98865,10 @@ function ChatHeaderComponent_Conditional_12_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
-    \u0275\u0275property("epTooltip", ctx_r0.isDockMode ? "Undock" : "Dock in parent")("tooltipOptions", \u0275\u0275pureFunction0(5, _c018));
-    \u0275\u0275attribute("aria-label", ctx_r0.isDockMode ? "Undock" : "Dock in parent");
+    \u0275\u0275property("epTooltip", ctx_r0.isDockMode() ? "Undock" : "Dock in parent")("tooltipOptions", \u0275\u0275pureFunction0(5, _c018));
+    \u0275\u0275attribute("aria-label", ctx_r0.isDockMode() ? "Undock" : "Dock in parent");
     \u0275\u0275advance();
-    \u0275\u0275property("name", ctx_r0.isDockMode ? "undock" : "dock")("size", 28);
+    \u0275\u0275property("name", ctx_r0.isDockMode() ? "undock" : "dock")("size", 28);
   }
 }
 function ChatHeaderComponent_Conditional_15_For_2_Template(rf, ctx) {
@@ -98829,17 +98891,17 @@ function ChatHeaderComponent_Conditional_15_For_2_Template(rf, ctx) {
     \u0275\u0275elementStart(1, "div", 25);
     \u0275\u0275element(2, "img", 26);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 27)(4, "div", 28);
+    \u0275\u0275elementStart(3, "div", 27)(4, "div");
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "div", 29);
+    \u0275\u0275elementStart(6, "div", 28);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
     const agent_r6 = ctx.$implicit;
     const ctx_r0 = \u0275\u0275nextContext(2);
-    \u0275\u0275classProp("ep-menu-item--inactive", !ctx_r0.isAgentActive(agent_r6));
+    \u0275\u0275classProp("ep-menu-item--active", ctx_r0.isCurrentAgent(agent_r6));
     \u0275\u0275attribute("aria-label", "Select agent " + agent_r6.name);
     \u0275\u0275advance(2);
     \u0275\u0275property("src", ctx_r0.getAgentIconPath(agent_r6), \u0275\u0275sanitizeUrl);
@@ -98864,13 +98926,13 @@ function ChatHeaderComponent_Conditional_15_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275repeater(ctx_r0.agents);
+    \u0275\u0275repeater(ctx_r0.agents());
   }
 }
 function ChatHeaderComponent_Conditional_16_Conditional_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r8 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu-item", 33);
+    \u0275\u0275elementStart(0, "ep-menu-item", 32);
     \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_click_0_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
@@ -98886,7 +98948,7 @@ function ChatHeaderComponent_Conditional_16_Conditional_3_Template(rf, ctx) {
     });
     \u0275\u0275text(1, "Create new Epicstaff agent");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "ep-menu-item", 34);
+    \u0275\u0275elementStart(2, "ep-menu-item", 33);
     \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_click_2_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
@@ -98902,7 +98964,7 @@ function ChatHeaderComponent_Conditional_16_Conditional_3_Template(rf, ctx) {
     });
     \u0275\u0275text(3, "Edit Epicstaff agent");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "ep-menu-item", 35);
+    \u0275\u0275elementStart(4, "ep-menu-item", 34);
     \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Conditional_3_Template_ep_menu_item_click_4_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r0 = \u0275\u0275nextContext(2);
@@ -98923,13 +98985,13 @@ function ChatHeaderComponent_Conditional_16_Conditional_3_Template(rf, ctx) {
 function ChatHeaderComponent_Conditional_16_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "ep-menu", 30);
+    \u0275\u0275elementStart(0, "ep-menu", 29);
     \u0275\u0275listener("closed", function ChatHeaderComponent_Conditional_16_Template_ep_menu_closed_0_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r0.closeActionsMenu());
     });
-    \u0275\u0275elementStart(1, "ep-menu-item", 31);
+    \u0275\u0275elementStart(1, "ep-menu-item", 30);
     \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Template_ep_menu_item_click_1_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
@@ -98946,7 +99008,7 @@ function ChatHeaderComponent_Conditional_16_Template(rf, ctx) {
     \u0275\u0275text(2, "Clear chat history");
     \u0275\u0275elementEnd();
     \u0275\u0275conditionalCreate(3, ChatHeaderComponent_Conditional_16_Conditional_3_Template, 6, 0);
-    \u0275\u0275elementStart(4, "ep-menu-item", 32);
+    \u0275\u0275elementStart(4, "ep-menu-item", 31);
     \u0275\u0275listener("click", function ChatHeaderComponent_Conditional_16_Template_ep_menu_item_click_4_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r0 = \u0275\u0275nextContext();
@@ -98966,46 +99028,46 @@ function ChatHeaderComponent_Conditional_16_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance(3);
-    \u0275\u0275conditional(!ctx_r0.isMonoAgent ? 3 : -1);
+    \u0275\u0275conditional(!ctx_r0.isMonoAgent() ? 3 : -1);
   }
 }
 var _ChatHeaderComponent = class _ChatHeaderComponent {
   constructor() {
-    this.currentAgent = null;
-    this.agents = [];
-    this.isMonoAgent = false;
-    this.dockEnabled = false;
-    this.isDockMode = false;
-    this.closed = new EventEmitter();
-    this.infoClicked = new EventEmitter();
-    this.dragClicked = new EventEmitter();
-    this.collapseClicked = new EventEmitter();
-    this.toggleFullHeightClicked = new EventEmitter();
-    this.agentSelected = new EventEmitter();
-    this.clearChatHistory = new EventEmitter();
-    this.createAgent = new EventEmitter();
-    this.editAgent = new EventEmitter();
-    this.removeAgent = new EventEmitter();
-    this.setDefaultPosition = new EventEmitter();
-    this.dockClicked = new EventEmitter();
+    this.currentAgent = input(null, ...ngDevMode ? [{ debugName: "currentAgent" }] : []);
+    this.agents = input([], ...ngDevMode ? [{ debugName: "agents" }] : []);
+    this.isMonoAgent = input(false, ...ngDevMode ? [{ debugName: "isMonoAgent" }] : []);
+    this.dockEnabled = input(false, ...ngDevMode ? [{ debugName: "dockEnabled" }] : []);
+    this.isDockMode = input(false, ...ngDevMode ? [{ debugName: "isDockMode" }] : []);
+    this.closed = output();
+    this.infoClicked = output();
+    this.dragClicked = output();
+    this.collapseClicked = output();
+    this.toggleFullHeightClicked = output();
+    this.agentSelected = output();
+    this.clearChatHistory = output();
+    this.createAgent = output();
+    this.editAgent = output();
+    this.removeAgent = output();
+    this.setDefaultPosition = output();
+    this.dockClicked = output();
     this.isAgentMenuShown = false;
     this.isActionsMenuShown = false;
     this.getImagePath = getImagePath;
-  }
-  get title() {
-    return this.currentAgent?.name || "Virtual Assistant";
-  }
-  get iconPath() {
-    return this.currentAgent?.imagePath || getImagePath("epicstaff-logo.svg");
+    this.title = computed(() => {
+      return this.currentAgent()?.name || "Virtual Assistant";
+    }, ...ngDevMode ? [{ debugName: "title" }] : []);
+    this.iconPath = computed(() => {
+      return this.currentAgent()?.imagePath || getImagePath("epicstaff-logo.svg");
+    }, ...ngDevMode ? [{ debugName: "iconPath" }] : []);
+    this.hasMultipleAgents = computed(() => {
+      return this.agents().length > 1;
+    }, ...ngDevMode ? [{ debugName: "hasMultipleAgents" }] : []);
   }
   getAgentIconPath(agent) {
     return agent.imagePath || getImagePath("epicstaff-logo.svg");
   }
-  get hasMultipleAgents() {
-    return this.agents.length > 1;
-  }
   toggleAgentMenu() {
-    if (this.hasMultipleAgents) {
+    if (this.hasMultipleAgents()) {
       this.closeActionsMenu();
       this.isAgentMenuShown = !this.isAgentMenuShown;
     }
@@ -99042,15 +99104,16 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
   }
   onSetDefaultPosition() {
     this.closeActionsMenu();
-    if (this.isDockMode) {
+    if (this.isDockMode()) {
       this.dockClicked.emit();
     }
     this.setDefaultPosition.emit();
   }
-  isAgentActive(agent) {
-    if (!this.currentAgent || !agent.epicstaffAgentId)
-      return true;
-    return this.currentAgent.epicstaffAgentId !== agent.epicstaffAgentId;
+  isCurrentAgent(agent) {
+    const current = this.currentAgent();
+    if (!current || !agent.epicstaffAgentId)
+      return false;
+    return current.epicstaffAgentId === agent.epicstaffAgentId;
   }
   onInfoClick() {
     this.infoClicked.emit();
@@ -99071,7 +99134,7 @@ var _ChatHeaderComponent = class _ChatHeaderComponent {
 _ChatHeaderComponent.\u0275fac = function ChatHeaderComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _ChatHeaderComponent)();
 };
-_ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatHeaderComponent, selectors: [["ep-chat-header"]], inputs: { currentAgent: "currentAgent", agents: "agents", isMonoAgent: "isMonoAgent", dockEnabled: "dockEnabled", isDockMode: "isDockMode" }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 17, vars: 16, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "20", "width", "20", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__title-text"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click"], ["name", "kebab-menu", 3, "size"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", 1, "chat-header__control-btn", 3, "epTooltip", "tooltipOptions"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["name", "minimize", 3, "size"], [1, "chat-header__menu--agents"], [1, "chat-header__menu--actions"], [1, "chat-header__dropdown-icon"], ["name", "chevron-down", 3, "size"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["name", "expand", 3, "size"], ["type", "button", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "epTooltip", "tooltipOptions"], [3, "name", "size"], [1, "chat-header__menu--agents", 3, "closed"], [3, "ep-menu-item--inactive"], [3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-text"], [1, "chat-header__agent-name"], [1, "chat-header__agent-description"], [1, "chat-header__menu--actions", 3, "closed"], ["aria-label", "Clear chat history", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Set default position", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Create new Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Edit Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Remove agent", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
+_ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatHeaderComponent, selectors: [["ep-chat-header"]], inputs: { currentAgent: [1, "currentAgent"], agents: [1, "agents"], isMonoAgent: [1, "isMonoAgent"], dockEnabled: [1, "dockEnabled"], isDockMode: [1, "isDockMode"] }, outputs: { closed: "closed", infoClicked: "infoClicked", dragClicked: "dragClicked", collapseClicked: "collapseClicked", toggleFullHeightClicked: "toggleFullHeightClicked", agentSelected: "agentSelected", clearChatHistory: "clearChatHistory", createAgent: "createAgent", editAgent: "editAgent", removeAgent: "removeAgent", setDefaultPosition: "setDefaultPosition", dockClicked: "dockClicked" }, decls: 17, vars: 16, consts: [[1, "chat-header"], [1, "chat-header__left"], [1, "chat-header__icon"], ["height", "20", "width", "20", "alt", "Assistant", 3, "src"], [1, "chat-header__title", 3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__title-text"], [1, "chat-header__dropdown-icon", 3, "chat-header__dropdown-icon--rotated"], [1, "chat-header__controls"], ["type", "button", "aria-label", "Menu", 1, "chat-header__control-btn", "chat-header__control-btn--dots", 3, "click"], ["name", "kebab-menu", 3, "size"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "tooltipOptions"], ["type", "button", 1, "chat-header__control-btn", 3, "epTooltip", "tooltipOptions"], ["type", "button", "aria-label", "Collapse", "epTooltip", "Collapse", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["name", "minimize", 3, "size"], [1, "chat-header__menu--agents", "ep-menu--panel"], [1, "chat-header__menu--actions", "ep-menu--panel"], [1, "chat-header__dropdown-icon"], ["name", "chevron-down", 3, "size"], ["type", "button", "aria-label", "Toggle full height", "epTooltip", "Toggle full height", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "tooltipOptions"], ["name", "expand", 3, "size"], ["type", "button", 1, "chat-header__control-btn", 3, "click", "keydown.enter", "keydown.space", "epTooltip", "tooltipOptions"], [3, "name", "size"], [1, "chat-header__menu--agents", "ep-menu--panel", 3, "closed"], [3, "ep-menu-item--active"], [3, "click", "keydown.enter", "keydown.space"], [1, "chat-header__agent-icon"], ["height", "24", "width", "24", "alt", "", 3, "src"], [1, "chat-header__agent-text"], [1, "chat-header__agent-description"], [1, "chat-header__menu--actions", "ep-menu--panel", 3, "closed"], ["aria-label", "Clear chat history", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Set default position", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Create new Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Edit Epicstaff agent", 3, "click", "keydown.enter", "keydown.space"], ["aria-label", "Remove agent", 3, "click", "keydown.enter", "keydown.space"]], template: function ChatHeaderComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "div", 2);
     \u0275\u0275element(3, "img", 3);
@@ -99114,51 +99177,51 @@ _ChatHeaderComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
   }
   if (rf & 2) {
     \u0275\u0275advance(3);
-    \u0275\u0275property("src", ctx.iconPath, \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", ctx.iconPath(), \u0275\u0275sanitizeUrl);
     \u0275\u0275advance();
-    \u0275\u0275classProp("chat-header__title--clickable", ctx.hasMultipleAgents);
-    \u0275\u0275attribute("tabindex", ctx.hasMultipleAgents ? 0 : -1)("role", ctx.hasMultipleAgents ? "button" : null)("aria-label", ctx.hasMultipleAgents ? "Select agent" : null);
+    \u0275\u0275classProp("chat-header__title--clickable", ctx.hasMultipleAgents());
+    \u0275\u0275attribute("tabindex", ctx.hasMultipleAgents() ? 0 : -1)("role", ctx.hasMultipleAgents() ? "button" : null)("aria-label", ctx.hasMultipleAgents() ? "Select agent" : null);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(ctx.title);
+    \u0275\u0275textInterpolate(ctx.title());
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.hasMultipleAgents ? 7 : -1);
+    \u0275\u0275conditional(ctx.hasMultipleAgents() ? 7 : -1);
     \u0275\u0275advance(3);
     \u0275\u0275property("size", 28);
     \u0275\u0275advance();
-    \u0275\u0275conditional(!ctx.isDockMode ? 11 : -1);
+    \u0275\u0275conditional(!ctx.isDockMode() ? 11 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.dockEnabled ? 12 : -1);
+    \u0275\u0275conditional(ctx.dockEnabled() ? 12 : -1);
     \u0275\u0275advance();
     \u0275\u0275property("tooltipOptions", \u0275\u0275pureFunction0(15, _c018));
     \u0275\u0275advance();
     \u0275\u0275property("size", 28);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.isAgentMenuShown && ctx.hasMultipleAgents ? 15 : -1);
+    \u0275\u0275conditional(ctx.isAgentMenuShown && ctx.hasMultipleAgents() ? 15 : -1);
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.isActionsMenuShown ? 16 : -1);
   }
-}, dependencies: [TooltipDirective, MenuComponent, MenuItemComponent, IconComponent], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 16px;\n  height: 52px;\n  box-sizing: border-box;\n  background: var(--ep-color-header-bg);\n  border-bottom: 1px solid var(--ep-color-header-border);\n  color: var(--ep-color-header-text);\n}\n.chat-header__left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 20px;\n  height: 20px;\n}\n.chat-header__icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n}\n.chat-header__title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  font-weight: 400;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-header-text);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%] {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text[_ngcontent-%COMP%] {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  opacity: 0.6;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-header__controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 28px;\n  height: 28px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-header-icon);\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:hover {\n  opacity: 1;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:active {\n  opacity: 0.7;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots[_ngcontent-%COMP%] {\n  margin-left: auto;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  display: block;\n}\n.chat-header__agent-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-text-item--active[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-text-item-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text-item-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-text-item-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.ep-menu-item--inactive[_ngcontent-%COMP%] {\n  pointer-events: none;\n  opacity: 0.5;\n}\n.chat-header__menu--agents[_ngcontent-%COMP%] {\n  top: 32px;\n  left: 12px;\n  max-width: 70%;\n  max-height: 60cqh;\n  overflow-y: auto;\n  overflow-x: hidden;\n}\n.chat-header__menu--actions[_ngcontent-%COMP%] {\n  top: 32px;\n  right: 12px;\n  min-width: 180px;\n}\n/*# sourceMappingURL=chat-header.component.css.map */"] });
+}, dependencies: [TooltipDirective, MenuComponent, MenuItemComponent, IconComponent], styles: ["\n\n[_nghost-%COMP%] {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 16px;\n  height: 52px;\n  box-sizing: border-box;\n  background: var(--ep-color-header-bg);\n  border-bottom: 1px solid var(--ep-color-header-border);\n  color: var(--ep-color-header-text);\n}\n.chat-header__left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 20px;\n  height: 20px;\n}\n.chat-header__icon[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n}\n.chat-header__title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  font-weight: 400;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-header-text);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%] {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text[_ngcontent-%COMP%] {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  opacity: 0.6;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated[_ngcontent-%COMP%] {\n  transform: rotate(180deg);\n}\n.chat-header__controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 28px;\n  height: 28px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-header-icon);\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:hover {\n  opacity: 1;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:active {\n  opacity: 0.7;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots[_ngcontent-%COMP%] {\n  margin-left: auto;\n}\n.chat-header__control-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  display: block;\n}\n.chat-header__agent-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item[_ngcontent-%COMP%] {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-text-item--active[_ngcontent-%COMP%]:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-text-item-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text-item-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item-name[_ngcontent-%COMP%] {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-text-item-description[_ngcontent-%COMP%] {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-description[_ngcontent-%COMP%] {\n  opacity: 0.7;\n}\n.ep-menu-item--inactive[_ngcontent-%COMP%] {\n  pointer-events: none;\n  opacity: 0.5;\n}\n.chat-header__menu--agents[_ngcontent-%COMP%] {\n  top: 32px;\n  left: 12px;\n  max-width: 70%;\n  max-height: 60cqh;\n  overflow-y: auto;\n  overflow-x: hidden;\n}\n.chat-header__menu--actions[_ngcontent-%COMP%] {\n  top: 32px;\n  right: 12px;\n  min-width: 180px;\n}\n/*# sourceMappingURL=chat-header.component.css.map */"], changeDetection: 0 });
 var ChatHeaderComponent = _ChatHeaderComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatHeaderComponent, [{
     type: Component,
-    args: [{ selector: "ep-chat-header", imports: [TooltipDirective, MenuComponent, MenuItemComponent, IconComponent], template: `<div class="chat-header">
+    args: [{ selector: "ep-chat-header", imports: [TooltipDirective, MenuComponent, MenuItemComponent, IconComponent], changeDetection: ChangeDetectionStrategy.OnPush, template: `<div class="chat-header">
   <div class="chat-header__left">
     <div class="chat-header__icon">
-      <img [src]="iconPath" height="20" width="20" alt="Assistant" />
+      <img [src]="iconPath()" height="20" width="20" alt="Assistant" />
     </div>
     <div
       class="chat-header__title"
-      [class.chat-header__title--clickable]="hasMultipleAgents"
-      [attr.tabindex]="hasMultipleAgents ? 0 : -1"
-      [attr.role]="hasMultipleAgents ? 'button' : null"
-      [attr.aria-label]="hasMultipleAgents ? 'Select agent' : null"
+      [class.chat-header__title--clickable]="hasMultipleAgents()"
+      [attr.tabindex]="hasMultipleAgents() ? 0 : -1"
+      [attr.role]="hasMultipleAgents() ? 'button' : null"
+      [attr.aria-label]="hasMultipleAgents() ? 'Select agent' : null"
       (click)="toggleAgentMenu(); $event.stopPropagation()"
       (keydown.enter)="toggleAgentMenu()"
       (keydown.space)="toggleAgentMenu()"
     >
-      <span class="chat-header__title-text">{{ title }}</span>
-      @if (hasMultipleAgents) {
+      <span class="chat-header__title-text">{{ title() }}</span>
+      @if (hasMultipleAgents()) {
         <div
           class="chat-header__dropdown-icon"
           [class.chat-header__dropdown-icon--rotated]="isAgentMenuShown"
@@ -99178,7 +99241,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       <ep-icon name="kebab-menu" [size]="28"></ep-icon>
     </button>
 
-    @if (!isDockMode) {
+    @if (!isDockMode()) {
       <button
         type="button"
         class="chat-header__control-btn"
@@ -99193,18 +99256,18 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       </button>
     }
 
-    @if (dockEnabled) {
+    @if (dockEnabled()) {
       <button
         type="button"
         class="chat-header__control-btn"
         (click)="onDockClick()"
         (keydown.enter)="onDockClick()"
         (keydown.space)="onDockClick()"
-        [attr.aria-label]="isDockMode ? 'Undock' : 'Dock in parent'"
-        [epTooltip]="isDockMode ? 'Undock' : 'Dock in parent'"
+        [attr.aria-label]="isDockMode() ? 'Undock' : 'Dock in parent'"
+        [epTooltip]="isDockMode() ? 'Undock' : 'Dock in parent'"
         [tooltipOptions]="{ delay: 500 }"
       >
-        <ep-icon [name]="isDockMode ? 'undock' : 'dock'" [size]="28"></ep-icon>
+        <ep-icon [name]="isDockMode() ? 'undock' : 'dock'" [size]="28"></ep-icon>
       </button>
     }
 
@@ -99223,11 +99286,11 @@ var ChatHeaderComponent = _ChatHeaderComponent;
   </div>
 </div>
 
-@if (isAgentMenuShown && hasMultipleAgents) {
-  <ep-menu (closed)="closeAgentMenu()" class="chat-header__menu--agents">
-    @for (agent of agents; track $index) {
+@if (isAgentMenuShown && hasMultipleAgents()) {
+  <ep-menu (closed)="closeAgentMenu()" class="chat-header__menu--agents ep-menu--panel">
+    @for (agent of agents(); track $index) {
       <ep-menu-item
-        [class.ep-menu-item--inactive]="!isAgentActive(agent)"
+        [class.ep-menu-item--active]="isCurrentAgent(agent)"
         [attr.aria-label]="'Select agent ' + agent.name"
         (click)="onAgentSelect(agent)"
         (keydown.enter)="onAgentSelect(agent)"
@@ -99237,7 +99300,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
           <img [src]="getAgentIconPath(agent)" height="24" width="24" alt="" />
         </div>
         <div class="chat-header__agent-text">
-          <div class="chat-header__agent-name">{{ agent.name }}</div>
+          <div>{{ agent.name }}</div>
           <div class="chat-header__agent-description">{{ agent.description }}</div>
         </div>
       </ep-menu-item>
@@ -99246,7 +99309,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
 }
 
 @if (isActionsMenuShown) {
-  <ep-menu (closed)="closeActionsMenu()" class="chat-header__menu--actions">
+  <ep-menu (closed)="closeActionsMenu()" class="chat-header__menu--actions ep-menu--panel">
     <ep-menu-item
       aria-label="Clear chat history"
       (click)="onClearChatHistory()"
@@ -99254,7 +99317,7 @@ var ChatHeaderComponent = _ChatHeaderComponent;
       (keydown.space)="onClearChatHistory()"
       >Clear chat history</ep-menu-item
     >
-    @if (!isMonoAgent) {
+    @if (!isMonoAgent()) {
       <ep-menu-item
         aria-label="Create new Epicstaff agent"
         (click)="onCreateAgent()"
@@ -99286,45 +99349,11 @@ var ChatHeaderComponent = _ChatHeaderComponent;
     >
   </ep-menu>
 }
-`, styles: ["/* src/app/components/chat-header/chat-header.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 16px;\n  height: 52px;\n  box-sizing: border-box;\n  background: var(--ep-color-header-bg);\n  border-bottom: 1px solid var(--ep-color-header-border);\n  color: var(--ep-color-header-text);\n}\n.chat-header__left {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 20px;\n  height: 20px;\n}\n.chat-header__icon img {\n  display: block;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n}\n.chat-header__title {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  font-weight: 400;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-header-text);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  opacity: 0.6;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated {\n  transform: rotate(180deg);\n}\n.chat-header__controls {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 28px;\n  height: 28px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-header-icon);\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn:hover {\n  opacity: 1;\n}\n.chat-header__control-btn:active {\n  opacity: 0.7;\n}\n.chat-header__control-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots {\n  margin-left: auto;\n}\n.chat-header__control-btn svg {\n  display: block;\n}\n.chat-header__agent-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-text-item--active:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-text-item-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text-item-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-text-item-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.chat-header__agent-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n}\n.ep-menu-item--inactive {\n  pointer-events: none;\n  opacity: 0.5;\n}\n.chat-header__menu--agents {\n  top: 32px;\n  left: 12px;\n  max-width: 70%;\n  max-height: 60cqh;\n  overflow-y: auto;\n  overflow-x: hidden;\n}\n.chat-header__menu--actions {\n  top: 32px;\n  right: 12px;\n  min-width: 180px;\n}\n/*# sourceMappingURL=chat-header.component.css.map */\n"] }]
-  }], null, { currentAgent: [{
-    type: Input
-  }], agents: [{
-    type: Input
-  }], isMonoAgent: [{
-    type: Input
-  }], dockEnabled: [{
-    type: Input
-  }], isDockMode: [{
-    type: Input
-  }], closed: [{
-    type: Output
-  }], infoClicked: [{
-    type: Output
-  }], dragClicked: [{
-    type: Output
-  }], collapseClicked: [{
-    type: Output
-  }], toggleFullHeightClicked: [{
-    type: Output
-  }], agentSelected: [{
-    type: Output
-  }], clearChatHistory: [{
-    type: Output
-  }], createAgent: [{
-    type: Output
-  }], editAgent: [{
-    type: Output
-  }], removeAgent: [{
-    type: Output
-  }], setDefaultPosition: [{
-    type: Output
-  }], dockClicked: [{
-    type: Output
-  }] });
+`, styles: ["/* src/app/components/chat-header/chat-header.component.scss */\n:host {\n  display: block;\n  flex-shrink: 0;\n  position: relative;\n}\n.chat-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 16px;\n  height: 52px;\n  box-sizing: border-box;\n  background: var(--ep-color-header-bg);\n  border-bottom: 1px solid var(--ep-color-header-border);\n  color: var(--ep-color-header-text);\n}\n.chat-header__left {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex: 1;\n  min-width: 0;\n}\n.chat-header__icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  width: 20px;\n  height: 20px;\n}\n.chat-header__icon img {\n  display: block;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n}\n.chat-header__title {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  font-weight: 400;\n  font-style: normal;\n  line-height: 20px;\n  color: var(--ep-color-header-text);\n  min-width: 0;\n  overflow: hidden;\n}\n.chat-header__title--clickable {\n  cursor: pointer;\n  -webkit-user-select: none;\n  user-select: none;\n}\n.chat-header__title--clickable:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__title-text {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n}\n.chat-header__dropdown-icon {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  opacity: 0.6;\n  transition: transform 0.3s ease;\n}\n.chat-header__dropdown-icon--rotated {\n  transform: rotate(180deg);\n}\n.chat-header__controls {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  flex-shrink: 0;\n  margin-left: 8px;\n}\n.chat-header__control-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 28px;\n  height: 28px;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-header-icon);\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.2s;\n  -webkit-user-select: none;\n  user-select: none;\n  flex-shrink: 0;\n}\n.chat-header__control-btn:hover {\n  opacity: 1;\n}\n.chat-header__control-btn:active {\n  opacity: 0.7;\n}\n.chat-header__control-btn:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent-contrast) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n.chat-header__control-btn--dots {\n  margin-left: auto;\n}\n.chat-header__control-btn svg {\n  display: block;\n}\n.chat-header__agent-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item {\n  display: flex;\n  padding: 4px 20px;\n  align-items: center;\n  gap: 10px;\n  align-self: stretch;\n  color: var(--ep-color-text);\n  font-size: 14px;\n  font-weight: 400;\n  line-height: 20px;\n}\n.chat-header__agent-text-item--active:hover {\n  background-color: var(--ep-color-accent-soft);\n  cursor: pointer;\n}\n.chat-header__agent-text-item-icon {\n  display: flex;\n  align-self: flex-start;\n}\n.chat-header__agent-text-item-text {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n.chat-header__agent-text-item-name {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-text-item-description {\n  font-size: 13px;\n  font-weight: 400;\n  line-height: 16px;\n  color: var(--ep-color-text-muted);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.chat-header__agent-description {\n  opacity: 0.7;\n}\n.ep-menu-item--inactive {\n  pointer-events: none;\n  opacity: 0.5;\n}\n.chat-header__menu--agents {\n  top: 32px;\n  left: 12px;\n  max-width: 70%;\n  max-height: 60cqh;\n  overflow-y: auto;\n  overflow-x: hidden;\n}\n.chat-header__menu--actions {\n  top: 32px;\n  right: 12px;\n  min-width: 180px;\n}\n/*# sourceMappingURL=chat-header.component.css.map */\n"] }]
+  }], null, { currentAgent: [{ type: Input, args: [{ isSignal: true, alias: "currentAgent", required: false }] }], agents: [{ type: Input, args: [{ isSignal: true, alias: "agents", required: false }] }], isMonoAgent: [{ type: Input, args: [{ isSignal: true, alias: "isMonoAgent", required: false }] }], dockEnabled: [{ type: Input, args: [{ isSignal: true, alias: "dockEnabled", required: false }] }], isDockMode: [{ type: Input, args: [{ isSignal: true, alias: "isDockMode", required: false }] }], closed: [{ type: Output, args: ["closed"] }], infoClicked: [{ type: Output, args: ["infoClicked"] }], dragClicked: [{ type: Output, args: ["dragClicked"] }], collapseClicked: [{ type: Output, args: ["collapseClicked"] }], toggleFullHeightClicked: [{ type: Output, args: ["toggleFullHeightClicked"] }], agentSelected: [{ type: Output, args: ["agentSelected"] }], clearChatHistory: [{ type: Output, args: ["clearChatHistory"] }], createAgent: [{ type: Output, args: ["createAgent"] }], editAgent: [{ type: Output, args: ["editAgent"] }], removeAgent: [{ type: Output, args: ["removeAgent"] }], setDefaultPosition: [{ type: Output, args: ["setDefaultPosition"] }], dockClicked: [{ type: Output, args: ["dockClicked"] }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatHeaderComponent, { className: "ChatHeaderComponent", filePath: "src/app/components/chat-header/chat-header.component.ts", lineNumber: 15 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatHeaderComponent, { className: "ChatHeaderComponent", filePath: "src/app/components/chat-header/chat-header.component.ts", lineNumber: 16 });
 })();
 
 // src/app/components/chat-toggle-button/chat-toggle-button.component.ts
@@ -99375,12 +99404,12 @@ _ChatToggleButtonComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCompone
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.unreadCount > 0 ? 2 : -1);
   }
-}, styles: ["\n\n.ep-chat-toggle-button[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 1003;\n  cursor: pointer;\n  display: inline-flex;\n  width: 100%;\n  align-items: center;\n  justify-content: center;\n  appearance: none;\n  background: transparent;\n  border: 0;\n  padding: 0;\n  margin: 0;\n  font: inherit;\n  color: inherit;\n  line-height: 0;\n}\n.ep-chat-toggle-button[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n}\n.ep-chat-toggle-button[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid var(--ep-color-accent);\n  outline-offset: 2px;\n}\n.ep-chat-toggle-button__badge[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  background: var(--ep-color-danger);\n  color: var(--ep-color-accent-contrast);\n  border-radius: 10px;\n  padding: 2px 6px;\n  font-size: 11px;\n  font-weight: 600;\n  min-width: 18px;\n  text-align: center;\n  line-height: 1.2;\n}\n/*# sourceMappingURL=chat-toggle-button.component.css.map */"] });
+}, styles: ["\n\n.ep-chat-toggle-button[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 1003;\n  cursor: pointer;\n  display: inline-flex;\n  width: 100%;\n  align-items: center;\n  justify-content: center;\n  appearance: none;\n  background: transparent;\n  border: 0;\n  padding: 0;\n  margin: 0;\n  font: inherit;\n  color: inherit;\n  line-height: 0;\n  margin-bottom: 1.75rem;\n}\n.ep-chat-toggle-button[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: block;\n}\n.ep-chat-toggle-button[_ngcontent-%COMP%]:focus-visible {\n  outline: 2px solid var(--ep-color-accent);\n  outline-offset: 2px;\n}\n.ep-chat-toggle-button__badge[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  background: var(--ep-color-danger);\n  color: var(--ep-color-accent-contrast);\n  border-radius: 10px;\n  padding: 2px 6px;\n  font-size: 11px;\n  font-weight: 600;\n  min-width: 18px;\n  text-align: center;\n  line-height: 1.2;\n}\n/*# sourceMappingURL=chat-toggle-button.component.css.map */"] });
 var ChatToggleButtonComponent = _ChatToggleButtonComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatToggleButtonComponent, [{
     type: Component,
-    args: [{ selector: "ep-chat-toggle-button", template: '<button\r\n  type="button"\r\n  class="ep-chat-toggle-button"\r\n  (click)="onClick()"\r\n  (keydown.enter)="onClick()"\r\n  (keydown.space)="onClick()"\r\n  aria-label="Toggle chat"\r\n>\r\n  <img [src]="iconPath" [attr.height]="chatIconSize" [attr.width]="chatIconSize" alt="Chat" />\r\n  @if (unreadCount > 0) {\r\n    <span class="ep-chat-toggle-button__badge">{{ unreadCount }}</span>\r\n  }\r\n</button>\r\n', styles: ["/* src/app/components/chat-toggle-button/chat-toggle-button.component.scss */\n.ep-chat-toggle-button {\n  position: relative;\n  z-index: 1003;\n  cursor: pointer;\n  display: inline-flex;\n  width: 100%;\n  align-items: center;\n  justify-content: center;\n  appearance: none;\n  background: transparent;\n  border: 0;\n  padding: 0;\n  margin: 0;\n  font: inherit;\n  color: inherit;\n  line-height: 0;\n}\n.ep-chat-toggle-button img {\n  display: block;\n}\n.ep-chat-toggle-button:focus-visible {\n  outline: 2px solid var(--ep-color-accent);\n  outline-offset: 2px;\n}\n.ep-chat-toggle-button__badge {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  background: var(--ep-color-danger);\n  color: var(--ep-color-accent-contrast);\n  border-radius: 10px;\n  padding: 2px 6px;\n  font-size: 11px;\n  font-weight: 600;\n  min-width: 18px;\n  text-align: center;\n  line-height: 1.2;\n}\n/*# sourceMappingURL=chat-toggle-button.component.css.map */\n"] }]
+    args: [{ selector: "ep-chat-toggle-button", template: '<button\r\n  type="button"\r\n  class="ep-chat-toggle-button"\r\n  (click)="onClick()"\r\n  (keydown.enter)="onClick()"\r\n  (keydown.space)="onClick()"\r\n  aria-label="Toggle chat"\r\n>\r\n  <img [src]="iconPath" [attr.height]="chatIconSize" [attr.width]="chatIconSize" alt="Chat" />\r\n  @if (unreadCount > 0) {\r\n    <span class="ep-chat-toggle-button__badge">{{ unreadCount }}</span>\r\n  }\r\n</button>\r\n', styles: ["/* src/app/components/chat-toggle-button/chat-toggle-button.component.scss */\n.ep-chat-toggle-button {\n  position: relative;\n  z-index: 1003;\n  cursor: pointer;\n  display: inline-flex;\n  width: 100%;\n  align-items: center;\n  justify-content: center;\n  appearance: none;\n  background: transparent;\n  border: 0;\n  padding: 0;\n  margin: 0;\n  font: inherit;\n  color: inherit;\n  line-height: 0;\n  margin-bottom: 1.75rem;\n}\n.ep-chat-toggle-button img {\n  display: block;\n}\n.ep-chat-toggle-button:focus-visible {\n  outline: 2px solid var(--ep-color-accent);\n  outline-offset: 2px;\n}\n.ep-chat-toggle-button__badge {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  background: var(--ep-color-danger);\n  color: var(--ep-color-accent-contrast);\n  border-radius: 10px;\n  padding: 2px 6px;\n  font-size: 11px;\n  font-weight: 600;\n  min-width: 18px;\n  text-align: center;\n  line-height: 1.2;\n}\n/*# sourceMappingURL=chat-toggle-button.component.css.map */\n"] }]
   }], null, { iconPath: [{
     type: Input
   }], chatIconSize: [{
@@ -99699,15 +99728,12 @@ var _EpicstaffAgentConfigComponent = class _EpicstaffAgentConfigComponent {
       payload.id = this.currentAgent?.epicstaffAgentId;
     }
     this.closed.emit();
-    const request$ = this.isEdit ? this.agentService.updateAgent(payload) : this.agentService.createAgent(payload, { selectAfterCreate: true });
-    request$.subscribe({
-      next: () => {
-        this.agentService.loadAgents();
-      },
-      error: (error) => {
-        console.error("Failed to save agent:", error);
-      }
-    });
+    if (this.isEdit) {
+      this.agentService.updateAgent(payload);
+    } else {
+      this.agentService.createAgent(payload, { selectAfterCreate: true });
+    }
+    this.agentService.loadAgents();
   }
   importFromClipboard() {
     return __async(this, null, function* () {
@@ -99790,7 +99816,7 @@ _EpicstaffAgentConfigComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCom
     });
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(17, "div", 4)(18, "div", 5);
-    \u0275\u0275text(19, "Epicstaff flow id ");
+    \u0275\u0275text(19, " Epicstaff flow id ");
     \u0275\u0275elementStart(20, "span", 6);
     \u0275\u0275text(21, "*");
     \u0275\u0275elementEnd()();
@@ -99842,77 +99868,79 @@ var EpicstaffAgentConfigComponent = _EpicstaffAgentConfigComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(EpicstaffAgentConfigComponent, [{
     type: Component,
-    args: [{ selector: "ep-epicstaff-agent-config", imports: [CommonModule, ReactiveFormsModule, ButtonComponent, ModalComponent, TooltipDirective], template: `<ep-modal\r
-  [closable]="true"\r
-  [closableOverlay]="true"\r
-  styleClass="ep-agent-config"\r
-  (closed)="cancel()"\r
->\r
-  <div class="agent-config-header">\r
-    <p class="agent-config-title">{{ isEdit ? "Edit" : "Create New" }} Agent</p>\r
-  </div>\r
-\r
-  <div class="agent-config-content" [formGroup]="form">\r
-    <div class="agent-config-field">\r
-      <div class="agent-config-label">Agent Name <span class="agent-config-required">*</span></div>\r
-      <input\r
-        type="text"\r
-        class="agent-config-input"\r
-        formControlName="name"\r
-        placeholder="Enter agent name"\r
-        (keydown)="$event.stopPropagation()"\r
-      />\r
-    </div>\r
-\r
-    <div class="agent-config-field">\r
-      <div class="agent-config-label">\r
-        Epicstaff flow URL <span class="agent-config-required">*</span>\r
-        <!-- <span class="agent-config-help" epTooltip="Base URL of the Epicstaff flow endpoint" [tooltipOptions]="{ position: 'top' }">?</span> -->\r
-      </div>\r
-      <input\r
-        type="text"\r
-        class="agent-config-input"\r
-        formControlName="flowUrl"\r
-        placeholder="Enter flow url"\r
-        (keydown)="$event.stopPropagation()"\r
-      />\r
-    </div>\r
-\r
-    <div class="agent-config-field">\r
-      <div class="agent-config-label">Epicstaff flow id <span class="agent-config-required">*</span></div>\r
-      <input\r
-        type="number"\r
-        class="agent-config-input"\r
-        formControlName="flowId"\r
-        placeholder="Enter flow id"\r
-        (keydown)="$event.stopPropagation()"\r
-      />\r
-    </div>\r
-\r
-    <div class="agent-config-field">\r
-      <div class="agent-config-label">Agent description</div>\r
-      <textarea\r
-        class="agent-config-input"\r
-        rows="3"\r
-        formControlName="description"\r
-        placeholder="Enter agent description"\r
-        (keydown)="$event.stopPropagation()"\r
-      ></textarea>\r
-    </div>\r
-  </div>\r
-\r
-  <div class="agent-config-footer">\r
-    <button type="button" class="agent-config-import" (click)="importFromClipboard()">\r
-      Import\r
-    </button>\r
-    <div class="agent-config-footer-right">\r
-      <ep-button (buttonClick)="cancel()">Cancel</ep-button>\r
-      <ep-button (buttonClick)="apply()" [disabled]="!isValidForm" variant="primary">\r
-        {{ isEdit ? "Save" : "Create" }}\r
-      </ep-button>\r
-    </div>\r
-  </div>\r
-</ep-modal>\r
+    args: [{ selector: "ep-epicstaff-agent-config", imports: [CommonModule, ReactiveFormsModule, ButtonComponent, ModalComponent], template: `<ep-modal
+  [closable]="true"
+  [closableOverlay]="true"
+  styleClass="ep-agent-config"
+  (closed)="cancel()"
+>
+  <div class="agent-config-header">
+    <p class="agent-config-title">{{ isEdit ? "Edit" : "Create New" }} Agent</p>
+  </div>
+
+  <div class="agent-config-content" [formGroup]="form">
+    <div class="agent-config-field">
+      <div class="agent-config-label">Agent Name <span class="agent-config-required">*</span></div>
+      <input
+        type="text"
+        class="agent-config-input"
+        formControlName="name"
+        placeholder="Enter agent name"
+        (keydown)="$event.stopPropagation()"
+      />
+    </div>
+
+    <div class="agent-config-field">
+      <div class="agent-config-label">
+        Epicstaff flow URL <span class="agent-config-required">*</span>
+        <!-- <span class="agent-config-help" epTooltip="Base URL of the Epicstaff flow endpoint" [tooltipOptions]="{ position: 'top' }">?</span> -->
+      </div>
+      <input
+        type="text"
+        class="agent-config-input"
+        formControlName="flowUrl"
+        placeholder="Enter flow url"
+        (keydown)="$event.stopPropagation()"
+      />
+    </div>
+
+    <div class="agent-config-field">
+      <div class="agent-config-label">
+        Epicstaff flow id <span class="agent-config-required">*</span>
+      </div>
+      <input
+        type="number"
+        class="agent-config-input"
+        formControlName="flowId"
+        placeholder="Enter flow id"
+        (keydown)="$event.stopPropagation()"
+      />
+    </div>
+
+    <div class="agent-config-field">
+      <div class="agent-config-label">Agent description</div>
+      <textarea
+        class="agent-config-input"
+        rows="3"
+        formControlName="description"
+        placeholder="Enter agent description"
+        (keydown)="$event.stopPropagation()"
+      ></textarea>
+    </div>
+  </div>
+
+  <div class="agent-config-footer">
+    <button type="button" class="agent-config-import" (click)="importFromClipboard()">
+      Import
+    </button>
+    <div class="agent-config-footer-right">
+      <ep-button (buttonClick)="cancel()">Cancel</ep-button>
+      <ep-button (buttonClick)="apply()" [disabled]="!isValidForm" variant="primary">
+        {{ isEdit ? "Save" : "Create" }}
+      </ep-button>
+    </div>
+  </div>
+</ep-modal>
 `, styles: ['/* src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.scss */\n:host {\n  display: block;\n}\n.agent-config-header {\n  display: flex;\n  align-items: center;\n  padding: 20px 20px;\n  border-bottom: 1px solid #2b2d30;\n}\n.agent-config-title {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 600;\n  color: var(--ep-color-text);\n}\n.agent-config-content {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  padding: 20px;\n}\n.agent-config-field {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n}\n.agent-config-label {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  font-size: 12px;\n  font-weight: 400;\n  color: var(--ep-color-text-muted);\n}\n.agent-config-required {\n  color: #685fff;\n}\n.agent-config-input {\n  width: 100%;\n  height: 40px;\n  padding: 0 12px;\n  border: 1px solid rgba(217, 217, 222, 0.16);\n  border-radius: 4px;\n  background: #2b2d30;\n  color: var(--ep-color-text);\n  font-family: "Open Sans", sans-serif;\n  font-size: 14px;\n  box-sizing: border-box;\n  outline: none;\n}\n.agent-config-input::placeholder {\n  color: var(--ep-color-text-muted);\n}\n.agent-config-input:focus {\n  border-color: var(--ep-color-accent);\n}\n.agent-config-field textarea.agent-config-input {\n  resize: none;\n  height: auto;\n  padding: 10px 12px;\n}\n.agent-config-footer {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding: 16px 20px;\n  border-top: 1px solid #2b2d30;\n}\n.agent-config-footer-right {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n.agent-config-import {\n  display: inline-flex;\n  align-items: center;\n  padding: 0;\n  border: none;\n  background: transparent;\n  color: var(--ep-color-accent);\n  cursor: pointer;\n  font-family: "Open Sans", sans-serif;\n  font-size: 13px;\n  font-weight: 500;\n}\n.agent-config-import:hover {\n  opacity: 0.8;\n  text-decoration: underline;\n}\n.agent-config-import:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ep-color-accent) 50%, transparent);\n  outline-offset: 2px;\n  border-radius: 2px;\n}\n:host ::ng-deep .ep-modal-container.ep-agent-config {\n  min-width: 480px;\n  border-radius: 10px;\n  background: #212325;\n}\n:host ::ng-deep .ep-modal-container.ep-agent-config .ep-modal-close-icon {\n  top: 22px;\n  right: 20px;\n}\n/*# sourceMappingURL=epicstaff-agent-config.component.css.map */\n'] }]
   }], () => [{ type: FormBuilder }, { type: EpicstaffAgentService }], { popupState: [{
     type: Input
@@ -99928,7 +99956,7 @@ var EpicstaffAgentConfigComponent = _EpicstaffAgentConfigComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(EpicstaffAgentConfigComponent, { className: "EpicstaffAgentConfigComponent", filePath: "src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.ts", lineNumber: 27 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(EpicstaffAgentConfigComponent, { className: "EpicstaffAgentConfigComponent", filePath: "src/app/components/epicstaff-agent-config/epicstaff-agent-config.component.ts", lineNumber: 26 });
 })();
 
 // src/app/directives/click-outside.directive.ts
@@ -99995,10 +100023,17 @@ var _ResizableChatDirective = class _ResizableChatDirective {
     this.isFullHeight = false;
     this.lastFullHeightNoop = false;
     this.resizeTimeout = null;
-    window.addEventListener("resize", () => this.handleWindowResize());
+    this.resizeHandler = () => this.handleWindowResize();
+    window.addEventListener("resize", this.resizeHandler);
   }
   ngOnInit() {
     this.element = this.elementRef.nativeElement;
+  }
+  ngOnDestroy() {
+    window.removeEventListener("resize", this.resizeHandler);
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+    }
   }
   ngOnChanges(changes) {
     if (changes["resizeDisabled"] && !changes["resizeDisabled"].firstChange) {
@@ -100736,13 +100771,13 @@ function ChatComponent_Conditional_2_Template(rf, ctx) {
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext();
     \u0275\u0275classProp("ep-popup--dock", ctx_r1.isDockMode);
-    \u0275\u0275property("ngStyle", ctx_r1.chatStyle)("config", ctx_r1.getConfig())("resizeDisabled", ctx_r1.isDockMode);
+    \u0275\u0275property("ngStyle", ctx_r1.chatStyle())("config", ctx_r1.getConfig())("resizeDisabled", ctx_r1.isDockMode);
     \u0275\u0275advance();
-    \u0275\u0275property("currentAgent", ctx_r1.currentAgent)("agents", ctx_r1.agentService.visibleAgents())("isMonoAgent", ctx_r1.isMonoAgent)("dockEnabled", ctx_r1.dockEnabled)("isDockMode", ctx_r1.isDockMode);
+    \u0275\u0275property("currentAgent", ctx_r1.agentService.currentAgent())("agents", ctx_r1.agentService.visibleAgents())("isMonoAgent", ctx_r1.isMonoAgent)("dockEnabled", ctx_r1.dockEnabled)("isDockMode", ctx_r1.isDockMode);
     \u0275\u0275advance();
-    \u0275\u0275property("messages", ctx_r1.chatService.messages())("isTyping", ctx_r1.isTyping)("scrollMode", ctx_r1.scrollMode);
+    \u0275\u0275property("messages", ctx_r1.chatService.messages())("isTyping", ctx_r1.isTyping())("scrollMode", ctx_r1.scrollMode());
     \u0275\u0275advance();
-    \u0275\u0275property("isTyping", ctx_r1.isTyping)("messages", ctx_r1.chatService.messages())("currentAgent", ctx_r1.currentAgent)("fileAttachmentEnabled", !ctx_r1.fileAttachmentDisabled);
+    \u0275\u0275property("isTyping", ctx_r1.isTyping())("messages", ctx_r1.chatService.messages())("currentAgent", ctx_r1.agentService.currentAgent())("fileAttachmentEnabled", !ctx_r1.fileAttachmentDisabled);
   }
 }
 function ChatComponent_Conditional_3_Template(rf, ctx) {
@@ -100758,7 +100793,7 @@ function ChatComponent_Conditional_3_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext();
-    \u0275\u0275property("popupState", ctx_r1.agentConfigState)("currentAgent", ctx_r1.currentAgent)("newAgentParams", ctx_r1.newAgentParamsForConfig);
+    \u0275\u0275property("popupState", ctx_r1.agentConfigState())("currentAgent", ctx_r1.agentService.currentAgent())("newAgentParams", ctx_r1.newAgentParamsForConfig());
   }
 }
 var _ChatComponent = class _ChatComponent {
@@ -100818,14 +100853,14 @@ var _ChatComponent = class _ChatComponent {
     this.epChatCommandResult = new EventEmitter();
     this.epChatEvent = new EventEmitter();
     this.unreadMessagesCount = 0;
-    this.isTyping = false;
-    this.iconPath = "";
-    this.chatStyle = {};
-    this.scrollMode = "none";
-    this.currentAgent = null;
-    this.isAgentConfigOpen = false;
-    this.agentConfigState = null;
-    this.newAgentParamsForConfig = null;
+    this.isTyping = signal(false, ...ngDevMode ? [{ debugName: "isTyping" }] : []);
+    this.iconPath = signal("", ...ngDevMode ? [{ debugName: "iconPath" }] : []);
+    this.chatStyle = signal({}, ...ngDevMode ? [{ debugName: "chatStyle" }] : []);
+    this.scrollMode = signal("none", ...ngDevMode ? [{ debugName: "scrollMode" }] : []);
+    this.isAgentConfigOpen = signal(false, ...ngDevMode ? [{ debugName: "isAgentConfigOpen" }] : []);
+    this.agentConfigState = signal(null, ...ngDevMode ? [{ debugName: "agentConfigState" }] : []);
+    this.newAgentParamsForConfig = signal(null, ...ngDevMode ? [{ debugName: "newAgentParamsForConfig" }] : []);
+    this.previousAgentRef = null;
     this.chatSessionId = Date.now();
     this.hasInitializedOpenState = false;
     this.apiSyncDone = false;
@@ -100838,11 +100873,11 @@ var _ChatComponent = class _ChatComponent {
       this.saveChatHistory();
     });
     effect(() => {
-      const previousAgent = this.currentAgent;
+      const previousAgent = this.previousAgentRef;
       const agent = this.agentService.currentAgent();
-      this.currentAgent = agent;
+      this.previousAgentRef = agent;
       if (agent) {
-        this.iconPath = agent.imagePath || this.getIconPath();
+        this.iconPath.set(agent.imagePath || this.getIconPath());
       }
       if (previousAgent !== agent) {
         this.loadChatHistory();
@@ -100855,15 +100890,16 @@ var _ChatComponent = class _ChatComponent {
       const open = this.chatService.isOpen();
       this.storageService.setItem(STORAGE_KEYS.CHAT_OPEN, open ? "1" : "0", false);
     });
-    this.actionService.openAgentConfig$.subscribe(({ flowId, url }) => {
-      if (this.isMonoAgent) {
-        return;
+    effect(() => {
+      const req = this.actionService.openAgentConfigRequest();
+      if (req && !this.isMonoAgent) {
+        this.newAgentParamsForConfig.set(req);
+        setTimeout(() => {
+          this.agentConfigState.set("create");
+          this.isAgentConfigOpen.set(true);
+        }, 0);
+        this.actionService.openAgentConfigRequest.set(null);
       }
-      this.newAgentParamsForConfig = { flowId, url };
-      setTimeout(() => {
-        this.agentConfigState = "create";
-        this.isAgentConfigOpen = true;
-      }, 0);
     });
   }
   ngOnInit() {
@@ -100883,7 +100919,7 @@ var _ChatComponent = class _ChatComponent {
     } else {
       this.initializeDefaultAgent();
     }
-    this.iconPath = this.getIconPath();
+    this.iconPath.set(this.getIconPath());
     this.updateChatStyle();
     if (this.unreadMessagesCount > 0) {
       this.chatService.incrementUnreadCount();
@@ -100898,7 +100934,7 @@ var _ChatComponent = class _ChatComponent {
       this.applyDateLocale();
     }
     if (changes["chatIconPath"]) {
-      this.iconPath = this.getIconPath();
+      this.iconPath.set(this.getIconPath());
     }
     if (changes["epChatCommand"]) {
       this.chatParentBridgeService.handleCommand(changes["epChatCommand"].currentValue, {
@@ -100961,8 +100997,8 @@ var _ChatComponent = class _ChatComponent {
   }
   onStopGenerating() {
     this.apiService.cancelActiveSse();
-    this.isTyping = false;
-    this.scrollMode = "none";
+    this.isTyping.set(false);
+    this.scrollMode.set("none");
   }
   onAgentSelected(agent) {
     if (!this.isMonoAgent) {
@@ -100977,57 +101013,52 @@ var _ChatComponent = class _ChatComponent {
   }
   onClearChatHistory() {
     this.chatSessionId = Date.now();
-    const chatId = this.messageService.getChatId(this.currentAgent, this.isMonoAgent);
+    const chatId = this.messageService.getChatId(this.agentService.currentAgent(), this.isMonoAgent);
     this.messageService.clearMessages(chatId);
     this.chatService.setMessages([]);
     this.initializeMessages();
   }
   onCreateAgent() {
     if (!this.isMonoAgent) {
-      this.agentConfigState = "create";
-      this.isAgentConfigOpen = true;
+      this.agentConfigState.set("create");
+      this.isAgentConfigOpen.set(true);
     }
   }
   onEditAgent() {
     if (!this.isMonoAgent) {
-      this.agentConfigState = "edit";
-      this.isAgentConfigOpen = true;
+      this.agentConfigState.set("edit");
+      this.isAgentConfigOpen.set(true);
     }
   }
   onRemoveAgent() {
-    if (!this.isMonoAgent && this.currentAgent?.epicstaffAgentId !== void 0) {
-      const flowId = this.currentAgent.epicstaffFlowId;
-      const flowUrl = this.currentAgent.epicstaffFlowUrl;
-      this.agentService.deleteAgent(this.currentAgent.epicstaffAgentId).subscribe({
-        next: () => {
-          if (flowId !== null && flowId !== void 0) {
-            const stillConnected = this.agentService.agents().some((a3) => a3.epicstaffFlowUrl === flowUrl && a3.epicstaffFlowId === flowId);
-            if (!stillConnected) {
-              this.epChatEvent.emit({
-                type: EP_CHAT_EVENTS.AGENT_DISCONNECTED,
-                payload: { flowId }
-              });
-            }
-          }
-        },
-        error: (error) => {
-          console.error("Failed to remove agent:", error);
+    const currentAgent = this.agentService.currentAgent();
+    if (!this.isMonoAgent && currentAgent?.epicstaffAgentId !== void 0) {
+      const flowId = currentAgent.epicstaffFlowId;
+      const flowUrl = currentAgent.epicstaffFlowUrl;
+      this.agentService.deleteAgent(currentAgent.epicstaffAgentId);
+      if (flowId !== null && flowId !== void 0) {
+        const stillConnected = this.agentService.agents().some((a3) => a3.epicstaffFlowUrl === flowUrl && a3.epicstaffFlowId === flowId);
+        if (!stillConnected) {
+          this.epChatEvent.emit({
+            type: EP_CHAT_EVENTS.AGENT_DISCONNECTED,
+            payload: { flowId }
+          });
         }
-      });
+      }
     }
   }
   onSetDefaultPosition() {
     this.resizableChat?.resetToDefault();
   }
   onCloseAgentConfig() {
-    this.isAgentConfigOpen = false;
-    this.agentConfigState = null;
-    this.newAgentParamsForConfig = null;
+    this.isAgentConfigOpen.set(false);
+    this.agentConfigState.set(null);
+    this.newAgentParamsForConfig.set(null);
   }
   onSendMessage(event) {
     return __async(this, null, function* () {
       const text = event.text;
-      if (!text.trim() || this.isTyping) {
+      if (!text.trim() || this.isTyping()) {
         return;
       }
       this.clearPromptSuggestions();
@@ -101041,15 +101072,16 @@ var _ChatComponent = class _ChatComponent {
       };
       const chatHistory = this.chatService.getMessagesValue();
       const basicAuth = this.getEpicstaffBasicAuth();
+      const currentAgent = this.agentService.currentAgent();
       this.chatService.addMessage(userMessage);
       this.lockPreviousTables();
-      this.scrollMode = "user-message";
-      this.isTyping = true;
+      this.scrollMode.set("user-message");
+      this.isTyping.set(true);
       const interimMessage = this.createInterimThinkingMessage();
       this.chatService.addMessage(interimMessage);
       try {
-        const agentUrl = this.currentAgent?.epicstaffFlowUrl;
-        const flowId = this.currentAgent?.epicstaffFlowId;
+        const agentUrl = currentAgent?.epicstaffFlowUrl;
+        const flowId = currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
         const contextExtras = {};
         if (event.tool) {
@@ -101060,7 +101092,7 @@ var _ChatComponent = class _ChatComponent {
         }
         const botMessage = yield this.apiService.sendMessage(text, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext(contextExtras), (update) => this.applyStreamUpdateToMessage(interimMessage.id, update), this.messageTimeout);
         this.finalizeInterimMessage(interimMessage.id, botMessage);
-        this.scrollMode = "question-answer";
+        this.scrollMode.set("question-answer");
         this.chatService.setAttachedFiles([]);
         this.chatService.setAttachedFile(null);
       } catch (error) {
@@ -101070,11 +101102,11 @@ var _ChatComponent = class _ChatComponent {
         } else {
           this.failInterimMessage(interimMessage.id, error instanceof Error ? error.message : void 0);
         }
-        this.scrollMode = "question-answer";
+        this.scrollMode.set("question-answer");
       } finally {
-        this.isTyping = false;
+        this.isTyping.set(false);
         setTimeout(() => {
-          this.scrollMode = "none";
+          this.scrollMode.set("none");
         }, 500);
       }
     });
@@ -101084,7 +101116,7 @@ var _ChatComponent = class _ChatComponent {
    */
   onSendAction(actionText, contextExtras, addUserMessage = true, useUserAction = true) {
     return __async(this, null, function* () {
-      if (this.isTyping) {
+      if (this.isTyping()) {
         return;
       }
       if (!actionText.trim() && !contextExtras) {
@@ -101105,17 +101137,18 @@ var _ChatComponent = class _ChatComponent {
         this.chatService.addMessage(userMessage);
         this.lockPreviousTables();
       }
-      this.scrollMode = "user-message";
-      this.isTyping = true;
+      this.scrollMode.set("user-message");
+      this.isTyping.set(true);
       const interimMessage = this.createInterimThinkingMessage();
       this.chatService.addMessage(interimMessage);
       try {
-        const agentUrl = this.currentAgent?.epicstaffFlowUrl;
-        const flowId = this.currentAgent?.epicstaffFlowId;
+        const currentAgent = this.agentService.currentAgent();
+        const agentUrl = currentAgent?.epicstaffFlowUrl;
+        const flowId = currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
         const botMessage = useUserAction ? yield this.apiService.sendActionMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext(contextExtras), (update) => this.applyStreamUpdateToMessage(interimMessage.id, update), this.messageTimeout) : yield this.apiService.sendMessage(actionText, agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext(contextExtras), (update) => this.applyStreamUpdateToMessage(interimMessage.id, update), this.messageTimeout);
         this.finalizeInterimMessage(interimMessage.id, botMessage);
-        this.scrollMode = "question-answer";
+        this.scrollMode.set("question-answer");
         this.chatService.setAttachedFiles([]);
         this.chatService.setAttachedFile(null);
       } catch (error) {
@@ -101125,11 +101158,11 @@ var _ChatComponent = class _ChatComponent {
         } else {
           this.failInterimMessage(interimMessage.id, error instanceof Error ? error.message : void 0);
         }
-        this.scrollMode = "question-answer";
+        this.scrollMode.set("question-answer");
       } finally {
-        this.isTyping = false;
+        this.isTyping.set(false);
         setTimeout(() => {
-          this.scrollMode = "none";
+          this.scrollMode.set("none");
         }, 500);
       }
     });
@@ -101248,26 +101281,33 @@ var _ChatComponent = class _ChatComponent {
     if (!messages.length) {
       return;
     }
-    let changed = false;
-    const updatedMessages = messages.map((message) => {
-      const actions = message.response?.action_message;
-      if (!Array.isArray(actions) || actions.length === 0) {
-        return message;
+    let targetIndex = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const actions = messages[i]?.response?.action_message;
+      if (Array.isArray(actions) && actions.some((action) => action.type === UserActionType.Prompt)) {
+        targetIndex = i;
+        break;
       }
-      const filteredActions = actions.filter((action) => action.type !== UserActionType.Prompt);
-      if (filteredActions.length === actions.length) {
-        return message;
-      }
-      changed = true;
-      return __spreadProps(__spreadValues({}, message), {
-        response: __spreadProps(__spreadValues({}, message.response), {
-          action_message: filteredActions.length > 0 ? filteredActions : void 0
-        })
-      });
-    });
-    if (changed) {
-      this.chatService.setMessages(updatedMessages);
     }
+    if (targetIndex < 0) {
+      return;
+    }
+    const targetMessage = messages[targetIndex];
+    const targetActions = targetMessage.response?.action_message;
+    if (!Array.isArray(targetActions) || targetActions.length === 0) {
+      return;
+    }
+    const filteredActions = targetActions.filter((action) => action.type !== UserActionType.Prompt);
+    if (filteredActions.length === targetActions.length) {
+      return;
+    }
+    const updatedMessages = [...messages];
+    updatedMessages[targetIndex] = __spreadProps(__spreadValues({}, targetMessage), {
+      response: __spreadProps(__spreadValues({}, targetMessage.response), {
+        action_message: filteredActions.length > 0 ? filteredActions : void 0
+      })
+    });
+    this.chatService.setMessages(updatedMessages);
   }
   onActionClick(event) {
     return __async(this, null, function* () {
@@ -101306,23 +101346,10 @@ var _ChatComponent = class _ChatComponent {
    * Load chat history from storage for current agent
    */
   loadChatHistory() {
-    const chatId = this.messageService.getChatId(this.currentAgent, this.isMonoAgent);
+    const chatId = this.messageService.getChatId(this.agentService.currentAgent(), this.isMonoAgent);
     const savedMessages = this.messageService.loadMessages(chatId);
     if (savedMessages && savedMessages.length > 0) {
       this.chatService.setMessages(savedMessages);
-    } else {
-      if (this.isDefaultAgent(this.currentAgent)) {
-        const initialMessage = {
-          id: generateMessageId(),
-          response: {
-            message: "Please create your first agent to begin work"
-          },
-          time: getCurrentTimestamp()
-        };
-        this.chatService.setMessages([initialMessage]);
-      } else {
-        this.chatService.setMessages([]);
-      }
     }
   }
   /**
@@ -101474,7 +101501,8 @@ var _ChatComponent = class _ChatComponent {
   }
   sendInitialAgentRequest() {
     return __async(this, null, function* () {
-      if (this.isTyping || !this.currentAgent || this.isDefaultAgent(this.currentAgent)) {
+      const currentAgent = this.agentService.currentAgent();
+      if (this.isTyping() || !currentAgent || this.isDefaultAgent(currentAgent)) {
         return;
       }
       const chatHistory = this.chatService.getMessagesValue();
@@ -101483,10 +101511,10 @@ var _ChatComponent = class _ChatComponent {
       }
       const userParams = this.getUserParams();
       const basicAuth = this.getEpicstaffBasicAuth();
-      this.isTyping = true;
+      this.isTyping.set(true);
       try {
-        const agentUrl = this.currentAgent?.epicstaffFlowUrl;
-        const flowId = this.currentAgent?.epicstaffFlowId;
+        const agentUrl = currentAgent?.epicstaffFlowUrl;
+        const flowId = currentAgent?.epicstaffFlowId;
         const attachedFiles = this.chatService.attachedFiles() || [];
         const botMessage = yield this.apiService.sendMessage("Hi!", agentUrl || void 0, flowId || void 0, attachedFiles, chatHistory, Object.keys(userParams).length > 0 ? userParams : void 0, basicAuth || void 0, this.withChatSessionContext(), void 0, this.messageTimeout);
         if (!botMessage.id) {
@@ -101500,7 +101528,7 @@ var _ChatComponent = class _ChatComponent {
           botMessage._isFirstMessageOfDay = this.isFirstMessageOfDay(botTime);
         }
         this.chatService.addMessage(botMessage);
-        this.scrollMode = "question-answer";
+        this.scrollMode.set("question-answer");
       } catch (error) {
         console.error("Error sending initial message:", error);
         const errorMessage = {
@@ -101512,11 +101540,11 @@ var _ChatComponent = class _ChatComponent {
           _epicaError: true
         };
         this.chatService.addMessage(errorMessage);
-        this.scrollMode = "question-answer";
+        this.scrollMode.set("question-answer");
       } finally {
-        this.isTyping = false;
+        this.isTyping.set(false);
         setTimeout(() => {
-          this.scrollMode = "none";
+          this.scrollMode.set("none");
         }, 500);
       }
     });
@@ -101525,7 +101553,7 @@ var _ChatComponent = class _ChatComponent {
    * Save current chat history to storage
    */
   saveChatHistory() {
-    const chatId = this.messageService.getChatId(this.currentAgent, this.isMonoAgent);
+    const chatId = this.messageService.getChatId(this.agentService.currentAgent(), this.isMonoAgent);
     const msgs = this.chatService.messages();
     if (chatId && msgs.length > 0) {
       this.messageService.saveMessages(chatId, msgs);
@@ -101553,7 +101581,7 @@ var _ChatComponent = class _ChatComponent {
     return lastDate !== messageDate || lastDateObj.getMonth() !== messageDateObj.getMonth() || lastDateObj.getFullYear() !== messageDateObj.getFullYear();
   }
   updateChatStyle() {
-    this.chatStyle = this.getChatStyle(this.chatPosition || void 0);
+    this.chatStyle.set(this.getChatStyle(this.chatPosition || void 0));
   }
   applyDateLocale() {
     const nextLocale = (this.dateLocale || "en-GB").trim() || "en-GB";
@@ -101675,7 +101703,7 @@ var _ChatComponent = class _ChatComponent {
     }
     const base = this.getBasePath();
     const normalized = base ? base.endsWith("/") ? base : base + "/" : "";
-    return normalized + "assets/images/shared/epicstaff-logo.svg";
+    return normalized + "assets/images/shared/epicstaff-chat-logo.svg";
   }
   getChatStyle(position) {
     const style = {
@@ -101753,11 +101781,11 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
   }
   if (rf & 2) {
     \u0275\u0275advance();
-    \u0275\u0275property("iconPath", ctx.iconPath)("chatIconSize", ctx.chatIconSize)("unreadCount", ctx.chatService.unreadCount());
+    \u0275\u0275property("iconPath", ctx.iconPath())("chatIconSize", ctx.chatIconSize)("unreadCount", ctx.chatService.unreadCount());
     \u0275\u0275advance();
     \u0275\u0275conditional(ctx.chatService.isOpen() ? 2 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.isAgentConfigOpen && !ctx.isMonoAgent ? 3 : -1);
+    \u0275\u0275conditional(ctx.isAgentConfigOpen() && !ctx.isMonoAgent ? 3 : -1);
   }
 }, dependencies: [
   CommonModule,
@@ -101769,7 +101797,7 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
   EpicstaffAgentConfigComponent,
   ClickOutsideDirective,
   ResizableChatDirective
-], styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  --ep-font-family:\n    "Inter",\n    "Inter var",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Arial,\n    sans-serif;\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-menu-panel-min-width: 170px;\n  --ep-menu-panel-radius: 8px;\n  --ep-menu-panel-bg: var(--ep-color-surface);\n  --ep-menu-panel-border: var(--ep-color-border);\n  --ep-menu-panel-divider: var(--ep-color-border);\n  --ep-menu-panel-item-text: var(--ep-color-text);\n  --ep-menu-panel-item-hover-bg: var(--ep-color-surface-alt);\n  --ep-menu-panel-item-padding: 10px 16px;\n  --ep-menu-panel-shadow: 0 2px 4px 0 var(--ep-color-shadow);\n  --ep-footer-select-open-bg: var(--ep-color-surface-alt);\n  --ep-footer-select-open-border: var(--ep-color-border);\n  --ep-footer-select-text: var(--ep-color-text);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: var(--ep-color-accent-soft);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: var(--ep-color-accent-soft);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-menu-panel-bg: #212325;\n  --ep-menu-panel-border: #2b2d30;\n  --ep-menu-panel-divider: #2b2d30;\n  --ep-menu-panel-item-text: #d9d9de;\n  --ep-menu-panel-item-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-menu-panel-shadow:\n    0 0 1px rgba(0, 0, 0, 0.04),\n    0 9px 18px rgba(0, 0, 0, 0.16),\n    0 6px 10px rgba(0, 0, 0, 0.12);\n  --ep-footer-select-open-bg: #2b2d30;\n  --ep-footer-select-open-border: #2b2d30;\n  --ep-footer-select-text: #d9d9de;\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-chat-bg-answer: #2b2d30;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'], encapsulation: 3 });
+], styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  --ep-font-family:\n    "Inter",\n    "Inter var",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Arial,\n    sans-serif;\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-menu-panel-min-width: 170px;\n  --ep-menu-panel-radius: 8px;\n  --ep-menu-panel-bg: var(--ep-color-surface);\n  --ep-menu-panel-border: var(--ep-color-border);\n  --ep-menu-panel-divider: var(--ep-color-border);\n  --ep-menu-panel-item-text: var(--ep-color-text);\n  --ep-menu-panel-item-hover-bg: var(--ep-color-surface-alt);\n  --ep-menu-panel-item-padding: 10px 16px;\n  --ep-menu-panel-shadow: 0 2px 4px 0 var(--ep-color-shadow);\n  --ep-footer-select-open-bg: var(--ep-color-surface-alt);\n  --ep-footer-select-open-border: var(--ep-color-border);\n  --ep-footer-select-text: var(--ep-color-text);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-menu-panel-bg: #212325;\n  --ep-menu-panel-border: #2b2d30;\n  --ep-menu-panel-divider: #2b2d30;\n  --ep-menu-panel-item-text: #d9d9de;\n  --ep-menu-panel-item-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-menu-panel-shadow:\n    0 0 1px rgba(0, 0, 0, 0.04),\n    0 9px 18px rgba(0, 0, 0, 0.16),\n    0 6px 10px rgba(0, 0, 0, 0.12);\n  --ep-footer-select-open-bg: #2b2d30;\n  --ep-footer-select-open-border: #2b2d30;\n  --ep-footer-select-text: #d9d9de;\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-chat-bg-answer: #2b2d30;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'], encapsulation: 3 });
 var ChatComponent = _ChatComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatComponent, [{
@@ -101783,7 +101811,7 @@ var ChatComponent = _ChatComponent;
       EpicstaffAgentConfigComponent,
       ClickOutsideDirective,
       ResizableChatDirective
-    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\r\n\r\n<ep-chat-toggle-button\r\n  [iconPath]="iconPath"\r\n  [chatIconSize]="chatIconSize"\r\n  [unreadCount]="chatService.unreadCount()"\r\n  (clicked)="toggleChat()"\r\n/>\r\n\r\n@if (chatService.isOpen()) {\r\n  <div\r\n    class="ep-popup"\r\n    [class.ep-popup--dock]="isDockMode"\r\n    [ngStyle]="chatStyle"\r\n    epClickOutside\r\n    epResizableChat\r\n    [config]="getConfig()"\r\n    [resizeDisabled]="isDockMode"\r\n    (epClickOutside)="onClickOutside()"\r\n  >\r\n    <ep-chat-header\r\n      [currentAgent]="currentAgent"\r\n      [agents]="agentService.visibleAgents()"\r\n      [isMonoAgent]="isMonoAgent"\r\n      [dockEnabled]="dockEnabled"\r\n      [isDockMode]="isDockMode"\r\n      (closed)="closeChat()"\r\n      (infoClicked)="onInfoClick()"\r\n      (dragClicked)="onDragClick()"\r\n      (collapseClicked)="onCollapseClick()"\r\n      (toggleFullHeightClicked)="onToggleFullHeight()"\r\n      (dockClicked)="onDockClick()"\r\n      (agentSelected)="onAgentSelected($event)"\r\n      (clearChatHistory)="onClearChatHistory()"\r\n      (createAgent)="onCreateAgent()"\r\n      (editAgent)="onEditAgent()"\r\n      (removeAgent)="onRemoveAgent()"\r\n      (setDefaultPosition)="onSetDefaultPosition()"\r\n    />\r\n\r\n    <ep-chat-body\r\n      [messages]="chatService.messages()"\r\n      [isTyping]="isTyping"\r\n      [scrollMode]="scrollMode"\r\n      (actionClick)="onActionClick($event)"\r\n    />\r\n\r\n    <ep-chat-footer\r\n      [isTyping]="isTyping"\r\n      [messages]="chatService.messages()"\r\n      [currentAgent]="currentAgent"\r\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\r\n      (sendMessage)="onSendMessage($event)"\r\n      (stop)="onStopGenerating()"\r\n    />\r\n  </div>\r\n\r\n  <!-- <div\r\n    class="ep-mat"\r\n    role="button"\r\n    tabindex="0"\r\n    (click)="closeChat()"\r\n    (keydown.enter)="closeChat()"\r\n    (keydown.space)="closeChat()"\r\n    aria-label="Close popup"\r\n  ></div> -->\r\n}\r\n\r\n@if (isAgentConfigOpen && !isMonoAgent) {\r\n  <ep-epicstaff-agent-config\r\n    [popupState]="agentConfigState"\r\n    [currentAgent]="currentAgent"\r\n    [newAgentParams]="newAgentParamsForConfig"\r\n    (closed)="onCloseAgentConfig()"\r\n  />\r\n}\r\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  --ep-font-family:\n    "Inter",\n    "Inter var",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Arial,\n    sans-serif;\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-menu-panel-min-width: 170px;\n  --ep-menu-panel-radius: 8px;\n  --ep-menu-panel-bg: var(--ep-color-surface);\n  --ep-menu-panel-border: var(--ep-color-border);\n  --ep-menu-panel-divider: var(--ep-color-border);\n  --ep-menu-panel-item-text: var(--ep-color-text);\n  --ep-menu-panel-item-hover-bg: var(--ep-color-surface-alt);\n  --ep-menu-panel-item-padding: 10px 16px;\n  --ep-menu-panel-shadow: 0 2px 4px 0 var(--ep-color-shadow);\n  --ep-footer-select-open-bg: var(--ep-color-surface-alt);\n  --ep-footer-select-open-border: var(--ep-color-border);\n  --ep-footer-select-text: var(--ep-color-text);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: var(--ep-color-accent-soft);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: var(--ep-color-accent-soft);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-menu-panel-bg: #212325;\n  --ep-menu-panel-border: #2b2d30;\n  --ep-menu-panel-divider: #2b2d30;\n  --ep-menu-panel-item-text: #d9d9de;\n  --ep-menu-panel-item-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-menu-panel-shadow:\n    0 0 1px rgba(0, 0, 0, 0.04),\n    0 9px 18px rgba(0, 0, 0, 0.16),\n    0 6px 10px rgba(0, 0, 0, 0.12);\n  --ep-footer-select-open-bg: #2b2d30;\n  --ep-footer-select-open-border: #2b2d30;\n  --ep-footer-select-text: #d9d9de;\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-chat-bg-answer: #2b2d30;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  padding-right: 2px;\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
+    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath()"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [class.ep-popup--dock]="isDockMode"\n    [ngStyle]="chatStyle()"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    [resizeDisabled]="isDockMode"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="agentService.currentAgent()"\n      [agents]="agentService.visibleAgents()"\n      [isMonoAgent]="isMonoAgent"\n      [dockEnabled]="dockEnabled"\n      [isDockMode]="isDockMode"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (dockClicked)="onDockClick()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping()"\n      [scrollMode]="scrollMode()"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping()"\n      [messages]="chatService.messages()"\n      [currentAgent]="agentService.currentAgent()"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (stop)="onStopGenerating()"\n    />\n  </div>\n\n  <!-- <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div> -->\n}\n\n@if (isAgentConfigOpen() && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState()"\n    [currentAgent]="agentService.currentAgent()"\n    [newAgentParams]="newAgentParamsForConfig()"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  --ep-font-family:\n    "Inter",\n    "Inter var",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Arial,\n    sans-serif;\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-menu-panel-min-width: 170px;\n  --ep-menu-panel-radius: 8px;\n  --ep-menu-panel-bg: var(--ep-color-surface);\n  --ep-menu-panel-border: var(--ep-color-border);\n  --ep-menu-panel-divider: var(--ep-color-border);\n  --ep-menu-panel-item-text: var(--ep-color-text);\n  --ep-menu-panel-item-hover-bg: var(--ep-color-surface-alt);\n  --ep-menu-panel-item-padding: 10px 16px;\n  --ep-menu-panel-shadow: 0 2px 4px 0 var(--ep-color-shadow);\n  --ep-footer-select-open-bg: var(--ep-color-surface-alt);\n  --ep-footer-select-open-border: var(--ep-color-border);\n  --ep-footer-select-text: var(--ep-color-text);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-menu-panel-bg: #212325;\n  --ep-menu-panel-border: #2b2d30;\n  --ep-menu-panel-divider: #2b2d30;\n  --ep-menu-panel-item-text: #d9d9de;\n  --ep-menu-panel-item-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-menu-panel-shadow:\n    0 0 1px rgba(0, 0, 0, 0.04),\n    0 9px 18px rgba(0, 0, 0, 0.16),\n    0 6px 10px rgba(0, 0, 0, 0.12);\n  --ep-footer-select-open-bg: #2b2d30;\n  --ep-footer-select-open-border: #2b2d30;\n  --ep-footer-select-text: #d9d9de;\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-chat-bg-answer: #2b2d30;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
   }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: ChatParentBridgeService }, { type: DateAdapter }, { type: ElementRef }], { uniqueUserId: [{
     type: Input
   }], userData: [{
@@ -101863,7 +101891,7 @@ var ChatComponent = _ChatComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 72 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 73 });
 })();
 
 // src/app/config/markdown.config.ts
@@ -101874,6 +101902,12 @@ function escapeHtml(value) {
 }
 function normalizeLanguage(raw) {
   return raw.trim().split(/\s+/)[0]?.toLowerCase() || "";
+}
+function sanitizeLanguage(value) {
+  if (!value)
+    return "text";
+  const safe = value.replace(/[^a-z0-9+-]/gi, "").toLowerCase();
+  return safe || "text";
 }
 var HTML_TAG_RE = /<\/?[a-zA-Z][a-zA-Z0-9]*[\s>/]/;
 var CSS_RULE_RE = /[a-zA-Z#.:*[\]]+\s*\{[\s\S]*?\}/;
@@ -101897,7 +101931,8 @@ function autoDetectLanguage(code) {
 }
 function resolveLanguage(raw, code) {
   const normalized = normalizeLanguage(raw ?? "");
-  return normalized || autoDetectLanguage(code);
+  const resolved2 = normalized || autoDetectLanguage(code);
+  return sanitizeLanguage(resolved2);
 }
 function parseCodeRendererArgs(tokenOrCode, languageOrOptions) {
   if (typeof tokenOrCode === "string") {
@@ -101929,8 +101964,8 @@ function markedOptionsFactory() {
     const escapedCode = escapeHtml(trimmedCode);
     const lines = trimmedCode.split("\n").length;
     const isLargeCode = trimmedCode.length > MAX_HIGHLIGHT_CODE_LENGTH || lines > MAX_HIGHLIGHT_CODE_LINES;
-    const language = isLargeCode ? "text" : parsed.language;
-    const displayLanguage = language.toUpperCase();
+    const language = isLargeCode ? "text" : sanitizeLanguage(parsed.language);
+    const displayLanguage = escapeHtml(language.toUpperCase());
     const codeId = `ep-md-code-${codeBlockCounter++}`;
     const blockClasses = isLargeCode ? "ep-md-code ep-md-code--plain" : "ep-md-code";
     return `
