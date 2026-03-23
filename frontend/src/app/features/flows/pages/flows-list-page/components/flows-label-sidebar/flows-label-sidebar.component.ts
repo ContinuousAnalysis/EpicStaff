@@ -245,7 +245,6 @@ export class FlowsLabelSidebarComponent implements OnInit {
             if (result === 'confirm') {
                 this.labelsStorage.deleteLabel(label.id).subscribe({
                     next: () => {
-                        this.flowsStorageService.removeLabelIdsFromFlows([label.id, ...sublabelIds]);
                         this.flowsStorageService.getFlows(true).subscribe();
                     },
                     error: (err) => {
