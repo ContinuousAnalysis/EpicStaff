@@ -93,20 +93,22 @@ dev-ngrok:
 
 setup-prod:
 	@echo "--- Setting up production environment ---"
-	@bash make_scripts/setup_prod.sh
+	@python3 make_scripts/setup_prod.py
+
+PROD_ENV_ARG = $(shell test -f prod/prod.env && echo "--env-file ../prod/prod.env")
 
 prod: start-prod
 
 start-prod:
 	@echo "--- Starting production services ---"
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env --env-file ./prod.env up --build -d
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) up --build -d
 
 prod-down:
 	@echo "--- Stopping production services ---"
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env --env-file ./prod.env down
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) down
 
 prod-logs:
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env --env-file ./prod.env logs -f
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) logs -f
 
 # ==========================================
 # UTILITIES

@@ -266,4 +266,4 @@ dev/dev.env
 .claude/
 CLAUDE.md
 CLAUDE.local.md
-src/prod.env
+!prod/prod.env.manifest
