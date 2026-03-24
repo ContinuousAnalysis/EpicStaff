@@ -4,6 +4,7 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
+    DestroyRef,
     ElementRef,
     forwardRef,
     inject,
@@ -16,14 +17,17 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Overlay, OverlayModule, OverlayPositionBuilder, OverlayRef } from '@angular/cdk/overlay';
-import { TemplatePortal } from '@angular/cdk/portal';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { ComponentType, TemplatePortal } from '@angular/cdk/portal';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppIconComponent, ButtonComponent, TooltipComponent } from "@shared/components";
 import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
 import { LLMLibraryService, ProviderWithModels } from "../../services/llms/llm-library.service";
 import { getProviderIconPath } from "@shared/utils";
 
 import { CreateLlmModelModalComponent } from "../create-llm-model-modal/create-llm-model-modal.component";
+import { CreateEmbeddingModelModalComponent } from "../create-embedding-model-modal/create-embedding-model-modal.component";
+import { CreateRealtimeModelModalComponent } from "../create-realtime-model-modal/create-realtime-model-modal.component";
+import { CreateTranscriptionModelModalComponent } from "../create-transcription-model-modal/create-transcription-model-modal.component";
 
 const TOP_PROVIDERS = [
     'openai',
@@ -55,6 +59,7 @@ const TOP_PROVIDERS = [
 export class LlmModelSelectorComponent implements ControlValueAccessor {
     private llmLibraryService = inject(LLMLibraryService);
     private dialog = inject(Dialog);
+    private readonly destroyRef = inject(DestroyRef);
     private overlayRef!: OverlayRef;
     private overlay = inject(Overlay);
     private overlayPositionBuilder = inject(OverlayPositionBuilder);
@@ -73,7 +78,6 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     configAdded = output<void>();
 
     readonly COLLAPSED_COUNT = 3;
-    readonly COLLAPSE_THRESHOLD = 4;
 
     open = signal(false);
     isDisabled = signal(false);
@@ -210,7 +214,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     }
 
     isCollapsible(group: ProviderWithModels<LLMModel>): boolean {
-        return group.visibleModels.length > this.COLLAPSE_THRESHOLD && !this.searchQuery().trim();
+        return group.visibleModels.length > this.COLLAPSED_COUNT && !this.searchQuery().trim();
     }
 
     hiddenCount(group: ProviderWithModels<LLMModel>): number {
@@ -225,11 +229,26 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         });
     }
 
+    private readonly createModelModals: Record<ModelTypes, ComponentType<unknown>> = {
+        [ModelTypes.LLM]:           CreateLlmModelModalComponent,
+        [ModelTypes.EMBEDDING]:     CreateEmbeddingModelModalComponent,
+        [ModelTypes.REALTIME]:      CreateRealtimeModelModalComponent,
+        [ModelTypes.TRANSCRIPTION]: CreateTranscriptionModelModalComponent,
+    };
+
     openAllModelsModal(provider: ProviderWithModels['provider']): void {
-        this.dialog.open(CreateLlmModelModalComponent, {
+        const dialogRef = this.dialog.open(this.createModelModals[this.provider()], {
             data: { provider },
             width: '600px',
         });
+
+        dialogRef.closed
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((result) => {
+                if (result) {
+                    this.modelsResource.reload();
+                }
+            });
     }
 
     writeValue(value: number | null): void {
