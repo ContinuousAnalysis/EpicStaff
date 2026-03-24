@@ -90,7 +90,7 @@
         <app-conditional-edge-node clickOrDrag (actualClick)="onEditClick()"></app-conditional-edge-node>
     }
     @case (NodeType.NOTE) {
-        <app-note-node [node]="noteNode!"></app-note-node>
+        <app-graph-note [node]="noteNode!"></app-graph-note>
     }
     @case (NodeType.TABLE) {
         <app-decision-table-node [node]="tableNode!" (actualClick)="onEditClick($event)"></app-decision-table-node>

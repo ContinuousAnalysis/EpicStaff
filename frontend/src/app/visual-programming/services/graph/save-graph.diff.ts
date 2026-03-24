@@ -12,86 +12,88 @@
 import { isEqual } from 'lodash';
 
 import { GraphDto } from '../../../features/flows/models/graph.model';
-import { FlowModel } from '../../core/models/flow.model';
-import { NodeType } from '../../core/enums/node-type';
-import { ConnectionModel } from '../../core/models/connection.model';
-import {
-    BaseNodeModel,
-    ProjectNodeModel,
-    PythonNodeModel,
-    LLMNodeModel,
-    FileExtractorNodeModel,
-    AudioToTextNodeModel,
-    SubGraphNodeModel,
-    WebhookTriggerNodeModel,
-    TelegramTriggerNodeModel,
-    EndNodeModel,
-    EdgeNodeModel,
-    DecisionTableNodeModel,
-    NoteNodeModel,
-    CodeAgentNodeModel,
-    NodeModel,
-} from '../../core/models/node.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { CreateCrewNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
-import { CreatePythonNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
-import { CreateLLMNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
-import { CreateFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import { CreateAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
-import { CreateSubGraphNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
-import { CreateWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
-import { CreateTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { CreateCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { CreateConditionalEdgeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
-import { CreateEdgeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
-import { CreateEndNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
+import { CreateCrewNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
 import {
     CreateConditionGroupRequest,
     CreateDecisionTableNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
-import { NoteNode, CreateNoteNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
-import { CreateCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
-
+import { CreateEdgeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
+import { CreateEndNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
+import { CreateFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import {
-    NodeDiff,
-    GraphPreviousState,
-    GraphNewState,
-    NodeOnlyDiff,
-    ConnectionDiff,
-    ResolvedConditionalEdge,
-    ResolvedUiEdge,
-    UiEdge,
-    NodeUIMetadata,
-    CreatedNodeMapping,
-    getUIMetadataForComparison,
-} from './save-graph.types';
+    CreateGraphNoteRequest,
+    GraphNote,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
+import { CreateLLMNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
+import { CreatePythonNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
+import { CreateSubGraphNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
+import { CreateTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { CreateWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
+import { NodeType } from '../../core/enums/node-type';
+import { ConnectionModel } from '../../core/models/connection.model';
+import { FlowModel } from '../../core/models/flow.model';
 import {
-    getCrewNodeForComparisonFromBackend,
-    getCrewNodeForComparisonFromUI,
-    getPythonNodeForComparisonFromBackend,
-    getPythonNodeForComparisonFromUI,
-    getLLMNodeForComparisonFromBackend,
-    getLLMNodeForComparisonFromUI,
-    getFileExtractorNodeForComparisonFromBackend,
-    getFileExtractorNodeForComparisonFromUI,
+    AudioToTextNodeModel,
+    BaseNodeModel,
+    CodeAgentNodeModel,
+    DecisionTableNodeModel,
+    EdgeNodeModel,
+    EndNodeModel,
+    FileExtractorNodeModel,
+    GraphNoteModel,
+    LLMNodeModel,
+    NodeModel,
+    ProjectNodeModel,
+    PythonNodeModel,
+    SubGraphNodeModel,
+    TelegramTriggerNodeModel,
+    WebhookTriggerNodeModel,
+} from '../../core/models/node.model';
+import {
     getAudioToTextNodeForComparisonFromBackend,
     getAudioToTextNodeForComparisonFromUI,
-    getSubGraphNodeForComparisonFromBackend,
-    getSubGraphNodeForComparisonFromUI,
-    getWebhookTriggerNodeForComparisonFromBackend,
-    getWebhookTriggerNodeForComparisonFromUI,
-    getTelegramTriggerNodeForComparisonFromBackend,
-    getTelegramTriggerNodeForComparisonFromUI,
+    getCodeAgentNodeForComparisonFromBackend,
+    getCodeAgentNodeForComparisonFromUI,
     getConditionalEdgeForComparisonFromBackend,
     getConditionalEdgeForComparisonFromUI,
+    getCrewNodeForComparisonFromBackend,
+    getCrewNodeForComparisonFromUI,
     getDecisionTableNodeForComparisonFromBackend,
     getDecisionTableNodeForComparisonFromUI,
     getEndNodeForComparisonFromBackend,
     getEndNodeForComparisonFromUI,
-    getNoteNodeForComparisonFromBackend,
-    getNoteNodeForComparisonFromUI,
-    getCodeAgentNodeForComparisonFromBackend,
-    getCodeAgentNodeForComparisonFromUI,
+    getFileExtractorNodeForComparisonFromBackend,
+    getFileExtractorNodeForComparisonFromUI,
+    getGraphNoteForComparisonFromBackend,
+    getGraphNoteForComparisonFromUI,
+    getLLMNodeForComparisonFromBackend,
+    getLLMNodeForComparisonFromUI,
+    getPythonNodeForComparisonFromBackend,
+    getPythonNodeForComparisonFromUI,
+    getSubGraphNodeForComparisonFromBackend,
+    getSubGraphNodeForComparisonFromUI,
+    getTelegramTriggerNodeForComparisonFromBackend,
+    getTelegramTriggerNodeForComparisonFromUI,
+    getWebhookTriggerNodeForComparisonFromBackend,
+    getWebhookTriggerNodeForComparisonFromUI,
 } from './save-graph.comparators';
+import {
+    ConnectionDiff,
+    CreatedNodeMapping,
+    getUIMetadataForComparison,
+    GraphNewState,
+    GraphPreviousState,
+    NodeDiff,
+    NodeOnlyDiff,
+    NodeUIMetadata,
+    ResolvedConditionalEdge,
+    ResolvedUiEdge,
+    UiEdge,
+} from './save-graph.types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Generic diff utility
@@ -170,7 +172,7 @@ export function extractPreviousState(graph: GraphDto): GraphPreviousState {
         edges: graph.edge_list ?? [],
         endNodes: graph.end_node_list ?? [],
         decisionTableNodes: graph.decision_table_node_list ?? [],
-        noteNodes: graph.note_node_list ?? [],
+        graphNotes: graph.graph_note_list ?? [],
         codeAgentNodes: graph.code_agent_node_list ?? [],
     };
 }
@@ -182,7 +184,7 @@ export function extractPreviousState(graph: GraphDto): GraphPreviousState {
 /** Resolves a frontend UUID to a backend ID using the node list. */
 function resolveBackendId(uuid: string | null, allNodes: NodeModel[]): number | null {
     if (!uuid) return null;
-    const match = allNodes.find(n => n.id === uuid);
+    const match = allNodes.find((n) => n.id === uuid);
     return match?.backendId ?? null;
 }
 
@@ -194,16 +196,12 @@ function resolveConditionalEdges(
     connections: ConnectionModel[],
     allNodes: NodeModel[]
 ): ResolvedConditionalEdge[] {
-    return edgeNodes.map(edgeNode => {
-        const incomingConnection = connections.find(c => c.targetNodeId === edgeNode.id);
-        const sourceNode = incomingConnection
-            ? allNodes.find(n => n.id === incomingConnection.sourceNodeId)
-            : null;
+    return edgeNodes.map((edgeNode) => {
+        const incomingConnection = connections.find((c) => c.targetNodeId === edgeNode.id);
+        const sourceNode = incomingConnection ? allNodes.find((n) => n.id === incomingConnection.sourceNodeId) : null;
 
-        const outgoingConnection = connections.find(c => c.sourceNodeId === edgeNode.id);
-        const targetNode = outgoingConnection
-            ? allNodes.find(n => n.id === outgoingConnection.targetNodeId)
-            : null;
+        const outgoingConnection = connections.find((c) => c.sourceNodeId === edgeNode.id);
+        const targetNode = outgoingConnection ? allNodes.find((n) => n.id === outgoingConnection.targetNodeId) : null;
 
         return {
             edgeNode,
@@ -219,11 +217,8 @@ function resolveConditionalEdges(
  * Converts valid flow connections into UiEdge entries with UUIDs and backend IDs,
  * filtering out connections that involve EDGE or TABLE source nodes.
  */
-function resolveEdges(
-    connections: ConnectionModel[],
-    allNodes: NodeModel[]
-): UiEdge[] {
-    const nodeById = new Map(allNodes.map(n => [n.id, n]));
+function resolveEdges(connections: ConnectionModel[], allNodes: NodeModel[]): UiEdge[] {
+    const nodeById = new Map(allNodes.map((n) => [n.id, n]));
     const result: UiEdge[] = [];
 
     for (const conn of connections) {
@@ -246,23 +241,23 @@ function resolveEdges(
 export function extractNewState(flowState: FlowModel): GraphNewState {
     const { nodes, connections } = flowState;
 
-    const edgeNodeModels = nodes.filter(n => n.type === NodeType.EDGE) as EdgeNodeModel[];
+    const edgeNodeModels = nodes.filter((n) => n.type === NodeType.EDGE) as EdgeNodeModel[];
 
     return {
-        crewNodes: nodes.filter(n => n.type === NodeType.PROJECT) as ProjectNodeModel[],
-        pythonNodes: nodes.filter(n => n.type === NodeType.PYTHON) as PythonNodeModel[],
-        llmNodes: nodes.filter(n => n.type === NodeType.LLM) as LLMNodeModel[],
-        fileExtractorNodes: nodes.filter(n => n.type === NodeType.FILE_EXTRACTOR) as FileExtractorNodeModel[],
-        audioToTextNodes: nodes.filter(n => n.type === NodeType.AUDIO_TO_TEXT) as AudioToTextNodeModel[],
-        subGraphNodes: nodes.filter(n => n.type === NodeType.SUBGRAPH) as SubGraphNodeModel[],
-        webhookTriggerNodes: nodes.filter(n => n.type === NodeType.WEBHOOK_TRIGGER) as WebhookTriggerNodeModel[],
-        telegramTriggerNodes: nodes.filter(n => n.type === NodeType.TELEGRAM_TRIGGER) as TelegramTriggerNodeModel[],
+        crewNodes: nodes.filter((n) => n.type === NodeType.PROJECT) as ProjectNodeModel[],
+        pythonNodes: nodes.filter((n) => n.type === NodeType.PYTHON) as PythonNodeModel[],
+        llmNodes: nodes.filter((n) => n.type === NodeType.LLM) as LLMNodeModel[],
+        fileExtractorNodes: nodes.filter((n) => n.type === NodeType.FILE_EXTRACTOR) as FileExtractorNodeModel[],
+        audioToTextNodes: nodes.filter((n) => n.type === NodeType.AUDIO_TO_TEXT) as AudioToTextNodeModel[],
+        subGraphNodes: nodes.filter((n) => n.type === NodeType.SUBGRAPH) as SubGraphNodeModel[],
+        webhookTriggerNodes: nodes.filter((n) => n.type === NodeType.WEBHOOK_TRIGGER) as WebhookTriggerNodeModel[],
+        telegramTriggerNodes: nodes.filter((n) => n.type === NodeType.TELEGRAM_TRIGGER) as TelegramTriggerNodeModel[],
         conditionalEdges: resolveConditionalEdges(edgeNodeModels, connections, nodes),
         edges: resolveEdges(connections, nodes),
-        noteNodes: nodes.filter(n => n.type === NodeType.NOTE) as NoteNodeModel[],
-        endNodes: nodes.filter(n => n.type === NodeType.END) as EndNodeModel[],
-        codeAgentNodes: nodes.filter(n => n.type === NodeType.CODE_AGENT) as CodeAgentNodeModel[],
-        decisionTableNodes: nodes.filter(n => n.type === NodeType.TABLE) as DecisionTableNodeModel[],
+        graphNotes: nodes.filter((n) => n.type === NodeType.NOTE) as GraphNoteModel[],
+        endNodes: nodes.filter((n) => n.type === NodeType.END) as EndNodeModel[],
+        codeAgentNodes: nodes.filter((n) => n.type === NodeType.CODE_AGENT) as CodeAgentNodeModel[],
+        decisionTableNodes: nodes.filter((n) => n.type === NodeType.TABLE) as DecisionTableNodeModel[],
         allNodes: nodes,
     };
 }
@@ -271,94 +266,114 @@ export function extractNewState(flowState: FlowModel): GraphNewState {
 // Step 3a — Node-only diff (Phase 1)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getNodeOnlyDiff(
-    previous: GraphPreviousState,
-    current: GraphNewState
-): NodeOnlyDiff {
+export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewState): NodeOnlyDiff {
     const allNodes = current.allNodes;
 
     const crewNodes = diffByKey(
-        previous.crewNodes, current.crewNodes,
-        n => n.backendId,
-        getCrewNodeForComparisonFromBackend, getCrewNodeForComparisonFromUI,
+        previous.crewNodes,
+        current.crewNodes,
+        (n) => n.backendId,
+        getCrewNodeForComparisonFromBackend,
+        getCrewNodeForComparisonFromUI,
         'CrewNode'
     );
 
     const pythonNodes = diffByKey(
-        previous.pythonNodes, current.pythonNodes,
-        n => n.backendId,
-        getPythonNodeForComparisonFromBackend, getPythonNodeForComparisonFromUI,
+        previous.pythonNodes,
+        current.pythonNodes,
+        (n) => n.backendId,
+        getPythonNodeForComparisonFromBackend,
+        getPythonNodeForComparisonFromUI,
         'PythonNode'
     );
 
     const llmNodes = diffByKey(
-        previous.llmNodes, current.llmNodes,
-        n => n.backendId,
-        getLLMNodeForComparisonFromBackend, getLLMNodeForComparisonFromUI,
+        previous.llmNodes,
+        current.llmNodes,
+        (n) => n.backendId,
+        getLLMNodeForComparisonFromBackend,
+        getLLMNodeForComparisonFromUI,
         'LLMNode'
     );
 
     const fileExtractorNodes = diffByKey(
-        previous.fileExtractorNodes, current.fileExtractorNodes,
-        n => n.backendId,
-        getFileExtractorNodeForComparisonFromBackend, getFileExtractorNodeForComparisonFromUI,
+        previous.fileExtractorNodes,
+        current.fileExtractorNodes,
+        (n) => n.backendId,
+        getFileExtractorNodeForComparisonFromBackend,
+        getFileExtractorNodeForComparisonFromUI,
         'FileExtractorNode'
     );
 
     const audioToTextNodes = diffByKey(
-        previous.audioToTextNodes, current.audioToTextNodes,
-        n => n.backendId,
-        getAudioToTextNodeForComparisonFromBackend, getAudioToTextNodeForComparisonFromUI,
+        previous.audioToTextNodes,
+        current.audioToTextNodes,
+        (n) => n.backendId,
+        getAudioToTextNodeForComparisonFromBackend,
+        getAudioToTextNodeForComparisonFromUI,
         'AudioToTextNode'
     );
 
     const subGraphNodes = diffByKey(
-        previous.subGraphNodes, current.subGraphNodes,
-        n => n.backendId,
-        getSubGraphNodeForComparisonFromBackend, getSubGraphNodeForComparisonFromUI,
+        previous.subGraphNodes,
+        current.subGraphNodes,
+        (n) => n.backendId,
+        getSubGraphNodeForComparisonFromBackend,
+        getSubGraphNodeForComparisonFromUI,
         'SubGraphNode'
     );
 
     const webhookTriggerNodes = diffByKey(
-        previous.webhookTriggerNodes, current.webhookTriggerNodes,
-        n => n.backendId,
-        getWebhookTriggerNodeForComparisonFromBackend, getWebhookTriggerNodeForComparisonFromUI,
+        previous.webhookTriggerNodes,
+        current.webhookTriggerNodes,
+        (n) => n.backendId,
+        getWebhookTriggerNodeForComparisonFromBackend,
+        getWebhookTriggerNodeForComparisonFromUI,
         'WebhookTriggerNode'
     );
 
     const telegramTriggerNodes = diffByKey(
-        previous.telegramTriggerNodes, current.telegramTriggerNodes,
-        n => n.backendId,
-        getTelegramTriggerNodeForComparisonFromBackend, getTelegramTriggerNodeForComparisonFromUI,
+        previous.telegramTriggerNodes,
+        current.telegramTriggerNodes,
+        (n) => n.backendId,
+        getTelegramTriggerNodeForComparisonFromBackend,
+        getTelegramTriggerNodeForComparisonFromUI,
         'TelegramTriggerNode'
     );
 
     const decisionTableNodes = diffByKey(
-        previous.decisionTableNodes, current.decisionTableNodes,
-        n => n.backendId,
+        previous.decisionTableNodes,
+        current.decisionTableNodes,
+        (n) => n.backendId,
         getDecisionTableNodeForComparisonFromBackend,
-        n => getDecisionTableNodeForComparisonFromUI(n, allNodes),
+        (n) => getDecisionTableNodeForComparisonFromUI(n, allNodes),
         'DecisionTableNode'
     );
 
     const endNodes = diffByKey(
-        previous.endNodes, current.endNodes,
-        n => n.backendId,
-        getEndNodeForComparisonFromBackend, getEndNodeForComparisonFromUI,
+        previous.endNodes,
+        current.endNodes,
+        (n) => n.backendId,
+        getEndNodeForComparisonFromBackend,
+        getEndNodeForComparisonFromUI,
         'EndNode'
     );
 
-    const noteNodes = diffByKey(
-        previous.noteNodes, current.noteNodes,
-        n => n.backendId,
-        getNoteNodeForComparisonFromBackend, getNoteNodeForComparisonFromUI,
-        'NoteNode'
+    const graphNotes = diffByKey(
+        previous.graphNotes,
+        current.graphNotes,
+        (n) => n.backendId,
+        getGraphNoteForComparisonFromBackend,
+        getGraphNoteForComparisonFromUI,
+        'GraphNote'
     );
 
     const codeAgentNodes = diffByKey(
-        previous.codeAgentNodes, current.codeAgentNodes,
-        n => n.backendId,
-        getCodeAgentNodeForComparisonFromBackend, getCodeAgentNodeForComparisonFromUI,
+        previous.codeAgentNodes,
+        current.codeAgentNodes,
+        (n) => n.backendId,
+        getCodeAgentNodeForComparisonFromBackend,
+        getCodeAgentNodeForComparisonFromUI,
         'CodeAgentNode'
     );
 
@@ -373,7 +388,7 @@ export function getNodeOnlyDiff(
         telegramTriggerNodes,
         decisionTableNodes,
         endNodes,
-        noteNodes,
+        graphNotes,
         codeAgentNodes,
     };
 }
@@ -409,7 +424,7 @@ export function resolveConditionalEdgeIds(
     condEdges: ResolvedConditionalEdge[],
     idMap: Map<string, number>
 ): ResolvedConditionalEdge[] {
-    return condEdges.map(re => ({
+    return condEdges.map((re) => ({
         ...re,
         sourceBackendId: re.sourceNodeUuid ? (idMap.get(re.sourceNodeUuid) ?? re.sourceBackendId) : re.sourceBackendId,
         targetBackendId: re.targetNodeUuid ? (idMap.get(re.targetNodeUuid) ?? re.targetBackendId) : re.targetBackendId,
@@ -428,32 +443,24 @@ export function getConnectionDiff(
 ): ConnectionDiff {
     // ── Resolve UI edge backend IDs ──
     const resolvedUiEdges: ResolvedUiEdge[] = currentEdges
-        .map(e => ({
+        .map((e) => ({
             start_node_id: idMap.get(e.sourceNodeUuid) ?? e.sourceBackendId,
             end_node_id: idMap.get(e.targetNodeUuid) ?? e.targetBackendId,
         }))
         .filter((e): e is ResolvedUiEdge => e.start_node_id != null && e.end_node_id != null);
 
     // ── Edge diff (create/delete only, no update) ──
-    const backendEdgeMap = new Map(
-        previousEdges.map(e => [`${e.start_node_id}__${e.end_node_id}`, e])
-    );
-    const uiEdgeKeys = new Set(
-        resolvedUiEdges.map(e => `${e.start_node_id}__${e.end_node_id}`)
-    );
-    const edgesToDelete = previousEdges.filter(
-        e => !uiEdgeKeys.has(`${e.start_node_id}__${e.end_node_id}`)
-    );
-    const edgesToCreate = resolvedUiEdges.filter(
-        e => !backendEdgeMap.has(`${e.start_node_id}__${e.end_node_id}`)
-    );
+    const backendEdgeMap = new Map(previousEdges.map((e) => [`${e.start_node_id}__${e.end_node_id}`, e]));
+    const uiEdgeKeys = new Set(resolvedUiEdges.map((e) => `${e.start_node_id}__${e.end_node_id}`));
+    const edgesToDelete = previousEdges.filter((e) => !uiEdgeKeys.has(`${e.start_node_id}__${e.end_node_id}`));
+    const edgesToCreate = resolvedUiEdges.filter((e) => !backendEdgeMap.has(`${e.start_node_id}__${e.end_node_id}`));
 
     // ── Conditional edge diff ──
     const resolvedCondEdges = resolveConditionalEdgeIds(currentCondEdges, idMap);
     const conditionalEdgesRaw = diffByKey(
         previousCondEdges,
         resolvedCondEdges,
-        n => n.edgeNode.backendId,
+        (n) => n.edgeNode.backendId,
         getConditionalEdgeForComparisonFromBackend,
         getConditionalEdgeForComparisonFromUI,
         'ConditionalEdge'
@@ -580,13 +587,17 @@ export function buildEdgePayload(e: ResolvedUiEdge, graphId: number): CreateEdge
 export function buildEndNodePayload(n: EndNodeModel, graphId: number): CreateEndNodeRequest {
     return {
         graph: graphId,
-        output_map: (n.data as any).output_map ?? { context: 'variables.context' },
+        output_map: n.data.output_map ?? { context: 'variables.context' },
         metadata: getUIMetadataForComparison(n),
     };
 }
 
 /** Resolves a UUID to a backend ID using idMap first (Phase 2), then falling back to allNodes. */
-function resolveBackendIdWithMap(uuid: string | null, allNodes: NodeModel[], idMap?: Map<string, number>): number | null {
+function resolveBackendIdWithMap(
+    uuid: string | null,
+    allNodes: NodeModel[],
+    idMap?: Map<string, number>
+): number | null {
     if (!uuid) return null;
     if (idMap) {
         const mapped = idMap.get(uuid);
@@ -601,16 +612,16 @@ export function buildDecisionTablePayload(
     allNodes: NodeModel[],
     idMap?: Map<string, number>
 ): CreateDecisionTableNodeRequest {
-    const tableData = (node as any).data?.table;
+    const tableData = node.data.table;
 
-    const conditionGroups: CreateConditionGroupRequest[] = ((tableData?.condition_groups ?? []) as any[])
-        .filter(g => g.valid !== false)
+    const conditionGroups: CreateConditionGroupRequest[] = tableData.condition_groups
+        .filter((g) => g.valid !== false)
         .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
         .map((g, idx) => ({
             group_name: g.group_name,
-            group_type: g.group_type ?? 'complex',
+            group_type: g.group_type,
             expression: g.expression,
-            conditions: (g.conditions ?? []).map((c: any) => ({
+            conditions: g.conditions.map((c) => ({
                 condition_name: c.condition_name,
                 condition: c.condition,
             })),
@@ -629,7 +640,7 @@ export function buildDecisionTablePayload(
     };
 }
 
-export function buildNoteNodePayload(n: NoteNodeModel, graphId: number): CreateNoteNodeRequest {
+export function buildGraphNotePayload(n: GraphNoteModel, graphId: number): CreateGraphNoteRequest {
     return {
         node_name: n.node_name,
         graph: graphId,

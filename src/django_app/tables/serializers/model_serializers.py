@@ -16,7 +16,7 @@ from tables.validators.python_code_tool_config_validator import (
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import WebhookTrigger, NgrokWebhookConfig
-from tables.models.graph_models import NoteNode, WebhookTriggerNode
+from tables.models.graph_models import GraphNote, WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
@@ -97,6 +97,7 @@ from tables.models.tag_models import (
     LLMModelTag,
 )
 from tables.models.vector_models import MemoryDatabase
+from tables.models.label_models import Label
 from tables.validators.tool_config_validator import ToolConfigValidator, eval_any
 from tables.models import (
     AgentSessionMessage,
@@ -1513,8 +1514,11 @@ class GraphTagSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class GraphLightSerializer(serializers.ModelSerializer):
+class GraphLightBaseSerializer(serializers.ModelSerializer):
     tags = GraphTagSerializer(many=True, read_only=True)
+    label_ids = serializers.PrimaryKeyRelatedField(
+        many=True, read_only=True, source="labels"
+    )
 
     class Meta:
         model = Graph
@@ -1524,7 +1528,21 @@ class GraphLightSerializer(serializers.ModelSerializer):
             "description",
             "tags",
             "epicchat_enabled",
+            "label_ids",
+            "created_at",
+            "updated_at",
         ]
+
+
+class GraphLightSerializer(GraphLightBaseSerializer):
+    subflows = serializers.SerializerMethodField()
+
+    class Meta(GraphLightBaseSerializer.Meta):
+        fields = GraphLightBaseSerializer.Meta.fields + ["subflows"]
+
+    def get_subflows(self, obj):
+        graphs = Graph.objects.get_transitive_subflows(obj.id)
+        return GraphLightBaseSerializer(graphs, many=True).data
 
 
 class RealtimeModelSerializer(serializers.ModelSerializer):
@@ -1708,9 +1726,9 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
         return instance
 
 
-class NoteNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+class GraphNoteSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
-        model = NoteNode
+        model = GraphNote
         fields = "__all__"
 
 
@@ -1734,7 +1752,10 @@ class GraphSerializer(serializers.ModelSerializer):
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
     )
-    note_node_list = NoteNodeSerializer(many=True, read_only=True)
+    label_ids = serializers.PrimaryKeyRelatedField(
+        many=True, source="labels", queryset=Label.objects.all(), required=False
+    )
+    graph_note_list = GraphNoteSerializer(many=True, read_only=True)
 
     class Meta:
         model = Graph
@@ -1760,8 +1781,35 @@ class GraphSerializer(serializers.ModelSerializer):
             "persistent_variables",
             "epicchat_enabled",
             "telegram_trigger_node_list",
-            "note_node_list",
+            "label_ids",
+            "graph_note_list",
         ]
+
+    def create(self, validated_data):
+        labels = validated_data.pop("labels", [])
+        instance = super().create(validated_data)
+        instance.labels.set(labels)
+        return instance
+
+    def update(self, instance, validated_data):
+        labels = validated_data.pop("labels", None)
+        instance = super().update(instance, validated_data)
+        if labels is not None:
+            instance.labels.set(labels)
+        return instance
+
+    def create(self, validated_data):
+        labels = validated_data.pop("labels", [])
+        instance = super().create(validated_data)
+        instance.labels.set(labels)
+        return instance
+
+    def update(self, instance, validated_data):
+        labels = validated_data.pop("labels", None)
+        instance = super().update(instance, validated_data)
+        if labels is not None:
+            instance.labels.set(labels)
+        return instance
 
 
 class GraphFileReadSerializer(serializers.ModelSerializer):
@@ -1851,3 +1899,32 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
+
+
+class LabelSerializer(serializers.ModelSerializer):
+    full_path = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Label
+        fields = ["id", "name", "parent", "created_at", "full_path"]
+        read_only_fields = ["id", "created_at", "full_path"]
+        extra_kwargs = {
+            "name": {"validators": []},
+        }
+
+    def validate(self, attrs):
+        name = attrs.get("name")
+        parent = attrs.get("parent")
+
+        if parent is None:
+            if Label.objects.filter(name=name, parent__isnull=True).exists():
+                raise serializers.ValidationError(
+                    {"name": "Top-level label with this name already exists."}
+                )
+        else:
+            if Label.objects.filter(name=name, parent=parent).exists():
+                raise serializers.ValidationError(
+                    {"name": "Label with this name already exists under this parent."}
+                )
+
+        return attrs

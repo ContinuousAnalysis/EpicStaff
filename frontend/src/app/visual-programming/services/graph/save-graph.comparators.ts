@@ -34,7 +34,7 @@ import {
     WebhookTriggerNodeModel,
 } from '../../core/models/node.model';
 import { EndNodeModel } from '../../core/models/node.model';
-import { getUIMetadataForComparison,NodeUIMetadata, ResolvedConditionalEdge } from './save-graph.types';
+import { getUIMetadataForComparison, NodeUIMetadata, ResolvedConditionalEdge } from './save-graph.types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared UI-metadata comparison helpers
@@ -371,13 +371,13 @@ export function getEndNodeForComparisonFromUI(node: EndNodeModel) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NoteNode
+// GraphNote
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { NoteNode } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
-import { NoteNodeModel } from '../../core/models/node.model';
+import { GraphNote } from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
+import { GraphNoteModel } from '../../core/models/node.model';
 
-export function getNoteNodeForComparisonFromBackend(node: NoteNode) {
+export function getGraphNoteForComparisonFromBackend(node: GraphNote) {
     return {
         node_name: node.node_name,
         content: node.content,
@@ -385,7 +385,7 @@ export function getNoteNodeForComparisonFromBackend(node: NoteNode) {
     };
 }
 
-export function getNoteNodeForComparisonFromUI(node: NoteNodeModel) {
+export function getGraphNoteForComparisonFromUI(node: GraphNoteModel) {
     return {
         node_name: node.node_name,
         content: node.data.content,

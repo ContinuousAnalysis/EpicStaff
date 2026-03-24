@@ -68,7 +68,7 @@ from tables.models.graph_models import (
     GraphOrganization,
     GraphOrganizationUser,
     LLMNode,
-    NoteNode,
+    GraphNote,
     Organization,
     OrganizationUser,
     TelegramTriggerNode,
@@ -87,8 +87,49 @@ from tables.models.realtime_models import (
     RealtimeAgentChat,
     RealtimeSessionItem,
 )
+from tables.filters import (
+    EmbeddingModelFilter,
+    LabelFilterBackend,
+    LLMModelFilter,
+    ProviderFilter,
+)
+from tables.utils.helpers import natural_sort_key
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
+from tables.models.label_models import Label
 from tables.models.vector_models import MemoryDatabase
+from tables.models.mcp_models import McpTool
+from utils.logger import logger
+from django.db.models import IntegerField, NOT_PROVIDED
+from django.db.models.functions import Cast
+from tables.serializers.model_serializers import (
+    AgentReadSerializer,
+    AgentWriteSerializer,
+    CrewTagSerializer,
+    AgentTagSerializer,
+    LabelSerializer,
+    DecisionTableNodeSerializer,
+    EndNodeSerializer,
+    SubGraphNodeSerializer,
+    GraphLightSerializer,
+    GraphTagSerializer,
+    PythonCodeToolConfigFieldSerializer,
+    PythonCodeToolConfigSerializer,
+    RealtimeConfigSerializer,
+    RealtimeSessionItemSerializer,
+    RealtimeAgentSerializer,
+    RealtimeAgentChatSerializer,
+    StartNodeSerializer,
+    ConditionGroupSerializer,
+    ConditionSerializer,
+    TaskReadSerializer,
+    TaskWriteSerializer,
+    TaskConfiguredTools,
+    TaskPythonCodeTools,
+    McpToolSerializer,
+    GraphFileReadSerializer,
+    WebhookTriggerNodeSerializer,
+    WebhookTriggerSerializer,
+)
 from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
 from tables.services.copy_services import (
     AgentCopyService,
@@ -104,7 +145,7 @@ from tables.serializers.model_serializers import (
     AgentWriteSerializer,
     AudioTranscriptionNodeSerializer,
     ConditionalEdgeSerializer,
-    NoteNodeSerializer,
+    GraphNoteSerializer,
     ConditionGroupSerializer,
     ConditionSerializer,
     CrewNodeSerializer,
@@ -730,6 +771,7 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
     copy_serializer_class = GraphLightSerializer
 
     serializer_class = GraphSerializer
+    filter_backends = [DjangoFilterBackend, LabelFilterBackend]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -741,7 +783,7 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        return (
+        qs = (
             Graph.objects.defer("metadata", "tags")
             .prefetch_related(
                 Prefetch(
@@ -787,6 +829,7 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
             )
             .all()
         )
+        return qs
 
     def perform_create(self, serializer):
         created_graph = serializer.save()
@@ -838,13 +881,18 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphLightSerializer
-    filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter]
-    # filterset_fields = ['tags']  TODO: Uncomment when tags logic implemented
+    filter_backends = [
+        DjangoFilterBackend,
+        drf_filters.SearchFilter,
+        LabelFilterBackend,
+    ]
     filterset_fields = ["epicchat_enabled"]
     search_fields = ["name", "description"]
 
     def get_queryset(self):
-        return Graph.objects.prefetch_related("tags")
+        return Graph.objects.only("id", "name", "description").prefetch_related(
+            "tags", "labels"
+        )
 
 
 class IdempotentNodeCreateMixin:
@@ -1333,11 +1381,11 @@ class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     serializer_class = TelegramTriggerNodeFieldSerializer
 
 
-class NoteNodeViewSet(
+class GraphNoteViewSet(
     IdempotentNodeCreateMixin, ContentHashPreconditionMixin, ModelViewSet
 ):
-    queryset = NoteNode.objects.all()
-    serializer_class = NoteNodeSerializer
+    queryset = GraphNote.objects.all()
+    serializer_class = GraphNoteSerializer
 
 
 class NgrokWebhookConfigViewSet(ModelViewSet):
@@ -1357,3 +1405,40 @@ class NgrokWebhookConfigViewSet(ModelViewSet):
         WebhookTriggerService().wait_for_tunnel_url(instance)
         response.data = self.get_serializer(instance).data
         return response
+
+
+class LabelViewSet(viewsets.ModelViewSet):
+    queryset = Label.objects.all()
+    serializer_class = LabelSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["name", "parent"]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        labels = list(queryset)
+
+        # Build paths in memory (one extra lightweight query) to avoid N+1
+        # and to correctly resolve parents that may be filtered out.
+        id_to_row = {
+            row["id"]: row for row in Label.objects.values("id", "parent_id", "name")
+        }
+
+        def full_path_key(label):
+            parts = []
+            current_id = label.id
+            while current_id is not None:
+                row = id_to_row.get(current_id)
+                if row is None:
+                    break
+                parts.append(row["name"])
+                current_id = row["parent_id"]
+            return "/".join(reversed(parts))
+
+        labels.sort(key=lambda label: natural_sort_key(full_path_key(label)))
+
+        page = self.paginate_queryset(labels)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        return Response(self.get_serializer(labels, many=True).data)

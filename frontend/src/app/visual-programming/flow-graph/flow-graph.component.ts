@@ -60,7 +60,7 @@ import {
 } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
 import { FlowModel } from '../core/models/flow.model';
-import { NodeModel, NoteNodeModel, ProjectNodeModel, StartNodeModel } from '../core/models/node.model';
+import { GraphNoteModel, NodeModel, ProjectNodeModel, StartNodeModel } from '../core/models/node.model';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
 import { ClipboardService } from '../services/clipboard.service';
 import { FlowService } from '../services/flow.service';
@@ -677,7 +677,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         }
 
         if (node.type === NodeType.NOTE) {
-            const noteNode = node as NoteNodeModel;
+            const noteNode = node as GraphNoteModel;
 
             const dialogRef = this.dialog.open(NoteEditDialogComponent, {
                 data: { node: noteNode },
@@ -693,7 +693,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
                 ) {
                     const content = (result as { content?: unknown }).content;
                     if (typeof content !== 'string') return;
-                    const updatedNode: NoteNodeModel = {
+                    const updatedNode: GraphNoteModel = {
                         ...noteNode,
                         data: {
                             ...noteNode.data,

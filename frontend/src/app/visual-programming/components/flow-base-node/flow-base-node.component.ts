@@ -21,7 +21,7 @@ import {
     signal,
     ViewChild,
 } from '@angular/core';
-import { EFResizeHandleType,FFlowModule } from '@foblex/flow';
+import { EFResizeHandleType, FFlowModule } from '@foblex/flow';
 
 import { GoToButtonComponent } from '../../../shared/components/go-to-button/go-to-button.component';
 import { flowUrl } from '../../../shared/utils/flow-links';
@@ -33,9 +33,9 @@ import {
     DecisionTableNodeModel,
     EdgeNodeModel,
     EndNodeModel,
+    GraphNoteModel,
     LLMNodeModel,
     NodeModel,
-    NoteNodeModel,
     ProjectNodeModel,
     PythonNodeModel,
     StartNodeModel,
@@ -47,7 +47,7 @@ import { CustomPortId } from '../../core/models/port.model';
 import { FlowService } from '../../services/flow.service';
 import { ConditionalEdgeNodeComponent } from '../nodes-components/conditional-edge/conditional-edge.component';
 import { DecisionTableNodeComponent } from '../nodes-components/decision-table-node/decision-table-node.component';
-import { NoteNodeComponent } from '../nodes-components/note-node/note-node.component';
+import { GraphNoteComponent } from '../nodes-components/graph-note/graph-note.component';
 import { ResizeHandleComponent } from '../resize-handle/resize-handle.component';
 import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay.component';
 
@@ -64,7 +64,7 @@ import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay
         ClickOrDragDirective,
         ConditionalEdgeNodeComponent,
         DecisionTableNodeComponent,
-        NoteNodeComponent,
+        GraphNoteComponent,
         FlowNodeVariablesOverlayComponent,
         GoToButtonComponent,
     ],
@@ -192,7 +192,7 @@ export class FlowBaseNodeComponent {
         return this.node.type === NodeType.END ? (this.node as EndNodeModel) : null;
     }
     public get noteNode() {
-        return this.node.type === NodeType.NOTE ? (this.node as NoteNodeModel) : null;
+        return this.node.type === NodeType.NOTE ? (this.node as GraphNoteModel) : null;
     }
     public get isBlockedSubgraph(): boolean {
         return this.node?.type === NodeType.SUBGRAPH && !!this.node.isBlocked;

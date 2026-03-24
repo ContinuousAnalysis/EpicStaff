@@ -6,8 +6,8 @@ import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/component
 import { Edge } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
+import { GraphNote } from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
 import { GetLLMNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
-import { NoteNode } from '../../../pages/flows-page/components/flow-visual-programming/models/note-node.model';
 import { PythonNode } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
 import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
@@ -20,9 +20,9 @@ import {
     EdgeNodeModel,
     EndNodeModel,
     FileExtractorNodeModel,
+    GraphNoteModel,
     LLMNodeModel,
     NodeModel,
-    NoteNodeModel,
     ProjectNodeModel,
     PythonNodeModel,
     SubGraphNodeModel,
@@ -116,7 +116,7 @@ export interface GraphPreviousState {
     edges: Edge[];
     endNodes: EndNode[];
     decisionTableNodes: GetDecisionTableNodeRequest[];
-    noteNodes: NoteNode[];
+    graphNotes: GraphNote[];
     codeAgentNodes: GetCodeAgentNodeRequest[];
 }
 
@@ -137,7 +137,7 @@ export interface GraphNewState {
     edges: UiEdge[];
     endNodes: EndNodeModel[];
     decisionTableNodes: DecisionTableNodeModel[];
-    noteNodes: NoteNodeModel[];
+    graphNotes: GraphNoteModel[];
     codeAgentNodes: CodeAgentNodeModel[];
     /** All UI nodes — used to resolve UUID → backendId for decision tables/edges. */
     allNodes: NodeModel[];
@@ -156,7 +156,7 @@ export interface NodeOnlyDiff {
     telegramTriggerNodes: NodeDiff<GetTelegramTriggerNodeRequest, TelegramTriggerNodeModel>;
     decisionTableNodes: NodeDiff<GetDecisionTableNodeRequest, DecisionTableNodeModel>;
     endNodes: NodeDiff<EndNode, EndNodeModel>;
-    noteNodes: NodeDiff<NoteNode, NoteNodeModel>;
+    graphNotes: NodeDiff<GraphNote, GraphNoteModel>;
     codeAgentNodes: NodeDiff<GetCodeAgentNodeRequest, CodeAgentNodeModel>;
 }
 

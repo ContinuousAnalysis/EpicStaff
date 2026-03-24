@@ -1,24 +1,17 @@
+import { Dialog as CdkDialog } from '@angular/cdk/dialog';
 import {
+    AfterViewInit,
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
-    signal,
-    OnInit,
-    OnDestroy,
     HostListener,
-    AfterViewInit,
+    OnDestroy,
+    OnInit,
+    signal,
     ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FlowService } from '../../../../visual-programming/services/flow.service';
-import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
-import {
-    CreateGraphDtoRequest,
-    GraphDto,
-    UpdateGraphDtoRequest,
-} from '../../../../features/flows/models/graph.model';
-import { FlowHeaderComponent } from './components/header/flow-header.component';
-import { FlowGraphComponent } from '../../../../visual-programming/flow-graph/flow-graph.component';
+import { isEqual } from 'lodash';
 import {
     catchError,
     EMPTY,
@@ -33,56 +26,52 @@ import {
     tap,
     throwError,
 } from 'rxjs';
+import { v4 as uuidv4 } from 'uuid';
 
-import { ConditionalEdgeService } from './services/conditional-edge.service';
-import { CrewNodeService } from './services/crew-node.service';
-import { EdgeService } from './services/edge.service';
-import { PythonNodeService } from './services/python-node.service';
+import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
+import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
+import { FlowSessionsListComponent } from '../../../../features/flows/components/flow-sessions-dialog/flow-sessions-list.component';
+import { CreateGraphDtoRequest, GraphDto, UpdateGraphDtoRequest } from '../../../../features/flows/models/graph.model';
+import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
+import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { RunGraphService } from '../../../../features/flows/services/run-graph-session.service';
-import { StartNodeService } from './services/start-node.service';
-import { StartNode, CreateStartNodeRequest } from './models/start-node.model';
-
+import { GetProjectRequest } from '../../../../features/projects/models/project.model';
+import { ConfigService } from '../../../../services/config/config.service';
+import { ToastService } from '../../../../services/notifications/toast.service';
+import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
+import { UnsavedChangesDialogService } from '../../../../shared/components/unsaved-changes-dialog';
+import { NodeType } from '../../../../visual-programming/core/enums/node-type';
+import { ConnectionModel } from '../../../../visual-programming/core/models/connection.model';
+import { FlowModel } from '../../../../visual-programming/core/models/flow.model';
+import { NodeModel, StartNodeModel } from '../../../../visual-programming/core/models/node.model';
+import { FlowGraphComponent } from '../../../../visual-programming/flow-graph/flow-graph.component';
+import { FlowService } from '../../../../visual-programming/services/flow.service';
+import { buildFlowModelFromGraph } from '../../../../visual-programming/services/graph/load-graph.service';
+import { GraphUpdateService } from '../../../../visual-programming/services/graph/save-graph.service';
+import {
+    CreatedNodeMapping,
+    getUIMetadataForComparison,
+} from '../../../../visual-programming/services/graph/save-graph.types';
+import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
+import { FlowUnsavedStateService } from '../../services/flow-unsaved-state.service';
+import { FlowHeaderComponent } from './components/header/flow-header.component';
+import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
+import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 import {
     ConditionalEdge,
     CreateConditionalEdgeRequest,
     CustomConditionalEdgeModelForNode,
     GetConditionalEdgeRequest,
 } from './models/conditional-edge.model';
-import { CreateEdgeRequest, Edge } from './models/edge.model';
-import { GetProjectRequest } from '../../../../features/projects/models/project.model';
-
 import { CreateCrewNodeRequest, CrewNode } from './models/crew-node.model';
-import {
-    CreatePythonNodeRequest,
-    PythonNode,
-} from './models/python-node.model';
-
-import { v4 as uuidv4 } from 'uuid';
-import { ToastService } from '../../../../services/notifications/toast.service';
-import { ConnectionModel } from '../../../../visual-programming/core/models/connection.model';
-import { FlowModel } from '../../../../visual-programming/core/models/flow.model';
-import {
-    NodeModel,
-    StartNodeModel,
-} from '../../../../visual-programming/core/models/node.model';
-import { NodeType } from '../../../../visual-programming/core/enums/node-type';
-import { GraphUpdateService } from '../../../../visual-programming/services/graph/save-graph.service';
-import { CreatedNodeMapping, getUIMetadataForComparison } from '../../../../visual-programming/services/graph/save-graph.types';
-import { Dialog as CdkDialog } from '@angular/cdk/dialog';
-import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
-import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
-import { FlowSessionsListComponent } from '../../../../features/flows/components/flow-sessions-dialog/flow-sessions-list.component';
-import { UnsavedChangesDialogService } from '../../../../shared/components/unsaved-changes-dialog';
-
-import { isEqual } from 'lodash';
-import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
-import { ConfigService } from '../../../../services/config/config.service';
-import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
-import { buildFlowModelFromGraph } from '../../../../visual-programming/services/graph/load-graph.service';
-import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
-import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
-import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
-import { FlowUnsavedStateService } from '../../services/flow-unsaved-state.service';
+import { CreateEdgeRequest, Edge } from './models/edge.model';
+import { CreatePythonNodeRequest, PythonNode } from './models/python-node.model';
+import { CreateStartNodeRequest, StartNode } from './models/start-node.model';
+import { ConditionalEdgeService } from './services/conditional-edge.service';
+import { CrewNodeService } from './services/crew-node.service';
+import { EdgeService } from './services/edge.service';
+import { PythonNodeService } from './services/python-node.service';
+import { StartNodeService } from './services/start-node.service';
 
 @Component({
     selector: 'app-flow-visual-programming',
@@ -92,9 +81,7 @@ import { FlowUnsavedStateService } from '../../services/flow-unsaved-state.servi
     styleUrl: './flow-visual-programming.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FlowVisualProgrammingComponent
-    implements OnInit, OnDestroy, CanComponentDeactivate
-{
+export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanComponentDeactivate {
     public readonly isEpicChatEnabled: boolean;
     public initialNodeId: string | null = null;
     public isLoaded = false;
@@ -136,11 +123,9 @@ export class FlowVisualProgrammingComponent
     public ngOnInit(): void {
         this.flowUnsavedStateService.register(this);
 
-        this.route.queryParamMap
-            .pipe(takeUntil(this.destroy$))
-            .subscribe((queryParams) => {
-                this.initialNodeId = queryParams.get('nodeId');
-            });
+        this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((queryParams) => {
+            this.initialNodeId = queryParams.get('nodeId');
+        });
 
         this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
             const id = Number(params.get('id'));
@@ -159,11 +144,7 @@ export class FlowVisualProgrammingComponent
         this.fetchGraph(graphId, true, true);
     }
 
-    private fetchGraph(
-        graphId: number,
-        forceRefresh = false,
-        showRefreshToast = false
-    ): void {
+    private fetchGraph(graphId: number, forceRefresh = false, showRefreshToast = false): void {
         this.flowApiService
             .getGraphById(graphId, forceRefresh)
             .pipe(
@@ -190,7 +171,7 @@ export class FlowVisualProgrammingComponent
                     let blockedCount = 0;
                     flowModel.nodes = flowModel.nodes.map((node) => {
                         if (node.type !== NodeType.SUBGRAPH) return node;
-                        const subgraphId = Number((node as any)?.data?.id);
+                        const subgraphId = Number((node as { data?: { id?: unknown } })?.data?.id);
                         const isMissing = !subgraphId || !availableIds.has(subgraphId);
                         if (isMissing) blockedCount++;
                         return { ...node, isBlocked: isMissing };
@@ -233,18 +214,14 @@ export class FlowVisualProgrammingComponent
             switchMap(() => {
                 const flowState: FlowModel = this.flowService.getFlowState();
 
-                const startNodeInFlow = flowState.nodes.find(
-                    (node) => node.type === NodeType.START
-                ) as StartNodeModel | undefined;
+                const startNodeInFlow = flowState.nodes.find((node) => node.type === NodeType.START) as
+                    | StartNodeModel
+                    | undefined;
 
                 if (!startNodeInFlow) {
                     return this.saveGraphDirectly(flowState, showNotif);
                 }
-                return this.saveGraphWithStartNode(
-                    flowState,
-                    startNodeInFlow,
-                    showNotif
-                );
+                return this.saveGraphWithStartNode(flowState, startNodeInFlow, showNotif);
             })
         );
     }
@@ -260,19 +237,14 @@ export class FlowVisualProgrammingComponent
         return this.startNodeService.getStartNodes().pipe(
             takeUntil(this.destroy$),
             switchMap((startNodes) => {
-                const matchingStartNode = startNodes.find(
-                    (sn) => sn.graph === this.graph.id
-                );
+                const matchingStartNode = startNodes.find((sn) => sn.graph === this.graph.id);
 
                 if (matchingStartNode) {
-                    return this.startNodeService.partialUpdateStartNode(
-                        matchingStartNode.id,
-                        {
-                            graph: this.graph.id,
-                            variables: initialStateData,
-                            metadata,
-                        }
-                    );
+                    return this.startNodeService.partialUpdateStartNode(matchingStartNode.id, {
+                        graph: this.graph.id,
+                        variables: initialStateData,
+                        metadata,
+                    });
                 }
 
                 return this.startNodeService.createStartNode({
@@ -283,12 +255,10 @@ export class FlowVisualProgrammingComponent
             }),
             switchMap((startNodeResult) => {
                 if (startNodeResult?.id != null) {
-                    const sn = flowState.nodes.find(n => n.type === NodeType.START);
+                    const sn = flowState.nodes.find((n) => n.type === NodeType.START);
                     if (sn) sn.backendId = startNodeResult.id;
 
-                    const snInService = this.flowService.nodes()?.find(
-                        (n: any) => n.type === NodeType.START
-                    );
+                    const snInService = this.flowService.nodes()?.find((n) => n.type === NodeType.START);
                     if (snInService) snInService.backendId = startNodeResult.id;
                 }
                 return this.graphUpdateService.saveGraph(flowState, this.graph);
@@ -303,11 +273,7 @@ export class FlowVisualProgrammingComponent
                 return true;
             }),
             catchError((err) => {
-                this.toastService.error(
-                    `Failed to save graph: ${
-                        err?.error?.error || 'Unknown error'
-                    }`
-                );
+                this.toastService.error(`Failed to save graph: ${err?.error?.error || 'Unknown error'}`);
                 console.error('Error saving graph:', err);
                 return of(false);
             }),
@@ -318,10 +284,7 @@ export class FlowVisualProgrammingComponent
         );
     }
 
-    private saveGraphDirectly(
-        flowState: FlowModel,
-        showNotif: boolean
-    ): Observable<boolean> {
+    private saveGraphDirectly(flowState: FlowModel, showNotif: boolean): Observable<boolean> {
         return this.graphUpdateService.saveGraph(flowState, this.graph).pipe(
             takeUntil(this.destroy$),
             map((result) => {
@@ -334,11 +297,7 @@ export class FlowVisualProgrammingComponent
                 return true;
             }),
             catchError((err) => {
-                this.toastService.error(
-                    `Failed to save graph: ${
-                        err?.error?.error || 'Unknown error'
-                    }`
-                );
+                this.toastService.error(`Failed to save graph: ${err?.error?.error || 'Unknown error'}`);
                 return of(false);
             }),
             finalize(() => {
@@ -348,7 +307,7 @@ export class FlowVisualProgrammingComponent
         );
     }
 
-    private saveGraphForRun(): Observable<any> {
+    private saveGraphForRun(): Observable<boolean> {
         // Trigger autosave before getting flow state
         this.flushActiveSidePanelState();
         this.sidePanelService.triggerAutosave();
@@ -359,20 +318,18 @@ export class FlowVisualProgrammingComponent
             switchMap(() => {
                 const flowState: FlowModel = this.flowService.getFlowState();
 
-                const startNodeInFlow = flowState.nodes.find(
-                    (node) => node.type === NodeType.START
-                ) as StartNodeModel | undefined;
+                const startNodeInFlow = flowState.nodes.find((node) => node.type === NodeType.START) as
+                    | StartNodeModel
+                    | undefined;
 
                 if (!startNodeInFlow) {
-                    return this.graphUpdateService
-                        .saveGraph(flowState, this.graph)
-                        .pipe(
-                            tap((result) => {
-                                this.graph = result.graph;
-                                this.patchBackendIds(result.createdMappings);
-                                this.initialState = this.flowService.getFlowState();
-                            })
-                        );
+                    return this.graphUpdateService.saveGraph(flowState, this.graph).pipe(
+                        tap((result) => {
+                            this.graph = result.graph;
+                            this.patchBackendIds(result.createdMappings);
+                            this.initialState = this.flowService.getFlowState();
+                        })
+                    );
                 }
 
                 const initialStateData = startNodeInFlow.data.initialState;
@@ -380,19 +337,14 @@ export class FlowVisualProgrammingComponent
 
                 return this.startNodeService.getStartNodes().pipe(
                     switchMap((startNodes) => {
-                        const matchingStartNode = startNodes.find(
-                            (sn) => sn.graph === this.graph.id
-                        );
+                        const matchingStartNode = startNodes.find((sn) => sn.graph === this.graph.id);
 
                         if (matchingStartNode) {
-                            return this.startNodeService.partialUpdateStartNode(
-                                matchingStartNode.id,
-                                {
-                                    graph: this.graph.id,
-                                    variables: initialStateData,
-                                    metadata,
-                                }
-                            );
+                            return this.startNodeService.partialUpdateStartNode(matchingStartNode.id, {
+                                graph: this.graph.id,
+                                variables: initialStateData,
+                                metadata,
+                            });
                         }
 
                         return this.startNodeService.createStartNode({
@@ -401,9 +353,7 @@ export class FlowVisualProgrammingComponent
                             metadata,
                         });
                     }),
-                    switchMap(() =>
-                        this.graphUpdateService.saveGraph(flowState, this.graph)
-                    ),
+                    switchMap(() => this.graphUpdateService.saveGraph(flowState, this.graph)),
                     tap((result) => {
                         this.graph = result.graph;
                         this.patchBackendIds(result.createdMappings);
@@ -422,11 +372,12 @@ export class FlowVisualProgrammingComponent
     private patchBackendIds(mappings: CreatedNodeMapping[]): void {
         if (!mappings || mappings.length === 0) return;
 
-        const mappingMap = new Map(mappings.map(m => [m.uiNodeId, m.backendId]));
+        const mappingMap = new Map(mappings.map((m) => [m.uiNodeId, m.backendId]));
 
-        const updatedNodes = this.flowService.nodes()
-            .filter(node => mappingMap.has(node.id))
-            .map(node => ({
+        const updatedNodes = this.flowService
+            .nodes()
+            .filter((node) => mappingMap.has(node.id))
+            .map((node) => ({
                 ...node,
                 backendId: mappingMap.get(node.id)!,
             }));
@@ -442,18 +393,11 @@ export class FlowVisualProgrammingComponent
         this.isRunning = true;
 
         // Check if we have unsaved changes and save first if needed
-        const saveFirst$ = this.hasUnsavedChanges()
-            ? this.saveGraphForRun()
-            : of(null);
+        const saveFirst$ = this.hasUnsavedChanges() ? this.saveGraphForRun() : of(null);
 
         saveFirst$
             .pipe(
-                switchMap(() =>
-                    this.runGraphService.runGraph(
-                        this.graph.id,
-                        this.graph.start_node_list[0].variables
-                    )
-                ),
+                switchMap(() => this.runGraphService.runGraph(this.graph.id, this.graph.start_node_list[0].variables)),
                 takeUntil(this.destroy$),
                 finalize(() => {
                     this.isRunning = false;
@@ -461,21 +405,12 @@ export class FlowVisualProgrammingComponent
                 })
             )
             .subscribe({
-                next: (response: any) => {
+                next: (response: { session_id?: string }) => {
                     this.isNavigatingToRun = true;
-                    this.router.navigate([
-                        'graph',
-                        this.graph.id,
-                        'session',
-                        response.session_id,
-                    ]);
+                    this.router.navigate(['graph', this.graph.id, 'session', response.session_id]);
                 },
-                error: (error: any) => {
-                    this.toastService.error(
-                        `Failed to run graph: ${
-                            error?.error?.error || 'Unknown error'
-                        }`
-                    );
+                error: (error: { error?: { error?: string } }) => {
+                    this.toastService.error(`Failed to run graph: ${error?.error?.error || 'Unknown error'}`);
                 },
             });
     }
@@ -494,25 +429,15 @@ export class FlowVisualProgrammingComponent
         const apiUrl = this.configService.apiUrl;
 
         if (flowId && startNodeInitialState) {
-            const curlCommand = this.generateCurlCommand(
-                flowId,
-                startNodeInitialState,
-                apiUrl
-            );
+            const curlCommand = this.generateCurlCommand(flowId, startNodeInitialState, apiUrl);
             this.copyToClipboard(curlCommand);
             this.toastService.success('CURL command copied to clipboard!');
         } else {
-            this.toastService.error(
-                'Unable to generate CURL: Missing flow ID or start node data'
-            );
+            this.toastService.error('Unable to generate CURL: Missing flow ID or start node data');
         }
     }
 
-    private generateCurlCommand(
-        flowId: number,
-        variables: Record<string, unknown>,
-        apiUrl: string
-    ): string {
+    private generateCurlCommand(flowId: number, variables: Record<string, unknown>, apiUrl: string): string {
         const variablesJson = JSON.stringify(variables, null, 2);
         const payload = JSON.stringify(
             {
@@ -650,5 +575,10 @@ export class FlowVisualProgrammingComponent
     public closeShortcutsModal(): void {
         this.isShortcutsOpen.set(false);
         this.shortcutsPos.set(null);
+    }
+
+    public onFlowEdited(updatedFlow: GraphDto): void {
+        this.graph = updatedFlow;
+        this.cdr.markForCheck();
     }
 }
