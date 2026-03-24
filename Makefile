@@ -93,7 +93,7 @@ dev-ngrok:
 
 prod-setup:
 	@echo "--- Setting up production environment ---"
-	@python make_scripts/setup_prod.py
+	@python3 make_scripts/setup_prod.py
 
 PROD_ENV_ARG = $(shell test -f prod/prod.env && echo "--env-file ../prod/prod.env")
 
