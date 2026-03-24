@@ -3,10 +3,11 @@ import {
     ChangeDetectorRef,
     Component,
     OnDestroy,
-    OnInit,
     signal,
+    computed,
     inject,
 } from '@angular/core';
+import { FlowsLabelSidebarComponent } from './components/flows-label-sidebar/flows-label-sidebar.component';
 import {
     GraphDto,
     CreateGraphDtoRequest,
@@ -37,6 +38,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { ImportExportService } from '../../../../core/services/import-export.service';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
+import { LabelsStorageService } from '../../services/labels-storage.service';
 
 @Component({
     selector: 'app-flows-list-page',
@@ -51,6 +53,7 @@ import { FlowService } from '../../../../visual-programming/services/flow.servic
         TabButtonComponent,
         FormsModule,
         AppIconComponent,
+        FlowsLabelSidebarComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -69,9 +72,28 @@ export class FlowsListPageComponent implements OnDestroy {
     private router = inject(Router);
     private cdr = inject(ChangeDetectorRef);
     private importExportService = inject(ImportExportService);
+    private labelsStorage = inject(LabelsStorageService);
 
     public selectMode = this.flowStorageService.selectMode;
     public selectedFlowIds = this.flowStorageService.selectedFlowIds;
+
+    public showSidebar = signal<boolean>(true);
+
+    public readonly activeLabelFilterDisplay = computed(() => {
+        const filter = this.labelsStorage.activeLabelFilter();
+        if (filter === 'all') return 'all';
+        if (filter === 'unlabeled') return 'Unlabeled';
+        const label = this.labelsStorage.labels().find((l) => l.id === filter);
+        return label && label.parent ? label.full_path : label?.name;
+    });
+
+    public toggleSidebar(): void {
+        this.showSidebar.update((v) => !v);
+    }
+
+    public selectAllLabels(): void {
+        this.labelsStorage.setActiveLabelFilter('all');
+    }
 
     constructor() {
         this.subscription = this.searchTerms

@@ -11,6 +11,8 @@ export interface ConfirmationDialogData {
   confirmText?: string;
   cancelText?: string;
   type?: 'warning' | 'danger' | 'info';
+  caution?: string;
+  isShownBorder?: boolean;
 }
 
 @Component({

@@ -10,13 +10,43 @@ from loguru import logger
 from tables.models.base_models import (
     BaseGlobalNode,
     BaseGraphEntity,
-    ContentHashMixin,
     TimestampMixin,
+    ContentHashMixin,
 )
+from tables.models.label_models import Label
+
+
+class GraphManager(models.Manager):
+    def get_transitive_subflows(self, graph_id):
+        """Return a queryset of all transitively referenced subgraphs using a recursive CTE."""
+        from django.db import connection
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                WITH RECURSIVE subgraph_tree AS (
+                    SELECT sn.subgraph_id
+                    FROM tables_subgraphnode sn
+                    WHERE sn.graph_id = %s
+                    UNION
+                    SELECT sn.subgraph_id
+                    FROM tables_subgraphnode sn
+                    INNER JOIN subgraph_tree st ON sn.graph_id = st.subgraph_id
+                )
+                SELECT subgraph_id FROM subgraph_tree
+                """,
+                [graph_id],
+            )
+            subgraph_ids = [row[0] for row in cursor.fetchall()]
+
+        return self.filter(id__in=subgraph_ids).prefetch_related("tags")
 
 
 class Graph(TimestampMixin, models.Model):
+    objects = GraphManager()
+
     tags = models.ManyToManyField(to="GraphTag", blank=True, default=[])
+    labels = models.ManyToManyField(Label, blank=True, related_name="flows")
 
     name = models.CharField(max_length=255, blank=False, unique=True)
     description = models.TextField(blank=True)

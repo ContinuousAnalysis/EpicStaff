@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ConfigService } from '../../../services/config/config.service';
@@ -31,9 +31,16 @@ export class FlowsApiService {
       .pipe(map((response) => response.results.sort((a, b) => b.id - a.id)));
   }
 
-  getGraphsLight(): Observable<GraphDto[]> {
+  getGraphsLight(params?: { label_id?: number; no_label?: boolean }): Observable<GraphDto[]> {
+    let httpParams = new HttpParams();
+    if (params?.label_id !== undefined) {
+      httpParams = httpParams.set('label_id', params.label_id.toString());
+    }
+    if (params?.no_label) {
+      httpParams = httpParams.set('no_label', 'true');
+    }
     return this.http
-      .get<ApiGetRequest<GraphDto>>(`${this.configService.apiUrl}graph-light/`)
+      .get<ApiGetRequest<GraphDto>>(`${this.configService.apiUrl}graph-light/`, { params: httpParams })
       .pipe(map((response) => response.results.sort((a, b) => b.id - a.id)));
   }
 
@@ -51,6 +58,10 @@ export class FlowsApiService {
     return this.http.put<GraphDto>(`${this.apiUrl}${id}/`, graph, {
       headers: this.httpHeaders,
     });
+  }
+
+  patchGraph(id: number, data: { label_ids?: number[]; name?: string; description?: string }): Observable<GraphDto> {
+    return this.http.patch<GraphDto>(`${this.apiUrl}${id}/`, data, { headers: this.httpHeaders });
   }
 
   deleteGraph(id: number): Observable<void> {

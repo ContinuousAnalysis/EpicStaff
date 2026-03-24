@@ -583,4 +583,9 @@ export class FlowVisualProgrammingComponent
         this.isShortcutsOpen.set(false);
         this.shortcutsPos.set(null);
     }
+
+    public onFlowEdited(updatedFlow: GraphDto): void {
+        this.graph = updatedFlow;
+        this.cdr.markForCheck();
+    }
 }

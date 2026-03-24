@@ -14,17 +14,23 @@
   border-radius: 8px;
   padding: 24px;
   min-width: 320px;
-  max-width: 400px;
+  max-width: 100%;
   color: var(--color-text);
   display: flex;
   flex-direction: column;
   gap: 16px;
+  font-family: "Inter", sans-serif;
 }
 
 .dialog-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+}
+
+.dialog-header.has-border {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 16px;  
 }
 
 .close-button {
@@ -47,14 +53,41 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   max-width: 100%;
+}
 
-  strong {
-    color: var(--color-text);
-    font-weight: 600;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    max-width: 100%;
-  }
+::ng-deep .dialog-message strong {
+  color: var(--color-text);
+  font-weight: 600;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.caution-block {
+  border-left: 3px solid var(--color-error);
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.caution-title {
+  color: var(--color-error);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.caution-message {
+  font-size: 0.875rem;
+  color: var(--color-text-subtle);
+  margin: 0;
+  line-height: 1.5;
+}
+
+::ng-deep .caution-message strong {
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .dialog-actions {
@@ -132,7 +165,7 @@
 .dialog-icon {
   display: flex;
   align-items: center;
-  font-size: 2.2rem;
+  font-size: 1.25rem;
   color: #2196f3;
 }
 

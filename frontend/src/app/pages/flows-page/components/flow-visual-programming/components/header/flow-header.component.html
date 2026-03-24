@@ -10,14 +10,19 @@
                 <span>Flows</span>
             </div>
             <span class="slash">/</span>
-            <div class="graph-name project-link">
-                {{ graphName ?? "Loading..." }}
-                @if (hasUnsavedChanges) {
-                <span class="unsaved-indicator" title="Unsaved changes">
-                    <i class="ti ti-circle"></i>
-                    <span class="unsaved-text">Unsaved changes</span>
-                </span>
-                }
+            <div class="graph-name-row">
+                <div class="graph-name project-link">
+                    {{ graphName ?? "Loading..." }}
+                    @if (hasUnsavedChanges) {
+                    <span class="unsaved-indicator" title="Unsaved changes">
+                        <i class="ti ti-circle"></i>
+                        <span class="unsaved-text">Unsaved changes</span>
+                    </span>
+                    }
+                </div>
+                <button class="edit-name-btn" (click)="openRenameDialog()" title="Edit flow">
+                    <app-icon icon="ui/edit" size="16px"></app-icon>
+                </button>
             </div>
         </h2>
     </div>

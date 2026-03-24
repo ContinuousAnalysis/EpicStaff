@@ -54,6 +54,7 @@ from tables.views.model_view_sets import (
     GraphOrganizationUserViewSet,
     WebhookTriggerNodeViewSet,
     WebhookTriggerViewSet,
+    LabelViewSet,
 )
 
 from tables.views.views import (
@@ -175,6 +176,7 @@ router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldView
 router.register(r"graph-notes", GraphNoteViewSet)
 router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
 
+router.register(r"labels", LabelViewSet)
 
 urlpatterns = [
     path(

@@ -2,6 +2,7 @@
 <app-flow-header
     [graphName]="graph.name"
     [graphId]="graph.id"
+    [graph]="graph"
     [isSaving]="isSaving"
     [isRunning]="isRunning"
     [hasUnsavedChanges]="hasUnsavedChanges()"
@@ -9,6 +10,7 @@
     (viewSessions)="handleViewSessions()"
     (run)="handleRunFlow()"
     (getCurl)="handleGetCurl()"
+    (flowEdited)="onFlowEdited($event)"
 ></app-flow-header>
 
 <div class="body">

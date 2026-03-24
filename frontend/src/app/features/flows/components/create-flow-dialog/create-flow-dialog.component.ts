@@ -12,8 +12,10 @@ import {
   CreateGraphDtoRequest,
 } from '../../../../features/flows/models/graph.model';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
-import { finalize } from 'rxjs/operators';
+import { finalize, switchMap, map } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
+import { LabelDropdownComponent } from '../label-dropdown/label-dropdown.component';
 
 export interface FlowDialogData {
   isEdit: boolean;
@@ -23,7 +25,7 @@ export interface FlowDialogData {
 @Component({
   selector: 'app-create-flow-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, ButtonComponent, LabelDropdownComponent],
   templateUrl: './create-flow-dialog.component.html',
   styleUrls: ['./create-flow-dialog.component.scss'],
 })
@@ -47,6 +49,7 @@ export class CreateFlowDialogComponent implements OnInit {
       name: new FormControl('', [Validators.required]),
       description: new FormControl(''),
       flow_icon: new FormControl(''),
+      label_ids: new FormControl<number[]>([]),
     });
 
     if (data && data.isEdit && data.flow) {
@@ -63,6 +66,7 @@ export class CreateFlowDialogComponent implements OnInit {
         name: this.data.flow.name,
         description: this.data.flow.description || '',
         flow_icon: (this.data.flow.metadata as any)?.flow_icon || '',
+        label_ids: this.data.flow.label_ids || [],
       });
       this.selectedIcon = (this.data.flow.metadata as any)?.flow_icon || null;
     }
@@ -77,6 +81,29 @@ export class CreateFlowDialogComponent implements OnInit {
 
     const formValue = this.flowForm.value;
 
+    if (this.isEditMode && this.originalFlow) {
+      this.flowsStorageService
+        .patchUpdateFlow(this.originalFlow.id, {
+          name: formValue.name,
+          description: formValue.description || '',
+        })
+        .pipe(
+          switchMap((updatedFlow) => {
+            const labelIds: number[] = formValue.label_ids || [];
+            return this.flowsStorageService
+              .updateFlowLabels(updatedFlow.id, labelIds)
+              .pipe(map(() => updatedFlow));
+          }),
+          finalize(() => (this.isSubmitting = false))
+        )
+        .subscribe({
+          next: (updatedFlow) => this.dialogRef.close(updatedFlow),
+          error: () =>
+            (this.errorMessage = 'Failed to update flow. Please try again.'),
+        });
+      return;
+    }
+
     // Default metadata for a new flow
     const newFlowMetadata: any = {
       flow_icon: formValue.flow_icon || undefined,
@@ -85,43 +112,33 @@ export class CreateFlowDialogComponent implements OnInit {
       groups: [],
     };
 
-    if (this.isEditMode && this.originalFlow) {
-      const updateRequest: any = {
-        ...this.originalFlow,
-        name: formValue.name,
-        description: formValue.description || '',
-        // When editing, preserve existing metadata and update only the icon, or merge if needed.
-        // For now, we are just updating/adding flow_icon to existing metadata.
-        metadata: {
-          ...(this.originalFlow.metadata || {}),
-          flow_icon: formValue.flow_icon || undefined,
+    const requestData: CreateGraphDtoRequest = {
+      name: formValue.name,
+      description: formValue.description || undefined,
+      metadata: newFlowMetadata,
+    };
+
+    this.flowsStorageService
+      .createFlow(requestData)
+      .pipe(
+        switchMap((newFlow) => {
+          const labelIds: number[] = formValue.label_ids || [];
+          if (labelIds.length === 0) return of(newFlow);
+          return this.flowsStorageService
+            .updateFlowLabels(newFlow.id, labelIds)
+            .pipe(map(() => newFlow));
+        }),
+        finalize(() => (this.isSubmitting = false))
+      )
+      .subscribe({
+        next: (newFlow: GraphDto) => {
+          this.dialogRef.close(newFlow);
         },
-      };
-      console.warn(
-        'Update functionality not fully implemented in this refactor. Metadata merging for edit needs review.'
-      );
-      // this.flowsStorageService.updateFlow(updateRequest).pipe(...)
-      this.isSubmitting = false;
-      // this.dialogRef.close(updatedFlow);
-    } else {
-      const requestData: CreateGraphDtoRequest = {
-        name: formValue.name,
-        description: formValue.description || undefined,
-        metadata: newFlowMetadata, // Use the structured metadata for new flows
-      };
-      this.flowsStorageService
-        .createFlow(requestData)
-        .pipe(finalize(() => (this.isSubmitting = false)))
-        .subscribe({
-          next: (newFlow: GraphDto) => {
-            this.dialogRef.close(newFlow);
-          },
-          error: (error) => {
-            console.error('Error creating flow:', error);
-            this.errorMessage = 'Failed to create flow. Please try again.';
-          },
-        });
-    }
+        error: (error) => {
+          console.error('Error creating flow:', error);
+          this.errorMessage = 'Failed to create flow. Please try again.';
+        },
+      });
   }
 
   onCancel(): void {
