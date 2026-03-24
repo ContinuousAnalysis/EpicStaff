@@ -53,6 +53,8 @@ class WebhookTriggerNodeImportSerializer(BaseNodeImportSerializer):
         queryset=WebhookTrigger.objects.all(),
         source="webhook_trigger",
         write_only=True,
+        allow_null=True,
+        required=False,
     )
 
     class Meta(BaseNodeImportSerializer.Meta):

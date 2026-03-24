@@ -66,7 +66,8 @@ def import_webhook_trigger_node(
     old_trigger_id = node_data.pop("webhook_trigger", None)
     new_trigger_id = id_mapper.get_or_none(EntityType.WEBHOOK_TRIGGER, old_trigger_id)
 
-    webhook_trigger = WebhookTrigger.objects.get(id=new_trigger_id)
+    webhook_trigger = WebhookTrigger.objects.filter(id=new_trigger_id).first()
+    webhook_trigger_id = getattr(webhook_trigger, "id", None)
 
     python_code_serializer = PythonCodeImportSerializer(data=python_code_data)
     python_code_serializer.is_valid(raise_exception=True)
@@ -77,7 +78,7 @@ def import_webhook_trigger_node(
             **node_data,
             "graph": graph.id,
             "python_code_id": python_code.id,
-            "webhook_trigger_id": webhook_trigger.id,
+            "webhook_trigger_id": webhook_trigger_id,
         }
     )
     serializer.is_valid(raise_exception=True)
