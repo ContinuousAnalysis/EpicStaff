@@ -223,10 +223,14 @@ export function generatePortsForNode(newNodeId: string, nodeType: NodeType, data
         const tableData =
             (
                 data as {
-                    table?: { condition_groups?: unknown[]; default_next_node?: unknown; next_error_node?: unknown };
+                    table?: {
+                        condition_groups?: ConditionGroup[];
+                        default_next_node?: unknown;
+                        next_error_node?: unknown;
+                    };
                 }
             )?.table ?? {};
-        const conditionGroups = tableData?.condition_groups ?? [];
+        const conditionGroups: ConditionGroup[] = tableData?.condition_groups ?? [];
         const hasDefault = Boolean(tableData?.default_next_node);
         const hasError = Boolean(tableData?.next_error_node);
         return generatePortsForDecisionTableNode(newNodeId, conditionGroups, hasDefault, hasError);

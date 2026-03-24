@@ -102,6 +102,6 @@ export interface UpdateGraphDtoRequest {
     name: string;
 
     description: string;
-    metadata: Record<string, unknown>;
+    metadata: FlowModel | Record<string, unknown>;
     tags?: string[];
 }

@@ -307,7 +307,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         );
     }
 
-    private saveGraphForRun(): Observable<boolean> {
+    private saveGraphForRun(): Observable<unknown> {
         // Trigger autosave before getting flow state
         this.flushActiveSidePanelState();
         this.sidePanelService.triggerAutosave();
@@ -393,7 +393,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         this.isRunning = true;
 
         // Check if we have unsaved changes and save first if needed
-        const saveFirst$ = this.hasUnsavedChanges() ? this.saveGraphForRun() : of(null);
+        const saveFirst$: Observable<unknown> = this.hasUnsavedChanges() ? this.saveGraphForRun() : of(null);
 
         saveFirst$
             .pipe(
@@ -405,7 +405,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                 })
             )
             .subscribe({
-                next: (response: { session_id?: string }) => {
+                next: (response: { session_id?: number }) => {
                     this.isNavigatingToRun = true;
                     this.router.navigate(['graph', this.graph.id, 'session', response.session_id]);
                 },

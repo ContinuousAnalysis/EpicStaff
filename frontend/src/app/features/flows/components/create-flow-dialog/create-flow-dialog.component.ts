@@ -58,10 +58,12 @@ export class CreateFlowDialogComponent implements OnInit {
             this.flowForm.patchValue({
                 name: this.data.flow.name,
                 description: this.data.flow.description || '',
-                flow_icon: ((this.data.flow.metadata as Record<string, unknown>)?.['flow_icon'] as string) || '',
+                flow_icon:
+                    ((this.data.flow.metadata as unknown as Record<string, unknown>)?.['flow_icon'] as string) || '',
                 label_ids: this.data.flow.label_ids || [],
             });
-            this.selectedIcon = ((this.data.flow.metadata as Record<string, unknown>)?.['flow_icon'] as string) || null;
+            this.selectedIcon =
+                ((this.data.flow.metadata as unknown as Record<string, unknown>)?.['flow_icon'] as string) || null;
         }
     }
 

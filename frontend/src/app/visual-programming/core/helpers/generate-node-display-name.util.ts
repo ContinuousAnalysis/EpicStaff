@@ -13,7 +13,7 @@ export function generateNodeDisplayName(type: NodeType, data: unknown, currentNo
         return '__end_node__';
     }
     if (type === NodeType.PROJECT) {
-        const projectName = data?.name || 'My Project';
+        const projectName = (data as { name?: string } | null)?.name || 'My Project';
         const count = getNextAvailableNumber(currentNodes, type, projectName);
         return `${projectName} (#${count})`;
     } else {
@@ -143,7 +143,10 @@ export function generateMultipleNodeDisplayNames(
         const data = node.data;
 
         // Get the name prefix for this node type
-        const namePrefix = type === NodeType.PROJECT ? data?.name || 'My Project' : NODE_TYPE_PREFIXES[type] || 'Node';
+        const namePrefix =
+            type === NodeType.PROJECT
+                ? (data as { name?: string } | null)?.name || 'My Project'
+                : NODE_TYPE_PREFIXES[type] || 'Node';
 
         // Get all existing node names of this type (including ones created in this batch)
         const allExistingNames = new Set([...existingNames, ...Array.from(generatedNames)]);

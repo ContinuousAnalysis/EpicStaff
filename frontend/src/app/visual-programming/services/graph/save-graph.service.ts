@@ -119,8 +119,10 @@ export class GraphUpdateService {
         return forkJoin(operations).pipe(
             map((results) => {
                 const createdMappings: CreatedNodeMapping[] = results
-                    .filter((r) => r.type === 'create' && r.uiNodeId && r.result?.id != null)
-                    .map((r) => ({ uiNodeId: r.uiNodeId!, backendId: r.result.id }));
+                    .filter(
+                        (r) => r.type === 'create' && r.uiNodeId && (r.result as { id?: number } | null)?.id != null
+                    )
+                    .map((r) => ({ uiNodeId: r.uiNodeId!, backendId: (r.result as { id: number }).id }));
 
                 const failures = results.filter((r) => r.type.endsWith('-failed'));
                 if (failures.length) {
