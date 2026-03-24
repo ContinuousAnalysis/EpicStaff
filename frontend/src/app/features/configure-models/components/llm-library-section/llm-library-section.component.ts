@@ -9,14 +9,22 @@ import {
     LoadingSpinnerComponent,
     SelectComponent, SelectItem
 } from "@shared/components";
+import { ModelTypes } from "@shared/models";
+import { Observable } from 'rxjs';
 import { ToastService } from "../../../../services/notifications";
 import { LlmLibraryModel } from "../../interfaces/llm-library-model.interface";
 import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
+import { EmbeddingConfigStorageService } from "../../services/llms/embedding-config-storage.service";
 import { LLMLibraryService } from "../../services/llms/llm-library.service";
 import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
+import { RealtimeConfigStorageService } from "../../services/llms/realtime-config-storage.service";
+import { TranscriptionConfigStorageService } from "../../services/llms/transcription-config-storage.service";
 import { LlmLibraryCardComponent } from '../llm-library-card/llm-library-card.component';
 import { AppIconComponent } from '@shared/components';
 import { LlmModelConfigDialogComponent } from "../llm-model-config-dialog/llm-model-config-dialog.component";
+import { EmbeddingModelConfigDialogComponent } from "../embedding-model-config-dialog/embedding-model-config-dialog.component";
+import { VoiceModelConfigDialogComponent } from "../voice-config-model/voice-model-config-dialog.component";
+import { TranscriptionModelConfigDialogComponent } from "../transcription-model-config-dialog/transcription-model-config-dialog.component";
 
 @Component({
     selector: 'app-llm-library-section',
@@ -28,6 +36,9 @@ import { LlmModelConfigDialogComponent } from "../llm-model-config-dialog/llm-mo
 export class LlmLibrarySectionComponent implements OnInit {
     private llmLibraryService = inject(LLMLibraryService);
     private llmConfigStorageService = inject(LlmConfigStorageService);
+    private embeddingConfigStorage = inject(EmbeddingConfigStorageService);
+    private realtimeConfigStorage = inject(RealtimeConfigStorageService);
+    private transcriptionConfigStorage = inject(TranscriptionConfigStorageService);
     private confirmationDialogService = inject(ConfirmationDialogService);
     private destroyRef = inject(DestroyRef);
     private dialog = inject(Dialog);
@@ -38,6 +49,13 @@ export class LlmLibrarySectionComponent implements OnInit {
     public searchQuery = signal('');
     public selectedCapability = signal<string | null>(null);
     public configsLoaded = signal<boolean>(false);
+
+    readonly configTypeSections: { type: ModelTypes; label: string }[] = [
+        { type: ModelTypes.LLM, label: 'LLM' },
+        { type: ModelTypes.EMBEDDING, label: 'Embedding' },
+        { type: ModelTypes.REALTIME, label: 'Voice' },
+        { type: ModelTypes.TRANSCRIPTION, label: 'Transcription' },
+    ];
 
     filteredGroups = computed<LlmLibraryProviderGroup[]>(() => {
         const query = this.searchQuery().toLowerCase();
@@ -62,6 +80,18 @@ export class LlmLibrarySectionComponent implements OnInit {
                 return { ...group, models: filteredModels };
             })
             .filter((group) => group.models.length > 0);
+    });
+
+    groupedByType = computed(() => {
+        const all = this.filteredGroups();
+        return this.configTypeSections
+            .map(section => ({
+                ...section,
+                groups: all
+                    .filter(g => g.configType === section.type)
+                    .sort((a, b) => a.providerName.localeCompare(b.providerName)),
+            }))
+            .filter(section => section.groups.length > 0);
     });
 
     public capabilities = computed<SelectItem[]>(() =>
@@ -90,11 +120,17 @@ export class LlmLibrarySectionComponent implements OnInit {
         })
     }
 
-    public onEdit(configId: number): void {
-        this.dialog.open(LlmModelConfigDialogComponent, {
+    public onEdit(model: LlmLibraryModel): void {
+        const dialogComponents: Record<ModelTypes, any> = {
+            [ModelTypes.LLM]: LlmModelConfigDialogComponent,
+            [ModelTypes.EMBEDDING]: EmbeddingModelConfigDialogComponent,
+            [ModelTypes.REALTIME]: VoiceModelConfigDialogComponent,
+            [ModelTypes.TRANSCRIPTION]: TranscriptionModelConfigDialogComponent,
+        };
+        this.dialog.open(dialogComponents[model.configType], {
             height: '90vh',
             width: '600px',
-            data: { configId },
+            data: { configId: model.id },
         });
     }
 
@@ -108,13 +144,18 @@ export class LlmLibrarySectionComponent implements OnInit {
         this.confirmationDialogService.confirm(opts)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((result) => {
-                if (result === true) {
-                    this.llmConfigStorageService.deleteConfig(model.id)
-                        .subscribe({
-                            next: () => this.toast.success('Configuration deleted.'),
-                        });
-                }
-            })
+                if (result !== true) return;
+
+                const delete$: Record<ModelTypes, () => Observable<void>> = {
+                    [ModelTypes.LLM]: () => this.llmConfigStorageService.deleteConfig(model.id),
+                    [ModelTypes.EMBEDDING]: () => this.embeddingConfigStorage.deleteConfig(model.id),
+                    [ModelTypes.REALTIME]: () => this.realtimeConfigStorage.deleteConfig(model.id),
+                    [ModelTypes.TRANSCRIPTION]: () => this.transcriptionConfigStorage.deleteConfig(model.id),
+                };
+
+                delete$[model.configType]().subscribe({
+                    next: () => this.toast.success('Configuration deleted.'),
+                });
+            });
     }
 }
-

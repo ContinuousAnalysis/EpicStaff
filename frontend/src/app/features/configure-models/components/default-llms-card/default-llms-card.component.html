@@ -1,6 +1,6 @@
 <article
     class="default-llms-card"
-    [class.default-llms-card--active]="selectedConfig()"
+    [class.default-llms-card--active]="selectedConfigId()"
 >
     <div class="default-llms-card__top">
         <div class="default-llms-card__header">
@@ -9,7 +9,7 @@
                 size="2rem"
                 class="default-llms-card__icon"
             />
-            @if (selectedConfig()) {
+            @if (selectedConfigId()) {
                 <app-icon
                     class="default-llms-card__close-icon"
                     size="1.25rem"
@@ -23,16 +23,12 @@
         <div class="default-llms-card__title">{{ card().title }}</div>
     </div>
     <div class="default-llms-card__controls">
-        <button
-            type="button"
-            class="default-llms-card__select"
-            (click)="toggleDropdown()"
-        >
-            <span class="default-llms-card__select-label">
-                {{ selectedConfig()?.custom_name || card().selectLabel }}
-            </span>
-            <i class="ti ti-chevron-down" aria-hidden="true"></i>
-        </button>
+        <app-select
+            [placeholder]="card().selectLabel"
+            [items]="selectItems()"
+            [selectedValue]="selectedConfigId()"
+            (changed)="selectConfig($event)"
+        />
         <button
             class="default-llms-card__add"
             type="button"
@@ -42,22 +38,6 @@
             <i class="ti ti-plus" aria-hidden="true"></i>
         </button>
     </div>
-    @if (isDropdownOpen()) {
-        <div class="default-llms-card__dropdown">
-            @for (config of configs(); track config.id) {
-                <button
-                    type="button"
-                    class="default-llms-card__dropdown-item"
-                    (click)="selectConfig(config)"
-                >
-                    {{ config.custom_name }}
-                </button>
-            }
-            @if (configs().length === 0) {
-                <div class="default-llms-card__dropdown-item">No configs</div>
-            }
-        </div>
-    }
     <div class="default-llms-card__divider" aria-hidden="true"></div>
     <p class="default-llms-card__description">{{ card().description }}</p>
 </article>

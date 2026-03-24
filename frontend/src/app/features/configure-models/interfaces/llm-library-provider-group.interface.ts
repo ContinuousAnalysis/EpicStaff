@@ -1,3 +1,4 @@
+import { ModelTypes } from "@shared/models";
 import { LlmLibraryModel } from './llm-library-model.interface';
 
 export interface LlmLibraryProviderGroup {
@@ -5,5 +6,6 @@ export interface LlmLibraryProviderGroup {
   providerName: string;
   providerIconPath: string;
   models: LlmLibraryModel[];
+  configType: ModelTypes;
 }
 

@@ -60,42 +60,9 @@
         background: rgba(255, 255, 255, 0.08);
     }
 
-    &__select {
-        flex: 1;
-        height: 32px;
-        border-radius: 6px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 12px;
-        font-size: 12px;
-        color: var(--color-text-secondary, #9aa0a6);
-        background: transparent;
-        cursor: pointer;
-        text-align: left;
-        transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
-
-        &:hover {
-            border-color: rgba(255, 255, 255, 0.35);
-            color: var(--configure-models-dialog-active-color, #d9d9de);
-        }
-
-        &:active {
-            background: rgba(255, 255, 255, 0.04);
-        }
-    }
-
-    &__select-label {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-weight: 500;
-    }
-
     &__add {
-        width: 32px;
-        height: 32px;
+        height: 40px;
+        aspect-ratio: 1;
         border-radius: 6px;
         border: none;
         background: var(--configure-models-dialog-inactive-color, #685fff);
@@ -127,35 +94,6 @@
         font-weight: 400;
         line-height: 1;
         color: rgba(217, 217, 222, 0.6);
-    }
-
-    &__dropdown {
-        position: absolute;
-        left: 16px;
-        right: 16px;
-        top: 132px;
-        background: #1f1f22;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 8px;
-        z-index: 2;
-        max-height: 180px;
-        overflow: auto;
-    }
-
-    &__dropdown-item {
-        width: 100%;
-        padding: 6px 12px;
-        font-size: 12px;
-        color: var(--color-text-secondary, #9aa0a6);
-        background: transparent;
-        border: none;
-        text-align: left;
-        cursor: pointer;
-
-        &:hover {
-            color: var(--configure-models-dialog-active-color, #d9d9de);
-            background: rgba(255, 255, 255, 0.04);
-        }
     }
 }
 

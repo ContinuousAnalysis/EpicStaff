@@ -1,24 +1,28 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { CreateLLMConfigRequest, GetLlmConfigRequest, UpdateLLMConfigRequest } from "@shared/models";
-import { LLMConfigService } from "@shared/services";
 import { catchError, finalize, Observable, of, tap, throwError } from 'rxjs';
 import { shareReplay } from "rxjs/operators";
+import {
+    CreateTranscriptionConfigRequest,
+    GetTranscriptionConfigRequest,
+    UpdateTranscriptionConfigRequest,
+} from "../../../transcription/models/transcription-config.model";
+import { TranscriptionConfigsService } from "../../../transcription/services/transcription-config.service";
 
 @Injectable({
     providedIn: 'root',
 })
-export class LlmConfigStorageService {
-    private readonly llmConfigService = inject(LLMConfigService);
+export class TranscriptionConfigStorageService {
+    private readonly transcriptionConfigsService = inject(TranscriptionConfigsService);
 
-    private configsRequest$?: Observable<GetLlmConfigRequest[]>;
+    private configsRequest$?: Observable<GetTranscriptionConfigRequest[]>;
 
-    private configsSignal = signal<GetLlmConfigRequest[]>([]);
+    private configsSignal = signal<GetTranscriptionConfigRequest[]>([]);
     private configsLoaded = signal<boolean>(false);
 
     public readonly configs = this.configsSignal.asReadonly();
     public readonly isConfigsLoaded = this.configsLoaded.asReadonly();
 
-    getAllConfigs(forceRefresh = false): Observable<GetLlmConfigRequest[]> {
+    getAllConfigs(forceRefresh = false): Observable<GetTranscriptionConfigRequest[]> {
         if (this.configsLoaded() && !forceRefresh) {
             return of(this.configsSignal());
         }
@@ -27,7 +31,7 @@ export class LlmConfigStorageService {
             return this.configsRequest$;
         }
 
-        this.configsRequest$ = this.llmConfigService.getAllConfigsLLM().pipe(
+        this.configsRequest$ = this.transcriptionConfigsService.getTranscriptionConfigs().pipe(
             tap((configs) => {
                 this.configsSignal.set(configs);
                 this.configsLoaded.set(true);
@@ -41,19 +45,19 @@ export class LlmConfigStorageService {
         return this.configsRequest$;
     }
 
-    getConfigById(id: number): Observable<GetLlmConfigRequest> {
+    getConfigById(id: number): Observable<GetTranscriptionConfigRequest> {
         const cached = this.configsSignal().find((c) => c.id === id);
         if (cached) {
             return of(cached);
         }
-        return this.llmConfigService.getConfigById(id).pipe(
+        return this.transcriptionConfigsService.getTranscriptionConfigById(id).pipe(
             tap((config) => this.mergeConfigsIntoCache([config])),
             catchError((err) => throwError(() => err))
         );
     }
 
-    createConfig(data: CreateLLMConfigRequest): Observable<GetLlmConfigRequest> {
-        return this.llmConfigService.createConfig(data).pipe(
+    createConfig(data: CreateTranscriptionConfigRequest): Observable<GetTranscriptionConfigRequest> {
+        return this.transcriptionConfigsService.createTranscriptionConfig(data).pipe(
             tap((config) => {
                 this.configsSignal.update((configs) => [config, ...configs]);
             }),
@@ -61,15 +65,15 @@ export class LlmConfigStorageService {
         );
     }
 
-    updateConfig(data: UpdateLLMConfigRequest): Observable<GetLlmConfigRequest> {
-        return this.llmConfigService.updateConfig(data).pipe(
+    updateConfig(data: UpdateTranscriptionConfigRequest): Observable<GetTranscriptionConfigRequest> {
+        return this.transcriptionConfigsService.updateTranscriptionConfig(data).pipe(
             tap((updated) => this.updateConfigInCache(updated)),
             catchError((err) => throwError(() => err))
         );
     }
 
     deleteConfig(id: number): Observable<void> {
-        return this.llmConfigService.deleteConfig(id).pipe(
+        return this.transcriptionConfigsService.deleteTranscriptionConfig(id).pipe(
             tap(() => {
                 this.configsSignal.update((configs) => configs.filter((c) => c.id !== id));
             }),
@@ -81,7 +85,7 @@ export class LlmConfigStorageService {
         this.configsLoaded.set(false);
     }
 
-    private mergeConfigsIntoCache(incoming: GetLlmConfigRequest[]): void {
+    private mergeConfigsIntoCache(incoming: GetTranscriptionConfigRequest[]): void {
         this.configsSignal.update((current) => {
             const map = new Map(current.map((c) => [c.id, c]));
             for (const config of incoming) {
@@ -91,7 +95,7 @@ export class LlmConfigStorageService {
         });
     }
 
-    private updateConfigInCache(updated: GetLlmConfigRequest): void {
+    private updateConfigInCache(updated: GetTranscriptionConfigRequest): void {
         this.configsSignal.update((configs) => {
             const index = configs.findIndex((c) => c.id === updated.id);
             if (index >= 0) {

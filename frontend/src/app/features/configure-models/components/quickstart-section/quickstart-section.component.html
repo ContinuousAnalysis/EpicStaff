@@ -58,7 +58,7 @@
                     <app-button
                         type="primary"
                         (click)="onQuickStart()"
-                        [disabled]="!quickStartForm.get('apiKey')?.value || isSaving()"
+                        [disabled]="quickStartForm.invalid || isSaving()"
                     >
                         Activate
                     </app-button>

@@ -1,3 +1,4 @@
+import { ModelTypes } from "@shared/models";
 import { DefaultLlmsSection } from '../interfaces/default-llms-section.interface';
 
 export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
@@ -13,6 +14,7 @@ export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
                     'Assigns the default LLM agent and ensures its operation; if necessary, the model can be customized for each agent individually.',
                 selectLabel: 'Select LLM from Library',
                 icon: 'llm-agents/agent',
+                configType: ModelTypes.LLM,
             },
             {
                 id: 'agent-fcm-llm',
@@ -22,6 +24,7 @@ export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
                     'The Function Calling LLM handles precise tasks like tool usage and code execution, assigning a recommended model by default.',
                 selectLabel: 'Select LLM from Library',
                 icon: 'llm-agents/func-calling',
+                configType: ModelTypes.LLM,
             },
             {
                 id: 'voice-llm',
@@ -31,6 +34,7 @@ export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
                     'Voice LLM enables real-time spoken interaction by generating immediate voice responses.',
                 selectLabel: 'Select LLM from Library',
                 icon: 'llm-agents/voice',
+                configType: ModelTypes.REALTIME,
             },
             {
                 id: 'transcription-llm',
@@ -40,6 +44,7 @@ export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
                     'Transcription LLM converts spoken language into accurate written text for further processing.',
                 selectLabel: 'Select LLM from Library',
                 icon: 'llm-agents/transcription',
+                configType: ModelTypes.TRANSCRIPTION,
             },
         ],
     },
@@ -55,6 +60,7 @@ export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
                     'The Crew Manager LLM coordinates and manages the team workflow within a hierarchical structure.',
                 selectLabel: 'Select LLM from Library',
                 icon: 'llm-agents/project-manager',
+                configType: ModelTypes.LLM,
             },
             // {
             //     id: 'planning-llm',
@@ -72,6 +78,7 @@ export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
                     "The Crew Embedding LLM manages your team's memory by handling short-term, long-term, and entity memory.",
                 selectLabel: 'Select LLM from Library',
                 icon: 'llm-agents/memory-embedding',
+                configType: ModelTypes.EMBEDDING,
             },
             {
                 id: 'memory-llm',
@@ -81,6 +88,7 @@ export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
                     'Memory LLM manages how your agents store and retrieve information, providing reliable context handling.',
                 selectLabel: 'Select LLM from Library',
                 icon: 'llm-agents/memory',
+                configType: ModelTypes.LLM,
             },
         ],
     },

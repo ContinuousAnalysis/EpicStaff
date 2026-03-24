@@ -1,7 +1,7 @@
 .default-llms {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 1rem;
     color: var(--color-text-primary);
 
     &__header {
@@ -36,7 +36,7 @@
     &__grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 20px;
+        gap: 1rem;
     }
 }
 

@@ -28,7 +28,7 @@ export class DefaultLlmsSectionComponent implements OnInit {
 
     ngOnInit(): void {
         forkJoin([
-            this.llmConfigStorageService.getAllConfigs(true),
+            this.llmConfigStorageService.getAllConfigs(),
             this.defaultModelsStorageService.loadDefaultModels(),
         ])
             .pipe(takeUntilDestroyed(this.destroyRef))

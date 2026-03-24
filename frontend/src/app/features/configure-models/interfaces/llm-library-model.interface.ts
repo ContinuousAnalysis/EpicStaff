@@ -1,4 +1,4 @@
-import { Tag } from "@shared/models";
+import { ModelTypes, Tag } from "@shared/models";
 
 export interface LlmLibraryModel {
   id: number;
@@ -7,5 +7,6 @@ export interface LlmLibraryModel {
   tags: Tag[];
   temperature: number;
   usedByCount: number | null; // null = "Ready to be used"
+  configType: ModelTypes;
 }
 

@@ -12,11 +12,11 @@ import { LlmLibraryModel } from '../../interfaces/llm-library-model.interface';
 export class LlmLibraryCardComponent {
     public readonly model = input.required<LlmLibraryModel>();
 
-    public readonly editClick = output<number>();
+    public readonly editClick = output<LlmLibraryModel>();
     public readonly deleteClick = output<LlmLibraryModel>();
 
     public onEdit(): void {
-        this.editClick.emit(this.model().id);
+        this.editClick.emit(this.model());
     }
 
     public onDelete(): void {

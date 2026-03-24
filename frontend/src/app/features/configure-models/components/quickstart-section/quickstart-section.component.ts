@@ -23,7 +23,11 @@ import { ConfigureModelsTabId } from "../../enums/configure-models-tab-id.enum";
 
 import { CreateQuickstartRequest } from "../../models/quickstart.model";
 import { DefaultModelsStorageService } from "../../services/default-models-storage.service";
+import { EmbeddingConfigStorageService } from "../../services/llms/embedding-config-storage.service";
+import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
 import { LlmProvidersStorageService } from "../../services/llms/llm-providers-storage.service";
+import { RealtimeConfigStorageService } from "../../services/llms/realtime-config-storage.service";
+import { TranscriptionConfigStorageService } from "../../services/llms/transcription-config-storage.service";
 import { QuickstartService } from "../../services/quickstart.service";
 import { getProviderIconPath } from "@shared/utils";
 
@@ -44,6 +48,10 @@ import { getProviderIconPath } from "@shared/utils";
 export class QuickstartSectionComponent implements OnInit {
     private readonly fb = inject(FormBuilder);
     private readonly providersStorageService = inject(LlmProvidersStorageService);
+    private readonly llmConfigStorageService = inject(LlmConfigStorageService);
+    private readonly embeddingConfigStorageService = inject(EmbeddingConfigStorageService);
+    private readonly realtimeConfigStorageService = inject(RealtimeConfigStorageService);
+    private readonly transcriptionConfigStorageService = inject(TranscriptionConfigStorageService);
     private readonly quickstartService =  inject(QuickstartService);
     private readonly defaultModelsStorageService = inject(DefaultModelsStorageService);
     private readonly destroyRef = inject(DestroyRef);
@@ -167,7 +175,14 @@ export class QuickstartSectionComponent implements OnInit {
                 this.toast.error('Failed to create/apply quickstart.');
                 return EMPTY;
             }),
-            finalize(() => this.isSaving.set(false)),
+            finalize(() => {
+                this.defaultModelsStorageService.markDefaultModelsOutdated();
+                this.llmConfigStorageService.markConfigsOutdated();
+                this.embeddingConfigStorageService.markConfigsOutdated();
+                this.realtimeConfigStorageService.markConfigsOutdated();
+                this.transcriptionConfigStorageService.markConfigsOutdated();
+                this.isSaving.set(false);
+            }),
             takeUntilDestroyed(this.destroyRef)
         ).subscribe();
     }

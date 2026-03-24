@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 import { DefaultModelsService } from './default-models.service';
 import { GetDefaultModelsResponse, UpdateDefaultModelsRequest } from '../models/default-models.model';
 
@@ -7,10 +7,17 @@ import { GetDefaultModelsResponse, UpdateDefaultModelsRequest } from '../models/
 export class DefaultModelsStorageService {
     private readonly defaultModelsApiService = inject(DefaultModelsService);
 
-    private readonly defaultModelsSignal = signal<GetDefaultModelsResponse | null>(null);
-    public readonly defaultModels = this.defaultModelsSignal.asReadonly();
+    private defaultModelsSignal = signal<GetDefaultModelsResponse | null>(null);
+    private modelsLoaded = signal<boolean>(false);
 
-    loadDefaultModels(): Observable<GetDefaultModelsResponse> {
+    public readonly defaultModels = this.defaultModelsSignal.asReadonly();
+    public readonly isDefaultModelsLoaded = this.modelsLoaded.asReadonly();
+
+    loadDefaultModels(forceRefresh = false): Observable<GetDefaultModelsResponse | null> {
+        if (this.isDefaultModelsLoaded() && !forceRefresh) {
+            return of(this.defaultModelsSignal());
+        }
+
         return this.defaultModelsApiService.getDefaultModels().pipe(
             tap(models => this.updateModelsInStorage(models))
         );
@@ -24,5 +31,10 @@ export class DefaultModelsStorageService {
 
     updateModelsInStorage(updated: GetDefaultModelsResponse): void {
         this.defaultModelsSignal.set(updated);
+        this.modelsLoaded.set(true);
+    }
+
+    markDefaultModelsOutdated(): void {
+        this.modelsLoaded.set(false);
     }
 }
