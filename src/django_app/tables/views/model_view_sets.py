@@ -802,6 +802,7 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class IdempotentNodeCreateMixin:
+    # TODO: change fields from (graph, node_name) to id (all nodes id's are consistent)
     """
     COMMIT_COMMENTS: Makes node POST idempotent — if a node with the same
     (graph, node_name) already exists, update it instead of failing with a
