@@ -115,10 +115,17 @@
         }
     }
 
+    &__section-title {
+        margin-bottom: 1rem;
+        font-weight: 500;
+        color: rgba(217, 217, 222, 0.5);
+    }
+
     &__provider-group {
         display: flex;
         flex-direction: column;
         gap: 14px;
+        margin-bottom: 1rem;
     }
 
     &__provider-header {

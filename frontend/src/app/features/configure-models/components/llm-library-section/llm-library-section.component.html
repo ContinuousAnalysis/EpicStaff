@@ -39,26 +39,32 @@
             </div>
         </header>
 
-        @for (group of filteredGroups(); track group.id) {
-            <div class="llm-library__provider-group">
-                <div class="llm-library__provider-header">
-                    <app-icon
-                        [icon]="group.providerIconPath"
-                        [size]="'22px'"
-                        [ariaLabel]="group.providerName"
-                    ></app-icon>
-                    <span class="llm-library__provider-name">{{ group.providerName }}</span>
-                </div>
+        @for (section of groupedByType(); track section.type) {
+            <div class="llm-library__section">
+                <h4 class="llm-library__section-title">{{ section.label }} Configs:</h4>
 
-                <div class="llm-library__grid">
-                    @for (model of group.models; track model.id) {
-                        <app-llm-library-card
-                            [model]="model"
-                            (editClick)="onEdit($event)"
-                            (deleteClick)="onDelete($event)"
-                        ></app-llm-library-card>
-                    }
-                </div>
+                @for (group of section.groups; track group.id) {
+                    <div class="llm-library__provider-group">
+                        <div class="llm-library__provider-header">
+                            <app-icon
+                                [icon]="group.providerIconPath"
+                                [size]="'22px'"
+                                [ariaLabel]="group.providerName"
+                            ></app-icon>
+                            <span class="llm-library__provider-name">{{ group.providerName }}</span>
+                        </div>
+
+                        <div class="llm-library__grid">
+                            @for (model of group.models; track model.configType + '-' + model.id) {
+                                <app-llm-library-card
+                                    [model]="model"
+                                    (editClick)="onEdit($event)"
+                                    (deleteClick)="onDelete($event)"
+                                ></app-llm-library-card>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
         }
     } @else {

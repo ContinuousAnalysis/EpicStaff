@@ -12,14 +12,14 @@ import {
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { AppIconComponent, SelectComponent, SelectItem } from '@shared/components';
-import { EmbeddingConfigsService, RealtimeModelConfigsService } from "@shared/services";
 import { Observable, switchMap } from "rxjs";
 import { map } from "rxjs/operators";
-import { GetTranscriptionConfigRequest } from "../../../transcription/models/transcription-config.model";
-import { TranscriptionConfigsService } from "../../../transcription/services/transcription-config.service";
 import { DefaultLlmsCard } from '../../interfaces/default-llms-card.interface';
 import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
-import { EmbeddingConfig, GetLlmConfigRequest, ModelTypes, RealtimeModelConfig } from '@shared/models';
+import { EmbeddingConfigStorageService } from '../../services/llms/embedding-config-storage.service';
+import { RealtimeConfigStorageService } from '../../services/llms/realtime-config-storage.service';
+import { TranscriptionConfigStorageService } from '../../services/llms/transcription-config-storage.service';
+import { ModelTypes } from '@shared/models';
 import {
     EmbeddingModelConfigDialogComponent
 } from "../embedding-model-config-dialog/embedding-model-config-dialog.component";
@@ -28,6 +28,12 @@ import {
     TranscriptionModelConfigDialogComponent
 } from "../transcription-model-config-dialog/transcription-model-config-dialog.component";
 import { VoiceModelConfigDialogComponent } from "../voice-config-model/voice-model-config-dialog.component";
+
+type DialogComponentType =
+    EmbeddingModelConfigDialogComponent |
+    LlmModelConfigDialogComponent |
+    VoiceModelConfigDialogComponent |
+    TranscriptionModelConfigDialogComponent;
 
 @Component({
     selector: 'app-default-llms-card',
@@ -39,9 +45,9 @@ import { VoiceModelConfigDialogComponent } from "../voice-config-model/voice-mod
 export class DefaultLlmsCardComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
     private readonly llmConfigStorageService = inject(LlmConfigStorageService);
-    private readonly realtimeConfigService = inject(RealtimeModelConfigsService);
-    private readonly transcriptionConfigsService = inject(TranscriptionConfigsService);
-    private readonly embeddingConfigsService = inject(EmbeddingConfigsService);
+    private readonly embeddingConfigStorage = inject(EmbeddingConfigStorageService);
+    private readonly realtimeConfigStorage = inject(RealtimeConfigStorageService);
+    private readonly transcriptionConfigStorage = inject(TranscriptionConfigStorageService);
 
     private dialog = inject(Dialog);
 
@@ -50,6 +56,20 @@ export class DefaultLlmsCardComponent implements OnInit {
     public readonly modelSelected = output<{ cardId: string; configId: number | null }>();
 
     selectItems = signal<SelectItem[]>([]);
+
+    private readonly configFetchers: Record<ModelTypes, () => Observable<{ id: number; custom_name: string }[]>> = {
+        [ModelTypes.LLM]:           () => this.llmConfigStorageService.getAllConfigs(),
+        [ModelTypes.EMBEDDING]:     () => this.embeddingConfigStorage.getAllConfigs(),
+        [ModelTypes.REALTIME]:      () => this.realtimeConfigStorage.getAllConfigs(),
+        [ModelTypes.TRANSCRIPTION]: () => this.transcriptionConfigStorage.getAllConfigs(),
+    };
+
+    private readonly dialogComponents: Record<ModelTypes, ComponentType<DialogComponentType>> = {
+        [ModelTypes.LLM]:           LlmModelConfigDialogComponent,
+        [ModelTypes.EMBEDDING]:     EmbeddingModelConfigDialogComponent,
+        [ModelTypes.REALTIME]:      VoiceModelConfigDialogComponent,
+        [ModelTypes.TRANSCRIPTION]: TranscriptionModelConfigDialogComponent,
+    };
 
     ngOnInit() {
         this.getConfigs$()
@@ -88,38 +108,11 @@ export class DefaultLlmsCardComponent implements OnInit {
             .subscribe();
     }
 
-    private getConfigs$(): Observable<EmbeddingConfig[] | GetTranscriptionConfigRequest[] | RealtimeModelConfig[] | GetLlmConfigRequest[]> {
-        switch (this.card().configType) {
-            case ModelTypes.EMBEDDING:
-                return this.embeddingConfigsService.getEmbeddingConfigs();
-            case ModelTypes.REALTIME:
-                return this.transcriptionConfigsService.getTranscriptionConfigs();
-            case ModelTypes.TRANSCRIPTION:
-                return this.realtimeConfigService.getAllConfigs();
-            case ModelTypes.LLM:
-                return this.llmConfigStorageService.getAllConfigs();
-            default:
-                return this.llmConfigStorageService.getAllConfigs();
-        }
+    private getConfigs$(): Observable<{ id: number; custom_name: string }[]> {
+        return this.configFetchers[this.card().configType]();
     }
 
-    private getDialogComponent(): ComponentType<
-        EmbeddingModelConfigDialogComponent |
-        LlmModelConfigDialogComponent |
-        VoiceModelConfigDialogComponent |
-        TranscriptionModelConfigDialogComponent
-    > {
-        switch (this.card().configType) {
-            case ModelTypes.EMBEDDING:
-                return EmbeddingModelConfigDialogComponent;
-            case ModelTypes.REALTIME:
-                return VoiceModelConfigDialogComponent;
-            case ModelTypes.TRANSCRIPTION:
-                return TranscriptionModelConfigDialogComponent;
-            case ModelTypes.LLM:
-                return LlmModelConfigDialogComponent;
-            default:
-                return LlmModelConfigDialogComponent;
-        }
+    private getDialogComponent(): ComponentType<DialogComponentType> {
+        return this.dialogComponents[this.card().configType];
     }
 }

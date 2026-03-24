@@ -89,8 +89,8 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         },
     });
 
-    sortedProvidersWithModels = computed<ProviderWithModels[]>(() => {
-        const providers = this.modelsResource.value() ?? [];
+    sortedProvidersWithModels = computed<ProviderWithModels<LLMModel>[]>(() => {
+        const providers = (this.modelsResource.value() ?? []) as ProviderWithModels<LLMModel>[];
 
         return [...providers].sort((a, b) => {
             const aIndex = TOP_PROVIDERS.indexOf(a.provider.name.toLowerCase());
@@ -104,7 +104,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         });
     });
 
-    selectedModelInfo = computed<{ model: LLMModel; provider: ProviderWithModels['provider'] } | null>(() => {
+    selectedModelInfo = computed<{ model: LLMModel; provider: ProviderWithModels<LLMModel>['provider'] } | null>(() => {
         const id = this.selectedValue();
         if (id === null || id === undefined) return null;
         for (const group of this.sortedProvidersWithModels()) {
@@ -137,7 +137,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
 
                 return null;
             })
-            .filter((p): p is ProviderWithModels => p !== null);
+            .filter((p): p is ProviderWithModels<LLMModel> => p !== null);
     });
 
     @ViewChild('triggerBtn') triggerBtn!: ElementRef<HTMLButtonElement>;
@@ -202,18 +202,18 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         return this.selectedValue() === modelId;
     }
 
-    getVisibleModels(group: ProviderWithModels): LLMModel[] {
+    getVisibleModels(group: ProviderWithModels<LLMModel>): LLMModel[] {
         if (this.searchQuery().trim() || this.expandedProviders().has(group.provider.id)) {
             return group.visibleModels;
         }
         return group.visibleModels.slice(0, this.COLLAPSED_COUNT);
     }
 
-    isCollapsible(group: ProviderWithModels): boolean {
+    isCollapsible(group: ProviderWithModels<LLMModel>): boolean {
         return group.visibleModels.length > this.COLLAPSE_THRESHOLD && !this.searchQuery().trim();
     }
 
-    hiddenCount(group: ProviderWithModels): number {
+    hiddenCount(group: ProviderWithModels<LLMModel>): number {
         return group.visibleModels.length - this.COLLAPSED_COUNT;
     }
 
