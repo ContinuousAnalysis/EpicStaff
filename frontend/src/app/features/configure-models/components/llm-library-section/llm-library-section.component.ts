@@ -14,6 +14,7 @@ import { Observable } from 'rxjs';
 import { ToastService } from "../../../../services/notifications";
 import { LlmLibraryModel } from "../../interfaces/llm-library-model.interface";
 import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
+import { DefaultModelsStorageService } from "../../services/default-models-storage.service";
 import { EmbeddingConfigStorageService } from "../../services/llms/embedding-config-storage.service";
 import { LLMLibraryService } from "../../services/llms/llm-library.service";
 import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
@@ -40,6 +41,7 @@ export class LlmLibrarySectionComponent implements OnInit {
     private realtimeConfigStorage = inject(RealtimeConfigStorageService);
     private transcriptionConfigStorage = inject(TranscriptionConfigStorageService);
     private confirmationDialogService = inject(ConfirmationDialogService);
+    private defaultModelsStorageService = inject(DefaultModelsStorageService);
     private destroyRef = inject(DestroyRef);
     private dialog = inject(Dialog);
     private toast = inject(ToastService);
@@ -154,7 +156,10 @@ export class LlmLibrarySectionComponent implements OnInit {
                 };
 
                 delete$[model.configType]().subscribe({
-                    next: () => this.toast.success('Configuration deleted.'),
+                    next: () => {
+                        this.toast.success('Configuration deleted.');
+                        this.defaultModelsStorageService.markDefaultModelsOutdated();
+                    },
                 });
             });
     }
