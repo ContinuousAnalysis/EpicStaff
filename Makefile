@@ -14,7 +14,7 @@ endif
         backup apply-backup stash-tags apply-tags switch \
         dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
         dev-voice dev-ngrok \
-        prod-setup prod start-prod prod-down prod-logs \
+        prod-setup prod-init prod start-prod prod-down prod-logs \
         clean docker-generate-certs
 
 # --- Help ---
@@ -95,11 +95,20 @@ prod-setup:
 	@echo "--- Setting up production environment ---"
 	@python3 make_scripts/setup_prod.py
 
+prod-init:
+	@echo "--- Creating external volumes and networks ---"
+	@docker volume create sandbox_venvs      || true
+	@docker volume create sandbox_executions || true
+	@docker volume create crew_pgdata        || true
+	@docker volume create media_data         || true
+	@docker network create mcp-network       || true
+	@echo "--- Done ---"
+
 PROD_ENV_ARG = $(shell test -f prod/prod.env && echo "--env-file ../prod/prod.env")
 
 prod: start-prod
 
-start-prod:
+start-prod: prod-init
 	@echo "--- Starting production services ---"
 	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) up --build -d
 
