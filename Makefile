@@ -14,7 +14,7 @@ endif
         backup apply-backup stash-tags apply-tags switch \
         dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
         dev-voice dev-ngrok \
-        setup-prod prod start-prod prod-down prod-logs \
+        prod-setup prod start-prod prod-down prod-logs \
         clean docker-generate-certs
 
 # --- Help ---
@@ -91,9 +91,9 @@ dev-ngrok:
 # PRODUCTION Environment
 # ==========================================
 
-setup-prod:
+prod-setup:
 	@echo "--- Setting up production environment ---"
-	@python3 make_scripts/setup_prod.py
+	@python make_scripts/setup_prod.py
 
 PROD_ENV_ARG = $(shell test -f prod/prod.env && echo "--env-file ../prod/prod.env")
 
