@@ -1,3 +1,4 @@
+import { ModelTypes } from "@shared/models";
 import { GetDefaultModelsResponse } from "../models/default-models.model";
 
 export interface DefaultLlmsCard {
@@ -7,6 +8,6 @@ export interface DefaultLlmsCard {
     description: string;
     selectLabel: string;
     icon: string;
+    configType: ModelTypes;
+    some?: any
 }
-
-

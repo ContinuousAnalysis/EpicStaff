@@ -49,7 +49,7 @@
         </div>
 
         <div class="model-selector__content">
-            @if (isLoading()) {
+            @if (modelsResource.isLoading()) {
                 <div class="model-selector__loading">
                     <div class="model-selector__spinner"></div>
                     <p>Loading providers and models...</p>

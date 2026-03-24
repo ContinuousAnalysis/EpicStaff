@@ -4,7 +4,6 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
-    DestroyRef,
     ElementRef,
     forwardRef,
     inject,
@@ -18,10 +17,9 @@ import {
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Overlay, OverlayModule, OverlayPositionBuilder, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { AppIconComponent, ButtonComponent, TooltipComponent } from "@shared/components";
-import { LLMModel, LLMProvider } from "@shared/models";
-import { finalize } from "rxjs/operators";
+import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
 import { LLMLibraryService, ProviderWithModels } from "../../services/llms/llm-library.service";
 import { getProviderIconPath } from "@shared/utils";
 
@@ -56,7 +54,6 @@ const TOP_PROVIDERS = [
 })
 export class LlmModelSelectorComponent implements ControlValueAccessor {
     private llmLibraryService = inject(LLMLibraryService);
-    private destroyRef = inject(DestroyRef);
     private dialog = inject(Dialog);
     private overlayRef!: OverlayRef;
     private overlay = inject(Overlay);
@@ -68,8 +65,8 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     label = input<string>('');
     required = input<boolean>(false);
     tooltipText = input<string>('');
+    provider = input.required<ModelTypes>();
 
-    isLoading = signal(true);
     searchQuery = signal('');
     selectedValue = model<number | null>(null);
     modelChanged = output<{ model: LLMModel, provider: LLMProvider }>();
@@ -82,21 +79,35 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     isDisabled = signal(false);
     expandedProviders = signal<Set<number>>(new Set());
 
-    providersWithModels = computed<ProviderWithModels[]>(() =>
-        [...this.llmLibraryService.providerModels()].sort((a, b) => {
+    modelsResource = rxResource({
+        request: () => ({
+            provider: this.provider(),
+        }),
+
+        loader: ({ request }) => {
+            return this.llmLibraryService.loadModels(request.provider);
+        },
+    });
+
+    sortedProvidersWithModels = computed<ProviderWithModels[]>(() => {
+        const providers = this.modelsResource.value() ?? [];
+
+        return [...providers].sort((a, b) => {
             const aIndex = TOP_PROVIDERS.indexOf(a.provider.name.toLowerCase());
             const bIndex = TOP_PROVIDERS.indexOf(b.provider.name.toLowerCase());
+
             if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
             if (aIndex !== -1) return -1;
             if (bIndex !== -1) return 1;
+
             return a.provider.name.localeCompare(b.provider.name);
-        })
-    );
+        });
+    });
 
     selectedModelInfo = computed<{ model: LLMModel; provider: ProviderWithModels['provider'] } | null>(() => {
         const id = this.selectedValue();
         if (id === null || id === undefined) return null;
-        for (const group of this.providersWithModels()) {
+        for (const group of this.sortedProvidersWithModels()) {
             const model = group.models.find(m => m.id === id);
             if (model) return { model, provider: group.provider };
         }
@@ -105,7 +116,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
 
     filteredProviders = computed(() => {
         const query = this.searchQuery().toLowerCase().trim();
-        const providers = this.providersWithModels();
+        const providers = this.sortedProvidersWithModels();
 
         if (!query) {
             return providers;
@@ -134,15 +145,6 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
 
     private onChange: (value: number | null) => void = () => {};
     private onTouched: () => void = () => {};
-
-    ngOnInit(): void {
-        this.llmLibraryService.loadModels()
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-                finalize(() => this.isLoading.set(false))
-            )
-            .subscribe();
-    }
 
     toggle(): void {
         this.open() ? this.close() : this.openDropdown();

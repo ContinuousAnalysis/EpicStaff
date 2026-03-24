@@ -1,13 +1,16 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { CreateLLMConfigRequest, GetLlmConfigRequest, UpdateLLMConfigRequest } from "@shared/models";
 import { LLMConfigService } from "@shared/services";
-import { catchError, Observable, of, tap, throwError } from 'rxjs';
+import { catchError, finalize, Observable, of, tap, throwError } from 'rxjs';
+import { shareReplay } from "rxjs/operators";
 
 @Injectable({
     providedIn: 'root',
 })
 export class LlmConfigStorageService {
     private readonly llmConfigService = inject(LLMConfigService);
+
+    private configsRequest$?: Observable<GetLlmConfigRequest[]>;
 
     private configsSignal = signal<GetLlmConfigRequest[]>([]);
     private configsLoaded = signal<boolean>(false);
@@ -19,16 +22,23 @@ export class LlmConfigStorageService {
         if (this.configsLoaded() && !forceRefresh) {
             return of(this.configsSignal());
         }
-        return this.llmConfigService.getAllConfigsLLM().pipe(
+
+        if (this.configsRequest$ && !forceRefresh) {
+            return this.configsRequest$;
+        }
+
+        this.configsRequest$ = this.llmConfigService.getAllConfigsLLM().pipe(
             tap((configs) => {
                 this.configsSignal.set(configs);
                 this.configsLoaded.set(true);
             }),
-            catchError((err) => {
-                this.configsLoaded.set(false);
-                return throwError(() => err);
-            })
+            finalize(() => {
+                this.configsRequest$ = undefined;
+            }),
+            shareReplay(1)
         );
+
+        return this.configsRequest$;
     }
 
     getConfigById(id: number): Observable<GetLlmConfigRequest> {

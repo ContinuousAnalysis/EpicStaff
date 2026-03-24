@@ -1,8 +1,11 @@
 import { computed, inject, Injectable } from '@angular/core';
-import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
+import { PROVIDER_ICON_PATHS } from '@shared/constants';
+import { EmbeddingModel, LLMModel, LLMProvider, ModelTypes, RealtimeModel } from "@shared/models";
+import { EmbeddingModelsService, RealtimeModelsService } from "@shared/services";
 import { forkJoin, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { PROVIDER_ICON_PATHS } from '@shared/constants';
+import { GetRealtimeTranscriptionModelRequest } from "../../../transcription/models/transcription-config.model";
+import { RealtimeTranscriptionModelsService } from "../../../transcription/services/transcription-models.service";
 import { LlmLibraryModel } from '../../interfaces/llm-library-model.interface';
 import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
 
@@ -10,10 +13,10 @@ import { LlmConfigStorageService } from './llm-config-storage.service';
 import { LlmModelsStorageService } from './llm-models-storage.service';
 import { LlmProvidersStorageService } from './llm-providers-storage.service';
 
-export interface ProviderWithModels {
+export interface ProviderWithModels<T extends { id: number; name: string } = any> {
     provider: LLMProvider;
-    models: LLMModel[];
-    visibleModels: LLMModel[];
+    models: T[];
+    visibleModels: T[];
 }
 
 @Injectable({
@@ -21,12 +24,29 @@ export interface ProviderWithModels {
 })
 export class LLMLibraryService {
     private readonly configStorage = inject(LlmConfigStorageService);
-    private readonly modelsStorage = inject(LlmModelsStorageService);
+    private readonly realtimeModelsService = inject(RealtimeModelsService);
+    private readonly transcriptionModelsService = inject(RealtimeTranscriptionModelsService);
+    private readonly embeddingModelsService = inject(EmbeddingModelsService);
+    private readonly llmModelsStorage = inject(LlmModelsStorageService);
     private readonly providersStorage = inject(LlmProvidersStorageService);
+
+    private providerIdExtractors: Record<ModelTypes, (model: any) => number> = {
+        [ModelTypes.LLM]: (m) => m.llm_provider,
+        [ModelTypes.TRANSCRIPTION]: (m) => m.provider,
+        [ModelTypes.REALTIME]: (m) => m.provider,
+        [ModelTypes.EMBEDDING]: (m) => m.embedding_provider,
+    };
+
+    private visibilityExtractors: Record<ModelTypes, (model: any) => boolean> = {
+        [ModelTypes.LLM]: (m) => m.is_visible,
+        [ModelTypes.EMBEDDING]: (m) => m.is_visible,
+        [ModelTypes.REALTIME]: (_m) => true,
+        [ModelTypes.TRANSCRIPTION]: (_m) => true,
+    };
 
     public readonly providerGroups = computed<LlmLibraryProviderGroup[]>(() => {
         const configs = this.configStorage.configs();
-        const models = this.modelsStorage.models();
+        const models = this.llmModelsStorage.models();
         const providers = this.providersStorage.providersByType().get(ModelTypes.LLM) ?? [];
 
         const modelMap = new Map(models.map((m) => [m.id, m]));
@@ -65,29 +85,85 @@ export class LLMLibraryService {
         return Array.from(groupsMap.values());
     });
 
-    // Models grouped by provider — used by the model selector
-    public readonly providerModels = computed<ProviderWithModels[]>(() => {
-        const providers = this.providersStorage.providersByType().get(ModelTypes.LLM) ?? [];
-        const byProvider = this.modelsStorage.modelsByProvider();
-        return providers.map((provider) => {
-            const allModels = byProvider.get(provider.id) ?? [];
-            const visibleModels = allModels.filter((m) => m.is_visible);
-            return { provider, models: allModels, visibleModels };
-        });
-    });
-
     loadConfigs(): Observable<void> {
         return forkJoin({
             configs: this.configStorage.getAllConfigs(),
-            models: this.modelsStorage.getModels(),
+            models: this.llmModelsStorage.getModels(),
             providers: this.providersStorage.getProvidersByType(ModelTypes.LLM),
         }).pipe(map(() => void 0));
     }
 
-    loadModels(): Observable<void> {
+    loadModels(type: ModelTypes): Observable<ProviderWithModels[]> {
         return forkJoin({
-            models: this.modelsStorage.getModels(),
-            providers: this.providersStorage.getProvidersByType(ModelTypes.LLM),
-        }).pipe(map(() => void 0));
+            models: this.getModelsByType(type),
+            providers: this.providersStorage.getProvidersByType(type),
+        }).pipe(
+            map(({ models, providers }) => {
+                const getProviderId = this.providerIdExtractors[type];
+                const isVisible = this.visibilityExtractors[type];
+                const modelsMap = this.groupModelsByProvider(models, getProviderId);
+                return this.mapToProviderWithModels(providers, modelsMap, isVisible);
+            })
+        );
+    }
+
+    private getModelsByType(type: ModelTypes): Observable<
+        LLMModel[] |
+        GetRealtimeTranscriptionModelRequest[] |
+        EmbeddingModel[] |
+        RealtimeModel[]
+    > {
+        switch (type) {
+            case ModelTypes.LLM:
+                return this.llmModelsStorage.getModels();
+
+            case ModelTypes.TRANSCRIPTION:
+                return this.transcriptionModelsService
+                    .getAllModels()
+                    .pipe(map(res => res.results));
+
+            case ModelTypes.REALTIME:
+                return this.realtimeModelsService.getAllModels();
+
+            case ModelTypes.EMBEDDING:
+                return this.embeddingModelsService.getEmbeddingModels();
+
+            default:
+                return this.llmModelsStorage.getModels();
+        }
+    }
+
+    private groupModelsByProvider<T>(
+        models: T[],
+        getProviderId: (model: T) => number
+    ): Map<number, T[]> {
+        const map = new Map<number, T[]>();
+
+        for (const model of models) {
+            const providerId = getProviderId(model);
+            const list = map.get(providerId) ?? [];
+
+            list.push(model);
+            map.set(providerId, list);
+        }
+
+        return map;
+    }
+
+    private mapToProviderWithModels(
+        providers: LLMProvider[],
+        modelsMap: Map<number, any[]>,
+        isVisible: (model: any) => boolean
+    ): ProviderWithModels[] {
+        return providers.map((provider) => {
+            const allModels = modelsMap.get(provider.id) ?? [];
+            const visibleModels = allModels.filter(isVisible);
+
+            return {
+                provider,
+                models: allModels,
+                visibleModels,
+            };
+        });
     }
 }
