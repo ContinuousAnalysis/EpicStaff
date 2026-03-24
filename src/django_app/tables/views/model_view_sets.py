@@ -12,7 +12,10 @@ from django_filters.rest_framework import (
 from rest_framework import filters as drf_filters
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import (
+    PermissionDenied,
+    ValidationError as DRFValidationError,
+)
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
@@ -22,11 +25,11 @@ from tables.exceptions import (
     BuiltInToolModificationError,
     TaskSerializerError,
 )
-from tables.filters import EmbeddingModelFilter, LLMModelFilter, ProviderFilter
 from tables.import_export.enums import EntityType
 from tables.models import (
     Agent,
     AudioTranscriptionNode,
+    CodeAgentNode,
     ConditionalEdge,
     Crew,
     CrewNode,
@@ -97,39 +100,6 @@ from tables.utils.helpers import natural_sort_key
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.label_models import Label
 from tables.models.vector_models import MemoryDatabase
-from tables.models.mcp_models import McpTool
-from utils.logger import logger
-from django.db.models import IntegerField, NOT_PROVIDED
-from django.db.models.functions import Cast
-from tables.serializers.model_serializers import (
-    AgentReadSerializer,
-    AgentWriteSerializer,
-    CrewTagSerializer,
-    AgentTagSerializer,
-    LabelSerializer,
-    DecisionTableNodeSerializer,
-    EndNodeSerializer,
-    SubGraphNodeSerializer,
-    GraphLightSerializer,
-    GraphTagSerializer,
-    PythonCodeToolConfigFieldSerializer,
-    PythonCodeToolConfigSerializer,
-    RealtimeConfigSerializer,
-    RealtimeSessionItemSerializer,
-    RealtimeAgentSerializer,
-    RealtimeAgentChatSerializer,
-    StartNodeSerializer,
-    ConditionGroupSerializer,
-    ConditionSerializer,
-    TaskReadSerializer,
-    TaskWriteSerializer,
-    TaskConfiguredTools,
-    TaskPythonCodeTools,
-    McpToolSerializer,
-    GraphFileReadSerializer,
-    WebhookTriggerNodeSerializer,
-    WebhookTriggerSerializer,
-)
 from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
 from tables.services.copy_services import (
     AgentCopyService,
@@ -144,6 +114,7 @@ from tables.serializers.model_serializers import (
     AgentTagSerializer,
     AgentWriteSerializer,
     AudioTranscriptionNodeSerializer,
+    CodeAgentNodeSerializer,
     ConditionalEdgeSerializer,
     GraphNoteSerializer,
     ConditionGroupSerializer,
@@ -164,6 +135,7 @@ from tables.serializers.model_serializers import (
     GraphSerializer,
     GraphSessionMessageSerializer,
     GraphTagSerializer,
+    LabelSerializer,
     LLMConfigSerializer,
     LLMModelSerializer,
     LLMNodeSerializer,
@@ -210,9 +182,7 @@ from tables.serializers.telegram_trigger_serializers import (
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
 from tables.services.redis_service import RedisService
-from tables.exceptions import BuiltInToolModificationError
 from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
-from tables.import_export.enums import EntityType
 from utils.logger import logger
 
 redis_service = RedisService()
@@ -753,6 +723,10 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
                 Prefetch("subgraph_node_list", queryset=SubGraphNode.objects.all()),
+                Prefetch(
+                    "code_agent_node_list",
+                    queryset=CodeAgentNode.objects.select_related("llm_config"),
+                ),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
                 Prefetch(
                     "telegram_trigger_node_list",
@@ -818,6 +792,7 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
         drf_filters.SearchFilter,
         LabelFilterBackend,
     ]
+    filterset_fields = ["epicchat_enabled"]
     search_fields = ["name", "description"]
 
     def get_queryset(self):
@@ -826,31 +801,70 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
 
-class CrewNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
+class IdempotentNodeCreateMixin:
+    # TODO: change fields from (graph, node_name) to id (all nodes id's are consistent)
+    """
+    COMMIT_COMMENTS: Makes node POST idempotent — if a node with the same
+    (graph, node_name) already exists, update it instead of failing with a
+    unique constraint violation. This prevents orphan accumulation when
+    forkJoin-based saves partially fail and retry.
+    """
+
+    def create(self, request, *args, **kwargs):
+        graph_id = request.data.get("graph")
+        node_name = request.data.get("node_name")
+        if graph_id and node_name:
+            try:
+                existing = self.get_queryset().model.objects.get(
+                    graph_id=graph_id, node_name=node_name
+                )
+                serializer = self.get_serializer(existing, data=request.data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except self.get_queryset().model.DoesNotExist:
+                pass
+        return super().create(request, *args, **kwargs)
+
+
+class CrewNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = CrewNode.objects.all()
     serializer_class = CrewNodeSerializer
 
 
-class PythonNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
+class PythonNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = PythonNode.objects.all()
     serializer_class = PythonNodeSerializer
 
 
-class FileExtractorNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
+class FileExtractorNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = FileExtractorNode.objects.all()
     serializer_class = FileExtractorNodeSerializer
 
 
 class AudioTranscriptionNodeViewSet(
-    ContentHashPreconditionMixin, viewsets.ModelViewSet
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
 ):
     queryset = AudioTranscriptionNode.objects.all()
     serializer_class = AudioTranscriptionNodeSerializer
 
 
-class LLMNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
+class LLMNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = LLMNode.objects.all()
     serializer_class = LLMNodeSerializer
+
+
+class CodeAgentNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet):
+    queryset = CodeAgentNode.objects.all()
+    serializer_class = CodeAgentNodeSerializer
 
 
 class EdgeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
@@ -1028,7 +1042,23 @@ class DecisionTableNodeModelViewSet(
     def create(self, request, *args, **kwargs):
         """
         Create a DecisionTableNode along with nested ConditionGroups and Conditions.
+        If a node with the same (graph, node_name) already exists, update it instead.
         """
+        graph_id = request.data.get("graph")
+        node_name = request.data.get("node_name")
+        if graph_id and node_name:
+            try:
+                existing = DecisionTableNode.objects.get(
+                    graph_id=graph_id, node_name=node_name
+                )
+                node, _ = self._create_or_update_node(
+                    data=request.data, instance=existing
+                )
+                return Response(
+                    self.get_serializer(node).data, status=status.HTTP_200_OK
+                )
+            except DecisionTableNode.DoesNotExist:
+                pass
         node, _ = self._create_or_update_node(data=request.data)
         return Response(self.get_serializer(node).data, status=status.HTTP_201_CREATED)
 
@@ -1217,11 +1247,24 @@ class GraphOrganizationUserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphOrganizationUserSerializer
 
 
-class WebhookTriggerNodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
+class WebhookTriggerNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = WebhookTriggerNode.objects.all()
     serializer_class = WebhookTriggerNodeSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["graph", "node_name", "webhook_trigger__path"]
+
+    def create(self, request, *args, **kwargs):
+        logger.info(f"[WebhookTriggerNode] CREATE payload: {request.data}")
+        try:
+            return super().create(request, *args, **kwargs)
+        except DRFValidationError as e:
+            logger.error(f"[WebhookTriggerNode] validation error: {e.detail}")
+            raise
+        except Exception as e:
+            logger.error(f"[WebhookTriggerNode] unexpected error: {e}")
+            raise
 
 
 class WebhookTriggerViewSet(viewsets.ModelViewSet):
@@ -1230,7 +1273,9 @@ class WebhookTriggerViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
 
 
-class TelegramTriggerNodeViewSet(ContentHashPreconditionMixin, ModelViewSet):
+class TelegramTriggerNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, ModelViewSet
+):
     queryset = TelegramTriggerNode.objects.prefetch_related("fields")
     serializer_class = TelegramTriggerNodeSerializer
 
@@ -1240,7 +1285,9 @@ class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     serializer_class = TelegramTriggerNodeFieldSerializer
 
 
-class GraphNoteViewSet(ContentHashPreconditionMixin, ModelViewSet):
+class GraphNoteViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, ModelViewSet
+):
     queryset = GraphNote.objects.all()
     serializer_class = GraphNoteSerializer
 

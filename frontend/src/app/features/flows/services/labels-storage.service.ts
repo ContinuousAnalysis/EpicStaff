@@ -1,6 +1,6 @@
-import { computed, inject,Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { catchError, shareReplay,tap } from 'rxjs/operators';
+import { catchError, shareReplay, tap } from 'rxjs/operators';
 
 import { LabelDto } from '../models/label.model';
 import { LabelsApiService } from './labels-api.service';

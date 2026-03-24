@@ -1,18 +1,12 @@
-import {
-    Component,
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    OnInit,
-    inject,
-    signal,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { finalize, switchMap, map } from 'rxjs/operators';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { finalize, map,switchMap } from 'rxjs/operators';
+
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
-import { LabelDropdownComponent } from '../label-dropdown/label-dropdown.component';
 import { FlowsStorageService } from '../../services/flows-storage.service';
+import { LabelDropdownComponent } from '../label-dropdown/label-dropdown.component';
 
 interface FlowRenameData {
     flowName: string;
@@ -66,10 +60,7 @@ interface FlowRenameData {
             }
             <div class="dialog-actions">
                 <app-button type="ghost" (click)="cancel()">Cancel</app-button>
-                <app-button
-                    type="primary"
-                    [disabled]="!newName || !newName.trim().length"
-                    (click)="save()"
+                <app-button type="primary" [disabled]="!newName || !newName.trim().length" (click)="save()"
                     >Save</app-button
                 >
             </div>
@@ -133,7 +124,7 @@ interface FlowRenameData {
             }
 
             .error-message-block {
-                padding: 0.5rem 0.75rem;               
+                padding: 0.5rem 0.75rem;
                 color: var(--color-error);
                 font-size: 12px;
                 margin-top: 4px;
