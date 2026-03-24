@@ -177,6 +177,7 @@ async def voice_stream(twilio_ws: WebSocket):
         try:
             resp = await http_client.post(
                 settings.INIT_API_URL,
+                headers={"Host": "localhost"},
                 json={
                     "agent_id": settings.VOICE_AGENT_ID,
                     "config": {

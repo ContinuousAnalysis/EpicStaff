@@ -35,6 +35,11 @@ pytest = "7.4.0"
 pytest-asyncio = "0.23.0"
 pytest-cov = "4.1.0"
 
+[tool.pytest.ini_options]
+# "." = src/realtime (resolves api, services, ai, ...)
+# "../.." = project root crewai-sheetsui (resolves src.shared)
+pythonpath = [".", "../.."]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

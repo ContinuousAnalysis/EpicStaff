@@ -13,6 +13,7 @@ endif
 .PHONY: help \
         backup apply-backup stash-tags apply-tags switch \
         dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
+        dev-voice dev-ngrok \
         prod start-prod prod-down prod-logs \
         clean docker-generate-certs
 
@@ -77,6 +78,14 @@ rebuild-dev:
 	@echo "--- Rebuilding development services (no cache) ---"
 	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env build --no-cache
 	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env up -d
+
+dev-voice:
+	@echo "--- Starting development services with voice (ngrok) ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env --profile voice up -d
+
+dev-ngrok:
+	@echo "--- Starting ngrok tunnel ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env --profile voice up ngrok
 
 # ==========================================
 # PRODUCTION Environment

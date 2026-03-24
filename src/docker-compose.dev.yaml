@@ -31,9 +31,13 @@ services:
   realtime:
     ports:
       - "${REALTIME_PORT:-8050}:${REALTIME_PORT:-8050}"
+    env_file:
+      - .env
+      - ../dev/dev.env
     environment:
       REALTIME_RELOAD: "True"
       WATCHFILES_FORCE_POLLING: "true"
+      DJANGO_HOST: django_app
     volumes:
       - ./realtime:/app/src/realtime
 
@@ -56,6 +60,7 @@ services:
       poetry run watchfiles
       --filter python
       --ignore-paths /app/src/crew/.venv
+      --ignore-paths /app/src/crew/.venv/lib
       'poetry run python3 /app/src/crew/main.py'
       /app/src/crew/"
     environment:
@@ -76,7 +81,6 @@ services:
       - ../dev/dev.env
     environment:
       API_URL: "http://127.0.0.1:${DJANGO_PORT:-8000}/api/"
-      REALTIME_API_URL: "http://127.0.0.1:${REALTIME_PORT:-8050}/"
 
   webhook:
     command: >
@@ -106,6 +110,20 @@ services:
     volumes:
       - ./sandbox:/app/src/sandbox
       - ./shared:/app/src/shared
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    entrypoint: ["/bin/sh", "-c", "ngrok http --url=$$NGROK_DOMAIN realtime:8050"]
+    env_file:
+      - ../dev/dev.env
+    ports:
+      - "4040:4040"
+    networks:
+      - backend-network
+    depends_on:
+      - realtime
+    profiles:
+      - voice
 
   epicstaff-nginx:
     profiles:
