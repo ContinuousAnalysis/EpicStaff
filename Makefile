@@ -14,7 +14,7 @@ endif
         backup apply-backup stash-tags apply-tags switch \
         dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
         dev-voice dev-ngrok \
-        prod start-prod prod-down prod-logs \
+        setup-prod prod start-prod prod-down prod-logs \
         clean docker-generate-certs
 
 # --- Help ---
@@ -91,18 +91,22 @@ dev-ngrok:
 # PRODUCTION Environment
 # ==========================================
 
+setup-prod:
+	@echo "--- Setting up production environment ---"
+	@bash make_scripts/setup_prod.sh
+
 prod: start-prod
 
 start-prod:
 	@echo "--- Starting production services ---"
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env up --build -d
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env --env-file ./prod.env up --build -d
 
 prod-down:
 	@echo "--- Stopping production services ---"
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env down
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env --env-file ./prod.env down
 
 prod-logs:
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env logs -f
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env --env-file ./prod.env logs -f
 
 # ==========================================
 # UTILITIES
