@@ -39,6 +39,9 @@ class GraphStrategy(EntityImportExportStrategy):
         deps[EntityType.GRAPH] = set(
             instance.subgraph_node_list.values_list("subgraph_id", flat=True)
         )
+        deps[EntityType.LLM_CONFIG] = set(
+            instance.code_agent_node_list.values_list("llm_config_id", flat=True)
+        )
         return deps
 
     def export_entity(self, instance: Graph) -> dict:
