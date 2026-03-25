@@ -129,9 +129,10 @@ clean:
 	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env down -v --remove-orphans
 
 docker-generate-certs:
+	@test -n "$(domain)" || (echo "ERROR: domain is required. Usage: make docker-generate-certs domain=example.com" && exit 1)
 	docker run --rm -v "$(CURDIR)/src/nginx/certs:/certs" -w /certs alpine \
-		sh -c "apk add openssl && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout privkey.pem -out fullchain.pem -subj '/CN=localhost'"
-	@echo "SSL certificates generated!"
+		sh -c "apk add openssl && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout privkey.pem -out fullchain.pem -subj '/CN=$(domain)'"
+	@echo "SSL certificates generated for domain: $(domain)"
 
 # ==========================================
 # LOCAL DJANGO DEVELOPMENT
