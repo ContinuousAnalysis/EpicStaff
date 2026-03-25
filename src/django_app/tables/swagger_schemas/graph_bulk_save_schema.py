@@ -70,7 +70,9 @@ SAVE_FLOW_SWAGGER = dict(
             "decision_table_node_list": openapi.Schema(
                 type=openapi.TYPE_ARRAY, items=_node_item
             ),
-            "note_node_list": openapi.Schema(type=openapi.TYPE_ARRAY, items=_node_item),
+            "graph_note_list": openapi.Schema(
+                type=openapi.TYPE_ARRAY, items=_node_item
+            ),
             "webhook_trigger_node_list": openapi.Schema(
                 type=openapi.TYPE_ARRAY, items=_node_item
             ),
@@ -94,7 +96,7 @@ SAVE_FLOW_SWAGGER = dict(
                     "end_node_ids": _id_list,
                     "subgraph_node_ids": _id_list,
                     "decision_table_node_ids": _id_list,
-                    "note_node_ids": _id_list,
+                    "graph_note_ids": _id_list,
                     "webhook_trigger_node_ids": _id_list,
                     "telegram_trigger_node_ids": _id_list,
                     "edge_ids": _id_list,
@@ -180,7 +182,7 @@ SAVE_FLOW_SWAGGER = dict(
                     ],
                 }
             ],
-            "note_node_list": [
+            "graph_note_list": [
                 {
                     "graph": 12,
                     "content": "This flow processes user text through a crew.",
@@ -192,22 +194,15 @@ SAVE_FLOW_SWAGGER = dict(
             "edge_list": [
                 {
                     "graph": 12,
-                    "start_key": "__start__",
-                    "end_key": "crewnode_5",
+                    "start_node_id": 9,
+                    "end_temp_id": "372b0d79-4cc2-464e-baf8-c4a982e63af3",
                     "metadata": {},
                 },
                 {
                     "id": 15,
                     "graph": 12,
-                    "start_key": "crewnode_5",
-                    "end_key": "pythonnode_9",
-                    "metadata": {},
-                },
-                {
-                    "id": 16,
-                    "graph": 12,
-                    "start_key": "pythonnode_9",
-                    "end_key": "__end_node__",
+                    "start_temp_id": "372b0d79-4cc2-464e-baf8-c4a982e63af3",
+                    "end_node_id": 101,
                     "metadata": {},
                 },
             ],

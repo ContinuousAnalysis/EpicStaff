@@ -9,7 +9,7 @@ from tables.serializers.model_serializers import (
     EndNodeSerializer,
     FileExtractorNodeSerializer,
     LLMNodeSerializer,
-    NoteNodeSerializer,
+    GraphNoteSerializer,
     PythonNodeSerializer,
     StartNodeSerializer,
     SubGraphNodeSerializer,
@@ -75,7 +75,7 @@ class DecisionTableNodeBulkSerializer(BulkSaveEntityMixin, DecisionTableNodeSeri
     pass
 
 
-class NoteNodeBulkSerializer(BulkSaveEntityMixin, NoteNodeSerializer):
+class GraphNoteBulkSerializer(BulkSaveEntityMixin, GraphNoteSerializer):
     pass
 
 
