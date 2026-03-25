@@ -5,9 +5,11 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ("tables", "0154_remove_unique_node_names"),
+        (
+            "tables",
+            "0161_remove_codeagentnode_unique_graph_node_name_for_code_agent_node_and_more",
+        ),
     ]
 
     operations = [
