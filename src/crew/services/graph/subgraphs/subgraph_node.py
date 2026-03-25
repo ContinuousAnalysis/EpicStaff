@@ -1,5 +1,6 @@
 from copy import deepcopy
 from uuid import uuid4
+from dataclasses import asdict
 
 from dotdict import DotDict
 from langgraph.graph import StateGraph
@@ -98,28 +99,21 @@ class SubGraphNode:
 
         self._send_start_message(state, subgraph_input, writer, subgraph_execution_id)
 
-        try:
-            subgraph_state = self._create_subgraph_state(state, subgraph_input)
-            compiled_subgraph = self.build(initial_state=subgraph_input)
+        subgraph_state = self._create_subgraph_state(state, subgraph_input)
+        compiled_subgraph = self.build(initial_state=subgraph_input)
 
-            result = await self._execute_subgraph(
-                compiled_subgraph, subgraph_state, writer, subgraph_execution_id
-            )
+        result = await self._execute_subgraph(
+            compiled_subgraph, subgraph_state, writer, subgraph_execution_id
+        )
 
-            updated_state = self._process_subgraph_result(state, subgraph_input, result)
+        updated_state = self._process_subgraph_result(state, subgraph_input, result)
 
-            self._send_finish_message(
-                updated_state,
-                result["variables"].model_dump(),
-                writer,
-                subgraph_execution_id,
-            )
-
-        except Exception as e:
-            self._send_finish_message(
-                state, {}, writer, subgraph_execution_id, error=str(e)
-            )
-            raise
+        self._send_finish_message(
+            updated_state,
+            result["variables"].model_dump(),
+            writer,
+            subgraph_execution_id,
+        )
 
         return {
             "variables": updated_state["variables"],
@@ -176,11 +170,17 @@ class SubGraphNode:
             if isinstance(chunk, tuple):
                 stream_mode, data = chunk
                 if stream_mode == "custom":
-                    if (
-                        isinstance(data, GraphMessage)
-                        and data.subgraph_execution_id is None
-                    ):
-                        data.subgraph_execution_id = subgraph_execution_id
+                    if isinstance(data, GraphMessage):
+                        msg_data = data.message_data
+
+                        if not isinstance(msg_data, dict):
+                            msg_data = asdict(msg_data)
+                            data.message_data = msg_data
+
+                        existing = msg_data.get("subgraph_execution_ids") or []
+                        msg_data["subgraph_execution_ids"] = existing + [
+                            subgraph_execution_id
+                        ]
                     writer(data)
                 elif stream_mode == "values":
                     result = data
@@ -242,7 +242,6 @@ class SubGraphNode:
         subgraph_output,
         writer: StreamWriter,
         subgraph_execution_id,
-        error=None,
     ):
         """Send subgraph finish message to writer."""
         finish_message_data = SubGraphFinishMessageData(
@@ -251,7 +250,6 @@ class SubGraphNode:
             ),
             output=subgraph_output,
             subgraph_execution_id=subgraph_execution_id,
-            error=error,
         )
         graph_message = GraphMessage(
             session_id=self.session_id,

@@ -19,7 +19,6 @@ class GraphSessionMessageData(BaseModel):
     timestamp: str
     message_data: dict
     uuid: str = ""
-    subgraph_execution_id: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
