@@ -14,7 +14,7 @@ endif
         backup apply-backup stash-tags apply-tags switch \
         dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
         dev-voice dev-ngrok \
-        prod-setup prod-init prod start-prod prod-down prod-logs \
+        prod-setup prod-init prod prod-build prod-up start-prod prod-down prod-logs \
         clean docker-generate-certs
 
 # --- Help ---
@@ -106,11 +106,17 @@ prod-init:
 
 PROD_ENV_ARG = $(shell test -f prod/prod.env && echo "--env-file ../prod/prod.env")
 
-prod: start-prod
+prod: prod-build prod-up
 
-start-prod: prod-init
+prod-build: prod-init
+	@echo "--- Building production images ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) build
+
+prod-up: prod-init
 	@echo "--- Starting production services ---"
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) up --build -d
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) up -d
+
+start-prod: prod
 
 prod-down:
 	@echo "--- Stopping production services ---"
