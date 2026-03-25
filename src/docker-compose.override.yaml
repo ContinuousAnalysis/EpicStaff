@@ -14,6 +14,8 @@ services:
   realtime:
     ports:
       - "${REALTIME_PORT:-8050}:${REALTIME_PORT:-8050}"
+    environment:
+      DJANGO_HOST: django_app
 
   manager:
     ports:
