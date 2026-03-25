@@ -49,7 +49,7 @@ All keys are optional. Omitting a key or passing an empty list for it means "no 
   "end_node_list":                 [],
   "subgraph_node_list":            [],
   "decision_table_node_list":      [],
-  "note_node_list":                [],
+  "graph_note_list":               [],
   "webhook_trigger_node_list":     [],
   "telegram_trigger_node_list":    [],
 
@@ -66,7 +66,7 @@ All keys are optional. Omitting a key or passing an empty list for it means "no 
     "end_node_ids":                 [],
     "subgraph_node_ids":            [],
     "decision_table_node_ids":      [],
-    "note_node_ids":                [],
+    "graph_note_list":              [],
     "webhook_trigger_node_ids":     [],
     "telegram_trigger_node_ids":    [],
     "edge_ids":                     [],
