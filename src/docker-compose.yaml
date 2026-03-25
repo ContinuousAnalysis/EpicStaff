@@ -345,6 +345,23 @@ services:
         condition: service_started
     restart: always
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    entrypoint: ["/bin/sh", "-c", "ngrok http --url=$$NGROK_DOMAIN realtime:${REALTIME_PORT:-8050}"]
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+      - NGROK_DOMAIN=${NGROK_DOMAIN}
+    ports:
+      - "4040:4040"
+    networks:
+      - backend-network
+    depends_on:
+      - realtime
+    restart: always
+    profiles:
+      - voice
+
 volumes:
   sandbox_venvs:
     external: true

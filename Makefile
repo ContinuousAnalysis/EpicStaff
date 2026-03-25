@@ -14,7 +14,7 @@ endif
         backup apply-backup stash-tags apply-tags switch \
         dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
         dev-voice dev-ngrok \
-        prod-setup prod-init prod prod-build prod-up start-prod prod-down prod-logs \
+        prod-setup prod-init prod prod-build prod-up start-prod prod-down prod-logs prod-voice prod-ngrok \
         clean docker-generate-certs
 
 # --- Help ---
@@ -124,6 +124,14 @@ prod-down:
 
 prod-logs:
 	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) logs -f
+
+prod-voice:
+	@echo "--- Starting production services with voice (ngrok) ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) --profile voice up -d
+
+prod-ngrok:
+	@echo "--- Starting ngrok tunnel (production) ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) --profile voice up ngrok
 
 # ==========================================
 # UTILITIES

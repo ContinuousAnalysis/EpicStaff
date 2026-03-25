@@ -111,20 +111,6 @@ services:
       - ./sandbox:/app/src/sandbox
       - ./shared:/app/src/shared
 
-  ngrok:
-    image: ngrok/ngrok:latest
-    entrypoint: ["/bin/sh", "-c", "ngrok http --url=$$NGROK_DOMAIN realtime:8050"]
-    env_file:
-      - ../dev/dev.env
-    ports:
-      - "4040:4040"
-    networks:
-      - backend-network
-    depends_on:
-      - realtime
-    profiles:
-      - voice
-
   epicstaff-nginx:
     profiles:
       - prod
