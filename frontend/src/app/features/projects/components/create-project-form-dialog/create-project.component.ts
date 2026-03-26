@@ -1,25 +1,12 @@
-import {
-    Component,
-    OnInit,
-    ChangeDetectionStrategy,
-    signal,
-} from '@angular/core';
-import {
-    FormBuilder,
-    FormGroup,
-    FormControl,
-    Validators,
-    ReactiveFormsModule,
-} from '@angular/forms';
-import { MATERIAL_FORMS } from '../../../../shared/material-forms';
-
 import { DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
+
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CustomErrorStateMatcher } from '../../../../shared/error-state-matcher/custom-error-state-matcher';
-import {
-    ProjectProcess,
-    CreateProjectRequest,
-} from '../../models/project.model';
+import { MATERIAL_FORMS } from '../../../../shared/material-forms';
+import { CreateProjectRequest, ProjectProcess } from '../../models/project.model';
 import { ProjectsStorageService } from '../../services/projects-storage.service';
 
 // Typed interface for the form data - all fields are non-nullable
@@ -36,10 +23,9 @@ interface ProjectFormData {
 
 @Component({
     selector: 'app-create-project',
-    standalone: true,
     templateUrl: './create-project.component.html',
     styleUrls: ['./create-project.component.scss'],
-    imports: [ReactiveFormsModule, ...MATERIAL_FORMS],
+    imports: [ReactiveFormsModule, ...MATERIAL_FORMS, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [
         {
@@ -64,7 +50,7 @@ export class CreateProjectComponent implements OnInit {
 
     constructor(
         private fb: FormBuilder,
-        private dialogRef: DialogRef<any>,
+        private dialogRef: DialogRef<unknown>,
         private projectsStorageService: ProjectsStorageService
     ) {}
 
@@ -76,24 +62,12 @@ export class CreateProjectComponent implements OnInit {
         this.projectForm = new FormGroup({
             name: new FormControl<string>('', Validators.required),
             description: new FormControl<string>(''),
-            process: new FormControl<ProjectProcess>(
-                ProjectProcess.SEQUENTIAL,
-                Validators.required
-            ),
+            process: new FormControl<ProjectProcess>(ProjectProcess.SEQUENTIAL, Validators.required),
             memory: new FormControl<boolean>(false),
             cache: new FormControl<boolean>(false),
-            max_rpm: new FormControl<number>(15, [
-                Validators.min(1),
-                Validators.max(50),
-            ]),
-            search_limit: new FormControl<number>(10, [
-                Validators.min(1),
-                Validators.max(1000),
-            ]),
-            similarity_threshold: new FormControl<number>(0.7, [
-                Validators.min(0.0),
-                Validators.max(1.0),
-            ]),
+            max_rpm: new FormControl<number>(15, [Validators.min(1), Validators.max(50)]),
+            search_limit: new FormControl<number>(10, [Validators.min(1), Validators.max(1000)]),
+            similarity_threshold: new FormControl<number>(0.7, [Validators.min(0.0), Validators.max(1.0)]),
         }) as FormGroup<{
             name: FormControl<string>;
             description: FormControl<string>;
@@ -156,22 +130,20 @@ export class CreateProjectComponent implements OnInit {
         };
 
         // Call the actual service
-        this.projectsStorageService
-            .createProject(createProjectRequest)
-            .subscribe({
-                next: (newProject) => {
-                    console.log('Project created successfully:', newProject);
-                    this.isSubmitting.set(false);
-                    // Close dialog and return the created project
-                    this.dialogRef.close(newProject);
-                },
-                error: (error) => {
-                    console.error('Error creating project:', error);
-                    this.isSubmitting.set(false);
-                    // TODO: Show error message to user (snackbar, toast, etc.)
-                    // For now, just log the error
-                },
-            });
+        this.projectsStorageService.createProject(createProjectRequest).subscribe({
+            next: (newProject) => {
+                console.log('Project created successfully:', newProject);
+                this.isSubmitting.set(false);
+                // Close dialog and return the created project
+                this.dialogRef.close(newProject);
+            },
+            error: (error) => {
+                console.error('Error creating project:', error);
+                this.isSubmitting.set(false);
+                // TODO: Show error message to user (snackbar, toast, etc.)
+                // For now, just log the error
+            },
+        });
     }
 
     onCancel(): void {

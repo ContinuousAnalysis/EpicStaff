@@ -40,4 +40,5 @@ class NodeType(str, Enum):
     DECISION_TABLE_NODE = "DecisionTableNode"
     SUBGRAPH_NODE = "SubgraphNode"
     END_NODE = "EndNode"
-    NOTE_NODE = "NoteNode"
+    NOTE_NODE = "GraphNote"
+    CODE_AGENT_NODE = "CodeAgentNode"

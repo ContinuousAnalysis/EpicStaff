@@ -1,14 +1,11 @@
 <div class="dialog-container" [ngClass]="data.type || 'info'">
-    <div class="dialog-header">
+    <div class="dialog-header" [class.has-border]="data.isShownBorder">
         <div class="dialog-title-row">
-        <span class="dialog-icon">
-            <i *ngIf="data.type === 'danger'" class="ti ti-alert-triangle"></i>
-            <i *ngIf="data.type === 'warning'" class="ti ti-alert-circle"></i>
-            <i
-               *ngIf="!data.type || data.type === 'info'"
-               class="ti ti-info-circle"
-            ></i>
-        </span>
+            <span class="dialog-icon">
+                <i *ngIf="data.type === 'danger'" class="ti ti-alert-triangle"></i>
+                <i *ngIf="data.type === 'warning'" class="ti ti-alert-circle"></i>
+                <i *ngIf="!data.type || data.type === 'info'" class="ti ti-info-circle"></i>
+            </span>
             <h2 class="dialog-title">{{ data.title }}</h2>
         </div>
         <app-icon-button
@@ -21,35 +18,19 @@
     </div>
     <p class="dialog-message" [innerHTML]="data.message"></p>
 
-    @if (data.cautionText) {
-        <div
-            class="dialog-caution"
-            [class.danger]="data.type === 'danger'"
-            [class.caution]="data.type === 'warning'"
-            [class.info]="data.type === 'info'"
-        >
-            <span class="caution-title">
-                {{
-                    data.type === 'danger' ? 'Caution' :
-                    data.type === 'warning' ? 'Attention' :
-                    data.type === 'info' ? 'Info' : ''
-                }}
-            </span>
-            <p class="dialog-message" [innerHTML]="data.cautionText"></p>
+    @if (data.caution) {
+        <div class="caution-block">
+            <span class="caution-title">Caution</span>
+            <p class="caution-message" [innerHTML]="data.caution"></p>
         </div>
     }
 
     <div class="dialog-actions">
         <button type="button" class="button cancel-button" (click)="onCancel()">
-            {{ data.cancelText || "Cancel" }}
+            {{ data.cancelText || 'Cancel' }}
         </button>
-        <button
-            type="button"
-            class="button confirm-button"
-            [ngClass]="data.type || 'info'"
-            (click)="onConfirm()"
-        >
-            {{ data.confirmText || "Confirm" }}
+        <button type="button" class="button confirm-button" [ngClass]="data.type || 'info'" (click)="onConfirm()">
+            {{ data.confirmText || 'Confirm' }}
         </button>
     </div>
 </div>
