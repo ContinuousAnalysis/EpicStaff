@@ -40,6 +40,7 @@ export interface SubflowLightDto {
 
 export interface GraphDto {
     id: number;
+    uuid: string;
     name: string;
     start_node_list: StartNode[];
     crew_node_list: CrewNode[];

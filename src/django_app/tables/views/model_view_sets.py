@@ -205,7 +205,8 @@ from tables.serializers.serializers import (
     BulkExportSerializer,
     GraphFileUpdateSerializer,
     UploadGraphFileSerializer,
-    FileImportSerializer,
+    BulkExportSerializer,
+    ImportRequestSerializer,
 )
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeFieldSerializer,
@@ -457,7 +458,7 @@ class AgentViewSet(CopyActionMixin, ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer = ImportRequestSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
 
         data = self.import_export_service.import_entity(
@@ -501,7 +502,7 @@ class CrewReadWriteViewSet(CopyActionMixin, ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer = ImportRequestSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
 
         data = self.import_export_service.import_entity(
@@ -809,11 +810,13 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer = ImportRequestSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
 
         data = self.import_export_service.import_entity(
-            file_serializer.validated_data["file"], Graph
+            file_serializer.validated_data["file"],
+            Graph,
+            preserve_uuids=file_serializer.validated_data["preserve_uuids"],
         )
         return Response(data, status=status.HTTP_200_OK)
 

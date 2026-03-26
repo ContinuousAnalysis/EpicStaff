@@ -13,6 +13,8 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
+import { ImportFlowOptionsDialogComponent, ImportFlowOptions } from '../../components/import-flow-options-dialog/import-flow-options-dialog.component';
+
 import { ImportExportService } from '../../../../core/services/import-export.service';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
@@ -130,26 +132,32 @@ export class FlowsListPageComponent implements OnDestroy {
     }
 
     public onImportClick(): void {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = (event: Event) => {
-            const file = (event.target as HTMLInputElement).files?.[0];
-            if (file) {
-                this.importExportService.importFlow(file).subscribe({
-                    next: (result) => {
-                        console.log('Flow imported successfully:', result);
-                        // Reload the page on successful import
-                        window.location.reload();
-                    },
-                    error: (error) => {
-                        console.error('Import failed:', error);
-                        // TODO: Show error message to user
-                    },
-                });
-            }
-        };
-        input.click();
+        const dialogRef = this.dialog.open<ImportFlowOptions | undefined>(ImportFlowOptionsDialogComponent, {
+            width: '400px',
+        });
+
+        dialogRef.closed.subscribe((options) => {
+            if (!options) return;
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (event: Event) => {
+                const file = (event.target as HTMLInputElement).files?.[0];
+                if (file) {
+                    this.importExportService.importFlow(file, options.preserveUuids).subscribe({
+                        next: (result) => {
+                            console.log('Flow imported successfully:', result);
+                            window.location.reload();
+                        },
+                        error: (error) => {
+                            console.error('Import failed:', error);
+                        },
+                    });
+                }
+            };
+            input.click();
+        });
     }
 
     public onExportClick(): void {
