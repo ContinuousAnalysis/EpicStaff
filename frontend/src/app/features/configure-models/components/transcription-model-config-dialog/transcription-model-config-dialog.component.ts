@@ -6,9 +6,8 @@ import {
     ButtonComponent, CustomInputComponent, IconButtonComponent, ValidationErrorsComponent
 } from "@shared/components";
 import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
-import { EmbeddingConfigsService } from "@shared/services";
 import { ToastService } from "../../../../services/notifications";
-import { TranscriptionConfigsService } from "../../../transcription/services/transcription-config.service";
+import { TranscriptionConfigStorageService } from "../../services/llms/transcription-config-storage.service";
 import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selector.component";
 
 @Component({
@@ -28,7 +27,7 @@ import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selec
 export class TranscriptionModelConfigDialogComponent {
     private fb = inject(FormBuilder);
     private destroyRef = inject(DestroyRef);
-    private transcriptionConfigsService = inject(TranscriptionConfigsService);
+    private transcriptionConfigsService = inject(TranscriptionConfigStorageService);
     private toast = inject(ToastService);
     private data = inject(DIALOG_DATA, { optional: true });
 
@@ -57,7 +56,7 @@ export class TranscriptionModelConfigDialogComponent {
 
     private loadConfig(configId: number): void {
         this.isLoading.set(true);
-        this.transcriptionConfigsService.getTranscriptionConfigById(configId)
+        this.transcriptionConfigsService.getConfigById(configId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (config) => {
@@ -90,8 +89,8 @@ export class TranscriptionModelConfigDialogComponent {
         const formValue = this.form.value;
 
         const request$ = this.isEditMode()
-            ? this.transcriptionConfigsService.updateTranscriptionConfig({ id: this.data!.configId!, ...formValue })
-            : this.transcriptionConfigsService.createTranscriptionConfig(formValue);
+            ? this.transcriptionConfigsService.updateConfig({ id: this.data!.configId!, ...formValue })
+            : this.transcriptionConfigsService.createConfig(formValue);
 
         request$
             .pipe(takeUntilDestroyed(this.destroyRef))

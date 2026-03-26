@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    ButtonComponent,
+    ButtonComponent, ConfirmationDialogData, ConfirmationDialogService,
     CustomInputComponent,
     SelectComponent,
     SelectItem
@@ -17,7 +17,7 @@ import {
 import { MATERIAL_FORMS } from "@shared/material-forms";
 import { LLMProvider, ModelTypes } from "@shared/models";
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
-import { EMPTY, finalize, forkJoin, of } from 'rxjs';
+import { EMPTY, filter, finalize, forkJoin, of } from 'rxjs';
 import { ToastService } from "../../../../services/notifications";
 import { ConfigureModelsTabId } from "../../enums/configure-models-tab-id.enum";
 
@@ -47,6 +47,7 @@ import { getProviderIconPath } from "@shared/utils";
 })
 export class QuickstartSectionComponent implements OnInit {
     private readonly fb = inject(FormBuilder);
+    private readonly confirmation = inject(ConfirmationDialogService);
     private readonly providersStorageService = inject(LlmProvidersStorageService);
     private readonly llmConfigStorageService = inject(LlmConfigStorageService);
     private readonly embeddingConfigStorageService = inject(EmbeddingConfigStorageService);
@@ -127,11 +128,13 @@ export class QuickstartSectionComponent implements OnInit {
                     }
                 }),
                 map(({ providers, config }) => {
-                    const allowedProviders = new Set(config.supported_providers);
-
-                    return providers.filter(provider =>
-                        allowedProviders.has(provider.name)
+                    const providersMap = new Map(
+                        providers.map(p => [p.name, p])
                     );
+
+                    return config.supported_providers
+                        .map(name => providersMap.get(name))
+                        .filter((p): p is LLMProvider => !!p);
                 }),
                 tap((filteredProviders) => this.providers.set(filteredProviders)),
                 catchError((error) => {
@@ -200,16 +203,21 @@ export class QuickstartSectionComponent implements OnInit {
     }
 
     public onUpdateDefaults(): void {
-        this.quickstartService.applyQuickstart()
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-                tap((models) => {
-                    this.defaultModelsStorageService.updateModelsInStorage(models);
-                    this.quickstartStatus.set('synced');
-                    this.toast.success('Models updated successfully.');
-                })
-            )
-            .subscribe();
+        const data: ConfirmationDialogData = {
+            title: 'Are you sure?',
+            message: 'This will apply Quickstart as a default model for all default LLMs',
+            type: 'info',
+        };
+        this.confirmation.confirm(data).pipe(
+            takeUntilDestroyed(this.destroyRef),
+            filter(result => result === true),
+            switchMap(() => this.quickstartService.applyQuickstart()),
+            tap((models) => {
+                this.defaultModelsStorageService.updateModelsInStorage(models);
+                this.quickstartStatus.set('synced');
+                this.toast.success('Models updated successfully.');
+            })
+        ).subscribe();
     }
 }
 

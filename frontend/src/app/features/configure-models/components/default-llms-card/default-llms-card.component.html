@@ -23,12 +23,14 @@
         <div class="default-llms-card__title">{{ card().title }}</div>
     </div>
     <div class="default-llms-card__controls">
-        <app-select
-            [placeholder]="card().selectLabel"
-            [items]="selectItems()"
-            [selectedValue]="selectedConfigId()"
-            (changed)="selectConfig($event)"
-        />
+        <div class="default-llms-card__select-wrapper">
+            <app-select
+                [placeholder]="card().selectLabel"
+                [items]="selectItems()"
+                [selectedValue]="selectedConfigId()"
+                (changed)="selectConfig($event)"
+            />
+        </div>
         <button
             class="default-llms-card__add"
             type="button"

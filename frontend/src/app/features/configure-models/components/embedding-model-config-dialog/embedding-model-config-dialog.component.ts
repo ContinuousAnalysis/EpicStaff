@@ -6,8 +6,8 @@ import {
     ButtonComponent, CustomInputComponent, IconButtonComponent, ValidationErrorsComponent
 } from "@shared/components";
 import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
-import { EmbeddingConfigsService } from "@shared/services";
 import { ToastService } from "../../../../services/notifications";
+import { EmbeddingConfigStorageService } from "../../services/llms/embedding-config-storage.service";
 import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selector.component";
 
 @Component({
@@ -27,7 +27,7 @@ import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selec
 export class EmbeddingModelConfigDialogComponent {
     private fb = inject(FormBuilder);
     private destroyRef = inject(DestroyRef);
-    private embeddingConfigsService = inject(EmbeddingConfigsService);
+    private embeddingConfigsService = inject(EmbeddingConfigStorageService);
     private toast = inject(ToastService);
     private data = inject(DIALOG_DATA, { optional: true });
 
@@ -56,7 +56,7 @@ export class EmbeddingModelConfigDialogComponent {
 
     private loadConfig(configId: number): void {
         this.isLoading.set(true);
-        this.embeddingConfigsService.getEmbeddingConfigById(configId)
+        this.embeddingConfigsService.getConfigById(configId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (config) => {
@@ -89,8 +89,8 @@ export class EmbeddingModelConfigDialogComponent {
         const formValue = this.form.value;
 
         const request$ = this.isEditMode()
-            ? this.embeddingConfigsService.updateEmbeddingConfig({ id: this.data!.configId!, ...formValue })
-            : this.embeddingConfigsService.createEmbeddingConfig(formValue);
+            ? this.embeddingConfigsService.updateConfig({ id: this.data!.configId!, ...formValue })
+            : this.embeddingConfigsService.createConfig(formValue);
 
         request$
             .pipe(takeUntilDestroyed(this.destroyRef))

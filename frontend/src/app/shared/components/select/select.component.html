@@ -26,7 +26,7 @@
                     [size]="'18px'"
                 ></app-icon>
             }
-            {{ selectedItem() ? selectedItem()!.name : placeholder() }}
+            <span class="selector__text">{{ selectedItem() ? selectedItem()!.name : placeholder() }}</span>
 
             <svg
                 class="selector__chevron"
@@ -55,7 +55,7 @@
                         [size]="'18px'"
                     ></app-icon>
                 }
-                {{ item.name }}
+                <span class="selector__text">{{ item.name }}</span>
             </div>
         }
 

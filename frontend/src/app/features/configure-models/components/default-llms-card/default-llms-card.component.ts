@@ -3,17 +3,18 @@ import { ComponentType } from "@angular/cdk/portal";
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     DestroyRef,
     inject,
-    input, OnInit,
+    input,
+    OnInit,
     output,
-    signal,
+    Signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { AppIconComponent, SelectComponent, SelectItem } from '@shared/components';
-import { Observable, switchMap } from "rxjs";
-import { map } from "rxjs/operators";
 import { DefaultLlmsCard } from '../../interfaces/default-llms-card.interface';
 import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
 import { EmbeddingConfigStorageService } from '../../services/llms/embedding-config-storage.service';
@@ -43,21 +44,26 @@ type DialogComponentType =
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DefaultLlmsCardComponent implements OnInit {
-    private readonly destroyRef = inject(DestroyRef);
     private readonly llmConfigStorageService = inject(LlmConfigStorageService);
     private readonly embeddingConfigStorage = inject(EmbeddingConfigStorageService);
     private readonly realtimeConfigStorage = inject(RealtimeConfigStorageService);
     private readonly transcriptionConfigStorage = inject(TranscriptionConfigStorageService);
 
+    private readonly destroyRef = inject(DestroyRef);
     private dialog = inject(Dialog);
 
     public readonly card = input.required<DefaultLlmsCard>();
     public readonly selectedConfigId = input<number | null>(null);
     public readonly modelSelected = output<{ cardId: string; configId: number | null }>();
 
-    selectItems = signal<SelectItem[]>([]);
+    private readonly configSignals: Record<ModelTypes, Signal<{ id: number; custom_name: string }[]>> = {
+        [ModelTypes.LLM]:           this.llmConfigStorageService.configs,
+        [ModelTypes.EMBEDDING]:     this.embeddingConfigStorage.configs,
+        [ModelTypes.REALTIME]:      this.realtimeConfigStorage.configs,
+        [ModelTypes.TRANSCRIPTION]: this.transcriptionConfigStorage.configs,
+    };
 
-    private readonly configFetchers: Record<ModelTypes, () => Observable<{ id: number; custom_name: string }[]>> = {
+    private readonly configLoaders: Record<ModelTypes, () => Observable<unknown>> = {
         [ModelTypes.LLM]:           () => this.llmConfigStorageService.getAllConfigs(),
         [ModelTypes.EMBEDDING]:     () => this.embeddingConfigStorage.getAllConfigs(),
         [ModelTypes.REALTIME]:      () => this.realtimeConfigStorage.getAllConfigs(),
@@ -71,18 +77,17 @@ export class DefaultLlmsCardComponent implements OnInit {
         [ModelTypes.TRANSCRIPTION]: TranscriptionModelConfigDialogComponent,
     };
 
-    ngOnInit() {
-        this.getConfigs$()
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-                map((items): SelectItem[] =>
-                    items.map(item => ({
-                        value: item.id,
-                        name: item.custom_name,
-                    }))
-                )
-            )
-            .subscribe(items => this.selectItems.set(items));
+    public readonly selectItems = computed<SelectItem[]>(() =>
+        this.configSignals[this.card().configType]().map(item => ({
+            value: item.id,
+            name: item.custom_name,
+        }))
+    );
+
+    public ngOnInit(): void {
+        this.configLoaders[this.card().configType]()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
     }
 
     public selectConfig(configId: number): void {
@@ -95,21 +100,10 @@ export class DefaultLlmsCardComponent implements OnInit {
 
     public onAddModel(): void {
         const component = this.getDialogComponent();
-        const dialogRef = this.dialog.open(component, {
+        this.dialog.open(component, {
             height: '90vh',
             width: '600px',
         });
-
-        dialogRef.closed
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-                switchMap(() => this.getConfigs$())
-            )
-            .subscribe();
-    }
-
-    private getConfigs$(): Observable<{ id: number; custom_name: string }[]> {
-        return this.configFetchers[this.card().configType]();
     }
 
     private getDialogComponent(): ComponentType<DialogComponentType> {

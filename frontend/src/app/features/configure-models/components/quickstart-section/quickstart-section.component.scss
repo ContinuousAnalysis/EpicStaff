@@ -43,7 +43,7 @@
 
     &__row {
         display: grid;
-        grid-template-columns: 100px minmax(0, 1fr);
+        grid-template-columns: 186px minmax(0, 1fr);
         align-items: center;
         gap: 12px;
         position: relative;
@@ -51,9 +51,9 @@
 
     &__label {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
-        width: 85px;
+        gap: 12px;
         font-size: 14px;
         color: rgba(217, 217, 222, 0.8);
 

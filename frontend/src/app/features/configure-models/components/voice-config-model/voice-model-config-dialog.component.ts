@@ -6,9 +6,8 @@ import {
     ButtonComponent, CustomInputComponent, IconButtonComponent, ValidationErrorsComponent
 } from "@shared/components";
 import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
-import { EmbeddingConfigsService, RealtimeModelConfigsService } from "@shared/services";
 import { ToastService } from "../../../../services/notifications";
-import { TranscriptionConfigsService } from "../../../transcription/services/transcription-config.service";
+import { RealtimeConfigStorageService } from "../../services/llms/realtime-config-storage.service";
 import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selector.component";
 
 @Component({
@@ -28,7 +27,7 @@ import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selec
 export class VoiceModelConfigDialogComponent {
     private fb = inject(FormBuilder);
     private destroyRef = inject(DestroyRef);
-    private realtimeModelConfigsService = inject(RealtimeModelConfigsService);
+    private realtimeModelConfigsService = inject(RealtimeConfigStorageService);
     private toast = inject(ToastService);
     private data = inject(DIALOG_DATA, { optional: true });
 

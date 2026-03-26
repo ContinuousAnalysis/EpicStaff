@@ -5,6 +5,9 @@ export const PROVIDER_ICON_PATHS: Record<string, string> = {
   huggingface: 'llm-providers-logos/huggingface-logo',
   groq: 'llm-providers-logos/groq-logo',
   azure: 'llm-providers-logos/azure-logo',
+  gemini: 'llm-providers-logos/gemini-logo',
+  cohere: 'llm-providers-logos/cohere-logo',
+  mistral: 'llm-providers-logos/mistral-logo',
 
   // Default icon
   default: 'llm-providers-logos/logo',

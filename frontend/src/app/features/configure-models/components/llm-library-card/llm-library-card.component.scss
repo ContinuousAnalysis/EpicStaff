@@ -3,6 +3,7 @@
 }
 
 .llm-card {
+    overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     padding: 14px 16px;
@@ -21,9 +22,13 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 0.25rem;
     }
 
     &__model {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         font-size: 11px;
         font-weight: 500;
         color: rgba(217, 217, 222, 0.5);

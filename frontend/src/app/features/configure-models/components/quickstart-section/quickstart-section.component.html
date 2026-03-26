@@ -11,10 +11,10 @@
             <form class="quickstart-section__form" [formGroup]="quickStartForm">
                 <div class="quickstart-section__row">
                     <div class="quickstart-section__label">
-                        <span>Provider</span>
+                        <span>Recommended Provider</span>
                         <mat-icon
                             class="quickstart-section__tooltip-icon"
-                            matTooltip="Select your AI provider"
+                            matTooltip="Select recommended AI provider."
                             matTooltipPosition="above"
                             matTooltipClass="dialog__label-tooltip"
                         >
@@ -23,7 +23,7 @@
                     </div>
                     <app-select
                         formControlName="provider"
-                        placeholder="Select Provider"
+                        placeholder="Select recommended Provider"
                         [required]="true"
                         [items]="providerItems()"
                     />
