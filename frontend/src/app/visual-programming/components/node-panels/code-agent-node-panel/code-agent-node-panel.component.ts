@@ -12,6 +12,7 @@ import {
     FormArray,
     FormBuilder,
 } from '@angular/forms';
+import { FullLLMConfig, FullLLMConfigService } from "@shared/services";
 import { CodeAgentNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
@@ -23,7 +24,7 @@ import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
-import { FullLLMConfigService, FullLLMConfig } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
+
 import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
 

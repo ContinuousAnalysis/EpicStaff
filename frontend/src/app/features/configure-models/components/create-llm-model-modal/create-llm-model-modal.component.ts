@@ -18,7 +18,6 @@ export interface CreateLlmModelDialogData {
 
 @Component({
     selector: 'app-create-llm-model-modal',
-    standalone: true,
     imports: [
         CommonModule,
         ReactiveFormsModule,
