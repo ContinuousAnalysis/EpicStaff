@@ -206,6 +206,7 @@ from tables.serializers.serializers import (
     GraphFileUpdateSerializer,
     UploadGraphFileSerializer,
     BulkExportSerializer,
+    ImportRequestSerializer,
 )
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeFieldSerializer,
@@ -213,7 +214,6 @@ from tables.serializers.telegram_trigger_serializers import (
 )
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
-from tables.serializers.import_serializers import ImportRequestSerializer
 from tables.services.redis_service import RedisService
 from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
 from utils.logger import logger
