@@ -1,43 +1,35 @@
+import { Dialog } from '@angular/cdk/dialog';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
-    OnDestroy,
-    OnInit,
-    signal,
+    computed,
     inject,
+    OnDestroy,
+    signal,
 } from '@angular/core';
-import {
-    GraphDto,
-    CreateGraphDtoRequest,
-    UpdateGraphDtoRequest,
-} from '../../models/graph.model';
-import { FlowsApiService } from '../../services/flows-api.service';
-import {
-    Router,
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-} from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
-import { CreateFlowDialogComponent } from '../../components/create-flow-dialog/create-flow-dialog.component';
 import { ImportFlowOptionsDialogComponent, ImportFlowOptions } from '../../components/import-flow-options-dialog/import-flow-options-dialog.component';
 
-import { Dialog } from '@angular/cdk/dialog';
-
-import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
-import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
+import { ImportExportService } from '../../../../core/services/import-export.service';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import {
     FiltersListComponent,
     SearchFilterChange,
 } from '../../../../shared/components/filters-list/filters-list.component';
-import { FlowsStorageService } from '../../services/flows-storage.service';
-import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { FormsModule } from '@angular/forms';
-import { ImportExportService } from '../../../../core/services/import-export.service';
+import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
+import { CreateFlowDialogComponent } from '../../components/create-flow-dialog/create-flow-dialog.component';
+import { CreateGraphDtoRequest, GraphDto, UpdateGraphDtoRequest } from '../../models/graph.model';
+import { FlowsApiService } from '../../services/flows-api.service';
+import { FlowsStorageService } from '../../services/flows-storage.service';
+import { LabelsStorageService } from '../../services/labels-storage.service';
+import { FlowsLabelSidebarComponent } from './components/flows-label-sidebar/flows-label-sidebar.component';
 
 @Component({
     selector: 'app-flows-list-page',
@@ -52,6 +44,7 @@ import { FlowService } from '../../../../visual-programming/services/flow.servic
         TabButtonComponent,
         FormsModule,
         AppIconComponent,
+        FlowsLabelSidebarComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -70,16 +63,33 @@ export class FlowsListPageComponent implements OnDestroy {
     private router = inject(Router);
     private cdr = inject(ChangeDetectorRef);
     private importExportService = inject(ImportExportService);
+    private labelsStorage = inject(LabelsStorageService);
 
     public selectMode = this.flowStorageService.selectMode;
     public selectedFlowIds = this.flowStorageService.selectedFlowIds;
 
+    public showSidebar = signal<boolean>(true);
+
+    public readonly activeLabelFilterDisplay = computed(() => {
+        const filter = this.labelsStorage.activeLabelFilter();
+        if (filter === 'all') return 'all';
+        if (filter === 'unlabeled') return 'Unlabeled';
+        const label = this.labelsStorage.labels().find((l) => l.id === filter);
+        return label && label.parent ? label.full_path : label?.name;
+    });
+
+    public toggleSidebar(): void {
+        this.showSidebar.update((v) => !v);
+    }
+
+    public selectAllLabels(): void {
+        this.labelsStorage.setActiveLabelFilter('all');
+    }
+
     constructor() {
-        this.subscription = this.searchTerms
-            .pipe(debounceTime(300), distinctUntilChanged())
-            .subscribe((term) => {
-                this.updateSearch(term);
-            });
+        this.subscription = this.searchTerms.pipe(debounceTime(300), distinctUntilChanged()).subscribe((term) => {
+            this.updateSearch(term);
+        });
     }
 
     ngOnDestroy(): void {
@@ -110,12 +120,9 @@ export class FlowsListPageComponent implements OnDestroy {
     }
 
     public openCreateFlowDialog(): void {
-        const dialogRef = this.dialog.open<GraphDto | undefined>(
-            CreateFlowDialogComponent,
-            {
-                width: '500px',
-            }
-        );
+        const dialogRef = this.dialog.open<GraphDto | undefined>(CreateFlowDialogComponent, {
+            width: '500px',
+        });
 
         dialogRef.closed.subscribe((result: GraphDto | undefined) => {
             if (result) {
@@ -125,10 +132,9 @@ export class FlowsListPageComponent implements OnDestroy {
     }
 
     public onImportClick(): void {
-        const dialogRef = this.dialog.open<ImportFlowOptions | undefined>(
-            ImportFlowOptionsDialogComponent,
-            { width: '400px' }
-        );
+        const dialogRef = this.dialog.open<ImportFlowOptions | undefined>(ImportFlowOptionsDialogComponent, {
+            width: '400px',
+        });
 
         dialogRef.closed.subscribe((options) => {
             if (options === undefined) return;
@@ -136,8 +142,8 @@ export class FlowsListPageComponent implements OnDestroy {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
-            input.onchange = (event: any) => {
-                const file = event.target.files[0];
+            input.onchange = (event: Event) => {
+                const file = (event.target as HTMLInputElement).files?.[0];
                 if (file) {
                     this.importExportService.importFlow(file, options.preserveUuids).subscribe({
                         next: (result) => {
@@ -169,7 +175,7 @@ export class FlowsListPageComponent implements OnDestroy {
             return;
         }
 
-        this.importExportService.bulkExportFlow( ids ).subscribe({
+        this.importExportService.bulkExportFlow(ids).subscribe({
             next: (blob) => {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -182,7 +188,7 @@ export class FlowsListPageComponent implements OnDestroy {
             },
             error: (error) => {
                 console.error('Bulk export failed:', error);
-            }
+            },
         });
     }
 

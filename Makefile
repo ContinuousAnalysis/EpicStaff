@@ -27,23 +27,43 @@ help:
 
 backup:
 	@echo "--- Creating Volume Backup ---"
+ifeq ($(OS),Windows_NT)
 	@.\make_scripts\backup.bat
+else
+	@./make_scripts/backup.sh
+endif
 
 apply-backup:
 	@echo "--- Applying Volume Backup ---"
+ifeq ($(OS),Windows_NT)
 	@.\make_scripts\apply_backup.bat
+else
+	@./make_scripts/apply_backup.sh
+endif
 
 stash-tags:
 	@echo "--- Stashing Image Tags ---"
+ifeq ($(OS),Windows_NT)
 	@.\make_scripts\stash_tag_images.bat
+else
+	@./make_scripts/stash_tag_images.sh
+endif
 
 apply-tags:
 	@echo "--- Applying Stashed Image Tags ---"
+ifeq ($(OS),Windows_NT)
 	@.\make_scripts\apply_tag_images.bat
+else
+	@./make_scripts/apply_tag_images.sh
+endif
 
 switch:
 	@echo "--- Switching Full Branch Environment ---"
+ifeq ($(OS),Windows_NT)
 	@.\make_scripts\switch_branch.bat $(b)
+else
+	@./make_scripts/switch_branch.sh $(b)
+endif
 
 # ==========================================
 # DEVELOPMENT Environment
@@ -108,3 +128,18 @@ docker-generate-certs:
 	docker run --rm -v "$(CURDIR)/src/nginx/certs:/certs" -w /certs alpine \
 		sh -c "apk add openssl && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout privkey.pem -out fullchain.pem -subj '/CN=localhost'"
 	@echo "SSL certificates generated!"
+
+# ==========================================
+# LOCAL DJANGO DEVELOPMENT
+# ==========================================
+
+django-makemigrations django-migrate django-manage: export PYTHONPATH = $(CURDIR)
+
+django-makemigrations:
+	@cd src/django_app && python manage.py makemigrations $(ARGS)
+
+django-migrate:
+	@cd src/django_app && python manage.py migrate $(ARGS)
+
+django-manage:
+	@cd src/django_app && python manage.py $(CMD)

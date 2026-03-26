@@ -11,6 +11,7 @@ export interface GraphMessage {
   created_at: string; // This is the timestamp
   message_data: MessageData; // Snake case from API - This will be one of the specific message types
   uuid?: string;
+  metadata: Record<string, any>;
 }
 
 // Message type constants
@@ -29,6 +30,7 @@ export enum MessageType {
   SUBGRAPH_START = 'subgraph_start',
   SUBGRAPH_FINISH = 'subgraph_finish',
   GRAPH_END = 'graph_end',
+  CODE_AGENT_STREAM = 'code_agent_stream',
 }
 
 export interface FinishMessageData {
@@ -168,6 +170,21 @@ export interface GraphEndMessageData {
   message_type: MessageType.GRAPH_END;
 }
 
+export interface CodeAgentToolCall {
+  name: string;
+  input: string;
+  output: string;
+  state: string;
+}
+
+export interface CodeAgentStreamMessageData {
+  text: string;
+  tool_calls?: CodeAgentToolCall[];
+  is_final: boolean;
+  step_id?: number;
+  message_type: MessageType.CODE_AGENT_STREAM;
+}
+
 // Type union for all message data types
 export type MessageData =
   | FinishMessageData
@@ -183,4 +200,5 @@ export type MessageData =
   | ExtractedChunksMessageData
   | StartSubflowMessageData
   | FinishSubflowMessageData
-  | GraphEndMessageData;
+  | GraphEndMessageData
+  | CodeAgentStreamMessageData;

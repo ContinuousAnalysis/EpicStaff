@@ -5,7 +5,14 @@ from collections import defaultdict, deque
 from typing import Type
 
 import redis
-from django.db import IntegrityError, models, transaction
+from django.db import close_old_connections, IntegrityError, models, transaction
+from tables.services.telegram_trigger_service import TelegramTriggerService
+from tables.services.webhook_trigger_service import WebhookTriggerService
+from tables.models import GraphSessionMessage
+from tables.models import PythonCodeResult
+from tables.models import GraphOrganization
+from src.shared.models import CodeResultData, GraphSessionMessageData, WebhookEventData
+from tables.models import Session
 from loguru import logger
 
 from django_app.settings import (
@@ -23,7 +30,7 @@ from tables.models import (
     PythonCodeResult,
     Session,
 )
-from tables.request_models import (
+from src.shared.models import (
     CodeResultData,
     GraphSessionMessageData,
     WebhookEventData,
@@ -63,6 +70,7 @@ class RedisPubSub:
         try:
             logger.debug(f"Received message from session_status_handler: {message}")
             data = json.loads(message["data"])
+            close_old_connections()
             with transaction.atomic():
                 session = Session.objects.get(id=data["session_id"])
                 if data[
@@ -83,6 +91,13 @@ class RedisPubSub:
                     session.status_data = status_data
                     session.token_usage = status_data["total_token_usage"]
                     session.save()
+
+                    if session.status in [
+                        Session.SessionStatus.END,
+                        Session.SessionStatus.ERROR,
+                    ]:
+                        self._save_organization_variables(session=session, data=data)
+
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
 
@@ -91,6 +106,7 @@ class RedisPubSub:
             logger.debug(f"Received message from code_result_handler: {message}")
             data = json.loads(message["data"])
             CodeResultData.model_validate(data)
+            close_old_connections()
             PythonCodeResult.objects.create(**data)
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
@@ -127,7 +143,8 @@ class RedisPubSub:
 
     def _save_organization_variables(self, session: Session, data: dict):
         """
-        Save organization and organization_user variables to database
+        Save organization and organization_user variables to database.
+        Only updates values that exist in the persistent_variables structure.
         """
         try:
             variables = data["status_data"]["variables"]
@@ -137,23 +154,57 @@ class RedisPubSub:
             graph_organization = GraphOrganization.objects.filter(
                 graph=session.graph
             ).first()
-            if graph_organization:
-                for key, value in variables.items():
-                    if key in graph_organization.persistent_variables:
-                        graph_organization.persistent_variables[key] = value
-                graph_organization.save(update_fields=["persistent_variables"])
+            if graph_organization and graph_organization.persistent_variables:
+                if self._update_persistent_values(
+                    graph_organization.persistent_variables, variables
+                ):
+                    graph_organization.save(update_fields=["persistent_variables"])
 
-            if session.graph_user:
-                for key, value in variables.items():
-                    if key in session.graph_user.persistent_variables:
-                        session.graph_user.persistent_variables[key] = value
-                session.graph_user.save(update_fields=["persistent_variables"])
+            if (
+                session.graph_user
+                and graph_organization.user_variables
+                and not session.graph_user.persistent_variables
+            ):
+                session.graph_user.persistent_variables = (
+                    graph_organization.user_variables
+                )
+                session.graph_user.save()
+
+            if session.graph_user and session.graph_user.persistent_variables:
+                if self._update_persistent_values(
+                    session.graph_user.persistent_variables, variables
+                ):
+                    session.graph_user.save(update_fields=["persistent_variables"])
 
         except Exception as e:
             logger.error(f"Error handling organization variables message: {e}")
 
+    def _update_persistent_values(self, persistent: dict, incoming: dict) -> bool:
+        """
+        Recursively update values in persistent dict from incoming dict.
+        Only updates keys that already exist in persistent.
+        Returns True if any values were updated.
+        """
+        updated = False
+
+        for key, persistent_value in persistent.items():
+            if key not in incoming:
+                continue
+
+            incoming_value = incoming[key]
+
+            if isinstance(persistent_value, dict) and isinstance(incoming_value, dict):
+                if self._update_persistent_values(persistent_value, incoming_value):
+                    updated = True
+            elif persistent_value != incoming_value:
+                persistent[key] = incoming_value
+                updated = True
+
+        return updated
+
     def _buffer_save(self, data, model: Type[models.Model]):
         try:
+            close_old_connections()
             with transaction.atomic():
                 created_objects = model.objects.bulk_create(data, ignore_conflicts=True)
                 logger.debug(
@@ -210,6 +261,7 @@ class RedisPubSub:
             graph_session_message_data = GraphSessionMessageData.model_validate(data)
             message_uuid = graph_session_message_data.uuid
             session_id = graph_session_message_data.session_id
+            close_old_connections()
             if not Session.objects.filter(pk=session_id).exists():
                 logger.warning(f"Session {session_id} was deleted")
                 return

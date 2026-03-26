@@ -9,14 +9,17 @@ from tables.models import (
     DecisionTableNode,
     SubGraphNode,
 )
+from tables.models.graph_models import GraphNote
 from tables.import_export.enums import NodeType, EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
+from tables.models.graph_models import CodeAgentNode
 from tables.import_export.serializers.graph import (
     StartNodeImportSerializer,
     CrewNodeImportSerializer,
     PythonNodeImportSerializer,
     LLMNodeImportSerializer,
+    CodeAgentNodeImportSerializer,
     WebhookTriggerNodeImportSerializer,
     FileExtractorNodeImportSerializer,
     AudioTranscriptionNodeImportSerializer,
@@ -27,6 +30,7 @@ from tables.import_export.serializers.graph import (
     ConditionGroupImportSerializer,
     ConditionImportSerializer,
     SubgraphNodeImportSerializer,
+    GraphNoteImportSerializer,
 )
 
 
@@ -64,7 +68,8 @@ def import_webhook_trigger_node(
     old_trigger_id = node_data.pop("webhook_trigger", None)
     new_trigger_id = id_mapper.get_or_none(EntityType.WEBHOOK_TRIGGER, old_trigger_id)
 
-    webhook_trigger = WebhookTrigger.objects.get(id=new_trigger_id)
+    webhook_trigger = WebhookTrigger.objects.filter(id=new_trigger_id).first()
+    webhook_trigger_id = getattr(webhook_trigger, "id", None)
 
     python_code_serializer = PythonCodeImportSerializer(data=python_code_data)
     python_code_serializer.is_valid(raise_exception=True)
@@ -75,7 +80,7 @@ def import_webhook_trigger_node(
             **node_data,
             "graph": graph.id,
             "python_code_id": python_code.id,
-            "webhook_trigger_id": webhook_trigger.id,
+            "webhook_trigger_id": webhook_trigger_id,
         }
     )
     serializer.is_valid(raise_exception=True)
@@ -99,13 +104,18 @@ def import_decision_table_node(
     serializer.is_valid(raise_exception=True)
     decision_table_node = serializer.save()
 
-    for data in condition_groups_data:
-        conditions_data = data.pop("conditions", [])
-        data["decision_table_node_id"] = decision_table_node.id
+    for group_data in condition_groups_data:
+        conditions_data = group_data.pop("conditions", [])
+        group_data["decision_table_node_id"] = decision_table_node.id
 
-        serializer = ConditionGroupImportSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        group_serializer = ConditionGroupImportSerializer(data=group_data)
+        group_serializer.is_valid(raise_exception=True)
+        condition_group = group_serializer.save()
+
+        for condition_data in conditions_data:
+            condition_serializer = ConditionImportSerializer(data=condition_data)
+            condition_serializer.is_valid(raise_exception=True)
+            condition_serializer.save(condition_group=condition_group)
 
     return decision_table_node
 
@@ -126,6 +136,19 @@ def import_telegram_trigger_node(
     serializer.save(telegram_trigger_node=telegram_trigger_node)
 
     return telegram_trigger_node
+
+
+def import_code_agent_node(
+    graph: Graph, node_data: dict, id_mapper: IDMapper
+) -> CodeAgentNode:
+    llm_config_id = node_data.pop("llm_config", None)
+
+    new_llm_config_id = id_mapper.get_or_none(EntityType.LLM_CONFIG, llm_config_id)
+    node_data["llm_config"] = new_llm_config_id
+
+    serializer = CodeAgentNodeImportSerializer(data={**node_data, "graph": graph.id})
+    serializer.is_valid(raise_exception=True)
+    return serializer.save()
 
 
 def import_subgraph_node(
@@ -191,5 +214,14 @@ NODE_HANDLERS = {
         "serializer": EndNodeImportSerializer,
         "relation": "end_node",
         "import_hook": import_end_node,
+    },
+    NodeType.NOTE_NODE: {
+        "serializer": GraphNoteImportSerializer,
+        "relation": "graph_note_list",
+    },
+    NodeType.CODE_AGENT_NODE: {
+        "serializer": CodeAgentNodeImportSerializer,
+        "relation": "code_agent_node_list",
+        "import_hook": import_code_agent_node,
     },
 }
