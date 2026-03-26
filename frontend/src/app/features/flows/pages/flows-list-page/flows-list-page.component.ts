@@ -131,7 +131,7 @@ export class FlowsListPageComponent implements OnDestroy {
         );
 
         dialogRef.closed.subscribe((options) => {
-            if (options === undefined) return;
+            if (!options) return;
 
             const input = document.createElement('input');
             input.type = 'file';
@@ -146,7 +146,6 @@ export class FlowsListPageComponent implements OnDestroy {
                         },
                         error: (error) => {
                             console.error('Import failed:', error);
-                            // TODO: Show error message to user
                         },
                     });
                 }
