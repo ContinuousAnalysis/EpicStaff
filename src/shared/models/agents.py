@@ -58,8 +58,8 @@ class RealtimeAgentChatData(BaseModel):
     llm: LLMData | None = None
     rt_model_name: str
     rt_api_key: str
-    transcript_model_name: str
-    transcript_api_key: str
+    transcript_model_name: str | None = None
+    transcript_api_key: str | None = None
     temperature: float | None
     memory: bool
     tools: list[BaseToolData] = []

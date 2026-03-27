@@ -3,6 +3,7 @@ import uuid
 import websockets
 from typing import Optional, List, Dict, Any, Callable, Awaitable
 from loguru import logger
+from starlette.websockets import WebSocketDisconnect
 
 from models.ai_models import RealtimeTool
 from services.tool_manager_service import ToolManagerService
@@ -97,18 +98,18 @@ class ElevenLabsRealtimeAgentClient:
         self.ws = await websockets.connect(url, extra_headers=headers)
         logger.info(f"ElevenLabs WebSocket connected: agent_id={self.agent_id}")
 
-        # Начальный конфиг
+        # Начальный конфиг — всегда отправляем, чтобы ElevenLabs начал разговор
+        # (без этого сообщения ElevenLabs не шлёт first_message и аудио не идёт)
         config_override = {}
         if self.voice and self.voice.lower() not in _OPENAI_VOICE_NAMES:
             config_override["tts"] = {"voice_id": self.voice}
 
-        if config_override:
-            await self.send_server(
-                {
-                    "type": "conversation_initiation_client_data",
-                    "conversation_config_override": config_override,
-                }
-            )
+        await self.send_server(
+            {
+                "type": "conversation_initiation_client_data",
+                "conversation_config_override": config_override,
+            }
+        )
 
     async def close(self) -> None:
         """Закрытие WebSocket."""
@@ -120,10 +121,6 @@ class ElevenLabsRealtimeAgentClient:
     # ------------------------------------------------------------------
 
     async def send_client(self, data: dict):
-        """
-        Отправка события на фронтенд.
-        ФИКС: Обязательно добавляем event_id, иначе фронтенд OpenAI выдаст ошибку.
-        """
         if "event_id" not in data:
             data["event_id"] = f"evt_{uuid.uuid4().hex[:16]}"
 
@@ -155,10 +152,17 @@ class ElevenLabsRealtimeAgentClient:
 
                     await self.server_event_handler.handle_event(data)
 
+                except WebSocketDisconnect:
+                    logger.info(
+                        "ElevenLabs: Client disconnected, stopping message handler"
+                    )
+                    break
                 except Exception as e:
                     logger.exception(f"ElevenLabs: Error processing message: {str(e)}")
         except websockets.exceptions.ConnectionClosed:
             logger.info("ElevenLabs: Connection closed")
+        finally:
+            await self.close()
 
     async def process_message(
         self, message: Dict[str, Any]

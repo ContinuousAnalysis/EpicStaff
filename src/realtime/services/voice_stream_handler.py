@@ -142,10 +142,7 @@ class VoiceStreamHandler:
             # Twilio (µ-law 8kHz) -> ElevenLabs (PCM 16kHz)
             pcm16 = self._ulaw_to_pcm16k(raw)
             audio_b64 = base64.b64encode(pcm16).decode()
-            # ФИКС: Правильная структура ивента для ElevenLabs
-            await self.rt_agent_client.send_server(
-                {"type": "user_audio_chunk", "chunk": audio_b64}
-            )
+            await self.rt_agent_client.send_server({"user_audio_chunk": audio_b64})
         else:
             audio_b64 = base64.b64encode(raw).decode()
             await self.rt_agent_client.send_server(
@@ -161,8 +158,7 @@ class VoiceStreamHandler:
             try:
                 audio_bytes = base64.b64decode(data["delta"])
                 if self._is_elevenlabs:
-                    # ElevenLabs (PCM 16kHz или 24kHz) -> Twilio (µ-law 8kHz)
-                    # Если вы используете модель Flash, там 16кГц. Если Turbo - 24кГц.
+                    # ElevenLabs шлёт raw PCM 16kHz → конвертируем в µ-law 8kHz для Twilio
                     audio_bytes = self._pcm_to_ulaw(audio_bytes, input_rate=16000)
 
                 await self._send_audio_to_twilio(audio_bytes)

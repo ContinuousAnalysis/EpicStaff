@@ -1,9 +1,7 @@
-import base64
 import json
 import uuid
 from typing import Any, Dict, Optional
 
-import numpy as np
 from db.database import save_realtime_session_item_to_db
 from loguru import logger
 
@@ -145,31 +143,16 @@ class ElevenLabsServerEventHandler:
 
         await self._ensure_assistant_item()
 
-        try:
-            pcm_data = base64.b64decode(audio_b64)
-            audio_array_16k = np.frombuffer(pcm_data, dtype=np.int16)
-            if len(audio_array_16k) > 0:
-                # Upsampling 16k -> 24k
-                x_16k = np.arange(len(audio_array_16k))
-                x_24k = np.linspace(
-                    0, len(audio_array_16k) - 1, int(len(audio_array_16k) * 1.5)
-                )
-                audio_array_24k = np.interp(x_24k, x_16k, audio_array_16k).astype("<i2")
-
-                await self._send_to_client(
-                    {
-                        "type": "response.audio.delta",
-                        "response_id": self._current_response_id,
-                        "item_id": self._current_item_id,
-                        "output_index": self._assistant_output_index,  # Используем динамический индекс
-                        "content_index": 0,
-                        "delta": base64.b64encode(audio_array_24k.tobytes()).decode(
-                            "utf-8"
-                        ),
-                    }
-                )
-        except Exception as e:
-            logger.error(f"Audio upsample error: {e}")
+        await self._send_to_client(
+            {
+                "type": "response.audio.delta",
+                "response_id": self._current_response_id,
+                "item_id": self._current_item_id,
+                "output_index": self._assistant_output_index,
+                "content_index": 0,
+                "delta": audio_b64,  # raw PCM 16kHz — consumer converts as needed
+            }
+        )
 
     async def _handle_agent_response(self, data: Dict[str, Any]) -> None:
         agent_response_event = data.get("agent_response_event", {})

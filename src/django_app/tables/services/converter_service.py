@@ -358,8 +358,12 @@ class ConverterService(metaclass=SingletonMeta):
             tools=self._get_agent_base_tools(agent=agent),
             rt_model_name=rt_config.realtime_model.name,
             rt_api_key=rt_config.api_key,
-            transcript_model_name=rt_transcription_config.realtime_transcription_model.name,
-            transcript_api_key=rt_transcription_config.api_key,
+            transcript_model_name=rt_transcription_config.realtime_transcription_model.name
+            if rt_transcription_config
+            else None,
+            transcript_api_key=rt_transcription_config.api_key
+            if rt_transcription_config
+            else None,
             temperature=agent.default_temperature,
             connection_key=rt_agent_chat.connection_key,
             wake_word=rt_agent_chat.wake_word,

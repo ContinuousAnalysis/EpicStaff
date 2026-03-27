@@ -1,5 +1,7 @@
 import asyncio
+import base64
 import json
+import numpy as np
 from fastapi import WebSocket, WebSocketDisconnect
 from loguru import logger
 
@@ -105,7 +107,7 @@ class ChatExecutor:
                 # otherwise auto-provision via ElevenLabsAgentProvisioner
                 agent_id=self.realtime_agent_chat_data.rt_model_name or "",
                 agent_provisioner=self.elevenlabs_agent_provisioner,
-                on_server_event=self.client_websocket.send_json,
+                on_server_event=self._elevenlabs_frontend_event,
                 tool_manager_service=self.tool_manager_service,
                 rt_tools=rt_tools,
                 voice=self.realtime_agent_chat_data.voice,
@@ -143,6 +145,31 @@ class ChatExecutor:
         )
 
         return rt_agent_client, rt_transcription_client
+
+    async def _elevenlabs_frontend_event(self, data: dict) -> None:
+        """Forward ElevenLabs events to the frontend WebSocket.
+
+        Upsamples audio delta from 16kHz to 24kHz expected by the browser,
+        leaving all other events unchanged.
+        """
+        if data.get("type") == "response.audio.delta":
+            try:
+                pcm_data = base64.b64decode(data["delta"])
+                audio_16k = np.frombuffer(pcm_data, dtype=np.int16)
+                if len(audio_16k) > 0:
+                    x_16k = np.arange(len(audio_16k))
+                    x_24k = np.linspace(
+                        0, len(audio_16k) - 1, int(len(audio_16k) * 1.5)
+                    )
+                    audio_24k = np.interp(x_24k, x_16k, audio_16k).astype("<i2")
+                    data = {
+                        **data,
+                        "delta": base64.b64encode(audio_24k.tobytes()).decode(),
+                    }
+            except Exception as e:
+                logger.error(f"ElevenLabs audio upsample error: {e}")
+
+        await self.client_websocket.send_json(data)
 
     async def execute(self):
         try:
