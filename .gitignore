@@ -267,3 +267,4 @@ dev/dev.env
 CLAUDE.md
 CLAUDE.local.md
 !prod/prod.env.manifest
+.claude/settings.local.json

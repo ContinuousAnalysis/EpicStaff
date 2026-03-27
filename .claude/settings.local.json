@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(make dev:*)"
+      "Bash(make dev:*)",
+      "WebSearch",
+      "WebFetch(domain:elevenlabs.io)"
     ]
   }
 }

@@ -152,7 +152,7 @@ docker-generate-certs:
 # LOCAL DJANGO DEVELOPMENT
 # ==========================================
 
-django-makemigrations django-migrate django-manage: export PYTHONPATH = $(CURDIR)
+django-makemigrations django-migrate django-manage setup-elevenlabs setup-elevenlabs-all: export PYTHONPATH = $(CURDIR)
 
 django-makemigrations:
 	@cd src/django_app && python manage.py makemigrations $(ARGS)
@@ -162,3 +162,12 @@ django-migrate:
 
 django-manage:
 	@cd src/django_app && python manage.py $(CMD)
+
+## ElevenLabs setup
+## Usage: make setup-elevenlabs AGENT_ID=42 EL_API_KEY=sk-el-...
+setup-elevenlabs:
+	@cd src/django_app && python manage.py setup_elevenlabs --agent-id $(AGENT_ID) --el-api-key $(EL_API_KEY) $(ARGS)
+
+## Usage: make setup-elevenlabs-all EL_API_KEY=sk-el-...
+setup-elevenlabs-all:
+	@cd src/django_app && python manage.py setup_elevenlabs --all-agents --el-api-key $(EL_API_KEY) $(ARGS)

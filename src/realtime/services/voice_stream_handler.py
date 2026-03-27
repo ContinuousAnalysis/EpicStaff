@@ -1,3 +1,4 @@
+import audioop
 import asyncio
 import base64
 import json
@@ -10,6 +11,8 @@ from ai.agent.openai_realtime_agent_client import (
     OpenaiRealtimeAgentClient,
     TurnDetectionMode,
 )
+from ai.agent.elevenlabs_realtime_agent_client import ElevenLabsRealtimeAgentClient
+from ai.agent.elevenlabs_agent_provisioner import ElevenLabsAgentProvisioner
 from models.ai_models import RealtimeTool
 from services.tool_manager_service import ToolManagerService
 from src.shared.models import RealtimeAgentChatData
@@ -21,10 +24,12 @@ MIN_CHUNK_SIZE = 960
 
 class VoiceStreamHandler:
     """
-    Bridges a Twilio MediaStream WebSocket directly to OpenaiRealtimeAgentClient,
+    Bridges a Twilio MediaStream WebSocket directly to an AI Realtime API client,
     eliminating the intermediate WebSocket hop from voice_app → realtime.
 
-    Audio path: Twilio WS → (in-process) → OpenAI Realtime API
+    Supported providers:
+      - openai:      Audio path: Twilio (G.711 µ-law) ↔ OpenAI (G.711 µ-law, no conversion)
+      - elevenlabs:  Audio path: Twilio (G.711 µ-law) ↔ ElevenLabs (PCM 16kHz, with conversion)
     """
 
     def __init__(
@@ -34,16 +39,23 @@ class VoiceStreamHandler:
         instructions: str,
         tool_manager_service: ToolManagerService,
         connections: dict,
+        elevenlabs_agent_provisioner: ElevenLabsAgentProvisioner | None = None,
     ):
         self.twilio_ws = twilio_ws
         self.realtime_agent_chat_data = realtime_agent_chat_data
         self.instructions = instructions
         self.tool_manager_service = tool_manager_service
         self.connections = connections
+        self.elevenlabs_agent_provisioner = elevenlabs_agent_provisioner
 
         self.stream_sid: Optional[str] = None
         self.audio_accumulator = bytearray()
-        self.rt_agent_client: Optional[OpenaiRealtimeAgentClient] = None
+        self.rt_agent_client: Optional[
+            OpenaiRealtimeAgentClient | ElevenLabsRealtimeAgentClient
+        ] = None
+        self._is_elevenlabs = realtime_agent_chat_data.rt_provider == "elevenlabs"
+        # audioop.ratecv state for resampling continuity (ElevenLabs output: 16kHz → 8kHz)
+        self._resample_state = None
 
     async def execute(self):
         # Register tools the same way ChatExecutor does
@@ -57,23 +69,44 @@ class VoiceStreamHandler:
             connection_key=self.realtime_agent_chat_data.connection_key
         )
 
-        self.rt_agent_client = OpenaiRealtimeAgentClient(
-            api_key=self.realtime_agent_chat_data.rt_api_key,
-            connection_key=self.realtime_agent_chat_data.connection_key,
-            on_server_event=self._handle_openai_event,
-            tool_manager_service=self.tool_manager_service,
-            rt_tools=rt_tools,
-            model=self.realtime_agent_chat_data.rt_model_name,
-            voice=self.realtime_agent_chat_data.voice,
-            instructions=self.instructions,
-            temperature=self.realtime_agent_chat_data.temperature,
-            input_audio_format="g711_ulaw",
-            output_audio_format="g711_ulaw",
-            turn_detection_mode=TurnDetectionMode.SERVER_VAD,
-        )
+        if self._is_elevenlabs:
+            llm_model = (
+                self.realtime_agent_chat_data.llm.config.model
+                if self.realtime_agent_chat_data.llm
+                else "gpt-4o-mini"
+            )
+            self.rt_agent_client = ElevenLabsRealtimeAgentClient(
+                api_key=self.realtime_agent_chat_data.rt_api_key,
+                connection_key=self.realtime_agent_chat_data.connection_key,
+                agent_id=self.realtime_agent_chat_data.rt_model_name or "",
+                agent_provisioner=self.elevenlabs_agent_provisioner,
+                on_server_event=self._handle_provider_event,
+                tool_manager_service=self.tool_manager_service,
+                rt_tools=rt_tools,
+                voice=self.realtime_agent_chat_data.voice,
+                instructions=self.instructions,
+                temperature=self.realtime_agent_chat_data.temperature,
+                llm_model=llm_model,
+            )
+        else:
+            self.rt_agent_client = OpenaiRealtimeAgentClient(
+                api_key=self.realtime_agent_chat_data.rt_api_key,
+                connection_key=self.realtime_agent_chat_data.connection_key,
+                on_server_event=self._handle_provider_event,
+                tool_manager_service=self.tool_manager_service,
+                rt_tools=rt_tools,
+                model=self.realtime_agent_chat_data.rt_model_name,
+                voice=self.realtime_agent_chat_data.voice,
+                instructions=self.instructions,
+                temperature=self.realtime_agent_chat_data.temperature,
+                input_audio_format="g711_ulaw",
+                output_audio_format="g711_ulaw",
+                turn_detection_mode=TurnDetectionMode.SERVER_VAD,
+            )
 
         await self.rt_agent_client.connect()
-        logger.success("Voice stream connected to OpenAI Realtime API")
+        provider_name = "ElevenLabs" if self._is_elevenlabs else "OpenAI"
+        logger.success(f"Voice stream connected to {provider_name} Realtime API")
 
         message_task = asyncio.create_task(self.rt_agent_client.handle_messages())
         try:
@@ -95,6 +128,9 @@ class VoiceStreamHandler:
         if event == "start":
             self.stream_sid = data["start"]["streamSid"]
             logger.info(f"Twilio stream started: {self.stream_sid}")
+            if not self._is_elevenlabs:
+                # OpenAI needs an explicit response.create to kick off
+                await self.rt_agent_client.send_server({"type": "response.create"})
         elif event == "media":
             chunk = base64.b64decode(data["media"]["payload"])
             self.audio_accumulator.extend(chunk)
@@ -106,18 +142,25 @@ class VoiceStreamHandler:
                 await self._flush_audio()
 
     async def _flush_audio(self):
-        audio_b64 = base64.b64encode(bytes(self.audio_accumulator)).decode()
-        await self.rt_agent_client.send_server(
-            {
-                "type": "input_audio_buffer.append",
-                "audio": audio_b64,
-            }
-        )
+        raw = bytes(self.audio_accumulator)
         self.audio_accumulator.clear()
 
-    async def _handle_openai_event(self, data: dict):
+        if self._is_elevenlabs:
+            # Twilio sends G.711 µ-law 8kHz → ElevenLabs expects PCM 16-bit 16kHz
+            pcm = self._ulaw_to_pcm16k(raw)
+            audio_b64 = base64.b64encode(pcm).decode()
+            await self.rt_agent_client.send_server(
+                {"type": "user_audio_chunk", "user_audio_chunk": {"audio": audio_b64}}
+            )
+        else:
+            audio_b64 = base64.b64encode(raw).decode()
+            await self.rt_agent_client.send_server(
+                {"type": "input_audio_buffer.append", "audio": audio_b64}
+            )
+
+    async def _handle_provider_event(self, data: dict):
         """
-        Intercepts OpenAI Realtime API events for voice-specific routing.
+        Intercepts provider events for voice-specific routing.
         Only audio delta and speech interruption events are acted on;
         all other events are dropped (no browser client to forward to).
         """
@@ -125,16 +168,45 @@ class VoiceStreamHandler:
 
         if event_type == "response.audio.delta":
             audio_bytes = base64.b64decode(data["delta"])
+            if self._is_elevenlabs:
+                # ElevenLabs sends PCM 16kHz → convert back to G.711 µ-law 8kHz for Twilio
+                audio_bytes = self._pcm16k_to_ulaw(audio_bytes)
             await self._send_audio_to_twilio(audio_bytes)
 
         elif event_type == "input_audio_buffer.speech_started":
             # User started speaking — clear Twilio's playback buffer and cancel response
             await self._clear_twilio_buffer()
             if self.rt_agent_client._is_responding:
-                await self.rt_agent_client.send_server({"type": "response.cancel"})
+                if self._is_elevenlabs:
+                    # ElevenLabs interruption handling is server-side; nothing extra needed
+                    pass
+                else:
+                    await self.rt_agent_client.send_server({"type": "response.cancel"})
 
         elif event_type == "error":
-            logger.error(f"OpenAI Realtime error in voice stream: {data}")
+            logger.error(f"Realtime API error in voice stream: {data}")
+
+    # ------------------------------------------------------------------
+    # Audio helpers (ElevenLabs only)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _ulaw_to_pcm16k(ulaw_bytes: bytes) -> bytes:
+        """Decode G.711 µ-law 8kHz to 16-bit linear PCM at 16kHz."""
+        pcm_8k = audioop.ulaw2lin(ulaw_bytes, 2)  # µ-law → 16-bit PCM @ 8kHz
+        pcm_16k, _ = audioop.ratecv(pcm_8k, 2, 1, 8000, 16000, None)
+        return pcm_16k
+
+    def _pcm16k_to_ulaw(self, pcm_bytes: bytes) -> bytes:
+        """Convert 16-bit linear PCM 16kHz to G.711 µ-law 8kHz."""
+        pcm_8k, self._resample_state = audioop.ratecv(
+            pcm_bytes, 2, 1, 16000, 8000, self._resample_state
+        )
+        return audioop.lin2ulaw(pcm_8k, 2)
+
+    # ------------------------------------------------------------------
+    # Twilio helpers
+    # ------------------------------------------------------------------
 
     async def _send_audio_to_twilio(self, audio_bytes: bytes):
         if self.stream_sid and self.twilio_ws:

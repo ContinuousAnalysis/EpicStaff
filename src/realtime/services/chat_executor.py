@@ -20,6 +20,8 @@ from ai.transcription.realtime_transcription import (
 from ai.agent.openai_realtime_agent_client import (
     OpenaiRealtimeAgentClient,
 )
+from ai.agent.elevenlabs_realtime_agent_client import ElevenLabsRealtimeAgentClient
+from ai.agent.elevenlabs_agent_provisioner import ElevenLabsAgentProvisioner
 from services.chat_mode import ChatMode
 from utils.tokenizer import Tokenizer
 
@@ -37,6 +39,7 @@ class ChatExecutor:
             WebSocket,
             tuple[OpenaiRealtimeAgentClient, OpenaiRealtimeTranscriptionClient],
         ],
+        elevenlabs_agent_provisioner: ElevenLabsAgentProvisioner | None = None,
     ):
         self.client_websocket = client_websocket
         self.realtime_agent_chat_data = realtime_agent_chat_data
@@ -45,10 +48,16 @@ class ChatExecutor:
         self.python_code_executor_service = python_code_executor_service
         self.tool_manager_service = tool_manager_service
         self.connections = connections
+        self.elevenlabs_agent_provisioner = elevenlabs_agent_provisioner
         self.wake_word = realtime_agent_chat_data.wake_word
         self.current_chat_mode = ChatMode.CONVERSATION
+        # ElevenLabs handles VAD/transcription internally — stop/listen mode not supported
+        chat_executor_ref = (
+            None if realtime_agent_chat_data.rt_provider == "elevenlabs" else self
+        )
         self.tool_manager_service.register_tools_from_rt_agent_chat_data(
-            realtime_agent_chat_data=realtime_agent_chat_data, chat_executor=self
+            realtime_agent_chat_data=realtime_agent_chat_data,
+            chat_executor=chat_executor_ref,
         )
 
     def initialize_buffer(
@@ -76,12 +85,36 @@ class ChatExecutor:
         self,
         buffer: ChatSummarizedBuffer,
     ) -> tuple[
-        OpenaiRealtimeAgentClient,
-        OpenaiRealtimeTranscriptionClient,
+        OpenaiRealtimeAgentClient | ElevenLabsRealtimeAgentClient,
+        OpenaiRealtimeTranscriptionClient | None,
     ]:
         rt_tools = await self.tool_manager_service.get_realtime_tool_models(
             connection_key=self.realtime_agent_chat_data.connection_key
         )
+
+        if self.realtime_agent_chat_data.rt_provider == "elevenlabs":
+            llm_model = (
+                self.realtime_agent_chat_data.llm.config.model
+                if self.realtime_agent_chat_data.llm
+                else "gpt-4o-mini"
+            )
+            rt_agent_client = ElevenLabsRealtimeAgentClient(
+                api_key=self.realtime_agent_chat_data.rt_api_key,
+                connection_key=self.realtime_agent_chat_data.connection_key,
+                # rt_model_name is used as explicit agent_id when set (manual mode),
+                # otherwise auto-provision via ElevenLabsAgentProvisioner
+                agent_id=self.realtime_agent_chat_data.rt_model_name or "",
+                agent_provisioner=self.elevenlabs_agent_provisioner,
+                on_server_event=self.client_websocket.send_json,
+                tool_manager_service=self.tool_manager_service,
+                rt_tools=rt_tools,
+                voice=self.realtime_agent_chat_data.voice,
+                instructions=self.instructions,
+                temperature=self.realtime_agent_chat_data.temperature,
+                llm_model=llm_model,
+            )
+            # ElevenLabs has built-in STT/VAD — no separate transcription client needed
+            return rt_agent_client, None
 
         rt_agent_client = OpenaiRealtimeAgentClient(
             api_key=self.realtime_agent_chat_data.rt_api_key,
@@ -129,7 +162,8 @@ class ChatExecutor:
             )
 
             await rt_agent_client.connect()
-            await rt_transcription_client.connect()
+            if rt_transcription_client is not None:
+                await rt_transcription_client.connect()
 
             self.connections[self.client_websocket] = (
                 rt_agent_client,
@@ -138,9 +172,10 @@ class ChatExecutor:
             rt_agent_client_message_handler = asyncio.create_task(
                 rt_agent_client.handle_messages()
             )
-            rt_transcription_client_message_handler = asyncio.create_task(
-                rt_transcription_client.handle_messages()
-            )
+            if rt_transcription_client is not None:
+                rt_transcription_client_message_handler = asyncio.create_task(
+                    rt_transcription_client.handle_messages()
+                )
 
             logger.info("WebSocket connection established")
 
@@ -150,7 +185,10 @@ class ChatExecutor:
             ]
             # Main communication loop
             while True:
-                if self.current_chat_mode == ChatMode.LISTEN:
+                if (
+                    self.current_chat_mode == ChatMode.LISTEN
+                    and rt_transcription_client is not None
+                ):
                     client = rt_transcription_client
                     last_input: list[str] = buffer.get_last_input()
                     # logger.debug(f"Last input: {last_input}")
@@ -205,6 +243,9 @@ class ChatExecutor:
                     await self.client_websocket.send_json(
                         {"type": "error", "message": "Invalid JSON format"}
                     )
+
+                except WebSocketDisconnect:
+                    raise
 
                 except Exception as e:
                     logger.exception(f"Error processing message: {e}")

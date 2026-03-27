@@ -13,6 +13,7 @@ from services.tool_manager_service import ToolManagerService
 from services.voice_stream_handler import VoiceStreamHandler
 from utils.instructions_concatenator import generate_instruction
 from ai.agent.openai_realtime_agent_client import OpenaiRealtimeAgentClient
+from ai.agent.elevenlabs_agent_provisioner import ElevenLabsAgentProvisioner
 
 from api.connection_repository import ConnectionRepository
 from ai.transcription.realtime_transcription import (
@@ -40,6 +41,7 @@ tool_manager_service = ToolManagerService(
     manager_host=settings.MANAGER_HOST,
     manager_port=settings.MANAGER_PORT,
 )
+elevenlabs_agent_provisioner = ElevenLabsAgentProvisioner(redis_service=redis_service)
 
 
 # Enable CORS
@@ -138,6 +140,7 @@ async def root(
         python_code_executor_service=python_code_executor_service,
         tool_manager_service=tool_manager_service,
         connections=connections,
+        elevenlabs_agent_provisioner=elevenlabs_agent_provisioner,
     )
 
     await strategy.execute()
@@ -222,5 +225,6 @@ async def voice_stream(twilio_ws: WebSocket):
         instructions=instructions,
         tool_manager_service=tool_manager_service,
         connections=connections,
+        elevenlabs_agent_provisioner=elevenlabs_agent_provisioner,
     )
     await handler.execute()

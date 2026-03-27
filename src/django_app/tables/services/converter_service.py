@@ -369,6 +369,9 @@ class ConverterService(metaclass=SingletonMeta):
             voice=rt_agent_chat.voice,
             input_audio_format=rt_agent_chat.input_audio_format.value,
             output_audio_format=rt_agent_chat.output_audio_format.value,
+            rt_provider=rt_config.realtime_model.provider.name
+            if rt_config.realtime_model.provider
+            else "openai",
         )
 
         return rt_agent_chat_data
