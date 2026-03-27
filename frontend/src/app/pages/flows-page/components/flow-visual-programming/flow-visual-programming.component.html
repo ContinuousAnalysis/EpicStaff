@@ -28,7 +28,7 @@
         (closed)="closeShortcutsModal()"
     ></app-shortcuts-modal>
 
-    @if (isPanelOpen) {
+    @if (isPanelOpen || !isPanelOpen) {
         <div
             class="drag-handle"
             [class.dragging]="isDragging"

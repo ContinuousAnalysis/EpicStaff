@@ -6,8 +6,8 @@
         <p class="text">Session execution</p>
     </div>
     <button
-        [disabled]="!hasPreviousSession"
-        (click)="goToPreviousSession()"
+        [disabled]="!hasNextSession"
+        (click)="goToNextSession()"
         class="btn-switch-session"
     >
         <div class="icon-arrow">
@@ -66,8 +66,8 @@
     </div>
 
     <button
-        [disabled]="!hasNextSession"
-        (click)="goToNextSession()"
+        [disabled]="!hasPreviousSession"
+        (click)="goToPreviousSession()"
         class="btn-switch-session"
     >
         <div class="icon-arrow">
@@ -105,6 +105,11 @@
         <app-graph-messages
             [graphId]="graphId"
             [sessionId]="selectedSessionId"
+            class="graph-messages-list"
         ></app-graph-messages>
+    } @else if (sessions.length === 0) {
+        <div class="panel-body__empty">
+            Click <span class="panel-body__run-badge"><i class="ti ti-player-play-filled"></i>Run</span> button to see session messages
+        </div>
     }
 </div>

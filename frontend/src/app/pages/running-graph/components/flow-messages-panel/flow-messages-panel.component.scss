@@ -48,7 +48,7 @@
         }
 
         &:active,
-        &[aria-pressed="true"] {
+        &[aria-pressed='true'] {
             background-color: #685fff;
             color: var(--color-text-primary);
             border-color: #685fff;
@@ -87,7 +87,7 @@
         }
 
         &:active,
-        &[aria-pressed="true"] {
+        &[aria-pressed='true'] {
             background-color: transparent;
             color: #685fff;
             border-color: #685fff;
@@ -179,10 +179,7 @@
         box-sizing: border-box;
 
         &::placeholder {
-            color: var(
-                --color-ks-transparent-text-60,
-                rgba(255, 255, 255, 0.4)
-            );
+            color: var(--color-ks-transparent-text-60, rgba(255, 255, 255, 0.4));
         }
 
         &:focus {
@@ -259,4 +256,37 @@
     overflow: hidden;
     padding: 0 16px;
     padding-top: 0;
+
+    &__empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 100%;
+        color: var(--color-ks-transparent-text-60, rgba(255, 255, 255, 0.4));
+        font-size: 13px;
+        text-align: center;
+    }
+
+    &__run-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0 8px;
+        height: 24px;
+        border-radius: 4px;
+        background-color: var(--accent-color);
+        color: white;
+        font-size: 12px;
+        font-weight: 400;
+        vertical-align: middle;
+        cursor: default;
+
+        i {
+            font-size: 10px;
+        }
+    }
+    .graph-messages-list {
+        zoom: 0.9;
+    }
 }

@@ -66,6 +66,10 @@ export class FlowMessagesPanelComponent implements OnInit, OnChanges, OnDestroy 
     public ngOnInit(): void {
         this.selectedSessionId = this.sessionId;
         this.loadSessions();
+
+        this.graphSessionService.sessionsChanged$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => this.loadSessions());
     }
 
     public ngOnChanges(changes: SimpleChanges): void {
@@ -113,7 +117,7 @@ export class FlowMessagesPanelComponent implements OnInit, OnChanges, OnDestroy 
         const session = this.sessions.find(
             (s) => s.id.toString() === this.selectedSessionId,
         );
-        return session ? `ID ${session.id}` : '—';
+        return session ? `ID ${session.id}` : `ID -`;
     }
 
     public goToPreviousSession(): void {
@@ -181,6 +185,20 @@ export class FlowMessagesPanelComponent implements OnInit, OnChanges, OnDestroy 
                     this.sessions = (response.results as GraphSessionLight[]).sort(
                         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
                     );
+
+                    const selectedStillExists = this.selectedSessionId &&
+                        this.sessions.some(s => s.id.toString() === this.selectedSessionId);
+
+                    if (!selectedStillExists) {
+                        if (this.sessions.length > 0) {
+                            this.selectedSessionId = this.sessions[0].id.toString();
+                            this.sessionSelected.emit(this.selectedSessionId);
+                        } else {
+                            this.selectedSessionId = null;
+                            this.sessionSelected.emit('');
+                        }
+                    }
+
                     this.cdr.markForCheck();
                 },
             });

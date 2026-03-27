@@ -104,7 +104,7 @@ export class FlowVisualProgrammingComponent
     public isRunning = false;
 
     public isPanelOpen = false;
-    public isPanelCollapsed = false;
+    public isPanelCollapsed = true;
     public currentSessionId: string | null = null;
     public panelWidthPx = 450;
     public isDragging = false;
@@ -441,6 +441,7 @@ export class FlowVisualProgrammingComponent
                 next: (response: any) => {
                     this.currentSessionId = response.session_id.toString();
                     this.isPanelOpen = true;
+                    this.isPanelCollapsed = false;
                     this.cdr.markForCheck();
                 },
                 error: (error: any) => {
