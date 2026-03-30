@@ -92,7 +92,7 @@ export class StepSelectRagComponent implements OnInit {
     }
 
     public onSelectRag(rag: Rag): void {
-        if (rag.disabled || this.forceType() !== rag.value) return;
+        if (rag.disabled || (this.forceType() && this.forceType() !== rag.value)) return;
 
         this.selectedRag.set(rag.value);
     }

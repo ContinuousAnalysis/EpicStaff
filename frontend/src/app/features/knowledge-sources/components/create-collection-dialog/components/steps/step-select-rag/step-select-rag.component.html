@@ -8,7 +8,7 @@
         @for (rag of RAG_TYPES; track rag.name) {
             <app-rag-type
                 class="select-rag__item"
-                [class.select-rag__item--disabled]="rag.disabled || forceType() !== rag.value"
+                [class.select-rag__item--disabled]="rag.disabled || (forceType() && forceType() !== rag.value)"
                 [rag]="rag"
                 [selected]="selectedRag() === rag.value"
                 (click)="onSelectRag(rag)"
