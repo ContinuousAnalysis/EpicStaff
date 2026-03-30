@@ -1,7 +1,9 @@
 from django.db import models
 
+from tables.models.base_models import ContentHashMixin
 
-class PythonCode(models.Model):
+
+class PythonCode(ContentHashMixin, models.Model):
     code = models.TextField()
     entrypoint = models.TextField(default="main")
     libraries = models.TextField(default="")  # sep: space

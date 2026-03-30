@@ -1,6 +1,6 @@
 import {HttpClient, HttpHeaders} from "@angular/common/http";
 import {ConfigService} from "../../../../../services/config/config.service";
-import {ApiGetRequest} from "../../../../../shared/models/api-request.model";
+import {ApiGetRequest} from "../../../../../core/models/api-request.model";
 import {map, Observable} from "rxjs";
 import {
     CreateTelegramTriggerNodeRequest,
@@ -43,6 +43,19 @@ export class TelegramTriggerNodeService {
         return this.http.post<GetTelegramTriggerNodeRequest>(this.apiUrlNode, request, {
             headers: this.headers,
         });
+    }
+
+    updateTelegramTriggerNode(
+        id: number,
+        request: CreateTelegramTriggerNodeRequest
+    ): Observable<GetTelegramTriggerNodeRequest> {
+        return this.http.put<GetTelegramTriggerNodeRequest>(
+            `${this.apiUrlNode}${id}/`,
+            request,
+            {
+                headers: this.headers,
+            }
+        );
     }
 
     deleteTelegramTriggerNode(id: number): Observable<void> {

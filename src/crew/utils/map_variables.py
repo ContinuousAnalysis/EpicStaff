@@ -5,7 +5,7 @@ from loguru import logger
 
 def _clean_value(v):
     """Recursively convert proxy objects (DotDict, SharedVariables, etc.) to plain types."""
-    if hasattr(v, 'model_dump'):
+    if hasattr(v, "model_dump"):
         v = v.model_dump()
     if isinstance(v, dict):
         return _clean_dict(v)
@@ -75,16 +75,16 @@ def map_variables_to_input(
         # Check for default value using pipe syntax: path|default
         default_value = None
         has_default = False
-        if '|' in input_key:
-            parts = input_key.split('|', 1)
+        if "|" in input_key:
+            parts = input_key.split("|", 1)
             input_key = parts[0]
             default_value = parts[1]
             has_default = True
-            if default_value.lower() in ('null', 'none'):
+            if default_value.lower() in ("null", "none"):
                 default_value = None
-            elif default_value.lower() == 'true':
+            elif default_value.lower() == "true":
                 default_value = True
-            elif default_value.lower() == 'false':
+            elif default_value.lower() == "false":
                 default_value = False
             elif default_value.isdigit():
                 default_value = int(default_value)
@@ -97,9 +97,9 @@ def map_variables_to_input(
             variable_name = shared_match.group(2)
 
             # Resolve variable references in access key (e.g. variables.chat_id)
-            if access_key.startswith('variables.'):
+            if access_key.startswith("variables."):
                 var_keys = pattern.findall(access_key)
-                if var_keys and var_keys[0] == 'variables':
+                if var_keys and var_keys[0] == "variables":
                     resolved = variables
                     for vk in var_keys[1:]:
                         resolved = getattr(resolved, vk)
@@ -155,7 +155,7 @@ def map_variables_to_input(
                 except Exception as e:
                     raise Exception(e)
 
-        if hasattr(value, 'model_dump'):
+        if hasattr(value, "model_dump"):
             value = value.model_dump()
         if isinstance(value, dict):
             value = _clean_dict(value)

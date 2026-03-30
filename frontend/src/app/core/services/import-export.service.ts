@@ -11,15 +11,16 @@ export class ImportExportService {
     constructor(
         private http: HttpClient,
         private configService: ConfigService
-    ) {}
+    ) { }
 
     private get apiUrl(): string {
         return this.configService.apiUrl + 'graphs/';
     }
 
-    importFlow(file: File): Observable<any> {
+    importFlow(file: File, preserveUuids: boolean = false): Observable<any> {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('preserve_uuids', String(preserveUuids));
 
         return this.http.post<any>(`${this.apiUrl}import/`, formData);
     }
@@ -29,4 +30,11 @@ export class ImportExportService {
             responseType: 'blob',
         });
     }
+
+    bulkExportFlow(ids: number[]): Observable<Blob> {
+        return this.http.post(`${this.apiUrl}bulk-export/`, { ids }, {
+            responseType: 'blob',
+        });
+    }
+
 }

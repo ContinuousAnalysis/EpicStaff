@@ -187,8 +187,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 (node: any) =>
                     node.id !== currentId &&
                     node.type !== NodeType.NOTE &&
-                    node.type !== NodeType.EDGE &&
-                    node.type !== NodeType.GROUP
+                    node.type !== NodeType.EDGE
             )
             .map((node: any) => ({
                 label: node.node_name,

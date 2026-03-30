@@ -1,10 +1,19 @@
+@if (label()) {
+    <app-tooltip
+        [required]="required()"
+        [tooltipText]="tooltipText()"
+        [label]="label()"
+        [icon]="icon()"
+    />
+}
+
 <div
     class="input__wrapper"
     [class.input__wrapper--invalid]="isInvalid()"
     (mouseenter)="hovered.set(true)"
     (mouseleave)="hovered.set(false)"
 >
-    @if (hovered()) {
+    @if (hovered() || alwaysShowSteps()) {
         <button
             type="button"
             class="input__step input__step--minus"
@@ -22,10 +31,12 @@
         [placeholder]="placeholder()"
         [ngModel]="value()"
         (ngModelChange)="onInputChange($event)"
+        (blur)="onTouched()"
         (keydown)="onKeyDown($event)"
+        [disabled]="isDisabled()"
     />
 
-    @if (hovered()) {
+    @if (hovered() || alwaysShowSteps()) {
         <button
             type="button"
             class="input__step input__step--plus"

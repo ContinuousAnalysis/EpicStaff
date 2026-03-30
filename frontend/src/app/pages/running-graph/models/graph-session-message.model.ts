@@ -1,6 +1,6 @@
-import { Agent, GetAgentRequest } from '../../../shared/models/agent.model';
+import { Agent, GetAgentRequest } from '../../../features/staff/models/agent.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { GetTaskRequest } from '../../../shared/models/task.model';
+import { GetTaskRequest } from '../../../features/tasks/models/task.model';
 
 // Base GraphMessage interface
 export interface GraphMessage {
@@ -11,6 +11,7 @@ export interface GraphMessage {
   created_at: string; // This is the timestamp
   message_data: MessageData; // Snake case from API - This will be one of the specific message types
   uuid?: string;
+  metadata: Record<string, any>;
 }
 
 // Message type constants
@@ -26,10 +27,13 @@ export enum MessageType {
   TASK = 'task',
   UPDATE_SESSION_STATUS = 'update_session_status',
   EXTRACTED_CHUNKS = 'extracted_chunks',
+  SUBGRAPH_START = 'subgraph_start',
+  SUBGRAPH_FINISH = 'subgraph_finish',
   GRAPH_END = 'graph_end',
   CONDITION_GROUP = 'condition_group',
   CLASSIFICATION_PROMPT = 'classification_prompt',
   CONDITION_GROUP_MANIPULATION = 'condition_group_manipulation',
+  CODE_AGENT_STREAM = 'code_agent_stream',
 }
 
 // Message data interfaces - these match the camelCase structure used in your code
@@ -138,6 +142,34 @@ export interface ExtractedChunksMessageData {
   rag_search_config: RagSearchConfig;
 }
 
+// State history item interface for subflow messages
+export interface StateHistoryItem {
+  name: string;
+  type: string;
+  input: Record<string, any>;
+  output: Record<string, any>;
+  variables: Record<string, any>;
+  additional_data: Record<string, any>;
+}
+
+// Subflow state interface
+export interface SubflowState {
+  variables: Record<string, any>;
+  state_history: StateHistoryItem[];
+}
+
+export interface StartSubflowMessageData {
+  input: Record<string, any>;
+  state: SubflowState;
+  message_type: MessageType.SUBGRAPH_START;
+}
+
+export interface FinishSubflowMessageData {
+  output: any;
+  state: SubflowState;
+  message_type: MessageType.SUBGRAPH_FINISH;
+}
+
 export interface GraphEndMessageData {
   end_node_result: Record<string, any>;
   message_type: MessageType.GRAPH_END;
@@ -167,6 +199,21 @@ export interface ConditionGroupManipulationMessageData {
   message_type: MessageType.CONDITION_GROUP_MANIPULATION;
 }
 
+export interface CodeAgentToolCall {
+  name: string;
+  input: string;
+  output: string;
+  state: string;
+}
+
+export interface CodeAgentStreamMessageData {
+  text: string;
+  tool_calls?: CodeAgentToolCall[];
+  is_final: boolean;
+  step_id?: number;
+  message_type: MessageType.CODE_AGENT_STREAM;
+}
+
 // Type union for all message data types
 export type MessageData =
   | FinishMessageData
@@ -180,7 +227,10 @@ export type MessageData =
   | TaskMessageData
   | UpdateSessionStatusMessageData
   | ExtractedChunksMessageData
+  | StartSubflowMessageData
+  | FinishSubflowMessageData
   | GraphEndMessageData
   | ConditionGroupMessageData
   | ClassificationPromptMessageData
-  | ConditionGroupManipulationMessageData;
+  | ConditionGroupManipulationMessageData
+  | CodeAgentStreamMessageData;

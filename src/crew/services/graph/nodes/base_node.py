@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Any, Literal
-import copy
 from langgraph.types import StreamWriter
 from src.crew.services.graph.events import StopEvent
 from src.crew.services.graph.custom_message_writer import CustomSessionMessageWriter
@@ -97,6 +96,9 @@ class BaseNode(ABC):
         additional data passed as keyword arguments. The message is then
         written using the provided stream writer.
         """
+        sc = getattr(self, "stream_config", None)
+        if sc and sc.get("final_reply") is False:
+            kwargs["sse_visible"] = False
         self.custom_session_message_writer.add_finish_message(
             session_id=self.session_id,
             node_name=self.node_name,
@@ -227,16 +229,16 @@ class BaseNode(ABC):
         """
 
         import json
-        
+
         state_history = state["state_history"]
-        
+
         # Serialize via JSON to avoid deepcopy pickle issues with asyncio objects
         def json_serialize(obj):
             try:
                 return json.loads(json.dumps(obj, default=str))
             except Exception:
                 return str(obj)
-        
+
         state_history.append(
             {
                 "type": type,

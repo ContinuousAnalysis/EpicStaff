@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from collections import defaultdict
 import uuid
 import base64
+from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.models.graph_models import TelegramTriggerNode
 from tables.services.telegram_trigger_service import TelegramTriggerService
 from tables.serializers.telegram_trigger_serializers import (
@@ -44,6 +45,7 @@ from tables.services.knowledge_services.indexing_service import IndexingService
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from tables.enums import SessionWarningType
 
 from tables.models import (
     Session,
@@ -53,6 +55,7 @@ from tables.models import (
     GraphOrganizationUser,
     OrganizationUser,
     Graph,
+    SessionWarningMessage,
 )
 from tables.serializers.model_serializers import (
     SessionSerializer,
@@ -211,6 +214,28 @@ class SessionViewSet(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
 
+    @swagger_auto_schema(
+        method="get",
+        responses={
+            200: openapi.Response(
+                description="Session warnings retrieved successfully"
+            ),
+            400: openapi.Response(description="Session is required"),
+            404: openapi.Response(description="Session not found"),
+        },
+    )
+    @action(detail=True, methods=["get"], url_path="warnings")
+    def get_session_warnings(self, request, pk=None):
+        session = self.get_object()
+
+        warning = (
+            SessionWarningMessage.objects.filter(session=session)
+            .values("messages")
+            .first()
+        )
+
+        return Response(warning, status=status.HTTP_200_OK)
+
 
 class RunSession(APIView):
     @swagger_auto_schema(
@@ -246,20 +271,32 @@ class RunSession(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         files_dict = {}
-        graph_id = serializer.validated_data["graph_id"]
+        graph_id = serializer.validated_data.get("graph_id")
+        graph_uuid = serializer.validated_data.get("graph_uuid")
         username = serializer.validated_data.get("username")
         graph_organization_user = None
+        warning_messages = []
 
-        graph = Graph.objects.filter(id=graph_id).first()
+        if graph_id:
+            graph = Graph.objects.filter(id=graph_id).first()
+        else:
+            graph = Graph.objects.filter(uuid=graph_uuid).first()
+
         if not graph:
             return Response(
                 {"message": "Provided graph does not exist"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        graph_id = graph.id
+
         graph_organization = GraphOrganization.objects.filter(
             graph__id=graph_id
         ).first()
+
+        if graph_organization:
+            if not username and graph_organization.user_variables:
+                warning_messages.append(SessionWarningType.USER_VARS_WITH_NO_USER.value)
 
         if username and not graph_organization:
             return Response(
@@ -271,6 +308,7 @@ class RunSession(APIView):
             user = OrganizationUser.objects.filter(
                 name=username, organization=graph_organization.organization
             ).first()
+
             if not user and username:
                 return Response(
                     {
@@ -322,8 +360,14 @@ class RunSession(APIView):
             )
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)})
         else:
+            if warning_messages:
+                SessionWarningMessage.objects.create(
+                    session_id=session_id, messages=warning_messages
+                )
+
             return Response(
-                data={"session_id": session_id}, status=status.HTTP_201_CREATED
+                data={"session_id": session_id},
+                status=status.HTTP_201_CREATED,
             )
 
     def _get_file_data(self, file, content_type):
@@ -924,8 +968,17 @@ class RegisterTelegramTriggerApiView(APIView):
             telegram_trigger_service = TelegramTriggerService()
 
             telegram_trigger_service.register_telegram_trigger(
-                path=telegram_trigger_node.url_path,
-                telegram_bot_api_key=telegram_trigger_node.telegram_bot_api_key,
+                telegram_trigger_instance=telegram_trigger_node,
             )
 
             return Response(status=status.HTTP_200_OK)
+
+
+class RegisterWebhooksApiView(APIView):
+    @swagger_auto_schema(
+        responses={200: "OK"},
+    )
+    def post(self, request):
+        webhook_trigger_service = WebhookTriggerService()
+        webhook_trigger_service.register_webhooks()
+        return Response(status=status.HTTP_200_OK)

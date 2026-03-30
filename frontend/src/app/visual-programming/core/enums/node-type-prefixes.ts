@@ -9,8 +9,7 @@ export const NODE_TYPE_PREFIXES: Record<NodeType, string> = {
     [NodeType.LLM]: 'LLM-Node',
     [NodeType.EDGE]: 'Edge-Node',
     [NodeType.START]: 'Start-Node',
-    [NodeType.GROUP]: 'Group',
-    [NodeType.TABLE]: 'Decision Table',
+    [NodeType.TABLE]: 'Decision-Table',
     [NodeType.CLASSIFICATION_TABLE]: 'Classification Decision Table',
     [NodeType.NOTE]: 'Note',
     [NodeType.FILE_EXTRACTOR]: 'File Extractor',
@@ -18,4 +17,6 @@ export const NODE_TYPE_PREFIXES: Record<NodeType, string> = {
     [NodeType.WEBHOOK_TRIGGER]: 'Webhook Trigger',
     [NodeType.TELEGRAM_TRIGGER]: 'Telegram Trigger',
     [NodeType.END]: 'End',
+    [NodeType.SUBGRAPH]: 'Flow-Node',
+    [NodeType.CODE_AGENT]: 'Code-Agent',
 };
