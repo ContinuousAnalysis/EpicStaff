@@ -1,10 +1,27 @@
 <div class="import-result-dialog">
   <!-- Header -->
   <div class="dialog-header">
-    <h2 class="dialog-title">
-      Imported Items
-
-    </h2>
+    <div class="header-left">
+      <h2 class="dialog-title">
+        Imported Items
+      </h2>
+      <div class="viewing-status" [ngClass]="{
+        'viewing-all-created': allCreated(),
+        'viewing-all-reused': allReused(),
+        'viewing-mixed': !allCreated() && !allReused()
+      }">
+        @if (allCreated()) {
+          <app-icon icon="ui/created-imported-item" size="1rem" class="created"></app-icon>
+          All items were newly created
+        } @else if (allReused()) {
+          <app-icon icon="ui/reused-imported-item" size="1rem" class="reused"></app-icon>
+          All items already existed and were reused
+        } @else {
+          <span class="viewing-dot"></span>
+          Import completed successfully
+        }
+      </div>
+    </div>
     <app-icon
       [icon]="'ui/close'"
       class="close-btn"
@@ -17,12 +34,27 @@
   <div class="dialog-content">
     <!-- Import Summary Section -->
     <div class="summary-section">
-      <h3 class="summary-title">
-        Import Summary
+      <div class="summary-block">
+        <h3 class="summary-title">
+          Import Summary
         <span class="summary-count">
           {{totalItemsCount()}}
         </span>
       </h3>
+      <div class="viewing-totals">
+        <div class="viewing-total-item">
+          <app-icon icon="ui/created-imported-item" size="1rem" class="created"></app-icon>
+          <span class="viewing-count created-count">{{ totalCreatedCount() }}</span>
+          <span class="viewing-label">Created</span>
+        </div>
+        <div class="viewing-total-item">
+          <app-icon icon="ui/reused-imported-item" size="1rem" class="reused"></app-icon>
+          <span class="viewing-count reused-count">{{ totalReusedCount() }}</span>
+          <span class="viewing-label">Reused</span>
+        </div>
+      </div>
+      </div>
+      
       <div class="summary-slider">
         <button
           type="button"
@@ -38,7 +70,7 @@
           @for (entityType of entityTypes(); track entityType) {
             @if(getEntityTypeCount(entityType) > 0 )
               {
-                <div class="summary-item">
+                <div class="summary-item" (click)="scrollToEntityGroup(entityType)">
                   @if(isInlineSvgIcon(entityType)) {
                     <div class="item-icon" [innerHTML]="getInlineSvgIcon(entityType)" [style.color]="getIconColorForEntityType(entityType)"></div>
                   } @else {
@@ -49,7 +81,7 @@
                       {{ getEntityTypeCount(entityType) }}
                     </span>
                     {{ getEntityTypeLabel(entityType) }}
-                  </p>   
+                  </p>
                 </div>
               }
           }
@@ -68,13 +100,19 @@
     </div>
 
     <!-- Entity Lists Section -->
-    <div class="entity-lists-section">
+    <div class="entity-lists-section" #entityListsSection>
       @for (entityType of entityTypes(); track entityType) {
       @let result = getEntityTypeResult(entityType);
       @if (result!.total !== 0) {
-      <div class="entity-group">
+      <div class="entity-group" #entityGroup [class.highlighted]="highlightedGroup() === entityType">
         <!-- Entity Type Header -->
-        <h4 class="entity-type-title">
+        <h4 class="entity-type-title" (click)="toggleGroup(entityType)">
+          <app-icon
+            icon="ui/chevron-down"
+            size="0.85rem"
+            class="collapse-icon"
+            [class.collapsed]="isGroupCollapsed(entityType)"
+          ></app-icon>
           @if(isInlineSvgIcon(entityType)) {
             <div class="item-icon" [innerHTML]="getInlineSvgIcon(entityType)" [style.color]="getIconColorForEntityType(entityType)"></div>
           } @else {
@@ -85,23 +123,49 @@
         </h4>
 
         <!-- Entity Items List -->
-        <div class="entity-items">
+        <div class="entity-items"
+          [@collapseExpand]="isGroupCollapsed(entityType) ? 'collapsed' : 'expanded'">
           <!-- Created Items -->
           @if (result!.created.items.length > 0) {
           <div class="entity-subgroup">
             <div class="entity-items-list">
               @for (item of result!.created.items; track item.id) {
-              <div class="entity-item">
-                <span class="item-name">{{ item.name }}</span>
-                <span class="status-badge" [ngClass]="getStatusClass('created')">
-                  <app-icon icon="ui/created-imported-item" size="1.2rem" class="created"></app-icon>
-                  Created
-                </span>
-                @if (isNavigable(entityType)) {
-                <button type="button" class="navigate-button" (click)="navigateToEntity(entityType, item.id)"
-                  [attr.aria-label]="'View ' + item.name">
-                  <app-icon icon="ui/arrow-right" size="1rem" class="navigate-arrow"></app-icon>
-                </button>
+              <div class="entity-item-wrapper">
+                <div class="entity-item"
+                  [class.expandable]="hasExpandableFields(entityType, item)"
+                  [class.expanded]="isItemExpanded(entityType, 'created', item.id)"
+                  (click)="hasExpandableFields(entityType, item) && toggleItem(entityType, 'created', item.id)">
+                  @if (hasExpandableFields(entityType, item)) {
+                    <app-icon
+                      icon="ui/chevron-down"
+                      size="0.7rem"
+                      class="item-collapse-icon"
+                      [class.collapsed]="!isItemExpanded(entityType, 'created', item.id)"
+                    ></app-icon>
+                  }
+                  <span class="item-name">{{ item.name }}</span>
+                  <span class="status-badge" [ngClass]="getStatusClass('created')">
+                    <app-icon icon="ui/created-imported-item" size="1.2rem" class="created"></app-icon>
+                    Created
+                  </span>
+                  @if (isNavigable(entityType)) {
+                  <button type="button" class="navigate-button"
+                    (click)="navigateToEntity(entityType, item.id); $event.stopPropagation()"
+                    [attr.aria-label]="'View ' + item.name">
+                    <app-icon icon="ui/arrow-right" size="1rem" class="navigate-arrow"></app-icon>
+                  </button>
+                  }
+                </div>
+                @if (hasExpandableFields(entityType, item)) {
+                  <div class="item-details"
+                    [@collapseExpand]="isItemExpanded(entityType, 'created', item.id) ? 'expanded' : 'collapsed'">
+                    <div class="item-details-grid">
+                      @for (entry of getEntityFields(entityType, item); track entry.label) {
+                        <div class="detail-key">{{ entry.label }}</div>
+                        <div class="detail-value">{{ entry.value }}</div>
+                      }
+                    </div>
+                  </div>
                 }
               </div>
               }
@@ -114,12 +178,36 @@
           <div class="entity-subgroup">
             <div class="entity-items-list">
               @for (item of result!.reused.items; track item.id) {
-              <div class="entity-item">
-                <span class="item-name">{{ item.name }}</span>
-                <span class="status-badge" [ngClass]="getStatusClass('reused')">
-                  <app-icon icon="ui/reused-imported-item" size="1.2rem" class="reused"></app-icon>
-                  Reused
-                </span>
+              <div class="entity-item-wrapper">
+                <div class="entity-item"
+                  [class.expandable]="hasExpandableFields(entityType, item)"
+                  [class.expanded]="isItemExpanded(entityType, 'reused', item.id)"
+                  (click)="hasExpandableFields(entityType, item) && toggleItem(entityType, 'reused', item.id)">
+                  @if (hasExpandableFields(entityType, item)) {
+                    <app-icon
+                      icon="ui/chevron-down"
+                      size="0.7rem"
+                      class="item-collapse-icon"
+                      [class.collapsed]="!isItemExpanded(entityType, 'reused', item.id)"
+                    ></app-icon>
+                  }
+                  <span class="item-name">{{ item.name }}</span>
+                  <span class="status-badge" [ngClass]="getStatusClass('reused')">
+                    <app-icon icon="ui/reused-imported-item" size="1.2rem" class="reused"></app-icon>
+                    Reused
+                  </span>
+                </div>
+                @if (hasExpandableFields(entityType, item)) {
+                  <div class="item-details"
+                    [@collapseExpand]="isItemExpanded(entityType, 'reused', item.id) ? 'expanded' : 'collapsed'">
+                    <div class="item-details-grid">
+                      @for (entry of getEntityFields(entityType, item); track entry.label) {
+                        <div class="detail-key">{{ entry.label }}</div>
+                        <div class="detail-value">{{ entry.value }}</div>
+                      }
+                    </div>
+                  </div>
+                }
               </div>
               }
             </div>
