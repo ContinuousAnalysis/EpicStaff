@@ -1,5 +1,6 @@
 import { Dialog as CdkDialog } from '@angular/cdk/dialog';
 import {
+    AfterViewInit,
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
@@ -36,6 +37,7 @@ import { FlowsApiService } from '../../../../features/flows/services/flows-api.s
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { RunGraphService } from '../../../../features/flows/services/run-graph-session.service';
 import { GetProjectRequest } from '../../../../features/projects/models/project.model';
+import { FlowMessagesPanelComponent } from '../../../../pages/running-graph/components/flow-messages-panel/flow-messages-panel.component';
 import { ConfigService } from '../../../../services/config/config.service';
 import { ToastService } from '../../../../services/notifications/toast.service';
 import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
@@ -72,12 +74,17 @@ import { CrewNodeService } from './services/crew-node.service';
 import { EdgeService } from './services/edge.service';
 import { PythonNodeService } from './services/python-node.service';
 import { StartNodeService } from './services/start-node.service';
-import { FlowMessagesPanelComponent } from '../../../../pages/running-graph/components/flow-messages-panel/flow-messages-panel.component';
 
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
-    imports: [FlowHeaderComponent, FlowGraphComponent, SpinnerComponent, ShortcutsModalComponent, FlowMessagesPanelComponent],
+    imports: [
+        FlowHeaderComponent,
+        FlowGraphComponent,
+        SpinnerComponent,
+        ShortcutsModalComponent,
+        FlowMessagesPanelComponent,
+    ],
     templateUrl: './flow-visual-programming.component.html',
     styleUrl: './flow-visual-programming.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -440,11 +447,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         const apiUrl = this.configService.apiUrl;
 
         if (flowUuid && startNodeInitialState) {
-            const curlCommand = this.generateCurlCommand(
-                flowUuid,
-                startNodeInitialState,
-                apiUrl
-            );
+            const curlCommand = this.generateCurlCommand(flowUuid, startNodeInitialState, apiUrl);
             this.copyToClipboard(curlCommand);
             this.toastService.success('CURL command copied to clipboard!');
         } else {
@@ -452,11 +455,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         }
     }
 
-    private generateCurlCommand(
-        flowUuid: string,
-        variables: Record<string, unknown>,
-        apiUrl: string
-    ): string {
+    private generateCurlCommand(flowUuid: string, variables: Record<string, unknown>, apiUrl: string): string {
         const variablesJson = JSON.stringify(variables, null, 2);
         const payload = JSON.stringify(
             {
@@ -525,6 +524,40 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         return true;
     }
 
+    public connectToEpicChat(): void {
+        if (!this.graph?.id) {
+            this.toastService.error('Unable to connect chat: Missing flow ID');
+            return;
+        }
+
+        const flowUrl = this.normalizeApiUrl(this.configService.apiUrl);
+        if (!flowUrl) {
+            this.toastService.error('Unable to connect chat: Missing API URL');
+            return;
+        }
+
+        this.flowApiService.patchGraph(this.graph.id, { epicchat_enabled: true }).subscribe({
+            next: () => {
+                this.graph.epicchat_enabled = true;
+                this.epicChatService.requestCreateAgent({
+                    name: this.graph.name?.trim() || `Flow ${this.graph.id}`,
+                    description: this.graph.description?.trim(),
+                    flowId: this.graph.id,
+                    flowUrl,
+                    selectAfterCreate: true,
+                });
+                this.toastService.success('Flow connected to Epic Chat');
+            },
+            error: () => {
+                this.toastService.error('Failed to save EpicChat connection');
+            },
+        });
+    }
+
+    private normalizeApiUrl(apiUrl: string): string {
+        return (apiUrl || '').trim().replace(/\/+$/, '');
+    }
+
     public closeMessagesPanel(): void {
         this.isPanelCollapsed = true;
         this.cdr.markForCheck();
@@ -563,40 +596,6 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
             this.isDragging = false;
             window.dispatchEvent(new Event('resize'));
         }
-    }
-
-    public connectToEpicChat(): void {
-        if (!this.graph?.id) {
-            this.toastService.error('Unable to connect chat: Missing flow ID');
-            return;
-        }
-
-        const flowUrl = this.normalizeApiUrl(this.configService.apiUrl);
-        if (!flowUrl) {
-            this.toastService.error('Unable to connect chat: Missing API URL');
-            return;
-        }
-
-        this.flowApiService.patchGraph(this.graph.id, { epicchat_enabled: true }).subscribe({
-            next: () => {
-                this.graph.epicchat_enabled = true;
-                this.epicChatService.requestCreateAgent({
-                    name: this.graph.name?.trim() || `Flow ${this.graph.id}`,
-                    description: this.graph.description?.trim(),
-                    flowId: this.graph.id,
-                    flowUrl,
-                    selectAfterCreate: true,
-                });
-                this.toastService.success('Flow connected to Epic Chat');
-            },
-            error: () => {
-                this.toastService.error('Failed to save EpicChat connection');
-            },
-        });
-    }
-
-    private normalizeApiUrl(apiUrl: string): string {
-        return (apiUrl || '').trim().replace(/\/+$/, '');
     }
 
     public ngOnDestroy(): void {
