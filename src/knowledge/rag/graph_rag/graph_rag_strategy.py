@@ -6,6 +6,7 @@ import pandas as pd
 from loguru import logger
 
 from graphrag.api.index import build_index
+from graphrag.api.query import local_search
 from graphrag.config.embeddings import text_unit_text_embedding
 from graphrag.config.models.graph_rag_config import GraphRagConfig
 from graphrag.prompts.query.basic_search_system_prompt import BASIC_SEARCH_SYSTEM_PROMPT
