@@ -1,7 +1,16 @@
 import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, output,signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    ElementRef,
+    inject,
+    OnInit,
+    output,
+    signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { AppIconComponent } from '../../../../../../shared/components/app-icon/app-icon.component';
@@ -31,6 +40,7 @@ export class FlowsLabelSidebarComponent implements OnInit {
     private readonly labelsStorage = inject(LabelsStorageService);
     private readonly flowsStorageService = inject(FlowsStorageService);
     private readonly dialog = inject(Dialog);
+    private readonly el = inject(ElementRef);
 
     // Expose from storage
     readonly labelTree = this.labelsStorage.labelTree;
@@ -114,6 +124,19 @@ export class FlowsLabelSidebarComponent implements OnInit {
         this.addingRootLabel.set(false);
         this.newLabelNameValue.set('');
         this.expandedNodes.update((s) => new Set([...s, parentId]));
+        this.scrollChildAddRowIntoView();
+    }
+
+    onTreeItemHover(event: MouseEvent): void {
+        const treeItem = event.currentTarget as HTMLElement;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const actions = treeItem.querySelector('.item-actions') as HTMLElement;
+                if (actions) {
+                    actions.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                }
+            });
+        });
     }
 
     confirmAddLabel(): void {
@@ -143,6 +166,7 @@ export class FlowsLabelSidebarComponent implements OnInit {
     startRename(label: LabelDto): void {
         this.editingLabelId.set(label.id);
         this.editingLabelNameValue.set(label.name);
+        this.scrollRenameRowIntoView();
     }
 
     cancelRename(): void {
@@ -249,6 +273,23 @@ export class FlowsLabelSidebarComponent implements OnInit {
 
     getIndentPadding(depth: number): string {
         return `${depth * 1.2 + 1}rem`;
+    }
+
+    private scrollChildAddRowIntoView(): void {
+        setTimeout(() => {
+            const row = this.el.nativeElement.querySelector('.add-label-row.child-add') as HTMLElement;
+            if (!row) return;
+            const buttons = row.querySelectorAll('button');
+            const lastBtn = buttons[buttons.length - 1] as HTMLElement;
+            if (lastBtn) lastBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }, 0);
+    }
+
+    private scrollRenameRowIntoView(): void {
+        setTimeout(() => {
+            const btn = this.el.nativeElement.querySelector('.cancel-btn') as HTMLElement;
+            if (btn) btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }, 0);
     }
 
     private parseCreateError(err: HttpErrorResponse): string {

@@ -1,14 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    EventEmitter,
-    inject,
-    Input,
-    Output,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output, signal } from '@angular/core';
 
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
@@ -46,7 +37,9 @@ export class FlowCardComponent {
     public isExpanded = signal<boolean>(false);
     public subflowMenuStates = new Map<number, boolean>();
 
-    public readonly hasSubflows = computed(() => !!this.flow?.subflows?.length);
+    get hasSubflows(): boolean {
+        return !!this.flow?.subflows?.length;
+    }
 
     toggleSubflows(event: MouseEvent): void {
         event.stopPropagation();
@@ -55,7 +48,8 @@ export class FlowCardComponent {
 
     getLabelName(id: number): string {
         const label = this.labelsStorage.labels().find((l) => l.id === id);
-        return label && !label.parent ? label.name : `/${label?.name}`;
+        if (!label) return '';
+        return !label.parent ? label.name : `/${label.name}`;
     }
 
     formatDate(dateStr?: string): string {

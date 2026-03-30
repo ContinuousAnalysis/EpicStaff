@@ -1,6 +1,6 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { tap, catchError, shareReplay } from 'rxjs/operators';
+import { catchError, shareReplay, tap } from 'rxjs/operators';
 
 import { LabelDto } from '../models/label.model';
 import { LabelsApiService } from './labels-api.service';
@@ -30,19 +30,14 @@ export class LabelsStorageService {
     // --- State Signals ---
     private labelsSignal = signal<LabelDto[]>([]);
     private labelsLoaded = signal<boolean>(false);
-    private activeLabelFilterSignal = signal<'all' | 'unlabeled' | number>(
-        'all'
-    );
+    private activeLabelFilterSignal = signal<'all' | 'unlabeled' | number>('all');
 
     // --- Public State Accessors ---
     public readonly labels = this.labelsSignal.asReadonly();
     public readonly isLabelsLoaded = this.labelsLoaded.asReadonly();
-    public readonly activeLabelFilter =
-        this.activeLabelFilterSignal.asReadonly();
+    public readonly activeLabelFilter = this.activeLabelFilterSignal.asReadonly();
 
-    public readonly labelTree = computed<LabelTreeNode[]>(() =>
-        buildTree(this.labelsSignal())
-    );
+    public readonly labelTree = computed<LabelTreeNode[]>(() => buildTree(this.labelsSignal()));
 
     // --- Data Loading ---
     public loadLabels(forceRefresh = false): Observable<LabelDto[]> {
@@ -64,17 +59,12 @@ export class LabelsStorageService {
     }
 
     // --- CRUD Methods ---
-    public createLabel(
-        name: string,
-        parentId?: number | null
-    ): Observable<LabelDto> {
-        return this.labelsApiService
-            .createLabel({ name, parent: parentId ?? null })
-            .pipe(
-                tap((newLabel) => {
-                    this.labelsSignal.set([...this.labelsSignal(), newLabel]);
-                })
-            );
+    public createLabel(name: string, parentId?: number | null): Observable<LabelDto> {
+        return this.labelsApiService.createLabel({ name, parent: parentId ?? null }).pipe(
+            tap((newLabel) => {
+                this.labelsSignal.set([...this.labelsSignal(), newLabel]);
+            })
+        );
     }
 
     public renameLabel(id: number, name: string): Observable<LabelDto> {
@@ -83,16 +73,12 @@ export class LabelsStorageService {
             throw new Error(`Label with id ${id} not found`);
         }
 
-        return this.labelsApiService
-            .updateLabel(id, { name, parent: label.parent })
-            .pipe(
-                tap((updatedLabel) => {
-                    const current = this.labelsSignal();
-                    this.labelsSignal.set(
-                        current.map((l) => (l.id === id ? updatedLabel : l))
-                    );
-                })
-            );
+        return this.labelsApiService.updateLabel(id, { name, parent: label.parent }).pipe(
+            tap((updatedLabel) => {
+                const current = this.labelsSignal();
+                this.labelsSignal.set(current.map((l) => (l.id === id ? updatedLabel : l)));
+            })
+        );
     }
 
     public deleteLabel(id: number): Observable<void> {
@@ -102,25 +88,25 @@ export class LabelsStorageService {
         return this.labelsApiService.deleteLabel(id).pipe(
             tap(() => {
                 const current = this.labelsSignal();
-                this.labelsSignal.set(
-                    current.filter((l) => {
-                        if (l.id === id) return false;
-                        if (
-                            cascadePrefix &&
-                            l.full_path.startsWith(cascadePrefix)
-                        )
-                            return false;
-                        return true;
-                    })
-                );
+                const deletedIds = new Set<number>([id]);
+                if (cascadePrefix) {
+                    current.forEach((l) => {
+                        if (l.full_path.startsWith(cascadePrefix)) {
+                            deletedIds.add(l.id);
+                        }
+                    });
+                }
+                this.labelsSignal.set(current.filter((l) => !deletedIds.has(l.id)));
+                const activeFilter = this.activeLabelFilterSignal();
+                if (typeof activeFilter === 'number' && deletedIds.has(activeFilter)) {
+                    this.activeLabelFilterSignal.set('all');
+                }
             })
         );
     }
 
     // --- Filter Setter ---
-    public setActiveLabelFilter(
-        filter: 'all' | 'unlabeled' | number
-    ): void {
+    public setActiveLabelFilter(filter: 'all' | 'unlabeled' | number): void {
         this.activeLabelFilterSignal.set(filter);
     }
 }

@@ -12,7 +12,7 @@ def natural_sort_key(s: str) -> list:
 
 def get_label_descendant_ids(label_id: int) -> set[int]:
     """Return the given label ID plus all descendant label IDs (one DB query)."""
-    from tables.models.labels import Label
+    from tables.models.label_models import Label
 
     all_labels = Label.objects.values("id", "parent_id")
     children_map: dict[int, list[int]] = {}

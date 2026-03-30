@@ -127,6 +127,7 @@
             }
         }
 
+        .connect-chat-button,
         .get-curl-button {
             background-color: transparent;
             color: var(--accent-color);
@@ -172,9 +173,11 @@
     cursor: pointer;
     color: var(--color-text-secondary);
     display: inline-flex;
-    align-items: start;    
+    align-items: start;
     flex-shrink: 0;
-    transition: opacity 0.15s ease, color 0.15s ease;
+    transition:
+        opacity 0.15s ease,
+        color 0.15s ease;
 
     &:hover {
         color: var(--color-ks-text);
