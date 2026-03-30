@@ -17,9 +17,6 @@ from graphrag.config.enums import (
     InputFileType,
     ChunkStrategyType,
 )
-from graphrag.prompts.query.basic_search_system_prompt import BASIC_SEARCH_SYSTEM_PROMPT
-from graphrag.prompts.query.local_search_system_prompt import LOCAL_SEARCH_SYSTEM_PROMPT
-
 from models.redis_models import GraphRagBasicSearchParams, GraphRagLocalSearchParams
 
 
@@ -394,10 +391,7 @@ class GraphRagConfigBuilder:
             The same config with basic_search fields updated
         """
         if params.prompt is not None:
-            (p := Path(config.root_dir) / "_basic_search_prompt.txt").write_text(
-                BASIC_SEARCH_SYSTEM_PROMPT + "\n\n" + params.prompt, encoding="utf-8"
-            )
-            config.basic_search.prompt = p.name
+            config.basic_search.prompt = params.prompt
         config.basic_search.k = params.k
         config.basic_search.max_context_tokens = params.max_context_tokens
         return config
@@ -418,10 +412,7 @@ class GraphRagConfigBuilder:
             The same config with local_search fields updated
         """
         if params.prompt is not None:
-            (p := Path(config.root_dir) / "_local_search_prompt.txt").write_text(
-                LOCAL_SEARCH_SYSTEM_PROMPT + "\n\n" + params.prompt, encoding="utf-8"
-            )
-            config.local_search.prompt = p.name
+            config.local_search.prompt = params.prompt
         config.local_search.text_unit_prop = params.text_unit_prop
         config.local_search.community_prop = params.community_prop
         config.local_search.conversation_history_max_turns = (
