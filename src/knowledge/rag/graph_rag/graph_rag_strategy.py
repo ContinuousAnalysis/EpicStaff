@@ -7,6 +7,7 @@ from loguru import logger
 
 from graphrag.api.index import build_index
 from graphrag.api.query import local_search
+from graphrag.api.query import basic_search, local_search
 from graphrag.config.embeddings import text_unit_text_embedding
 from graphrag.config.models.graph_rag_config import GraphRagConfig
 from graphrag.prompts.query.basic_search_system_prompt import BASIC_SEARCH_SYSTEM_PROMPT
@@ -258,14 +259,10 @@ class GraphRAGStrategy(BaseRAGStrategy):
                 )
             else:
                 logger.info(f"Running basic search for graph_rag_id: {graph_rag_id}")
-                system_prompt = BASIC_SEARCH_SYSTEM_PROMPT
-                if search_params.prompt:
-                    system_prompt += "\n\n" + search_params.prompt
                 response, context = self._run_basic_search(
                     root_folder=root_folder,
                     graphrag_config=graphrag_config,
                     query=query,
-                    system_prompt=system_prompt,
                 )
 
             # Step 5: Build response with single-chunk extraction
@@ -311,24 +308,16 @@ class GraphRAGStrategy(BaseRAGStrategy):
         root_folder: Path,
         graphrag_config: GraphRagConfig,
         query: str,
-        system_prompt: str | None = None,
     ) -> tuple:
         """Run basic search using text_units only."""
         text_units = self._load_parquet(root_folder, "text_units.parquet")
-        vector_store_args = {
-            k: v.model_dump() for k, v in graphrag_config.vector_store.items()
-        }
-        embedding_store = get_embedding_store(
-            vector_store_args, text_unit_text_embedding
+        return asyncio.run(
+            basic_search(
+                config=graphrag_config,
+                text_units=text_units,
+                query=query,
+            )
         )
-        search_engine = get_basic_search_engine(
-            config=graphrag_config,
-            text_units=read_indexer_text_units(text_units),
-            text_unit_embeddings=embedding_store,
-            system_prompt=system_prompt,
-        )
-        result = asyncio.run(search_engine.search(query))
-        return result.response, result.context_data
 
     def _run_local_search(
         self,

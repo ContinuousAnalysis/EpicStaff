@@ -257,9 +257,12 @@ def load_search_prompt(root_dir: str, prompt_config: str | None) -> str | None:
 
     """
     if prompt_config:
-        prompt_file = Path(root_dir) / prompt_config
-        if prompt_file.exists():
-            return prompt_file.read_bytes().decode(encoding="utf-8")
+        try:
+            prompt_file = Path(root_dir) / prompt_config
+            if prompt_file.exists():
+                return prompt_file.read_bytes().decode(encoding="utf-8")
+        except OSError:
+            pass
         return prompt_config
     return None
 
