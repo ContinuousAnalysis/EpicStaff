@@ -119,22 +119,20 @@ STORAGE_UPLOAD_SWAGGER = dict(
         "Upload a file to the specified path. Send as multipart/form-data with "
         "`file` (the file) and `path` (target folder)."
     ),
-    manual_parameters=[
-        openapi.Parameter(
-            "file",
-            openapi.IN_FORM,
-            description="File to upload",
-            type=openapi.TYPE_FILE,
-            required=True,
-        ),
-        openapi.Parameter(
-            "path",
-            openapi.IN_FORM,
-            description="Target folder path",
-            type=openapi.TYPE_STRING,
-            default="/",
-        ),
-    ],
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["file"],
+        properties={
+            "file": openapi.Schema(
+                type=openapi.TYPE_FILE, description="File to upload"
+            ),
+            "path": openapi.Schema(
+                type=openapi.TYPE_STRING,
+                description="Target folder path",
+                default="/",
+            ),
+        },
+    ),
     responses={
         201: openapi.Response(
             description="Upload successful",
@@ -160,22 +158,21 @@ STORAGE_UPLOAD_ARCHIVE_SWAGGER = dict(
         "Upload a .zip archive. The server extracts its contents into the target folder, "
         "preserving folder structure. Send as multipart/form-data."
     ),
-    manual_parameters=[
-        openapi.Parameter(
-            "file",
-            openapi.IN_FORM,
-            description="Archive file (.zip) to upload and extract",
-            type=openapi.TYPE_FILE,
-            required=True,
-        ),
-        openapi.Parameter(
-            "path",
-            openapi.IN_FORM,
-            description="Target folder path for extraction",
-            type=openapi.TYPE_STRING,
-            default="/",
-        ),
-    ],
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["file"],
+        properties={
+            "file": openapi.Schema(
+                type=openapi.TYPE_FILE,
+                description="Archive file (.zip) to upload and extract",
+            ),
+            "path": openapi.Schema(
+                type=openapi.TYPE_STRING,
+                description="Target folder path for extraction",
+                default="/",
+            ),
+        },
+    ),
     responses={
         201: openapi.Response(
             description="Archive extracted successfully",

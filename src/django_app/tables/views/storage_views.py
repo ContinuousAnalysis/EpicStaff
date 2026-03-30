@@ -4,7 +4,8 @@ import zipfile
 from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, parser_classes
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -61,6 +62,7 @@ class StorageAPIView(ViewSet):
 
     @action(detail=False, methods=["post"], url_path="upload")
     @swagger_auto_schema(**STORAGE_UPLOAD_SWAGGER)
+    @parser_classes([MultiPartParser])
     def upload(self, request):
         path = request.data.get("path", "/")
         uploaded_file = request.FILES.get("file")
@@ -73,6 +75,7 @@ class StorageAPIView(ViewSet):
 
     @action(detail=False, methods=["post"], url_path="upload-archive")
     @swagger_auto_schema(**STORAGE_UPLOAD_ARCHIVE_SWAGGER)
+    @parser_classes([MultiPartParser])
     def upload_archive(self, request):
         path = request.data.get("path", "/")
         return Response(
