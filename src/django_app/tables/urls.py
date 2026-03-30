@@ -105,7 +105,12 @@ from tables.views.knowledge_views.naive_rag_views import (
 )
 
 
-from tables.views.sse_views import RunSessionSSEView, RunSessionSSEViewSwagger, FilteredRunSessionSSEView
+from tables.views.storage_views import StorageAPIView
+from tables.views.sse_views import (
+    RunSessionSSEView,
+    RunSessionSSEViewSwagger,
+    FilteredRunSessionSSEView,
+)
 
 router = DefaultRouter()
 router.register(r"template-agents", TemplateAgentReadWriteViewSet)
@@ -179,6 +184,7 @@ router.register(r"graph-notes", GraphNoteViewSet)
 router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
 
 router.register(r"labels", LabelViewSet)
+router.register(r"storage", StorageAPIView, basename="storage")
 
 urlpatterns = [
     path(
