@@ -145,7 +145,10 @@ export class FlowMessagesPanelComponent implements OnInit, OnChanges, OnDestroy 
 
     public openSessionPage(): void {
         if (this.graphId && this.selectedSessionId) {
-            this.router.navigate(['graph', this.graphId, 'session', this.selectedSessionId]);
+            const url = this.router.serializeUrl(
+                this.router.createUrlTree(['graph', this.graphId, 'session', this.selectedSessionId])
+            );
+            window.open(url, '_blank');
         }
     }
 
