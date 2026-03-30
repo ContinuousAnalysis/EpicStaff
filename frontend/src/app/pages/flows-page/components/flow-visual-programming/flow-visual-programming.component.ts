@@ -556,10 +556,9 @@ export class FlowVisualProgrammingComponent
     }
 
     public closeMessagesPanel(): void {
-        this.isPanelOpen = false;
-        this.isPanelCollapsed = false;
-        this.currentSessionId = null;
+        this.isPanelCollapsed = true;
         this.cdr.markForCheck();
+        window.dispatchEvent(new Event('resize'));
     }
 
     public togglePanelCollapsed(): void {
