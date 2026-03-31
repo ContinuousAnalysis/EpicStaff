@@ -11,7 +11,7 @@ import {
     ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { isEqual } from 'lodash';
+import { isEqual } from 'lodash-es';
 import { catchError, finalize, map, Observable, of, Subject, switchMap, takeUntil, tap } from 'rxjs';
 
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';

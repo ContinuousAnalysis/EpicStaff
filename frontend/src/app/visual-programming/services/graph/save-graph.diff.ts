@@ -9,7 +9,7 @@
  *   5. Payload builders      — convert UI nodes into API request bodies
  */
 
-import { isEqual } from 'lodash';
+import { isEqual } from 'lodash-es';
 
 import { GraphDto } from '../../../features/flows/models/graph.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
