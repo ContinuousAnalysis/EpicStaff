@@ -71,22 +71,6 @@ class IDMapper:
             if not mapping.was_created
         ]
 
-    # def get_detailed_summary(self) -> dict:
-    #     summary = {}
-    #     for entity_type in self._mappings:
-    #         summary[entity_type] = {
-    #             "total": len(self._mappings[entity_type]),
-    #             "created": {
-    #                 "count": self.get_created_count(entity_type),
-    #                 "ids": self.get_created_ids(entity_type),
-    #             },
-    #             "reused": {
-    #                 "count": self.get_reused_count(entity_type),
-    #                 "ids": self.get_reused_ids(entity_type),
-    #             },
-    #         }
-    #     return summary
-
     def get_detailed_summary(self, registry) -> dict:
         summary = {}
 

@@ -14,6 +14,7 @@ from tables.import_export.serializers.graph import (
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 from tables.import_export.enums import EntityType
 from tables.import_export.id_mapper import IDMapper
+from tables.import_export.constants import NODE_MAPPING_KEY
 from tables.import_export.utils import ensure_unique_identifier
 from tables.import_export.strategies.node_handlers import NODE_HANDLERS
 
@@ -80,15 +81,17 @@ class GraphStrategy(EntityImportExportStrategy):
         serializer.is_valid(raise_exception=True)
         graph = serializer.save()
 
+        node_mapper = IDMapper()
+
         # Pass 1: create all nodes and build the old→new node ID mapping
-        self._create_nodes(nodes_data, graph, id_mapper)
+        self._create_nodes(nodes_data, graph, node_mapper)
 
         # Pass 2: create edges/conditional-edges with remapped node IDs,
         # then fix stale node-ID references in decision tables and metadata
-        self._create_edges(edges_data, graph, id_mapper)
-        self._create_conditional_edges(conditional_edges_data, graph, id_mapper)
-        self._remap_decision_table_references(graph, id_mapper)
-        self._update_metadata_node_ids(graph, id_mapper)
+        self._create_edges(edges_data, graph, node_mapper)
+        self._create_conditional_edges(conditional_edges_data, graph, node_mapper)
+        self._remap_decision_table_references(graph, node_mapper)
+        self._update_metadata_node_ids(graph, node_mapper)
 
         return graph
 
@@ -126,16 +129,16 @@ class GraphStrategy(EntityImportExportStrategy):
                 node = self._default_import_node(graph, node_data, config)
 
             if old_id and node:
-                id_mapper.map(EntityType.NODE, old_id, node.id)
+                id_mapper.map(NODE_MAPPING_KEY, old_id, node.id)
 
     def _create_edges(self, edges_data: list, graph: Graph, id_mapper: IDMapper):
         for edge_data in edges_data:
             edge_data["graph"] = graph.id
             edge_data["start_node_id"] = id_mapper.get(
-                EntityType.NODE, edge_data["start_node_id"]
+                NODE_MAPPING_KEY, edge_data["start_node_id"]
             )
             edge_data["end_node_id"] = id_mapper.get(
-                EntityType.NODE, edge_data["end_node_id"]
+                NODE_MAPPING_KEY, edge_data["end_node_id"]
             )
 
             serializer = EdgeImportSerializer(data=edge_data)
@@ -156,7 +159,7 @@ class GraphStrategy(EntityImportExportStrategy):
             edge_data["python_code_id"] = python_code.id
             if edge_data["source_node_id"] is not None:
                 edge_data["source_node_id"] = id_mapper.get(
-                    EntityType.NODE, edge_data["source_node_id"]
+                    NODE_MAPPING_KEY, edge_data["source_node_id"]
                 )
 
             serializer = ConditionalEdgeImportSerializer(data=edge_data)
@@ -169,7 +172,7 @@ class GraphStrategy(EntityImportExportStrategy):
 
             if dt_node.default_next_node_id:
                 new_id = id_mapper.get_or_none(
-                    EntityType.NODE, dt_node.default_next_node_id
+                    NODE_MAPPING_KEY, dt_node.default_next_node_id
                 )
                 if new_id:
                     dt_node.default_next_node_id = new_id
@@ -177,7 +180,7 @@ class GraphStrategy(EntityImportExportStrategy):
 
             if dt_node.next_error_node_id:
                 new_id = id_mapper.get_or_none(
-                    EntityType.NODE, dt_node.next_error_node_id
+                    NODE_MAPPING_KEY, dt_node.next_error_node_id
                 )
                 if new_id:
                     dt_node.next_error_node_id = new_id
@@ -190,7 +193,7 @@ class GraphStrategy(EntityImportExportStrategy):
 
             for group in dt_node.condition_groups.all():
                 if group.next_node_id:
-                    new_id = id_mapper.get_or_none(EntityType.NODE, group.next_node_id)
+                    new_id = id_mapper.get_or_none(NODE_MAPPING_KEY, group.next_node_id)
                     if new_id:
                         group.next_node_id = new_id
                         group.save(update_fields=["next_node_id"])
@@ -207,7 +210,7 @@ class GraphStrategy(EntityImportExportStrategy):
             data = node.get("data") or {}
             node_id = data.get("id")
             if node_id is not None:
-                new_id = id_mapper.get_or_none(EntityType.NODE, node_id)
+                new_id = id_mapper.get_or_none(NODE_MAPPING_KEY, node_id)
                 if new_id and new_id != node_id:
                     data["id"] = new_id
                     changed = True
