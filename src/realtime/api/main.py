@@ -6,24 +6,30 @@ from loguru import logger
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
 from fastapi.middleware.cors import CORSMiddleware
 from src.shared.models import RealtimeAgentChatData
-from services.chat_executor import ChatExecutor
-from services.python_code_executor_service import PythonCodeExecutorService
-from services.redis_service import RedisService
-from services.tool_manager_service import ToolManagerService
-from services.voice_stream_handler import VoiceStreamHandler
-from utils.instructions_concatenator import generate_instruction
-from ai.agent.openai_realtime_agent_client import OpenaiRealtimeAgentClient
-from ai.agent.elevenlabs_agent_provisioner import ElevenLabsAgentProvisioner
-
-from api.connection_repository import ConnectionRepository
-from ai.transcription.realtime_transcription import (
-    OpenaiRealtimeTranscriptionClient,
+from application.conversation_service import ConversationService
+from application.voice_call_service import VoiceCallService
+from application.tool_manager_service import ToolManagerService
+from infrastructure.messaging.python_code_executor_service import (
+    PythonCodeExecutorService,
 )
+from infrastructure.messaging.redis_service import RedisService
+from infrastructure.persistence.connection_repository import ConnectionRepository
+from infrastructure.providers.elevenlabs.elevenlabs_agent_provisioner import (
+    ElevenLabsAgentProvisioner,
+)
+from infrastructure.providers.factory import RealtimeAgentClientFactory
+from infrastructure.summarization.openai_summarization_client import (
+    OpenaiSummarizationClient,
+)
+from infrastructure.transcription.transcription_client_factory import (
+    TranscriptionClientFactory,
+)
+from utils.instructions_concatenator import generate_instruction
 from core.config import settings
 
 
-from db.database import get_db, engine
-from models.db_models import Base
+from infrastructure.persistence.database import get_db, engine
+from infrastructure.persistence.db_models import Base
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,6 +48,10 @@ tool_manager_service = ToolManagerService(
     manager_port=settings.MANAGER_PORT,
 )
 elevenlabs_agent_provisioner = ElevenLabsAgentProvisioner(redis_service=redis_service)
+factory = RealtimeAgentClientFactory(
+    elevenlabs_agent_provisioner=elevenlabs_agent_provisioner
+)
+transcription_client_factory = TranscriptionClientFactory()
 
 
 # Enable CORS
@@ -127,9 +137,7 @@ async def startup_event():
 
 
 # Store active connections and their handlers
-connections: Dict[
-    WebSocket, list[OpenaiRealtimeAgentClient | OpenaiRealtimeTranscriptionClient]
-] = {}
+connections: Dict[WebSocket, tuple] = {}
 
 
 @app.websocket("/realtime/")
@@ -155,18 +163,21 @@ async def root(
         backstory=realtime_agent_chat_data.backstory,
     )
 
-    strategy = ChatExecutor(
+    summ_client = OpenaiSummarizationClient(
+        api_key=realtime_agent_chat_data.rt_api_key,
+    )
+    service = ConversationService(
         client_websocket=websocket,
         realtime_agent_chat_data=realtime_agent_chat_data,
         instructions=instructions,
-        redis_service=redis_service,
-        python_code_executor_service=python_code_executor_service,
         tool_manager_service=tool_manager_service,
         connections=connections,
-        elevenlabs_agent_provisioner=elevenlabs_agent_provisioner,
+        factory=factory,
+        summ_client=summ_client,
+        transcription_client_factory=transcription_client_factory,
     )
 
-    await strategy.execute()
+    await service.execute()
 
 
 @app.websocket("/ht")
@@ -265,7 +276,7 @@ async def voice_stream(twilio_ws: WebSocket):
             await twilio_ws.close()
             return
 
-    # 2. Wait for Redis listener to store agent config (delivered asynchronously)
+    # 3. Wait for Redis listener to store agent config (delivered asynchronously)
     realtime_agent_chat_data = None
     for _ in range(20):  # up to 2 seconds
         realtime_agent_chat_data = connection_repository.get_connection(conn_key)
@@ -278,18 +289,18 @@ async def voice_stream(twilio_ws: WebSocket):
         await twilio_ws.close()
         return
 
-    # 3. Build instructions and hand off to VoiceStreamHandler (no WebSocket hop)
+    # 4. Build instructions and hand off to VoiceCallService
     instructions = generate_instruction(
         role=realtime_agent_chat_data.role,
         goal=realtime_agent_chat_data.goal,
         backstory=realtime_agent_chat_data.backstory,
     )
-    handler = VoiceStreamHandler(
+    service = VoiceCallService(
         twilio_ws=twilio_ws,
         realtime_agent_chat_data=realtime_agent_chat_data,
         instructions=instructions,
         tool_manager_service=tool_manager_service,
         connections=connections,
-        elevenlabs_agent_provisioner=elevenlabs_agent_provisioner,
+        factory=factory,
     )
-    await handler.execute()
+    await service.execute()
