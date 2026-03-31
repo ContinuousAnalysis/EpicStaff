@@ -1,12 +1,9 @@
-import { computed,Injectable, signal } from '@angular/core';
-import { IPoint, IRect } from '@foblex/2d';
-import { Observable, of } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { computed, Injectable, signal } from '@angular/core';
 
 import { NodeType } from '../core/enums/node-type';
 import { generatePortsForDecisionTableNode } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
-import { ConditionGroup,DecisionTableNode } from '../core/models/decision-table.model';
+import { ConditionGroup, DecisionTableNode } from '../core/models/decision-table.model';
 import { FlowModel } from '../core/models/flow.model';
 import { DecisionTableNodeModel, NodeModel, StartNodeModel } from '../core/models/node.model';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
@@ -698,12 +695,7 @@ export class FlowService {
                     }
                 }
 
-                const updatedPorts = generatePortsForDecisionTableNode(
-                    sourceNode.id,
-                    updatedTable.condition_groups,
-                    !!updatedTable.default_next_node,
-                    !!updatedTable.next_error_node
-                );
+                const updatedPorts = generatePortsForDecisionTableNode(sourceNode.id, updatedTable.condition_groups);
 
                 decisionTableUpdates.set(sourceNode.id, {
                     table: updatedTable,

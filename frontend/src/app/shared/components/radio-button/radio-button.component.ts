@@ -51,7 +51,9 @@ export class RadioButtonComponent<T> implements ControlValueAccessor {
         this.onTouched = fn;
     }
 
-    setDisabledState(isDisabled: boolean): void {}
+    setDisabledState(isDisabled: boolean): void {
+        void isDisabled;
+    }
 
     select(option: SegmentedOption<T>) {
         if (this.disabled()) return;

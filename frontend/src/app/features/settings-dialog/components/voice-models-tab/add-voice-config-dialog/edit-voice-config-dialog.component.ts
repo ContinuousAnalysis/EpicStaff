@@ -66,7 +66,7 @@ export class EditVoiceConfigDialogComponent implements OnInit {
                 next: () => {
                     this.dialogRef.close(true); // Close with success result
                 },
-                error: (error) => {
+                error: () => {
                     this.errorMessage.set('Failed to update configuration. Please try again.');
                 },
             });

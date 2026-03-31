@@ -81,7 +81,7 @@ export class EditFileParametersDialogComponent {
             .updateDocumentFields(this.data.ragId, documentId, body)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (v) => {
+                next: () => {
                     this.toastService.success(`Document updated`);
                     this.chunksSection.runChunking();
                 },

@@ -610,6 +610,7 @@ function buildConditionalEdgeConnections(
     nodeByBackendId: Map<number, NodeModel>,
     decisionTableNodes: DecisionTableNodeModel[]
 ): ConnectionModel[] {
+    void decisionTableNodes;
     const connections: ConnectionModel[] = [];
 
     for (let i = 0; i < conditionalEdges.length; i++) {

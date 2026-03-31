@@ -1,13 +1,9 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { NgFor, NgIf } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 
 import { ConfirmationDialogService } from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
-import { ConfirmationDialogComponent } from '../../../../../../shared/components/cofirm-dialog/confirmation-dialog.component';
 import { LoadingSpinnerComponent } from '../../../../../../shared/components/loading-spinner/loading-spinner.component';
 import { FlowRenameDialogComponent } from '../../../../../flows/components/flow-rename-dialog/flow-rename-dialog.component';
 import { CreateProjectComponent } from '../../../../components/create-project-form-dialog/create-project.component';
@@ -159,7 +155,7 @@ export class MyProjectsComponent implements OnInit {
         }
     }
     private openCopyDialog(project: GetProjectRequest): void {
-        const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
+        this.dialog.open<string>(FlowRenameDialogComponent, {
             data: {
                 flowName: `${project.name} Copy`,
                 title: 'Copy Project',

@@ -66,7 +66,7 @@ export class ConsoleService implements OnDestroy {
         this.connectionError$.complete();
     }
 
-    private connectToRealtime(connectionKey: string): void {
+    private connectToRealtime(): void {
         this.client = new RealtimeClient({
             url: this.configService.realtimeApiUrl,
             dangerouslyAllowAPIKeyInBrowser: false,
@@ -150,7 +150,7 @@ export class ConsoleService implements OnDestroy {
                         throw new Error('No connectionKey found in localStorage');
                     }
 
-                    this.connectToRealtime(storedKey);
+                    this.connectToRealtime();
                     this.updateItems();
 
                     // Begin a sequence of initialization steps
@@ -420,7 +420,7 @@ export class ConsoleService implements OnDestroy {
 
         try {
             this.client.sendUserMessageContent([{ type: 'input_text', text: message }]);
-            const interruptResponse = await this.wavStreamPlayerService.interrupt();
+            await this.wavStreamPlayerService.interrupt();
 
             return true;
         } catch (error) {

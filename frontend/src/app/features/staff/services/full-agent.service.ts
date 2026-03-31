@@ -16,7 +16,6 @@ import { RealtimeModelConfigsService } from '../../settings-dialog/services/real
 import { RealtimeModelsService } from '../../settings-dialog/services/realtime-llms/real-time-models.service';
 import { GetMcpToolRequest } from '../../tools/models/mcp-tool.model';
 import { GetPythonCodeToolRequest } from '../../tools/models/python-code-tool.model';
-import { Tool } from '../../tools/models/tool.model';
 import { GetToolConfigRequest } from '../../tools/models/tool-config.model';
 import { McpToolsService } from '../../tools/services/mcp-tools/mcp-tools.service';
 import { ToolConfigService } from '../../tools/services/tool-config.service';

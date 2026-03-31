@@ -197,8 +197,6 @@ export class ProjectsStorageService {
                 const index = currentProjects.findIndex((p) => p.id === id);
 
                 if (index !== -1) {
-                    const oldProject = currentProjects[index];
-
                     const updatedProjectsList = [...currentProjects];
                     updatedProjectsList[index] = {
                         ...updatedProjectsList[index],
@@ -206,8 +204,6 @@ export class ProjectsStorageService {
                     } as GetProjectRequest;
 
                     this.projectsSignal.set(updatedProjectsList);
-
-                    const verifyTapUpdate = this.projectsSignal().find((p) => p.id === id);
                 }
             })
         );
@@ -244,16 +240,11 @@ export class ProjectsStorageService {
         const index = currentProjects.findIndex((p) => p.id === updatedProject.id);
 
         if (index !== -1) {
-            const oldProject = currentProjects[index];
-
             const updatedProjects = [...currentProjects];
             // Create a new object reference to ensure change detection works
             updatedProjects[index] = { ...updatedProject };
 
             this.projectsSignal.set(updatedProjects);
-
-            // Verify the update
-            const verifyUpdate = this.projectsSignal().find((p) => p.id === updatedProject.id);
         } else {
             console.log('🚀 Project not found in cache, adding it');
             // If project not found, add it

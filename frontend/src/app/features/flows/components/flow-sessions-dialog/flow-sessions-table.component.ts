@@ -3,7 +3,7 @@ import { ChangeDetectorRef, Component, EventEmitter, Input, Output, signal } fro
 import { CheckboxComponent, IconButtonComponent, LoadingSpinnerComponent } from '@shared/components';
 
 import { GraphDto } from '../../models/graph.model';
-import { GraphSession, GraphSessionLight, GraphSessionStatus } from '../../services/flows-sessions.service';
+import { GraphSessionLight, GraphSessionStatus } from '../../services/flows-sessions.service';
 import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.component';
 @Component({
     selector: 'app-flow-sessions-table',

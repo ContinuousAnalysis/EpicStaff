@@ -429,7 +429,7 @@ export class AgentMessageComponent implements OnInit {
         if (this.hasToolInput()) {
             try {
                 this.toolJsonData = JSON.parse(this.getToolInput());
-            } catch (e) {
+            } catch {
                 this.toolJsonData = null;
             }
         }
@@ -439,7 +439,7 @@ export class AgentMessageComponent implements OnInit {
         if (this.getResult()) {
             try {
                 this.resultJsonData = JSON.parse(this.getResult());
-            } catch (e) {
+            } catch {
                 this.resultJsonData = null;
             }
         }
@@ -449,7 +449,7 @@ export class AgentMessageComponent implements OnInit {
         try {
             JSON.parse(str);
             return true;
-        } catch (e) {
+        } catch {
             return false;
         }
     }
@@ -474,7 +474,7 @@ export class AgentMessageComponent implements OnInit {
             // Using more explicit formatting to ensure proper indentation and brackets
             let formatted = JSON.stringify(parsed, null, 2);
             return formatted;
-        } catch (e) {
+        } catch {
             return jsonString;
         }
     }

@@ -10,7 +10,6 @@ import {
     OnChanges,
     OnInit,
     signal,
-    SimpleChanges,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -89,7 +88,7 @@ export class WebhookTriggerNodePanelComponent
         this.getNgrokConfigs();
     }
 
-    ngOnChanges(changes: SimpleChanges) {
+    ngOnChanges() {
         const id = this.node().data.webhook_trigger?.ngrok_webhook_config;
         this.ngrokConfigId.set(id);
     }

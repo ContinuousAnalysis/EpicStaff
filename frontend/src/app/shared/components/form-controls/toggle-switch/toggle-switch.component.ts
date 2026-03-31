@@ -27,7 +27,7 @@ export class ToggleSwitchComponent implements ControlValueAccessor {
     @Input() checked = false;
     @Output() checkedChange = new EventEmitter<boolean>();
 
-    private onChange = (_: boolean) => {};
+    private onChange: (value: boolean) => void = () => {};
     private onTouched = () => {};
     private isDisabled = false;
 

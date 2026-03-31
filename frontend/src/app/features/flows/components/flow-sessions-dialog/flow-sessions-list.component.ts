@@ -120,7 +120,7 @@ export class FlowSessionsListComponent implements OnInit {
 
     public onStopSession(sessionId: number): void {
         this.graphSessionService.stopSessionById(sessionId).subscribe({
-            next: (response) => {
+            next: () => {
                 this.sessions.update((sessions) =>
                     sessions.map((s) => (s.id === sessionId ? { ...s, status: GraphSessionStatus.STOP } : s))
                 );

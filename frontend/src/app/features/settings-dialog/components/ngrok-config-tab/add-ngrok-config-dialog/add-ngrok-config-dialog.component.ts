@@ -90,7 +90,7 @@ export class AddNgrokConfigDialogComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.dialogRef.close(),
-                error: (e) => {
+                error: () => {
                     this.errorMessage.set('Failed to create configuration. Please try again.');
                     this.isSubmitting.set(false);
                 },
@@ -103,7 +103,7 @@ export class AddNgrokConfigDialogComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.dialogRef.close(),
-                error: (e) => {
+                error: () => {
                     this.errorMessage.set('Failed to update configuration. Please try again.');
                     this.isSubmitting.set(false);
                 },

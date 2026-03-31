@@ -1,7 +1,6 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { map, switchMap, tap } from 'rxjs/operators';
 
 import { CrewNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/crew-node.service';
 import { ConfigService } from '../../../services/config/config.service';

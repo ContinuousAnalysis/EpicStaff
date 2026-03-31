@@ -1,5 +1,5 @@
 import { NgIf } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, OnDestroy, OnInit, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
 
 import { FullAgent, FullAgentService } from '../../features/staff/services/full-agent.service';
@@ -7,7 +7,6 @@ import { RealtimeAgentService } from '../../features/staff/services/realtime-age
 import { PageHeaderComponent } from '../../shared/components/header/page-header.component';
 import { SpinnerComponent } from '../../shared/components/spinner/spinner.component';
 import { ChatsContentComponent } from './components/chats-content/chats-content.component';
-import { ChatsHeaderComponent } from './components/chats-page-header/chats-page-header.component';
 import { ChatsSidebarComponent } from './components/chats-sidebar/chats-sidebar.component';
 import { ChatsService } from './services/chats.service';
 import { ConsoleService } from './services/console.service';

@@ -15,13 +15,7 @@ import { Subscription } from 'rxjs';
 import { GetProjectRequest } from '../../features/projects/models/project.model';
 import { FullAgent } from '../../features/staff/services/full-agent.service';
 import { FullTask } from '../../features/tasks/models/full-task.model';
-import {
-    CreateTaskRequest,
-    GetTaskRequest,
-    TableFullTask,
-    UpdateTaskRequest,
-} from '../../features/tasks/models/task.model';
-import { TasksService } from '../../features/tasks/services/tasks.service';
+import { TableFullTask } from '../../features/tasks/models/task.model';
 import { ProjectStateService } from '../services/project-state.service';
 import { TasksTableComponent } from './tasks-table/tasks-table.component';
 import { TaskPendingEvent } from './tasks-table/tasks-table.component';

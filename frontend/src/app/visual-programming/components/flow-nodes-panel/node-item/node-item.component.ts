@@ -6,12 +6,10 @@ import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
 import { NodeType } from '../../../core/enums/node-type';
 import {
     AgentNodeModel,
-    DecisionTableNodeModel,
     LLMNodeModel,
     NodeModel,
     ProjectNodeModel,
     PythonNodeModel,
-    StartNodeModel,
     TaskNodeModel,
     ToolNodeModel,
 } from '../../../core/models/node.model';

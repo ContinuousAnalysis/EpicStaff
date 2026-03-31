@@ -6,7 +6,6 @@ import { GraphDto } from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { GoToButtonComponent } from '../../../../shared/components/go-to-button/go-to-button.component';
-import { flowUrl } from '../../../../shared/utils/flow-links';
 import { SubGraphNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { InputMapComponent } from '../../input-map/input-map.component';

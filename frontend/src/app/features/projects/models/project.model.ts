@@ -1,5 +1,3 @@
-import { GetCrewTagRequest } from './crew-tag.model';
-import { Session } from './sesson.model';
 export enum ProjectProcess {
     SEQUENTIAL = 'sequential',
     HIERARCHICAL = 'hierarchical',

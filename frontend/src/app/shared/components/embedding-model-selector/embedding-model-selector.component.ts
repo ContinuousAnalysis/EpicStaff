@@ -388,7 +388,7 @@ export class EmbeddingModelSelectorComponent implements OnInit, OnDestroy, OnCha
     }
 
     setDisabledState(isDisabled: boolean): void {
-        // Implement if needed
+        void isDisabled;
     }
 
     // Add this helper method to update the selected config

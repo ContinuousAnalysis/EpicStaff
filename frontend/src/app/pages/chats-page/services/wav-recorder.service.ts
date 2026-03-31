@@ -1,6 +1,4 @@
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject } from 'rxjs';
 import { WavRecorder } from 'wavtools';
 import { AudioAnalysisOutputType } from 'wavtools/dist/lib/analysis/audio_analysis';
 
@@ -98,6 +96,7 @@ export class WavRecorderService {
         audioCallback?: (data: { mono: Int16Array; raw: Int16Array }) => void,
         chunkSize: number = 8192
     ): Promise<boolean> {
+        void chunkSize;
         // Update state signals
         this.isRecording.set(true);
         this.isPaused.set(false);

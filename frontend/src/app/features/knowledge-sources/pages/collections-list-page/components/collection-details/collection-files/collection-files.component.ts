@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, model } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AppIconComponent } from '../../../../../../../shared/components/app-icon/app-icon.component';

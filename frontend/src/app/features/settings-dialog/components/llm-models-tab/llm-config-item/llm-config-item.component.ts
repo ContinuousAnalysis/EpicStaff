@@ -4,7 +4,6 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { IconButtonComponent } from '../../../../../shared/components/buttons/icon-button/icon-button.component';
-import { ToggleSwitchComponent } from '../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { FullLLMConfig } from '../../../services/llms/full-llm-config.service';
 import { getProviderIconPath } from '../../../utils/get-provider-icon';
 

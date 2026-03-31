@@ -1,4 +1,4 @@
-import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { WavStreamPlayer } from 'wavtools';
 import { AudioAnalysisOutputType } from 'wavtools/dist/lib/analysis/audio_analysis';
 

@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 
 import { ApiGetRequest } from '../../../../../core/models/api-request.model';
 import { ConfigService } from '../../../../../services/config/config.service';
-import { CreatePythonNodeRequest } from '../models/python-node.model';
 import { CreateWebhookTriggerNodeRequest, GetWebhookTriggerNodeRequest } from '../models/webhook-trigger';
 export interface WebhookTrigger {
     id: number;

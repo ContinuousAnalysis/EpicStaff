@@ -135,7 +135,6 @@ export function generateMultipleNodeDisplayNames(
 
     // Generate names for each node
     const displayNames: string[] = [];
-    const tempCounts = new Map<NodeType, number>();
     const generatedNames = new Set<string>(); // Track names generated in this batch
 
     nodesToCreate.forEach((node, index) => {

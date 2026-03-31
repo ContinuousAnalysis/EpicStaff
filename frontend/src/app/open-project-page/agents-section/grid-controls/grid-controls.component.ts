@@ -3,9 +3,6 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, In
 import { FormsModule } from '@angular/forms';
 
 import { FullAgent } from '../../../features/staff/services/full-agent.service';
-import { ProjectFavoriteButtonComponent } from '../../../shared/components/header/header-components/header-favorite/header-favorite-button.component';
-import { ProjectFilterButtonComponent } from '../../../shared/components/header/header-components/header-filter/header-filter-button.component';
-import { ProjectSortButtonComponent } from '../../../shared/components/header/header-components/header-sort/header-sort-button.component';
 import { SearchDropdownComponent } from './dropdown-staff-agents/search-dropdown.component';
 
 export type GridSizeOption = 'small' | 'medium' | 'large';

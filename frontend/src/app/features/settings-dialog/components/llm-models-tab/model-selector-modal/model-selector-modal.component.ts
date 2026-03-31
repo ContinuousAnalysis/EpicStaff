@@ -12,7 +12,7 @@ import { LLM_Model } from '../../../models/llms/LLM.model';
 import { LLM_Providers_Service } from '../../../services/llm-providers.service';
 import { LLM_Models_Service } from '../../../services/llms/llm-models.service';
 import { getProviderIconPath } from '../../../utils/get-provider-icon';
-import { AllModelsModalComponent, AllModelsResult } from '../all-models-modal/all-models-modal.component';
+import { AllModelsModalComponent } from '../all-models-modal/all-models-modal.component';
 
 export interface ModelSelectorDialogData {
     selectedModelId?: number | null;
@@ -208,7 +208,7 @@ export class ModelSelectorModalComponent implements OnInit {
         return this.selectedModelId() === modelId;
     }
 
-    openAllModelsModal(provider: LLM_Provider, providerData: ProviderWithModels): void {
+    openAllModelsModal(provider: LLM_Provider): void {
         this.modelsService
             .getLLMModels(provider.id)
             .pipe(takeUntilDestroyed(this.destroyRef))

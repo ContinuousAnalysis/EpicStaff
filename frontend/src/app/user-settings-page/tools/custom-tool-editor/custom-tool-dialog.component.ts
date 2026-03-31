@@ -208,7 +208,7 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
                 properties: parsedInputs.properties || {},
                 required: parsedInputs.required || [],
             };
-        } catch (e) {
+        } catch {
             this.toastService.error('Invalid inputs JSON format');
             return;
         }

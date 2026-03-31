@@ -254,7 +254,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
                 const expectedPortCount = 1 + validGroups.length + 2;
 
                 if (node.ports.length !== expectedPortCount) {
-                    node.ports = generatePortsForDecisionTableNode(node.id, conditionGroups, true, true);
+                    node.ports = generatePortsForDecisionTableNode(node.id, conditionGroups);
                 }
             }
             return node;
@@ -559,12 +559,6 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
                 height: 150,
             };
         } else if (event.type === NodeType.TABLE) {
-            const tableData = (
-                event.data as {
-                    table?: { condition_groups?: unknown[] };
-                }
-            )?.table;
-            const conditionGroups = tableData?.condition_groups ?? [];
             nodeSize = {
                 width: 330,
                 height: this.getDecisionTableVisualHeight({

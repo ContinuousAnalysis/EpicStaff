@@ -20,11 +20,7 @@ import { Router } from '@angular/router';
 import { AppIconComponent } from '@shared/components';
 import { Subject, takeUntil } from 'rxjs';
 
-import {
-    GraphSessionLight,
-    GraphSessionService,
-    GraphSessionStatus,
-} from '../../../../features/flows/services/flows-sessions.service';
+import { GraphSessionLight, GraphSessionService } from '../../../../features/flows/services/flows-sessions.service';
 import { GraphMessagesComponent } from '../graph-messages/graph-messages.component';
 
 @Component({

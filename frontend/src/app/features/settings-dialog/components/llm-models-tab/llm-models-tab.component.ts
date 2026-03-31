@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 
 import { LoadingState } from '../../../../core/enums/loading-state.enum';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { UpdateLLMConfigRequest } from '../../models/llms/LLM_config.model';
 import { FullLLMConfig, FullLLMConfigService } from '../../services/llms/full-llm-config.service';
@@ -72,7 +71,7 @@ export class LlmModelsTabComponent implements OnInit {
         });
     }
 
-    public onFavoriteToggled(event: { id: string | number; value: boolean }) {
+    public onFavoriteToggled(): void {
         // Placeholder for favorite toggle logic
     }
 

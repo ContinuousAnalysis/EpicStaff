@@ -1,6 +1,6 @@
 // pagination-controls.component.ts
 import { CommonModule } from '@angular/common';
-import { Component, computed, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
     selector: 'app-pagination-controls',

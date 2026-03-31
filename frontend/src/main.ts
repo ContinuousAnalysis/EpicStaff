@@ -6,7 +6,7 @@ import { appConfig } from './app/app.config';
 
 // Setup Monaco environment with webpack approach
 (window as unknown as { MonacoEnvironment: Record<string, unknown> }).MonacoEnvironment = {
-    getWorkerUrl: function (_moduleId: string, label: string) {
+    getWorkerUrl: function () {
         return './assets/monaco/min/vs/base/worker/workerMain.js';
     },
 };

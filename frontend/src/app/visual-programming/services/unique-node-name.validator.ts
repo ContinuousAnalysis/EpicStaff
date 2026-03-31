@@ -1,8 +1,7 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
-import { catchError, map, Observable, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
-import { NodeModel } from '../core/models/node.model';
 import { FlowService } from './flow.service';
 
 export interface UniqueNameValidationResult {

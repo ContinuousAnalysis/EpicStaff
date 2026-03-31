@@ -78,6 +78,7 @@ export class RunSessionSSEService {
     }
 
     private connect(sessionId: string): void {
+        void sessionId;
         if (this.eventSource) {
             console.warn('SSE already started');
             return;
@@ -165,7 +166,7 @@ export class RunSessionSSEService {
             }
         });
 
-        this.eventSource.addEventListener('fatal-error', (event: MessageEvent) => {
+        this.eventSource.addEventListener('fatal-error', () => {
             console.error('Fatal SSE error received');
             this.handleConnectionLoss();
         });

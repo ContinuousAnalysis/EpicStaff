@@ -13,11 +13,7 @@ import {
     FullLLMConfigService,
 } from '../../../features/settings-dialog/services/llms/full-llm-config.service';
 import { Tool } from '../../../features/tools/models/tool.model';
-import {
-    CreateToolConfigRequest,
-    GetToolConfigRequest,
-    ToolConfig,
-} from '../../../features/tools/models/tool-config.model';
+import { GetToolConfigRequest, ToolConfig } from '../../../features/tools/models/tool-config.model';
 import { ToolConfigService } from '../../../features/tools/services/tool-config.service';
 import { ToastService } from '../../../services/notifications/toast.service';
 import { ConfirmationDialogService } from '../../../shared/components/cofirm-dialog/confimation-dialog.service';
@@ -145,7 +141,7 @@ export class ToolConfigurationDialogComponent implements OnInit, OnDestroy {
         this.createNewConfig();
     }
 
-    deleteFromList(config: ToolConfig, event: MouseEvent): void {
+    deleteFromList(config: ToolConfig): void {
         this.onDeleteConfig(config);
     }
 

@@ -388,7 +388,7 @@ export class LlmModelSelectorComponent implements OnInit, OnDestroy, OnChanges, 
     }
 
     setDisabledState(isDisabled: boolean): void {
-        // Implement if needed
+        void isDisabled;
     }
 
     // Add this helper method to update the selected config

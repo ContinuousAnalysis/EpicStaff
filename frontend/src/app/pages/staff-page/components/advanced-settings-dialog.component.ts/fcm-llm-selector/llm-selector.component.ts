@@ -31,7 +31,7 @@ export class LlmSelectorComponent implements ControlValueAccessor, OnChanges {
 
     isOpen = false;
     value: number | null = null;
-    onChange = (_: number | null) => {};
+    onChange: (value: number | null) => void = () => {};
     onTouched = () => {};
 
     get selectedConfig(): FullLLMConfig | undefined {

@@ -4,7 +4,7 @@ import { NgxJsonViewerModule } from 'ngx-json-viewer';
 import { MarkdownModule } from 'ngx-markdown';
 
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
-import { GraphMessage, MessageType, TaskMessageData } from '../../../../models/graph-session-message.model';
+import { GraphMessage, TaskMessageData } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-task-message',
@@ -343,7 +343,7 @@ export class TaskMessageComponent implements OnInit {
         try {
             JSON.parse(str);
             return true;
-        } catch (e) {
+        } catch {
             return false;
         }
     }
@@ -352,7 +352,7 @@ export class TaskMessageComponent implements OnInit {
         if (this.hasRawData()) {
             try {
                 this.parsedRawData = JSON.parse(this.getRawData());
-            } catch (e) {
+            } catch {
                 this.parsedRawData = null;
             }
         }

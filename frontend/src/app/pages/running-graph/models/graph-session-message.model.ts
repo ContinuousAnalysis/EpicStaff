@@ -1,5 +1,5 @@
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { Agent, GetAgentRequest } from '../../../features/staff/models/agent.model';
+import { GetAgentRequest } from '../../../features/staff/models/agent.model';
 import { GetTaskRequest } from '../../../features/tasks/models/task.model';
 
 // Base GraphMessage interface

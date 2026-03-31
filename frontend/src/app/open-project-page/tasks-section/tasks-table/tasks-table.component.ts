@@ -8,7 +8,6 @@ import {
     ElementRef,
     EventEmitter,
     HostListener,
-    Inject,
     Input,
     OnChanges,
     Output,
@@ -17,51 +16,31 @@ import {
     SimpleChanges,
     ViewChild,
 } from '@angular/core';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
+import { AgGridModule } from 'ag-grid-angular';
 import {
     CellClickedEvent,
     CellContextMenuEvent,
-    CellEditingStartedEvent,
     CellKeyDownEvent,
-    CellMouseOutEvent,
-    CellMouseOverEvent,
     CellValueChangedEvent,
     ColDef,
     GridApi,
     GridOptions,
     GridReadyEvent,
-    ICellRendererParams,
     RowDragEndEvent,
     SuppressKeyboardEventParams,
 } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import { themeQuartz } from 'ag-grid-community';
-import { forkJoin, Observable } from 'rxjs';
 
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { CreateAgentRequest, UpdateAgentRequest } from '../../../features/staff/models/agent.model';
-import { FullAgent, FullAgentService, TableFullAgent } from '../../../features/staff/services/full-agent.service';
-import { AgentsService } from '../../../features/staff/services/staff.service';
+import { FullAgent } from '../../../features/staff/services/full-agent.service';
 import { FullTask } from '../../../features/tasks/models/full-task.model';
-import {
-    CreateTaskRequest,
-    GetTaskRequest,
-    TableFullTask,
-    UpdateTaskRequest,
-} from '../../../features/tasks/models/task.model';
+import { CreateTaskRequest, TableFullTask, UpdateTaskRequest } from '../../../features/tasks/models/task.model';
 import { TasksService } from '../../../features/tasks/services/tasks.service';
-import {
-    AdvancedSettingsData,
-    AdvancedSettingsDialogComponent,
-} from '../../../pages/staff-page/components/advanced-settings-dialog.component.ts/advanced-settings-dialog.component';
-import { LLMPopupComponent } from '../../../pages/staff-page/components/cell-popups-and-modals/llm-selector-popup/llm-popup.component';
-import { TagsPopupComponent } from '../../../pages/staff-page/components/cell-popups-and-modals/tags-popup/tags-popup.component';
 import { ToolsPopupComponent } from '../../../pages/staff-page/components/cell-popups-and-modals/tools-selector-popup/tools-popup.component';
 import { IndexCellRendererComponent } from '../../../pages/staff-page/components/cell-renderers/index-row-cell-renderer/custom-row-height.component';
 import { AgGridContextMenuComponent } from '../../../pages/staff-page/components/context-menu/ag-grid-context-menu.component';
 import { PreventContextMenuDirective } from '../../../pages/staff-page/components/directives/prevent-context-menu.directive';
-import { DelegationHeaderComponent } from '../../../pages/staff-page/components/header-renderers/delegation-header.component';
-import { MemoryHeaderComponent } from '../../../pages/staff-page/components/header-renderers/memory-header.component';
 import { ToastService } from '../../../services/notifications/toast.service';
 import { ClickOutsideDirective } from '../../../shared/directives/click-outside.directive';
 import { buildToolIdsArray } from '../../../shared/utils/tool-ids-builder.util';
@@ -71,7 +50,6 @@ import {
     AdvancedTaskSettingsData,
     AdvancedTaskSettingsDialogComponent,
 } from './advanced-task-settings-dialog/advanced-task-settings-dialog.component';
-import { AsyncHeaderComponent } from './header-renderers/async-exec-header/async-header.component';
 import { HumanInputHeaderComponent } from './header-renderers/human-input-header/human-input.component';
 import { KnowledgeQueryHeaderComponent } from './header-renderers/knowledge-query-header/knowledge-query-header.component';
 import { AgentSelectionPopupComponent } from './popups/agent-select-popup/agent-selection-popup.component';
@@ -609,7 +587,7 @@ export class TasksTableComponent implements OnChanges {
         {
             headerName: '',
             field: 'actions',
-            cellRenderer: (params: ICellRendererParams) => {
+            cellRenderer: () => {
                 return `<i class="ti ti-settings action-icon"></i>`;
             },
             width: 40,
@@ -660,7 +638,7 @@ export class TasksTableComponent implements OnChanges {
             this.activeRowId = String(node.data.id);
         },
         onRowDragEnd: (event) => this.onRowDragEnd(event),
-        onRowDragEnter: (event) => {
+        onRowDragEnter: () => {
             // Clear the outside flag when re-entering the row area
             this.isDragOutsideRows = false;
             this.draggedTaskData = null;
@@ -1283,7 +1261,7 @@ export class TasksTableComponent implements OnChanges {
         }
 
         // Remove optimistically from local array
-        let removedRow = this.rowData.splice(index, 1)[0];
+        this.rowData.splice(index, 1);
         this.reindexAndSyncPendingOrders();
 
         this.cdr.markForCheck();
@@ -1651,8 +1629,6 @@ export class TasksTableComponent implements OnChanges {
             const portal = new ComponentPortal(ToolsPopupComponent);
             const popupRef = this.popupOverlayRef.attach(portal);
             const rowNode = event.node;
-            const taskData = rowNode.data as TableFullTask;
-
             popupRef.instance.mergedTools = event.data?.mergedTools || [];
 
             popupRef.instance.mergedToolsUpdated.subscribe((updatedMergedTools) => {
@@ -1727,8 +1703,6 @@ export class TasksTableComponent implements OnChanges {
 
         // Get the available space at the bottom of the screen
         const spaceBelow = window.innerHeight - mouseEvent.clientY;
-        const spaceAbove = mouseEvent.clientY;
-
         const menuHeight = 265; // Height of the context menu, you can adjust this based on the actual height
 
         // If there's not enough space below, position it above
@@ -1860,7 +1834,8 @@ export class TasksTableComponent implements OnChanges {
         const idNum = Number(parsedUpdateData.id);
         if (!Number.isFinite(idNum)) return;
 
-        const { order, ...parsedWithoutOrder } = parsedUpdateData;
+        const parsedWithoutOrder = { ...parsedUpdateData };
+        delete (parsedWithoutOrder as Record<string, unknown>)['order'];
 
         const updateTaskRequest: UpdateTaskRequest = {
             ...parsedWithoutOrder,
@@ -2036,7 +2011,6 @@ export class TasksTableComponent implements OnChanges {
             return;
         }
 
-        const cell = (target as HTMLElement).closest('.ag-cell');
         const rowEl = (target as HTMLElement).closest('.ag-row');
         const clickedId = rowEl?.getAttribute('row-id') ?? null;
 

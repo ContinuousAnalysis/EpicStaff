@@ -729,7 +729,7 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         this.recomputeUnsaved();
     }
 
-    public onAgentsDirtyChange(_: boolean): void {
+    public onAgentsDirtyChange(): void {
         this.recomputeUnsaved();
     }
 

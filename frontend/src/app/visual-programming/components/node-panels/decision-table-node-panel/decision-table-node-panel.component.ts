@@ -1,15 +1,6 @@
 import { CommonModule } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    Component,
-    computed,
-    effect,
-    inject,
-    input,
-    signal,
-} from '@angular/core';
-import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, input, signal } from '@angular/core';
+import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { NodeType } from '../../../core/enums/node-type';
@@ -133,12 +124,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
             height: Math.max(calculatedHeight, 152),
         };
 
-        const updatedPorts = generatePortsForDecisionTableNode(
-            currentNode.id,
-            conditionGroups,
-            !!decisionTableData.default_next_node,
-            !!decisionTableData.next_error_node
-        );
+        const updatedPorts = generatePortsForDecisionTableNode(currentNode.id, conditionGroups);
 
         return {
             ...currentNode,

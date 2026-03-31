@@ -1,12 +1,10 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { forkJoin, map, Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 import { ApiGetRequest } from '../../../core/models/api-request.model';
 import { ConfigService } from '../../../services/config/config.service';
-import { GetProjectRequest } from '../../projects/models/project.model';
 import {
-    Agent,
     CreateAgentRequest,
     GetAgentRequest,
     PartialUpdateAgentRequest,

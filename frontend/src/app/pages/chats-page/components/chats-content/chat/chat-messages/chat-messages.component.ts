@@ -214,7 +214,7 @@ export class ChatMessagesComponent {
 
         try {
             return JSON.parse(text);
-        } catch (e) {
+        } catch {
             // If parsing fails, return the string as is in an object
             return { value: text };
         }

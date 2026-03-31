@@ -9,7 +9,6 @@ import { GraphDto } from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { GraphSessionStatus } from '../../../../features/flows/services/flows-sessions.service';
 import { GraphMessagesComponent } from '../../components/graph-messages/graph-messages.component';
-import { FlowRepresentationComponent } from '../../components/graph-reprsentation/graph-representation.component';
 import { RunningGraphHeaderComponent } from '../../components/header/run-graph-header.component';
 import { GraphMessage } from '../../models/graph-session-message.model';
 

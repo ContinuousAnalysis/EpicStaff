@@ -1,15 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import {
-    AfterViewInit,
-    ChangeDetectorRef,
-    Component,
-    HostListener,
-    Inject,
-    inject,
-    OnDestroy,
-    ViewChild,
-} from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, HostListener, Inject, inject, ViewChild } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { SaveWithIndicatorComponent } from 'src/app/shared/components/save-with-indicator/save-with-indicator.component';
 import { UnsavedChangesDialogService } from 'src/app/shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';

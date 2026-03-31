@@ -62,7 +62,7 @@ export class EditLlmConfigDialogComponent implements OnInit {
             next: () => {
                 this.dialogRef.close(true);
             },
-            error: (err) => {
+            error: () => {
                 this.errorMessage.set('Failed to update configuration. Please try again.');
                 this.isSubmitting.set(false);
             },

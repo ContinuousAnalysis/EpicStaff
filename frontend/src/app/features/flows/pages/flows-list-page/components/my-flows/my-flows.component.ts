@@ -10,7 +10,6 @@ import {
     ConfirmationDialogService,
     ConfirmationResult,
 } from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
-import { ConfirmationDialogComponent } from '../../../../../../shared/components/cofirm-dialog/confirmation-dialog.component';
 import { LoadingSpinnerComponent } from '../../../../../../shared/components/loading-spinner/loading-spinner.component';
 import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
 import { FlowCardAction, FlowCardComponent } from '../../../../components/flow-card/flow-card.component';

@@ -1,4 +1,4 @@
-import { Component, inject, input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
+import { Component, inject, input, OnChanges, OnDestroy } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup } from '@angular/forms';
 
 import { StrategyModel } from '../../../../models/strategy.model';
@@ -14,7 +14,7 @@ export abstract class StrategyForm<T extends StrategyModel> implements OnChanges
     params = input.required<T>();
 
     // Rebuild form on each document change
-    ngOnChanges(changes: SimpleChanges): void {
+    ngOnChanges(): void {
         this.parentForm().removeControl('strategyParams');
         this.strategyForm = this.initializeForm(this.params());
         this.parentForm().addControl('strategyParams', this.strategyForm);

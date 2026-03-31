@@ -1,5 +1,4 @@
 import { Dialog } from '@angular/cdk/dialog'; // Import from CDK instead of Material
-import { NgIf } from '@angular/common';
 import { Component, HostListener, ViewChild } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, finalize, map, tap } from 'rxjs/operators';
@@ -10,7 +9,6 @@ import { ToastService } from '../../services/notifications/toast.service';
 import { ButtonComponent } from '../../shared/components/buttons/button/button.component';
 import { CreateAgentFormComponent } from '../../shared/components/create-agent-form-dialog/create-agent-form-dialog.component';
 import { AgentDialogResult } from '../../shared/components/create-agent-form-dialog/create-agent-form-dialog.component';
-import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
 import { SaveWithIndicatorComponent } from '../../shared/components/save-with-indicator/save-with-indicator.component';
 import { UnsavedChangesDialogService } from '../../shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
 import { UnsavedIndicatorComponent } from '../../shared/components/unsaved-indicator/unsaved-indicator.component';

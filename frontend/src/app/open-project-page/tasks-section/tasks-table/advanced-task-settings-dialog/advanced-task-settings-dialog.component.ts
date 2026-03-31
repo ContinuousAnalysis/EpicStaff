@@ -1,15 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { NgClass, NgFor, NgIf } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    DestroyRef,
-    Inject,
-    inject,
-    OnInit,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Inject, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -98,7 +89,7 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
                 const outputModel = this.taskData.output_model;
                 const schemaString = JSON.stringify(outputModel, null, 2);
                 this.jsonConfig.set(this.stripTypeAndTitle(schemaString));
-            } catch (e) {
+            } catch {
                 this.jsonConfig.set(this.getDefaultJsonSchema());
             }
         } else {
@@ -117,9 +108,11 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
     private stripTypeAndTitle(schemaString: string): string {
         try {
             const schema = JSON.parse(schemaString);
-            const { type, title, ...rest } = schema;
+            const { type: _type, title: _title, ...rest } = schema;
+            void _type;
+            void _title;
             return JSON.stringify(rest, null, 2);
-        } catch (e) {
+        } catch {
             return schemaString;
         }
     }
@@ -201,7 +194,7 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
             };
 
             this.dialogRef.close(result);
-        } catch (e) {
+        } catch {
             this.isJsonValid.set(false);
         }
     }

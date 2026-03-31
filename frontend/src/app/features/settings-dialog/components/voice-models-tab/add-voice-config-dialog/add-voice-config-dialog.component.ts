@@ -1,4 +1,4 @@
-import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -90,7 +90,7 @@ export class AddVoiceConfigDialogComponent implements OnInit {
                         this.updateCustomNameIfNeeded();
                     }
                 },
-                error: (error) => {
+                error: () => {
                     this.errorMessage.set('Failed to load providers. Please try again.');
                 },
             });
@@ -112,7 +112,7 @@ export class AddVoiceConfigDialogComponent implements OnInit {
                         this.form.get('modelId')?.setValue(null);
                     }
                 },
-                error: (error) => {
+                error: () => {
                     this.errorMessage.set('Failed to load models for the selected provider. Please try again.');
                 },
             });
@@ -136,7 +136,7 @@ export class AddVoiceConfigDialogComponent implements OnInit {
                 next: () => {
                     this.dialogRef.close(true);
                 },
-                error: (error) => {
+                error: () => {
                     this.errorMessage.set('Failed to create configuration. Please try again.');
                 },
             });

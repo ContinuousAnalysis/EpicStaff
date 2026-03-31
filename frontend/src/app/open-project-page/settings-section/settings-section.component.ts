@@ -25,7 +25,6 @@ import { LLM_Config_Service } from '../../features/settings-dialog/services/llms
 import { EmbeddingModelSelectorComponent } from '../../shared/components/embedding-model-selector/embedding-model-selector.component';
 import { HelpTooltipComponent } from '../../shared/components/help-tooltip/help-tooltip.component';
 import { LlmModelSelectorComponent } from '../../shared/components/llm-model-selector/llm-model-selector.component';
-import { RangeSliderComponent } from '../../shared/components/range-slider/range-slider.component';
 
 @Component({
     selector: 'app-settings-section',

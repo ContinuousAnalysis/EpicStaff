@@ -73,7 +73,7 @@
                                     <app-agents-section
                                         (agentsIdsChange)="onAgentsIdsChanged($event)"
                                         (agentUpdatePending)="onAgentUpdatePending($event)"
-                                        (dirtyChange)="onAgentsDirtyChange($event)"
+                                        (dirtyChange)="onAgentsDirtyChange()"
                                     ></app-agents-section>
                                 } @else if (section.id === 'tasks') {
                                     <app-tasks-section

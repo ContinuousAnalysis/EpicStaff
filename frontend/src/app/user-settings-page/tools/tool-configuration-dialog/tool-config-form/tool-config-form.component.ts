@@ -20,8 +20,6 @@ import {
     Validators,
 } from '@angular/forms';
 
-import { EmbeddingConfig } from '../../../../features/settings-dialog/models/embeddings/embedding-config.model';
-import { GetLlmConfigRequest } from '../../../../features/settings-dialog/models/llms/LLM_config.model';
 import { FullEmbeddingConfig } from '../../../../features/settings-dialog/services/embeddings/full-embedding.service';
 import { FullLLMConfig } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
 import { Tool } from '../../../../features/tools/models/tool.model';
@@ -183,8 +181,6 @@ export class ToolConfigFormComponent implements OnInit, OnChanges {
             if (!currentName) return null;
 
             // If editing, allow the same name as the selected config
-            const editingCurrentConfigName: string | undefined = this.selectedConfig?.name?.trim().toLowerCase();
-
             const nameExists: boolean = this.existingToolConfigs.some((config) => {
                 const configName = config.name.trim().toLowerCase();
                 // If in edit mode, ignore the currently selected config

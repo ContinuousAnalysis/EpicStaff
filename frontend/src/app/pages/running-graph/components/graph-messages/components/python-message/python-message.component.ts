@@ -1,4 +1,3 @@
-import { animate, state, style, transition, trigger } from '@angular/animations';
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnInit } from '@angular/core';
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
@@ -380,7 +379,7 @@ export class PythonMessageComponent implements OnInit {
             try {
                 const data = this.getExecutionData();
                 this.parsedInput = typeof data['input'] === 'string' ? JSON.parse(data['input']) : data['input'];
-            } catch (e) {
+            } catch {
                 this.parsedInput = null;
             }
         }
@@ -390,7 +389,7 @@ export class PythonMessageComponent implements OnInit {
         try {
             JSON.parse(str);
             return true;
-        } catch (e) {
+        } catch {
             return false;
         }
     }
@@ -406,7 +405,7 @@ export class PythonMessageComponent implements OnInit {
         try {
             const parsed = JSON.parse(jsonString);
             return JSON.stringify(parsed, null, 2);
-        } catch (e) {
+        } catch {
             return jsonString;
         }
     }

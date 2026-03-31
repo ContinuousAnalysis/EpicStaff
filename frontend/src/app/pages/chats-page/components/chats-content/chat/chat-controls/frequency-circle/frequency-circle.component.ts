@@ -72,13 +72,11 @@ export class TinyAudioVisualizerComponent implements OnInit, OnDestroy {
 
             // Create pulsing gradient based on audio amplitude
             const pulseSize = 0.5 + avgAmplitude * 0.5;
-            const innerRadius = radius * pulseSize;
 
             // Create gradient with accent blue colors only
             const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
 
             // Use accent blue colors with varying brightness and opacity based on amplitude
-            const brightness = 70 + avgAmplitude * 30;
             const alpha = 0.5 + avgAmplitude * 0.5;
 
             gradient.addColorStop(0, `rgba(104, 95, 255, ${alpha})`);

@@ -4,29 +4,16 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-import {
-    Agent,
-    PartialUpdateAgentRequest,
-    RealtimeAgentConfig,
-} from '../../../../../../features/staff/models/agent.model';
-import {
-    RealtimeAgent,
-    UpdateRealtimeAgentRequest,
-} from '../../../../../../features/staff/models/realtime-agent.model';
+import { PartialUpdateAgentRequest, RealtimeAgentConfig } from '../../../../../../features/staff/models/agent.model';
 import { FullAgent, PartialAgent } from '../../../../../../features/staff/services/full-agent.service';
-import { RealtimeAgentService } from '../../../../../../features/staff/services/realtime-agent.service';
 import { AgentsService } from '../../../../../../features/staff/services/staff.service';
-import {
-    EnhancedTranscriptionConfig,
-    GetTranscriptionConfigRequest,
-} from '../../../../../../features/transcription/models/transcription-config.model';
+import { EnhancedTranscriptionConfig } from '../../../../../../features/transcription/models/transcription-config.model';
 import { TranscriptionConfigsService } from '../../../../../../features/transcription/services/transcription-config.service';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { HelpTooltipComponent } from '../../../../../../shared/components/help-tooltip/help-tooltip.component';
 import { AVAILABLE_LANGUAGES } from '../../../../../../shared/constants/languages-selector.constants';
 import { AVAILABLE_VOICES } from '../../../../../../shared/constants/realtime-voice.constants';
 import { buildToolIdsArray } from '../../../../../../shared/utils/tool-ids-builder.util';
-import { ChatsService } from '../../../../services/chats.service';
 import { AddTranscriptionConfigDialogComponent } from './add-transcription-dialog/add-transcription-dialog.component';
 import { LanguageSelectorComponent } from './language-selector/language-selector.component';
 import { TranscriptionConfigSelectorComponent } from './transcription-model-selector/transcription-config-selector.component';

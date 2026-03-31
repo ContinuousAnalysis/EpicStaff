@@ -62,6 +62,7 @@ export class LlmHeaderComponent {
     }
 
     refresh(params: IHeaderParams): boolean {
+        void params;
         return false;
     }
 }

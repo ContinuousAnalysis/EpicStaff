@@ -5,7 +5,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ValidationErrorsComponent } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 import { EMPTY, filter } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 import { ToastService } from '../../../../../../services/notifications';
 import { FILE_TYPES } from '../../../../constants/constants';

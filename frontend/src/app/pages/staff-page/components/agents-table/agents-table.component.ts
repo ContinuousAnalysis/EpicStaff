@@ -1,7 +1,7 @@
-import { Dialog, DIALOG_DATA, DialogModule, DialogRef } from '@angular/cdk/dialog';
+import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
-import { NgClass, NgIf, NgStyle } from '@angular/common';
+import { NgIf } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -9,7 +9,6 @@ import {
     ElementRef,
     EventEmitter,
     HostListener,
-    Inject,
     Input,
     Output,
     Renderer2,
@@ -17,21 +16,17 @@ import {
     SimpleChanges,
     ViewChild,
 } from '@angular/core';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
+import { AgGridModule } from 'ag-grid-angular';
 import {
     CellClickedEvent,
     CellContextMenuEvent,
-    CellEditingStartedEvent,
     CellEditingStoppedEvent,
     CellKeyDownEvent,
-    CellMouseOutEvent,
-    CellMouseOverEvent,
     CellValueChangedEvent,
     ColDef,
     GridApi,
     GridOptions,
     GridReadyEvent,
-    ICellRendererParams,
     RowDragEndEvent,
     SuppressKeyboardEventParams,
 } from 'ag-grid-community';
@@ -40,7 +35,6 @@ import { themeQuartz } from 'ag-grid-community';
 import { catchError, concatMap, EMPTY, finalize, from, map, Observable, of, switchMap, tap, toArray } from 'rxjs';
 
 import { CreateAgentRequest, ToolUniqueName, UpdateAgentRequest } from '../../../../features/staff/models/agent.model';
-import { CreateRealtimeAgentRequest } from '../../../../features/staff/models/realtime-agent.model';
 import {
     FullAgent,
     FullAgentService,
@@ -65,7 +59,6 @@ import { ConfigCellRendererComponent } from '../cell-renderers/llm-cell-renderer
 import { AgGridContextMenuComponent } from '../context-menu/ag-grid-context-menu.component';
 import { PreventContextMenuDirective } from '../directives/prevent-context-menu.directive';
 import { DelegationHeaderComponent } from '../header-renderers/delegation-header.component';
-import { MemoryHeaderComponent } from '../header-renderers/memory-header.component';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -518,7 +511,7 @@ export class AgentsTableComponent {
         {
             headerName: '',
             field: 'actions',
-            cellRenderer: (params: ICellRendererParams) => {
+            cellRenderer: () => {
                 return `<i class="ti ti-settings action-icon"></i>`;
             },
             width: 50,
@@ -531,7 +524,7 @@ export class AgentsTableComponent {
         {
             headerName: '',
             field: 'copy',
-            cellRenderer: (params: ICellRendererParams) => {
+            cellRenderer: () => {
                 return `<i class="ti ti-copy action-icon"></i>`;
             },
             width: 50,
@@ -570,7 +563,7 @@ export class AgentsTableComponent {
 
         onCellEditingStopped: (e) => this.onCellEditingStopped(e),
 
-        onFirstDataRendered: (params) => {
+        onFirstDataRendered: () => {
             this.isLoading.set(false);
         },
         getRowId: (params) => {
@@ -890,9 +883,6 @@ export class AgentsTableComponent {
         this.cdr.markForCheck();
 
         // Check if this is a temporary row or one with a real ID
-        const isTempRow =
-            !updatedAgent.id || (typeof updatedAgent.id === 'string' && updatedAgent.id.startsWith('temp_'));
-
         // Get realtime config ID - check mergedConfigs FIRST as it's the source of truth
         let realtimeConfigId = null;
 
@@ -990,8 +980,6 @@ export class AgentsTableComponent {
 
         // Get the available space at the bottom of the screen
         const spaceBelow = window.innerHeight - mouseEvent.clientY;
-        const spaceAbove = mouseEvent.clientY;
-
         const menuHeight = 265; // Height of the context menu, you can adjust this based on the actual height
 
         // If there's not enough space below, position it above

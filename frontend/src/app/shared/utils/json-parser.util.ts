@@ -5,14 +5,14 @@ export function safeJsonParse(jsonString: string): unknown {
 
     try {
         return JSON.parse(jsonString);
-    } catch (e) {
+    } catch {
         try {
             const parsed = JSON.parse(jsonString);
             if (typeof parsed === 'string') {
                 return safeJsonParse(parsed);
             }
             return parsed;
-        } catch (e2) {
+        } catch {
             return jsonString;
         }
     }

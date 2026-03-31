@@ -96,7 +96,8 @@ export class CollectionsStorageService {
     }
 
     private updateOrCreateCollectionInCache(updated: CreateCollectionDtoResponse): void {
-        const { rag_configurations, ...rest } = updated;
+        const rest = { ...updated };
+        delete (rest as Record<string, unknown>)['rag_configurations'];
 
         this.collectionsSignal.update((collections) => {
             const index = collections.findIndex((c) => c.collection_id === rest.collection_id);

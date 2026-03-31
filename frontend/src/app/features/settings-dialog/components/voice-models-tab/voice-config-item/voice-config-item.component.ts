@@ -4,7 +4,6 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { IconButtonComponent } from '../../../../../shared/components/buttons/icon-button/icon-button.component';
-import { ToggleSwitchComponent } from '../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { FullRealtimeConfig } from '../../../services/realtime-llms/full-reamtime-config.service';
 import { getProviderIconPath } from '../../../utils/get-provider-icon';
 
@@ -45,7 +44,7 @@ export class VoiceConfigItemComponent {
         return this.isFavorite ? '#ffb800' : 'var(--color-text-secondary)';
     }
 
-    public onEnabledToggle(value: boolean): void {
+    public onEnabledToggle(): void {
         // this.enabledToggled.emit({ id: this.config.id, value });
     }
 

@@ -327,7 +327,7 @@ export class DomainDialogComponent implements OnDestroy {
             try {
                 this.initialStateJson = JSON.stringify(initial, null, 2);
                 this.isJsonValid = true;
-            } catch (e) {
+            } catch {
                 this.initialStateJson = JSON.stringify(DEFAULT_INITIAL_STATE, null, 2);
                 this.isJsonValid = false;
             }

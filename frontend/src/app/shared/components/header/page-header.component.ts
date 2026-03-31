@@ -19,7 +19,7 @@ import { ProjectSortButtonComponent } from './header-components/header-sort/head
         ProjectCreateButtonComponent,
     ],
     template: `
-        <div class="header" (document:click)="onDocumentClick($event)">
+        <div class="header" (document:click)="onDocumentClick()">
             <div class="title-search">
                 <div class="title">{{ headerTitle }}</div>
                 <span *ngIf="projectCount !== 0" class="projects-page-project-count-badge">({{ projectCount }})</span>
@@ -140,7 +140,7 @@ export class PageHeaderComponent {
         this.sortToggle.emit();
     }
 
-    onDocumentClick(event: MouseEvent): void {
+    onDocumentClick(): void {
         // Handle clicks outside to close menus if needed
     }
 }

@@ -302,7 +302,7 @@ export class AgentFinishMessageComponent implements OnInit {
         try {
             JSON.parse(str);
             return true;
-        } catch (e) {
+        } catch {
             return false;
         }
     }
@@ -312,7 +312,7 @@ export class AgentFinishMessageComponent implements OnInit {
         if (this.outputJsonData === null) {
             try {
                 this.outputJsonData = JSON.parse(str);
-            } catch (e) {
+            } catch {
                 this.outputJsonData = null;
             }
         }

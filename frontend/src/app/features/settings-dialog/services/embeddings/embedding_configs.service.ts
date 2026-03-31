@@ -3,7 +3,6 @@ import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 
 import { ApiGetRequest } from '../../../../core/models/api-request.model';
-import { Memory } from '../../../../pages/running-graph/components/memory-sidebar/models/memory.model';
 import { ConfigService } from '../../../../services/config/config.service';
 import {
     CreateEmbeddingConfigRequest,

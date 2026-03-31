@@ -1,5 +1,5 @@
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input, OnChanges, signal, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, OnChanges, signal } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
@@ -93,7 +93,7 @@ export class DocumentConfigComponent implements OnChanges {
 
     form: FormGroup = new FormGroup({});
 
-    ngOnChanges(changes: SimpleChanges) {
+    ngOnChanges() {
         const strategy = this.document().chunk_strategy;
         this.selectedStrategy.set(strategy);
     }

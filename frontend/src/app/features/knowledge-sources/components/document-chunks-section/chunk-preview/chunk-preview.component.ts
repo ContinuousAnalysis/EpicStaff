@@ -11,7 +11,6 @@ import {
     NgZone,
     OnChanges,
     signal,
-    SimpleChanges,
     ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -75,7 +74,7 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
 
     @ViewChild('scrollContainer') private scrollContainer!: ElementRef<HTMLDivElement>;
 
-    ngOnChanges(changes: SimpleChanges) {
+    ngOnChanges() {
         const state: DocumentChunkingState = this.chunkingState();
         const limit = calcLimit(state.chunkSize);
 

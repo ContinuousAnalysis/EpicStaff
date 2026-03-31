@@ -1,6 +1,6 @@
 // chat.component.ts
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { FullAgent } from '../../../../../features/staff/services/full-agent.service';

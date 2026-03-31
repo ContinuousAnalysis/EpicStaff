@@ -140,6 +140,7 @@ export class AsyncHeaderComponent implements OnDestroy, AfterViewInit {
     }
 
     refresh(params: IHeaderParams): boolean {
+        void params;
         return false;
     }
 

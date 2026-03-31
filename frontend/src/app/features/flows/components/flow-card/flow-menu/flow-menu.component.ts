@@ -2,7 +2,6 @@ import { NgClass, NgIf } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
-    computed,
     effect,
     ElementRef,
     EventEmitter,

@@ -113,8 +113,8 @@ export class IndexCellRendererComponent implements ICellRendererAngularComp, OnD
     }
 
     // Handle pointer up (stop resizing)
-    @HostListener('pointerup', ['$event'])
-    onPointerUp(event: PointerEvent) {
+    @HostListener('pointerup')
+    onPointerUp() {
         if (this.isResizing) {
             this.isResizing = false;
             if (this.animationFrame) {
@@ -142,8 +142,8 @@ export class IndexCellRendererComponent implements ICellRendererAngularComp, OnD
     }
 
     // New method for handling double-click to set row height based on content
-    @HostListener('dblclick', ['$event'])
-    onDoubleClick(event: MouseEvent) {
+    @HostListener('dblclick')
+    onDoubleClick() {
         // Get the content of the role, goal, and backstory
         const roleText = this.params.data.role || '';
         const goalText = this.params.data.goal || '';

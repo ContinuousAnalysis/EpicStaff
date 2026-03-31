@@ -5,7 +5,7 @@ import { MarkdownModule } from 'ngx-markdown';
 
 import { GetProjectRequest } from '../../../../../../features/projects/models/project.model';
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
-import { FinishMessageData, GraphMessage, MessageType } from '../../../../models/graph-session-message.model';
+import { FinishMessageData, GraphMessage } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-finish-message',

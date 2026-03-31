@@ -1,14 +1,4 @@
-import {
-    Component,
-    ElementRef,
-    EventEmitter,
-    Input,
-    OnChanges,
-    OnInit,
-    Output,
-    SimpleChanges,
-    ViewChild,
-} from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
@@ -139,7 +129,7 @@ export class DetailsContentComponent implements OnInit, OnChanges {
 
     public adjustTextareaHeight(textarea: HTMLTextAreaElement): void {
         textarea.style.height = 'auto';
-        const newHeight = Math.min(textarea.scrollHeight, 160); // Max height 160px
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
     }
 
     private updateProjectDescription(description: string): void {

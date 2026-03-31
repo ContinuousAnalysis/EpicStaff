@@ -2,7 +2,7 @@ import { ConnectedPosition, Overlay, OverlayModule, OverlayRef } from '@angular/
 import { ComponentPortal } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Input, NgZone, OnDestroy, ViewChild } from '@angular/core';
-import { filter, fromEvent, take } from 'rxjs';
+import { fromEvent, take } from 'rxjs';
 
 import { AppIconComponent } from '../app-icon/app-icon.component';
 import { TooltipContentComponent } from './tooltip-content.component';

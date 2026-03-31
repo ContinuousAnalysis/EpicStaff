@@ -1,5 +1,5 @@
 import { DialogRef } from '@angular/cdk/dialog';
-import { NgFor, NgIf } from '@angular/common';
+import { NgIf } from '@angular/common';
 import {
     AfterViewInit,
     ChangeDetectionStrategy,
@@ -17,10 +17,7 @@ import { ToastService } from '../../../../services/notifications/toast.service';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { EmbeddingModel } from '../../../settings-dialog/models/embeddings/embedding.model';
-import {
-    CreateEmbeddingConfigRequest,
-    EmbeddingConfig,
-} from '../../../settings-dialog/models/embeddings/embedding-config.model';
+import { CreateEmbeddingConfigRequest } from '../../../settings-dialog/models/embeddings/embedding-config.model';
 import { GetLlmModelRequest } from '../../../settings-dialog/models/llms/LLM.model';
 import { CreateLLMConfigRequest } from '../../../settings-dialog/models/llms/LLM_config.model';
 import { CreateRealtimeModelConfigRequest } from '../../../settings-dialog/models/realtime-voice/realtime-llm-config.model';

@@ -18,7 +18,6 @@ import {
     GridApi,
     GridOptions,
     GridReadyEvent,
-    ICellEditorParams,
 } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import { themeQuartz } from 'ag-grid-community';
@@ -256,7 +255,7 @@ export class DecisionTableGridComponent implements OnInit {
             editable: true,
             width: 200,
             cellEditor: 'agSelectCellEditor',
-            cellEditorParams: (params: ICellEditorParams) => {
+            cellEditorParams: () => {
                 const nodes = this.availableNodes();
                 return {
                     values: ['', ...nodes.map((n) => n.value)],

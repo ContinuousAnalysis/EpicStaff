@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 
 import { LoadingState } from '../../../../core/enums/loading-state.enum';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { EmbeddingConfig } from '../../models/embeddings/embedding-config.model';
 import { EmbeddingConfigsService } from '../../services/embeddings/embedding_configs.service';

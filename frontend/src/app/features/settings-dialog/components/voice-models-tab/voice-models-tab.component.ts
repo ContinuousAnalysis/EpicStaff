@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 
 import { LoadingState } from '../../../../core/enums/loading-state.enum';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { UpdateRealtimeModelConfigRequest } from '../../models/realtime-voice/realtime-llm-config.model';
 import {

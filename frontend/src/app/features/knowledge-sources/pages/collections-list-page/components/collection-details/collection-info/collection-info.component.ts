@@ -1,8 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { AppIconComponent } from '../../../../../../../shared/components/app-icon/app-icon.component';
-import { ButtonComponent } from '../../../../../../../shared/components/buttons/button/button.component';
 import { CreateCollectionDtoResponse } from '../../../../../models/collection.model';
 import { DisplayedListDocument } from '../../../../../models/document.model';
 

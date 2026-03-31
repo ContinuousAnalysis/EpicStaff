@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { forkJoin, map, Observable, of, switchMap } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 import { Tool } from '../models/tool.model';
 import { CreateToolConfigRequest, GetToolConfigRequest } from '../models/tool-config.model';

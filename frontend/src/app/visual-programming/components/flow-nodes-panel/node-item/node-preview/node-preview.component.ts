@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
-import { NodeType } from '../../../../core/enums/node-type';
 import { NodeModel } from '../../../../core/models/node.model';
 
 @Component({

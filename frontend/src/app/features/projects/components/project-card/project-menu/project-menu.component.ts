@@ -2,7 +2,6 @@ import { NgClass, NgIf } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
-    computed,
     effect,
     ElementRef,
     EventEmitter,
@@ -14,7 +13,6 @@ import {
 } from '@angular/core';
 
 import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
-import { ClickOutsideDirective } from '../../../../../shared/directives/click-outside.directive';
 import { ProjectMenuItemComponent } from './project-menu-item/project-menu-item.component';
 
 @Component({
