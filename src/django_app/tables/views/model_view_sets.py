@@ -10,7 +10,7 @@ from django_filters.rest_framework import (
     NumberFilter,
 )
 from rest_framework import filters as drf_filters
-from rest_framework import mixins, status, viewsets
+from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -89,7 +89,11 @@ from tables.models.realtime_models import (
 )
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.vector_models import MemoryDatabase
-from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
+from tables.models.webhook_models import (
+    NgrokWebhookConfig,
+    VoiceSettings,
+    WebhookTrigger,
+)
 from tables.services.copy_services import (
     AgentCopyService,
     CrewCopyService,
@@ -153,6 +157,7 @@ from tables.serializers.model_serializers import (
     TaskWriteSerializer,
     TemplateAgentSerializer,
     ToolConfigSerializer,
+    VoiceSettingsSerializer,
     WebhookTriggerNodeSerializer,
     WebhookTriggerSerializer,
 )
@@ -1214,3 +1219,10 @@ class NgrokWebhookConfigViewSet(ModelViewSet):
         WebhookTriggerService().wait_for_tunnel_url(instance)
         response.data = self.get_serializer(instance).data
         return response
+
+
+class VoiceSettingsView(generics.RetrieveUpdateAPIView):
+    serializer_class = VoiceSettingsSerializer
+
+    def get_object(self):
+        return VoiceSettings.load()

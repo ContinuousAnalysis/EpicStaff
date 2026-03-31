@@ -5,6 +5,7 @@ import { IconButtonComponent } from '../../shared/components/buttons/icon-button
 import { LlmModelsTabComponent } from './components/llm-models-tab/llm-models-tab.component';
 import { EmbeddingModelsTabComponent } from './components/embedding-models-tab/embedding-models-tab.component';
 import { NgrokConfigTabComponent } from "./components/ngrok-config-tab/ngrok-config-tab.component";
+import { VoiceSettingsTabComponent } from './components/voice-settings-tab/voice-settings-tab.component';
 import { VoiceModelsTabComponent } from './components/voice-models-tab/voice-models-tab.component';
 import { PreferencesTabComponent } from './components/preferences-tab/preferences-tab.component';
 import { AppIconComponent } from '../../shared/components/app-icon/app-icon.component';
@@ -17,6 +18,7 @@ export enum TabId {
   PREFERENCES = 'preferences',
   QUICKSTART = 'quickstart',
   NGROK_CONFIG = 'ngrok_config',
+  VOICE_SETTINGS = 'voice_settings',
 }
 
 export interface Tab {
@@ -37,6 +39,7 @@ export interface Tab {
     AppIconComponent,
     QuickstartTabComponent,
     NgrokConfigTabComponent,
+    VoiceSettingsTabComponent,
   ],
   template: `
     <div class="settings-dialog">
@@ -80,6 +83,8 @@ export interface Tab {
           <app-quickstart-tab></app-quickstart-tab>
           } @case (TabId.NGROK_CONFIG) {
           <app-ngrok-config-tab></app-ngrok-config-tab>
+          } @case (TabId.VOICE_SETTINGS) {
+          <app-voice-settings-tab></app-voice-settings-tab>
           } }
         </div>
       </div>
@@ -180,6 +185,7 @@ export class SettingsDialogComponent {
     // { id: TabId.PREFERENCES, label: 'Preferences' },
     { id: TabId.QUICKSTART, label: 'Quickstart' },
     { id: TabId.NGROK_CONFIG, label: 'Ngrok Config' },
+    { id: TabId.VOICE_SETTINGS, label: 'Voice / Twilio' },
   ];
 
   public activeTabId = signal<TabId>(TabId.LLM);

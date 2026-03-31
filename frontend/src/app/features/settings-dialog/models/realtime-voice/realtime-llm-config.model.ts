@@ -3,6 +3,7 @@ export interface RealtimeModelConfig {
   custom_name: string;
   api_key: string;
   realtime_model: number;
+  provider_name?: string;
 }
 
 export interface CreateRealtimeModelConfigRequest {

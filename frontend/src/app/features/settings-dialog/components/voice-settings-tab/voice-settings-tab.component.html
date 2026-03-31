@@ -1,0 +1,81 @@
+<div class="tab">
+    <div class="tab__header">
+        <div>
+            <h3 class="tab__title">Voice / Twilio Settings</h3>
+            <p class="tab__subtitle">
+                Configure Twilio credentials and the default voice agent for inbound calls.
+            </p>
+        </div>
+        <app-button
+            type="primary"
+            [disabled]="saving()"
+            (click)="onSave()"
+        >
+            {{ saving() ? 'Saving…' : 'Save' }}
+        </app-button>
+    </div>
+
+    @if (status() === 'loading') {
+        <div class="tab__loading-state">
+            <p>Loading voice settings…</p>
+        </div>
+    } @else if (status() === 'error') {
+        <div class="tab__loading-state tab__loading-state--error">
+            <p>Failed to load voice settings.</p>
+        </div>
+    } @else {
+        <form [formGroup]="form" class="tab__form">
+            <div class="tab__field">
+                <label class="tab__label">Twilio Account SID</label>
+                <input
+                    type="text"
+                    class="tab__input"
+                    formControlName="twilio_account_sid"
+                    placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                />
+            </div>
+
+            <div class="tab__field">
+                <label class="tab__label">Twilio Auth Token</label>
+                <input
+                    type="password"
+                    class="tab__input"
+                    formControlName="twilio_auth_token"
+                    placeholder="••••••••••••••••••••••••••••••••"
+                />
+            </div>
+
+            <div class="tab__field">
+                <label class="tab__label">Default Voice Agent</label>
+                <select class="tab__select" formControlName="voice_agent">
+                    <option [ngValue]="null">— None —</option>
+                    @for (agent of agents(); track agent.id) {
+                        <option [ngValue]="agent.id">{{ agent.role }}</option>
+                    }
+                </select>
+            </div>
+
+            <div class="tab__field">
+                <label class="tab__label">Ngrok Config (for Voice Stream URL)</label>
+                <select class="tab__select" formControlName="ngrok_config">
+                    <option [ngValue]="null">— None —</option>
+                    @for (config of ngrokConfigs(); track config.id) {
+                        <option [ngValue]="config.id">{{ config.name }} ({{ config.domain }})</option>
+                    }
+                </select>
+            </div>
+
+            @if (voiceStreamUrl()) {
+                <div class="tab__field">
+                    <label class="tab__label">Voice Stream URL (computed)</label>
+                    <input
+                        type="text"
+                        class="tab__input tab__input--readonly"
+                        [value]="voiceStreamUrl()"
+                        readonly
+                    />
+                </div>
+            }
+        </form>
+    }
+</div>

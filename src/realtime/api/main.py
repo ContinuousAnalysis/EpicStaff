@@ -3,7 +3,7 @@ import json
 import asyncio
 import httpx
 from loguru import logger
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
 from fastapi.middleware.cors import CORSMiddleware
 from src.shared.models import RealtimeAgentChatData
 from services.chat_executor import ChatExecutor
@@ -55,6 +55,29 @@ app.add_middleware(
 
 
 connection_repository = ConnectionRepository()
+
+_voice_settings_cache: dict | None = None
+_voice_settings_cache_time: float = 0.0
+_VOICE_SETTINGS_TTL = 60.0
+
+
+async def get_voice_settings() -> dict:
+    global _voice_settings_cache, _voice_settings_cache_time
+    now = asyncio.get_event_loop().time()
+    if (
+        _voice_settings_cache is None
+        or (now - _voice_settings_cache_time) > _VOICE_SETTINGS_TTL
+    ):
+        try:
+            url = settings.INIT_API_URL.replace("init-realtime", "voice-settings")
+            async with httpx.AsyncClient() as client:
+                r = await client.get(url, timeout=5.0)
+                if r.is_success:
+                    _voice_settings_cache = r.json()
+                    _voice_settings_cache_time = now
+        except Exception as e:
+            logger.warning(f"Could not fetch voice settings from Django: {e}")
+    return _voice_settings_cache or {}
 
 
 async def redis_listener():
@@ -158,12 +181,31 @@ async def healthcheck_endpoint(websocket: WebSocket):
 
 
 @app.post("/voice")
-async def twilio_voice_webhook(request: Request):
-    """Twilio calls this on incoming call. Returns TwiML directing audio to /voice/stream."""
+async def twilio_voice_webhook(
+    agent_id: int = None,
+    language: str = None,
+):
+    """Twilio calls this on incoming call. Returns TwiML directing audio to /voice/stream.
+
+    Query params (optional):
+      agent_id  — which RealtimeAgent to use (default: settings.VOICE_AGENT_ID)
+      language  — ISO 639-1 code to override the agent's language (e.g. 'ru', 'en')
+    """
+    vs = await get_voice_settings()
+    effective_agent_id = agent_id or vs.get("voice_agent") or settings.VOICE_AGENT_ID
+    voice_stream_url = vs.get("voice_stream_url") or settings.VOICE_STREAM_URL
+
+    params = [f'<Parameter name="agent_id" value="{effective_agent_id}" />']
+    if language:
+        params.append(f'<Parameter name="language" value="{language}" />')
+
+    params_xml = "\n      ".join(params)
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
-    <Stream url="{settings.VOICE_STREAM_URL}" />
+    <Stream url="{voice_stream_url}">
+      {params_xml}
+    </Stream>
   </Connect>
 </Response>"""
     return Response(content=twiml, media_type="application/xml")
@@ -171,18 +213,41 @@ async def twilio_voice_webhook(request: Request):
 
 @app.websocket("/voice/stream")
 async def voice_stream(twilio_ws: WebSocket):
-    """Twilio MediaStream WebSocket. Bridges audio directly to OpenAI Realtime API."""
+    """Twilio MediaStream WebSocket. Bridges audio directly to AI Realtime API."""
     await twilio_ws.accept()
     logger.info("Twilio MediaStream WebSocket accepted")
 
-    # 1. Call Django init-realtime to get connection_key and publish agent config to Redis
+    # 1. Read the first message to get customParameters from Twilio `start` event
+    vs = await get_voice_settings()
+    agent_id = vs.get("voice_agent") or settings.VOICE_AGENT_ID
+    language_override = None
+    try:
+        raw = await asyncio.wait_for(twilio_ws.receive_text(), timeout=5.0)
+        first_msg = json.loads(raw)
+        if first_msg.get("event") == "connected":
+            raw = await asyncio.wait_for(twilio_ws.receive_text(), timeout=5.0)
+            first_msg = json.loads(raw)
+        if first_msg.get("event") == "start":
+            custom = first_msg.get("start", {}).get("customParameters", {})
+            if "agent_id" in custom:
+                agent_id = int(custom["agent_id"])
+            if "language" in custom:
+                language_override = custom["language"]
+            logger.info(
+                f"Twilio params: agent_id={agent_id}, language={language_override}"
+            )
+    except Exception as e:
+        logger.warning(f"Could not read Twilio start event: {e}")
+        first_msg = None
+
+    # 2. Call Django init-realtime with the resolved agent_id
     async with httpx.AsyncClient() as http_client:
         try:
             resp = await http_client.post(
                 settings.INIT_API_URL,
                 headers={"Host": "localhost"},
                 json={
-                    "agent_id": settings.VOICE_AGENT_ID,
+                    "agent_id": agent_id,
                     "config": {
                         "input_audio_format": "g711_ulaw",
                         "output_audio_format": "g711_ulaw",

@@ -15,7 +15,11 @@ from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
-from tables.models.webhook_models import WebhookTrigger, NgrokWebhookConfig
+from tables.models.webhook_models import (
+    WebhookTrigger,
+    NgrokWebhookConfig,
+    VoiceSettings,
+)
 from tables.models.graph_models import GraphNote, WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
@@ -1522,6 +1526,10 @@ class RealtimeModelSerializer(serializers.ModelSerializer):
 
 
 class RealtimeConfigSerializer(serializers.ModelSerializer):
+    provider_name = serializers.CharField(
+        source="realtime_model.provider.name", read_only=True
+    )
+
     class Meta:
         model = RealtimeConfig
         fields = "__all__"
@@ -1816,3 +1824,22 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
+
+
+class VoiceSettingsSerializer(serializers.ModelSerializer):
+    voice_stream_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = VoiceSettings
+        fields = [
+            "twilio_account_sid",
+            "twilio_auth_token",
+            "voice_agent",
+            "ngrok_config",
+            "voice_stream_url",
+        ]
+
+    def get_voice_stream_url(self, obj):
+        if obj.ngrok_config and obj.ngrok_config.domain:
+            return f"wss://{obj.ngrok_config.domain}/voice/stream"
+        return None

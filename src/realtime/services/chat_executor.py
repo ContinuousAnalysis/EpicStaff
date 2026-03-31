@@ -98,14 +98,16 @@ class ChatExecutor:
             llm_model = (
                 self.realtime_agent_chat_data.llm.config.model
                 if self.realtime_agent_chat_data.llm
-                else "gpt-4o-mini"
+                else None
             )
+            if llm_model is None:
+                print("Ebat', kak ti tak drug?")
+            else:
+                print(f"Okak, using {llm_model}")
             rt_agent_client = ElevenLabsRealtimeAgentClient(
                 api_key=self.realtime_agent_chat_data.rt_api_key,
                 connection_key=self.realtime_agent_chat_data.connection_key,
-                # rt_model_name is used as explicit agent_id when set (manual mode),
-                # otherwise auto-provision via ElevenLabsAgentProvisioner
-                agent_id=self.realtime_agent_chat_data.rt_model_name or "",
+                agent_id="",
                 agent_provisioner=self.elevenlabs_agent_provisioner,
                 on_server_event=self._elevenlabs_frontend_event,
                 tool_manager_service=self.tool_manager_service,
@@ -114,6 +116,7 @@ class ChatExecutor:
                 instructions=self.instructions,
                 temperature=self.realtime_agent_chat_data.temperature,
                 llm_model=llm_model,
+                language=self.realtime_agent_chat_data.language,
             )
             # ElevenLabs has built-in STT/VAD — no separate transcription client needed
             return rt_agent_client, None

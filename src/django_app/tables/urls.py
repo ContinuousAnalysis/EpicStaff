@@ -52,6 +52,7 @@ from tables.views.model_view_sets import (
     OrganizationUserViewSet,
     GraphOrganizationViewSet,
     GraphOrganizationUserViewSet,
+    VoiceSettingsView,
     WebhookTriggerNodeViewSet,
     WebhookTriggerViewSet,
 )
@@ -339,5 +340,10 @@ urlpatterns = [
         "register-webhooks/",
         RegisterWebhooksApiView.as_view(),
         name="register-webhooks",
+    ),
+    path(
+        "voice-settings/",
+        VoiceSettingsView.as_view(),
+        name="voice-settings",
     ),
 ]

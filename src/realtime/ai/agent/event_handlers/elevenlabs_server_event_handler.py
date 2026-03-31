@@ -7,11 +7,6 @@ from loguru import logger
 
 
 class ElevenLabsServerEventHandler:
-    """
-    Мост между ElevenLabs и OpenAI Realtime Frontend.
-    Решает проблему десинхронизации индексов и отсутствующих айтемов (Item not found).
-    """
-
     def __init__(self, client):
         from ai.agent.elevenlabs_realtime_agent_client import (
             ElevenLabsRealtimeAgentClient,
@@ -19,27 +14,22 @@ class ElevenLabsServerEventHandler:
 
         self.client: ElevenLabsRealtimeAgentClient = client
 
-        # Состояние текущего хода
         self._current_response_id: Optional[str] = None
         self._current_item_id: Optional[str] = None
         self._current_user_item_id: Optional[str] = None
 
-        # Счетчик индексов внутри одного ответа (Критично для OpenAI протокола)
         self._current_output_index = 0
 
     async def _send_to_client(self, payload: Dict[str, Any]) -> None:
-        """Гарантирует наличие event_id для каждого сообщения на фронтенд."""
         if "event_id" not in payload:
             payload["event_id"] = f"evt_{uuid.uuid4().hex[:16]}"
         await self.client.send_client(payload)
 
     async def _ensure_response_exists(self):
-        """Создает оболочку response и ГАРАНТИРУЕТ, что сообщение пользователя идет первым."""
         if not self._current_response_id:
             self._current_response_id = f"resp_{uuid.uuid4().hex[:10]}"
             self._current_output_index = 0
 
-            # 1. ГАРАНТИЯ ПОРЯДКА: Создаем пользователя ДО ассистента
             if not self._current_user_item_id:
                 self._current_user_item_id = f"msg_user_{uuid.uuid4().hex[:10]}"
                 await self._send_to_client(
@@ -54,7 +44,6 @@ class ElevenLabsServerEventHandler:
                     }
                 )
 
-            # 2. Создаем Response
             await self._send_to_client(
                 {
                     "type": "response.created",
@@ -68,12 +57,10 @@ class ElevenLabsServerEventHandler:
             )
 
     async def _ensure_assistant_item(self):
-        """Гарантирует наличие сообщения ассистента."""
         await self._ensure_response_exists()
 
         if not self._current_item_id:
             self._current_item_id = f"msg_{uuid.uuid4().hex[:10]}"
-            # ФИКС: Запоминаем индекс конкретно для этого сообщения
             self._assistant_output_index = self._current_output_index
 
             agent_item = {
@@ -162,12 +149,8 @@ class ElevenLabsServerEventHandler:
             return
 
         rid, iid = self._current_response_id, self._current_item_id
-        # Используем индекс ассистента, который мы сохранили ранее
         idx = getattr(self, "_assistant_output_index", 0)
 
-        # --- ФИКС ТРАНСКРИПЦИИ: Отправляем Delta перед Done ---
-
-        # 1. Говорим фронтенду: "Смотри, у нас тут текст появился"
         await self._send_to_client(
             {
                 "type": "response.audio_transcript.delta",
@@ -179,7 +162,6 @@ class ElevenLabsServerEventHandler:
             }
         )
 
-        # 2. Финализируем транскрипт
         await self._send_to_client(
             {
                 "type": "response.audio_transcript.done",
@@ -191,7 +173,6 @@ class ElevenLabsServerEventHandler:
             }
         )
 
-        # 3. Финализируем аудио (обязательно для OpenAI SDK)
         await self._send_to_client(
             {
                 "type": "response.audio.done",
@@ -202,7 +183,6 @@ class ElevenLabsServerEventHandler:
             }
         )
 
-        # 4. Закрываем айтем и ответ
         await self._send_to_client(
             {
                 "type": "response.output_item.done",
@@ -217,7 +197,6 @@ class ElevenLabsServerEventHandler:
 
         logger.info(f"Assistant turn finished with transcript: {text[:30]}...")
 
-        # Сбрасываем состояние
         self._current_response_id = None
         self._current_item_id = None
         self._current_user_item_id = None
@@ -229,7 +208,6 @@ class ElevenLabsServerEventHandler:
         if not text:
             return
 
-        # Создаем пользователя, если он не был создан в _ensure_response_exists
         if not self._current_user_item_id:
             self._current_user_item_id = f"msg_user_{uuid.uuid4().hex[:10]}"
             await self._send_to_client(
@@ -252,19 +230,15 @@ class ElevenLabsServerEventHandler:
                 "transcript": text,
             }
         )
-        # ФИКС: Удален self._current_user_item_id = None (перенесено в конец ответа)
 
     async def _handle_client_tool_call(self, data: Dict[str, Any]) -> None:
-        """Обработка вызова инструмента с жестким соблюдением последовательности."""
         tool_call = data.get("client_tool_call", {})
         tool_call_id = tool_call.get("tool_call_id", "")
         tool_name = tool_call.get("tool_name", "")
         parameters = tool_call.get("parameters", {})
 
-        # 1. Гарантируем наличие Response
         await self._ensure_response_exists()
 
-        # 2. РЕГИСТРИРУЕМ айтем в разговоре ДО добавления в ответ
         await self._send_to_client(
             {
                 "type": "conversation.item.created",
@@ -279,7 +253,6 @@ class ElevenLabsServerEventHandler:
             }
         )
 
-        # 3. Добавляем его в текущий ответ под СЛЕДУЮЩИМ индексом
         await self._send_to_client(
             {
                 "type": "response.output_item.added",
@@ -295,7 +268,6 @@ class ElevenLabsServerEventHandler:
             }
         )
 
-        # 4. Финализируем аргументы
         await self._send_to_client(
             {
                 "type": "response.function_call_arguments.done",
@@ -308,9 +280,7 @@ class ElevenLabsServerEventHandler:
             }
         )
 
-        self._current_output_index += 1  # Увеличиваем индекс для будущего
-
-        # 5. Выполняем саму тулзу
+        self._current_output_index += 1
         logger.info(f"EL Tool Execution: {tool_name}")
         await self.client.call_tool(tool_call_id, tool_name, parameters)
 

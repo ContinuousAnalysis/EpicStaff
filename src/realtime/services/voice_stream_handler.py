@@ -67,7 +67,7 @@ class VoiceStreamHandler:
             self.rt_agent_client = ElevenLabsRealtimeAgentClient(
                 api_key=self.realtime_agent_chat_data.rt_api_key,
                 connection_key=self.realtime_agent_chat_data.connection_key,
-                agent_id=self.realtime_agent_chat_data.rt_model_name or "",
+                agent_id="",
                 agent_provisioner=self.elevenlabs_agent_provisioner,
                 on_server_event=self._handle_provider_event,
                 tool_manager_service=self.tool_manager_service,
@@ -76,6 +76,7 @@ class VoiceStreamHandler:
                 instructions=self.instructions,
                 temperature=self.realtime_agent_chat_data.temperature,
                 llm_model=llm_model,
+                language=self.realtime_agent_chat_data.language,
             )
             # Важно для логики внутри клиента (если она там есть)
             self.rt_agent_client.is_twilio = True

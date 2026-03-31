@@ -1,6 +1,6 @@
 import hashlib
 import json
-from typing import List
+from typing import List, Optional
 
 import httpx
 from loguru import logger
@@ -9,9 +9,11 @@ from services.redis_service import RedisService
 from utils.singleton_meta import SingletonMeta
 
 _EL_API_BASE = "https://api.elevenlabs.io/v1"
-_DEFAULT_LLM = "gpt-4o-mini"
+_DEFAULT_LLM = "gemini-2.5-flash"
 _HTTP_TIMEOUT = 30.0
 _CACHE_TTL = 3600  # 1 hour
+_TTS_MODEL_EN = "eleven_turbo_v2"
+_TTS_MODEL_MULTILINGUAL = "eleven_flash_v2_5"
 _OPENAI_VOICE_NAMES = {
     "alloy",
     "ash",
@@ -35,10 +37,8 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
         self, client: httpx.AsyncClient, api_key: str, rt_tool: RealtimeTool
     ) -> str:
         headers = {"xi-api-key": api_key}
-        # Имя, которое мы ищем (например, CLI_Executor_Tool)
         search_name = rt_tool.name.replace(" ", "_")
 
-        # 1. Получаем список
         resp = await client.get(f"{_EL_API_BASE}/convai/tools", headers=headers)
         resp.raise_for_status()
         data = resp.json()
@@ -100,9 +100,15 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
         voice: str,
         rt_tools: List[RealtimeTool],
         llm_model: str,
+        language: Optional[str] = None,
     ) -> str:
         tools_repr = sorted(
             f"{t.name}:{t.parameters.model_dump_json()}" for t in rt_tools
+        )
+        tts_model = (
+            _TTS_MODEL_EN
+            if not language or language == "en"
+            else _TTS_MODEL_MULTILINGUAL
         )
         raw = json.dumps(
             {
@@ -111,10 +117,29 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
                 "voice": voice,
                 "tools": tools_repr,
                 "llm": llm_model,
+                "tts_model": tts_model,
+                "language": language,
             },
             sort_keys=True,
         )
         return f"el_agent:{hashlib.md5(raw.encode()).hexdigest()}"
+
+    async def invalidate_cache(
+        self,
+        api_key: str,
+        instructions: str,
+        voice: str,
+        rt_tools: List[RealtimeTool],
+        llm_model: str,
+        language: Optional[str] = None,
+    ) -> None:
+        cache_key = self._cache_key(
+            api_key, instructions, voice, rt_tools, llm_model, language
+        )
+        redis = self.redis_service.aioredis_client
+        if redis:
+            await redis.delete(cache_key)
+            logger.info(f"EL Provisioner: cache invalidated for key={cache_key}")
 
     async def get_or_create_agent(
         self,
@@ -123,8 +148,11 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
         voice: str,
         rt_tools: List[RealtimeTool],
         llm_model: str,
+        language: Optional[str] = None,
     ) -> str:
-        cache_key = self._cache_key(api_key, instructions, voice, rt_tools, llm_model)
+        cache_key = self._cache_key(
+            api_key, instructions, voice, rt_tools, llm_model, language
+        )
         redis = self.redis_service.aioredis_client
         if redis:
             cached = await redis.get(cache_key)
@@ -149,7 +177,7 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
 
             agent = next((a for a in existing_agents if a["name"] == agent_name), None)
             agent_payload = self._build_agent_payload(
-                agent_name, instructions, voice, rt_tools, tool_ids, llm_model
+                agent_name, instructions, voice, rt_tools, tool_ids, llm_model, language
             )
 
             if agent:
@@ -162,7 +190,11 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
                     headers=headers,
                     json=agent_payload,
                 )
-                res.raise_for_status()
+                if not res.is_success:
+                    logger.warning(
+                        f"EL Provisioner: PATCH agent failed ({res.status_code}): {res.text} — using existing agent as-is"
+                    )
+                    # Agent exists and is usable; treat update failure as non-fatal
             else:
                 logger.info(
                     f"EL Provisioner: Agent '{agent_name}' not found. Creating..."
@@ -187,6 +219,7 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
         rt_tools: List[RealtimeTool],
         tool_ids: List[str],
         llm_model: str,
+        language: Optional[str] = None,
     ) -> dict:
         """Вспомогательный метод для сборки структуры агента."""
         tools_config = []
@@ -201,7 +234,7 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
                     "name": tool_meta.name.replace(" ", "_"),
                     "description": tool_meta.description
                     or f"Executes {tool_meta.name}",
-                    "expects_response": True,  # КРИТИЧЕСКИЙ ФИКС
+                    "expects_response": True,
                     "parameters": {
                         "type": "object",
                         "properties": params_data.get("properties", {}),
@@ -216,6 +249,12 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
             else "21m00Tcm4TlvDq8ikWAM"
         )
 
+        tts_model = (
+            _TTS_MODEL_EN
+            if not language or language == "en"
+            else _TTS_MODEL_MULTILINGUAL
+        )
+
         return {
             "name": name,
             "conversation_config": {
@@ -227,6 +266,6 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
                         "tools": tools_config,
                     },
                 },
-                "tts": {"voice_id": voice_id, "model_id": "eleven_flash_v2"},
+                "tts": {"voice_id": voice_id, "model_id": tts_model},
             },
         }

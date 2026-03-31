@@ -37,6 +37,7 @@ import {
     EnhancedTranscriptionConfig,
     GetTranscriptionConfigRequest,
 } from '../../../../../../features/transcription/models/transcription-config.model';
+import { RealtimeModelConfigsService } from '../../../../../../features/settings-dialog/services/realtime-llms/real-time-model-config.service';
 import { TranscriptionConfigSelectorComponent } from './transcription-model-selector/transcription-config-selector.component';
 import { AddTranscriptionConfigDialogComponent } from './add-transcription-dialog/add-transcription-dialog.component';
 import { buildToolIdsArray } from '../../../../../../shared/utils/tool-ids-builder.util';
@@ -62,6 +63,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     errorMessage: string | null = null;
     transcriptionConfigs: EnhancedTranscriptionConfig[] = [];
     loadingConfigs = false;
+    isElevenLabs = false;
 
     // Language options from constants
     languages = AVAILABLE_LANGUAGES;
@@ -74,6 +76,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         @Inject(DIALOG_DATA) public data: { agent: FullAgent },
         private agentsService: AgentsService,
         private transcriptionConfigsService: TranscriptionConfigsService,
+        private realtimeModelConfigsService: RealtimeModelConfigsService,
         private fb: FormBuilder,
         private toastService: ToastService,
         private dialog: Dialog
@@ -81,6 +84,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadTranscriptionConfigs();
+        this.loadRealtimeConfig();
 
         this.settingsForm = this.fb.group({
             voice: [this.data.agent.realtime_agent.voice, Validators.required],
@@ -101,6 +105,21 @@ export class RealtimeSettingsDialogComponent implements OnInit {
             realtime_transcription_config: [
                 this.data.agent.realtime_agent.realtime_transcription_config,
             ],
+        });
+    }
+
+    loadRealtimeConfig(): void {
+        const configId = this.data.agent.realtime_agent.realtime_config;
+        if (configId == null) {
+            return;
+        }
+        this.realtimeModelConfigsService.getConfigById(configId).subscribe({
+            next: (config) => {
+                this.isElevenLabs = config.provider_name === 'elevenlabs';
+            },
+            error: () => {
+                // Non-critical — voice dropdown remains as default
+            },
         });
     }
 

@@ -25,11 +25,6 @@ _OPENAI_VOICE_NAMES = {
 
 
 class ElevenLabsRealtimeAgentClient:
-    """
-    Клиент для взаимодействия с ElevenLabs Conversational AI API.
-    Адаптирован под интерфейс OpenAI Realtime для полной совместимости с ChatExecutor.
-    """
-
     def __init__(
         self,
         api_key: str,
@@ -42,7 +37,8 @@ class ElevenLabsRealtimeAgentClient:
         temperature: float = 0.8,
         agent_id: str = "",
         agent_provisioner: Any = None,
-        llm_model: str = "gpt-4o-mini",
+        llm_model: str = "",
+        language: Optional[str] = None,
     ):
         self.api_key = api_key
         self.connection_key = connection_key
@@ -54,6 +50,7 @@ class ElevenLabsRealtimeAgentClient:
         self.temperature = temperature
         self.agent_id = agent_id
         self.agent_provisioner = agent_provisioner
+        self.language = language
         self.llm_model = llm_model
 
         self.ws = None
@@ -76,12 +73,7 @@ class ElevenLabsRealtimeAgentClient:
                 rt_tool = rt_tool.model_dump()
             self.tools.append(rt_tool)
 
-    # ------------------------------------------------------------------
-    # Lifecycle
-    # ------------------------------------------------------------------
-
     async def connect(self) -> None:
-        """Установка соединения и создание агента."""
         if not self.agent_id:
             logger.info("ElevenLabs: Provisioning agent...")
             self.agent_id = await self.agent_provisioner.get_or_create_agent(
@@ -90,6 +82,7 @@ class ElevenLabsRealtimeAgentClient:
                 voice=self.voice,
                 rt_tools=self.rt_tools,
                 llm_model=self.llm_model,
+                language=self.language,
             )
 
         url = f"{self.base_url}?agent_id={self.agent_id}"
@@ -103,6 +96,8 @@ class ElevenLabsRealtimeAgentClient:
         config_override = {}
         if self.voice and self.voice.lower() not in _OPENAI_VOICE_NAMES:
             config_override["tts"] = {"voice_id": self.voice}
+        if self.language:
+            config_override["agent"] = {"language": self.language}
 
         await self.send_server(
             {
@@ -138,29 +133,53 @@ class ElevenLabsRealtimeAgentClient:
 
     async def handle_messages(self) -> None:
         """Слушатель сообщений ElevenLabs."""
-        logger.info("ElevenLabs: Message handler started.")
+        _retried = False
         try:
-            async for message in self.ws:
+            while True:
+                logger.info("ElevenLabs: Message handler started.")
                 try:
-                    data = json.loads(message)
+                    async for message in self.ws:
+                        try:
+                            data = json.loads(message)
 
-                    # Пинг-понг для удержания соединения
-                    if data.get("type") == "ping":
-                        event_id = data.get("ping_event", {}).get("event_id")
-                        await self.send_server({"type": "pong", "event_id": event_id})
-                        continue
+                            # Пинг-понг для удержания соединения
+                            if data.get("type") == "ping":
+                                event_id = data.get("ping_event", {}).get("event_id")
+                                await self.send_server(
+                                    {"type": "pong", "event_id": event_id}
+                                )
+                                continue
 
-                    await self.server_event_handler.handle_event(data)
+                            await self.server_event_handler.handle_event(data)
 
-                except WebSocketDisconnect:
-                    logger.info(
-                        "ElevenLabs: Client disconnected, stopping message handler"
-                    )
-                    break
-                except Exception as e:
-                    logger.exception(f"ElevenLabs: Error processing message: {str(e)}")
-        except websockets.exceptions.ConnectionClosed:
-            logger.info("ElevenLabs: Connection closed")
+                        except WebSocketDisconnect:
+                            logger.info(
+                                "ElevenLabs: Client disconnected, stopping message handler"
+                            )
+                            return
+                        except Exception as e:
+                            logger.exception(
+                                f"ElevenLabs: Error processing message: {str(e)}"
+                            )
+                except websockets.exceptions.ConnectionClosed as e:
+                    code = e.rcvd.code if e.rcvd else None
+                    if code == 3000 and not _retried and self.agent_provisioner:
+                        logger.warning(
+                            "ElevenLabs: Agent not found (3000) — invalidating cache and re-provisioning..."
+                        )
+                        await self.agent_provisioner.invalidate_cache(
+                            api_key=self.api_key,
+                            instructions=self.instructions,
+                            voice=self.voice,
+                            rt_tools=self.rt_tools,
+                            llm_model=self.llm_model,
+                        )
+                        self.agent_id = ""
+                        _retried = True
+                        await self.connect()
+                        continue  # restart the message loop with the new agent
+                    logger.info("ElevenLabs: Connection closed")
+                break
         finally:
             await self.close()
 
