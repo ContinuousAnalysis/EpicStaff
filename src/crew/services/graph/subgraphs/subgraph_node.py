@@ -1,16 +1,20 @@
-from utils import map_variables_to_input
 from copy import deepcopy
+from uuid import uuid4
+from dataclasses import asdict
+
 from dotdict import DotDict
-from models.request_models import SubGraphNodeData, GraphData, SubGraphData
-from models.graph_models import (
+from langgraph.graph import StateGraph
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import StreamWriter
+from src.shared.models import GraphData, SubGraphData, SubGraphNodeData
+
+from src.crew.models.graph_models import (
     GraphMessage,
     SubGraphFinishMessageData,
     SubGraphStartMessageData,
 )
-from langgraph.graph import StateGraph
-from langgraph.graph.state import CompiledStateGraph
-from langgraph.types import StreamWriter
 from services.graph.custom_message_writer import CustomSessionMessageWriter
+from utils import map_variables_to_input
 from utils.set_output_variables import set_output_variables
 
 
@@ -58,7 +62,7 @@ class SubGraphNode:
 
     def _create_temp_session_data(self, initial_state):
         """Create temporary session data for subgraph building."""
-        from models.request_models import SessionData
+        from src.shared.models import SessionData
 
         return SessionData(
             id=self.session_id,
@@ -84,24 +88,31 @@ class SubGraphNode:
     def _build_simple_graph(self) -> CompiledStateGraph:
         """Build simple graph without SessionGraphBuilder."""
         subgraph_data = self.subgraph_data.data
-        self._graph_builder.set_entry_point(subgraph_data.data.entry_point)
+        self._graph_builder.set_entry_point(subgraph_data.data.entrypoint)
         return self._graph_builder.compile()
 
     async def run(self, state, writer: StreamWriter):
         """Execute the subgraph and handle input/output mapping."""
+        subgraph_execution_id = str(uuid4())
+
         subgraph_input = self._prepare_subgraph_input(state)
 
-        self._send_start_message(state, subgraph_input, writer)
+        self._send_start_message(state, subgraph_input, writer, subgraph_execution_id)
 
         subgraph_state = self._create_subgraph_state(state, subgraph_input)
         compiled_subgraph = self.build(initial_state=subgraph_input)
 
-        result = await self._execute_subgraph(compiled_subgraph, subgraph_state, writer)
+        result = await self._execute_subgraph(
+            compiled_subgraph, subgraph_state, writer, subgraph_execution_id
+        )
 
         updated_state = self._process_subgraph_result(state, subgraph_input, result)
 
         self._send_finish_message(
-            updated_state, result["variables"].model_dump(), writer
+            updated_state,
+            result["variables"].model_dump(),
+            writer,
+            subgraph_execution_id,
         )
 
         return {
@@ -113,11 +124,15 @@ class SubGraphNode:
         """Map variables from parent state to subgraph input."""
         return map_variables_to_input(state["variables"], self.input_map)
 
-    def _send_start_message(self, state, subgraph_input, writer: StreamWriter):
+    def _send_start_message(
+        self, state, subgraph_input, writer: StreamWriter, subgraph_execution_id
+    ):
         """Send subgraph start message to writer."""
         start_message_data = SubGraphStartMessageData(
             state=self.custom_session_message_writer._convert_state(state=state),
             input=subgraph_input,
+            subgraph_execution_id=subgraph_execution_id,
+            subgraph_id=self.subgraph_node_data.subgraph_id,
         )
         graph_message = GraphMessage(
             session_id=self.session_id,
@@ -138,7 +153,11 @@ class SubGraphNode:
         }
 
     async def _execute_subgraph(
-        self, compiled_subgraph, subgraph_state, writer: StreamWriter
+        self,
+        compiled_subgraph,
+        subgraph_state,
+        writer: StreamWriter,
+        subgraph_execution_id,
     ):
         """Execute the compiled subgraph and stream results."""
         result = None
@@ -151,6 +170,17 @@ class SubGraphNode:
             if isinstance(chunk, tuple):
                 stream_mode, data = chunk
                 if stream_mode == "custom":
+                    if isinstance(data, GraphMessage):
+                        msg_data = data.message_data
+
+                        if not isinstance(msg_data, dict):
+                            msg_data = asdict(msg_data)
+                            data.message_data = msg_data
+
+                        existing = msg_data.get("subgraph_execution_ids") or []
+                        msg_data["subgraph_execution_ids"] = existing + [
+                            subgraph_execution_id
+                        ]
                     writer(data)
                 elif stream_mode == "values":
                     result = data
@@ -207,7 +237,11 @@ class SubGraphNode:
         }
 
     def _send_finish_message(
-        self, updated_state, subgraph_output, writer: StreamWriter
+        self,
+        updated_state,
+        subgraph_output,
+        writer: StreamWriter,
+        subgraph_execution_id,
     ):
         """Send subgraph finish message to writer."""
         finish_message_data = SubGraphFinishMessageData(
@@ -215,6 +249,7 @@ class SubGraphNode:
                 state=updated_state
             ),
             output=subgraph_output,
+            subgraph_execution_id=subgraph_execution_id,
         )
         graph_message = GraphMessage(
             session_id=self.session_id,

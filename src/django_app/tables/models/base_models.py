@@ -1,10 +1,13 @@
-from enum import Enum
 import hashlib
 import json
-from django.db import models
-from django.db.models import Func, Value
-
 from abc import abstractmethod
+from enum import Enum
+
+from typing import Self
+
+from django.apps import apps
+from django.db import connection, models
+from django.db.models import Func, Value
 
 
 class AbstractDefaultFillableModel(models.Model):
@@ -135,17 +138,31 @@ class MetadataMixin(models.Model):
 
 
 class ContentHashMixin(models.Model):
-    content_hash = models.CharField(max_length=64, editable=False, null=True)
-
     class Meta:
         abstract = True
+
+    @property
+    def content_hash(self):
+        if self._state.adding:
+            return None
+        return self.generate_hash()
+
+    @content_hash.setter
+    def content_hash(self, value):
+        """
+        Treat assignment as setting the expected hash for optimistic locking.
+        Serializer update() loops call setattr(instance, 'content_hash', client_value),
+        which flows into instance.save() → ContentHashConflictError on mismatch.
+        Works for both top-level nodes and nested objects (e.g. python_code).
+        """
+        self._expected_hash = value
 
     def generate_hash(self):
         """
         Generates a SHA-256 hash.
         """
 
-        excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
+        excluded_fields = ["id", "created_at", "updated_at", "metadata"]
 
         data = {
             f.name: str(getattr(self, f.name))
@@ -157,7 +174,14 @@ class ContentHashMixin(models.Model):
         return hashlib.sha256(data_string).hexdigest()
 
     def save(self, *args, **kwargs):
-        self.content_hash = self.generate_hash()
+        if not self._state.adding:
+            expected_hash = getattr(self, "_expected_hash", None)
+            if expected_hash is not None:
+                current = self.__class__.objects.get(pk=self.pk)
+                if current.content_hash != expected_hash:
+                    from tables.exceptions import ContentHashConflictError
+
+                    raise ContentHashConflictError()
         super().save(*args, **kwargs)
 
 
@@ -178,7 +202,8 @@ class NextVal(Func):
 
 class BaseGlobalNode(models.Model):
     """
-    Abstract base class for all nodes that must share the same Global ID sequence.
+    Abstract base class for all nodes.
+    Manages global ID sequence and provides cross-table lookup logic.
     """
 
     id = models.BigIntegerField(
@@ -187,5 +212,48 @@ class BaseGlobalNode(models.Model):
         editable=False,
     )
 
+    # node_name = models.CharField(max_length=255, blank=True)
+
     class Meta:
         abstract = True
+
+    @classmethod
+    def get_all_node_models(cls):
+        """
+        Safely finds all non-abstract Django models inheriting from BaseGlobalNode.
+        """
+        node_models = []
+        for model in apps.get_models():
+            if issubclass(model, cls) and not model._meta.abstract:
+                node_models.append(model)
+        return node_models
+
+    @classmethod
+    def find_globally(cls, node_id) -> Self:
+        """
+        Executes a single SQL UNION query to find which table contains the given ID
+        and returns the actual model instance.
+        """
+        node_models = cls.get_all_node_models()
+        if not node_models:
+            return None
+
+        # Map table names to model classes for quick reverse lookup
+        table_to_model = {m._meta.db_table: m for m in node_models}
+        tables = list(table_to_model.keys())
+
+        # Build UNION ALL query: SELECT 'table_name' as tbl FROM table_name WHERE id = %s
+        union_parts = [f"SELECT '{t}' as tbl FROM {t} WHERE id = %s" for t in tables]
+        query = " UNION ALL ".join(union_parts)
+        params = [node_id] * len(tables)
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, params)
+            row = cursor.fetchone()
+
+        if row:
+            table_name = row[0]
+            target_model = table_to_model[table_name]
+            return target_model.objects.get(id=node_id)
+
+        return None

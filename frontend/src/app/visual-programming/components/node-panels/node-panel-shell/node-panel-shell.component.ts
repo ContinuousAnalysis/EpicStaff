@@ -114,11 +114,17 @@ export class NodePanelShellComponent {
     });
 
     protected readonly outlet = viewChild(NgComponentOutlet);
-    protected readonly componentInputs = computed(() => ({
-        node: this.node(),
-        isExpanded: this.isExpanded(),
-        currentFlowId: this.currentFlowId(),
-    }));
+    protected readonly componentInputs = computed(() => {
+        const node = this.node();
+
+        return {
+            node,
+            isExpanded: this.isExpanded(),
+            ...(node?.type === 'subgraph'
+                ? { currentFlowId: this.currentFlowId() }
+                : {}),
+        };
+    });
 
     protected readonly isShaking = signal(false);
     protected readonly isExpanded = signal(false);
@@ -188,6 +194,10 @@ export class NodePanelShellComponent {
 
     protected toggleExpanded(): void {
         this.isExpanded.update((expanded) => !expanded);
+    }
+
+    public expandPanel(): void {
+        this.isExpanded.set(true);
     }
 
     private saveSidePanel(): void {
