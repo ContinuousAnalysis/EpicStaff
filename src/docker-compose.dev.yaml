@@ -56,13 +56,16 @@ services:
 
   crew:
     command: >
-      sh -lc "cd /app/src/crew &&
+      sh -lc "
       poetry run watchfiles
       --filter python
       --ignore-paths /app/src/crew/.venv
-      --ignore-paths /app/src/crew/.venv/lib
+      --ignore-paths /app/src/crew/libraries
+      --ignore-paths /app/src/crew/__pycache__
+      --ignore-paths /app/src/crew/.pytest_cache
+      --ignore-paths /app/src/crew/.ruff_cache
       'poetry run python3 /app/src/crew/main.py'
-      /app/src/crew/"
+      /app/src/crew"
     environment:
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
