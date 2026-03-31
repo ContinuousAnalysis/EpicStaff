@@ -1,6 +1,7 @@
-import { AbstractControl, FormBuilder, FormGroup } from "@angular/forms";
-import { Component, inject, input, OnChanges, OnDestroy, SimpleChanges } from "@angular/core";
-import { StrategyModel } from "../../../../models/strategy.model";
+import { Component, inject, input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
+import { AbstractControl, FormBuilder, FormGroup } from '@angular/forms';
+
+import { StrategyModel } from '../../../../models/strategy.model';
 
 @Component({
     template: '',
@@ -24,7 +25,7 @@ export abstract class StrategyForm<T extends StrategyModel> implements OnChanges
     }
 
     getMainParamControl(control: string): AbstractControl | null | undefined {
-        return this.strategyForm.get('mainParams')?.get(control)
+        return this.strategyForm.get('mainParams')?.get(control);
     }
 
     protected abstract initializeForm(config: T): FormGroup;

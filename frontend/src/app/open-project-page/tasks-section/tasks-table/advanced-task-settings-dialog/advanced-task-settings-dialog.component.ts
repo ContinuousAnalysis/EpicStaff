@@ -1,42 +1,35 @@
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { NgClass, NgFor, NgIf } from '@angular/common';
 import {
-    Component,
-    Inject,
-    OnInit,
     ChangeDetectionStrategy,
-    signal,
+    Component,
     computed,
     DestroyRef,
+    Inject,
     inject,
+    OnInit,
+    signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { NgIf, NgFor, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
+
 import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
+import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 
 export interface AdvancedTaskSettingsData {
-    config: any | null;
-    output_model: any | null;
+    config: Record<string, unknown> | null;
+    output_model: Record<string, unknown> | null;
     task_context_list: number[];
     taskName: string;
     taskId: number | string | null;
-    availableTasks?: any[];
+    availableTasks?: { id: number; order: number | null; name?: string }[];
 }
 
 @Component({
     selector: 'app-advanced-task-settings-dialog',
     standalone: true,
-    imports: [
-        NgIf,
-        NgFor,
-        NgClass,
-        FormsModule,
-        MatSlideToggleModule,
-        JsonEditorComponent,
-        HelpTooltipComponent,
-    ],
+    imports: [NgIf, NgFor, NgClass, FormsModule, MatSlideToggleModule, JsonEditorComponent, HelpTooltipComponent],
     templateUrl: './advanced-task-settings-dialog.component.html',
     styleUrls: ['./advanced-task-settings-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,7 +39,7 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
     public jsonConfig = signal<string>('{}');
     public isJsonValid = signal<boolean>(true);
     public selectedTaskIds = signal<number[]>([]);
-    public readonly availableTasks: any[];
+    public readonly availableTasks: { id: number; order: number | null; name?: string }[];
     public useOutputModel = signal<boolean>(false);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -77,37 +70,26 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
         });
 
         const initialSelectedIds = Array.isArray(data.task_context_list)
-            ? [...data.task_context_list].map((id) =>
-                  typeof id === 'string' ? parseInt(id, 10) : id
-              )
+            ? [...data.task_context_list].map((id) => (typeof id === 'string' ? parseInt(id, 10) : id))
             : [];
 
         this.selectedTaskIds.set(initialSelectedIds);
 
         // Initialize useOutputModel based on whether output_model exists
-        this.useOutputModel.set(
-            this.taskData.output_model !== null &&
-                this.taskData.output_model !== undefined
-        );
+        this.useOutputModel.set(this.taskData.output_model !== null && this.taskData.output_model !== undefined);
 
-        this.dialogRef
-            .backdropClick
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(() => {
-                console.log('[Dialog] backdrop click');
-                this.requestClose()
-            });
+        this.dialogRef.backdropClick.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            console.log('[Dialog] backdrop click');
+            this.requestClose();
+        });
 
-        this.dialogRef
-            .keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((event: KeyboardEvent) => {
-                console.log('[Dialog] keydown', event.key);
-                if (event.key === 'Escape') {
-                    event.preventDefault();
-                    this.requestClose();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event: KeyboardEvent) => {
+            console.log('[Dialog] keydown', event.key);
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                this.requestClose();
+            }
+        });
     }
 
     public ngOnInit(): void {
@@ -176,15 +158,13 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
         return order === null ? 'null' : `${order}`;
     }
 
-    public tryProcessOutputModel(jsonString: string): any | null {
+    public tryProcessOutputModel(jsonString: string): Record<string, unknown> | null {
         if (!jsonString) return null;
 
         try {
             const parsedJson = JSON.parse(jsonString);
 
-            const hasProperties =
-                parsedJson.properties &&
-                Object.keys(parsedJson.properties).length > 0;
+            const hasProperties = parsedJson.properties && Object.keys(parsedJson.properties).length > 0;
 
             if (!hasProperties) {
                 return null;

@@ -23,8 +23,6 @@ import { AgentsTableComponent } from './components/agents-table/agents-table.com
     imports: [
         AgentsTableComponent,
         ButtonComponent,
-        LoadingSpinnerComponent,
-        NgIf,
         SaveWithIndicatorComponent,
         UnsavedIndicatorComponent,
         HideInlineSubtitleOnOverflowDirective,

@@ -1,19 +1,20 @@
 import {
     Component,
-    Input,
-    Output,
+    ElementRef,
     EventEmitter,
-    OnInit,
+    Input,
     OnChanges,
+    OnInit,
+    Output,
     SimpleChanges,
     ViewChild,
-    ElementRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
-import { ProjectsStorageService } from '../../features/projects/services/projects-storage.service';
+
 import { GetProjectRequest } from '../../features/projects/models/project.model';
+import { ProjectsStorageService } from '../../features/projects/services/projects-storage.service';
 import { ToastService } from '../../services/notifications/toast.service';
 
 @Component({
@@ -27,9 +28,7 @@ export class DetailsContentComponent implements OnInit, OnChanges {
     @Input() public description!: string;
     @Input() public tags: string[] = [];
     @Input() public projectId!: number;
-    @Output() public tagsUpdated: EventEmitter<string[]> = new EventEmitter<
-        string[]
-    >();
+    @Output() public tagsUpdated: EventEmitter<string[]> = new EventEmitter<string[]>();
     @Output() public dirtyChange = new EventEmitter<boolean>();
     @Output() public detailsChange = new EventEmitter<{ description: string; tags: string[] }>();
 
@@ -56,18 +55,14 @@ export class DetailsContentComponent implements OnInit, OnChanges {
         this.internalTags = [...this.tags];
         this.initialTags = [...this.internalTags];
 
-        this.descriptionSubject
-            .pipe(debounceTime(500))
-            .subscribe((updatedDescription: string) => {
-                this.emitDetailsChange(updatedDescription, this.internalTags);
-            });
+        this.descriptionSubject.pipe(debounceTime(500)).subscribe((updatedDescription: string) => {
+            this.emitDetailsChange(updatedDescription, this.internalTags);
+        });
 
-        this.tagsSubject
-            .pipe(debounceTime(300))
-            .subscribe((updatedTags: string[]) => {
-                this.tagsUpdated.emit(updatedTags);
-                this.emitDetailsChange(this.internalDescription, updatedTags);
-            });
+        this.tagsSubject.pipe(debounceTime(300)).subscribe((updatedTags: string[]) => {
+            this.tagsUpdated.emit(updatedTags);
+            this.emitDetailsChange(this.internalDescription, updatedTags);
+        });
         this.emitDirty();
     }
 
@@ -92,12 +87,9 @@ export class DetailsContentComponent implements OnInit, OnChanges {
         }
 
         if (trimmedTag) {
-            const formattedTag =
-                trimmedTag.charAt(0).toUpperCase() + trimmedTag.slice(1);
+            const formattedTag = trimmedTag.charAt(0).toUpperCase() + trimmedTag.slice(1);
 
-            const duplicate = this.internalTags.find(
-                (tag) => tag.toLowerCase() === formattedTag.toLowerCase()
-            );
+            const duplicate = this.internalTags.find((tag) => tag.toLowerCase() === formattedTag.toLowerCase());
 
             if (duplicate) {
                 this.duplicateTagName = duplicate;
@@ -153,41 +145,36 @@ export class DetailsContentComponent implements OnInit, OnChanges {
     private updateProjectDescription(description: string): void {
         if (!this.projectId) {
             console.error('Project ID is required for updating description');
-            this.toastService.error(
-                'Project ID is required for updating description'
-            );
+            this.toastService.error('Project ID is required for updating description');
             return;
         }
-        this.projectsService
-            .patchUpdateProject(this.projectId, { description })
-            .subscribe({
-                next: (response: GetProjectRequest) => {
-                    console.log('Description updated successfully', response);
-                    this.toastService.success(
-                        'Project description updated successfully'
-                    );
-                },
-                error: (error: any) => {
-                    console.error('Error updating description:', error);
+        this.projectsService.patchUpdateProject(this.projectId, { description }).subscribe({
+            next: (response: GetProjectRequest) => {
+                console.log('Description updated successfully', response);
+                this.toastService.success('Project description updated successfully');
+            },
+            error: (error: unknown) => {
+                console.error('Error updating description:', error);
 
-                    // Revert the description to the original value
-                    this.internalDescription = this.description || '';
+                // Revert the description to the original value
+                this.internalDescription = this.description || '';
 
-                    // Show error notification
-                    let errorMessage = 'Failed to update project description';
-                    if (error.error && error.error.message) {
-                        errorMessage = error.error.message;
-                    } else if (error.error && typeof error.error === 'string') {
-                        errorMessage = error.error;
-                    } else if (error.message) {
-                        errorMessage = error.message;
-                    }
+                // Show error notification
+                let errorMessage = 'Failed to update project description';
+                if ((error as { error?: { message?: string } })?.error?.message) {
+                    errorMessage = (error as { error: { message: string } }).error.message;
+                } else if (
+                    (error as { error?: unknown })?.error &&
+                    typeof (error as { error: unknown }).error === 'string'
+                ) {
+                    errorMessage = (error as { error: string }).error;
+                } else if ((error as { message?: string })?.message) {
+                    errorMessage = (error as { message: string }).message;
+                }
 
-                    this.toastService.error(
-                        `Error updating project description: ${errorMessage}`
-                    );
-                },
-            });
+                this.toastService.error(`Error updating project description: ${errorMessage}`);
+            },
+        });
     }
 
     private emitDetailsChange(description: string, tags: string[]): void {

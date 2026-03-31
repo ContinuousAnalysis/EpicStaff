@@ -1,20 +1,25 @@
+import { Overlay, OverlayPositionBuilder, OverlayRef } from '@angular/cdk/overlay';
+import { TemplatePortal } from '@angular/cdk/portal';
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     ElementRef,
+    inject,
+    input,
+    model,
+    OnInit,
+    output,
+    signal,
+    TemplateRef,
     ViewChild,
     ViewContainerRef,
-    signal,
-    input,
-    output, inject, computed, OnInit, model
 } from '@angular/core';
-import { TemplatePortal } from '@angular/cdk/portal';
 
-import {AppIconComponent} from "../app-icon/app-icon.component";
-import {CheckboxComponent} from "../checkbox/checkbox.component";
-import {ButtonComponent} from "../buttons";
-import {Overlay, OverlayPositionBuilder, OverlayRef} from "@angular/cdk/overlay";
-import {SelectItem} from "../select/select.component";
+import { AppIconComponent } from '../app-icon/app-icon.component';
+import { ButtonComponent } from '../buttons';
+import { CheckboxComponent } from '../checkbox/checkbox.component';
+import { SelectItem } from '../select/select.component';
 
 interface GroupedItems {
     group: string | null;
@@ -24,14 +29,10 @@ interface GroupedItems {
 @Component({
     selector: 'app-multi-select',
     standalone: true,
-    imports: [
-        AppIconComponent,
-        CheckboxComponent,
-        ButtonComponent
-    ],
+    imports: [AppIconComponent, CheckboxComponent, ButtonComponent],
     templateUrl: './multi-select.component.html',
     styleUrls: ['./multi-select.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MultiSelectComponent implements OnInit {
     icon = input<string>('');
@@ -45,22 +46,20 @@ export class MultiSelectComponent implements OnInit {
 
     isOpen = signal(false);
     search = signal('');
-    tempSelected = signal<any[]>([]);
+    tempSelected = signal<unknown[]>([]);
 
     groupedFiltered = computed<GroupedItems[]>(() => {
         const search = this.search().toLowerCase();
 
-        const filteredItems = this.items().filter(i =>
-            i.name.toLowerCase().includes(search)
-        );
+        const filteredItems = this.items().filter((i) => i.name.toLowerCase().includes(search));
 
         // Grouping disabled
         if (!this.grouped()) {
             return [
                 {
                     group: null,
-                    items: filteredItems
-                }
+                    items: filteredItems,
+                },
             ];
         }
 
@@ -79,12 +78,12 @@ export class MultiSelectComponent implements OnInit {
 
         return Array.from(map.entries()).map(([group, items]) => ({
             group,
-            items
+            items,
         }));
     });
 
     @ViewChild('triggerBtn') triggerBtn!: ElementRef<HTMLElement>;
-    @ViewChild('dropdownTemplate') dropdownTemplate!: any;
+    @ViewChild('dropdownTemplate') dropdownTemplate!: TemplateRef<unknown>;
 
     private overlayRef!: OverlayRef;
 
@@ -104,20 +103,22 @@ export class MultiSelectComponent implements OnInit {
         if (!this.overlayRef) {
             const positionStrategy = this.overlayPositionBuilder
                 .flexibleConnectedTo(this.triggerBtn)
-                .withPositions([{
-                    originX: 'start',
-                    originY: 'bottom',
-                    overlayX: 'start',
-                    overlayY: 'top',
-                    offsetY: 4
-                }])
+                .withPositions([
+                    {
+                        originX: 'start',
+                        originY: 'bottom',
+                        overlayX: 'start',
+                        overlayY: 'top',
+                        offsetY: 4,
+                    },
+                ])
                 .withPush(true);
 
             this.overlayRef = this.overlay.create({
                 positionStrategy,
                 scrollStrategy: this.overlay.scrollStrategies.reposition(),
                 hasBackdrop: true,
-                backdropClass: 'transparent-backdrop'
+                backdropClass: 'transparent-backdrop',
             });
 
             this.overlayRef.backdropClick().subscribe(() => this.close());
@@ -135,11 +136,11 @@ export class MultiSelectComponent implements OnInit {
         this.isOpen.set(false);
     }
 
-    isChecked(value: any) {
+    isChecked(value: unknown) {
         return this.tempSelected().includes(value);
     }
 
-    toggleValue(value: any) {
+    toggleValue(value: unknown) {
         const arr = [...this.tempSelected()];
         const i = arr.indexOf(value);
         if (i >= 0) arr.splice(i, 1);

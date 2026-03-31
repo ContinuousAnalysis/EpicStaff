@@ -248,9 +248,14 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
     }
 
-    public onAgentRagChange(value: number): void {
+    public onAgentRagChange(value: unknown): void {
+        const ragId = typeof value === 'number' ? value : Number(value);
+        if (!Number.isFinite(ragId)) {
+            this.agentData.rag = null;
+            return;
+        }
         this.agentData.rag = {
-            rag_id: value,
+            rag_id: ragId,
             rag_type: 'naive',
         };
     }

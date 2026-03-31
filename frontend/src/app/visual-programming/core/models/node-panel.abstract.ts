@@ -1,8 +1,9 @@
-import { Component, DestroyRef, inject, input, effect } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, DestroyRef, effect, inject, input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NodeModel } from './node.model';
+import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+
 import { UniqueNodeNameValidatorService } from '../../services/unique-node-name.validator';
+import { NodeModel } from './node.model';
 
 @Component({
     template: '',
@@ -46,7 +47,6 @@ export abstract class BaseSidePanel<T extends NodeModel> {
         return updatedNode;
     }
 
-
     // Returns the updated node without emitting outputs or closing the panel
     public onSaveSilently(): T | null {
         if (!this.form) return null;
@@ -58,15 +58,11 @@ export abstract class BaseSidePanel<T extends NodeModel> {
         }
     }
 
-    protected createNodeNameValidators(
-        additionalValidators: any[] = []
-    ): any[] {
+    protected createNodeNameValidators(additionalValidators: ValidatorFn[] = []): ValidatorFn[] {
         const currentNodeId = this.node().id;
         return [
             Validators.required,
-            this.uniqueNameValidator.createSyncUniqueNameValidator(
-                currentNodeId
-            ),
+            this.uniqueNameValidator.createSyncUniqueNameValidator(currentNodeId),
             ...additionalValidators,
         ];
     }
@@ -74,9 +70,7 @@ export abstract class BaseSidePanel<T extends NodeModel> {
     protected getNodeNameErrorMessage(): string {
         const nodeNameControl = this.form.get('node_name');
         if (nodeNameControl && nodeNameControl.errors) {
-            return this.uniqueNameValidator.getValidationErrorMessage(
-                nodeNameControl.errors
-            );
+            return this.uniqueNameValidator.getValidationErrorMessage(nodeNameControl.errors);
         }
         return '';
     }

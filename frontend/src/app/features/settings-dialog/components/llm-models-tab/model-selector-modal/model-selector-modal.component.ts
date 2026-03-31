@@ -1,16 +1,8 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    DestroyRef,
-    OnInit,
-    inject,
-    signal,
-    computed,
-} from '@angular/core';
+import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Dialog, DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
@@ -82,11 +74,9 @@ export class ModelSelectorModalComponent implements OnInit {
         }
 
         return providers
-            .map(p => {
+            .map((p) => {
                 const providerMatches = p.provider.name.toLowerCase().includes(query);
-                const matchingModels = p.visibleModels.filter(m =>
-                    m.name.toLowerCase().includes(query)
-                );
+                const matchingModels = p.visibleModels.filter((m) => m.name.toLowerCase().includes(query));
 
                 if (providerMatches) {
                     return p;
@@ -139,7 +129,7 @@ export class ModelSelectorModalComponent implements OnInit {
                 next: (providers) => {
                     const sortedProviders = this.sortProviders(providers);
 
-                    const modelRequests = sortedProviders.map(provider =>
+                    const modelRequests = sortedProviders.map((provider) =>
                         this.modelsService.getLLMModels(provider.id, true)
                     );
 
@@ -156,24 +146,26 @@ export class ModelSelectorModalComponent implements OnInit {
                         )
                         .subscribe({
                             next: (modelsArrays) => {
-                                const providersWithModels: ProviderWithModels[] = sortedProviders.map((provider, index) => {
-                                    const visibleModels = modelsArrays[index] || [];
+                                const providersWithModels: ProviderWithModels[] = sortedProviders.map(
+                                    (provider, index) => {
+                                        const visibleModels = modelsArrays[index] || [];
 
-                                    const selectedId = this.selectedModelId();
-                                    if (selectedId) {
-                                        const selectedInProvider = visibleModels.find(m => m.id === selectedId);
-                                        if (selectedInProvider) {
-                                            this.selectedModel.set(selectedInProvider);
-                                            this.selectedProvider.set(provider);
+                                        const selectedId = this.selectedModelId();
+                                        if (selectedId) {
+                                            const selectedInProvider = visibleModels.find((m) => m.id === selectedId);
+                                            if (selectedInProvider) {
+                                                this.selectedModel.set(selectedInProvider);
+                                                this.selectedProvider.set(provider);
+                                            }
                                         }
-                                    }
 
-                                    return {
-                                        provider,
-                                        models: visibleModels,
-                                        visibleModels,
-                                    };
-                                });
+                                        return {
+                                            provider,
+                                            models: visibleModels,
+                                            visibleModels,
+                                        };
+                                    }
+                                );
 
                                 this.providersWithModels.set(providersWithModels);
                             },
@@ -217,47 +209,49 @@ export class ModelSelectorModalComponent implements OnInit {
     }
 
     openAllModelsModal(provider: LLM_Provider, providerData: ProviderWithModels): void {
-        this.modelsService.getLLMModels(provider.id).pipe(
-            takeUntilDestroyed(this.destroyRef)
-        ).subscribe({
-            next: (allModels) => {
-                const dialogRef = this.dialog.open(AllModelsModalComponent, {
-                    data: {
-                        provider,
-                        models: allModels,
-                    },
-                });
+        this.modelsService
+            .getLLMModels(provider.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (allModels) => {
+                    const dialogRef = this.dialog.open(AllModelsModalComponent, {
+                        data: {
+                            provider,
+                            models: allModels,
+                        },
+                    });
 
-                dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-                    this.reloadProviderModels(provider.id);
-                });
-            }
-        });
+                    dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+                        this.reloadProviderModels(provider.id);
+                    });
+                },
+            });
     }
 
     private reloadProviderModels(providerId: number): void {
-        this.modelsService.getLLMModels(providerId, true).pipe(
-            takeUntilDestroyed(this.destroyRef)
-        ).subscribe({
-            next: (visibleModels) => {
-                this.providersWithModels.update(providers => {
-                    return providers.map(p => {
-                        if (p.provider.id !== providerId) return p;
-                        return {
-                            ...p,
-                            models: visibleModels,
-                            visibleModels,
-                        };
+        this.modelsService
+            .getLLMModels(providerId, true)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (visibleModels) => {
+                    this.providersWithModels.update((providers) => {
+                        return providers.map((p) => {
+                            if (p.provider.id !== providerId) return p;
+                            return {
+                                ...p,
+                                models: visibleModels,
+                                visibleModels,
+                            };
+                        });
                     });
-                });
-            }
-        });
+                },
+            });
     }
 
     onClose(): void {
         const model = this.selectedModel();
         const provider = this.selectedProvider();
-        
+
         if (model && provider) {
             const result: ModelSelectorResult = { provider, model };
             this.dialogRef.close(result);

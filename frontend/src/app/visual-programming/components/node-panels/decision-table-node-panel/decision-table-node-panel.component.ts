@@ -1,37 +1,29 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    input,
-    ChangeDetectorRef,
-    signal,
-    computed,
-    inject,
-    effect,
-} from '@angular/core';
-import { ReactiveFormsModule, FormGroup, Validators } from '@angular/forms';
-import { DecisionTableNodeModel } from '../../../core/models/node.model';
-import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
-import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { CommonModule } from '@angular/common';
 import {
-    DecisionTableNode,
-    ConditionGroup,
-    Condition,
-} from '../../../core/models/decision-table.model';
-import { DecisionTableGridComponent } from './decision-table-grid/decision-table-grid.component';
-import { FlowService } from '../../../services/flow.service';
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    computed,
+    effect,
+    inject,
+    input,
+    signal,
+} from '@angular/core';
+import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+
+import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { NodeType } from '../../../core/enums/node-type';
 import { generatePortsForDecisionTableNode } from '../../../core/helpers/helpers';
+import { Condition, ConditionGroup, DecisionTableNode } from '../../../core/models/decision-table.model';
+import { DecisionTableNodeModel } from '../../../core/models/node.model';
+import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
+import { FlowService } from '../../../services/flow.service';
+import { DecisionTableGridComponent } from './decision-table-grid/decision-table-grid.component';
 
 @Component({
     standalone: true,
     selector: 'app-decision-table-node-panel',
-    imports: [
-        ReactiveFormsModule,
-        CustomInputComponent,
-        CommonModule,
-        DecisionTableGridComponent,
-    ],
+    imports: [ReactiveFormsModule, CustomInputComponent, CommonModule, DecisionTableGridComponent],
     templateUrl: './decision-table-node-panel.component.html',
     styleUrls: ['./decision-table-node-panel.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,12 +41,13 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
         const currentNodeId = this.node().id;
 
         return nodes
-            .filter((node) =>
-                node.type !== NodeType.NOTE &&
-                node.type !== NodeType.START &&
-                node.type !== NodeType.WEBHOOK_TRIGGER &&
-                node.type !== NodeType.TELEGRAM_TRIGGER &&
-                node.id !== currentNodeId
+            .filter(
+                (node) =>
+                    node.type !== NodeType.NOTE &&
+                    node.type !== NodeType.START &&
+                    node.type !== NodeType.WEBHOOK_TRIGGER &&
+                    node.type !== NodeType.TELEGRAM_TRIGGER &&
+                    node.id !== currentNodeId
             )
             .map((node) => ({
                 value: node.id,
@@ -68,7 +61,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
 
     initializeForm(): FormGroup {
         const node = this.node();
-        const decisionTableData = (node.data as any).table as DecisionTableNode;
+        const decisionTableData = (node.data as Record<string, unknown>)['table'] as DecisionTableNode;
         const nodes = this.flowService.nodes();
         const connections = this.flowService.connections();
 
@@ -76,7 +69,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
             // 1. Try to find by ID or Name directly
             if (value) {
                 console.log(`[DecisionTable] Resolving node reference for ${role}: '${value}'`);
-                const foundNode = nodes.find(n => n.id === value || n.node_name === value);
+                const foundNode = nodes.find((n) => n.id === value || n.node_name === value);
                 if (foundNode) {
                     console.log(`[DecisionTable] Found node: ${foundNode.node_name} (${foundNode.id})`);
                     return foundNode.id;
@@ -91,13 +84,11 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
             const portSuffix = role === 'default' ? 'decision-default' : 'decision-error';
             const portId = `${node.id}_${portSuffix}`;
 
-            const connection = connections.find(
-                c => c.sourceNodeId === node.id && c.sourcePortId === portId
-            );
+            const connection = connections.find((c) => c.sourceNodeId === node.id && c.sourcePortId === portId);
 
             if (connection) {
-                 console.log(`[DecisionTable] Found visual connection for ${role} to node: ${connection.targetNodeId}`);
-                 return connection.targetNodeId;
+                console.log(`[DecisionTable] Found visual connection for ${role} to node: ${connection.targetNodeId}`);
+                return connection.targetNodeId;
             }
 
             return value || '';
@@ -112,9 +103,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
             next_error_node: [errorNext],
         });
 
-        const groupsCopy = this.cloneConditionGroups(
-            decisionTableData.condition_groups || []
-        );
+        const groupsCopy = this.cloneConditionGroups(decisionTableData.condition_groups || []);
 
         this.conditionGroups.set(groupsCopy);
 
@@ -123,9 +112,7 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
 
     createUpdatedNode(): DecisionTableNodeModel {
         const currentNode = this.node();
-        const conditionGroups = this.cloneConditionGroups(
-            this.conditionGroups() || []
-        );
+        const conditionGroups = this.cloneConditionGroups(this.conditionGroups() || []);
 
         const decisionTableData: DecisionTableNode = {
             default_next_node: this.form.value.default_next_node || null,
@@ -135,13 +122,10 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
 
         const headerHeight = 60;
         const rowHeight = 46;
-        const validGroupsCount = conditionGroups.filter(g => g.valid).length;
+        const validGroupsCount = conditionGroups.filter((g) => g.valid).length;
         const hasDefaultRow = 1;
         const hasErrorRow = 1;
-        const totalRows = Math.max(
-            validGroupsCount + hasDefaultRow + hasErrorRow,
-            2
-        );
+        const totalRows = Math.max(validGroupsCount + hasDefaultRow + hasErrorRow, 2);
         const calculatedHeight = headerHeight + rowHeight * totalRows;
 
         const updatedSize = {
