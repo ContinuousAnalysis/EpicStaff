@@ -27,11 +27,11 @@ class EntityImportExportStrategy(ABC):
         pass
 
     @abstractmethod
-    def create_entity(self, data: dict, id_mapper: IDMapper) -> Any:
+    def create_entity(self, data: dict, id_mapper: IDMapper, **kwargs) -> Any:
         pass
 
     def import_entity(
-        self, data: dict, id_mapper: "IDMapper", is_main: bool = False
+        self, data: dict, id_mapper: "IDMapper", is_main: bool = False, **kwargs
     ) -> Any:
         """
         Standard import - checks for existing first.
@@ -42,12 +42,14 @@ class EntityImportExportStrategy(ABC):
             existing_id = id_mapper.get(self.entity_type, old_id)
             existing = self.get_instance(existing_id)
             return existing
+        if is_main:
+            return self.create_entity(data, id_mapper, **kwargs)
 
         existing = self.find_existing(data, id_mapper)
         if existing and not is_main:
             return existing
 
-        return self.create_entity(data, id_mapper)
+        return self.create_entity(data, id_mapper, **kwargs)
 
     def find_existing(self, data: dict, id_mapper: IDMapper) -> Optional[Any]:
         """
