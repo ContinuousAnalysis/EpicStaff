@@ -21,7 +21,6 @@ export interface TableItem extends DisplayedTelegramField {
     templateUrl: './telegram-trigger-editing-dialog.component.html',
     styleUrls: ['./telegram-trigger-editing-dialog.component.scss'],
     imports: [
-        AppIconComponent,
         AppSvgIconComponent,
         SearchComponent,
         TelegramTriggerFieldsTableComponent,

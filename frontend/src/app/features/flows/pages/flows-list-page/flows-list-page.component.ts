@@ -21,10 +21,7 @@ import { ImportFlowOptionsDialogComponent, ImportFlowOptions } from '../../compo
 import { ImportExportService } from '../../../../core/services/import-export.service';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
-import {
-    FiltersListComponent,
-    SearchFilterChange,
-} from '../../../../shared/components/filters-list/filters-list.component';
+import { SearchFilterChange } from '../../../../shared/components/filters-list/filters-list.component';
 import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
 import { ToastService } from '../../../../services/notifications/toast.service';
@@ -47,6 +44,7 @@ import { FlowsLabelSidebarComponent } from './components/flows-label-sidebar/flo
         AppIconComponent,
         ImportResultDialogComponent,
         FlowsLabelSidebarComponent,
+        HideInlineSubtitleOnOverflowDirective,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
