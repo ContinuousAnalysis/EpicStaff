@@ -1,29 +1,22 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    DestroyRef,
-    inject,
-    OnInit,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { ButtonComponent } from '@shared/components';
+import { ButtonComponent, CustomInputComponent, SelectComponent, SelectItem } from '@shared/components';
+
 import { LoadingState } from '../../../../core/enums/loading-state.enum';
 import { ToastService } from '../../../../services/notifications';
+import { GetAgentRequest } from '../../../staff/models/agent.model';
+import { AgentsService } from '../../../staff/services/staff.service';
 import { GetNgrokConfigResponse } from '../../models/ngrok-config.model';
 import { VoiceSettings } from '../../models/voice-settings.model';
 import { NgrokConfigApiService } from '../../services/ngrok-config/ngrok-config-api.service';
 import { VoiceSettingsService } from '../../services/voice-settings.service';
-import { GetAgentRequest } from '../../../staff/models/agent.model';
-import { AgentsService } from '../../../staff/services/staff.service';
-import { CommonModule } from '@angular/common';
 
 @Component({
     selector: 'app-voice-settings-tab',
     templateUrl: './voice-settings-tab.component.html',
     styleUrls: ['./voice-settings-tab.component.scss'],
-    imports: [ReactiveFormsModule, ButtonComponent, CommonModule],
+    imports: [ReactiveFormsModule, ButtonComponent, CustomInputComponent, SelectComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VoiceSettingsTabComponent implements OnInit {
@@ -36,9 +29,19 @@ export class VoiceSettingsTabComponent implements OnInit {
 
     status = signal<LoadingState>(LoadingState.IDLE);
     saving = signal(false);
-    agents = signal<GetAgentRequest[]>([]);
-    ngrokConfigs = signal<GetNgrokConfigResponse[]>([]);
     voiceStreamUrl = signal<string | null>(null);
+
+    private agents = signal<GetAgentRequest[]>([]);
+    private ngrokConfigs = signal<GetNgrokConfigResponse[]>([]);
+
+    agentItems = computed<SelectItem[]>(() => this.agents().map((a) => ({ name: a.role, value: a.id })));
+
+    ngrokItems = computed<SelectItem[]>(() =>
+        this.ngrokConfigs().map((c) => ({
+            name: c.domain ? `${c.name} (${c.domain})` : c.name,
+            value: c.id,
+        }))
+    );
 
     form!: FormGroup;
 
@@ -50,13 +53,12 @@ export class VoiceSettingsTabComponent implements OnInit {
             ngrok_config: [null],
         });
 
-        this.form.get('ngrok_config')!.valueChanges
-            .pipe(takeUntilDestroyed(this.destroyRef))
+        this.form
+            .get('ngrok_config')!
+            .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((id: number | null) => {
                 const config = this.ngrokConfigs().find((c) => c.id === Number(id));
-                this.voiceStreamUrl.set(
-                    config?.domain ? `wss://${config.domain}/voice/stream` : null
-                );
+                this.voiceStreamUrl.set(config?.domain ? `wss://${config.domain}/voice/stream` : null);
             });
 
         this.loadAll();
@@ -74,7 +76,7 @@ export class VoiceSettingsTabComponent implements OnInit {
             });
 
         this.agentsService
-            .getAgents()
+            .getAgentsWithRealtimeConfig()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (agents) => this.agents.set(agents),

@@ -3,8 +3,16 @@ import json
 import asyncio
 import httpx
 from loguru import logger
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    WebSocketDisconnect,
+    Response,
+    Request,
+    HTTPException,
+)
 from fastapi.middleware.cors import CORSMiddleware
+from twilio.request_validator import RequestValidator
 from src.shared.models import RealtimeAgentChatData
 from application.conversation_service import ConversationService
 from application.voice_call_service import VoiceCallService
@@ -81,13 +89,38 @@ async def get_voice_settings() -> dict:
         try:
             url = settings.INIT_API_URL.replace("init-realtime", "voice-settings")
             async with httpx.AsyncClient() as client:
-                r = await client.get(url, timeout=5.0)
+                r = await client.get(url, headers={"Host": "localhost"}, timeout=5.0)
                 if r.is_success:
                     _voice_settings_cache = r.json()
                     _voice_settings_cache_time = now
+                    logger.info(f"Voice settings loaded: {_voice_settings_cache}")
+                else:
+                    logger.warning(
+                        f"Voice settings request failed: {r.status_code} {r.text}"
+                    )
         except Exception as e:
             logger.warning(f"Could not fetch voice settings from Django: {e}")
     return _voice_settings_cache or {}
+
+
+async def voice_settings_invalidation_listener():
+    """Listen for voice settings changes and invalidate the local cache."""
+    global _voice_settings_cache, _voice_settings_cache_time
+
+    svc = RedisService(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+    )
+    await svc.connect()
+    pubsub = await svc.async_subscribe("voice_settings:invalidate")
+    logger.info("Subscribed to channel 'voice_settings:invalidate'")
+
+    async for message in pubsub.listen():
+        if message["type"] == "message":
+            _voice_settings_cache = None
+            _voice_settings_cache_time = 0.0
+            logger.info("Voice settings cache invalidated")
 
 
 async def redis_listener():
@@ -134,6 +167,7 @@ async def startup_event():
     await init_db()
 
     asyncio.create_task(redis_listener())
+    asyncio.create_task(voice_settings_invalidation_listener())
 
 
 # Store active connections and their handlers
@@ -192,31 +226,37 @@ async def healthcheck_endpoint(websocket: WebSocket):
 
 
 @app.post("/voice")
-async def twilio_voice_webhook(
-    agent_id: int = None,
-    language: str = None,
-):
-    """Twilio calls this on incoming call. Returns TwiML directing audio to /voice/stream.
-
-    Query params (optional):
-      agent_id  — which RealtimeAgent to use (default: settings.VOICE_AGENT_ID)
-      language  — ISO 639-1 code to override the agent's language (e.g. 'ru', 'en')
-    """
+async def twilio_voice_webhook(request: Request):
+    """Twilio calls this on incoming call. Returns TwiML directing audio to /voice/stream."""
     vs = await get_voice_settings()
-    effective_agent_id = agent_id or vs.get("voice_agent") or settings.VOICE_AGENT_ID
+    auth_token = vs.get("twilio_auth_token")
+    if auth_token:
+        validator = RequestValidator(auth_token)
+        signature = request.headers.get("X-Twilio-Signature", "")
+        proto = request.headers.get("x-forwarded-proto", "https")
+        host = request.headers.get("x-forwarded-host") or request.headers.get(
+            "host", ""
+        )
+        path = request.url.path
+        query = f"?{request.url.query}" if request.url.query else ""
+        url = f"{proto}://{host}{path}{query}"
+        form_data = dict(await request.form())
+        logger.debug(f"Twilio validation URL: {url}")
+        if not validator.validate(url, form_data, signature):
+            logger.warning(
+                f"Invalid Twilio signature from {request.client.host}, url={url}"
+            )
+            raise HTTPException(status_code=403, detail="Invalid Twilio signature")
+
     voice_stream_url = vs.get("voice_stream_url") or settings.VOICE_STREAM_URL
+    if not voice_stream_url:
+        logger.error("No voice stream URL configured (ngrok not set up)")
+        raise HTTPException(status_code=503, detail="No voice stream URL configured")
 
-    params = [f'<Parameter name="agent_id" value="{effective_agent_id}" />']
-    if language:
-        params.append(f'<Parameter name="language" value="{language}" />')
-
-    params_xml = "\n      ".join(params)
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
-    <Stream url="{voice_stream_url}">
-      {params_xml}
-    </Stream>
+    <Stream url="{voice_stream_url}" />
   </Connect>
 </Response>"""
     return Response(content=twiml, media_type="application/xml")
@@ -228,10 +268,16 @@ async def voice_stream(twilio_ws: WebSocket):
     await twilio_ws.accept()
     logger.info("Twilio MediaStream WebSocket accepted")
 
-    # 1. Read the first message to get customParameters from Twilio `start` event
+    # 1. Resolve agent_id from Voice Settings
     vs = await get_voice_settings()
-    agent_id = vs.get("voice_agent") or settings.VOICE_AGENT_ID
-    language_override = None
+    agent_id = vs.get("voice_agent")
+    if not agent_id:
+        logger.error("No voice agent configured in Voice Settings")
+        await twilio_ws.close()
+        return
+
+    # 2. Read the first Twilio message (connected / start) to get stream_sid
+    first_msg = None
     try:
         raw = await asyncio.wait_for(twilio_ws.receive_text(), timeout=5.0)
         first_msg = json.loads(raw)
@@ -239,14 +285,7 @@ async def voice_stream(twilio_ws: WebSocket):
             raw = await asyncio.wait_for(twilio_ws.receive_text(), timeout=5.0)
             first_msg = json.loads(raw)
         if first_msg.get("event") == "start":
-            custom = first_msg.get("start", {}).get("customParameters", {})
-            if "agent_id" in custom:
-                agent_id = int(custom["agent_id"])
-            if "language" in custom:
-                language_override = custom["language"]
-            logger.info(
-                f"Twilio params: agent_id={agent_id}, language={language_override}"
-            )
+            logger.info(f"Twilio stream started: agent_id={agent_id}")
     except Exception as e:
         logger.warning(f"Could not read Twilio start event: {e}")
         first_msg = None
@@ -302,5 +341,6 @@ async def voice_stream(twilio_ws: WebSocket):
         tool_manager_service=tool_manager_service,
         connections=connections,
         factory=factory,
+        initial_message=first_msg,
     )
     await service.execute()

@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # --- Twilio ---
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
-    VOICE_AGENT_ID: int = 2
+    VOICE_AGENT_ID: int = 0
     VOICE_STREAM_URL: str = ""
 
     # --- Django (for init-realtime HTTP call) ---

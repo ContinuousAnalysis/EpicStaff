@@ -30,6 +30,7 @@ class VoiceCallService:
         tool_manager_service: ToolManagerService,
         connections: dict,
         factory: RealtimeAgentClientFactory,
+        initial_message: Optional[dict] = None,
     ):
         self.twilio_ws = twilio_ws
         self.realtime_agent_chat_data = realtime_agent_chat_data
@@ -37,6 +38,7 @@ class VoiceCallService:
         self.tool_manager_service = tool_manager_service
         self.connections = connections
         self.factory = factory
+        self.initial_message = initial_message
 
         self.stream_sid: Optional[str] = None
         self.audio_accumulator = bytearray()
@@ -66,6 +68,8 @@ class VoiceCallService:
 
         message_task = asyncio.create_task(rt_agent_client.handle_messages())
         try:
+            if self.initial_message:
+                await self._handle_twilio_message(self.initial_message, rt_agent_client)
             async for raw in self.twilio_ws.iter_text():
                 await self._handle_twilio_message(json.loads(raw), rt_agent_client)
         except Exception as e:

@@ -363,6 +363,12 @@ class AgentViewSet(CopyActionMixin, ModelViewSet):
         if crew_id is not None:
             queryset = queryset.filter(crew__id=crew_id)
 
+        if self.request.query_params.get("has_realtime_config") == "true":
+            queryset = queryset.filter(
+                realtime_agent__isnull=False,
+                realtime_agent__realtime_config__isnull=False,
+            )
+
         return queryset
 
     @transaction.atomic
@@ -1226,3 +1232,8 @@ class VoiceSettingsView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return VoiceSettings.load()
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        redis_service.redis_client.publish("voice_settings:invalidate", "{}")
+        return response
