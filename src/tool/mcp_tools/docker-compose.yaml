@@ -31,6 +31,7 @@ services:
       PORT: ${MCP_BROWSER_OPEN_INTERPRETER_PORT}
     ports:
       - "${MCP_BROWSER_OPEN_INTERPRETER_PORT}:${MCP_BROWSER_OPEN_INTERPRETER_PORT}"
+      - "6081:6080"
     volumes:
       - ${MCP_SAVEFILES_PATH}:/app/data
     restart: unless-stopped

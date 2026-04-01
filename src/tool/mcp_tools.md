@@ -302,7 +302,7 @@ Input Description
 **Browser Tool**
 - Automates browser interactions in headful mode
 - Executes a sequence of instructions
-- GUI available at http://127.0.0.1:6080/vnc.html
+- GUI available at http://127.0.0.1:6081/vnc.html
 - Browser is persistant within single tool call. New call - fresh browser
 
 **GUI Tool**
