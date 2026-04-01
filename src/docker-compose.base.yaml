@@ -263,6 +263,42 @@ services:
       redis:
         condition: service_healthy
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT:-9001}"
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-minioadmin_secret}
+    volumes:
+      - minio_data:/data
+    networks:
+      - backend-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${MINIO_PORT:-9000}/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    networks:
+      - backend-network
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:${MINIO_PORT:-9000} ${STORAGE_ACCESS_KEY:-minioadmin} ${STORAGE_SECRET_KEY:-minioadmin_secret} &&
+      mc mb --ignore-existing local/${STORAGE_BUCKET_NAME:-epicstaff} &&
+      echo 'Bucket ready.' &&
+      exit 0
+      "
+    restart: on-failure
+
   frontend:
     image: frontend
     build:
@@ -312,6 +348,7 @@ volumes:
     external: true
   media_data:
     external: true
+  minio_data: {}
 
 networks:
   backend-network:
