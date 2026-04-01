@@ -9,6 +9,7 @@ import {
   AfterViewInit,
   QueryList,
   ViewChildren,
+  DestroyRef,
 } from '@angular/core';
 import { DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
 import { Router } from '@angular/router';
@@ -43,6 +44,7 @@ import {
 export class ImportResultDialogComponent implements AfterViewInit {
   private router = inject(Router);
   private sanitizer = inject(DomSanitizer);
+  private destroyRef = inject(DestroyRef);
 
   @ViewChild('summaryList') summaryListRef!: ElementRef<HTMLElement>;
   @ViewChild('entityListsSection') entityListsSectionRef!: ElementRef<HTMLElement>;
@@ -227,6 +229,16 @@ export class ImportResultDialogComponent implements AfterViewInit {
 
   public ngAfterViewInit(): void {
     this.onSummaryScroll();
+
+    const el = this.summaryListRef?.nativeElement;
+    if (!el) return;
+
+    const observer = new ResizeObserver(() => {
+      this.onSummaryScroll();
+    });
+    observer.observe(el);
+
+    this.destroyRef.onDestroy(() => observer.disconnect());
   }
 
   public onSummaryScroll(): void {
