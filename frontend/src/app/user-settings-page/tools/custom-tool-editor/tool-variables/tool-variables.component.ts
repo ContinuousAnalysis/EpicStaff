@@ -4,12 +4,15 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    DestroyRef,
     ElementRef,
+    inject,
     Input,
     OnInit,
     QueryList,
     ViewChildren,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
 import { ArgsSchema } from '../../../../features/tools/models/python-code-tool.model';
@@ -39,6 +42,7 @@ export class ToolVariablesComponent implements OnInit, AfterViewInit {
 
     /** Tracks which input should receive focus after view update */
     private focusIndex: number | null = null;
+    private destroyRef = inject(DestroyRef);
 
     public constructor(private cdr: ChangeDetectorRef) {}
 
@@ -68,7 +72,7 @@ export class ToolVariablesComponent implements OnInit, AfterViewInit {
 
     ngAfterViewInit(): void {
         // Subscribe to changes in the nameInputs QueryList
-        this.nameInputs.changes.subscribe(() => {
+        this.nameInputs.changes.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.focusNameInputIfNeeded();
         });
     }

@@ -4,6 +4,7 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
+    DestroyRef,
     ElementRef,
     inject,
     input,
@@ -15,6 +16,7 @@ import {
     ViewChild,
     ViewContainerRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AppIconComponent } from '../app-icon/app-icon.component';
 import { ButtonComponent } from '../buttons';
@@ -90,6 +92,7 @@ export class MultiSelectComponent implements OnInit {
     private overlay = inject(Overlay);
     private overlayPositionBuilder = inject(OverlayPositionBuilder);
     private vcr = inject(ViewContainerRef);
+    private destroyRef = inject(DestroyRef);
 
     ngOnInit() {
         this.tempSelected.set([...this.selectedValues()]);
@@ -121,7 +124,10 @@ export class MultiSelectComponent implements OnInit {
                 backdropClass: 'transparent-backdrop',
             });
 
-            this.overlayRef.backdropClick().subscribe(() => this.close());
+            this.overlayRef
+                .backdropClick()
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(() => this.close());
         }
 
         const portal = new TemplatePortal(this.dropdownTemplate, this.vcr);

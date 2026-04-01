@@ -3,14 +3,15 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    DestroyRef,
     EventEmitter,
+    inject,
     Input,
-    OnDestroy,
     OnInit,
     Output,
     ViewChild,
 } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { GetProjectRequest } from '../../features/projects/models/project.model';
 import { FullAgent } from '../../features/staff/services/full-agent.service';
@@ -28,7 +29,7 @@ import { TaskPendingEvent } from './tasks-table/tasks-table.component';
     imports: [CommonModule, TasksTableComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TasksSectionComponent implements OnInit, OnDestroy {
+export class TasksSectionComponent implements OnInit {
     @Input() project!: GetProjectRequest;
     @Input() isSaving = false;
     @Output() taskPending = new EventEmitter<TaskPendingEvent>();
@@ -38,7 +39,7 @@ export class TasksSectionComponent implements OnInit, OnDestroy {
     public tasks: FullTask[] = [];
     public agents: FullAgent[] = [];
 
-    private subscription = new Subscription();
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private projectStateService: ProjectStateService,
@@ -46,29 +47,21 @@ export class TasksSectionComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit(): void {
-        this.subscription.add(
-            this.projectStateService.tasks$.subscribe({
-                next: (tasks) => {
-                    this.tasks = tasks;
-                    this.cdr.markForCheck();
-                },
-                error: (err) => console.error('Error fetching tasks:', err),
-            })
-        );
+        this.projectStateService.tasks$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (tasks) => {
+                this.tasks = tasks;
+                this.cdr.markForCheck();
+            },
+            error: (err) => console.error('Error fetching tasks:', err),
+        });
 
-        this.subscription.add(
-            this.projectStateService.agents$.subscribe({
-                next: (agents) => {
-                    this.agents = agents;
-                    this.cdr.markForCheck();
-                },
-                error: (err) => console.error('Error fetching agents:', err),
-            })
-        );
-    }
-
-    ngOnDestroy(): void {
-        this.subscription.unsubscribe();
+        this.projectStateService.agents$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (agents) => {
+                this.agents = agents;
+                this.cdr.markForCheck();
+            },
+            error: (err) => console.error('Error fetching agents:', err),
+        });
     }
 
     onTaskPending(ev: TaskPendingEvent): void {

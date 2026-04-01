@@ -1,4 +1,15 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import {
+    Component,
+    DestroyRef,
+    EventEmitter,
+    inject,
+    Input,
+    OnChanges,
+    OnInit,
+    Output,
+    SimpleChanges,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
@@ -31,6 +42,8 @@ export class DetailsContentComponent implements OnInit, OnChanges {
     private readonly descriptionSubject: Subject<string> = new Subject();
     private readonly tagsSubject: Subject<string[]> = new Subject();
 
+    private readonly destroyRef = inject(DestroyRef);
+
     constructor(
         private readonly projectsService: ProjectsStorageService,
         private readonly toastService: ToastService
@@ -45,14 +58,18 @@ export class DetailsContentComponent implements OnInit, OnChanges {
         this.internalTags = [...this.tags];
         this.initialTags = [...this.internalTags];
 
-        this.descriptionSubject.pipe(debounceTime(500)).subscribe((updatedDescription: string) => {
-            this.emitDetailsChange(updatedDescription, this.internalTags);
-        });
+        this.descriptionSubject
+            .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
+            .subscribe((updatedDescription: string) => {
+                this.emitDetailsChange(updatedDescription, this.internalTags);
+            });
 
-        this.tagsSubject.pipe(debounceTime(300)).subscribe((updatedTags: string[]) => {
-            this.tagsUpdated.emit(updatedTags);
-            this.emitDetailsChange(this.internalDescription, updatedTags);
-        });
+        this.tagsSubject
+            .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
+            .subscribe((updatedTags: string[]) => {
+                this.tagsUpdated.emit(updatedTags);
+                this.emitDetailsChange(this.internalDescription, updatedTags);
+            });
         this.emitDirty();
     }
 

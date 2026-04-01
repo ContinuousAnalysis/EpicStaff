@@ -1,7 +1,16 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, ChangeDetectorRef, Component, HostListener, Inject, inject, ViewChild } from '@angular/core';
-import { Subscription } from 'rxjs';
+import {
+    AfterViewInit,
+    ChangeDetectorRef,
+    Component,
+    DestroyRef,
+    HostListener,
+    Inject,
+    inject,
+    ViewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SaveWithIndicatorComponent } from 'src/app/shared/components/save-with-indicator/save-with-indicator.component';
 import { UnsavedChangesDialogService } from 'src/app/shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
 import { UnsavedIndicatorComponent } from 'src/app/shared/components/unsaved-indicator/unsaved-indicator.component';
@@ -47,7 +56,7 @@ export class ProjectDialogComponent implements AfterViewInit {
     dialogRef = inject(DialogRef);
     private cdr = inject(ChangeDetectorRef);
     private unsavedChangesDialog = inject(UnsavedChangesDialogService);
-    private subs = new Subscription();
+    private destroyRef = inject(DestroyRef);
 
     constructor(
         @Inject(DIALOG_DATA)
@@ -60,11 +69,7 @@ export class ProjectDialogComponent implements AfterViewInit {
     ngAfterViewInit(): void {
         queueMicrotask(() => this.cdr.detectChanges());
 
-        this.subs.add(this.dialogRef.backdropClick.subscribe(() => this.tryClose()));
-    }
-
-    ngOnDestroy(): void {
-        this.subs.unsubscribe();
+        this.dialogRef.backdropClick.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.tryClose());
     }
 
     public tryClose(): void {
@@ -100,9 +105,11 @@ export class ProjectDialogComponent implements AfterViewInit {
     }
 
     @HostListener('window:keydown.escape', ['$event'])
-    onEsc(e: KeyboardEvent): void {
-        e.preventDefault();
-        e.stopPropagation();
+    onEsc(e: Event): void {
+        if (e instanceof KeyboardEvent) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         this.tryClose();
     }
 }

@@ -5,6 +5,7 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
+    DestroyRef,
     ElementRef,
     inject,
     input,
@@ -15,6 +16,7 @@ import {
     ViewChild,
     ViewContainerRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { TooltipComponent } from '../tooltip/tooltip.component';
@@ -75,6 +77,7 @@ export class SelectComponent implements ControlValueAccessor {
     private overlay = inject(Overlay);
     private overlayPositionBuilder = inject(OverlayPositionBuilder);
     private vcr = inject(ViewContainerRef);
+    private destroyRef = inject(DestroyRef);
 
     toggle() {
         this.open() ? this.close() : this.openDropdown();
@@ -103,7 +106,10 @@ export class SelectComponent implements ControlValueAccessor {
                 width: this.triggerBtn.nativeElement.offsetWidth,
             });
 
-            this.overlayRef.backdropClick().subscribe(() => this.close());
+            this.overlayRef
+                .backdropClick()
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(() => this.close());
         }
 
         const portal = new TemplatePortal(this.dropdownTemplate, this.vcr);

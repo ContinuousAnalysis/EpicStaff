@@ -114,6 +114,8 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
     public project!: GetProjectRequest;
     private subscription = new Subscription();
     public isLoading = signal(true);
+    public readonly agentCount = computed(() => this.projectStateService.agentCount());
+    public readonly taskCount = computed(() => this.projectStateService.taskCount());
 
     public activeTab: TabType = 'overview';
 
@@ -231,16 +233,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
                 },
             },
         ];
-    }
-
-    // Get reactive count for agents
-    getAgentCount(): number {
-        return this.projectStateService.agentCount();
-    }
-
-    // Get reactive count for tasks
-    getTaskCount(): number {
-        return this.projectStateService.taskCount();
     }
 
     private loadData(): void {

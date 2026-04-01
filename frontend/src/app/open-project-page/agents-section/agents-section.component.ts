@@ -4,13 +4,15 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    DestroyRef,
     EventEmitter,
     HostBinding,
-    OnDestroy,
+    inject,
     OnInit,
     Output,
     ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ClickOutsideDirective } from '@shared/directives';
 import { Subscription } from 'rxjs';
@@ -35,7 +37,7 @@ export type AgentPendingAction =
     imports: [CommonModule, FormsModule, ClickOutsideDirective, GridControlsComponent, StaffAgentCardComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AgentsSectionComponent implements OnInit, OnDestroy {
+export class AgentsSectionComponent implements OnInit {
     @ViewChild('gridControls') gridControls!: GridControlsComponent;
 
     public agents: FullAgent[] = [];
@@ -58,7 +60,7 @@ export class AgentsSectionComponent implements OnInit, OnDestroy {
 
     public cardState: CardState = 'removing';
 
-    private agentsSubscription!: Subscription;
+    private readonly destroyRef = inject(DestroyRef);
     public isLoaded: boolean = false;
     constructor(
         private projectStateService: ProjectStateService,
@@ -66,19 +68,13 @@ export class AgentsSectionComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit(): void {
-        this.agentsSubscription = this.projectStateService.agents$.subscribe({
+        this.projectStateService.agents$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (agents: FullAgent[]) => {
                 this.agents = agents;
                 this.isLoaded = true;
                 this.cdr.markForCheck();
             },
         });
-    }
-
-    ngOnDestroy(): void {
-        if (this.agentsSubscription) {
-            this.agentsSubscription.unsubscribe();
-        }
     }
 
     onGridSizeChanged(size: GridSizeOption): void {

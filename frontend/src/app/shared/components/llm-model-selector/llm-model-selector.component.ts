@@ -3,8 +3,10 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    DestroyRef,
     EventEmitter,
     forwardRef,
+    inject,
     Input,
     OnChanges,
     OnDestroy,
@@ -12,6 +14,7 @@ import {
     Output,
     SimpleChanges,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { FullLLMConfig } from '../../../features/settings-dialog/services/llms/full-llm-config.service';
@@ -82,13 +85,14 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
                 <div class="models-list">
                     <div *ngIf="filteredConfigs.length === 0" class="no-results">No matching models found</div>
 
-                    <app-llm-model-item
-                        *ngFor="let config of filteredConfigs"
-                        [config]="config"
-                        [isSelected]="selectedConfigId === config.id"
-                        (selected)="selectConfig($event)"
-                    >
-                    </app-llm-model-item>
+                    @for (config of filteredConfigs; track config.id) {
+                        <app-llm-model-item
+                            [config]="config"
+                            [isSelected]="selectedConfigId === config.id"
+                            (selected)="selectConfig($event)"
+                        >
+                        </app-llm-model-item>
+                    }
                 </div>
             </div>
         </div>
@@ -248,6 +252,7 @@ export class LlmModelSelectorComponent implements OnInit, OnDestroy, OnChanges, 
     // ControlValueAccessor implementation
     private onChange: (value: number | null) => void = () => {};
     private onTouched: () => void = () => {};
+    private destroyRef = inject(DestroyRef);
 
     constructor(
         private cdr: ChangeDetectorRef,
@@ -262,7 +267,7 @@ export class LlmModelSelectorComponent implements OnInit, OnDestroy, OnChanges, 
         this.updateSelectedConfig();
 
         // Subscribe to dropdown manager to close this dropdown when another opens
-        this.dropdownManager.activeDropdown$.subscribe((activeId) => {
+        this.dropdownManager.activeDropdown$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((activeId) => {
             if (activeId !== this.dropdownId && this.isDropdownOpen) {
                 this.closeDropdown();
             }
@@ -277,7 +282,13 @@ export class LlmModelSelectorComponent implements OnInit, OnDestroy, OnChanges, 
         }
     }
 
-    ngOnDestroy(): void {}
+    ngOnDestroy(): void {
+        document.removeEventListener('click', this.closeDropdownOnClickOutside);
+        if (this.isDropdownOpen) {
+            this.dropdownManager.closeDropdown(this.dropdownId);
+            this.isDropdownOpen = false;
+        }
+    }
 
     toggleDropdown(event?: MouseEvent): void {
         if (event) {

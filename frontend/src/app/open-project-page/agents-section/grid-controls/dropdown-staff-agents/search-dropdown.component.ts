@@ -3,17 +3,19 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    DestroyRef,
     EventEmitter,
     HostBinding,
+    inject,
     Input,
     OnChanges,
-    OnDestroy,
     OnInit,
     Output,
     SimpleChanges,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { combineLatest, Subscription } from 'rxjs';
+import { combineLatest } from 'rxjs';
 
 import { FullAgent, FullAgentService } from '../../../../features/staff/services/full-agent.service';
 import { ProjectStateService } from '../../../services/project-state.service';
@@ -27,7 +29,7 @@ import { StaffAgentCardComponent } from './staff-agent-card/staff-agent-card.com
     styleUrls: ['./search-dropdown.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SearchDropdownComponent implements OnInit, OnChanges, OnDestroy {
+export class SearchDropdownComponent implements OnInit, OnChanges {
     @HostBinding('attr.size')
     @Input()
     public currentSize: 'small' | 'medium' | 'large' = 'small';
@@ -38,7 +40,7 @@ export class SearchDropdownComponent implements OnInit, OnChanges, OnDestroy {
     public staffAgents: FullAgent[] = [];
     public filteredStaffAgents: FullAgent[] = [];
 
-    private subscription!: Subscription;
+    private readonly destroyRef = inject(DestroyRef);
 
     public isLoading: boolean = true;
 
@@ -65,30 +67,32 @@ export class SearchDropdownComponent implements OnInit, OnChanges, OnDestroy {
         this.cdr.markForCheck();
 
         // Combine the full staff agents stream with the project agents stream.
-        this.subscription = combineLatest([
+        combineLatest([
             this.fullAgentService.getFullAgents(), // Full list of staff agents
             this.projectStateService.agents$, // Project agents (already assigned)
-        ]).subscribe({
-            next: ([fullStaffAgents, projectAgents]) => {
-                // Filter out staff agents already in the project.
-                this.staffAgents = fullStaffAgents.filter(
-                    (staffAgent) => !projectAgents.some((projectAgent) => projectAgent.id === staffAgent.id)
-                );
+        ])
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: ([fullStaffAgents, projectAgents]) => {
+                    // Filter out staff agents already in the project.
+                    this.staffAgents = fullStaffAgents.filter(
+                        (staffAgent) => !projectAgents.some((projectAgent) => projectAgent.id === staffAgent.id)
+                    );
 
-                // Initialize filtered staff agents
-                this.filterStaffAgents();
+                    // Initialize filtered staff agents
+                    this.filterStaffAgents();
 
-                // Set loading to false after data is loaded
-                this.isLoading = false;
-                this.cdr.markForCheck();
-            },
-            error: (error) => {
-                console.error('Error loading staff agents:', error);
-                // Also set loading to false on error
-                this.isLoading = false;
-                this.cdr.markForCheck();
-            },
-        });
+                    // Set loading to false after data is loaded
+                    this.isLoading = false;
+                    this.cdr.markForCheck();
+                },
+                error: (error) => {
+                    console.error('Error loading staff agents:', error);
+                    // Also set loading to false on error
+                    this.isLoading = false;
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     private filterStaffAgents(): void {
@@ -118,11 +122,5 @@ export class SearchDropdownComponent implements OnInit, OnChanges, OnDestroy {
 
     public trackStaffAgentById(index: number, staffAgent: FullAgent): string | number {
         return staffAgent.id;
-    }
-
-    ngOnDestroy(): void {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
-        }
     }
 }

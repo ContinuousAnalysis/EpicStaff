@@ -4,13 +4,15 @@ import {
     ChangeDetectorRef,
     Component,
     computed,
+    DestroyRef,
     inject,
     OnDestroy,
     signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { Subject, Subscription } from 'rxjs';
+import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { CreateFlowDialogComponent } from '../../components/create-flow-dialog/create-flow-dialog.component';
@@ -56,7 +58,6 @@ export class FlowsListPageComponent implements OnDestroy {
 
     public searchTerm: string = '';
     private searchTerms = new Subject<string>();
-    private subscription: Subscription;
 
     private dialog = inject(Dialog);
     private flowStorageService = inject(FlowsStorageService);
@@ -65,6 +66,7 @@ export class FlowsListPageComponent implements OnDestroy {
     private importExportService = inject(ImportExportService);
     private toastService = inject(ToastService);
     private labelsStorage = inject(LabelsStorageService);
+    private destroyRef = inject(DestroyRef);
 
     public selectMode = this.flowStorageService.selectMode;
     public selectedFlowIds = this.flowStorageService.selectedFlowIds;
@@ -88,16 +90,14 @@ export class FlowsListPageComponent implements OnDestroy {
     }
 
     constructor() {
-        this.subscription = this.searchTerms.pipe(debounceTime(300), distinctUntilChanged()).subscribe((term) => {
-            this.updateSearch(term);
-        });
+        this.searchTerms
+            .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+            .subscribe((term) => {
+                this.updateSearch(term);
+            });
     }
 
     ngOnDestroy(): void {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
-        }
-
         this.searchTerm = '';
         this.flowStorageService.setFilter(null);
         this.flowStorageService.setSelectMode(false);
