@@ -419,15 +419,6 @@ export class QuickstartTabComponent implements AfterViewInit {
                             (model) => model.provider === this.openAIProviderId
                         );
 
-                    console.log('Found models for OpenAI:', {
-                        llmModel: llmModel ? `${llmModel.name} (ID: ${llmModel.id})` : 'None',
-                        embeddingModel: embeddingModel ? `${embeddingModel.name} (ID: ${embeddingModel.id})` : 'None',
-                        realtimeModel: realtimeModel ? `${realtimeModel.name} (ID: ${realtimeModel.id})` : 'None',
-                        transcriptionModel: transcriptionModel
-                            ? `${transcriptionModel.name} (ID: ${transcriptionModel.id})`
-                            : 'None',
-                    });
-
                     // Now fetch existing configurations to find unique names
                     return forkJoin({
                         llmConfigs: this.llmConfigService.getConfigsByProviderId(this.openAIProviderId),
@@ -551,11 +542,9 @@ export class QuickstartTabComponent implements AfterViewInit {
                     }
 
                     forkJoin(configsToCreate.map((item) => item.observable)).subscribe({
-                        next: (createdResults) => {
+                        next: () => {
                             this.isSaving = false;
                             this.cdr.markForCheck();
-
-                            console.log('QuickStart configurations created:', createdResults);
 
                             if (missingModels.length > 0) {
                                 this.toastService.info(

@@ -96,7 +96,6 @@ export class ToolsListPageComponent {
 
             dialogRef.closed.subscribe((result) => {
                 if (result) {
-                    console.log('New custom tool created:', result);
                     // Emit event to notify custom tools component
                     this.toolsEventsService.emitCustomToolCreated(result);
                     // Navigate to custom tools tab after creating a tool
@@ -117,7 +116,6 @@ export class ToolsListPageComponent {
 
         dialogRef.closed.subscribe((result) => {
             if (result) {
-                console.log('New MCP tool created:', result);
                 // Emit event to notify MCP tools component
                 this.toolsEventsService.emitMcpToolCreated(result);
                 // Navigate to MCP tools tab after creating a tool

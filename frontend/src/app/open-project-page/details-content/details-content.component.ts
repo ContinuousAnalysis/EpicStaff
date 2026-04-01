@@ -14,7 +14,6 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
-import { GetProjectRequest } from '../../features/projects/models/project.model';
 import { ProjectsStorageService } from '../../features/projects/services/projects-storage.service';
 import { ToastService } from '../../services/notifications/toast.service';
 
@@ -156,8 +155,7 @@ export class DetailsContentComponent implements OnInit, OnChanges {
             return;
         }
         this.projectsService.patchUpdateProject(this.projectId, { description }).subscribe({
-            next: (response: GetProjectRequest) => {
-                console.log('Description updated successfully', response);
+            next: () => {
                 this.toastService.success('Project description updated successfully');
             },
             error: (error: unknown) => {

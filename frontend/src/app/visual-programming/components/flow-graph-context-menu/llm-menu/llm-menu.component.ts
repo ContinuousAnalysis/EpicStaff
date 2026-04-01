@@ -109,8 +109,6 @@ export class LlmMenuComponent implements OnInit {
     }
 
     public onConfigClicked(config: GetLlmConfigRequest): void {
-        console.log('Config clicked');
-
         this.nodeSelected.emit({ type: NodeType.LLM, data: config });
     }
 

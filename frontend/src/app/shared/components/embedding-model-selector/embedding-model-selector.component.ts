@@ -377,12 +377,10 @@ export class EmbeddingModelSelectorComponent implements OnInit, OnDestroy, OnCha
 
     // ControlValueAccessor implementation
     writeValue(value: number | null): void {
-        console.log('writeValue called with value:', value);
         this.selectedConfigId = value;
 
         if (value !== null && this.embeddingConfigs.length > 0) {
             this.selectedConfig = this.embeddingConfigs.find((config) => config.id === value) || null;
-            console.log('writeValue - Found matching config:', this.selectedConfig);
         } else {
             this.selectedConfig = null;
         }
@@ -407,11 +405,11 @@ export class EmbeddingModelSelectorComponent implements OnInit, OnDestroy, OnCha
         if (this.selectedConfigId && this.embeddingConfigs.length > 0) {
             this.selectedConfig = this.embeddingConfigs.find((config) => config.id === this.selectedConfigId) || null;
 
-            if (this.selectedConfig) {
-                console.log('Found selected config:', this.selectedConfig);
-            } else {
-                console.log('No matching config found for ID:', this.selectedConfigId);
-            }
+            // if (this.selectedConfig) {
+            //     console.log('Found selected config:', this.selectedConfig);
+            // } else {
+            //     console.log('No matching config found for ID:', this.selectedConfigId);
+            // }
 
             this.cdr.markForCheck();
         }

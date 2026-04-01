@@ -82,7 +82,6 @@ export class ProjectStateService {
         if (currentProject) {
             this.projectsService.patchUpdateProject(currentProject.id, { agents: agentIds }).subscribe({
                 next: (updatedProject) => {
-                    console.log(updatedProject);
                     this.projectSubject.next(updatedProject);
                 },
                 error: (error) => {
@@ -120,7 +119,6 @@ export class ProjectStateService {
         if (currentProject) {
             this.projectsService.patchUpdateProject(currentProject.id, { agents: agentIds }).subscribe({
                 next: (updatedProject) => {
-                    console.log(updatedProject);
                     this.projectSubject.next(updatedProject);
                     this.toastService.success('Agent removed successfully');
                 },

@@ -59,10 +59,8 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
         const findNodeId = (value: string | null, role: 'default' | 'error'): string => {
             // 1. Try to find by ID or Name directly
             if (value) {
-                console.log(`[DecisionTable] Resolving node reference for ${role}: '${value}'`);
                 const foundNode = nodes.find((n) => n.id === value || n.node_name === value);
                 if (foundNode) {
-                    console.log(`[DecisionTable] Found node: ${foundNode.node_name} (${foundNode.id})`);
                     return foundNode.id;
                 }
                 console.warn(`[DecisionTable] Node not found for value: '${value}'`);
@@ -78,7 +76,6 @@ export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTable
             const connection = connections.find((c) => c.sourceNodeId === node.id && c.sourcePortId === portId);
 
             if (connection) {
-                console.log(`[DecisionTable] Found visual connection for ${role} to node: ${connection.targetNodeId}`);
                 return connection.targetNodeId;
             }
 

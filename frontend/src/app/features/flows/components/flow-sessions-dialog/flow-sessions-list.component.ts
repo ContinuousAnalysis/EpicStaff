@@ -93,7 +93,6 @@ export class FlowSessionsListComponent implements OnInit {
         this.graphSessionService.bulkDeleteSessions(ids).subscribe({
             next: () => {
                 this.reloadAfterDeletion(ids);
-                console.log('Sessions deleted successfully', ids);
             },
             error: (err) => {
                 console.error('Failed to bulk delete sessions', err);

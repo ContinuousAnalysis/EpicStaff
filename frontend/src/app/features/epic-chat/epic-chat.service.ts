@@ -67,7 +67,6 @@ export class EpicChatService {
             );
             return;
         }
-        console.log(`[EpicChat command success] ${result.action}, requestId=${result.requestId}`);
     }
 
     public onEpChatEvent(event: Event): void {
@@ -174,7 +173,6 @@ export class EpicChatService {
         const flowUrl = this.normalizeApiUrl(environment.apiUrl);
         this.flowsApiService.getEpicChatEnabledFlows().subscribe({
             next: (flows) => {
-                console.log(`[EpicChat] Syncing ${flows.length} agent(s)`);
                 const payload: EpicChatSyncAgentsPayload = {
                     agents: flows.map((flow) => ({
                         name: flow.name?.trim() || `Flow ${flow.id}`,

@@ -1008,8 +1008,6 @@ export class TasksTableComponent implements OnChanges {
             return hasNormalId && hasValidOrder;
         });
 
-        console.log('Filtered tasks (normal IDs & valid order):', normalTasks);
-
         const positionStrategy = new GlobalPositionStrategy().top('45px').centerHorizontally();
 
         const dialogRef = this.dialog.open(AdvancedTaskSettingsDialogComponent, {
@@ -1191,7 +1189,6 @@ export class TasksTableComponent implements OnChanges {
         if (!this.selectedRowData) return;
         // Deep clone the selected row (to avoid mutating references)
         this.copiedRowData = JSON.parse(JSON.stringify(this.selectedRowData));
-        console.log('Copied row:', this.copiedRowData);
         this.closeContextMenu();
     }
     public handlePasteBelow(): void {
@@ -1233,7 +1230,6 @@ export class TasksTableComponent implements OnChanges {
                     columns: ['index'],
                 });
 
-                console.log('Deleted temporary row:', this.selectedRowData);
                 this.cdr.markForCheck();
             } else {
                 console.warn('Row not found for local deletion.');

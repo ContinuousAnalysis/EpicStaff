@@ -248,7 +248,6 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: (result: GetPythonCodeToolRequest) => {
-                        console.log('Tool updated successfully:', result);
                         this.toastService.success(`Custom Tool updated successfully!`);
                         this.dialogRef.close(result);
                     },
@@ -264,7 +263,6 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: (result: GetPythonCodeToolRequest) => {
-                        console.log('Tool created successfully in dialog:', result);
                         this.toastService.success(`Custom Tool created successfully!`);
                         this.dialogRef.close(result);
                     },

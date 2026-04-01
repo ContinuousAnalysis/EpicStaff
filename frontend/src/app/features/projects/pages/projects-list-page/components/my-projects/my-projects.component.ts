@@ -138,7 +138,6 @@ export class MyProjectsComponent implements OnInit {
 
         switch (action) {
             case 'run':
-                console.log('Running project:', project.id);
                 break;
             case 'copy':
                 this.projectsStorageService.copyProject(project.id).subscribe();
@@ -206,8 +205,6 @@ export class MyProjectsComponent implements OnInit {
 
     public openCreateProjectDialog(): void {
         // Logic to open a dialog or navigate to a creation page
-        // Example: this.dialog.open(CreateProjectDialogComponent).closed.subscribe(result => ...);
-        console.log('Open create project dialog - placeholder');
-        this.router.navigate(['/projects', 'new']); // Placeholder navigation
+        this.router.navigate(['/projects', 'new']);
     }
 }

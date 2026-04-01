@@ -108,8 +108,6 @@ export class DecisionTableGridComponent implements OnInit {
         const connections = this.flowService.connections();
         const currentNodeId = this.currentNodeId();
 
-        console.log('[DecisionTableGrid] Initializing with groups:', groups);
-
         const findNodeId = (value: string | null, groupName: string): string | null => {
             // 1. Try direct lookup
             if (value) {
@@ -129,9 +127,6 @@ export class DecisionTableGridComponent implements OnInit {
                 );
 
                 if (connection) {
-                    console.log(
-                        `[DecisionTableGrid] Recovered connection for group '${groupName}' -> ${connection.targetNodeId}`
-                    );
                     return connection.targetNodeId;
                 }
             }

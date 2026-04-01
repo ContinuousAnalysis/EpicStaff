@@ -60,7 +60,7 @@ export class RagConfigurationComponent implements OnInit {
                 next: () => {},
                 error: (e) => {
                     this.toastService.error('Failed to fetch documents');
-                    console.log(e);
+                    console.error(e);
                 },
             });
 
@@ -125,7 +125,7 @@ export class RagConfigurationComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (res) => this.toastService.success(res.message),
-                error: (e) => console.log(e),
+                error: (e) => console.error(e),
             });
     }
 
@@ -163,7 +163,7 @@ export class RagConfigurationComponent implements OnInit {
             )
             .subscribe({
                 next: (res) => this.toastService.success(res.message),
-                error: (e) => console.log(e),
+                error: (e) => console.error(e),
             });
     }
 

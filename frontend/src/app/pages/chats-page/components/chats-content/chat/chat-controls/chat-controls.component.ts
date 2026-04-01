@@ -66,7 +66,6 @@ export class ChatControlsComponent implements OnInit {
             next: (result) => {
                 this.isConnecting.set(false);
                 if (result.success) {
-                    console.log('Conversation connected successfully');
                     // Ensure microphone state is updated
                     this.updateMicrophoneState();
                 } else {
@@ -116,7 +115,6 @@ export class ChatControlsComponent implements OnInit {
         try {
             const result = await this.consoleService.disconnectConversation();
             if (result) {
-                console.log('Conversation disconnected successfully');
             } else {
                 console.warn('Disconnection completed with issues');
             }
@@ -163,7 +161,6 @@ export class ChatControlsComponent implements OnInit {
     sendMessage(): void {
         if (this.messageText.trim()) {
             this.consoleService.sendTextMessage(this.messageText);
-            console.log('Sending message:', this.messageText);
 
             // Clear the input after sending
             this.messageText = '';

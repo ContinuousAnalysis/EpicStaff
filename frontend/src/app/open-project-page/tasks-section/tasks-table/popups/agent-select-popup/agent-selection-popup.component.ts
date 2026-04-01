@@ -45,7 +45,6 @@ export class AgentSelectionPopupComponent implements OnInit, OnChanges, OnDestro
     ngOnInit(): void {
         if (this.selectedAgent) {
             this.selectedAgentId = this.selectedAgent.id;
-            console.log(this.selectedAgentId);
         }
     }
 

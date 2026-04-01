@@ -38,7 +38,6 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
         public dialogRef: DialogRef<AdvancedTaskSettingsData>,
         @Inject(DIALOG_DATA) public data: AdvancedTaskSettingsData
     ) {
-        console.log('Dialog data:', data);
         this.taskData = {
             ...data,
             config: null,
@@ -70,12 +69,10 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
         this.useOutputModel.set(this.taskData.output_model !== null && this.taskData.output_model !== undefined);
 
         this.dialogRef.backdropClick.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-            console.log('[Dialog] backdrop click');
             this.requestClose();
         });
 
         this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event: KeyboardEvent) => {
-            console.log('[Dialog] keydown', event.key);
             if (event.key === 'Escape') {
                 event.preventDefault();
                 this.requestClose();
@@ -138,8 +135,6 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
             updatedSelection.splice(index, 1);
             this.selectedTaskIds.set(updatedSelection);
         }
-
-        console.log('Updated selected task IDs:', this.selectedTaskIds());
     }
 
     public isTaskSelected(taskId: number): boolean {

@@ -556,7 +556,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: ({ status }: SessionUpdates) => this.sseService.setStatus(status),
-                error: (err) => console.log(err),
+                error: (err) => console.error(err),
             });
     }
 
@@ -768,9 +768,6 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
     }
 
     onUserMessageSubmitted(message: string) {
-        // Log or handle the user message
-        console.log('User typed message:', message);
-
         // Make sure we have valid sessionId and updateSessionStatusData
         if (!this.sessionId) {
             console.warn('No sessionId available; cannot send answer.');
@@ -790,8 +787,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
         };
 
         this.answerToLLMService.sendAnswerToLLM(requestData).subscribe({
-            next: (response) => {
-                console.log('Answer to LLM sent successfully:', response);
+            next: () => {
                 this.sseService.resumeStream();
                 this.statusWaitForUser = false;
                 this.cdr.markForCheck();

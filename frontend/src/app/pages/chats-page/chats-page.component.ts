@@ -61,8 +61,6 @@ export class ChatsPageComponent implements OnInit, OnDestroy {
                 next: ({ fullAgents }) => {
                     this.agentsList.set(fullAgents);
 
-                    console.log('Loaded full agents:', fullAgents.length);
-
                     // Set the first agent as selected if available
                     if (fullAgents.length > 0) {
                         this.chatsService.setSelectedAgent(fullAgents[0]);

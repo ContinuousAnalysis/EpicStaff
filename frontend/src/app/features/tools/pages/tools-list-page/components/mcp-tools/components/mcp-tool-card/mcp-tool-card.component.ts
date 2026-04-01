@@ -36,25 +36,21 @@ export class McpToolCardComponent {
     }
 
     public onConfigure(): void {
-        console.log('Configure clicked for MCP tool:', this.tool);
         this.configure.emit(this.tool);
     }
 
     public onToggle(val: boolean): void {
-        console.log('Toggle clicked for MCP tool:', this.tool);
         this.enabled = val;
         this.toggle.emit({ tool: this.tool, enabled: val });
     }
 
     public onStar(): void {
-        console.log('Star clicked for MCP tool:', this.tool);
         this.starred = !this.starred;
         this.cdr.markForCheck();
         this.star.emit({ tool: this.tool, starred: this.starred });
     }
 
     public onDelete(): void {
-        console.log('Delete clicked for MCP tool:', this.tool);
         this.delete.emit(this.tool);
     }
 }

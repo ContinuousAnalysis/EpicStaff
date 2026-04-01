@@ -156,11 +156,9 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
     ngOnInit() {
         if (this.inputProjectId) {
             this.projectId = String(this.inputProjectId);
-            console.log('ngOnInit - using input projectId:', this.projectId);
             this.loadData();
         } else {
             this.projectId = this.route.snapshot.paramMap.get('projectId')!;
-            console.log('ngOnInit - projectId from route:', this.projectId);
 
             if (!this.projectId) {
                 console.error('No projectId found in route params or input!');
@@ -239,8 +237,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         const loadStartTime = Date.now();
         this.isLoading.set(true);
 
-        console.log('loadData - Starting to load project with ID:', this.projectId);
-
         const projectRequest = this.projectsService.getProjectById(+this.projectId);
 
         const tasksRequest = this.fullTaskService.getFullTasksByProject(+this.projectId);
@@ -261,7 +257,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
                         const remainingTime = Math.max(0, 500 - loadTime);
 
                         setTimeout(() => {
-                            console.log('loadData - Finalizing, setting isLoading to false');
                             this.isLoading.set(false);
                             if (this.project) {
                                 this.setupSections();
@@ -272,10 +267,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
                 )
                 .subscribe({
                     next: ({ project, tasks, agents }) => {
-                        console.log('loadData - Success! Project:', project);
-                        console.log('loadData - Tasks:', tasks);
-                        console.log('loadData - Agents:', agents);
-
                         this.projectStateService.setProject(project ?? null);
 
                         if (!project) {
@@ -284,7 +275,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
                             );
                         }
                         this.project = project;
-                        console.log('project', this.project);
 
                         this.projectStateService.updateTasks(tasks);
                         this.projectStateService.updateAgents(agents);

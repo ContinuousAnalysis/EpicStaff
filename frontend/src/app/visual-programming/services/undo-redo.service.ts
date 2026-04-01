@@ -25,8 +25,6 @@ export class UndoRedoService {
     }
 
     public stateChanged(): void {
-        console.log('state changed triggered');
-
         this.undoStack.push(this.snapshotCurrentState());
         this.redoStack = [];
     }

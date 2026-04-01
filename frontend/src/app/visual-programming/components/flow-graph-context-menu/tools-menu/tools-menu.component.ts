@@ -113,8 +113,6 @@ export class ToolsMenuComponent implements OnInit {
     ngOnInit(): void {
         this.toolConfigService.getToolConfigs().subscribe({
             next: (tools: ToolConfig[]) => {
-                console.log('Tools:', tools);
-
                 this.tools = tools;
                 this.cdr.markForCheck();
             },

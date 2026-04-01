@@ -61,7 +61,6 @@ export class BuiltInToolsComponent implements OnInit {
     }
 
     public onToolConfigure(tool: Tool): void {
-        console.log('Opening configuration dialog for tool:', tool);
         const dialogRef = this.dialog.open(ToolConfigurationDialogComponent, {
             data: {
                 tool: tool,
@@ -77,7 +76,6 @@ export class BuiltInToolsComponent implements OnInit {
 
     public onToolEnabledChange(event: { tool: Tool; enabled: boolean }): void {
         const { tool, enabled } = event;
-        console.log(`Tool ${tool.name} enabled state changed to: ${enabled}`);
 
         // Create updated tool with new enabled status
         const updatedTool: Tool = {
@@ -91,8 +89,6 @@ export class BuiltInToolsComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (updated) => {
-                    console.log(`Tool ${updated.name} enabled state updated successfully`);
-
                     // Update local state
                     const currentTools = this.allTools();
                     const index = currentTools.findIndex((t) => t.id === updated.id);
@@ -134,7 +130,6 @@ export class BuiltInToolsComponent implements OnInit {
                 next: (tools) => {
                     this.allTools.set(tools);
                     this.isLoaded.set(true);
-                    console.log(`✅ Built-in tools loaded: ${tools.length} tools available`);
                 },
                 error: (err: HttpErrorResponse) => {
                     this.error.set('Failed to load tools. Please try again later.');

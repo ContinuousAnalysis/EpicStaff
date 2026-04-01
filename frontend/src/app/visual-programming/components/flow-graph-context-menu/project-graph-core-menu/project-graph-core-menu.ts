@@ -153,8 +153,6 @@ export class ProjectGraphCoreMenuComponent {
      * depending on the 'type' and then emit { type, data }.
      */
     public onBlockClicked(type: NodeType | string): void {
-        console.log('Block clicked with type:', type); // Add this line to see what type is passed
-
         let data: Record<string, unknown> | null = null;
 
         if (type === NodeType.TASK) {
@@ -170,7 +168,6 @@ export class ProjectGraphCoreMenuComponent {
                 crew: null,
                 agent: null,
             };
-            console.log('task node emitted');
         } else {
             return;
         }

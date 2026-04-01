@@ -147,7 +147,6 @@ export class FlowGraphContextMenuComponent implements AfterViewInit, OnDestroy {
     }
 
     public onNodeSelected(event: { type: NodeType; data: unknown }): void {
-        console.log('Node selected:', event.data);
         this.nodeSelected.emit(event);
     }
 

@@ -59,17 +59,14 @@ export class BuiltInToolCardComponent {
     }
 
     public onConfigure(): void {
-        console.log('Configure clicked for tool:', this.tool);
         this.configure.emit(this.tool);
     }
 
     public onToggle(enabled: boolean): void {
-        console.log('Toggle clicked for tool:', this.tool, 'new state:', enabled);
         this.enabledChange.emit({ tool: this.tool, enabled });
     }
 
     public onStar(): void {
-        console.log('Star clicked for tool:', this.tool);
         this.starred = !this.starred;
         this.cdr.markForCheck();
     }

@@ -97,8 +97,6 @@ export class ChatMessagesComponent {
             if (currentItems.length > this.previousItemCount) {
                 // Log only the new items
                 for (let i = this.previousItemCount; i < currentItems.length; i++) {
-                    console.log('New conversation item:', currentItems[i]);
-
                     // Track tool output pairs to manage loading indicator
                     if (currentItems[i].type === 'function_call_output') {
                         // If we get a function output, mark it as received

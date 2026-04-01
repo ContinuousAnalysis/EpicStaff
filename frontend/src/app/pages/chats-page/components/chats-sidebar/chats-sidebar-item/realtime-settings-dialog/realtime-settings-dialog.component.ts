@@ -219,8 +219,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                     })
                 )
                 .subscribe({
-                    next: (response) => {
-                        console.log('Realtime agent updated successfully:', response);
+                    next: () => {
                         this.toastService.success('Realtime agent settings updated successfully');
 
                         // Pass the updated agent back to the parent component

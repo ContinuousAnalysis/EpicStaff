@@ -422,11 +422,6 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         const mcpToolIds = formData.mcp_tools || [];
         const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds, mcpToolIds);
 
-        console.log('=== Agent Form Submission ===');
-        console.log('Form data:', formData);
-        console.log('Built tool_ids array:', toolIds);
-        console.log('=== End Agent Form Data ===');
-
         if (this.isEditMode && this.agentToEdit) {
             // Edit mode - update existing agent
             const updateRequest = {
@@ -465,8 +460,6 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     },
                 },
             };
-
-            console.log('Update request:', updateRequest);
 
             this.isSubmitting.set(false);
             this.dialogRef.close({ kind: 'update', payload: updateRequest });
@@ -507,8 +500,6 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     },
                 },
             };
-
-            console.log('Create request:', agentRequest);
 
             this.isSubmitting.set(false);
             this.dialogRef.close({ kind: 'create', payload: agentRequest });

@@ -149,7 +149,6 @@ export class ToolConfigurationDialogComponent implements OnInit, OnDestroy {
     onFilteredConfigsChange(filteredConfigs: ToolConfig[]): void {
         this.currentFilteredConfigs = filteredConfigs;
         this.cdr.detectChanges();
-        console.log(this.currentFilteredConfigs);
     }
 
     onConfigSelected(config: ToolConfig): void {

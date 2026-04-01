@@ -67,8 +67,6 @@ export class ToolConfigFormComponent implements OnInit, OnChanges {
     ) {}
 
     ngOnInit(): void {
-        console.log('selected config in form', this.selectedConfig);
-        console.log('selected tool in form', this.tool);
         this.buildForm();
         if (this.selectedConfig) {
             this.populateFormWithConfig(this.selectedConfig);
@@ -101,7 +99,6 @@ export class ToolConfigFormComponent implements OnInit, OnChanges {
             switch (field.data_type) {
                 case 'llm_config':
                     // Handle LLM config field - should be a dropdown with LLM configs
-                    console.log('Creating LLM config field:', field.name);
                     this.form.addControl(field.name, this.fb.control('', validators));
                     break;
                 case 'embedding_config':
@@ -266,8 +263,6 @@ export class ToolConfigFormComponent implements OnInit, OnChanges {
 
             if (!this.selectedConfig) {
                 // Create new configuration
-                console.log(toolConfigRequest);
-
                 this.toolConfigService.createToolConfig(toolConfigRequest).subscribe({
                     next: (createdConfig) => {
                         this.submitForm.emit(createdConfig);

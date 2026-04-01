@@ -59,7 +59,6 @@ export class VoiceModelsTabComponent implements OnInit {
     }
 
     public onEnabledToggled(event: { id: string | number; value: boolean }) {
-        console.log('Enabled toggled:', event);
         const config: FullRealtimeConfig | undefined = this.voiceConfigs().find((c) => c.id === event.id);
         if (!config) return;
         const updateReq: UpdateRealtimeModelConfigRequest = {

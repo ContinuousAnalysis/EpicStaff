@@ -95,7 +95,6 @@ export class RunningGraphComponent implements OnInit, OnDestroy {
 
             // Update sessionId and trigger change detection
             if (newSessionId !== this.sessionId) {
-                console.log('Session changed from', this.sessionId, 'to', newSessionId);
                 this.sessionId = newSessionId;
                 this.currentSessionStatus = null; // Reset status for new session
                 this.messages = []; // Clear messages for new session

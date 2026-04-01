@@ -75,11 +75,6 @@ export class RuffDiagnosticsService {
             severity,
             message,
         };
-        const msgPreview = marker.message.length > 45 ? marker.message.slice(0, 42) + '...' : marker.message;
-        console.log(
-            `[RuffDiagnostics] marker: L${marker.startLineNumber}:${marker.startColumn}-L${marker.endLineNumber}:${marker.endColumn} ` +
-                `sev=${marker.severity} "${msgPreview}"`
-        );
         return marker;
     }
 
@@ -156,38 +151,14 @@ export class RuffDiagnosticsService {
 
     setMarkers(editor: import('monaco-editor').editor.IStandaloneCodeEditor, diagnostics: RuffDiagnostic[]): void {
         const monaco = getMonaco();
-        console.log('[RuffDiagnostics] setMarkers() called, diagnostics:', diagnostics.length);
         const model = editor.getModel();
         if (!model) {
             console.warn('[RuffDiagnostics] setMarkers() - editor has no model!');
             return;
         }
-        console.log('[RuffDiagnostics] model.uri:', model.uri?.toString());
         const code = model.getValue();
         const markers = this.toMonacoMarkers(diagnostics, code);
-        console.log(
-            '[RuffDiagnostics] total markers:',
-            markers.length,
-            '| model.getLineCount():',
-            model.getLineCount()
-        );
-        const existingMarkers = monaco.editor.getModelMarkers({ resource: model.uri });
-        console.log(
-            '[RuffDiagnostics] existing markers BEFORE set (owner, count):',
-            existingMarkers.map((m) => m.owner).filter(Boolean)
-        );
         monaco.editor.setModelMarkers(model, RUFF_OWNER, markers);
-        const afterMarkers = monaco.editor.getModelMarkers({ resource: model.uri });
-        console.log(
-            '[RuffDiagnostics] markers AFTER set:',
-            afterMarkers.length,
-            afterMarkers.map((m) => ({
-                owner: m.owner,
-                range: `${m.startLineNumber}:${m.startColumn}-${m.endLineNumber}:${m.endColumn}`,
-                msg: m.message?.slice(0, 30),
-            }))
-        );
-        console.log('[RuffDiagnostics] setModelMarkers done');
     }
 
     clearMarkers(editor: import('monaco-editor').editor.IStandaloneCodeEditor): void {

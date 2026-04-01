@@ -79,7 +79,6 @@ export class McpToolsComponent implements OnInit {
                 next: (tools) => {
                     this.allTools.set(tools);
                     this.isLoaded.set(true);
-                    console.log(`✅ MCP tools loaded: ${tools.length} tools available`);
                 },
                 error: (err: HttpErrorResponse) => {
                     this.error.set('Failed to load MCP tools. Please try again later.');
@@ -130,7 +129,6 @@ export class McpToolsComponent implements OnInit {
                                 this.allTools.set(currentTools.filter((t) => t.id !== tool.id));
 
                                 this.toastService.success(`MCP tool "${tool.name}" has been deleted successfully.`);
-                                console.log(`✅ MCP tool "${tool.name}" deleted successfully`);
                             },
                             error: (err: HttpErrorResponse) => {
                                 this.toastService.error(`Failed to delete MCP tool "${tool.name}". Please try again.`);
@@ -151,6 +149,5 @@ export class McpToolsComponent implements OnInit {
     public addNewTool(tool: GetMcpToolRequest): void {
         const currentTools = this.allTools();
         this.allTools.set([tool, ...currentTools]);
-        console.log(`✅ New MCP tool "${tool.name}" added to list`);
     }
 }

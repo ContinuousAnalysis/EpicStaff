@@ -75,7 +75,6 @@ export class CustomToolsComponent implements OnInit {
                 next: (tools) => {
                     this.allTools.set(tools);
                     this.isLoaded.set(true);
-                    console.log(`✅ Custom tools loaded: ${tools.length} tools available`);
                 },
                 error: (err: HttpErrorResponse) => {
                     this.error.set('Failed to load custom tools. Please try again later.');
@@ -125,7 +124,6 @@ export class CustomToolsComponent implements OnInit {
                                 this.allTools.set(currentTools.filter((t) => t.id !== tool.id));
 
                                 this.toastService.success(`Tool "${tool.name}" has been deleted successfully.`);
-                                console.log(`✅ Tool "${tool.name}" deleted successfully`);
                             },
                             error: (err: HttpErrorResponse) => {
                                 this.toastService.error(`Failed to delete tool "${tool.name}". Please try again.`);
@@ -140,6 +138,5 @@ export class CustomToolsComponent implements OnInit {
     public addNewTool(tool: GetPythonCodeToolRequest): void {
         const currentTools = this.allTools();
         this.allTools.set([tool, ...currentTools]);
-        console.log(`✅ New custom tool "${tool.name}" added to list`);
     }
 }

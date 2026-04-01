@@ -152,7 +152,6 @@ export class AgentsTableComponent {
                 }
 
                 this.ensureSingleSpareEmptyRow();
-                console.log(this.rowData);
 
                 this.cdr.markForCheck();
             },
@@ -171,7 +170,6 @@ export class AgentsTableComponent {
 
         if (changes['newAgent'] && changes['newAgent'].currentValue && !changes['newAgent'].firstChange) {
             const newAgent = changes['newAgent'].currentValue as FullAgent;
-            console.log('New agent detected:', newAgent);
 
             if (this.gridApi) {
                 this.rowData.unshift(newAgent);
@@ -784,7 +782,6 @@ export class AgentsTableComponent {
 
         // Parse the agent data
         const parsedUpdateData = this.parseAgentData(row);
-        console.log(parsedUpdateData);
 
         // Build tool_ids array for update
         const updateConfiguredToolIds = parsedUpdateData.configured_tools || [];
@@ -998,12 +995,10 @@ export class AgentsTableComponent {
 
         // Make sure we have a selected row
         if (!this.selectedRowData) {
-            console.log('No row selected');
             return;
         }
 
         const rowId = this.selectedRowData.id;
-        console.log('Selected row ID for deletion:', rowId, 'Type:', typeof rowId);
 
         const isTempRow = typeof rowId === 'string' && rowId.startsWith('temp_');
 
@@ -1017,8 +1012,6 @@ export class AgentsTableComponent {
         };
 
         if (isTempRow) {
-            console.log('Deleting temporary row:', rowId);
-
             const index = this.rowData.findIndex((row) => row.id === rowId);
 
             if (index !== -1) {
@@ -1034,7 +1027,6 @@ export class AgentsTableComponent {
                     columns: ['index'],
                 });
 
-                console.log('Temporary row removed from grid');
                 this.cdr.markForCheck();
             } else {
                 console.warn('Temporary row not found in data array');
@@ -1083,7 +1075,6 @@ export class AgentsTableComponent {
         if (this.shouldBlockInteraction()) return;
         if (!this.selectedRowData) return;
         this.copiedRowData = JSON.parse(JSON.stringify(this.selectedRowData));
-        console.log('Copied row:', this.copiedRowData);
         this.closeContextMenu();
     }
 
@@ -1469,8 +1460,6 @@ export class AgentsTableComponent {
 
             // Subscribe to the configsSelected event
             popupRef.instance.configsSelected.subscribe((mergedConfigs: MergedConfig[]) => {
-                console.log('Selected configs:', mergedConfigs);
-
                 if (this.currentPopupCell) {
                     const rowIndex = this.currentPopupCell.rowIndex;
                     const rowNode = this.gridApi.getDisplayedRowAtIndex(rowIndex);
@@ -1589,7 +1578,6 @@ export class AgentsTableComponent {
 
             // Subscribe to the mergedToolsSaved event
             popupRef.instance.mergedToolsUpdated.subscribe((updatedMergedTools: string[]) => {
-                console.log('Returned from tools popup:', updatedMergedTools);
                 if (this.currentPopupCell) {
                     const rowIndex = this.currentPopupCell.rowIndex;
 
@@ -1629,8 +1617,6 @@ export class AgentsTableComponent {
             popupRef.instance.cellTags = event.data?.tags || [];
 
             popupRef.instance.tagsSaved.subscribe((updatedTags: string[]) => {
-                console.log('Updated tags:', updatedTags);
-
                 if (this.currentPopupCell) {
                     const rowIndex = this.currentPopupCell.rowIndex;
 

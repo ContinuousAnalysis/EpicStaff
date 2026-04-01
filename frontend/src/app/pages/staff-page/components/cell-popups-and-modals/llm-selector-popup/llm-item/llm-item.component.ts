@@ -50,21 +50,17 @@ export class LlmItemComponent implements OnChanges {
     constructor(private cdr: ChangeDetectorRef) {}
 
     ngOnChanges(changes: SimpleChanges): void {
-        console.log('item', this.item);
         if (changes['isSelected']) {
             this.cdr.markForCheck();
         }
     }
 
     public onSelect(): void {
-        console.log('LLM Item clicked:', this.item);
-        console.log('Current isSelected state:', this.isSelected);
         this.itemSelected.emit(this.item);
     }
 
     public onCheckboxClick(event: Event): void {
         event.stopPropagation();
-        console.log('Checkbox clicked:', this.item);
         this.itemSelected.emit(this.item);
     }
 

@@ -43,17 +43,7 @@ export class RunSessionSSEService {
 
     private get apiUrl(): string {
         const baseUrl = this.configService.apiUrl;
-        console.log('=== URL Construction Debug ===');
-        console.log('1. ConfigService.apiUrl:', baseUrl);
-
-        console.log('4. Current session ID:', this.currentSessionId);
-
         const url = `${baseUrl}run-session/subscribe/${this.currentSessionId}/`;
-        console.log('5. Final constructed URL:', url);
-
-        console.log('7. Final URL contains /epicstaff/:', url.includes('/epicstaff/'));
-        console.log('=== End URL Construction Debug ===');
-
         return url;
     }
 
@@ -87,20 +77,9 @@ export class RunSessionSSEService {
         this.connectionStatusSignal.set('connecting');
 
         const eventSourceUrl = this.apiUrl;
-        console.log('=== EventSource Creation Debug ===');
-        console.log('Creating EventSource with URL:', eventSourceUrl);
-
-        console.log('URL contains /epicstaff/:', eventSourceUrl.includes('/epicstaff/'));
-        console.log(
-            'URL starts with https://chat.mym.hysdev.com/:',
-            eventSourceUrl.startsWith('https://chat.mym.hysdev.com/')
-        );
-        console.log('=== End EventSource Creation Debug ===');
-
         this.eventSource = new EventSource(eventSourceUrl);
 
         this.eventSource.onopen = () => {
-            console.log('SSE connection established');
             this.reconnectAttempts = 0;
             this.streamOpen.set(true);
             this.connectionStatusSignal.set('connected');
@@ -179,7 +158,6 @@ export class RunSessionSSEService {
 
     private handleConnectionLoss(): void {
         if (this.isManualDisconnect) {
-            console.log('Manual disconnect - not attempting reconnection');
             return;
         }
 
@@ -195,17 +173,9 @@ export class RunSessionSSEService {
         this.reconnectAttempts++;
         const delay = this.calculateReconnectDelay();
 
-        console.log(
-            `Connection lost. Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`
-        );
-        console.log(`Current session ID: ${this.currentSessionId}`);
-
         this.reconnectTimeout = setTimeout(() => {
             if (!this.isManualDisconnect && this.currentSessionId) {
-                console.log(`Attempting to reconnect to session: ${this.currentSessionId}`);
                 this.connect(this.currentSessionId);
-            } else {
-                console.log('Reconnection cancelled - manual disconnect or no session ID');
             }
         }, delay);
     }
@@ -216,15 +186,10 @@ export class RunSessionSSEService {
         const jitter = Math.random() * 0.1 * exponentialDelay; // 10% jitter
         const finalDelay = Math.min(exponentialDelay + jitter, this.maxReconnectDelayMs);
 
-        console.log(
-            `Reconnect delay calculation: base=${this.baseReconnectDelayMs}, attempt=${this.reconnectAttempts}, exponential=${exponentialDelay}, jitter=${jitter}, final=${finalDelay}`
-        );
-
         return finalDelay;
     }
 
     private finalDisconnect(): void {
-        console.log('Final disconnect after max reconnection attempts');
         this.disconnect();
         this.connectionStatusSignal.set('disconnected');
     }
@@ -238,7 +203,6 @@ export class RunSessionSSEService {
         if (this.eventSource) {
             this.eventSource.close();
             this.eventSource = null;
-            console.log('SSE connection closed');
         }
 
         this.streamOpen.set(false);
@@ -254,7 +218,6 @@ export class RunSessionSSEService {
         if (this.eventSource) {
             this.eventSource.close();
             this.eventSource = null;
-            console.log('SSE cleanup completed');
         }
 
         this.reconnectAttempts = 0;

@@ -93,7 +93,6 @@ export class StaffMenuComponent implements OnInit {
     ngOnInit(): void {
         this.agentsService.getAgents().subscribe({
             next: (agents: GetAgentRequest[]) => {
-                console.log('Agents:', agents);
                 this.agents = agents;
                 this.cdr.markForCheck();
             },
@@ -108,7 +107,6 @@ export class StaffMenuComponent implements OnInit {
     }
 
     public onAgentClicked(agent: GetAgentRequest): void {
-        console.log('Agent clicked:', agent);
         this.nodeSelected.emit({ type: NodeType.AGENT, data: agent });
     }
 

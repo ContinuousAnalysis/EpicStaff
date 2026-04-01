@@ -65,7 +65,6 @@ export class NodePanelShellComponent {
     public readonly panelComponent = computed(() => {
         const node = this.node();
         if (!node) return null;
-        console.log('PANEL_COMPONENT_MAP[node.type]', PANEL_COMPONENT_MAP[node.type]);
 
         return PANEL_COMPONENT_MAP[node.type] || null;
     });
@@ -105,7 +104,6 @@ export class NodePanelShellComponent {
         effect(() => {
             const trigger = this.sidePanelService.autosaveTrigger();
             if (trigger && this.panelInstance && !this.isAutosaving) {
-                console.log('External autosave triggered:', trigger);
                 this.isAutosaving = true;
                 this.performAutosave();
                 setTimeout(() => {
@@ -171,9 +169,7 @@ export class NodePanelShellComponent {
     }
 
     private saveSidePanel(): void {
-        console.log('Saving side panel');
         if (this.panelInstance && typeof this.panelInstance.onSave === 'function') {
-            console.log('Panel instance found');
             const updatedNode = this.panelInstance.onSave();
             if (updatedNode) {
                 this.save.emit(updatedNode);
@@ -182,7 +178,6 @@ export class NodePanelShellComponent {
     }
 
     private performAutosave(): void {
-        console.log('Auto-saving previous node');
         if (this.panelInstance && typeof this.panelInstance.onSave === 'function') {
             const updatedNode = this.panelInstance.onSave();
             if (updatedNode) {

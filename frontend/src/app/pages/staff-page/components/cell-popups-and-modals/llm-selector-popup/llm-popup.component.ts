@@ -83,7 +83,6 @@ export class LLMPopupComponent implements OnInit, OnChanges, OnDestroy, AfterVie
     ) {}
 
     public ngOnInit(): void {
-        console.log('cellValue', this.cellValue);
         this.loadConfigs();
     }
 
@@ -262,44 +261,32 @@ export class LLMPopupComponent implements OnInit, OnChanges, OnDestroy, AfterVie
     }
 
     public onSelectLLM(item: MergedConfig): void {
-        console.log('onSelectLLM called with item:', item);
-        console.log('Current selectedLLMId:', this.selectedLLMId);
-
         if (this.selectedLLMId === item.id) {
             // If already selected, unselect it
-            console.log('Unselecting LLM item');
             this.selectedLLMId = null;
             this.selectedLLM = null;
         } else {
             // Select this item
-            console.log('Selecting LLM item');
             this.selectedLLMId = item.id;
             // Find the original config object
             this.selectedLLM = this.llmConfigs.find((config) => config.id === item.id) ?? null;
         }
 
-        console.log('New selectedLLMId:', this.selectedLLMId);
         this.cdr.detectChanges();
     }
 
     public onSelectRealtime(item: MergedConfig): void {
-        console.log('onSelectRealtime called with item:', item);
-        console.log('Current selectedRealtimeId:', this.selectedRealtimeId);
-
         if (this.selectedRealtimeId === item.id) {
             // If already selected, unselect it
-            console.log('Unselecting Realtime item');
             this.selectedRealtimeId = null;
             this.selectedRealtime = null;
         } else {
             // Select this item
-            console.log('Selecting Realtime item');
             this.selectedRealtimeId = item.id;
             // Find the original config object
             this.selectedRealtime = this.realtimeConfigs.find((config) => config.id === item.id) ?? null;
         }
 
-        console.log('New selectedRealtimeId:', this.selectedRealtimeId);
         this.cdr.detectChanges();
     }
 

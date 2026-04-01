@@ -48,8 +48,6 @@ export class ChatsSidebarItemComponent {
 
         dialogRef.closed.subscribe((updatedAgent) => {
             if (updatedAgent) {
-                console.log('Updated agent received in parent:', updatedAgent);
-
                 // Update the local agent reference with the new data
                 this.agent = {
                     ...updatedAgent,

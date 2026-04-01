@@ -84,18 +84,6 @@ export class StaffAgentCardComponent implements OnInit, OnChanges {
 
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['agent'] && !changes['agent'].firstChange) {
-            console.log('Agent updated:', this.agent);
-            console.log('Updated tools:', this.agent.mergedTools);
-            console.log(
-                'Merged tools structure:',
-                this.agent.mergedTools?.map((t) => ({
-                    id: t.id,
-                    configName: t.configName,
-                    toolName: t.toolName,
-                    type: t.type,
-                }))
-            );
-
             // Ensure the details section is expanded when agent is updated
             // so the user can see the updated tools
             if (this.agent.mergedTools && this.agent.mergedTools.length > 0) {
@@ -111,7 +99,6 @@ export class StaffAgentCardComponent implements OnInit, OnChanges {
     }
 
     public onRemoveAgentClick(): void {
-        console.log('Remove agent clicked:', this.agent.role);
         this.removeAgent.emit(this.agent);
     }
 
@@ -133,13 +120,11 @@ export class StaffAgentCardComponent implements OnInit, OnChanges {
     }
 
     public onRemoveFromMenu(): void {
-        console.log('Remove agent from menu clicked:', this.agent.role);
         this.removeAgent.emit(this.agent);
         this.closeMenu();
     }
 
     public onEditAgent(): void {
-        console.log('Edit agent clicked:', this.agent.role);
         this.editAgent.emit(this.agent);
         this.closeMenu();
     }
@@ -196,7 +181,6 @@ export class StaffAgentCardComponent implements OnInit, OnChanges {
 
     public toggleToolsExpanded(): void {
         this.toolsExpanded = !this.toolsExpanded;
-        console.log('Tools expanded:', this.toolsExpanded);
         this.cdr.markForCheck();
     }
 
