@@ -7,6 +7,7 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    computed,
     DestroyRef,
     HostListener,
     Input,
@@ -83,6 +84,13 @@ interface FlowModel {
     nodes: unknown[];
     connections: unknown[];
     groups: unknown[];
+}
+
+function asTaskPendingPayloadRecord(payload: unknown): Record<string, unknown> {
+    if (payload !== null && typeof payload === 'object' && !Array.isArray(payload)) {
+        return payload as Record<string, unknown>;
+    }
+    return {};
 }
 
 @Component({
@@ -495,14 +503,16 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         const createEvents = taskUpdates.filter((ev) => ev.kind === 'create');
         const updateEvents = taskUpdates.filter((ev) => ev.kind === 'update');
         const deletedIds = new Set(
-            deleteEvents.map((ev) => Number(ev.payload?.id)).filter((id) => Number.isFinite(id))
+            deleteEvents
+                .map((ev) => Number(asTaskPendingPayloadRecord(ev.payload)['id']))
+                .filter((id) => Number.isFinite(id))
         );
 
         const delete$ =
             deleteEvents.length > 0
                 ? forkJoin(
                       deleteEvents.map((ev) =>
-                          this.tasksService.deleteTask(ev.payload.id).pipe(
+                          this.tasksService.deleteTask(Number(asTaskPendingPayloadRecord(ev.payload)['id'])).pipe(
                               map((res) => ({ ev, res })),
                               catchError((error) => {
                                   if (error instanceof HttpErrorResponse && error.status === 404) {
@@ -724,15 +734,16 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         }
 
         if (ev.kind === 'delete') {
-            const deletedId = Number((ev.payload as TaskPayload).id);
+            const deletedId = Number(asTaskPendingPayloadRecord(ev.payload)['id']);
             for (const [rowKey, pendingEv] of this.pendingTaskUpdates.entries()) {
                 if (pendingEv.kind === 'create' || pendingEv.kind === 'update') {
-                    const ctxList = (pendingEv.payload as TaskPayload)?.task_context_list;
+                    const payloadRec = asTaskPendingPayloadRecord(pendingEv.payload);
+                    const ctxList = payloadRec['task_context_list'];
                     if (Array.isArray(ctxList) && ctxList.some((id: unknown) => Number(id) === deletedId)) {
                         this.pendingTaskUpdates.set(rowKey, {
                             ...pendingEv,
                             payload: {
-                                ...pendingEv.payload,
+                                ...payloadRec,
                                 task_context_list: ctxList.filter((id: unknown) => Number(id) !== deletedId),
                             },
                         });
@@ -787,14 +798,16 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         const createEvents = taskUpdates.filter((ev) => ev.kind === 'create');
         const updateEvents = taskUpdates.filter((ev) => ev.kind === 'update');
         const deletedIds = new Set(
-            deleteEvents.map((ev) => Number(ev.payload?.id)).filter((id) => Number.isFinite(id))
+            deleteEvents
+                .map((ev) => Number(asTaskPendingPayloadRecord(ev.payload)['id']))
+                .filter((id) => Number.isFinite(id))
         );
 
         const delete$ =
             deleteEvents.length > 0
                 ? forkJoin(
                       deleteEvents.map((ev) =>
-                          this.tasksService.deleteTask(ev.payload.id).pipe(
+                          this.tasksService.deleteTask(Number(asTaskPendingPayloadRecord(ev.payload)['id'])).pipe(
                               map((res) => ({ ev, res })),
                               catchError((error) => {
                                   if (error instanceof HttpErrorResponse && error.status === 404) {
@@ -978,7 +991,7 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         const deletedIds = new Set(
             Array.from(this.pendingTaskUpdates.values())
                 .filter((ev) => ev.kind === 'delete')
-                .map((ev) => Number((ev.payload as TaskPayload)?.id))
+                .map((ev) => Number(asTaskPendingPayloadRecord(ev.payload)['id']))
                 .filter((id) => Number.isFinite(id))
         );
 
@@ -987,7 +1000,8 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
                 continue;
             }
 
-            const ctxList = (ev.payload as TaskPayload)?.task_context_list;
+            const payloadRec = asTaskPendingPayloadRecord(ev.payload);
+            const ctxList = payloadRec['task_context_list'];
             if (!Array.isArray(ctxList)) {
                 continue;
             }
@@ -1001,7 +1015,7 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
             this.pendingTaskUpdates.set(rowKey, {
                 ...ev,
                 payload: {
-                    ...(ev.payload as TaskPayload),
+                    ...payloadRec,
                     task_context_list: sanitized,
                 },
             });
@@ -1074,7 +1088,7 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
             if (Array.isArray(v)) return v.map(walk);
             if (v && typeof v === 'object') {
                 const out: any = {};
-                for (const k of Object.keys(v).sort()) out[k] = walk(v[k]);
+                for (const k of Object.keys(v).sort()) out[k] = walk((v as Record<string, unknown>)[k]);
                 return out;
             }
             if (typeof v === 'number') return Number(v.toFixed(6));

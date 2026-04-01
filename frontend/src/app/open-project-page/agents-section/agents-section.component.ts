@@ -15,7 +15,6 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ClickOutsideDirective } from '@shared/directives';
-import { Subscription } from 'rxjs';
 
 import { FullAgent } from '../../features/staff/services/full-agent.service';
 import { ProjectStateService } from '../services/project-state.service';
