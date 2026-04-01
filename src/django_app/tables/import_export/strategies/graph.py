@@ -84,7 +84,7 @@ class GraphStrategy(EntityImportExportStrategy):
         node_mapper = IDMapper()
 
         # Pass 1: create all nodes and build the old→new node ID mapping
-        self._create_nodes(nodes_data, graph, node_mapper)
+        self._create_nodes(nodes_data, graph, node_mapper, id_mapper)
 
         # Pass 2: create edges/conditional-edges with remapped node IDs,
         # then fix stale node-ID references in decision tables and metadata
@@ -112,7 +112,7 @@ class GraphStrategy(EntityImportExportStrategy):
         return nodes
 
     def _create_nodes(
-        self, nodes_data: list, graph: Graph, id_mapper: IDMapper
+        self, nodes_data: list, graph: Graph, node_mapper: IDMapper, id_mapper: IDMapper
     ) -> None:
         for node_data in nodes_data:
             node_type = node_data.pop("node_type")
@@ -129,7 +129,7 @@ class GraphStrategy(EntityImportExportStrategy):
                 node = self._default_import_node(graph, node_data, config)
 
             if old_id and node:
-                id_mapper.map(NODE_MAPPING_KEY, old_id, node.id)
+                node_mapper.map(NODE_MAPPING_KEY, old_id, node.id)
 
     def _create_edges(self, edges_data: list, graph: Graph, id_mapper: IDMapper):
         for edge_data in edges_data:
