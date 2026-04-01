@@ -24,12 +24,12 @@ or
 
 For CLI tool only
 ~~~bash
-docker compose up cli_oi_tool --build
+docker compose up cli_open_interpreter --build
 ~~~
 
 For Browser Use tool only
 ~~~bash
-docker compose up browser_oi_tool up --build
+docker compose up browser_open_interpreter --build
 ~~~
 
 
@@ -46,7 +46,8 @@ After startup, this ports are exposed:
 - `7001` – CLI tool API
 - `7002` - Browser Use tool API
 - `7003` - GUI Tool API
-- `6080` - VNC server for browser GUI (Browser tool)
+- `6080` - VNC server for desktop GUI (Computer use tool)
+- `6081` - VNC server for browser GUI (Browser tool)
 ---
 
 ## Access
