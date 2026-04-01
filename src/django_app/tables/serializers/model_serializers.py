@@ -1840,6 +1840,15 @@ class VoiceSettingsSerializer(serializers.ModelSerializer):
         ]
 
     def get_voice_stream_url(self, obj):
-        if obj.ngrok_config and obj.ngrok_config.domain:
-            return f"wss://{obj.ngrok_config.domain}/voice/stream"
+        if not obj.ngrok_config:
+            return None
+        from tables.services.webhook_trigger_service import WebhookTriggerService
+        try:
+            base = WebhookTriggerService().get_tunnel_url(ngrok_webhook_config=obj.ngrok_config)
+        except Exception:
+            base = None
+        if not base and obj.ngrok_config.domain:
+            base = f"https://{obj.ngrok_config.domain}"
+        if base:
+            return base.rstrip("/").replace("https://", "wss://").replace("http://", "wss://") + "/voice/stream"
         return None

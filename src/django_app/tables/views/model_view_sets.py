@@ -1,3 +1,9 @@
+import base64
+import json
+import urllib.error
+import urllib.parse
+import urllib.request
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import NOT_PROVIDED, IntegerField, Prefetch
@@ -1237,3 +1243,89 @@ class VoiceSettingsView(generics.RetrieveUpdateAPIView):
         response = super().update(request, *args, **kwargs)
         redis_service.redis_client.publish("voice_settings:invalidate", "{}")
         return response
+
+
+def _twilio_request(account_sid: str, auth_token: str, url: str, method: str = "GET", data: dict = None):
+    """Make an authenticated request to the Twilio REST API."""
+    credentials = base64.b64encode(f"{account_sid}:{auth_token}".encode()).decode()
+    headers = {"Authorization": f"Basic {credentials}", "Accept": "application/json"}
+    body = None
+    if data:
+        encoded = urllib.parse.urlencode(data).encode()
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        body = encoded
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode())
+
+
+class TwilioPhoneNumbersView(generics.GenericAPIView):
+    """Return the list of incoming phone numbers from Twilio."""
+
+    def get(self, request):
+        vs = VoiceSettings.load()
+        if not vs.twilio_account_sid or not vs.twilio_auth_token:
+            return Response(
+                {"error": "Twilio Account SID and Auth Token are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{vs.twilio_account_sid}/IncomingPhoneNumbers.json?PageSize=100"
+            data = _twilio_request(vs.twilio_account_sid, vs.twilio_auth_token, url)
+            numbers = [
+                {
+                    "sid": n["sid"],
+                    "phone_number": n["phone_number"],
+                    "friendly_name": n["friendly_name"],
+                    "voice_url": n.get("voice_url") or "",
+                }
+                for n in data.get("incoming_phone_numbers", [])
+            ]
+            return Response(numbers)
+        except urllib.error.HTTPError as e:
+            return Response({"error": e.read().decode()}, status=e.code)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+
+class TwilioConfigureWebhookView(generics.GenericAPIView):
+    """Set the VoiceUrl on a Twilio phone number to the configured voice stream URL."""
+
+    def post(self, request):
+        phone_sid = request.data.get("phone_sid")
+        if not phone_sid:
+            return Response({"error": "phone_sid is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        vs = VoiceSettings.load()
+        if not vs.twilio_account_sid or not vs.twilio_auth_token:
+            return Response(
+                {"error": "Twilio Account SID and Auth Token are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from tables.serializers.model_serializers import VoiceSettingsSerializer
+        voice_stream_url = VoiceSettingsSerializer(vs).data.get("voice_stream_url")
+        if not voice_stream_url:
+            return Response(
+                {"error": "No voice stream URL configured — set up an ngrok tunnel first"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Twilio expects the webhook as an HTTP/HTTPS URL not WSS
+        # voice_stream_url is wss://host/voice/stream → https://host/voice
+        webhook_url = voice_stream_url.replace("wss://", "https://").replace("/stream", "").rstrip("/")
+
+        try:
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{vs.twilio_account_sid}/IncomingPhoneNumbers/{phone_sid}.json"
+            _twilio_request(
+                vs.twilio_account_sid,
+                vs.twilio_auth_token,
+                url,
+                method="POST",
+                data={"VoiceUrl": webhook_url, "VoiceMethod": "POST"},
+            )
+            return Response({"webhook_url": webhook_url})
+        except urllib.error.HTTPError as e:
+            return Response({"error": e.read().decode()}, status=e.code)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)

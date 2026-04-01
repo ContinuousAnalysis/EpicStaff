@@ -57,6 +57,32 @@
         }
     }
 
+    &__section-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(217, 217, 222, 0.1);
+    }
+
+    &__phone-row {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-end;
+
+        app-select {
+            flex: 1;
+        }
+    }
+
+    &__hint {
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+        margin: 0;
+    }
+
     &__loading-state {
         text-align: center;
         padding: 2rem;
