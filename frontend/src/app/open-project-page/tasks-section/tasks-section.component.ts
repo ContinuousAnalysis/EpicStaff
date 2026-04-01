@@ -5,10 +5,13 @@ import {
   Input,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  Output,
+  EventEmitter,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FullTask } from '../../shared/models/full-task.model';
-import { FullAgent } from '../../services/full-agent.service';
+import { FullTask } from '../../features/tasks/models/full-task.model';
+import { FullAgent } from '../../features/staff/services/full-agent.service';
 import { ProjectStateService } from '../services/project-state.service';
 import { Subscription } from 'rxjs';
 import { TasksTableComponent } from './tasks-table/tasks-table.component';
@@ -17,8 +20,9 @@ import {
   CreateTaskRequest,
   UpdateTaskRequest,
   GetTaskRequest,
-} from '../../shared/models/task.model';
-import { TasksService } from '../../services/tasks.service'; // Import the TasksService
+} from '../../features/tasks/models/task.model';
+import { TaskPendingEvent } from './tasks-table/tasks-table.component';
+import { TasksService } from '../../features/tasks/services/tasks.service';
 
 @Component({
   selector: 'app-tasks-section',
@@ -30,6 +34,11 @@ import { TasksService } from '../../services/tasks.service'; // Import the Tasks
 })
 export class TasksSectionComponent implements OnInit, OnDestroy {
   @Input() project!: GetProjectRequest;
+  @Input() isSaving = false;
+  @Output() taskPending = new EventEmitter<TaskPendingEvent>();
+  @Output() dirtyChange = new EventEmitter<boolean>();
+  @ViewChild(TasksTableComponent) private table?: TasksTableComponent;
+
   public tasks: FullTask[] = [];
   public agents: FullAgent[] = [];
 
@@ -55,7 +64,6 @@ export class TasksSectionComponent implements OnInit, OnDestroy {
       this.projectStateService.agents$.subscribe({
         next: (agents) => {
           this.agents = agents;
-          console.log('Updated agents:', this.agents);
           this.cdr.markForCheck();
         },
         error: (err) => console.error('Error fetching agents:', err),
@@ -65,5 +73,37 @@ export class TasksSectionComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
+  }
+
+  onTaskPending(ev: TaskPendingEvent): void {
+    this.taskPending.emit(ev);
+  }
+
+  onDirtyChange(isDirty: boolean): void {
+    this.dirtyChange.emit(isDirty);
+  }
+
+  public validateBeforeSave(): boolean {
+    return this.table?.validateBeforeSave() ?? true;
+  }
+
+  public clearLocalDirtyAfterSave(): void {
+    this.table?.clearLocalDirtyAfterSave();
+  }
+
+  public applyCreatedTask(tempRowKey: string, created: any): void {
+    this.table?.applyCreatedTask(tempRowKey, created);
+  }
+
+  public applyUpdatedTask(rowKey: string, updated: any): void {
+    this.table?.applyUpdatedTask(rowKey, updated);
+  }
+
+  public getCurrentReorderPayload(): Array<{ id: number; order: number }> {
+    return this.table?.getCurrentReorderPayload() ?? [];
+  }
+
+  public getCurrentRows(): any[] {
+    return this.table?.getCurrentRows?.() ?? [];
   }
 }

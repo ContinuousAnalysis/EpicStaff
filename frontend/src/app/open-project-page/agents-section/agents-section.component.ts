@@ -1,58 +1,38 @@
 // agents-section.component.ts
+import { CommonModule } from '@angular/common';
 import {
-    Component,
-    OnInit,
-    OnDestroy,
     ChangeDetectionStrategy,
     ChangeDetectorRef,
-    ElementRef,
-    Renderer2,
-    NgZone,
-    ApplicationRef,
-    Output,
+    Component,
     EventEmitter,
     HostBinding,
+    OnDestroy,
+    OnInit,
+    Output,
     ViewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
+import { ClickOutsideDirective } from '@shared/directives';
 import { Subscription } from 'rxjs';
+
+import { FullAgent } from '../../features/staff/services/full-agent.service';
 import { ProjectStateService } from '../services/project-state.service';
-import { FullAgent, FullAgentService } from '../../services/full-agent.service';
-import {
-    GridControlsComponent,
-    GridSizeOption,
-} from './grid-controls/grid-controls.component';
-import {
-    trigger,
-    style,
-    transition,
-    animate,
-    AnimationEvent,
-} from '@angular/animations';
 import {
     CardState,
     StaffAgentCardComponent,
 } from './grid-controls/dropdown-staff-agents/staff-agent-card/staff-agent-card.component';
-import { Dialog } from '@angular/cdk/dialog';
-import { CreateAgentFormComponent } from '../../shared/components/create-agent-form-dialog/create-agent-form-dialog.component';
-import { AgentsService } from '../../services/staff.service';
-import { ToastService } from '../../services/notifications/toast.service';
-import { ClickOutsideDirective } from '../../shared/directives/click-outside.directive';
+import { GridControlsComponent, GridSizeOption } from './grid-controls/grid-controls.component';
+
+export type AgentPendingAction =
+    | { kind: 'add'; agentId: number }
+    | { kind: 'remove'; agentId: number }
+    | { kind: 'update'; agent: FullAgent };
 
 @Component({
     selector: 'app-agents-section',
     templateUrl: './agents-section.component.html',
     styleUrls: ['./agents-section.component.scss'],
-    standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        ClickOutsideDirective,
-        GridControlsComponent,
-        StaffAgentCardComponent,
-    ],
+    imports: [CommonModule, FormsModule, ClickOutsideDirective, GridControlsComponent, StaffAgentCardComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AgentsSectionComponent implements OnInit, OnDestroy {
@@ -71,17 +51,18 @@ export class AgentsSectionComponent implements OnInit, OnDestroy {
         return this.currentGridSize === 'large';
     }
 
+    @Output() agentsIdsChange = new EventEmitter<number[]>();
+    @Output() agentUpdatePending = new EventEmitter<FullAgent>();
+    @Output() dirtyChange = new EventEmitter<boolean>();
+    @Output() agentsPendingChange = new EventEmitter<AgentPendingAction>();
+
     public cardState: CardState = 'removing';
 
     private agentsSubscription!: Subscription;
     public isLoaded: boolean = false;
     constructor(
         private projectStateService: ProjectStateService,
-        private cdr: ChangeDetectorRef,
-        private dialog: Dialog,
-        private agentsService: AgentsService,
-        private toastService: ToastService,
-        private fullAgentService: FullAgentService
+        private cdr: ChangeDetectorRef
     ) {}
 
     ngOnInit(): void {
@@ -114,42 +95,31 @@ export class AgentsSectionComponent implements OnInit, OnDestroy {
         }
         this.cdr.markForCheck();
     }
+
     public onRemoveStaffAgent(staffAgent: FullAgent) {
-        this.projectStateService.removeAgent(staffAgent);
+        const id = Number(staffAgent.id);
+        this.agents = this.agents.filter((a) => Number(a.id) !== id);
+        const nextIds = this.agents.map((a) => Number(a.id));
+        this.agentsIdsChange.emit(nextIds);
+        this.agentsPendingChange.emit({ kind: 'remove', agentId: id });
+        this.projectStateService.updateAgents(this.agents);
+        this.dirtyChange.emit(true);
+        this.cdr.markForCheck();
     }
 
-    public onEditAgent(agent: FullAgent): void {
-        const dialogRef = this.dialog.open<FullAgent>(
-            CreateAgentFormComponent,
-            {
-                maxWidth: '95vw',
-                maxHeight: '90vh',
-                autoFocus: true,
-                data: { agent, isEditMode: true },
-            }
-        );
-
-        dialogRef.closed.subscribe((updatedAgent) => {
-            if (updatedAgent) {
-                // Update the agent via service
-                this.agentsService.updateAgent(updatedAgent as any).subscribe({
-                    next: (result) => {
-                        // After updating the agent, refresh the full agent data
-                        this.projectStateService.refreshAgent(result.id);
-                    },
-                    error: (error) => {
-                        console.error('Error updating agent:', error);
-                        this.toastService.error('Failed to update agent');
-                    },
-                });
-            }
-        });
-    }
-
-    public trackAgentById(
-        index: number,
-        staffAgent: FullAgent
-    ): string | number {
+    public trackAgentById(index: number, staffAgent: FullAgent): string | number {
         return staffAgent.id;
+    }
+
+    public onAddStaffAgent(staffAgent: FullAgent): void {
+        const id = Number(staffAgent.id);
+        if (this.agents.some((a) => Number(a.id) === id)) return;
+        this.agents = [...this.agents, staffAgent];
+        const nextIds = this.agents.map((a) => Number(a.id));
+        this.agentsIdsChange.emit(nextIds);
+        this.agentsPendingChange.emit({ kind: 'add', agentId: id });
+        this.projectStateService.updateAgents(this.agents);
+        this.dirtyChange.emit(true);
+        this.cdr.markForCheck();
     }
 }

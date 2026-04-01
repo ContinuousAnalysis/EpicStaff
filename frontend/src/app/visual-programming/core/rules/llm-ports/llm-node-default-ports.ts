@@ -17,12 +17,16 @@ export const DEFAULT_LLM_NODE_PORTS: BasePort[] = [
       'project-out',
       'python-out',
       'python-in',
+      'web-scraper-out',
+      'web-scraper-in',
       'table-in',
+      'subgraph-in',
       'audio-to-text-in',
       'audio-to-text-out',
+      'code-agent-in',
     ],
     position: 'right',
-    color: '#e0575b', // LLM color mapping
+    color: '#e0575b',
   },
 
   {
@@ -40,10 +44,14 @@ export const DEFAULT_LLM_NODE_PORTS: BasePort[] = [
       'project-out',
       'python-out',
       'python-in',
+      'web-scraper-out',
+      'web-scraper-in',
+      'subgraph-out',
       'audio-to-text-out',
       'audio-to-text-in',
+      'code-agent-out',
     ],
     position: 'left',
-    color: '#e0575b', // LLM color mapping
+    color: '#e0575b',
   },
 ];

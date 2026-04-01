@@ -17,11 +17,29 @@ class GraphMessage:
 
 
 @dataclass
+class SubGraphStartMessageData:
+    state: dict
+    input: object
+    subgraph_id: int
+    subgraph_execution_id: str
+    message_type: str = "subgraph_start"
+
+
+@dataclass
+class SubGraphFinishMessageData:
+    state: dict
+    output: object
+    subgraph_execution_id: str
+    message_type: str = "subgraph_finish"
+
+
+@dataclass
 class FinishMessageData:
     output: object
     state: dict
     message_type: str = "finish"
     additional_data: dict | None = None
+    sse_visible: bool | None = None
 
 
 @dataclass

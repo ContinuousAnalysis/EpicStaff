@@ -7,12 +7,13 @@ export enum NodeType {
     PYTHON = 'python',
     EDGE = 'edge',
     START = 'start',
-    GROUP = 'group',
     TABLE = 'table',
     NOTE = 'note',
     FILE_EXTRACTOR = 'file-extractor',
     WEBHOOK_TRIGGER = 'webhook-trigger',
     TELEGRAM_TRIGGER = 'telegram-trigger',
     END = 'end',
-    AUDIO_TO_TEXT = 'audio-to-text-node'
+    SUBGRAPH = 'subgraph',
+    AUDIO_TO_TEXT = 'audio-to-text-node',
+    CODE_AGENT = 'code-agent',
 }
