@@ -261,7 +261,7 @@ def load_search_prompt(root_dir: str, prompt_config: str | None) -> str | None:
             prompt_file = Path(root_dir) / prompt_config
             if prompt_file.exists():
                 return prompt_file.read_bytes().decode(encoding="utf-8")
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
         return prompt_config
     return None
