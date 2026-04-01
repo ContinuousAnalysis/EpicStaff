@@ -74,21 +74,20 @@
     }
 
     .item-actions {
-        display: none;
+        visibility: hidden;
         margin-left: auto;
+        display: flex;
         gap: 0.6rem;
         align-items: center;
         flex-shrink: 0;
     }
 
     &:hover .item-actions {
-        display: flex;
+        visibility: visible;
     }
 
     .label-name {
         flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
         min-width: 80px;
     }
