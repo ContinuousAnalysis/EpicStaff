@@ -17,8 +17,11 @@ from graphrag.config.enums import (
     InputFileType,
     ChunkStrategyType,
 )
-
 from models.redis_models import GraphRagBasicSearchParams, GraphRagLocalSearchParams
+from rag.graph_rag.utils import (
+    build_basic_search_prompt,
+    build_local_search_prompt,
+)
 
 
 # Model ID constants used by GraphRagConfig
@@ -392,7 +395,7 @@ class GraphRagConfigBuilder:
             The same config with basic_search fields updated
         """
         if params.prompt is not None:
-            config.basic_search.prompt = params.prompt
+            config.basic_search.prompt = build_basic_search_prompt(params.prompt)
         config.basic_search.k = params.k
         config.basic_search.max_context_tokens = params.max_context_tokens
         return config
@@ -413,7 +416,7 @@ class GraphRagConfigBuilder:
             The same config with local_search fields updated
         """
         if params.prompt is not None:
-            config.local_search.prompt = params.prompt
+            config.local_search.prompt = build_local_search_prompt(params.prompt)
         config.local_search.text_unit_prop = params.text_unit_prop
         config.local_search.community_prop = params.community_prop
         config.local_search.conversation_history_max_turns = (

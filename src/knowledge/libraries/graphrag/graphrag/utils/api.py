@@ -251,13 +251,19 @@ def load_search_prompt(root_dir: str, prompt_config: str | None) -> str | None:
     """
     Load the search prompt from disk if configured.
 
-    If not, leave it empty - the search functions will load their defaults.
+    If prompt_config is a valid file path, reads content from disk.
+    Otherwise treats it as the raw prompt text directly.
+    If not configured, leave it empty - the search functions will load their defaults.
 
     """
     if prompt_config:
-        prompt_file = Path(root_dir) / prompt_config
-        if prompt_file.exists():
-            return prompt_file.read_bytes().decode(encoding="utf-8")
+        try:
+            prompt_file = Path(root_dir) / prompt_config
+            if prompt_file.exists():
+                return prompt_file.read_bytes().decode(encoding="utf-8")
+        except Exception:  # noqa: BLE001, S110
+            pass
+        return prompt_config
     return None
 
 
