@@ -123,6 +123,17 @@ async def voice_settings_invalidation_listener():
             logger.info("Voice settings cache invalidated")
 
 
+async def _run_forever(coro_fn, name: str, restart_delay: float = 2.0):
+    """Run a coroutine, restarting it if it crashes."""
+    while True:
+        try:
+            await coro_fn()
+            logger.warning(f"{name} exited unexpectedly, restarting in {restart_delay}s")
+        except Exception as e:
+            logger.error(f"{name} crashed: {e}, restarting in {restart_delay}s")
+        await asyncio.sleep(restart_delay)
+
+
 async def redis_listener():
     """Listen to Redis channel and store connection data."""
 
@@ -132,6 +143,7 @@ async def redis_listener():
         password=settings.REDIS_PASSWORD,
     )
     await redis_service.connect()
+    logger.info("redis_listener: connected to Redis")
 
     pubsub = await redis_service.async_subscribe(
         settings.REALTIME_AGENTS_SCHEMA_CHANNEL
@@ -166,7 +178,7 @@ async def startup_event():
     """Start Redis listener and init DB on FastAPI startup."""
     await init_db()
 
-    asyncio.create_task(redis_listener())
+    asyncio.create_task(_run_forever(redis_listener, "redis_listener"))
     asyncio.create_task(voice_settings_invalidation_listener())
 
 
@@ -310,6 +322,7 @@ async def voice_stream(twilio_ws: WebSocket):
                 await twilio_ws.close()
                 return
             conn_key = resp.json().get("connection_key")
+            logger.info(f"Init realtime response: status={resp.status_code} conn_key={conn_key}")
         except Exception as e:
             logger.error(f"Failed to init realtime session: {e}")
             await twilio_ws.close()

@@ -15,7 +15,9 @@ class RedisService(IRedisMessagingService, metaclass=SingletonMeta):
         self.aioredis_client: aioredis.Redis | None = None
 
     async def connect(self):
-        """Establish connection with Redis."""
+        """Establish connection with Redis (idempotent)."""
+        if self.aioredis_client is not None:
+            return
         self.aioredis_client = await aioredis.from_url(
             f"redis://{self.host}:{self.port}",
             password=self.password,
