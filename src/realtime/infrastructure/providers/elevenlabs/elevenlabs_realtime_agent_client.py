@@ -109,10 +109,47 @@ class ElevenLabsRealtimeAgentClient(BaseRealtimeAgentClient):
                 language=self.language,
             )
 
+        await self._do_connect(allow_reprovision=True)
+
+    async def _do_connect(self, *, allow_reprovision: bool = False) -> None:
+        """Open the WebSocket to ElevenLabs.
+
+        If the handshake fails (e.g. HTTP 404 because the agent was deleted on
+        ElevenLabs' side without sending close code 3000), and ``allow_reprovision``
+        is True, the cache is invalidated, a fresh agent is provisioned, and the
+        connection is retried once.
+        """
         url = f"{self.base_url}?agent_id={self.agent_id}"
         headers = {"xi-api-key": self.api_key}
 
-        self.ws = await websockets.connect(url, extra_headers=headers)
+        try:
+            self.ws = await websockets.connect(url, extra_headers=headers)
+        except websockets.exceptions.InvalidHandshake as exc:
+            if allow_reprovision and self.agent_provisioner:
+                logger.warning(
+                    f"ElevenLabs: WS handshake failed ({exc}) — stale agent_id={self.agent_id}. "
+                    "Invalidating cache and re-provisioning..."
+                )
+                await self.agent_provisioner.invalidate_cache(
+                    api_key=self.api_key,
+                    instructions=self.instructions,
+                    voice=self.voice,
+                    rt_tools=self.rt_tools,
+                    llm_model=self.llm_model,
+                    language=self.language,
+                )
+                self.agent_id = await self.agent_provisioner.get_or_create_agent(
+                    api_key=self.api_key,
+                    instructions=self.instructions,
+                    voice=self.voice,
+                    rt_tools=self.rt_tools,
+                    llm_model=self.llm_model,
+                    language=self.language,
+                )
+                await self._do_connect(allow_reprovision=False)
+                return
+            raise
+
         logger.info(f"ElevenLabs WebSocket connected: agent_id={self.agent_id}")
 
         config_override = {}
