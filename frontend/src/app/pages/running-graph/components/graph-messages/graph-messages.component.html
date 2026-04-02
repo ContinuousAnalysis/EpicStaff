@@ -1,5 +1,5 @@
 <!-- graph-messages.component.html -->
-<div class="messages-container" #messagesContainer (scroll)="onMessagesScroll()">
+<div class="messages-container" #messagesContainer (scroll)="onMessagesScroll()" (wheel)="onMessagesWheel($event)">
     <!-- Connection status indicator -->
     <div
         class="connection-status"
@@ -306,6 +306,19 @@
             aria-label="Scroll to top"
         >
             <i class="ti ti-arrow-up"></i>
+        </button>
+    }
+
+    @if (showScrollToBottom) {
+        <button
+            class="scroll-to-bottom-btn"
+            (click)="scrollToBottomAndReengage()"
+            aria-label="Scroll to bottom"
+        >
+            <i class="ti ti-arrow-down"></i>
+            @if (unseenMessageCount > 0) {
+                <span class="unseen-badge">{{ unseenMessageCount }}</span>
+            }
         </button>
     }
 </div>

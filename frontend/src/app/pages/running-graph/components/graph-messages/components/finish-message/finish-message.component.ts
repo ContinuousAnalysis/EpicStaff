@@ -153,10 +153,7 @@ import { GetProjectRequest } from '../../../../../../features/projects/models/pr
           font-size: 1.1rem;
           font-weight: 600;
           margin: 0;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 100%;
+          word-break: break-word;
 
           .project-name {
             color: #5672cd;
