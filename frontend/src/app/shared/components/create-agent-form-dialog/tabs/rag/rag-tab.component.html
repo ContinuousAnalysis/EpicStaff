@@ -78,6 +78,8 @@
                                             label="K"
                                             tooltipText="Number of text units to retrieve from the vector store for context building"
                                             [alwaysShowSteps]="true"
+                                            [min]="1"
+                                            [max]="100"
                                         />
                                     </div>
                                     <div class="form-group">
@@ -86,6 +88,8 @@
                                             label="Max Context Tokens"
                                             tooltipText="The maximum context size to create, in tokens"
                                             [alwaysShowSteps]="true"
+                                            [min]="100"
+                                            [max]="100000"
                                         />
                                     </div>
                                 </div>
@@ -127,6 +131,8 @@
                                             label="Conversation History max Turns"
                                             tooltipText="The conversation history maximum turns"
                                             [alwaysShowSteps]="true"
+                                            [min]="1"
+                                            [max]="50"
                                         />
                                     </div>
                                     <div class="form-group">
@@ -135,6 +141,8 @@
                                             label="Max Context Tokens"
                                             tooltipText="The maximum tokens to use building the request context"
                                             [alwaysShowSteps]="true"
+                                            [min]="100"
+                                            [max]="100000"
                                         />
                                     </div>
                                 </div>
@@ -146,6 +154,8 @@
                                             label="Top K Entities"
                                             tooltipText="The top k mapped entities"
                                             [alwaysShowSteps]="true"
+                                            [min]="1"
+                                            [max]="100"
                                         />
                                     </div>
                                     <div class="form-group">
@@ -154,6 +164,8 @@
                                             label="Top K Relationships"
                                             tooltipText="The top k mapped relations"
                                             [alwaysShowSteps]="true"
+                                            [min]="1"
+                                            [max]="100"
                                         />
                                     </div>
                                 </div>

@@ -110,11 +110,11 @@ export class RagTabComponent implements OnInit {
         if (ragType === 'naive') {
             this.searchConfigsFormGroup = this.fb.group({
                 search_limit: [
-                    configs?.naive?.search_limit || 3,
+                    configs?.naive?.search_limit ?? 3,
                     [Validators.min(0), Validators.max(1000)]
                 ],
                 similarity_threshold: [
-                    configs?.naive?.similarity_threshold || 0.2,
+                    configs?.naive?.similarity_threshold ?? 0.2,
                     [Validators.min(0.0), Validators.max(1.0)]
                 ],
             });
@@ -122,7 +122,7 @@ export class RagTabComponent implements OnInit {
 
         if (ragType === 'graph') {
             this.searchConfigsFormGroup = this.fb.group({
-                search_method: [configs?.graph?.search_method || 'basic', [Validators.required]],
+                search_method: [configs?.graph?.search_method ?? 'basic', [Validators.required]],
                 basic: this.initGraphBasicSearchConfig(configs?.graph?.basic),
                 local: this.initGraphLocalSearchConfig(configs?.graph?.local),
             });
@@ -138,24 +138,24 @@ export class RagTabComponent implements OnInit {
                 [Validators.maxLength(1000)]
             ],
             k: [
-                configs?.k || 10,
-                [Validators.required, Validators.min(0), Validators.max(1000)]
+                configs?.k ?? 10,
+                [Validators.required, Validators.min(1), Validators.max(100)]
             ],
             max_context_tokens: [
-                configs?.max_context_tokens || 12000,
-                [Validators.required, Validators.min(0), Validators.max(100000)]
+                configs?.max_context_tokens ?? 12000,
+                [Validators.required, Validators.min(100), Validators.max(100000)]
             ],
         });
     }
 
     private initGraphLocalSearchConfig(configs: GraphLocalSearchConfig | undefined): FormGroup {
         this.textUnitProportionControl = this.fb.control(
-            configs?.text_unit_prop || 0.5,
+            configs?.text_unit_prop ?? 0.5,
             [Validators.required, Validators.min(0), Validators.max(1)]
         );
 
         this.communityProportionControl = this.fb.control(
-            configs?.community_prop || 0.15,
+            configs?.community_prop ?? 0.15,
             [Validators.required, Validators.min(0), Validators.max(1)]
         );
 
@@ -167,20 +167,20 @@ export class RagTabComponent implements OnInit {
             text_unit_prop: this.textUnitProportionControl,
             community_prop: this.communityProportionControl,
             conversation_history_max_turns: [
-                configs?.conversation_history_max_turns || 5,
-                [Validators.required, Validators.min(0), Validators.max(100)]
+                configs?.conversation_history_max_turns ?? 5,
+                [Validators.required, Validators.min(1), Validators.max(50)]
             ],
             max_context_tokens: [
-                configs?.max_context_tokens || 100,
-                [Validators.required, Validators.min(0), Validators.max(100000)]
+                configs?.max_context_tokens ?? 100,
+                [Validators.required, Validators.min(100), Validators.max(100000)]
             ],
             top_k_entities: [
-                configs?.top_k_entities || 10,
-                [Validators.required, Validators.min(0), Validators.max(100)]
+                configs?.top_k_entities ?? 10,
+                [Validators.required, Validators.min(1), Validators.max(100)]
             ],
             top_k_relationships: [
-                configs?.top_k_relationships || 10,
-                [Validators.required, Validators.min(0), Validators.max(100)]
+                configs?.top_k_relationships ?? 10,
+                [Validators.required, Validators.min(1), Validators.max(100)]
             ],
         });
     }

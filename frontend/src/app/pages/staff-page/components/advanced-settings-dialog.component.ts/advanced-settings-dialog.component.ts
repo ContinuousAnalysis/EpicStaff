@@ -174,7 +174,7 @@ export class AdvancedSettingsDialogComponent implements OnInit {
             ...rest,
             rag,
             search_configs: rag?.rag_type
-                ? { [rag.rag_type]: search_configs }
+                ? { ...this.data.search_configs, [rag.rag_type]: search_configs }
                 : null,
         };
 
