@@ -68,6 +68,7 @@ from tables.models.crew_models import (
 )
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.graph_models import (
+    CodeAgentNode,
     Condition,
     ConditionGroup,
     DecisionTableNode,
@@ -100,6 +101,7 @@ from tables.models.tag_models import (
     LLMModelTag,
 )
 from tables.models.vector_models import MemoryDatabase
+from tables.models.label_models import Label
 from tables.validators.tool_config_validator import ToolConfigValidator, eval_any
 from tables.models import (
     AgentSessionMessage,
@@ -331,6 +333,10 @@ class PythonCodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer
         model = PythonCode
         fields = "__all__"
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "code": {"allow_blank": True},
+            "entrypoint": {"allow_blank": True},
+        }
 
     def to_representation(self, instance):
         """Convert 'libraries' string to a list of strings for output."""
@@ -1309,6 +1315,12 @@ class LLMNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
         return data
 
 
+class CodeAgentNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CodeAgentNode
+        fields = "__all__"
+
+
 class EdgeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
         model = Edge
@@ -1460,6 +1472,7 @@ class SessionSerializer(serializers.ModelSerializer):
             "finished_at",
             "graph",
             "graph_schema",
+            "parent_session",
         ]
 
 
@@ -1473,6 +1486,7 @@ class SessionLightSerializer(serializers.ModelSerializer):
             "status_updated_at",
             "created_at",
             "finished_at",
+            "parent_session",
         )
 
 
@@ -1506,8 +1520,11 @@ class GraphTagSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class GraphLightSerializer(serializers.ModelSerializer):
+class GraphLightBaseSerializer(serializers.ModelSerializer):
     tags = GraphTagSerializer(many=True, read_only=True)
+    label_ids = serializers.PrimaryKeyRelatedField(
+        many=True, read_only=True, source="labels"
+    )
 
     class Meta:
         model = Graph
@@ -1516,7 +1533,22 @@ class GraphLightSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "tags",
+            "epicchat_enabled",
+            "label_ids",
+            "created_at",
+            "updated_at",
         ]
+
+
+class GraphLightSerializer(GraphLightBaseSerializer):
+    subflows = serializers.SerializerMethodField()
+
+    class Meta(GraphLightBaseSerializer.Meta):
+        fields = GraphLightBaseSerializer.Meta.fields + ["subflows"]
+
+    def get_subflows(self, obj):
+        graphs = Graph.objects.get_transitive_subflows(obj.id)
+        return GraphLightBaseSerializer(graphs, many=True).data
 
 
 class RealtimeModelSerializer(serializers.ModelSerializer):
@@ -1631,14 +1663,30 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
             "webhook_trigger",
         ] + BaseGraphEntityMixin.Meta.common_fields
 
+    def to_internal_value(self, data):
+        # COMMIT_COMMENTS: Accept webhook_trigger as int FK ID (sent by frontend
+        # after loading from backend) in addition to nested dict — prevents
+        # validation error when the frontend round-trips the serialized data.
+        wt = data.get("webhook_trigger")
+        if isinstance(wt, int):
+            self._webhook_trigger_id = wt
+            data = data.copy()
+            data["webhook_trigger"] = None
+        else:
+            self._webhook_trigger_id = None
+        return super().to_internal_value(data)
+
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
         webhook_trigger_data = validated_data.pop("webhook_trigger", None)
+        wt_id = getattr(self, "_webhook_trigger_id", None)
 
         python_code = PythonCode.objects.create(**python_code_data)
 
         webhook_trigger_instance = None
-        if webhook_trigger_data:
+        if wt_id:
+            webhook_trigger_instance = WebhookTrigger.objects.filter(id=wt_id).first()
+        elif webhook_trigger_data:
             path = webhook_trigger_data.get("path")
             ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
@@ -1661,7 +1709,11 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
                 setattr(python_code, attr, value)
             python_code.save()
 
-        if "webhook_trigger" in validated_data:
+        wt_id = getattr(self, "_webhook_trigger_id", None)
+        if wt_id:
+            instance.webhook_trigger = WebhookTrigger.objects.filter(id=wt_id).first()
+            validated_data.pop("webhook_trigger", None)
+        elif "webhook_trigger" in validated_data:
             webhook_trigger_data = validated_data.pop("webhook_trigger")
 
             if webhook_trigger_data:
@@ -1705,9 +1757,13 @@ class GraphSerializer(serializers.ModelSerializer):
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
     subgraph_node_list = SubGraphNodeSerializer(many=True, read_only=True)
+    code_agent_node_list = CodeAgentNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
+    )
+    label_ids = serializers.PrimaryKeyRelatedField(
+        many=True, source="labels", queryset=Label.objects.all(), required=False
     )
     graph_note_list = GraphNoteSerializer(many=True, read_only=True)
 
@@ -1715,6 +1771,7 @@ class GraphSerializer(serializers.ModelSerializer):
         model = Graph
         fields = [
             "id",
+            "uuid",
             "name",
             "metadata",
             "description",
@@ -1728,13 +1785,42 @@ class GraphSerializer(serializers.ModelSerializer):
             "webhook_trigger_node_list",
             "decision_table_node_list",
             "subgraph_node_list",
+            "code_agent_node_list",
             "start_node_list",
             "end_node_list",
             "time_to_live",
             "persistent_variables",
+            "epicchat_enabled",
             "telegram_trigger_node_list",
+            "label_ids",
             "graph_note_list",
         ]
+
+    def create(self, validated_data):
+        labels = validated_data.pop("labels", [])
+        instance = super().create(validated_data)
+        instance.labels.set(labels)
+        return instance
+
+    def update(self, instance, validated_data):
+        labels = validated_data.pop("labels", None)
+        instance = super().update(instance, validated_data)
+        if labels is not None:
+            instance.labels.set(labels)
+        return instance
+
+    def create(self, validated_data):
+        labels = validated_data.pop("labels", [])
+        instance = super().create(validated_data)
+        instance.labels.set(labels)
+        return instance
+
+    def update(self, instance, validated_data):
+        labels = validated_data.pop("labels", None)
+        instance = super().update(instance, validated_data)
+        if labels is not None:
+            instance.labels.set(labels)
+        return instance
 
 
 class GraphFileReadSerializer(serializers.ModelSerializer):
@@ -1824,6 +1910,34 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
+
+class LabelSerializer(serializers.ModelSerializer):
+    full_path = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Label
+        fields = ["id", "name", "parent", "created_at", "full_path"]
+        read_only_fields = ["id", "created_at", "full_path"]
+        extra_kwargs = {
+            "name": {"validators": []},
+        }
+
+    def validate(self, attrs):
+        name = attrs.get("name")
+        parent = attrs.get("parent")
+
+        if parent is None:
+            if Label.objects.filter(name=name, parent__isnull=True).exists():
+                raise serializers.ValidationError(
+                    {"name": "Top-level label with this name already exists."}
+                )
+        else:
+            if Label.objects.filter(name=name, parent=parent).exists():
+                raise serializers.ValidationError(
+                    {"name": "Label with this name already exists under this parent."}
+                )
+
+        return attrs
 
 
 class VoiceSettingsSerializer(serializers.ModelSerializer):

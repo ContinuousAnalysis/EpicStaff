@@ -1,20 +1,11 @@
-import {
-    Component,
-    Input,
-    ChangeDetectionStrategy,
-    OnDestroy,
-    AfterViewInit,
-    ElementRef,
-    ViewChild,
-    ChangeDetectorRef,
-} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { GraphNoteModel } from '../../../core/models/node.model';
+import { EFResizeHandleType, FFlowModule } from '@foblex/flow';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+
+import { GraphNoteModel } from '../../../core/models/node.model';
 import { FlowService } from '../../../services/flow.service';
-import { FFlowModule, EFResizeHandleType } from '@foblex/flow';
 import { ResizeHandleComponent } from '../../resize-handle/resize-handle.component';
 
 @Component({
@@ -22,16 +13,11 @@ import { ResizeHandleComponent } from '../../resize-handle/resize-handle.compone
     standalone: true,
     imports: [CommonModule, FFlowModule, FormsModule, ResizeHandleComponent],
     template: `
-        <div
-            class="note-container"
-            [style.background-color]="node.data.backgroundColor || '#ffffd1'"
-        >
+        <div class="note-container" [style.background-color]="node.data.backgroundColor || '#ffffd1'">
             <div class="content-container">
                 {{ node.data.content || 'Add note text...' }}
             </div>
-            <app-resize-handle
-                [handleType]="eResizeHandleType.RIGHT_BOTTOM"
-            ></app-resize-handle>
+            <app-resize-handle [handleType]="eResizeHandleType.RIGHT_BOTTOM"></app-resize-handle>
         </div>
     `,
     styles: [

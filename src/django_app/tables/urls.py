@@ -18,6 +18,7 @@ from tables.views.model_view_sets import (
     PythonNodeViewSet,
     FileExtractorNodeViewSet,
     AudioTranscriptionNodeViewSet,
+    CodeAgentNodeViewSet,
     LLMNodeViewSet,
     StartNodeModelViewSet,
     RealtimeConfigModelViewSet,
@@ -57,6 +58,7 @@ from tables.views.model_view_sets import (
     TwilioConfigureWebhookView,
     WebhookTriggerNodeViewSet,
     WebhookTriggerViewSet,
+    LabelViewSet,
 )
 
 from tables.views.views import (
@@ -106,7 +108,7 @@ from tables.views.knowledge_views.naive_rag_views import (
 )
 
 
-from tables.views.sse_views import RunSessionSSEView, RunSessionSSEViewSwagger
+from tables.views.sse_views import RunSessionSSEView, RunSessionSSEViewSwagger, FilteredRunSessionSSEView
 
 router = DefaultRouter()
 router.register(r"template-agents", TemplateAgentReadWriteViewSet)
@@ -141,6 +143,7 @@ router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
 router.register(r"subgraph-nodes", SubGraphNodeModelViewSet)
+router.register(r"code-agent-nodes", CodeAgentNodeViewSet)
 
 router.register(r"edges", EdgeViewSet)
 router.register(r"conditionaledges", ConditionalEdgeViewSet)
@@ -178,6 +181,7 @@ router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldView
 router.register(r"graph-notes", GraphNoteViewSet)
 router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
 
+router.register(r"labels", LabelViewSet)
 
 urlpatterns = [
     path(
@@ -256,6 +260,11 @@ urlpatterns = [
         "run-session/subscribe/<int:session_id>/",
         RunSessionSSEView.as_view(),
         name="run-session-subscribe",
+    ),
+    path(
+        "run-session/subscribe/<int:session_id>/filtered/",
+        FilteredRunSessionSSEView.as_view(),
+        name="run-session-subscribe-filtered",
     ),
     path(
         "run-session/subscribe/<int:session_id>/swagger/",

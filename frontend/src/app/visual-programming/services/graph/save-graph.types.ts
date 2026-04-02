@@ -1,41 +1,42 @@
-import { CrewNode } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
-import { PythonNode } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
-import { GetLLMNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
-import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
-import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
-import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
-import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { GetCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
+import { CrewNode } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
+import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
 import { Edge } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { EndNode } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
-import { GetDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
+import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import { GraphNote } from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
+import { GetLLMNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
+import { PythonNode } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
+import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
+import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import {
+    AudioToTextNodeModel,
     BaseNodeModel,
+    CodeAgentNodeModel,
+    DecisionTableNodeModel,
+    EdgeNodeModel,
+    EndNodeModel,
+    FileExtractorNodeModel,
+    GraphNoteModel,
+    LLMNodeModel,
+    NodeModel,
     ProjectNodeModel,
     PythonNodeModel,
-    LLMNodeModel,
-    FileExtractorNodeModel,
-    AudioToTextNodeModel,
     SubGraphNodeModel,
-    WebhookTriggerNodeModel,
     TelegramTriggerNodeModel,
-    EndNodeModel,
-    EdgeNodeModel,
-    DecisionTableNodeModel,
-    GraphNoteModel,
-    NodeModel,
+    WebhookTriggerNodeModel,
 } from '../../core/models/node.model';
 
 // ---- UI metadata stored in each node's backend `metadata` JSON field ----
 
-export interface NodeUIMetadata {
+export interface NodeUIMetadata extends Record<string, unknown> {
     position: { x: number; y: number };
     color: string;
     icon: string;
     size: { width: number; height: number };
-    parentId: string | null;
 }
 
 /**
@@ -49,7 +50,6 @@ export function getUIMetadataForComparison(node: BaseNodeModel): NodeUIMetadata 
         color: node.color,
         icon: node.icon,
         size: node.size,
-        parentId: node.parentId,
     };
 }
 
@@ -69,7 +69,7 @@ export interface CreatedNodeMapping {
 
 /** Result of executing a diff: raw HTTP results + mappings for created nodes. */
 export interface NodeDiffResult {
-    results: any[];
+    results: unknown[];
     createdMappings: CreatedNodeMapping[];
 }
 
@@ -117,6 +117,7 @@ export interface GraphPreviousState {
     endNodes: EndNode[];
     decisionTableNodes: GetDecisionTableNodeRequest[];
     graphNotes: GraphNote[];
+    codeAgentNodes: GetCodeAgentNodeRequest[];
 }
 
 // ---- New state (what the UI currently shows) ----
@@ -137,6 +138,7 @@ export interface GraphNewState {
     endNodes: EndNodeModel[];
     decisionTableNodes: DecisionTableNodeModel[];
     graphNotes: GraphNoteModel[];
+    codeAgentNodes: CodeAgentNodeModel[];
     /** All UI nodes — used to resolve UUID → backendId for decision tables/edges. */
     allNodes: NodeModel[];
 }
@@ -155,6 +157,7 @@ export interface NodeOnlyDiff {
     decisionTableNodes: NodeDiff<GetDecisionTableNodeRequest, DecisionTableNodeModel>;
     endNodes: NodeDiff<EndNode, EndNodeModel>;
     graphNotes: NodeDiff<GraphNote, GraphNoteModel>;
+    codeAgentNodes: NodeDiff<GetCodeAgentNodeRequest, CodeAgentNodeModel>;
 }
 
 // ---- Connection diff (Phase 2 — after node IDs are known) ----

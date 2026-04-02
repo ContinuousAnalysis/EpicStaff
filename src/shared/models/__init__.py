@@ -32,6 +32,7 @@ from .graph_nodes import (
     SubGraphNodeData,
     GraphData,
     SubGraphData,
+    CodeAgentNodeData,
 )
 from .knowledge import (
     BaseRagSearchConfig,
@@ -99,6 +100,7 @@ __all__ = [
     "SubGraphNodeData",
     "GraphData",
     "SubGraphData",
+    "CodeAgentNodeData",
     # knowledge
     "BaseRagSearchConfig",
     "NaiveRagSearchConfig",

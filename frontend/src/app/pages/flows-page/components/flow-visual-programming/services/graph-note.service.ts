@@ -1,8 +1,9 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CreateGraphNoteRequest, GraphNote } from '../models/graph-note.model';
+
 import { ConfigService } from '../../../../../services/config/config.service';
+import { CreateGraphNoteRequest, GraphNote } from '../models/graph-note.model';
 
 @Injectable({
     providedIn: 'root',
@@ -12,7 +13,10 @@ export class GraphNoteService {
         'Content-Type': 'application/json',
     });
 
-    constructor(private http: HttpClient, private configService: ConfigService) {}
+    constructor(
+        private http: HttpClient,
+        private configService: ConfigService
+    ) {}
 
     private get apiUrl(): string {
         return this.configService.apiUrl + 'graph-notes/';
@@ -26,7 +30,7 @@ export class GraphNoteService {
         return this.http.put<GraphNote>(`${this.apiUrl}${id}/`, request, { headers: this.headers });
     }
 
-    deleteGraphNote(id: string): Observable<any> {
-        return this.http.delete(`${this.apiUrl}${id}/`, { headers: this.headers });
+    deleteGraphNote(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}${id}/`, { headers: this.headers });
     }
 }

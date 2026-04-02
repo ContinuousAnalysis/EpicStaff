@@ -1,12 +1,10 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { forkJoin, map, Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 import { ApiGetRequest } from '../../../core/models/api-request.model';
 import { ConfigService } from '../../../services/config/config.service';
-import { GetProjectRequest } from '../../projects/models/project.model';
 import {
-    Agent,
     CreateAgentRequest,
     GetAgentRequest,
     PartialUpdateAgentRequest,
@@ -24,7 +22,8 @@ export class AgentsService {
     constructor(
         private http: HttpClient,
         private configService: ConfigService
-    ) {}
+    ) {
+    }
 
     // Dynamically retrieve the API URL from ConfigService
     private get apiUrl(): string {
@@ -39,9 +38,7 @@ export class AgentsService {
 
     // GET agents that have a realtime config configured
     getAgentsWithRealtimeConfig(): Observable<GetAgentRequest[]> {
-        return this.http
-            .get<ApiGetRequest<GetAgentRequest>>(`${this.apiUrl}?has_realtime_config=true`)
-            .pipe(map((response) => response.results));
+        return this.http.get<ApiGetRequest<GetAgentRequest>>(`${this.apiUrl}?has_realtime_config=true`).pipe(map((response) => response.results));
     }
 
     // GET agents by project (crew) ID
