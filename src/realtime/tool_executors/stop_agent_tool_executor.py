@@ -23,11 +23,12 @@ class StopAgentToolExecutor(BaseToolExecutor):
             properties={},
             required=[],
         )
-        return RealtimeTool(
+        tool = RealtimeTool(
             name=self.tool_name,
-            description=self.stop_prompt,
             parameters=tool_parameters,
         )
+        tool.description = self.stop_prompt
+        return tool
 
     async def get_realtime_tool_model(self) -> RealtimeTool:
         return self._realtime_model

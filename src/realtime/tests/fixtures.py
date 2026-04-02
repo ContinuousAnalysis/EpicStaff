@@ -11,6 +11,21 @@ from tool_executors.base_tool_executor import BaseToolExecutor
 from tests.conftest import CONNECTION_KEY
 
 
+class FakeTokenizer:
+    """Returns one token per character — no tiktoken download needed in tests."""
+
+    def tokenize(self, text: str) -> list[int]:
+        return list(range(len(text)))
+
+    def detokenize(self, tokens) -> str:
+        return "x" * len(tokens)
+
+
+@pytest.fixture
+def fake_tokenizer():
+    return FakeTokenizer()
+
+
 class DummyToolExecutor(BaseToolExecutor):
     def __init__(self, name="dummy_tool"):
         super().__init__(tool_name=name)
