@@ -22,11 +22,7 @@
                 [class.configure-models-dialog__tab--active]="activeTabId() === tab.id"
                 (click)="selectTab(tab.id)"
             >
-                <i
-                    class="configure-models-dialog__tab-icon"
-                    [ngClass]="tab.iconClass"
-                    aria-hidden="true"
-                ></i>
+                <i class="configure-models-dialog__tab-icon" [ngClass]="tab.iconClass" aria-hidden="true"></i>
                 {{ tab.label }}
             </button>
             @if (!isLast) {
@@ -39,9 +35,7 @@
         @switch (activeTabId()) {
             @case (tabIds.QUICKSTART) {
                 <section class="configure-models-dialog__panel">
-                    <app-quickstart-section
-                        [activeTabSignal]="activeTabId"
-                    ></app-quickstart-section>
+                    <app-quickstart-section [activeTabSignal]="activeTabId"></app-quickstart-section>
                 </section>
             }
             @case (tabIds.DEFAULT_LLMS) {
@@ -59,8 +53,9 @@
                     <app-ngrok-config-section></app-ngrok-config-section>
                 </section>
             }
+            @case (tabIds.VOICE_SETTINGS) {
+                <app-voice-settings-tab></app-voice-settings-tab>
+            }
         }
     </main>
 </div>
-
-

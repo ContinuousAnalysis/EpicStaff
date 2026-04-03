@@ -2,14 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnIni
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CustomInputComponent, SelectComponent, SelectItem } from '@shared/components';
+import { GetNgrokConfigResponse, VoiceSettings } from '@shared/models';
+import { NgrokConfigApiService } from '@shared/services';
 
 import { LoadingState } from '../../../../core/enums/loading-state.enum';
 import { ToastService } from '../../../../services/notifications';
 import { GetAgentRequest } from '../../../staff/models/agent.model';
 import { AgentsService } from '../../../staff/services/staff.service';
-import { GetNgrokConfigResponse } from '../../models/ngrok-config.model';
-import { VoiceSettings } from '../../models/voice-settings.model';
-import { NgrokConfigApiService } from '../../services/ngrok-config/ngrok-config-api.service';
 import { TwilioPhoneNumber, VoiceSettingsService } from '../../services/voice-settings.service';
 
 const PHONE_CACHE_TTL_MS = 60_000;
@@ -23,12 +22,12 @@ interface PhoneNumberCache {
 
 @Component({
     selector: 'app-voice-settings-tab',
-    templateUrl: './voice-settings-tab.component.html',
-    styleUrls: ['./voice-settings-tab.component.scss'],
+    templateUrl: './voice-settings-section.component.html',
+    styleUrls: ['./voice-settings-section.component.scss'],
     imports: [ReactiveFormsModule, ButtonComponent, CustomInputComponent, SelectComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class VoiceSettingsTabComponent implements OnInit {
+export class VoiceSettingsSectionComponent implements OnInit {
     private voiceSettingsService = inject(VoiceSettingsService);
     private ngrokApiService = inject(NgrokConfigApiService);
     private agentsService = inject(AgentsService);

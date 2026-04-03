@@ -1,12 +1,11 @@
 import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, Inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RealtimeModelConfigsService } from '@shared/services';
 import { finalize } from 'rxjs';
 
-import {
-    RealtimeModelConfigsService
-} from "../../../../../../features/settings-dialog/services/realtime-llms/real-time-model-config.service";
 import { PartialUpdateAgentRequest, RealtimeAgentConfig } from '../../../../../../features/staff/models/agent.model';
 import { FullAgent, PartialAgent } from '../../../../../../features/staff/services/full-agent.service';
 import { AgentsService } from '../../../../../../features/staff/services/staff.service';
@@ -59,7 +58,8 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         private realtimeModelConfigsService: RealtimeModelConfigsService,
         private fb: FormBuilder,
         private toastService: ToastService,
-        private dialog: Dialog
+        private dialog: Dialog,
+        private destroyRef: DestroyRef
     ) {}
 
     ngOnInit(): void {
@@ -89,14 +89,17 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         if (configId == null) {
             return;
         }
-        this.realtimeModelConfigsService.getConfigById(configId).subscribe({
-            next: (config) => {
-                this.isElevenLabs = config.provider_name === 'elevenlabs';
-            },
-            error: () => {
-                // Non-critical — voice dropdown remains as default
-            },
-        });
+        this.realtimeModelConfigsService
+            .getConfigById(configId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (config) => {
+                    this.isElevenLabs = config.provider_name === 'elevenlabs';
+                },
+                error: () => {
+                    // Non-critical — voice dropdown remains as default
+                },
+            });
     }
 
     loadTranscriptionConfigs(): void {

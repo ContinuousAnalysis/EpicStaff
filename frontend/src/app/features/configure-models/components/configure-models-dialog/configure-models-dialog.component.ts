@@ -9,6 +9,7 @@ import { DefaultLlmsSectionComponent } from '../default-llms-section/default-llm
 import { LlmLibrarySectionComponent } from '../llm-library-section/llm-library-section.component';
 import { AppNgrokSectionComponent } from '../ngrok-config-section/ngrok-config-section.component';
 import { QuickstartSectionComponent } from '../quickstart-section/quickstart-section.component';
+import { VoiceSettingsSectionComponent } from '../voice-settings-section/voice-settings-section.component';
 
 @Component({
     selector: 'app-configure-models-dialog',
@@ -19,6 +20,7 @@ import { QuickstartSectionComponent } from '../quickstart-section/quickstart-sec
         LlmLibrarySectionComponent,
         AppIconComponent,
         AppNgrokSectionComponent,
+        VoiceSettingsSectionComponent,
     ],
     templateUrl: './configure-models-dialog.component.html',
     styleUrls: ['./configure-models-dialog.component.scss'],
