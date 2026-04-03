@@ -44,7 +44,6 @@ from tables.models import (
     FileExtractorNode,
     SubGraphNode,
     AudioTranscriptionNode,
-    GraphFile,
 )
 from rest_framework import serializers
 from tables.exceptions import (
@@ -1813,25 +1812,6 @@ class GraphSerializer(serializers.ModelSerializer):
         if labels is not None:
             instance.labels.set(labels)
         return instance
-
-
-class GraphFileReadSerializer(serializers.ModelSerializer):
-    file = serializers.FileField(use_url=True)
-
-    class Meta:
-        model = GraphFile
-        fields = [
-            "id",
-            "graph",
-            "domain_key",
-            "name",
-            "content_type",
-            "size",
-            "file",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = fields
 
 
 class OrganizationSerializer(serializers.ModelSerializer):

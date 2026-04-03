@@ -48,7 +48,6 @@ from tables.views.model_view_sets import (
     RealtimeModelViewSet,
     RealtimeAgentViewSet,
     RealtimeAgentChatViewSet,
-    GraphFileViewSet,
     OrganizationViewSet,
     OrganizationUserViewSet,
     GraphOrganizationViewSet,
@@ -136,7 +135,6 @@ collection_documents_viewset = CollectionDocumentsViewSet.as_view({"get": "list"
 
 # Graphs
 router.register(r"graphs", GraphViewSet, basename="graphs")
-router.register(r"graph-files", GraphFileViewSet)
 router.register(r"crewnodes", CrewNodeViewSet)
 router.register(r"pythonnodes", PythonNodeViewSet)
 router.register(r"file-extractor-nodes", FileExtractorNodeViewSet)

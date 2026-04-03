@@ -11,7 +11,6 @@ from tables.serializers.telegram_trigger_serializers import (
 from tables.utils.telegram_fields import load_telegram_trigger_fields
 from tables.models import Tool
 from tables.models import Crew
-from tables.models import GraphFile
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
 from tables.services.realtime_service import RealtimeService
@@ -324,13 +323,6 @@ class RunSession(APIView):
             )
 
         variables = serializer.validated_data.get("variables", {})
-        graph_files = GraphFile.objects.filter(graph__id=graph_id)
-
-        for graph_file in graph_files:
-            files_dict[graph_file.domain_key] = self._get_file_data(
-                graph_file.file, graph_file.content_type
-            )
-
         for key, file in request.FILES.items():
             files_dict[key] = self._get_file_data(file, file.content_type)
 
