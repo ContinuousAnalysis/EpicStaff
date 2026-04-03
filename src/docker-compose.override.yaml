@@ -23,4 +23,4 @@ services:
 
   frontend:
     ports:
-      - "4201:80"
+      - "${FRONTEND_PORT:-4201}:80"

@@ -195,8 +195,8 @@ export class VoiceSettingsTabComponent implements OnInit {
             });
     }
 
-    onPhoneNumberChange(sid: string | null): void {
-        this.selectedPhoneSid.set(sid);
+    onPhoneNumberChange(sid: unknown): void {
+        this.selectedPhoneSid.set(sid as string | null);
     }
 
     onConfigureWebhook(): void {

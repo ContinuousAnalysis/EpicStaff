@@ -77,8 +77,16 @@ services:
       - ./crew/main.py:/app/src/crew/main.py:cached
 
   frontend:
+    image: frontend-dev
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.fe
+      target: development
     ports:
-      - "${FRONTEND_PORT:-4201}:80"
+      - "${FRONTEND_PORT:-4200}:4200"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
     env_file:
       - ./.env
       - ../dev/dev.env
@@ -119,3 +127,4 @@ services:
     environment:
       - DOMAIN_NAME=localhost
       - SSL_ENABLE=#
+      - FRONTEND_INTERNAL_PORT=4200
