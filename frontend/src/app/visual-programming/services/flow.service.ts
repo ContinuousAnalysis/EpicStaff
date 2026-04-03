@@ -1,7 +1,4 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { IPoint, IRect } from '@foblex/2d';
-import { Observable, of } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
 
 import { NodeType } from '../core/enums/node-type';
 import { generatePortsForDecisionTableNode } from '../core/helpers/helpers';
