@@ -12,16 +12,54 @@ from src.crew.services.schema_converter.converter import generate_model_from_sch
 from src.crew.services.graph.events import StopEvent
 
 
+def _unwrap_single_nested_schema(schema: dict) -> tuple[dict, str | None]:
+    """
+    If the schema has exactly one required property whose type is an object
+    (i.e. a wrapper like `input_data: BrowserToolInput`), return the inner
+    object's schema promoted to top level, plus the wrapper field name.
+
+    Returns (effective_schema, wrapper_key).
+    If no unwrapping is needed, returns (original_schema, None).
+    """
+    props = schema.get("properties", {})
+    if len(props) != 1:
+        return schema, None
+
+    wrapper_key = next(iter(props))
+    inner = props[wrapper_key]
+
+    # Resolve $ref if present
+    if "$ref" in inner:
+        ref_name = inner["$ref"].rsplit("/", 1)[-1]
+        inner = schema.get("$defs", {}).get(ref_name, inner)
+
+    if inner.get("type") != "object" or "properties" not in inner:
+        return schema, None
+
+    flat_schema = {
+        "type": "object",
+        "properties": inner["properties"],
+    }
+    if "required" in inner:
+        flat_schema["required"] = inner["required"]
+    if "title" in schema:
+        flat_schema["title"] = schema["title"]
+
+    return flat_schema, wrapper_key
+
+
 class McpTool:
     def __init__(
         self,
         fast_mcp_client: Client,
         tool_name: str,
         stop_event: StopEvent | None = None,
+        wrapper_key: str | None = None,
     ):
         self.fast_mcp_client = fast_mcp_client
         self.tool_name = tool_name
         self.stop_event = stop_event
+        self.wrapper_key = wrapper_key
 
     async def get_tool_data(self) -> FastMCPTool:
         # List all tools from the server
@@ -36,6 +74,9 @@ class McpTool:
         return tool
 
     async def execute(self, stop_event: StopEvent | None = None, **kwargs):
+        if self.wrapper_key:
+            kwargs = {self.wrapper_key: kwargs}
+
         async with self.fast_mcp_client:
             task = asyncio.create_task(
                 self.fast_mcp_client.call_tool(self.tool_name, arguments=kwargs)
@@ -76,14 +117,22 @@ class CrewaiMcpToolFactory:
         )
         tool = await mcp_tool.get_tool_data()
 
+        wrapper_key = None
+        effective_schema = tool.inputSchema
+        if tool.inputSchema:
+            effective_schema, wrapper_key = _unwrap_single_nested_schema(
+                tool.inputSchema
+            )
+
+        mcp_tool.wrapper_key = wrapper_key
+
         config = {
             "name": tool_data.tool_name,
             "description": tool.description or tool_data.tool_name,
         }
-        if tool.inputSchema:
-            title = tool_data.tool_name
-            tool.inputSchema["title"] = title
-            args_schema = generate_model_from_schema(schema_dict=tool.inputSchema)
+        if effective_schema:
+            effective_schema["title"] = tool_data.tool_name
+            args_schema = generate_model_from_schema(schema_dict=effective_schema)
             config["args_schema"] = args_schema
         config["func"] = partial(sync_wrapper, mcp_tool.execute)
         return CrewaiTool(**config)
