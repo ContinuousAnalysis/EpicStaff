@@ -15,7 +15,11 @@ from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
-from tables.models.webhook_models import WebhookTrigger, NgrokWebhookConfig
+from tables.models.webhook_models import (
+    WebhookTrigger,
+    NgrokWebhookConfig,
+    VoiceSettings,
+)
 from tables.models.graph_models import GraphNote, WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
@@ -1610,6 +1614,10 @@ class RealtimeModelSerializer(serializers.ModelSerializer):
 
 
 class RealtimeConfigSerializer(serializers.ModelSerializer):
+    provider_name = serializers.CharField(
+        source="realtime_model.provider.name", read_only=True
+    )
+
     class Meta:
         model = RealtimeConfig
         fields = "__all__"
@@ -1959,7 +1967,6 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
 
-
 class LabelSerializer(serializers.ModelSerializer):
     full_path = serializers.CharField(read_only=True)
 
@@ -1987,3 +1994,31 @@ class LabelSerializer(serializers.ModelSerializer):
                 )
 
         return attrs
+
+
+class VoiceSettingsSerializer(serializers.ModelSerializer):
+    voice_stream_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = VoiceSettings
+        fields = [
+            "twilio_account_sid",
+            "twilio_auth_token",
+            "voice_agent",
+            "ngrok_config",
+            "voice_stream_url",
+        ]
+
+    def get_voice_stream_url(self, obj):
+        if not obj.ngrok_config:
+            return None
+        from tables.services.webhook_trigger_service import WebhookTriggerService
+        try:
+            base = WebhookTriggerService().get_tunnel_url(ngrok_webhook_config=obj.ngrok_config)
+        except Exception:
+            base = None
+        if not base and obj.ngrok_config.domain:
+            base = f"https://{obj.ngrok_config.domain}"
+        if base:
+            return base.rstrip("/").replace("https://", "wss://").replace("http://", "wss://") + "/voice/stream"
+        return None
