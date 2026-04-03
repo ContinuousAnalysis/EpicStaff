@@ -3,6 +3,12 @@ import zipfile
 from abc import ABC, abstractmethod
 from typing import Iterator
 
+from tables.services.storage_service.dataclasses import (
+    FileInfo,
+    FileListItem,
+    UploadResult,
+)
+
 
 class AbstractStorageBackend(ABC):
     def _iter_archive_entries(self, archive_file) -> Iterator[tuple[str, bytes]]:
@@ -41,12 +47,12 @@ class AbstractStorageBackend(ABC):
         raise ValueError("Unsupported archive format — expected ZIP or TAR")
 
     @abstractmethod
-    def list_(self, prefix: str) -> list[dict]:
-        """List files and folders at prefix. Returns [{name, type, size, modified}]."""
+    def list_(self, prefix: str) -> list[FileListItem]:
+        """List files and folders at prefix."""
 
     @abstractmethod
-    def upload(self, path: str, file_object) -> dict:
-        """Upload file_object to path. Returns {path, size}."""
+    def upload(self, path: str, file_object) -> UploadResult:
+        """Upload file_object to path."""
 
     @abstractmethod
     def download(self, path: str) -> bytes:
@@ -69,8 +75,8 @@ class AbstractStorageBackend(ABC):
         """Copy file or folder."""
 
     @abstractmethod
-    def info(self, path: str) -> dict:
-        """Return {name, size, content_type, modified}."""
+    def info(self, path: str) -> FileInfo:
+        """Return file metadata."""
 
     @abstractmethod
     def exists(self, path: str) -> bool:

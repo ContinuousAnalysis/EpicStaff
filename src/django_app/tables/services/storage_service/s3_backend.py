@@ -6,6 +6,11 @@ import boto3
 from botocore.exceptions import ClientError
 
 from tables.services.storage_service.base import AbstractStorageBackend
+from tables.services.storage_service.dataclasses import (
+    FileInfo,
+    FileListItem,
+    UploadResult,
+)
 
 
 class S3StorageBackend(AbstractStorageBackend):
@@ -43,13 +48,13 @@ class S3StorageBackend(AbstractStorageBackend):
             return full_key[len(self.organization_prefix) :]
         return full_key
 
-    def list_(self, prefix: str) -> list[dict]:
+    def list_(self, prefix: str) -> list[FileListItem]:
         full_prefix = self._full_path(prefix)
         if full_prefix and not full_prefix.endswith("/"):
             full_prefix += "/"
 
         paginator = self.client.get_paginator("list_objects_v2")
-        results = []
+        results: list[FileListItem] = []
 
         for page in paginator.paginate(
             Bucket=self.bucket_name,
@@ -60,12 +65,12 @@ class S3StorageBackend(AbstractStorageBackend):
                 folder_key = common_prefix["Prefix"]
                 folder_name = folder_key.rstrip("/").split("/")[-1]
                 results.append(
-                    {
-                        "name": folder_name,
-                        "type": "folder",
-                        "size": 0,
-                        "modified": None,
-                    }
+                    FileListItem(
+                        name=folder_name,
+                        type="folder",
+                        size=0,
+                        modified=None,
+                    )
                 )
 
             for obj in page.get("Contents", []):
@@ -73,21 +78,21 @@ class S3StorageBackend(AbstractStorageBackend):
                     continue
                 file_name = obj["Key"].split("/")[-1]
                 results.append(
-                    {
-                        "name": file_name,
-                        "type": "file",
-                        "size": obj["Size"],
-                        "modified": obj["LastModified"].isoformat(),
-                    }
+                    FileListItem(
+                        name=file_name,
+                        type="file",
+                        size=obj["Size"],
+                        modified=obj["LastModified"].isoformat(),
+                    )
                 )
 
         return results
 
-    def upload(self, path: str, file_object) -> dict:
+    def upload(self, path: str, file_object) -> UploadResult:
         full_path = self._full_path(path)
         self.client.upload_fileobj(file_object, self.bucket_name, full_path)
         head = self.client.head_object(Bucket=self.bucket_name, Key=full_path)
-        return {"path": path, "size": head["ContentLength"]}
+        return UploadResult(path=path, size=head["ContentLength"])
 
     def download(self, path: str) -> bytes:
         full_path = self._full_path(path)
@@ -182,7 +187,7 @@ class S3StorageBackend(AbstractStorageBackend):
         if not copied:
             raise FileNotFoundError(f"Source path does not exist: {source_path}")
 
-    def info(self, path: str) -> dict:
+    def info(self, path: str) -> FileInfo:
         full_path = self._full_path(path)
         try:
             head = self.client.head_object(Bucket=self.bucket_name, Key=full_path)
@@ -191,13 +196,13 @@ class S3StorageBackend(AbstractStorageBackend):
                 raise FileNotFoundError(f"File does not exist: {path}")
             raise
         name = path.rstrip("/").split("/")[-1]
-        return {
-            "name": name,
-            "path": path,
-            "size": head["ContentLength"],
-            "content_type": head.get("ContentType", "application/octet-stream"),
-            "modified": head["LastModified"].isoformat(),
-        }
+        return FileInfo(
+            name=name,
+            path=path,
+            size=head["ContentLength"],
+            content_type=head.get("ContentType", "application/octet-stream"),
+            modified=head["LastModified"].isoformat(),
+        )
 
     def exists(self, path: str) -> bool:
         full_path = self._full_path(path)

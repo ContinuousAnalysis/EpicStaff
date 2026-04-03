@@ -6,6 +6,14 @@ from typing import Iterator
 from rest_framework.exceptions import PermissionDenied
 
 from tables.services.storage_service.base import AbstractStorageBackend
+from tables.services.storage_service.dataclasses import (
+    ArchiveUploadResult,
+    FileInfo,
+    FileListItem,
+    FileUploadResult,
+    UploadFileResult,
+    UploadResult,
+)
 from tables.services.storage_service.decorators import check_permission
 from tables.services.storage_service.enums import StorageAction
 
@@ -71,15 +79,22 @@ class StorageManager:
     # --- Single-org operations ---
 
     @check_permission
-    def list_(self, user_name: str, org_id: int, prefix: str = "") -> list[dict]:
+    def list_(
+        self, user_name: str, org_id: int, prefix: str = ""
+    ) -> list[FileListItem]:
         return self._backend.list_(self._build_storage_key(org_id, prefix))
 
     @check_permission
-    def upload(self, user_name: str, org_id: int, path: str, file_object) -> dict:
+    def upload(
+        self, user_name: str, org_id: int, path: str, file_object
+    ) -> UploadResult:
         result = self._backend.upload(
             self._build_storage_key(org_id, path), file_object
         )
-        return {**result, "path": self._strip_org_prefix(org_id, result["path"])}
+        return UploadResult(
+            path=self._strip_org_prefix(org_id, result.path),
+            size=result.size,
+        )
 
     @check_permission
     def download(self, user_name: str, org_id: int, path: str) -> bytes:
@@ -112,7 +127,7 @@ class StorageManager:
         )
 
     @check_permission
-    def info(self, user_name: str, org_id: int, path: str) -> dict:
+    def info(self, user_name: str, org_id: int, path: str) -> FileInfo:
         return self._backend.info(self._build_storage_key(org_id, path))
 
     @check_permission
@@ -158,10 +173,12 @@ class StorageManager:
         file_object.seek(pos)
         return result
 
-    def upload_file(self, user_name: str, org_id: int, path: str, file_object) -> dict:
+    def upload_file(
+        self, user_name: str, org_id: int, path: str, file_object
+    ) -> UploadFileResult:
         """
         Upload a file, auto-extracting archives (ZIP/TAR).
-        Returns dict with "type" key ("archive" or "file") plus payload.
+        Returns FileUploadResult or ArchiveUploadResult.
         """
         is_archive = self._is_archive(file_object)
 
@@ -170,7 +187,7 @@ class StorageManager:
                 user_name, org_id, action=StorageAction.UPLOAD, path=path
             )
             extracted = self._upload_archive(org_id, path, file_object)
-            return {"type": "archive", "extracted": extracted}
+            return ArchiveUploadResult(type="archive", extracted=extracted)
 
         destination = (
             f"{path.rstrip('/')}/{file_object.name}" if path else file_object.name
@@ -181,11 +198,11 @@ class StorageManager:
         result = self._backend.upload(
             self._build_storage_key(org_id, destination), file_object
         )
-        return {
-            "type": "file",
-            "path": self._strip_org_prefix(org_id, result["path"]),
-            "size": result["size"],
-        }
+        return FileUploadResult(
+            type="file",
+            path=self._strip_org_prefix(org_id, result.path),
+            size=result.size,
+        )
 
     # --- Cross-org operations ---
 

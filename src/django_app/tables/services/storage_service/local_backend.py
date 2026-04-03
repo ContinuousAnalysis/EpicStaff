@@ -7,6 +7,11 @@ from pathlib import Path
 from typing import Iterator
 
 from tables.services.storage_service.base import AbstractStorageBackend
+from tables.services.storage_service.dataclasses import (
+    FileInfo,
+    FileListItem,
+    UploadResult,
+)
 
 
 class LocalStorageBackend(AbstractStorageBackend):
@@ -28,12 +33,12 @@ class LocalStorageBackend(AbstractStorageBackend):
             raise PermissionError(f"Path traversal detected: {path}")
         return resolved
 
-    def list_(self, prefix: str) -> list[dict]:
+    def list_(self, prefix: str) -> list[FileListItem]:
         directory = self._resolve(prefix)
         if not directory.exists() or not directory.is_dir():
             return []
 
-        results = []
+        results: list[FileListItem] = []
         for entry in sorted(directory.iterdir()):
             stat = entry.stat()
             modified = datetime.fromtimestamp(
@@ -41,30 +46,30 @@ class LocalStorageBackend(AbstractStorageBackend):
             ).isoformat()
             if entry.is_dir():
                 results.append(
-                    {
-                        "name": entry.name,
-                        "type": "folder",
-                        "size": 0,
-                        "modified": modified,
-                    }
+                    FileListItem(
+                        name=entry.name,
+                        type="folder",
+                        size=0,
+                        modified=modified,
+                    )
                 )
             else:
                 results.append(
-                    {
-                        "name": entry.name,
-                        "type": "file",
-                        "size": stat.st_size,
-                        "modified": modified,
-                    }
+                    FileListItem(
+                        name=entry.name,
+                        type="file",
+                        size=stat.st_size,
+                        modified=modified,
+                    )
                 )
         return results
 
-    def upload(self, path: str, file_object) -> dict:
+    def upload(self, path: str, file_object) -> UploadResult:
         destination = self._resolve(path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         file_bytes = file_object.read()
         destination.write_bytes(file_bytes)
-        return {"path": path, "size": len(file_bytes)}
+        return UploadResult(path=path, size=len(file_bytes))
 
     def download(self, path: str) -> bytes:
         return self._resolve(path).read_bytes()
@@ -104,18 +109,18 @@ class LocalStorageBackend(AbstractStorageBackend):
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(source), str(destination))
 
-    def info(self, path: str) -> dict:
+    def info(self, path: str) -> FileInfo:
         target = self._resolve(path)
         stat = target.stat()
         content_type, _ = mimetypes.guess_type(target.name)
         modified = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
-        return {
-            "name": target.name,
-            "path": path,
-            "size": stat.st_size,
-            "content_type": content_type or "application/octet-stream",
-            "modified": modified,
-        }
+        return FileInfo(
+            name=target.name,
+            path=path,
+            size=stat.st_size,
+            content_type=content_type or "application/octet-stream",
+            modified=modified,
+        )
 
     def exists(self, path: str) -> bool:
         return self._resolve(path).exists()
