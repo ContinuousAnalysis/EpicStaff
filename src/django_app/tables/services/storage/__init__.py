@@ -6,6 +6,25 @@ from tables.services.storage.base import AbstractStorageBackend
 from tables.services.storage.local_backend import LocalStorageBackend
 from tables.services.storage.s3_backend import S3StorageBackend
 
+_storage_manager = None
+
+
+def get_storage_manager() -> "StorageManager":  # noqa: F821
+    """
+    Return the singleton StorageManager backed by a prefix-free backend.
+
+    The manager handles all org-path composition itself, so the backend is
+    initialized with an empty organization_prefix. Singleton is safe because
+    the manager holds no per-request state — user_name and org_id are always
+    passed as arguments.
+    """
+    global _storage_manager
+    if _storage_manager is None:
+        from tables.services.storage.manager import StorageManager
+
+        _storage_manager = StorageManager(get_storage_backend(organization_prefix=""))
+    return _storage_manager
+
 
 def get_storage_backend(organization_prefix: str = "org_1/") -> AbstractStorageBackend:
     """
