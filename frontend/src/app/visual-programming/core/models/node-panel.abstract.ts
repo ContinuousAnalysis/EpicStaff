@@ -1,7 +1,6 @@
 import { Component, effect, inject, input } from '@angular/core';
 import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 
-import { UniqueNodeNameValidatorService } from '../../services/unique-node-name.validator';
 import { NodeModel } from './node.model';
 
 @Component({
@@ -11,7 +10,6 @@ import { NodeModel } from './node.model';
 })
 export abstract class BaseSidePanel<T extends NodeModel> {
     protected fb = inject(FormBuilder);
-    protected uniqueNameValidator = inject(UniqueNodeNameValidatorService);
     private lastInitializedNodeId: string | null = null;
 
     node = input.required<T>();
@@ -58,18 +56,13 @@ export abstract class BaseSidePanel<T extends NodeModel> {
     }
 
     protected createNodeNameValidators(additionalValidators: ValidatorFn[] = []): ValidatorFn[] {
-        const currentNodeId = this.node().id;
-        return [
-            Validators.required,
-            this.uniqueNameValidator.createSyncUniqueNameValidator(currentNodeId),
-            ...additionalValidators,
-        ];
+        return [Validators.required, ...additionalValidators];
     }
 
     protected getNodeNameErrorMessage(): string {
         const nodeNameControl = this.form.get('node_name');
-        if (nodeNameControl && nodeNameControl.errors) {
-            return this.uniqueNameValidator.getValidationErrorMessage(nodeNameControl.errors);
+        if (nodeNameControl?.errors?.['required']) {
+            return 'Node name is required';
         }
         return '';
     }

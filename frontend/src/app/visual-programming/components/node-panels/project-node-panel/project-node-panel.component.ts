@@ -22,7 +22,7 @@ interface InputMapPair {
                 <form [formGroup]="form" class="form-container">
                     <app-custom-input
                         label="Node Name"
-                        tooltipText="The unique identifier used to reference this project node. This name must be unique within the flow."
+                        tooltipText="The name used to reference this project node."
                         formControlName="node_name"
                         placeholder="Enter node name"
                         [activeColor]="activeColor"

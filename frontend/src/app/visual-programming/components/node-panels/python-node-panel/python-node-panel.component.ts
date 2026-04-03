@@ -36,7 +36,7 @@ interface InputMapPair {
                                     <!-- Node Name Field -->
                                     <app-custom-input
                                         label="Node Name"
-                                        tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
+                                        tooltipText="The name used to reference this Python node."
                                         formControlName="node_name"
                                         placeholder="Enter node name"
                                         [activeColor]="activeColor"
@@ -123,7 +123,7 @@ interface InputMapPair {
                             <!-- Node Name Field -->
                             <app-custom-input
                                 label="Node Name"
-                                tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
+                                tooltipText="The name used to reference this Python node."
                                 formControlName="node_name"
                                 placeholder="Enter node name"
                                 [activeColor]="activeColor"

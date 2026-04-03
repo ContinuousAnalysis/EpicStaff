@@ -46,7 +46,7 @@ interface InputMapPair {
                                 <div class="form-fields">
                                     <app-custom-input
                                         label="Node Name"
-                                        tooltipText="Unique identifier for this Code Agent node within the flow."
+                                        tooltipText="The name used to reference this Code Agent node."
                                         formControlName="node_name"
                                         placeholder="Enter node name"
                                         [activeColor]="activeColor"
@@ -253,7 +253,7 @@ interface InputMapPair {
                         <div class="form-layout collapsed">
                             <app-custom-input
                                 label="Node Name"
-                                tooltipText="Unique identifier for this Code Agent node within the flow."
+                                tooltipText="The name used to reference this Code Agent node."
                                 formControlName="node_name"
                                 placeholder="Enter node name"
                                 [activeColor]="activeColor"

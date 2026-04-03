@@ -39,7 +39,7 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
                         <div class="form-fields">
                             <app-custom-input
                                 label="Node Name"
-                                tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
+                                tooltipText="The name used to reference this webhook trigger node."
                                 formControlName="node_name"
                                 placeholder="Enter node name"
                                 [activeColor]="activeColor"
