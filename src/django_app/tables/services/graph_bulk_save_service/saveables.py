@@ -1,4 +1,4 @@
-from tables.models.graph_models import Condition, ConditionGroup
+from tables.models.graph_models import Condition, ConditionGroup, DecisionTableNode
 
 
 """
@@ -43,17 +43,108 @@ class _SerializerSaveable:
         return s.update(s.instance, validated)
 
 
+class _DecisionTableNodeRefsSaveable:
+    """
+    Deferred resolver for the three routing node-id fields of DecisionTableNode
+    that may reference a temp_id belonging to a node created in the same request:
+        - DecisionTableNode.default_next_node_id
+        - DecisionTableNode.next_error_node_id
+        - ConditionGroup.next_node_id  (one per condition group)
+
+    resolve_and_save() is called after ALL _NodeSaveable instances have run, so
+    temp_id_map is fully populated regardless of node ordering in the payload.
+
+    Uses QuerySet.update() — bypasses model.save() / clean() intentionally.
+    content_hash is a dynamic @property on both models so no stale-hash issue.
+    """
+
+    def __init__(
+        self,
+        default_next_ref: tuple | None,
+        next_error_ref: tuple | None,
+        group_refs: list,
+    ):
+        """
+        Args:
+            default_next_ref: (is_temp: bool, value) or None.
+            next_error_ref:   (is_temp: bool, value) or None.
+            group_refs:       list of (is_temp, value) | None, one per condition group
+                              in positional order matching _create_condition_groups output.
+        """
+        self._default_next_ref = default_next_ref
+        self._next_error_ref = next_error_ref
+        self._group_refs: list = (
+            group_refs  # positional refs, index == condition group index
+        )
+
+        # Populated by DecisionTableNodeSaveable.save() after DB writes.
+        self._decision_table_node_id: int | None = None
+        self._group_ids: list[int] = []
+
+    def set_node_id(self, node_id: int) -> None:
+        """Called by DecisionTableNodeSaveable after the node is saved."""
+        self._decision_table_node_id = node_id
+
+    def set_group_ids(self, groups: list) -> None:
+        """
+        Called by DecisionTableNodeSaveable after bulk_create returns.
+        groups is the list of ConditionGroup instances in the same positional
+        order as group_refs.
+        """
+        self._group_ids = [g.id for g in groups]
+
+    def resolve_and_save(self, temp_id_map: dict) -> None:
+        node_updates: dict = {}
+
+        if self._default_next_ref is not None:
+            is_temp, value = self._default_next_ref
+            node_updates["default_next_node_id"] = (
+                temp_id_map[str(value)] if is_temp else value
+            )
+
+        if self._next_error_ref is not None:
+            is_temp, value = self._next_error_ref
+            node_updates["next_error_node_id"] = (
+                temp_id_map[str(value)] if is_temp else value
+            )
+
+        if node_updates:
+            DecisionTableNode.objects.filter(id=self._decision_table_node_id).update(
+                **node_updates
+            )
+
+        for group_id, ref in zip(self._group_ids, self._group_refs):
+            if ref is not None:
+                is_temp, value = ref
+                ConditionGroup.objects.filter(id=group_id).update(
+                    next_node_id=temp_id_map[str(value)] if is_temp else value
+                )
+
+
 class DecisionTableNodeSaveable:
     """
     Wraps a validated DecisionTableNodeBulkSerializer and its condition_groups data.
 
     Defers the actual save so it can be executed inside the atomic write phase.
     Replicates the nested logic from DecisionTableNodeModelViewSet._create_or_update_node.
+
+    If any routing field (default_next_node_id, next_error_node_id, or a
+    condition group's next_node_id) references a temp_id, a
+    _DecisionTableNodeRefsSaveable is wired in via the deferred_refs_saveable
+    argument. That saveable runs after all nodes are saved (alongside edge
+    saveables) and performs a QuerySet.update() to resolve the deferred ids.
     """
 
-    def __init__(self, serializer, condition_groups_data, instance=None):
+    def __init__(
+        self,
+        serializer,
+        condition_groups_data,
+        deferred_refs_saveable=None,
+        instance=None,
+    ):
         self._serializer = serializer
         self._condition_groups_data = condition_groups_data
+        self._deferred = deferred_refs_saveable  # _DecisionTableNodeRefsSaveable | None
         self._instance = instance
 
     def save(self):
@@ -70,8 +161,19 @@ class DecisionTableNodeSaveable:
             Condition.objects.filter(condition_group__decision_table_node=node).delete()
             ConditionGroup.objects.filter(decision_table_node=node).delete()
 
+        # Inform the deferred saveable of the saved node id before group creation,
+        # so it is always set even when condition_groups_data is empty.
+        if self._deferred is not None:
+            self._deferred.set_node_id(node.id)
+
+        created_groups = []
         if self._condition_groups_data:
-            self._create_condition_groups(node, self._condition_groups_data)
+            created_groups = self._create_condition_groups(
+                node, self._condition_groups_data
+            )
+
+        if self._deferred is not None:
+            self._deferred.set_group_ids(created_groups)
 
         return node
 
@@ -79,7 +181,8 @@ class DecisionTableNodeSaveable:
     _CONDITION_EXCLUDED_FIELDS = frozenset({"condition_group", "id"})
 
     @staticmethod
-    def _create_condition_groups(node, groups_data: list[dict]):
+    def _create_condition_groups(node, groups_data: list[dict]) -> list:
+        """Create ConditionGroup and Condition records. Returns the created groups list."""
         groups_to_create = []
         conditions_map = []
 
@@ -109,6 +212,8 @@ class DecisionTableNodeSaveable:
 
         if conditions_to_create:
             Condition.objects.bulk_create(conditions_to_create)
+
+        return created_groups
 
 
 class _NodeSaveable:

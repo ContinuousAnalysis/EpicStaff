@@ -49,6 +49,7 @@ class GraphBulkSaveService:
             all_errors["deleted"] = deletion_errors
 
         # Pass 1: validate nodes (driven by registry — no hardcoded lists)
+        routing_refs_to_validate: set[int] = set()
         for config in NODE_TYPE_REGISTRY:
             incoming = validated_input.get(config.list_key, [])
             if not incoming:
@@ -56,13 +57,17 @@ class GraphBulkSaveService:
             db_map = {
                 obj.id: obj for obj in config.model_class.objects.filter(graph=graph)
             }
-            errors, entity_saveables = self._validate_node_list(
-                graph, incoming, config, db_map
+            errors, entity_saveables, deferred_savs, routing_refs = (
+                self._validate_node_list(
+                    graph, incoming, config, db_map, payload_temp_ids
+                )
             )
             if errors:
                 all_errors[config.list_key] = errors
             else:
                 node_saveables.extend(entity_saveables)
+                edge_saveables.extend(deferred_savs)
+                routing_refs_to_validate |= routing_refs
 
         # Pass 1: validate edges
         existing_node_ref_errors = []
@@ -92,13 +97,24 @@ class GraphBulkSaveService:
             edge_saveables.extend(cond_savs)
             edge_refs_to_validate |= cond_refs
 
-        # Batch-validate all real (non-temp) node refs across both edge types.
-        if edge_refs_to_validate:
-            invalid_ids = self._find_nonexistent_global_node_ids(edge_refs_to_validate)
+        # Batch-validate all real (non-temp) node refs across edge types and
+        # decision table routing fields combined.
+        all_real_refs = edge_refs_to_validate | routing_refs_to_validate
+        if all_real_refs:
+            invalid_ids = self._find_nonexistent_global_node_ids(all_real_refs)
             if invalid_ids:
-                existing_node_ref_errors.append(
-                    f"Edge references node IDs that do not exist: {sorted(invalid_ids)}"
-                )
+                # Partition errors by source for clearer attribution.
+                invalid_edge_refs = invalid_ids & edge_refs_to_validate
+                invalid_routing_refs = invalid_ids & routing_refs_to_validate
+                if invalid_edge_refs:
+                    existing_node_ref_errors.append(
+                        f"Edge references node IDs that do not exist: {sorted(invalid_edge_refs)}"
+                    )
+                if invalid_routing_refs:
+                    existing_node_ref_errors.append(
+                        f"DecisionTableNode routing references node IDs that do not exist: "
+                        f"{sorted(invalid_routing_refs)}"
+                    )
         if existing_node_ref_errors:
             all_errors.setdefault("edge_list", []).extend(existing_node_ref_errors)
 
@@ -115,10 +131,14 @@ class GraphBulkSaveService:
         incoming_list: list[dict],
         config: NodeTypeConfig,
         db_map: dict,
-    ) -> tuple[list, list[_NodeSaveable]]:
-        """Validate all items in one node list. Returns (errors, saveables)."""
+        payload_temp_ids: set[str],
+    ) -> tuple[list, list[_NodeSaveable], list, set[int]]:
+        """Validate all items in one node list.
+        Returns (errors, node_saveables, deferred_saveables, real_routing_node_ids)."""
         errors = []
         saveables = []
+        deferred_saveables = []
+        real_routing_refs: set[int] = set()
 
         for index, item_data in enumerate(incoming_list):
             item_data = dict(item_data)
@@ -127,7 +147,9 @@ class GraphBulkSaveService:
 
             if item_id is None:
                 item_data.pop("id", None)
-                error, inner = self._build_saveable(config, item_data, index)
+                error, inner, deferred = self._build_saveable(
+                    config, item_data, index, payload_temp_ids
+                )
             else:
                 db_instance = db_map.get(item_id)
                 if db_instance is None:
@@ -140,26 +162,37 @@ class GraphBulkSaveService:
                     continue
 
                 item_data.pop("id", None)
-                error, inner = self._build_saveable(
-                    config, item_data, index, instance=db_instance
+                error, inner, deferred = self._build_saveable(
+                    config, item_data, index, payload_temp_ids, instance=db_instance
                 )
 
             if error:
                 errors.append(error)
             else:
                 saveables.append(_NodeSaveable(inner, temp_id or None))
+                if deferred is not None:
+                    deferred_saveables.append(deferred)
+                    real_routing_refs |= self._collect_real_routing_refs(deferred)
 
-        return errors, saveables
+        return errors, saveables, deferred_saveables, real_routing_refs
 
     def _build_saveable(
         self,
         config: NodeTypeConfig,
         data: dict,
         index: int,
+        payload_temp_ids: set[str],
         instance=None,
-    ) -> tuple[dict | None, Any]:
-        """Build one saveable via the config factory. Returns (error, None) or (None, saveable)."""
-        data, extra = config.saveable_factory.preprocess_data(data)
+    ) -> tuple[dict | None, Any, Any]:
+        """Build one saveable via the config factory.
+        Returns (error, inner_saveable, deferred_saveable) or (error, None, None)."""
+        data, extra = config.saveable_factory.preprocess_data(data, payload_temp_ids)
+
+        # Surface routing validation errors collected by preprocess_data before
+        # attempting serializer construction.
+        routing_errors = extra.get("routing_errors", [])
+        if routing_errors:
+            return {"index": index, "errors": routing_errors}, None, None
 
         s = (
             config.serializer_class(instance, data=data)
@@ -167,9 +200,25 @@ class GraphBulkSaveService:
             else config.serializer_class(data=data)
         )
         if not s.is_valid():
-            return {"index": index, "errors": s.errors}, None
+            return {"index": index, "errors": s.errors}, None, None
 
-        return None, config.saveable_factory.build(s, extra, instance)
+        inner = config.saveable_factory.build(s, extra, instance)
+        deferred = config.saveable_factory.build_deferred(inner, extra)
+        return None, inner, deferred
+
+    @staticmethod
+    def _collect_real_routing_refs(deferred) -> set[int]:
+        """Extract real (non-temp) node IDs from a _DecisionTableNodeRefsSaveable
+        for batch existence validation in Pass 1."""
+        refs: set[int] = set()
+        for attr in ("_default_next_ref", "_next_error_ref"):
+            ref = getattr(deferred, attr, None)
+            if ref is not None and not ref[0]:  # not is_temp
+                refs.add(ref[1])
+        for ref in getattr(deferred, "_group_refs", []):
+            if ref is not None and not ref[0]:
+                refs.add(ref[1])
+        return refs
 
     def _validate_edge_list(
         self,
