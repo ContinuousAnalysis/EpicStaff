@@ -39,6 +39,12 @@ services:
       DJANGO_HOST: ${DJANGO_HOST:-localhost}
       DJANGO_PORT: ${DJANGO_PORT:-8000}
       LOAD_DEBUG_ENV: ${LOAD_DEBUG_ENV}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://minio:9000}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-minioadmin}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-minioadmin_secret}
+      STORAGE_BUCKET_NAME: ${STORAGE_BUCKET_NAME:-epicstaff}
+      STORAGE_LOCAL_ROOT: ${STORAGE_LOCAL_ROOT:-/app/storage}
     volumes:
       - media_data:/app/src/django_app/media
     networks:
@@ -47,6 +53,8 @@ services:
       crewdb:
         condition: service_started
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://${DJANGO_HOST:-localhost}:${DJANGO_PORT:-8000}/ht/')\""]
