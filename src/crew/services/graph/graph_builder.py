@@ -1,37 +1,40 @@
 import json
-import threading
-
-from services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
-from services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
 
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.checkpoint.memory import MemorySaver
-from loguru import logger
+from langgraph.types import StreamWriter
 
+from src.crew.models.state import State
+from src.crew.services.graph.nodes import (
+    AudioTranscriptionNode,
+    FileContentExtractorNode,
+    PythonNode,
+    CrewNode,
+    BaseNode,
+    EndNode,
+)
 
-from callbacks.session_callback_factory import CrewCallbackFactory
-from services.graph.events import StopEvent
-from services.graph.subgraphs.decision_table_node import DecisionTableNodeSubgraph
-from services.graph.nodes.llm_node import LLMNode
-from services.graph.nodes.end_node import EndNode
-from models.state import *
-from services.graph.nodes import *
-
-from services.crew.crew_parser_service import CrewParserService
-from services.redis_service import RedisService
-from models.request_models import (
-    ConditionGroupData,
+from src.crew.services.graph.nodes.code_agent_node import CodeAgentNode
+from src.crew.services.graph.nodes.llm_node import LLMNode
+from src.crew.services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
+from src.crew.services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.graph.subgraphs.decision_table_node import (
+    DecisionTableNodeSubgraph,
+)
+from src.crew.services.graph.subgraphs.subgraph_node import SubGraphNode
+from src.crew.services.crew.crew_parser_service import CrewParserService
+from src.crew.services.redis_service import RedisService
+from src.shared.models import (
     DecisionTableNodeData,
     PythonCodeData,
     SessionData,
+    SubGraphData,
 )
-from services.run_python_code_service import RunPythonCodeService
-from services.knowledge_search_service import KnowledgeSearchService
-from langgraph.types import StreamWriter
-from utils import map_variables_to_input
+from src.crew.services.run_python_code_service import RunPythonCodeService
+from src.crew.services.knowledge_search_service import KnowledgeSearchService
 
-from utils.psutil_wrapper import psutil_wrapper
+from src.crew.utils import map_variables_to_input
 
 
 class ReturnCodeError(Exception): ...
@@ -156,6 +159,7 @@ class SessionGraphBuilder:
             decision_table_node_data=decision_table_node_data,
             graph_builder=subgraph_builder,
             stop_event=self.stop_event,
+            run_code_execution_service=self.python_code_executor_service,
         )
         subgraph: CompiledStateGraph = builder.build()
 
@@ -170,6 +174,29 @@ class SessionGraphBuilder:
         self._graph_builder.add_conditional_edges(
             decision_table_node_data.node_name, condition
         )
+
+    def add_subgraph_node(
+        self,
+        subgraph_node_data: SubGraphNode,
+        unique_subgraph_list: list[SubGraphData],
+        stop_event,
+    ) -> str:
+        """
+        Adds a subgraph node to the graph builder.
+        """
+        builder = SubGraphNode(
+            session_id=self.session_id,
+            subgraph_node_data=subgraph_node_data,
+            unique_subgraph_list=unique_subgraph_list,
+            graph_builder=StateGraph(State),
+            session_graph_builder=self,
+            stop_event=stop_event,
+        )
+
+        async def inner(state: State, writer: StreamWriter):
+            return await builder.run(state, writer)
+
+        self._graph_builder.add_node(subgraph_node_data.node_name, inner)
 
     @property
     def end_node_result(self):
@@ -219,6 +246,7 @@ class SessionGraphBuilder:
                 output_variable_path=crew_node_data.output_variable_path,
                 knowledge_search_service=self.knowledge_search_service,
                 stop_event=self.stop_event,
+                stream_config=crew_node_data.stream_config,
             )
             self.add_node(crew_node)
 
@@ -231,6 +259,7 @@ class SessionGraphBuilder:
                 input_map=python_node_data.input_map,
                 output_variable_path=python_node_data.output_variable_path,
                 stop_event=self.stop_event,
+                stream_config=python_node_data.stream_config,
             )
             self.add_node(python_node)
 
@@ -267,6 +296,32 @@ class SessionGraphBuilder:
             )
             self.add_node(llm_node)
 
+        for ca_data in schema.code_agent_node_list:
+            code_agent_node = CodeAgentNode(
+                session_id=self.session_id,
+                graph_id=schema.graph_id,
+                node_name=ca_data.node_name,
+                stop_event=self.stop_event,
+                input_map=ca_data.input_map,
+                output_variable_path=ca_data.output_variable_path,
+                python_code_executor_service=self.python_code_executor_service,
+                llm_config_id=ca_data.llm_config_id,
+                agent_mode=ca_data.agent_mode,
+                code_session_id=ca_data.session_id,
+                system_prompt=ca_data.system_prompt,
+                stream_handler_code=ca_data.stream_handler_code,
+                libraries=ca_data.libraries,
+                polling_interval_ms=ca_data.polling_interval_ms,
+                silence_indicator_s=ca_data.silence_indicator_s,
+                indicator_repeat_s=ca_data.indicator_repeat_s,
+                chunk_timeout_s=ca_data.chunk_timeout_s,
+                inactivity_timeout_s=ca_data.inactivity_timeout_s,
+                max_wait_s=ca_data.max_wait_s,
+                stream_config=ca_data.stream_config,
+                output_schema=ca_data.output_schema,
+            )
+            self.add_node(code_agent_node)
+
         for edge in schema.edge_list:
             self.add_edge(edge.start_key, edge.end_key)
 
@@ -282,6 +337,14 @@ class SessionGraphBuilder:
             self.add_decision_table_node(
                 decision_table_node_data=decision_table_node_data
             )
+
+        for subgraph_node_data in schema.subgraph_node_list:
+            self.add_subgraph_node(
+                subgraph_node_data=subgraph_node_data,
+                unique_subgraph_list=session_data.unique_subgraph_list,
+                stop_event=self.stop_event,
+            )
+
         for webhook_trigger_node_data in schema.webhook_trigger_node_data_list:
             self.add_node(
                 node=WebhookTriggerNode(
@@ -301,13 +364,12 @@ class SessionGraphBuilder:
                     field_list=telegram_trigger_node_data.field_list,
                 )
             )
-            
+
         if schema.entrypoint is not None:
             self.set_entrypoint(schema.entrypoint)
-        # name always __end_node__
-        # TODO: remove validation here and in request model
         if schema.end_node is not None:
             end_node = EndNode(
+                node_name=schema.end_node.node_name,
                 session_graph_builder_instance=self,
                 session_id=self.session_id,
                 output_map=schema.end_node.output_map,

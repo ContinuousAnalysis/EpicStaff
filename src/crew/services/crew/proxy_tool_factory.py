@@ -1,27 +1,27 @@
-import concurrent.futures
-
+from typing import Any
 import time
-from typing import Any, Type
+import concurrent.futures
+import asyncio
+import requests
+from loguru import logger
+
+
 from crewai.tools.base_tool import Tool
-from services.graph.events import StopEvent
-from models.response_models import ToolResponse
-from models.request_models import (
-    McpToolData,
+
+from src.crew.models.response_models import ToolResponse
+from src.shared.models import (
     PythonCodeToolData,
     ConfiguredToolData,
     ToolInitConfigurationModel,
 )
-from crewai.tools import BaseTool
-import requests
-from services.schema_converter.converter import generate_model_from_schema
-from services.pickle_encode import txt_to_obj
-from loguru import logger
-from services.run_python_code_service import RunPythonCodeService
-import asyncio
+
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.schema_converter.converter import generate_model_from_schema
+from src.crew.services.pickle_encode import txt_to_obj
+from src.crew.services.run_python_code_service import RunPythonCodeService
 
 
 class ProxyToolFactory:
-
     def __init__(
         self,
         host: str,
@@ -39,13 +39,21 @@ class ProxyToolFactory:
         global_kwargs: dict[str, Any],
         stop_event: StopEvent,
     ) -> Tool:
-        args_schema = generate_model_from_schema(python_code_tool_data.args_schema)
+        args_schema_raw = python_code_tool_data.args_schema
+        args_schema_dict = (
+            args_schema_raw
+            if isinstance(args_schema_raw, dict)
+            else args_schema_raw.model_dump()
+        )
+        args_schema = generate_model_from_schema(args_schema_dict)
         name = python_code_tool_data.name
         description = python_code_tool_data.description
 
         def _run(*_, **kwargs):
             # TODO: fix workaround after making crewai async
-            python_code_kwargs = python_code_tool_data.python_code.global_kwargs or dict() 
+            python_code_kwargs = (
+                python_code_tool_data.python_code.global_kwargs or dict()
+            )
             inputs = {**python_code_kwargs, **kwargs}
             future = asyncio.run_coroutine_threadsafe(
                 self.python_code_executor_service.run_code(
@@ -72,7 +80,6 @@ class ProxyToolFactory:
         tool_data: ConfiguredToolData,
         stop_event: StopEvent | None = None,
     ) -> Tool:
-
         tool_init_configuration = None
         if tool_data.tool_config is not None:
             tool_init_configuration = tool_data.tool_config.tool_init_configuration
@@ -125,7 +132,6 @@ class ProxyToolFactory:
         run_kwargs: dict[str, Any],
         stop_event: StopEvent | None = None,
     ) -> str:
-
         response = self.post_data_with_retry(
             url=f"http://{self.host}:{self.port}/tool/{tool_data.name_alias}/run",
             json={

@@ -2,11 +2,11 @@ import uvicorn
 import sys
 from pyngrok import ngrok
 from loguru import logger
-from app.core.config import settings
-import os
+from app.core.settings import settings
 import dotenv
 
 dotenv.load_dotenv()
+
 
 def start_tunnel():
     try:

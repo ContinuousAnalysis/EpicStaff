@@ -1,13 +1,18 @@
 import json
-from typing import override
-from callbacks.session_callback_factory import CrewCallbackFactory
-from services.crew.crew_parser_service import CrewParserService
-from services.redis_service import RedisService
-from services.knowledge_search_service import KnowledgeSearchService
-from models.request_models import CrewData
-from .base_node import *
-from models.state import *
+from typing import Any
+
 from loguru import logger
+from langgraph.types import StreamWriter
+
+from src.crew.callbacks.session_callback_factory import CrewCallbackFactory
+from src.crew.services.crew.crew_parser_service import CrewParserService
+from src.crew.services.graph.events import StopEvent
+from src.crew.services.graph.nodes import BaseNode
+from src.crew.services.redis_service import RedisService
+from src.crew.services.knowledge_search_service import KnowledgeSearchService
+from src.shared.models import CrewData
+
+from src.crew.models.state import State
 
 
 class CrewNode(BaseNode):
@@ -25,6 +30,7 @@ class CrewNode(BaseNode):
         input_map: dict,
         output_variable_path: str,
         knowledge_search_service: KnowledgeSearchService,
+        stream_config: dict | None = None,
     ):
         super().__init__(
             session_id=session_id,
@@ -38,11 +44,11 @@ class CrewNode(BaseNode):
         self.crewai_output_channel = crewai_output_channel
         self.crew_parser_service = crew_parser_service
         self.knowledge_search_service = knowledge_search_service
+        self.stream_config = stream_config or {}
 
     async def execute(
         self, state: State, writer: StreamWriter, execution_order: int, input_: Any
     ):
-
         crew_callback_factory = CrewCallbackFactory(
             redis_service=self.redis_service,
             session_id=self.session_id,
@@ -52,6 +58,7 @@ class CrewNode(BaseNode):
             crewai_output_channel=self.crewai_output_channel,
             stream_writer=writer,
             knowledge_search_service=self.knowledge_search_service,
+            stream_config=self.stream_config,
         )
 
         gloabl_kwargs = {
@@ -91,13 +98,14 @@ class CrewNode(BaseNode):
             if crew_output.pydantic
             else {"raw": crew_output.raw}
         )
+        if "message" not in output:
+            output["message"] = crew_output.raw
         if token_usage:
             output["token_usage"] = token_usage
 
         return output
 
     def update_state_history(self, state, type, name, input, output, **kwargs):
-
         return super().update_state_history(
             state=state,
             type=type,

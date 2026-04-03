@@ -1,44 +1,41 @@
+import { NgIf, NgStyle, NgTemplateOutlet } from '@angular/common';
 import {
-    Component,
-    Input,
     ChangeDetectionStrategy,
-    computed,
-    signal,
-    EventEmitter,
-    Output,
-    ViewChild,
-    ElementRef,
-    effect,
     ChangeDetectorRef,
+    Component,
+    computed,
+    EventEmitter,
+    Input,
+    Output,
+    signal,
 } from '@angular/core';
-import { FFlowModule, EFResizeHandleType } from '@foblex/flow';
-import {
-    NgFor,
-    NgClass,
-    NgSwitch,
-    NgSwitchCase,
-    NgSwitchDefault,
-    NgIf,
-    NgStyle,
-    NgTemplateOutlet,
-} from '@angular/common';
+import { EFResizeHandleType, FFlowModule } from '@foblex/flow';
 
+import { GoToButtonComponent } from '../../../shared/components/go-to-button/go-to-button.component';
+import { flowUrl } from '../../../shared/utils/flow-links';
 import { ClickOrDragDirective } from '../../core/directives/click-or-drag.directive';
+import { getNodeTitle } from '../../core/enums/node-title.util';
+import { NodeType } from '../../core/enums/node-type';
 import {
+    AgentNodeModel,
+    DecisionTableNodeModel,
+    EdgeNodeModel,
+    EndNodeModel,
+    GraphNoteModel,
+    LLMNodeModel,
     NodeModel,
     ProjectNodeModel,
     PythonNodeModel,
-    NoteNodeModel,
+    StartNodeModel,
+    SubGraphNodeModel,
+    TaskNodeModel,
+    ToolNodeModel,
 } from '../../core/models/node.model';
-import { NodeType } from '../../core/enums/node-type';
-import { FlowService } from '../../services/flow.service';
 import { CustomPortId } from '../../core/models/port.model';
-
+import { FlowService } from '../../services/flow.service';
 import { ConditionalEdgeNodeComponent } from '../nodes-components/conditional-edge/conditional-edge.component';
 import { DecisionTableNodeComponent } from '../nodes-components/decision-table-node/decision-table-node.component';
-import { NoteNodeComponent } from '../nodes-components/note-node/note-node.component';
-import { getNodeTitle } from '../../core/enums/node-title.util';
-import { ResizeHandleComponent } from '../resize-handle/resize-handle.component';
+import { GraphNoteComponent } from '../nodes-components/graph-note/graph-note.component';
 import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay.component';
 
 @Component({
@@ -54,8 +51,9 @@ import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay
         ClickOrDragDirective,
         ConditionalEdgeNodeComponent,
         DecisionTableNodeComponent,
-        NoteNodeComponent,
+        GraphNoteComponent,
         FlowNodeVariablesOverlayComponent,
+        GoToButtonComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: {
@@ -88,10 +86,13 @@ export class FlowBaseNodeComponent {
         }
 
         const fullMap = this.flowService.portConnectionsMap();
-        return this.node.ports.reduce((acc, port) => {
-            acc[port.id] = fullMap[port.id] || [];
-            return acc;
-        }, {} as Record<string, CustomPortId[]>);
+        return this.node.ports.reduce(
+            (acc, port) => {
+                acc[port.id] = fullMap[port.id] || [];
+                return acc;
+            },
+            {} as Record<string, CustomPortId[]>
+        );
     });
 
     constructor(
@@ -104,6 +105,9 @@ export class FlowBaseNodeComponent {
             event.preventDefault();
             event.stopPropagation();
         }
+        if (this.isBlockedSubgraph) {
+            return;
+        }
         this.editClicked.emit(this.node);
     }
 
@@ -112,6 +116,7 @@ export class FlowBaseNodeComponent {
     }
 
     public getNodeClass(): string {
+        const blockedClass = this.isBlockedSubgraph ? ' is-blocked' : '';
         switch (this.node.type) {
             case NodeType.AGENT:
                 return 'type-agent';
@@ -134,61 +139,53 @@ export class FlowBaseNodeComponent {
             case NodeType.NOTE:
                 return 'type-note';
             default:
-                return 'type-default';
+                return `type-default${blockedClass}`;
         }
     }
 
     // Getters for specific node types
     public get agentNode() {
-        return this.node.type === NodeType.AGENT ? (this.node as any) : null;
+        return this.node.type === NodeType.AGENT ? (this.node as AgentNodeModel) : null;
     }
 
     public get taskNode() {
-        return this.node.type === NodeType.TASK ? (this.node as any) : null;
+        return this.node.type === NodeType.TASK ? (this.node as TaskNodeModel) : null;
     }
 
     public get toolNode() {
-        return this.node.type === NodeType.TOOL ? (this.node as any) : null;
+        return this.node.type === NodeType.TOOL ? (this.node as ToolNodeModel) : null;
     }
 
     public get llmNode() {
-        return this.node.type === NodeType.LLM ? (this.node as any) : null;
+        return this.node.type === NodeType.LLM ? (this.node as LLMNodeModel) : null;
     }
 
     public get pythonNode() {
-        return this.node.type === NodeType.PYTHON ? (this.node as any) : null;
+        return this.node.type === NodeType.PYTHON ? (this.node as PythonNodeModel) : null;
     }
 
     public get edgeNode() {
-        return this.node.type === NodeType.EDGE ? (this.node as any) : null;
+        return this.node.type === NodeType.EDGE ? (this.node as EdgeNodeModel) : null;
     }
 
     public get tableNode() {
-        return this.node.type === NodeType.TABLE ? (this.node as any) : null;
+        return this.node.type === NodeType.TABLE ? (this.node as DecisionTableNodeModel) : null;
     }
 
     public get startNode() {
-        return this.node.type === NodeType.START ? (this.node as any) : null;
+        return this.node.type === NodeType.START ? (this.node as StartNodeModel) : null;
     }
     public get endNode() {
-        return this.node.type === NodeType.END ? (this.node as any) : null;
+        return this.node.type === NodeType.END ? (this.node as EndNodeModel) : null;
     }
     public get noteNode() {
-        return this.node.type === NodeType.NOTE
-            ? (this.node as NoteNodeModel)
-            : null;
+        return this.node.type === NodeType.NOTE ? (this.node as GraphNoteModel) : null;
+    }
+    public get isBlockedSubgraph(): boolean {
+        return this.node?.type === NodeType.SUBGRAPH && !!this.node.isBlocked;
     }
     public onExpandProjectClick(): void {
         this.projectExpandToggled.emit(this.node as ProjectNodeModel);
-    }
-
-    public onUngroupClick(event: MouseEvent): void {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const updatedNode: NodeModel = { ...this.node, parentId: null };
-
-        this.flowService.updateNode(updatedNode);
     }
 
     public getNodeTitle(): string {
@@ -197,5 +194,13 @@ export class FlowBaseNodeComponent {
 
     onNodeSizeChanged(size: { width: number; height: number }): void {
         this.fNodeSizeChange.emit(size);
+    }
+
+    public getSelectedFlowUrl(): string | null {
+        if (this.node?.type !== NodeType.SUBGRAPH) return null;
+        if (this.isBlockedSubgraph) return null;
+        const flowId = Number((this.node as SubGraphNodeModel).data?.id);
+        if (!Number.isFinite(flowId) || flowId <= 0) return null;
+        return flowUrl(flowId);
     }
 }

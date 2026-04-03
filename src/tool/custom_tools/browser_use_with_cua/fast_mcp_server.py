@@ -3,16 +3,21 @@ import json
 import time
 import subprocess
 from fastmcp import FastMCP
-from app_browser_use.browser_runner import run_browser_task, clear_sessions, reset_browser_session
+from app_browser_use.browser_runner import (
+    run_browser_task,
+    clear_sessions,
+    reset_browser_session,
+)
 
 mcp = FastMCP("Browser Use Agent")
 
 SESSIONS_DIR = "sessions"
 os.makedirs(SESSIONS_DIR, exist_ok=True)
 
+
 @mcp.tool
 async def restart_browser_use() -> dict:
-    script_path = "/app/restart.sh" 
+    script_path = "/app/restart.sh"
 
     try:
         clear_sessions()
@@ -23,7 +28,7 @@ async def restart_browser_use() -> dict:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
-            text=True
+            text=True,
         )
 
         time.sleep(10)
@@ -31,20 +36,20 @@ async def restart_browser_use() -> dict:
         return {
             "status": "success" if result.returncode == 0 else "error",
             "stdout": result.stdout.strip(),
-            "stderr": result.stderr.strip()
+            "stderr": result.stderr.strip(),
         }
 
     except Exception as ex:
-        return {
-            "status": "failed",
-            "error": str(ex)
-        }
+        return {"status": "failed", "error": str(ex)}
+
 
 @mcp.tool
-async def run_browser_use(prompt: str, next_prompt: str | None = None, session_id: str | None = None) -> dict:
+async def run_browser_use(
+    prompt: str, next_prompt: str | None = None, session_id: str | None = None
+) -> dict:
     if not session_id:
         session_id = os.urandom(4).hex()
-    
+
     session_file = os.path.join(SESSIONS_DIR, f"{session_id}.json")
 
     session_data = {}
@@ -64,10 +69,10 @@ async def run_browser_use(prompt: str, next_prompt: str | None = None, session_i
     result["session_id"] = session_id
     return result
 
-if __name__ == "__main__":
-    print(f"[server] Starting simple MCP server")
-    mcp.run("streamable-http", host="0.0.0.0", port=8080)
 
+if __name__ == "__main__":
+    print("[server] Starting simple MCP server")
+    mcp.run("streamable-http", host="0.0.0.0", port=8080)
 
 
 # import os
@@ -98,7 +103,7 @@ if __name__ == "__main__":
 #         return {"ok": True, "output": result.get("output")}
 #     except Exception as e:
 #         return {"ok": False, "error": str(e)}
-    
+
 
 # if __name__ == "__main__":
 #     print(f"[server] Starting simple MCP server")
@@ -223,7 +228,6 @@ if __name__ == "__main__":
 #             step=step, plan=plan, step_idx=step_idx, tool=chosen
 #         )
 #         return await _execute_computer_step(session_id, prompt, session, step_idx)
-
 
 
 # @mcp.tool(description="Computer tool")

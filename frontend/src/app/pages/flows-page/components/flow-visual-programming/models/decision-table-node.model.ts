@@ -6,7 +6,7 @@ export interface ConditionGroupBackend {
     expression: string | null;
     conditions: ConditionBackend[];
     manipulation: string | null;
-    next_node: string | null;
+    next_node_id: number | null;
     order: number;
 }
 
@@ -16,7 +16,7 @@ export interface CreateConditionGroupRequest {
     expression: string | null;
     conditions: CreateConditionRequest[];
     manipulation: string | null;
-    next_node: string | null;
+    next_node_id: number | null;
     order: number;
 }
 
@@ -37,15 +37,16 @@ export interface GetDecisionTableNodeRequest {
     graph: number;
     node_name: string;
     condition_groups: ConditionGroupBackend[];
-    default_next_node: string | null;
-    next_error_node: string | null;
+    default_next_node_id: number | null;
+    next_error_node_id: number | null;
+    metadata: Record<string, unknown>;
 }
 
 export interface CreateDecisionTableNodeRequest {
     graph: number;
     node_name: string;
     condition_groups: CreateConditionGroupRequest[];
-    default_next_node: string | null;
-    next_error_node: string | null;
+    default_next_node_id: number | null;
+    next_error_node_id: number | null;
+    metadata?: Record<string, unknown>;
 }
-

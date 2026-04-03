@@ -2,12 +2,11 @@ import json
 import asyncio
 import base64
 import httpx
-import websockets
 from fastapi import APIRouter, WebSocket, Response
 from loguru import logger
 
 from app.client.realtime_client import RealtimeClient, TurnDetectionMode
-from app.core.config import settings
+from app.core.settings import settings
 
 router = APIRouter(prefix="/voice", tags=["voice"])
 
@@ -84,7 +83,6 @@ async def websocket_bridge(twilio_ws: WebSocket):
             await twilio_ws.send_text(json.dumps(payload))
 
     async def handle_ai_interrupt():
-
         if stream_sid:
             # Clear Twilio's audio buffer
             await twilio_ws.send_text(
@@ -148,5 +146,6 @@ async def websocket_bridge(twilio_ws: WebSocket):
 
         try:
             await twilio_ws.close()
-        except:
+        except Exception as e:
+            logger.error(f"await twilio_ws.close() had a error {e}")
             pass

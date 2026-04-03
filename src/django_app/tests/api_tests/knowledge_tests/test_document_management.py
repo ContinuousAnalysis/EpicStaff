@@ -6,7 +6,7 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
-from tables.models.knowledge_models import DocumentMetadata, DocumentContent
+from tables.models.knowledge_models import DocumentMetadata
 
 
 @pytest.mark.django_db

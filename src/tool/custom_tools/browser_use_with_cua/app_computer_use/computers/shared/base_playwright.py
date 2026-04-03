@@ -1,6 +1,6 @@
 import time
 import base64
-from typing import List, Dict, Literal
+from typing import List, Dict
 from playwright.sync_api import sync_playwright, Browser, Page
 from app_computer_use.utils import check_blocklisted_url
 

@@ -10,7 +10,11 @@ def _apply_context_env(params: Dict[str, Any]) -> Dict[str, Any]:
     window_id: Optional[str] = (
         str(params.get("window_id"))
         if params.get("window_id") is not None
-        else (str(ctx_in.get("window_id")) if ctx_in.get("window_id") is not None else None)
+        else (
+            str(ctx_in.get("window_id"))
+            if ctx_in.get("window_id") is not None
+            else None
+        )
     )
     last_url: Optional[str] = params.get("last_url") or ctx_in.get("last_url")
     screenshot: Optional[str] = params.get("screenshot") or ctx_in.get("screenshot")
@@ -43,7 +47,7 @@ async def run_computer_task(
     params: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     params = params or {}
-    
+
     if env:
         os.environ["COMPUTER_ENV"] = env
 
@@ -53,8 +57,8 @@ async def run_computer_task(
     state = await loop.run_in_executor(None, run_steps, prompt)
 
     return {
-        "output": state,  
+        "output": state,
         "status": "ok",
         "env": os.getenv("COMPUTER_ENV", env or "local"),
-        "context_used": norm_ctx, 
+        "context_used": norm_ctx,
     }

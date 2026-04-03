@@ -1,7 +1,6 @@
-import {BasePort} from "../../models/port.model";
+import { BasePort } from '../../models/port.model';
 
 export const DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS: BasePort[] = [
-
     {
         port_type: 'output',
         role: 'telegram-trigger-out',
@@ -14,9 +13,10 @@ export const DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS: BasePort[] = [
             'table-in',
             'llm-out-left',
             'file-extractor-in',
-            'telegram-trigger',
+            'subgraph-in',
             'audio-to-text-in',
             'end-in',
+            'code-agent-in',
         ],
         position: 'right',
         color: '#229ED9',

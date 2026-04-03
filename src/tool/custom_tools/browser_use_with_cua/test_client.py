@@ -3,6 +3,7 @@ import asyncio
 import json
 from fastmcp import Client
 
+
 def serialize_response(resp) -> str:
     try:
         return json.dumps(resp.model_dump(), ensure_ascii=False, indent=2)
@@ -17,6 +18,7 @@ def serialize_response(resp) -> str:
     except TypeError:
         return str(resp)
 
+
 async def main():
     url = os.getenv("FASTMCP_URL", "http://127.0.0.1:8080/mcp")
 
@@ -27,15 +29,18 @@ async def main():
 
     async with Client(url) as client:
         try:
-            result = await client.call_tool("run_browser_use", {
-                "prompt": prompt,
-                "session_id": session_id,
-            })
+            result = await client.call_tool(
+                "run_browser_use",
+                {
+                    "prompt": prompt,
+                    "session_id": session_id,
+                },
+            )
             print("Response:")
             print(serialize_response(result))
             session_id = (
-                result.structured_content.get("session_id") 
-                if hasattr(result, "structured_content") 
+                result.structured_content.get("session_id")
+                if hasattr(result, "structured_content")
                 else session_id
             )
         except Exception as e:
@@ -44,7 +49,9 @@ async def main():
 
         task_counter = 1
         while True:
-            next_prompt = input(f"\n[{task_counter}] Enter NEXT TASK (or type 'exit'): ").strip()
+            next_prompt = input(
+                f"\n[{task_counter}] Enter NEXT TASK (or type 'exit'): "
+            ).strip()
             if next_prompt.lower() in ("exit", "quit"):
                 print("Exiting interactive session.")
                 try:
@@ -55,7 +62,9 @@ async def main():
                 except Exception as restart_error:
                     print(f"Error during restart: {restart_error}")
 
-                restart = input("Do you want to start a NEW session? (y/n): ").strip().lower()
+                restart = (
+                    input("Do you want to start a NEW session? (y/n): ").strip().lower()
+                )
                 if restart == "y":
                     return await main()
                 else:
@@ -67,16 +76,20 @@ async def main():
                 continue
 
             try:
-                result = await client.call_tool("run_browser_use", {
-                    "prompt": prompt,
-                    "next_prompt": next_prompt,
-                    "session_id": session_id,
-                })
+                result = await client.call_tool(
+                    "run_browser_use",
+                    {
+                        "prompt": prompt,
+                        "next_prompt": next_prompt,
+                        "session_id": session_id,
+                    },
+                )
                 print("Response:")
                 print(serialize_response(result))
                 task_counter += 1
             except Exception as e:
                 print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

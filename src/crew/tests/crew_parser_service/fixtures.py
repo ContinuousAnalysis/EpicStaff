@@ -5,7 +5,7 @@ from callbacks.session_callback_factory import CrewCallbackFactory
 from services.knowledge_search_service import KnowledgeSearchService
 
 if TYPE_CHECKING:
-    from models.request_models import AgentData, TaskData, CrewData
+    from src.shared.models import AgentData, TaskData, CrewData
 
 import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
@@ -13,7 +13,7 @@ from callbacks import GraphSessionCallbackFactory
 from unittest.mock import MagicMock
 from services.redis_service import RedisService
 
-from models.request_models import (
+from src.shared.models import (
     AgentData,
     CrewData,
     EmbedderData,
@@ -138,7 +138,9 @@ def graph_session_callback_factory(mock_redis_service) -> GraphSessionCallbackFa
 
 
 @pytest.fixture
-def crew_callback_factory(mock_redis_service, knowledge_search_service) -> CrewCallbackFactory:
+def crew_callback_factory(
+    mock_redis_service, knowledge_search_service
+) -> CrewCallbackFactory:
     """
     Fixture for creating a SessionCallbackFactory instance with mocked dependencies.
     """
@@ -151,7 +153,7 @@ def crew_callback_factory(mock_redis_service, knowledge_search_service) -> CrewC
         execution_order=0,
         crewai_output_channel="crewai_output_channel",
         stream_writer=None,
-        knowledge_search_service=knowledge_search_service
+        knowledge_search_service=knowledge_search_service,
     )
 
     get_task_callback_mock = MagicMock()
@@ -180,6 +182,7 @@ def crew_callback_factory(mock_redis_service, knowledge_search_service) -> CrewC
 @pytest.fixture
 def python_code_executor_service(mock_redis_service) -> RunPythonCodeService:
     return RunPythonCodeService(redis_service=mock_redis_service)
+
 
 @pytest.fixture
 def knowledge_search_service(mock_redis_service) -> KnowledgeSearchService:

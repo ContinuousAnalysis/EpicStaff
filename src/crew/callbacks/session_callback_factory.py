@@ -2,25 +2,26 @@ import json
 import os
 import time
 from typing import Callable, Optional, Union
-from crewai.agents.crew_agent_executor import KNOWLEDGE_KEYWORD
 
-from services.graph.events import StopEvent
-from models.graph_models import (
+import asyncio
+
+from crewai.agents.crew_agent_executor import KNOWLEDGE_KEYWORD
+from crewai.agents.parser import AgentAction, AgentFinish
+from crewai.task import TaskOutput
+from langgraph.types import StreamWriter
+from loguru import logger
+
+from src.crew.services.graph.events import StopEvent
+from src.crew.models.graph_models import (
     GraphMessage,
     AgentMessageData,
     AgentFinishMessageData,
     TaskMessageData,
     UpdateSessionStatusMessageData,
 )
-from services.redis_service import RedisService, SyncPubsubSubscriber
-from services.knowledge_search_service import KnowledgeSearchService
-from datetime import datetime
-from crewai.agents.parser import AgentAction, AgentFinish
-from crewai.task import TaskOutput
-from langgraph.types import StreamWriter
-
-import asyncio
-from loguru import logger
+from src.crew.services.graph.custom_message_writer import CustomSessionMessageWriter
+from src.crew.services.redis_service import RedisService, SyncPubsubSubscriber
+from src.crew.services.knowledge_search_service import KnowledgeSearchService
 
 
 SESSION_STATUS_CHANNEL = os.environ.get(
@@ -29,7 +30,6 @@ SESSION_STATUS_CHANNEL = os.environ.get(
 
 
 class GraphSessionCallbackFactory:
-
     def __init__(
         self, session_id: int, redis_service: RedisService, crewai_output_channel: str
     ):
@@ -105,6 +105,7 @@ class CrewCallbackFactory:
         knowledge_search_service: KnowledgeSearchService,
         crewai_output_channel: str,
         stream_writer: Optional[StreamWriter] = None,
+        stream_config: dict | None = None,
     ):
         self.redis_service = redis_service
         self.crewai_output_channel = crewai_output_channel
@@ -114,12 +115,13 @@ class CrewCallbackFactory:
         self.execution_order = execution_order
         self.stream_writer = stream_writer
         self.knowledge_search_service = knowledge_search_service
+        self.stream_config = stream_config or {}
+        self._message_writer = CustomSessionMessageWriter()
 
     def get_step_callback(
         self, agent_id: int
     ) -> Callable[[Union[AgentAction, AgentFinish]], None]:
         def inner(output: AgentAction | AgentFinish) -> None:
-
             if isinstance(output, AgentAction):
                 self._publish_agent_action(
                     agent_id=agent_id,
@@ -167,6 +169,10 @@ class CrewCallbackFactory:
 
             if self.stream_writer is not None:
                 self.stream_writer(graph_message)
+                self._emit_crewai_output(
+                    text=agent_finish.output or agent_finish.text,
+                    category="agent_activity",
+                )
 
         except Exception as e:
             logger.error(f"Error in step callback for session {self.session_id}: {e}")
@@ -204,6 +210,10 @@ class CrewCallbackFactory:
 
             if self.stream_writer is not None:
                 self.stream_writer(graph_message)
+                self._emit_crewai_output(
+                    text=agent_action.thought or agent_action.text,
+                    category="agent_reasoning",
+                )
 
         except Exception as e:
             logger.error(f"Error in step callback for session {self.session_id}: {e}")
@@ -234,11 +244,36 @@ class CrewCallbackFactory:
 
                 if self.stream_writer is not None:
                     self.stream_writer(graph_message)
+                    self._emit_crewai_output(
+                        text=output.raw,
+                        category="task_progress",
+                    )
 
             except Exception as e:
                 logger.error(f"Error in task callback: {e}")
 
         return inner
+
+    def _emit_crewai_output(self, text: str, category: str) -> None:
+        """Emit a crewai_output message for the EpicChat widget.
+        The widget recognizes this message_type for the Thinking expander.
+        sse_visible is controlled by stream_config."""
+        if not text or self.stream_writer is None:
+            return
+        visible = self.stream_config.get(category, True)
+        self._message_writer.add_custom_message(
+            session_id=self.session_id,
+            node_name=self.node_name,
+            writer=self.stream_writer,
+            execution_order=self.execution_order,
+            message_data={
+                "message_type": "crewai_output",
+                "text": text,
+                "category": category,
+                "is_final": False,
+                "sse_visible": visible,
+            },
+        )
 
     def _extract_knowledges(self, knowledge_snippets: list) -> str:
         snippet = "\n\n".join(knowledge_snippets)
@@ -286,7 +321,7 @@ class CrewCallbackFactory:
             if self.stream_writer is not None:
                 self.stream_writer(graph_message)
 
-            logger.info(f"Waiting for user input...")
+            logger.info("Waiting for user input...")
             while True:
                 user_input = crew_callback_receiver.results
                 if user_input is not None:
@@ -325,7 +360,6 @@ class CrewCallbackFactory:
                 self.stream_writer(graph_message)
 
             if user_input != "</done/>":
-
                 user_input_with_knowledges = ""
                 user_input_with_knowledges += user_input
                 # TODO: make one search and combine crew_knowledge_collection_id
@@ -360,7 +394,6 @@ class CrewCallbackFactory:
 
 
 class CrewUserCallbackReceiver:
-
     def __init__(self, crew_id: int, node_name: str, execution_order: int):
         self.crew_id = crew_id
         self.node_name = node_name
@@ -378,7 +411,6 @@ class CrewUserCallbackReceiver:
             and message_data.get("node_name") == self.node_name
             and message_data.get("execution_order") == self.execution_order
         ):
-
             self._results = message_data.get("text", "<NO USER INPUT>")
             # TODO: remove logging
             logger.success(f"CrewUserCallbackReceiver, {self._results=}")

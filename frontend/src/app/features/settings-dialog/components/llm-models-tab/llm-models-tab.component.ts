@@ -1,25 +1,17 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    OnInit,
-    signal,
-    inject,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Dialog } from '@angular/cdk/dialog';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 
 import { LoadingState } from '../../../../core/enums/loading-state.enum';
-import { LlmConfigItemComponent } from './llm-config-item/llm-config-item.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
-import { AddLlmConfigDialogComponent } from './add-llm-config-dialog/add-llm-config-dialog.component';
-import { EditLlmConfigDialogComponent } from './add-llm-config-dialog/edit-llm-config-dialog.component';
-import {
-    FullLLMConfigService,
-    FullLLMConfig,
-} from '../../services/llms/full-llm-config.service';
-import { LLM_Config_Service } from '../../services/llms/LLM_config.service';
 import { UpdateLLMConfigRequest } from '../../models/llms/LLM_config.model';
+import { FullLLMConfig, FullLLMConfigService } from '../../services/llms/full-llm-config.service';
+import { LLM_Config_Service } from '../../services/llms/llm-config.service';
+import {
+    AddLlmConfigDialogComponent,
+    AddLlmConfigDialogData,
+} from './add-llm-config-dialog/add-llm-config-dialog.component';
+import { LlmConfigItemComponent } from './llm-config-item/llm-config-item.component';
 
 @Component({
     selector: 'app-llm-models-tab',
@@ -57,7 +49,6 @@ export class LlmModelsTabComponent implements OnInit {
 
         dialogRef.closed.subscribe((result) => {
             if (result === true) {
-                // Refresh the list if a new config was added
                 this.refreshData();
             }
         });
@@ -70,33 +61,26 @@ export class LlmModelsTabComponent implements OnInit {
             next: (configs) => {
                 const sortedConfigs = configs.sort((a, b) => b.id - a.id);
                 this.llmConfigs.set(sortedConfigs);
-                console.log('configs', sortedConfigs);
                 this.status.set(LoadingState.LOADED);
             },
             error: (err) => {
                 console.error('Failed to load LLM configurations:', err);
-                this.errorMessage.set(
-                    'Failed to load configurations. Please try again.'
-                );
+                this.errorMessage.set('Failed to load configurations. Please try again.');
                 this.status.set(LoadingState.ERROR);
             },
         });
     }
 
-    public onFavoriteToggled(event: { id: string | number; value: boolean }) {
-        console.log('Favorite toggled:', event);
+    public onFavoriteToggled(): void {
+        // Placeholder for favorite toggle logic
     }
 
     public onEnabledToggled(event: { id: string | number; value: boolean }) {
-        console.log('Enabled toggled:', event);
-        const config: FullLLMConfig | undefined = this.llmConfigs().find(
-            (c) => c.id === event.id
-        );
+        const config: FullLLMConfig | undefined = this.llmConfigs().find((c) => c.id === event.id);
         if (!config) return;
         const updateReq: UpdateLLMConfigRequest = {
             id: config.id,
             temperature: config.temperature,
-            num_ctx: config.num_ctx,
             api_key: config.api_key,
             is_visible: event.value,
             model: config.model,
@@ -106,11 +90,7 @@ export class LlmModelsTabComponent implements OnInit {
             next: (updated) => {
                 // Update local array
                 this.llmConfigs.set(
-                    this.llmConfigs().map((c) =>
-                        c.id === updated.id
-                            ? { ...c, is_visible: updated.is_visible }
-                            : c
-                    )
+                    this.llmConfigs().map((c) => (c.id === updated.id ? { ...c, is_visible: updated.is_visible } : c))
                 );
             },
             error: (err) => {
@@ -120,13 +100,33 @@ export class LlmModelsTabComponent implements OnInit {
     }
 
     public onConfigureClicked(id: string | number) {
-        console.log('Configure clicked:', id);
         const config = this.llmConfigs().find((c) => c.id === id);
         if (!config) return;
-        const dialogRef = this.dialog.open(EditLlmConfigDialogComponent, {
+
+        const dialogData: AddLlmConfigDialogData = {
+            editConfig: {
+                id: config.id,
+                custom_name: config.custom_name,
+                model: config.model,
+                api_key: config.api_key,
+                temperature: config.temperature,
+                top_p: config.top_p ?? null,
+                stop: config.stop ?? null,
+                max_tokens: config.max_tokens ?? null,
+                presence_penalty: config.presence_penalty ?? null,
+                frequency_penalty: config.frequency_penalty ?? null,
+                logit_bias: config.logit_bias ?? null,
+                seed: config.seed ?? null,
+                timeout: config.timeout ?? null,
+                headers: config.headers ?? undefined,
+                is_visible: config.is_visible,
+            },
+        };
+
+        const dialogRef = this.dialog.open(AddLlmConfigDialogComponent, {
             width: '500px',
             disableClose: true,
-            data: { ...config },
+            data: dialogData,
         });
         dialogRef.closed.subscribe((result) => {
             if (result === true) {
@@ -136,12 +136,9 @@ export class LlmModelsTabComponent implements OnInit {
     }
 
     public onDeleteClicked(id: string | number) {
-        console.log('Delete clicked:', id);
         this.llmConfigService.deleteConfig(Number(id)).subscribe({
             next: () => {
-                this.llmConfigs.set(
-                    this.llmConfigs().filter((c) => c.id !== id)
-                );
+                this.llmConfigs.set(this.llmConfigs().filter((c) => c.id !== id));
             },
             error: (err) => {
                 console.error('Failed to delete config:', err);

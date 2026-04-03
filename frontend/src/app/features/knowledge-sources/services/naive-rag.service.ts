@@ -1,17 +1,25 @@
-import {inject, Injectable} from "@angular/core";
-import {HttpClient, HttpHeaders} from "@angular/common/http";
-import {ConfigService} from "../../../services/config/config.service";
-import {Observable} from "rxjs";
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+
+import { ConfigService } from '../../../services/config';
+import { CreateRagForCollectionResponse } from '../models/naive-rag.model';
+import { GetNaiveRagDocumentChunksResponse, NaiveRagChunkingResponse } from '../models/naive-rag-chunk.model';
 import {
-    BulkDeleteNaiveRagDocumentDtoRequest, BulkDeleteNaiveRagDocumentDtoResponse,
-    BulkUpdateNaiveRagDocumentDtoRequest, BulkUpdateNaiveRagDocumentDtoResponse,
-    CreateRagForCollectionResponse, GetNaiveRagDocumentConfigsResponse, InitNaiveRagDocumentsResponse,
-    StartIndexingDtoRequest, StartIndexingDtoResponse,
-    UpdateNaiveRagDocumentDtoRequest, UpdateNaiveRagDocumentResponse,
-} from "../models/rag.model";
+    BulkDeleteNaiveRagDocumentDtoRequest,
+    BulkDeleteNaiveRagDocumentDtoResponse,
+    BulkUpdateNaiveRagDocumentDtoRequest,
+    BulkUpdateNaiveRagDocumentDtoResponse,
+    GetNaiveRagDocumentConfigsResponse,
+    InitNaiveRagDocumentsResponse,
+    StartIndexingDtoRequest,
+    StartIndexingDtoResponse,
+    UpdateNaiveRagDocumentDtoRequest,
+    UpdateNaiveRagDocumentResponse,
+} from '../models/naive-rag-document.model';
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class NaiveRagService {
     private http = inject(HttpClient);
@@ -25,16 +33,13 @@ export class NaiveRagService {
         return `${this.configService.apiUrl}naive-rag/`;
     }
 
-    createRagForCollection(
-        collectionId: number,
-        embedderId: number
-    ): Observable<CreateRagForCollectionResponse> {
-        const body = {embedder_id: embedderId};
+    createRagForCollection(collectionId: number, embedderId: number): Observable<CreateRagForCollectionResponse> {
+        const body = { embedder_id: embedderId };
 
         return this.http.post<CreateRagForCollectionResponse>(
             `${this.apiUrl}collections/${collectionId}/naive-rag/`,
             body
-        )
+        );
     }
 
     getDocumentConfigs(naiveRagId: number): Observable<GetNaiveRagDocumentConfigsResponse> {
@@ -73,13 +78,38 @@ export class NaiveRagService {
     }
 
     startIndexing(dto: StartIndexingDtoRequest): Observable<StartIndexingDtoResponse> {
-        return this.http.post<StartIndexingDtoResponse>(`${this.configService.apiUrl}process-rag-indexing/`, dto)
+        return this.http.post<StartIndexingDtoResponse>(`${this.configService.apiUrl}process-rag-indexing/`, dto);
     }
 
     initializeDocuments(ragId: number): Observable<InitNaiveRagDocumentsResponse> {
-        return this.http.post<InitNaiveRagDocumentsResponse>(
-            `${this.apiUrl}${ragId}/document-configs/initialize/`,
+        return this.http.post<InitNaiveRagDocumentsResponse>(`${this.apiUrl}${ragId}/document-configs/initialize/`, {});
+    }
+
+    runChunkingProcess(ragId: number, documentId: number): Observable<NaiveRagChunkingResponse> {
+        return this.http.post<NaiveRagChunkingResponse>(
+            `${this.apiUrl}${ragId}/document-configs/${documentId}/process-chunking/`,
             {}
+        );
+    }
+
+    getChunkPreview(
+        ragId: number,
+        documentId: number,
+        offset?: number,
+        limit?: number
+    ): Observable<GetNaiveRagDocumentChunksResponse> {
+        let params = new HttpParams();
+
+        if (offset !== undefined) {
+            params = params.set('offset', offset.toString());
+        }
+        if (limit !== undefined) {
+            params = params.set('limit', limit.toString());
+        }
+
+        return this.http.get<GetNaiveRagDocumentChunksResponse>(
+            `${this.apiUrl}${ragId}/document-configs/${documentId}/chunks/`,
+            { params }
         );
     }
 }

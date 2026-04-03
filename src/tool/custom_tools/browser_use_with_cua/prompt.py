@@ -10,10 +10,10 @@
 # Open “multigroup2” → Subgroups → tick “group2”.
 # Summarize steps done.
 # For test:
-#Open the following URL: http://epic-ai-tokarev.ddns.hysdev.com:8889/#!/login
-#Log in using these credentials: - Username: `Cas P` - Password: `Epica23!`
-#Find the Resource management tab and navigate to it.
-#Find and click the plus icon to the right of the word "Groups" in the first row of the left column. After clicking, a window titled "Create New" should appear. In that window, select the option "Multigroup". After selecting "Multigroup", immediately type "multigroup2" and press Enter. Confirm that the name "multigroup2" is displayed correctly and the input field is no longer editable.
+# Open the following URL: http://epic-ai-tokarev.ddns.hysdev.com:8889/#!/login
+# Log in using these credentials: - Username: `Cas P` - Password: `Epica23!`
+# Find the Resource management tab and navigate to it.
+# Find and click the plus icon to the right of the word "Groups" in the first row of the left column. After clicking, a window titled "Create New" should appear. In that window, select the option "Multigroup". After selecting "Multigroup", immediately type "multigroup2" and press Enter. Confirm that the name "multigroup2" is displayed correctly and the input field is no longer editable.
 
 # """
 

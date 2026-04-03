@@ -3,7 +3,7 @@ import os
 import uuid
 import json
 from browser_use import Agent, Tools, BrowserProfile, Browser
-from browser_use.llm import ChatDeepSeek, ChatOpenAI
+from browser_use.llm import ChatOpenAI
 
 
 SESSION_DIR = "sessions"
@@ -23,9 +23,9 @@ You are a browser task executor. All outputs must follow the strict JSON format 
 """
 
 
-deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 if deepseek_api_key is None:
-    print('Error: missing DEEPSEEK_API_KEY')
+    print("Error: missing DEEPSEEK_API_KEY")
     exit(1)
 
 
@@ -44,18 +44,20 @@ llm = ChatOpenAI(
 
 
 browser_profile = BrowserProfile(
-minimum_wait_page_load_time=0.1,
-wait_between_actions=0.1,
-headless=False,
-keep_alive=True,
+    minimum_wait_page_load_time=0.1,
+    wait_between_actions=0.1,
+    headless=False,
+    keep_alive=True,
 )
 
 
 sessions = {}
 
+
 def clear_sessions():
     print("Clearing sessions before restart")
     sessions.clear()
+
 
 def reset_browser_session():
     global browser
@@ -67,24 +69,24 @@ def load_or_create_session(session_id: str, prompt: str) -> Agent:
     if session_id in sessions:
         return sessions[session_id]
 
-
     agent = Agent(
-    task=prompt,
-    llm=llm,
-    use_vision=True,
-    tools=tools,
-    flash_mode=True,
-    extend_system_message=SPEED_OPTIMIZATION_PROMPT,
-    browser_profile=browser_profile,
-    browser_session=browser
+        task=prompt,
+        llm=llm,
+        use_vision=True,
+        tools=tools,
+        flash_mode=True,
+        extend_system_message=SPEED_OPTIMIZATION_PROMPT,
+        browser_profile=browser_profile,
+        browser_session=browser,
     )
-
 
     sessions[session_id] = agent
     return agent
 
 
-async def run_browser_task(prompt: str, next_prompt: str | None = None, session_id: str | None = None) -> dict:
+async def run_browser_task(
+    prompt: str, next_prompt: str | None = None, session_id: str | None = None
+) -> dict:
     session_id = session_id or str(uuid.uuid4())
     session_path = os.path.join(SESSION_DIR, f"{session_id}.json")
 
@@ -103,7 +105,7 @@ async def run_browser_task(prompt: str, next_prompt: str | None = None, session_
         flash_mode=True,
         extend_system_message=SPEED_OPTIMIZATION_PROMPT,
         browser_profile=browser_profile,
-        browser_session=browser  
+        browser_session=browser,
     )
 
     await agent.run()
@@ -111,35 +113,25 @@ async def run_browser_task(prompt: str, next_prompt: str | None = None, session_
     history.append({"prompt": current_prompt})
 
     with open(session_path, "w", encoding="utf-8") as f:
-        json.dump({
-            "session_id": session_id,
-            "history": history
-        }, f, ensure_ascii=False, indent=2)
+        json.dump(
+            {"session_id": session_id, "history": history},
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
 
     return {
         "status": "done",
         "session_id": session_id,
         "last_prompt": current_prompt,
-        "history": history
+        "history": history,
     }
 
 
-
 if __name__ == "__main__":
-    asyncio.run(run_browser_task("What are the latest changes in AI regulations in the EU?"))
-
-
-
-
-
-
-
-
-
-
-
-
-
+    asyncio.run(
+        run_browser_task("What are the latest changes in AI regulations in the EU?")
+    )
 
 
 # from browser_use import Browser, Agent

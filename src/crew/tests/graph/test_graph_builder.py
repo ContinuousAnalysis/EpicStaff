@@ -1,4 +1,3 @@
-import tempfile
 import pytest
 from unittest.mock import Mock
 from dotdict import DotDict
@@ -9,7 +8,7 @@ from services.graph.graph_session_manager_service import (
     RunPythonCodeService,
     KnowledgeSearchService,
 )
-from models.request_models import (
+from src.shared.models import (
     ConditionData,
     ConditionGroupData,
     LLMConfigData,
@@ -17,11 +16,8 @@ from models.request_models import (
     PythonCodeData,
     SessionData,
     GraphData,
-    CrewNodeData,
     PythonNodeData,
-    LLMNodeData,
     EdgeData,
-    ConditionalEdgeData,
     DecisionTableNodeData,
 )
 import asyncio
@@ -138,7 +134,7 @@ def mock_session_data() -> SessionData:
                 )
             ],
             crew_node_list=[],
-            entry_point="start_node",
+            entrypoint="start_node",
         ),
     )
 

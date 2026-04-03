@@ -2,7 +2,6 @@ from datetime import datetime
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-import os
 
 from models.db_models import RealtimeSessionItem
 from sqlalchemy.exc import SQLAlchemyError
@@ -31,6 +30,6 @@ async def save_realtime_session_item_to_db(data, connection_key):
             await db_session.commit()
             await db_session.refresh(realtime_session_item)
             return realtime_session_item
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             await db_session.rollback()
             logger.exception("Error saving to DB")

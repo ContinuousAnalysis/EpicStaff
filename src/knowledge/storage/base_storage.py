@@ -92,7 +92,6 @@ class BaseORMStorage:
         """
         Get BaseRagType record for any RAG implementation.
         """
-        from models.orm import BaseRagType
 
         try:
             rag_table = self.get_rag_table(rag_type)
