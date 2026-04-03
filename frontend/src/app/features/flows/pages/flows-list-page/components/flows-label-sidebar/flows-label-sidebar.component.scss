@@ -1,16 +1,15 @@
 :host {
     display: flex;
     flex-direction: column;
-    width: 422px;
-    min-width: 280px;
+    width: 30%;
     height: 100%;
     background-color: var(--color-background-body);
     border-right: 1px solid var(--color-divider-subtle);
     border-radius: 0 0 0 12px;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
     flex-shrink: 0;
-    font-family: "Inter", sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 
 .sidebar-header {
@@ -21,12 +20,17 @@
     height: 40px;
     border-bottom: 1px solid var(--color-divider-subtle);
     flex-shrink: 0;
+    min-width: 0;
 
     .sidebar-title {
         font-size: 0.85rem;
         font-weight: 500;
         color: var(--color-text-secondary);
         letter-spacing: 0.05em;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .close-btn {
@@ -39,16 +43,16 @@
         padding: 0.2rem;
         border-radius: 4px;
 
-        &:hover {           
+        &:hover {
             color: var(--color-ks-text);
-        }       
+        }
     }
 }
 
 .sidebar-content {
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
     padding-bottom: 1rem;
 }
 
@@ -58,14 +62,15 @@
     gap: 0.4rem;
     padding: 0.45rem 0.75rem 0.45rem 1rem;
     cursor: pointer;
-    color: var(--color-ks-text);   
+    color: var(--color-ks-text);
     font-size: 14px;
     position: relative;
+    min-width: max-content;
 
     &:hover {
         background: var(--color-ghost-btn-hover);
         color: var(--color-ks-text);
-    }   
+    }
 
     &.active {
         background: var(--color-ghost-btn-active);
@@ -73,23 +78,22 @@
     }
 
     .item-actions {
-        display: none;
+        visibility: hidden;
         margin-left: auto;
+        display: flex;
         gap: 0.6rem;
         align-items: center;
         flex-shrink: 0;
     }
 
     &:hover .item-actions {
-        display: flex;
+        visibility: visible;
     }
 
     .label-name {
         flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
-        min-width: 0;
+        min-width: 80px;
     }
 
     .label-icon {
@@ -125,7 +129,7 @@
     }
 
     .section-label {
-        font-size: 14px;        
+        font-size: 14px;
         color: var(--color-ks-text);
         letter-spacing: 0.08em;
     }
@@ -138,14 +142,14 @@
         display: flex;
         align-items: center;
         padding: 0.15rem;
-        border-radius: 4px;       
+        border-radius: 4px;
 
-        &:hover {           
+        &:hover {
             color: var(--color-ks-text);
         }
 
         &:active {
-            color: var(--color-ks-text);          
+            color: var(--color-ks-text);
         }
     }
 }
@@ -156,16 +160,17 @@
     gap: 0.25rem;
     padding: 0.3rem 0.5rem;
     margin: 0.1rem 0.5rem;
+    min-width: max-content;
 
-    &.child-add {       
-        padding-left: 0; 
+    &.child-add {
+        padding-left: 0;
         padding-right: 0.5rem;
         margin: 0.1rem 0.5rem;
     }
 
     .label-input {
         flex: 1;
-        min-width: 0;
+        min-width: 120px;
         background: var(--color-input-background);
         border: 1px solid var(--color-input-border);
         border-radius: 4px;
@@ -182,7 +187,7 @@
             color: var(--color-text-secondary);
             opacity: 0.7;
         }
-    }   
+    }
 }
 
 .confirm-btn,
@@ -219,11 +224,11 @@
     border: 1px solid var(--accent-color);
 
     &:hover {
-        color: var(--accent-color-hover);        
+        color: var(--accent-color-hover);
     }
 
     &:active {
-        color: var(--accent-color-active);        
+        color: var(--accent-color-active);
     }
 }
 
@@ -268,7 +273,7 @@
 
 .rename-input {
     flex: 1;
-    min-width: 0;
+    min-width: 120px;
     background: var(--color-input-background);
     border: 1px solid var(--accent-color);
     border-radius: 4px;
@@ -300,9 +305,11 @@
 
 .edit-label-btn {
     ::ng-deep app-icon svg path {
-        fill: #D9D9DE;
+        fill: #d9d9de;
         fill-opacity: 0.6;
-        transition: fill 0.15s ease, fill-opacity 0.15s ease;
+        transition:
+            fill 0.15s ease,
+            fill-opacity 0.15s ease;
     }
 
     &:hover ::ng-deep app-icon svg path {
@@ -377,7 +384,7 @@
 .label-error {
     margin: 0.1rem 0 0.3rem;
     padding: 0.35rem 0.6rem;
-    background: rgba(245, 66, 66, 0.10);
+    background: rgba(245, 66, 66, 0.1);
     border: 1px solid rgba(245, 66, 66, 0.3);
     border-left: 3px solid var(--color-error);
     border-radius: 4px;

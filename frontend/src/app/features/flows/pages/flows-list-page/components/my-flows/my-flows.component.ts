@@ -1,7 +1,7 @@
-import { Dialog,DialogModule } from '@angular/cdk/dialog';
+import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect,inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { ImportExportService } from '../../../../../../core/services/import-export.service';
@@ -10,13 +10,12 @@ import {
     ConfirmationDialogService,
     ConfirmationResult,
 } from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
-import { ConfirmationDialogComponent } from '../../../../../../shared/components/cofirm-dialog/confirmation-dialog.component';
 import { LoadingSpinnerComponent } from '../../../../../../shared/components/loading-spinner/loading-spinner.component';
 import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
-import { FlowCardAction,FlowCardComponent } from '../../../../components/flow-card/flow-card.component';
+import { FlowCardAction, FlowCardComponent } from '../../../../components/flow-card/flow-card.component';
 import { FlowRenameDialogComponent } from '../../../../components/flow-rename-dialog/flow-rename-dialog.component';
 import { FlowSessionsListComponent } from '../../../../components/flow-sessions-dialog/flow-sessions-list.component';
-import { GetGraphLightRequest,GraphDto } from '../../../../models/graph.model';
+import { GetGraphLightRequest, GraphDto } from '../../../../models/graph.model';
 import { FlowsApiService } from '../../../../services/flows-api.service';
 import { FlowsStorageService } from '../../../../services/flows-storage.service';
 import { LabelsStorageService } from '../../../../services/labels-storage.service';
@@ -98,7 +97,6 @@ export class MyFlowsComponent {
                 break;
 
             case 'viewSessions':
-                console.log('View sessions for flow:', flow.name);
                 this.dialog.open(FlowSessionsListComponent, {
                     data: { flow },
                     panelClass: 'custom-dialog-panel',
@@ -133,7 +131,7 @@ export class MyFlowsComponent {
                 if (result === true) {
                     this.flowsService.deleteFlow(flow.id).subscribe({
                         next: () => {
-                            console.log(`Flow ${flow.id} - ${flow.name} deleted successfully.`);
+                            this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe();
                         },
                         error: (err) => {
                             console.error(`Error deleting flow ${flow.id} - ${flow.name}`, err);
@@ -159,6 +157,7 @@ export class MyFlowsComponent {
 
         dialogRef.closed.subscribe((result) => {
             if (!result) return;
+            this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe();
         });
     }
     private saving(flowState: GraphDto['metadata'], graph: GraphDto): void {
@@ -199,8 +198,6 @@ export class MyFlowsComponent {
 
         this.runGraphService.runGraph(flow.id, inputs).subscribe({
             next: (response) => {
-                console.log('Flow execution started:', response);
-
                 if (response && response.session_id) {
                     this.router.navigate(['/graph', flow.id, 'session', response.session_id]);
                 } else {

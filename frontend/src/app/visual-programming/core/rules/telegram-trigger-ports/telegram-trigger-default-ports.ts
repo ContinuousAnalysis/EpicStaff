@@ -1,4 +1,4 @@
-import {BasePort} from "../../models/port.model";
+import { BasePort } from '../../models/port.model';
 
 export const DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS: BasePort[] = [
     {
@@ -16,6 +16,7 @@ export const DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS: BasePort[] = [
             'subgraph-in',
             'audio-to-text-in',
             'end-in',
+            'code-agent-in',
         ],
         position: 'right',
         color: '#229ED9',

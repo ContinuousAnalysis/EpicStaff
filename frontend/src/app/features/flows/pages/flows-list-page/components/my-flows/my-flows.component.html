@@ -24,7 +24,7 @@
                             [selectMode]="selectMode()"
                             [isSelected]="isFlowSelected(flow.id)"
                             (selectionToggle)="onFlowSelect(flow.id)"
-                            (cardClick)="handleFlowCardAction({ action: 'open', flow: flow })"
+                            (cardClick)="handleFlowCardAction({ action: 'open', flow: $event })"
                             (action)="handleFlowCardAction($event)"
                         ></app-flow-card>
                     }

@@ -64,7 +64,7 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
     });
 
     get triggerLabel(): string {
-        const count = this.localSelectedIds().size;
+        const count = this.selectedLabelIds.length;
         if (count === 0) return 'Select label';
         return `${count} label${count !== 1 ? 's' : ''} selected`;
     }
@@ -161,6 +161,7 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
         this.newLabelName.set('');
         this.addLabelError.set('');
         this.expandedIds.update((s) => new Set([...s, parentId]));
+        this.scrollChildAddRowIntoView();
     }
 
     cancelAdd(): void {
@@ -196,6 +197,13 @@ export class LabelDropdownComponent implements OnInit, OnChanges {
 
     getIndentPadding(depth: number): string {
         return `${depth * 1 + 0.25}rem`;
+    }
+
+    private scrollChildAddRowIntoView(): void {
+        setTimeout(() => {
+            const input = this.elementRef.nativeElement.querySelector('.add-label-row.child-add input') as HTMLElement;
+            if (input) input.scrollIntoView({ block: 'nearest', inline: 'start' });
+        }, 0);
     }
 
     private parseError(err: HttpErrorResponse): string {

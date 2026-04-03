@@ -1,7 +1,16 @@
 import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, output,signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    ElementRef,
+    inject,
+    OnInit,
+    output,
+    signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { AppIconComponent } from '../../../../../../shared/components/app-icon/app-icon.component';
@@ -31,6 +40,7 @@ export class FlowsLabelSidebarComponent implements OnInit {
     private readonly labelsStorage = inject(LabelsStorageService);
     private readonly flowsStorageService = inject(FlowsStorageService);
     private readonly dialog = inject(Dialog);
+    private readonly el = inject(ElementRef);
 
     // Expose from storage
     readonly labelTree = this.labelsStorage.labelTree;
@@ -114,6 +124,7 @@ export class FlowsLabelSidebarComponent implements OnInit {
         this.addingRootLabel.set(false);
         this.newLabelNameValue.set('');
         this.expandedNodes.update((s) => new Set([...s, parentId]));
+        this.scrollChildAddRowIntoView();
     }
 
     confirmAddLabel(): void {
@@ -143,6 +154,7 @@ export class FlowsLabelSidebarComponent implements OnInit {
     startRename(label: LabelDto): void {
         this.editingLabelId.set(label.id);
         this.editingLabelNameValue.set(label.name);
+        this.scrollRenameRowIntoView();
     }
 
     cancelRename(): void {
@@ -249,6 +261,20 @@ export class FlowsLabelSidebarComponent implements OnInit {
 
     getIndentPadding(depth: number): string {
         return `${depth * 1.2 + 1}rem`;
+    }
+
+    private scrollChildAddRowIntoView(): void {
+        setTimeout(() => {
+            const input = this.el.nativeElement.querySelector('.add-label-row.child-add input') as HTMLElement;
+            if (input) input.scrollIntoView({ block: 'nearest', inline: 'start' });
+        }, 0);
+    }
+
+    private scrollRenameRowIntoView(): void {
+        setTimeout(() => {
+            const input = this.el.nativeElement.querySelector('.rename-input') as HTMLElement;
+            if (input) input.scrollIntoView({ block: 'nearest', inline: 'start' });
+        }, 0);
     }
 
     private parseCreateError(err: HttpErrorResponse): string {

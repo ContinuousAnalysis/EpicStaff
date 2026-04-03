@@ -24,10 +24,6 @@
         border-color: var(--accent-color);
     }
 
-    // &.open {
-    //     border-color: var(--accent-color);
-    // }
-
     .trigger-text {
         flex: 1;
         overflow: hidden;
@@ -57,8 +53,9 @@
     background: var(--color-sidenav-background);
     border: 1px solid var(--color-input-border);
     border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.15), 0px 2px 3px rgba(0, 0, 0, 0.3);
+    box-shadow:
+        0px 6px 10px rgba(0, 0, 0, 0.15),
+        0px 2px 3px rgba(0, 0, 0, 0.3);
 }
 
 .labels-section-header {
@@ -110,22 +107,24 @@
     gap: 8px;
     max-height: 260px;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
     padding: 0 1.25rem 0.5rem;
 
     // Custom scrollbar
     scrollbar-width: thin;
-    scrollbar-color: var(--color-input-background) transparent;
+    scrollbar-color: var(--color-text-secondary) transparent;
 
     &::-webkit-scrollbar {
-        width: 8px;
+        width: 6px;
+        height: 4px;
     }
     &::-webkit-scrollbar-track {
         background: transparent;
     }
     &::-webkit-scrollbar-thumb {
-        background: var(--color-input-background);
+        background: var(--color-text-secondary);
         border-radius: 4px;
+        opacity: 0.5;
     }
 }
 
@@ -151,6 +150,7 @@
     border-radius: 4px;
     flex-shrink: 0;
     transition: border-color 0.15s;
+    min-width: max-content;
 
     &:hover {
         border-color: var(--accent-color);
@@ -172,8 +172,6 @@
 
     .label-name {
         flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
         min-width: 0;
     }
@@ -218,7 +216,9 @@
     border-radius: 4px;
     background: transparent;
     position: relative;
-    transition: background 0.15s, border-color 0.15s;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
 
     &:checked {
         background: var(--accent-color);
@@ -257,7 +257,9 @@
     width: 28px;
     height: 28px;
     opacity: 0;
-    transition: opacity 0.1s ease, background 0.1s ease;
+    transition:
+        opacity 0.1s ease,
+        background 0.1s ease;
 
     &:hover {
         background: var(--accent-color-hover, var(--accent-color));
@@ -275,6 +277,7 @@
     align-items: center;
     gap: 0.25rem;
     padding: 0.3rem 0.5rem;
+    min-width: max-content;
 
     &.child-add {
         padding-right: 0.5rem;
@@ -282,7 +285,7 @@
 
     .label-input {
         flex: 1;
-        min-width: 0;
+        min-width: 100px;
         background: var(--color-input-background);
         border: 1px solid var(--color-input-border);
         border-radius: 4px;

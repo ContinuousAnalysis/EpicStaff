@@ -1,41 +1,62 @@
-@if (isLoaded ) {
-<app-flow-header
-    [graphName]="graph.name"
-    [graphId]="graph.id"
-    [graph]="graph"
-    [isSaving]="isSaving"
-    [isRunning]="isRunning"
-    [hasUnsavedChanges]="hasUnsavedChanges()"
-    (save)="handleSaveFlow(true).subscribe()"
-    (viewSessions)="handleViewSessions()"
-    (run)="handleRunFlow()"
-    (getCurl)="handleGetCurl()"
-    (flowEdited)="onFlowEdited($event)"
-></app-flow-header>
-
-<div class="body">
-    <app-flow-graph
-        [flowState]="loadedFlowState"
-        [nodesMode]="'flow-graph'"
-        [currentFlowId]="graph.id"
+@if (isLoaded) {
+    <app-flow-header
+        [graphName]="graph.name"
+        [graphId]="graph.id"
+        [isEpicChatEnabled]="isEpicChatEnabled"
+        [graph]="graph"
+        [isSaving]="isSaving"
+        [isRunning]="isRunning"
+        [hasUnsavedChanges]="hasUnsavedChanges()"
         (save)="handleSaveFlow(true).subscribe()"
-        (openShortcuts)="openShortcutsModal($event)"
-    ></app-flow-graph>
-    <app-shortcuts-modal
-        [open]="isShortcutsOpen()"
-        [pos]="shortcutsPos()"
-        title="Command & Shortcuts"
-        iconSrc="assets/icons/ui/shortcut.svg"
-        [sections]="shortcutSections"
-        (closed)="closeShortcutsModal()"
-    ></app-shortcuts-modal>
-</div>
+        (viewSessions)="handleViewSessions()"
+        (run)="handleRunFlow()"
+        (getCurl)="handleGetCurl()"
+        (connectChat)="connectToEpicChat()"
+        (flowEdited)="onFlowEdited($event)"
+    ></app-flow-header>
+
+    <div class="body">
+        <app-flow-graph
+            [flowState]="loadedFlowState"
+            [nodesMode]="'flow-graph'"
+            [currentFlowId]="graph.id"
+            [initialNodeId]="initialNodeId"
+            [initialNodeId]="initialNodeId"
+            (save)="handleSaveFlow(true).subscribe()"
+            (openShortcuts)="openShortcutsModal($event)"
+        ></app-flow-graph>
+        <app-shortcuts-modal
+            [open]="isShortcutsOpen()"
+            [pos]="shortcutsPos()"
+            title="Command & Shortcuts"
+            iconSrc="assets/icons/ui/shortcut.svg"
+            [sections]="shortcutSections"
+            (closed)="closeShortcutsModal()"
+        ></app-shortcuts-modal>
+        @if (isPanelOpen || !isPanelOpen) {
+            <div
+                class="drag-handle"
+                [class.dragging]="isDragging"
+                [class.collapsed]="isPanelCollapsed"
+                (mousedown)="onDragStart($event)"
+            >
+                <button class="collapse-toggle" (mousedown)="$event.stopPropagation()" (click)="togglePanelCollapsed()">
+                    <span class="collapse-toggle__icon">
+                        {{ isPanelCollapsed ? '◀' : '▶' }}
+                    </span>
+                </button>
+            </div>
+            @if (!isPanelCollapsed) {
+                <app-flow-messages-panel
+                    [style.width.px]="panelWidthPx"
+                    [graphId]="graph.id"
+                    [sessionId]="currentSessionId"
+                    (close)="closeMessagesPanel()"
+                    (sessionSelected)="onSessionSelected($event)"
+                ></app-flow-messages-panel>
+            }
+        }
+    </div>
 } @else {
-
-<app-spinner
-    [text]="'Loading flow...'"
-    [accentColor]="'#6562f5'"
-    [isOverlay]="false"
-></app-spinner>
-
+    <app-spinner [text]="'Loading flow...'" [accentColor]="'#6562f5'" [isOverlay]="false"></app-spinner>
 }
