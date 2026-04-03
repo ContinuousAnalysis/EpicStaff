@@ -1,31 +1,39 @@
 .tab {
-    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    color: var(--color-text-primary);
 
     &__header {
         display: flex;
+        align-items: flex-start;
         justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
+        gap: 24px;
+    }
+
+    &__header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
     }
 
     &__title {
         font-size: 20px;
-        font-weight: 400;
-        color: var(--color-text-primary);
-        margin-top: 0;
-        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--configure-models-dialog-active-color, #d9d9de);
+        margin: 0;
     }
 
     &__subtitle {
         font-size: 14px;
-        color: var(--color-text-secondary);
-        margin-top: 0;
+        color: rgba(217, 217, 222, 0.6);
+        margin: 0;
     }
 
     &__form {
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: 14px;
         max-width: 480px;
     }
 
