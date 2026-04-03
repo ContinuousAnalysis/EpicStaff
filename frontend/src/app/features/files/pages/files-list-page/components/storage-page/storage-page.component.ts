@@ -83,7 +83,7 @@ export class StoragePageComponent {
         }
     }
 
-    onContextAction(event: { action: string; item: StorageItem }): void {
+    onContextAction(event: { action: string; item: StorageItem; renameFromPath?: string }): void {
         switch (event.action) {
             case 'download':
                 this.storageApiService.download(event.item.path);
@@ -92,7 +92,7 @@ export class StoragePageComponent {
                 this.handleDelete(event.item);
                 break;
             case 'rename':
-                // Handled inline by tree component
+                this.handleRename(event);
                 break;
             case 'copy':
                 // TODO: Implement copy-to-folder dialog
@@ -153,6 +153,27 @@ export class StoragePageComponent {
                     error: () => this.toastService.error(`Failed to upload "${file.name}"`),
                 });
         }
+    }
+
+    private handleRename(event: { item: StorageItem; renameFromPath?: string }): void {
+        const from = event.renameFromPath?.trim() ?? '';
+        const to = event.item.path?.trim() ?? '';
+        if (!from || !to || from === to) {
+            return;
+        }
+        this.storageApiService
+            .rename(from, to)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.toastService.success(`Renamed to "${event.item.name}"`);
+                    if (this.selectedFile()?.path === from) {
+                        this.selectedFile.set(event.item);
+                    }
+                    this.loadTree();
+                },
+                error: () => this.toastService.error('Failed to rename'),
+            });
     }
 
     private handleDelete(item: StorageItem): void {

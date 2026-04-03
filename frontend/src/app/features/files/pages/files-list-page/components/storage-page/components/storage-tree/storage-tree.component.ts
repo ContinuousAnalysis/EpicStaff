@@ -17,13 +17,17 @@ export class StorageTreeComponent {
     @Input() items: StorageItem[] = [];
     @Output() fileSelected = new EventEmitter<StorageItem>();
     @Output() folderToggled = new EventEmitter<StorageItem>();
-    @Output() contextAction = new EventEmitter<{ action: string; item: StorageItem }>();
+    @Output() contextAction = new EventEmitter<{
+        action: string;
+        item: StorageItem;
+        renameFromPath?: string;
+    }>();
     closeSidebar = output<void>();
     openCreateFolder = output<string>();
 
-    selectedPath = signal<string | null>(null);
-    hoveredPath = signal<string | null>(null);
-    renamingPath = signal<string | null>(null);
+    selectedItem = signal<StorageItem | null>(null);
+    hoveredItem = signal<StorageItem | null>(null);
+    renamingItem = signal<StorageItem | null>(null);
     renameValue = '';
 
     contextMenuOpen = signal<boolean>(false);
@@ -42,7 +46,7 @@ export class StorageTreeComponent {
             item.isExpanded = !item.isExpanded;
             this.folderToggled.emit(item);
         } else {
-            this.selectedPath.set(item.path);
+            this.selectedItem.set(item);
             this.fileSelected.emit(item);
         }
     }
@@ -72,7 +76,7 @@ export class StorageTreeComponent {
         if (!item) return;
 
         if (action === 'rename') {
-            this.renamingPath.set(item.path);
+            this.renamingItem.set(item);
             this.renameValue = item.name;
         } else {
             this.contextAction.emit({ action, item });
@@ -81,20 +85,35 @@ export class StorageTreeComponent {
     }
 
     onRenameConfirm(item: StorageItem): void {
-        const newName = this.renameValue.trim();
-        if (newName && newName !== item.name) {
-            const parentPath = item.path.substring(0, item.path.lastIndexOf('/'));
-            const newPath = parentPath ? `${parentPath}/${newName}` : newName;
-            this.contextAction.emit({
-                action: 'rename',
-                item: { ...item, name: newName, path: newPath },
-            });
+        try {
+            const newName = this.renameValue.trim();
+            const currentName = item.name ?? '';
+            if (newName && newName !== currentName) {
+                const currentPath = item.path ?? '';
+                const slashIndex = currentPath.lastIndexOf('/');
+                const parentPath = slashIndex >= 0 ? currentPath.substring(0, slashIndex) : '';
+                const newPath = parentPath ? `${parentPath}/${newName}` : newName;
+                this.contextAction.emit({
+                    action: 'rename',
+                    item: { ...item, name: newName, path: newPath },
+                    renameFromPath: currentPath,
+                });
+            }
+        } finally {
+            this.renamingItem.set(null);
         }
-        this.renamingPath.set(null);
     }
 
-    onRenameCancel(): void {
-        this.renamingPath.set(null);
+    onRenameCancel(event?: Event): void {
+        event?.preventDefault();
+        event?.stopPropagation();
+        this.renamingItem.set(null);
+    }
+
+    onRenameEnter(event: Event, item: StorageItem): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.onRenameConfirm(item);
     }
 
     getFileExtension(name: string): string {
@@ -104,19 +123,14 @@ export class StorageTreeComponent {
 
     getFileIcon(item: StorageItem): string {
         if (item.type === 'folder') {
-            return item.isExpanded ? 'ui/folder-open' : 'ui/folder';
+            return 'ui/folder';
         }
         return 'ui/file';
     }
 
     onAddFolderClick(): void {
-        const selected = this.selectedPath();
-        const availableItems = this.asStorageItems(this.items);
-        const currentFolder = selected
-            ? availableItems.find((i) => i.path === selected)?.type === 'folder'
-                ? selected
-                : ''
-            : '';
+        const selected = this.selectedItem();
+        const currentFolder = selected?.type === 'folder' && selected.path ? selected.path : '';
         this.openCreateFolder.emit(currentFolder);
     }
 
