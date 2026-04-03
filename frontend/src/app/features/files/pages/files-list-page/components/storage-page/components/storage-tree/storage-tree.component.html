@@ -1,0 +1,168 @@
+<div class="storage-tree">
+    <div class="storage-tree__header">
+        <span class="storage-tree__header-label">Folder Branches</span>
+        <button class="storage-tree__header-close" aria-label="Close panel" (click)="closeSidebar.emit()">
+            <app-icon icon="ui/x" size="0.875rem"></app-icon>
+        </button>
+    </div>
+
+    <div class="storage-tree__toolbar">
+        <span class="storage-tree__toolbar-label">Folders</span>
+        <button class="storage-tree__toolbar-btn" aria-label="Add folder" (click)="onAddFolderClick()">
+            <app-icon icon="ui/plus" size="0.875rem"></app-icon>
+        </button>
+        <button class="storage-tree__toolbar-btn" aria-label="More options" (click)="onMoreOptionsClick($event)">
+            <app-icon icon="ui/dots-vertical" size="0.875rem"></app-icon>
+        </button>
+    </div>
+
+    <div class="storage-tree__list">
+        <ng-container *ngTemplateOutlet="treeNodes; context: { $implicit: items, level: 0 }"></ng-container>
+    </div>
+</div>
+
+<ng-template #treeNodes let-nodes let-level="level">
+    @for (node of asStorageItems(nodes); track node.path) {
+        <div
+            class="storage-tree__item"
+            [class.storage-tree__item--selected]="selectedPath() === node.path"
+            [class.storage-tree__item--hovered]="hoveredPath() === node.path"
+            [style.padding-left.rem]="0.75 + level * 1.25"
+            (click)="onItemClick(node)"
+            (contextmenu)="onContextMenu($event, node)"
+            (mouseenter)="hoveredPath.set(node.path)"
+            (mouseleave)="hoveredPath.set(null)"
+        >
+            @if (node.type === 'folder') {
+                <app-icon
+                    class="storage-tree__chevron"
+                    [class.storage-tree__chevron--expanded]="node.isExpanded"
+                    icon="ui/chevron-right"
+                    size="0.75rem"
+                ></app-icon>
+            } @else {
+                <span class="storage-tree__chevron-placeholder"></span>
+            }
+
+            <app-icon class="storage-tree__icon" [icon]="getFileIcon(node)" size="1rem"></app-icon>
+
+            @if (renamingPath() === node.path) {
+                <input
+                    class="storage-tree__rename-input"
+                    type="text"
+                    [(ngModel)]="renameValue"
+                    (keydown.enter)="onRenameConfirm(node)"
+                    (keydown.escape)="onRenameCancel()"
+                    (blur)="onRenameConfirm(node)"
+                    autofocus
+                    (click)="$event.stopPropagation()"
+                />
+            } @else {
+                <span class="storage-tree__name" [title]="node.name">{{ node.name }}</span>
+
+                @if (
+                    node.type === 'folder' &&
+                    (!node.children || node.children.length === 0) &&
+                    node.isExpanded === undefined
+                ) {
+                    <span class="storage-tree__empty-badge">Empty</span>
+                }
+            }
+
+            @if (hoveredPath() === node.path && renamingPath() !== node.path) {
+                <div class="storage-tree__hover-actions">
+                    <button
+                        class="storage-tree__hover-btn"
+                        aria-label="Add"
+                        (click)="$event.stopPropagation(); onContextMenuAction('add-to-flow')"
+                    >
+                        <app-icon icon="ui/plus" size="0.75rem"></app-icon>
+                    </button>
+                    <button class="storage-tree__hover-btn" aria-label="More" (click)="onKebabClick($event, node)">
+                        <app-icon icon="ui/dots-vertical" size="0.75rem"></app-icon>
+                    </button>
+                </div>
+            }
+        </div>
+
+        @if (node.type === 'folder' && node.isExpanded && node.children?.length) {
+            <ng-container
+                *ngTemplateOutlet="treeNodes; context: { $implicit: asStorageItems(node.children), level: level + 1 }"
+            ></ng-container>
+        }
+    }
+</ng-template>
+
+<!-- More Options Menu Overlay -->
+@if (moreMenuOpen()) {
+    <div class="storage-tree__overlay" (click)="closeMoreMenu()"></div>
+    <div
+        class="storage-tree__context-menu"
+        [style.left.px]="moreMenuPosition().x"
+        [style.top.px]="moreMenuPosition().y"
+    >
+        <button class="storage-tree__context-menu-item" (click)="onMoreMenuAction('upload')">
+            <app-icon icon="ui/upload" size="0.875rem"></app-icon>
+            Upload files
+        </button>
+        <button class="storage-tree__context-menu-item" (click)="onMoreMenuAction('create-folder')">
+            <app-icon icon="ui/folder" size="0.875rem"></app-icon>
+            Create folder
+        </button>
+        <div class="storage-tree__context-menu-divider"></div>
+        <button class="storage-tree__context-menu-item" (click)="onMoreMenuAction('paste')">
+            <app-icon icon="ui/copy" size="0.875rem"></app-icon>
+            Paste
+        </button>
+    </div>
+}
+
+<!-- Context Menu Overlay -->
+@if (contextMenuOpen()) {
+    <div class="storage-tree__overlay" (click)="closeContextMenu()"></div>
+    <div
+        class="storage-tree__context-menu"
+        [style.left.px]="contextMenuPosition().x"
+        [style.top.px]="contextMenuPosition().y"
+    >
+        @if (contextMenuItem()?.type === 'file') {
+            <button class="storage-tree__context-menu-item" (click)="onContextMenuAction('add-to-flow')">
+                <app-icon icon="ui/plus" size="0.875rem"></app-icon>
+                Add to flow
+            </button>
+            <button class="storage-tree__context-menu-item" (click)="onContextMenuAction('download')">
+                <app-icon icon="ui/download" size="0.875rem"></app-icon>
+                Download
+            </button>
+        }
+        <button class="storage-tree__context-menu-item" (click)="onContextMenuAction('rename')">
+            <app-icon icon="ui/edit" size="0.875rem"></app-icon>
+            Rename
+        </button>
+        <button class="storage-tree__context-menu-item" (click)="onContextMenuAction('copy')">
+            <app-icon icon="ui/copy" size="0.875rem"></app-icon>
+            Copy to folder
+        </button>
+        <button class="storage-tree__context-menu-item" (click)="onContextMenuAction('view-details')">
+            <app-icon icon="ui/info-circle" size="0.875rem"></app-icon>
+            View details
+        </button>
+        <div class="storage-tree__context-menu-divider"></div>
+        <button
+            class="storage-tree__context-menu-item storage-tree__context-menu-item--danger"
+            (click)="onContextMenuAction('delete')"
+        >
+            <app-icon icon="ui/trash" size="0.875rem"></app-icon>
+            Delete
+        </button>
+        <div class="storage-tree__context-menu-divider"></div>
+        <button
+            class="storage-tree__context-menu-item storage-tree__context-menu-item--disabled"
+            disabled
+            title="Coming soon"
+        >
+            <app-icon icon="ui/lock" size="0.875rem"></app-icon>
+            Manage access
+        </button>
+    </div>
+}

@@ -1,7 +1,9 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
+import { LastVisitedTabService } from './services/last-visited-tab.service';
 
 export const routes: Routes = [
     {
@@ -20,7 +22,16 @@ export const routes: Routes = [
                         (m) => m.ProjectsListPageComponent
                     ),
                 children: [
-                    { path: '', redirectTo: 'my', pathMatch: 'full' },
+                    {
+                        path: '',
+                        canActivate: [
+                            () => {
+                                const last = inject(LastVisitedTabService).get('/projects');
+                                return inject(Router).parseUrl(last ?? '/projects/my');
+                            },
+                        ],
+                        children: [],
+                    },
                     {
                         path: 'my',
                         loadComponent: () =>
@@ -56,7 +67,16 @@ export const routes: Routes = [
                         (m) => m.ToolsListPageComponent
                     ),
                 children: [
-                    { path: '', redirectTo: 'custom', pathMatch: 'full' },
+                    {
+                        path: '',
+                        canActivate: [
+                            () => {
+                                const last = inject(LastVisitedTabService).get('/tools');
+                                return inject(Router).parseUrl(last ?? '/tools/custom');
+                            },
+                        ],
+                        children: [],
+                    },
                     {
                         path: 'custom',
                         loadComponent: () =>
@@ -80,7 +100,16 @@ export const routes: Routes = [
                         (m) => m.FlowsListPageComponent
                     ),
                 children: [
-                    { path: '', redirectTo: 'my', pathMatch: 'full' },
+                    {
+                        path: '',
+                        canActivate: [
+                            () => {
+                                const last = inject(LastVisitedTabService).get('/flows');
+                                return inject(Router).parseUrl(last ?? '/flows/my');
+                            },
+                        ],
+                        children: [],
+                    },
                     {
                         path: 'my',
                         loadComponent: () =>
@@ -114,10 +143,41 @@ export const routes: Routes = [
             },
             {
                 path: 'knowledge-sources',
+                redirectTo: 'files',
+                pathMatch: 'full',
+            },
+            {
+                path: 'files',
                 loadComponent: () =>
-                    import('./features/knowledge-sources/pages/collections-list-page/collections-list-page.component').then(
-                        (m) => m.CollectionsListPageComponent
+                    import('./features/files/pages/files-list-page/files-list-page.component').then(
+                        (m) => m.FilesListPageComponent
                     ),
+                children: [
+                    {
+                        path: '',
+                        canActivate: [
+                            () => {
+                                const last = inject(LastVisitedTabService).get('/files');
+                                return inject(Router).parseUrl(last ?? '/files/knowledge-sources');
+                            },
+                        ],
+                        children: [],
+                    },
+                    {
+                        path: 'knowledge-sources',
+                        loadComponent: () =>
+                            import('./features/knowledge-sources/pages/collections-list-page/collections-list-page.component').then(
+                                (m) => m.CollectionsListPageComponent
+                            ),
+                    },
+                    {
+                        path: 'storage',
+                        loadComponent: () =>
+                            import('./features/files/pages/files-list-page/components/storage-page/storage-page.component').then(
+                                (m) => m.StoragePageComponent
+                            ),
+                    },
+                ],
             },
             {
                 path: 'chats',
