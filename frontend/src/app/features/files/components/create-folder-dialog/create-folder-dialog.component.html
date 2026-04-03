@@ -1,0 +1,77 @@
+<div class="create-folder-dialog">
+    <div class="create-folder-dialog__header">
+        <h2 class="create-folder-dialog__title">Create folder</h2>
+        <div class="create-folder-dialog__header-actions">
+            <button
+                class="create-folder-dialog__icon-btn create-folder-dialog__icon-btn--cancel"
+                aria-label="Cancel"
+                (click)="onCancel()"
+            >
+                <app-icon icon="ui/x" size="1.1rem"></app-icon>
+            </button>
+            <button
+                class="create-folder-dialog__icon-btn create-folder-dialog__icon-btn--confirm"
+                aria-label="Create"
+                [disabled]="!folderName.trim()"
+                (click)="onConfirm()"
+            >
+                <app-icon icon="ui/check" size="1.1rem"></app-icon>
+            </button>
+        </div>
+    </div>
+
+    <div class="create-folder-dialog__body">
+        <div class="create-folder-dialog__field">
+            <label class="create-folder-dialog__label" for="folderName">Folder name</label>
+            <input
+                id="folderName"
+                class="create-folder-dialog__input"
+                type="text"
+                placeholder="Enter folder name"
+                [(ngModel)]="folderName"
+                (keydown.enter)="onConfirm()"
+                autofocus
+            />
+        </div>
+
+        <div class="create-folder-dialog__field">
+            <label class="create-folder-dialog__label"
+                >Files <span class="create-folder-dialog__label-hint">(optional)</span></label
+            >
+            <div
+                class="create-folder-dialog__drop-zone"
+                [class.create-folder-dialog__drop-zone--dragging]="isDragging()"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onDrop($event)"
+            >
+                <app-icon icon="ui/upload" size="2rem" class="create-folder-dialog__drop-icon"></app-icon>
+                <span class="create-folder-dialog__drop-text">Drag & drop files here</span>
+                <span class="create-folder-dialog__drop-or">or</span>
+                <label class="create-folder-dialog__browse-btn">
+                    Browse files
+                    <input type="file" multiple hidden (change)="onFileInputChange($event)" />
+                </label>
+            </div>
+        </div>
+
+        @if (files().length > 0) {
+            <ul class="create-folder-dialog__file-list">
+                @for (file of files(); track file.name; let i = $index) {
+                    <li class="create-folder-dialog__file-item">
+                        <app-icon icon="ui/file" size="0.875rem" class="create-folder-dialog__file-icon"></app-icon>
+                        <span class="create-folder-dialog__file-name" [title]="file.name">{{ file.name }}</span>
+                        <span class="create-folder-dialog__file-size">{{ formatSize(file.size) }}</span>
+                        <button
+                            class="create-folder-dialog__file-remove"
+                            aria-label="Remove file"
+                            (click)="removeFile(i)"
+                        >
+                            <app-icon icon="ui/x" size="0.75rem"></app-icon>
+                        </button>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

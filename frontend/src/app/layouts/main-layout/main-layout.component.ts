@@ -1,7 +1,13 @@
-import { Component, HostListener } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, DestroyRef, HostListener, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs/operators';
+
 import { EpicChatService } from '../../features/epic-chat/epic-chat.service';
+import { LastVisitedTabService } from '../../services/last-visited-tab.service';
 import { LeftSidebarComponent } from './sidenav/sidenav.component';
+
+const TABBED_ROUTES = ['/projects', '/tools', '/flows', '/files'];
 
 @Component({
     selector: 'app-main-layout',
@@ -51,14 +57,8 @@ import { LeftSidebarComponent } from './sidenav/sidenav.component';
         </div>
 
         @if (epicChatService.isDocked() && epicChatService.isChatOpen()) {
-            <div
-                class="chat-dock-spacer"
-                [style.width.px]="epicChatService.dockWidth()"
-            >
-                <div
-                    class="chat-dock-resizer"
-                    (mousedown)="onDockResizeStart($event)"
-                ></div>
+            <div class="chat-dock-spacer" [style.width.px]="epicChatService.dockWidth()">
+                <div class="chat-dock-resizer" (mousedown)="onDockResizeStart($event)"></div>
             </div>
         }
 
@@ -67,12 +67,31 @@ import { LeftSidebarComponent } from './sidenav/sidenav.component';
         </div>
     `,
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
     private isDockResizing = false;
     private dockResizeStartX = 0;
     private dockResizeStartWidth = 0;
 
+    private router = inject(Router);
+    private destroyRef = inject(DestroyRef);
+    private lastVisitedTabService = inject(LastVisitedTabService);
+
     constructor(public epicChatService: EpicChatService) {}
+
+    ngOnInit(): void {
+        this.router.events
+            .pipe(
+                filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe((e) => {
+                const url = e.urlAfterRedirects;
+                const parent = TABBED_ROUTES.find((p) => url.startsWith(p + '/'));
+                if (parent) {
+                    this.lastVisitedTabService.set(parent, url);
+                }
+            });
+    }
 
     public onDockResizeStart(event: MouseEvent): void {
         if (!this.epicChatService.isDocked()) {

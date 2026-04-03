@@ -1,0 +1,33 @@
+<app-drag-drop-area (filesDropped)="onFilesDropped($event)">
+    <div class="storage-page">
+        @if (isLoading()) {
+            <div class="storage-page__loading">
+                <app-spinner [text]="'Loading storage...'" [accentColor]="'#6562f5'" [isOverlay]="false"></app-spinner>
+            </div>
+        } @else {
+            <div class="storage-page__sidebar" [class.storage-page__sidebar--hidden]="!showSidebar()">
+                <app-storage-tree
+                    [items]="treeData()"
+                    (fileSelected)="onFileSelect($event)"
+                    (folderToggled)="onFolderToggle($event)"
+                    (contextAction)="onContextAction($event)"
+                    (closeSidebar)="toggleSidebar()"
+                    (openCreateFolder)="onOpenCreateFolder($event)"
+                />
+            </div>
+            <div class="storage-page__content">
+                <div class="storage-page__breadcrumb-bar">
+                    <button
+                        class="storage-page__toggle-btn"
+                        [class.storage-page__toggle-btn--active]="showSidebar()"
+                        (click)="toggleSidebar()"
+                        title="Toggle Folder Branches"
+                    >
+                        <app-icon icon="ui/expand-sidebar" size="0.85rem"></app-icon>
+                    </button>
+                </div>
+                <app-storage-preview [item]="selectedFile()" />
+            </div>
+        }
+    </div>
+</app-drag-drop-area>
