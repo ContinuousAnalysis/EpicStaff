@@ -42,7 +42,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 87px;
     height: 28px;
     padding: 0 8px;
     background: var(--color-flow-card-bg);
@@ -61,8 +60,6 @@
         font-weight: 500;
         color: var(--color-text-primary);
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
         text-decoration: none;
     }
 }

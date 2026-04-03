@@ -2,6 +2,7 @@ import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
+    AfterViewChecked,
     ChangeDetectionStrategy,
     Component,
     computed,
@@ -11,6 +12,7 @@ import {
     inject,
     signal,
     viewChild,
+    viewChildren,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
@@ -39,7 +41,7 @@ import { RunGraphService } from '../../../../services/run-graph-session.service'
     styleUrls: ['./my-flows.component.scss'],
     imports: [CommonModule, FlowCardComponent, LoadingSpinnerComponent, DialogModule, RouterLink],
 })
-export class MyFlowsComponent {
+export class MyFlowsComponent implements AfterViewChecked {
     private readonly flowsService = inject(FlowsStorageService);
     private readonly graphUpdateService = inject(GraphUpdateService);
     private readonly flowsApiService = inject(FlowsApiService);
@@ -53,10 +55,9 @@ export class MyFlowsComponent {
     private readonly destroyRef = inject(DestroyRef);
 
     private readonly recentSection = viewChild<ElementRef<HTMLElement>>('recentSection');
-    private readonly containerWidth = signal(0);
+    private readonly recentCards = viewChildren<ElementRef<HTMLElement>>('recentCard');
     private resizeObserver: ResizeObserver | null = null;
 
-    private static readonly CARD_WIDTH = 87;
     private static readonly GAP = 8;
 
     public readonly activeLabelFilter = this.labelsStorage.activeLabelFilter;
@@ -66,20 +67,18 @@ export class MyFlowsComponent {
     public readonly isFlowsLoaded = this.flowsService.isFlowsLoaded;
     public readonly selectMode = this.flowsService.selectMode;
     public readonly selectedFlowIds = this.flowsService.selectedFlowIds;
+    public readonly visibleCount = signal<number>(Infinity);
 
-    private readonly maxVisibleRecent = computed(() => {
-        const width = this.containerWidth();
-        if (width <= 0) return 0;
-        return Math.floor((width + MyFlowsComponent.GAP) / (MyFlowsComponent.CARD_WIDTH + MyFlowsComponent.GAP));
-    });
-
-    public readonly recentFlows = computed(() => {
-        const max = this.maxVisibleRecent();
+    private readonly allRecentFlows = computed(() => {
         return this.filteredFlows()
             .filter((filtered) => filtered.updated_at)
             .slice()
-            .sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime())
-            .slice(0, max);
+            .sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime());
+    });
+
+    public readonly recentFlows = computed(() => {
+        const max = this.visibleCount();
+        return this.allRecentFlows().slice(0, max);
     });
 
     constructor() {
@@ -99,15 +98,41 @@ export class MyFlowsComponent {
             if (!el) return;
 
             this.resizeObserver?.disconnect();
-            this.containerWidth.set(el.clientWidth);
-            this.resizeObserver = new ResizeObserver((entries) => {
-                const width = entries[0]?.contentRect.width ?? 0;
-                this.containerWidth.set(width);
+            this.recalcVisibleCount();
+            this.resizeObserver = new ResizeObserver(() => {
+                this.recalcVisibleCount();
             });
             this.resizeObserver.observe(el);
         });
 
         this.destroyRef.onDestroy(() => this.resizeObserver?.disconnect());
+    }
+
+    public ngAfterViewChecked(): void {
+        this.recalcVisibleCount();
+    }
+
+    private recalcVisibleCount(): void {
+        const container = this.recentSection()?.nativeElement;
+        if (!container) return;
+
+        const containerWidth = container.clientWidth;
+        const cards = this.recentCards();
+        if (cards.length === 0) return;
+
+        let usedWidth = 0;
+        let count = 0;
+        for (const card of cards) {
+            const cardWidth = card.nativeElement.offsetWidth;
+            const totalWidth = usedWidth + cardWidth + (count > 0 ? MyFlowsComponent.GAP : 0);
+            if (totalWidth > containerWidth) break;
+            usedWidth = totalWidth;
+            count++;
+        }
+
+        if (count !== this.visibleCount() && count > 0) {
+            this.visibleCount.set(count);
+        }
     }
 
     public retryLoad(): void {

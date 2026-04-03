@@ -18,7 +18,7 @@
                     } @else {
                         <ul class="recent-flows-list">
                             @for (flow of recentFlows(); track flow.id) {
-                                <li class="recent-flow-card">
+                                <li class="recent-flow-card" #recentCard>
                                     <a class="recent-flow-name" [routerLink]="['/flows', flow.id]">{{ flow.name }}</a>
                                 </li>
                             }
