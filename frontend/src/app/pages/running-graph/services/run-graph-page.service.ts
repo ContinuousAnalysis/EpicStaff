@@ -6,6 +6,7 @@ import { Memory } from '../components/memory-sidebar/models/memory.model';
 })
 export class RunGraphPageService {
   private memories = signal<Memory[]>([]);
+  private nodeNameFilter = signal<string | null>(null);
 
   constructor() {}
 
@@ -24,4 +25,14 @@ export class RunGraphPageService {
     );
     this.memories.set(updatedMemories);
   }
+  
+  public getNodeNameFilter(): string | null {
+    return this.nodeNameFilter();
+  }
+
+  public setNodeNameFilter(nodeName: string | null) {
+    this.nodeNameFilter.set(nodeName)
+  }
+
+  public readonly activeNodeNameFilter = this.nodeNameFilter.asReadonly();
 }

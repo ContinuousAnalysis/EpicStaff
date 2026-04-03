@@ -16,6 +16,11 @@
         (valueChange)="onStatusFilterChange($event)"
       >
       </app-flow-session-status-filter-dropdown>
+      <app-flow-session-node-filter-dropdown
+        [nodes]="availableNodes()"
+        [value]="nodeFilter()"
+        (valueChange)="onNodeFilterChange($event)"
+      ></app-flow-session-node-filter-dropdown>
     </div>
 
     <div class="table-container">
