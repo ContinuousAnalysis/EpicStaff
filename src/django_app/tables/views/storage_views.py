@@ -7,7 +7,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from tables.services.storage import get_storage_manager
+from tables.services.storage_service import get_storage_manager
 from tables.storage_permissions import StoragePermission
 from tables.models import Organization, OrganizationUser
 from tables.swagger_schemas.storage_schema import (
