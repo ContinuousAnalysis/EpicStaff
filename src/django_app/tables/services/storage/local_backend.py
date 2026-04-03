@@ -28,7 +28,7 @@ class LocalStorageBackend(AbstractStorageBackend):
             raise PermissionError(f"Path traversal detected: {path}")
         return resolved
 
-    def list(self, prefix: str) -> list[dict]:
+    def list_(self, prefix: str) -> list[dict]:
         directory = self._resolve(prefix)
         if not directory.exists() or not directory.is_dir():
             return []
@@ -80,15 +80,26 @@ class LocalStorageBackend(AbstractStorageBackend):
         self._resolve(path).mkdir(parents=True, exist_ok=True)
 
     def move(self, source_path: str, destination_path: str) -> None:
-        shutil.move(
-            str(self._resolve(source_path)), str(self._resolve(destination_path))
-        )
+        source = self._resolve(source_path)
+        destination = self._resolve(destination_path)
+        if not source.exists():
+            raise FileNotFoundError(f"Source path does not exist: {source_path}")
+        # If destination is an existing directory, move source into it
+        if destination.is_dir():
+            shutil.move(str(source), str(destination / source.name))
+        else:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(source), str(destination))
 
     def copy(self, source_path: str, destination_path: str) -> None:
         source = self._resolve(source_path)
         destination = self._resolve(destination_path)
+        if not source.exists():
+            raise FileNotFoundError(f"Source path does not exist: {source_path}")
         if source.is_dir():
-            shutil.copytree(str(source), str(destination))
+            # Copy source folder into destination: /dest/source_name/...
+            target = destination / source.name if destination.is_dir() else destination
+            shutil.copytree(str(source), str(target))
         else:
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(source), str(destination))
@@ -118,16 +129,13 @@ class LocalStorageBackend(AbstractStorageBackend):
         buffer.seek(0)
         yield buffer.read()
 
-    def upload_archive(self, prefix: str, zip_file) -> list[str]:
+    def upload_archive(self, prefix: str, archive_file) -> list[str]:
         target_directory = self._resolve(prefix)
         target_directory.mkdir(parents=True, exist_ok=True)
         extracted_paths = []
-        with zipfile.ZipFile(zip_file, "r") as archive:
-            for entry in archive.infolist():
-                if entry.is_dir():
-                    continue
-                destination = target_directory / entry.filename
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                destination.write_bytes(archive.read(entry.filename))
-                extracted_paths.append(prefix.rstrip("/") + "/" + entry.filename)
+        for relative_path, file_bytes in self._iter_archive_entries(archive_file):
+            destination = target_directory / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(file_bytes)
+            extracted_paths.append(prefix.rstrip("/") + "/" + relative_path)
         return extracted_paths

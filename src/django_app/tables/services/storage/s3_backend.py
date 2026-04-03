@@ -43,7 +43,7 @@ class S3StorageBackend(AbstractStorageBackend):
             return full_key[len(self.organization_prefix) :]
         return full_key
 
-    def list(self, prefix: str) -> list[dict]:
+    def list_(self, prefix: str) -> list[dict]:
         full_prefix = self._full_path(prefix)
         if full_prefix and not full_prefix.endswith("/"):
             full_prefix += "/"
@@ -91,7 +91,12 @@ class S3StorageBackend(AbstractStorageBackend):
 
     def download(self, path: str) -> bytes:
         full_path = self._full_path(path)
-        response = self.client.get_object(Bucket=self.bucket_name, Key=full_path)
+        try:
+            response = self.client.get_object(Bucket=self.bucket_name, Key=full_path)
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "NoSuchKey":
+                raise FileNotFoundError(f"File does not exist: {path}")
+            raise
         return response["Body"].read()
 
     def delete(self, path: str) -> None:
@@ -130,35 +135,61 @@ class S3StorageBackend(AbstractStorageBackend):
     def copy(self, source_path: str, destination_path: str) -> None:
         full_source = self._full_path(source_path)
         full_destination = self._full_path(destination_path)
+
+        # Single file: destination must differ from source
+        if full_source.rstrip("/") == full_destination.rstrip("/"):
+            raise ValueError(
+                "Source and destination are the same path — cannot copy to itself."
+            )
+
         copy_source = {"Bucket": self.bucket_name, "Key": full_source}
 
-        # Check if source is a folder prefix
-        if not self.exists(source_path):
-            source_prefix = (
-                full_source if full_source.endswith("/") else full_source + "/"
-            )
-            paginator = self.client.get_paginator("list_objects_v2")
-            for page in paginator.paginate(
-                Bucket=self.bucket_name, Prefix=source_prefix
-            ):
-                for obj in page.get("Contents", []):
-                    relative = obj["Key"][len(source_prefix) :]
-                    destination_key = full_destination.rstrip("/") + "/" + relative
-                    self.client.copy_object(
-                        CopySource={"Bucket": self.bucket_name, "Key": obj["Key"]},
-                        Bucket=self.bucket_name,
-                        Key=destination_key,
-                    )
-        else:
+        # Check if source is a single object
+        if self.exists(source_path):
             self.client.copy_object(
                 CopySource=copy_source,
                 Bucket=self.bucket_name,
                 Key=full_destination,
             )
+            return
+
+        # Try as a folder prefix
+        source_prefix = full_source if full_source.endswith("/") else full_source + "/"
+        # Preserve the source folder name inside the destination.
+        # e.g. copy("dir/", "temp_dir/") -> temp_dir/dir/<contents>
+        source_folder_name = full_source.rstrip("/").split("/")[-1]
+        dest_base = full_destination.rstrip("/") + "/" + source_folder_name
+
+        # Folder copy into its own parent resolves to the same path
+        if dest_base.rstrip("/") == full_source.rstrip("/"):
+            raise ValueError(
+                "Source and destination are the same path — cannot copy to itself."
+            )
+
+        copied = False
+        paginator = self.client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=source_prefix):
+            for obj in page.get("Contents", []):
+                relative = obj["Key"][len(source_prefix) :]
+                destination_key = dest_base + "/" + relative
+                self.client.copy_object(
+                    CopySource={"Bucket": self.bucket_name, "Key": obj["Key"]},
+                    Bucket=self.bucket_name,
+                    Key=destination_key,
+                )
+                copied = True
+
+        if not copied:
+            raise FileNotFoundError(f"Source path does not exist: {source_path}")
 
     def info(self, path: str) -> dict:
         full_path = self._full_path(path)
-        head = self.client.head_object(Bucket=self.bucket_name, Key=full_path)
+        try:
+            head = self.client.head_object(Bucket=self.bucket_name, Key=full_path)
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "404":
+                raise FileNotFoundError(f"File does not exist: {path}")
+            raise
         name = path.rstrip("/").split("/")[-1]
         return {
             "name": name,
@@ -188,14 +219,10 @@ class S3StorageBackend(AbstractStorageBackend):
         buffer.seek(0)
         yield buffer.read()
 
-    def upload_archive(self, prefix: str, zip_file) -> list[str]:
+    def upload_archive(self, prefix: str, archive_file) -> list[str]:
         extracted_paths = []
-        with zipfile.ZipFile(zip_file, "r") as archive:
-            for entry in archive.infolist():
-                if entry.is_dir():
-                    continue
-                destination_path = prefix.rstrip("/") + "/" + entry.filename
-                file_bytes = archive.read(entry.filename)
-                self.upload(destination_path, io.BytesIO(file_bytes))
-                extracted_paths.append(destination_path)
+        for relative_path, file_bytes in self._iter_archive_entries(archive_file):
+            destination_path = prefix.rstrip("/") + "/" + relative_path
+            self.upload(destination_path, io.BytesIO(file_bytes))
+            extracted_paths.append(destination_path)
         return extracted_paths

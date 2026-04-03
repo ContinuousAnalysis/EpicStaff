@@ -1,6 +1,22 @@
 from drf_yasg import openapi
 
-# --- Reusable schemas ---
+# --- Reusable parameters ---
+
+_username_param = openapi.Parameter(
+    "username",
+    openapi.IN_QUERY,
+    description="Name of the user performing the operation (defaults to 'default')",
+    type=openapi.TYPE_STRING,
+    required=False,
+)
+
+_org_id_param = openapi.Parameter(
+    "org_id",
+    openapi.IN_QUERY,
+    description="Organization ID (defaults to 'default' org)",
+    type=openapi.TYPE_INTEGER,
+    required=False,
+)
 
 _path_param = openapi.Parameter(
     "path",
@@ -17,6 +33,16 @@ _session_id_param = openapi.Parameter(
     type=openapi.TYPE_INTEGER,
     required=True,
 )
+
+# --- Reusable body fields ---
+
+_username_field = openapi.Schema(
+    type=openapi.TYPE_STRING, description="Name of the user performing the operation"
+)
+
+_org_id_field = openapi.Schema(type=openapi.TYPE_INTEGER, description="Organization ID")
+
+# --- Reusable schemas ---
 
 _file_item = openapi.Schema(
     type=openapi.TYPE_OBJECT,
@@ -40,8 +66,10 @@ _file_item = openapi.Schema(
 
 _from_to_body = openapi.Schema(
     type=openapi.TYPE_OBJECT,
-    required=["from", "to"],
+    required=["username", "org_id", "from", "to"],
     properties={
+        "username": _username_field,
+        "org_id": _org_id_field,
         "from": openapi.Schema(type=openapi.TYPE_STRING, description="Source path"),
         "to": openapi.Schema(type=openapi.TYPE_STRING, description="Destination path"),
     },
@@ -61,7 +89,7 @@ _from_to_response = openapi.Schema(
 STORAGE_LIST_SWAGGER = dict(
     operation_summary="List files and folders",
     operation_description="Returns the contents of a storage folder (files and subfolders with name, type, size, modified).",
-    manual_parameters=[_path_param],
+    manual_parameters=[_username_param, _org_id_param, _path_param],
     responses={
         200: openapi.Response(
             description="Folder contents",
@@ -79,7 +107,7 @@ STORAGE_LIST_SWAGGER = dict(
 STORAGE_INFO_SWAGGER = dict(
     operation_summary="Get file metadata",
     operation_description="Returns metadata for a single file (name, size, content_type, modified, created, etag).",
-    manual_parameters=[_path_param],
+    manual_parameters=[_username_param, _org_id_param, _path_param],
     responses={
         200: openapi.Response(
             description="File metadata",
@@ -107,24 +135,29 @@ STORAGE_INFO_SWAGGER = dict(
 STORAGE_DOWNLOAD_SWAGGER = dict(
     operation_summary="Download a file",
     operation_description="Downloads a single file by path. Returns the file content with appropriate Content-Disposition header.",
-    manual_parameters=[_path_param],
+    manual_parameters=[_username_param, _org_id_param, _path_param],
     responses={
         200: openapi.Response(description="File content as binary stream"),
     },
 )
 
 STORAGE_UPLOAD_SWAGGER = dict(
-    operation_summary="Upload a file",
+    operation_summary="Upload files",
     operation_description=(
-        "Upload a file to the specified path. Send as multipart/form-data with "
-        "`file` (the file) and `path` (target folder)."
+        "Upload one or more files to the specified path. Send as multipart/form-data with "
+        "`files` (one or more files), `path` (target folder), `username`, and `org_id`. "
+        "Archives (ZIP/TAR) are automatically extracted."
     ),
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
-        required=["file"],
+        required=["username", "org_id", "files"],
         properties={
-            "file": openapi.Schema(
-                type=openapi.TYPE_FILE, description="File to upload"
+            "username": _username_field,
+            "org_id": _org_id_field,
+            "files": openapi.Schema(
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Schema(type=openapi.TYPE_FILE),
+                description="Files to upload",
             ),
             "path": openapi.Schema(
                 type=openapi.TYPE_STRING,
@@ -139,50 +172,32 @@ STORAGE_UPLOAD_SWAGGER = dict(
             schema=openapi.Schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
-                    "path": openapi.Schema(
-                        type=openapi.TYPE_STRING,
-                        description="Full path of uploaded file",
-                    ),
-                    "size": openapi.Schema(
-                        type=openapi.TYPE_INTEGER, description="File size in bytes"
-                    ),
-                },
-            ),
-        ),
-    },
-)
-
-STORAGE_UPLOAD_ARCHIVE_SWAGGER = dict(
-    operation_summary="Upload and extract an archive",
-    operation_description=(
-        "Upload a .zip archive. The server extracts its contents into the target folder, "
-        "preserving folder structure. Send as multipart/form-data."
-    ),
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=["file"],
-        properties={
-            "file": openapi.Schema(
-                type=openapi.TYPE_FILE,
-                description="Archive file (.zip) to upload and extract",
-            ),
-            "path": openapi.Schema(
-                type=openapi.TYPE_STRING,
-                description="Target folder path for extraction",
-                default="/",
-            ),
-        },
-    ),
-    responses={
-        201: openapi.Response(
-            description="Archive extracted successfully",
-            schema=openapi.Schema(
-                type=openapi.TYPE_OBJECT,
-                properties={
-                    "extracted": openapi.Schema(
+                    "uploaded": openapi.Schema(
                         type=openapi.TYPE_ARRAY,
-                        items=openapi.Schema(type=openapi.TYPE_STRING),
-                        description="List of extracted file paths",
+                        description="Results for each uploaded file",
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "type": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    enum=["file", "archive"],
+                                    description="Whether the file was uploaded as-is or extracted as an archive",
+                                ),
+                                "path": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    description="Relative path (regular files only)",
+                                ),
+                                "size": openapi.Schema(
+                                    type=openapi.TYPE_INTEGER,
+                                    description="File size in bytes (regular files only)",
+                                ),
+                                "extracted": openapi.Schema(
+                                    type=openapi.TYPE_ARRAY,
+                                    items=openapi.Schema(type=openapi.TYPE_STRING),
+                                    description="Extracted file paths (archives only)",
+                                ),
+                            },
+                        ),
                     ),
                 },
             ),
@@ -195,8 +210,10 @@ STORAGE_DOWNLOAD_ZIP_SWAGGER = dict(
     operation_description="Accepts a list of file paths and returns them bundled in a single .zip archive.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
-        required=["paths"],
+        required=["username", "org_id", "paths"],
         properties={
+            "username": _username_field,
+            "org_id": _org_id_field,
             "paths": openapi.Schema(
                 type=openapi.TYPE_ARRAY,
                 items=openapi.Schema(type=openapi.TYPE_STRING),
@@ -214,8 +231,10 @@ STORAGE_MKDIR_SWAGGER = dict(
     operation_description="Creates a new folder at the specified path.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
-        required=["path"],
+        required=["username", "org_id", "path"],
         properties={
+            "username": _username_field,
+            "org_id": _org_id_field,
             "path": openapi.Schema(
                 type=openapi.TYPE_STRING, description="Folder path to create"
             ),
@@ -238,15 +257,7 @@ STORAGE_MKDIR_SWAGGER = dict(
 STORAGE_DELETE_SWAGGER = dict(
     operation_summary="Delete a file or folder",
     operation_description="Deletes the file or folder at the specified path.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=["path"],
-        properties={
-            "path": openapi.Schema(
-                type=openapi.TYPE_STRING, description="Path to delete"
-            ),
-        },
-    ),
+    manual_parameters=[_username_param, _org_id_param, _path_param],
     responses={
         204: openapi.Response(description="Deleted successfully"),
     },
@@ -265,8 +276,34 @@ STORAGE_RENAME_SWAGGER = dict(
 
 STORAGE_MOVE_SWAGGER = dict(
     operation_summary="Move a file or folder",
-    operation_description="Moves a file or folder from one location to another.",
-    request_body=_from_to_body,
+    operation_description=(
+        "Moves a file or folder from one location to another. "
+        "To move across organizations, provide `source_org_id` and `destination_org_id` "
+        "instead of `org_id` — the user must be a member of both orgs."
+    ),
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["username", "from", "to"],
+        properties={
+            "username": _username_field,
+            "org_id": openapi.Schema(
+                type=openapi.TYPE_INTEGER,
+                description="Organization ID (for same-org move)",
+            ),
+            "from": openapi.Schema(type=openapi.TYPE_STRING, description="Source path"),
+            "to": openapi.Schema(
+                type=openapi.TYPE_STRING, description="Destination path"
+            ),
+            "source_org_id": openapi.Schema(
+                type=openapi.TYPE_INTEGER,
+                description="Source organization ID (cross-org move)",
+            ),
+            "destination_org_id": openapi.Schema(
+                type=openapi.TYPE_INTEGER,
+                description="Destination organization ID (cross-org move)",
+            ),
+        },
+    ),
     responses={
         200: openapi.Response(
             description="Moved successfully", schema=_from_to_response
@@ -276,8 +313,34 @@ STORAGE_MOVE_SWAGGER = dict(
 
 STORAGE_COPY_SWAGGER = dict(
     operation_summary="Copy a file or folder",
-    operation_description="Creates a copy of a file or folder at the destination path. Both source and destination will exist after the operation.",
-    request_body=_from_to_body,
+    operation_description=(
+        "Creates a copy of a file or folder at the destination path. "
+        "To copy across organizations, provide `source_org_id` and `destination_org_id` "
+        "instead of `org_id` — the user must be a member of both orgs."
+    ),
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["username", "from", "to"],
+        properties={
+            "username": _username_field,
+            "org_id": openapi.Schema(
+                type=openapi.TYPE_INTEGER,
+                description="Organization ID (for same-org copy)",
+            ),
+            "from": openapi.Schema(type=openapi.TYPE_STRING, description="Source path"),
+            "to": openapi.Schema(
+                type=openapi.TYPE_STRING, description="Destination path"
+            ),
+            "source_org_id": openapi.Schema(
+                type=openapi.TYPE_INTEGER,
+                description="Source organization ID (cross-org copy)",
+            ),
+            "destination_org_id": openapi.Schema(
+                type=openapi.TYPE_INTEGER,
+                description="Destination organization ID (cross-org copy)",
+            ),
+        },
+    ),
     responses={
         200: openapi.Response(
             description="Copied successfully", schema=_from_to_response
@@ -324,22 +387,18 @@ STORAGE_ADD_TO_FLOW_SWAGGER = dict(
 STORAGE_SESSION_OUTPUTS_SWAGGER = dict(
     operation_summary="List session output files",
     operation_description="Returns the list of files written to storage during a specific flow session.",
-    manual_parameters=[_session_id_param],
+    manual_parameters=[_username_param, _org_id_param, _session_id_param],
     responses={
         200: openapi.Response(
             description="Session output files",
             schema=openapi.Schema(
-                type=openapi.TYPE_ARRAY,
-                items=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "path": openapi.Schema(type=openapi.TYPE_STRING),
-                        "size": openapi.Schema(type=openapi.TYPE_INTEGER),
-                        "created": openapi.Schema(
-                            type=openapi.TYPE_STRING, format="date-time"
-                        ),
-                    },
-                ),
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "items": openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=_file_item,
+                    ),
+                },
             ),
         ),
     },

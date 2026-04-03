@@ -1,10 +1,47 @@
+import tarfile
+import zipfile
 from abc import ABC, abstractmethod
 from typing import Iterator
 
 
 class AbstractStorageBackend(ABC):
+    def _iter_archive_entries(self, archive_file) -> Iterator[tuple[str, bytes]]:
+        """
+        Yield (relative_path, bytes) for every file inside a ZIP or TAR archive.
+        Supports .zip, .tar, .tar.gz, .tar.bz2, .tar.xz (anything the stdlib handles).
+        Raises ValueError for unrecognised formats.
+        """
+        pos = archive_file.tell()
+
+        if zipfile.is_zipfile(archive_file):
+            archive_file.seek(pos)
+            with zipfile.ZipFile(archive_file, "r") as zf:
+                for entry in zf.infolist():
+                    if not entry.is_dir():
+                        yield entry.filename, zf.read(entry.filename)
+            return
+
+        archive_file.seek(pos)
+        try:
+            is_tar = tarfile.is_tarfile(archive_file)
+        except Exception:
+            is_tar = False
+
+        if is_tar:
+            archive_file.seek(pos)
+            with tarfile.open(fileobj=archive_file, mode="r:*") as tf:
+                for member in tf.getmembers():
+                    if member.isfile():
+                        fobj = tf.extractfile(member)
+                        if fobj:
+                            yield member.name, fobj.read()
+            return
+
+        archive_file.seek(pos)
+        raise ValueError("Unsupported archive format — expected ZIP or TAR")
+
     @abstractmethod
-    def list(self, prefix: str) -> list[dict]:
+    def list_(self, prefix: str) -> list[dict]:
         """List files and folders at prefix. Returns [{name, type, size, modified}]."""
 
     @abstractmethod
@@ -44,5 +81,5 @@ class AbstractStorageBackend(ABC):
         """Yield a streaming zip archive containing the given paths."""
 
     @abstractmethod
-    def upload_archive(self, prefix: str, zip_file) -> list[str]:
-        """Extract zip into prefix. Returns list of extracted relative paths."""
+    def upload_archive(self, prefix: str, archive_file) -> list[str]:
+        """Extract archive (ZIP or TAR) into prefix. Returns list of extracted relative paths."""
