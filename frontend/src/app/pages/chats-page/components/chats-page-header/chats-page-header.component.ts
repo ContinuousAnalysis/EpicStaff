@@ -1,18 +1,7 @@
-import {
-    Component,
-    Input,
-    OnInit,
-    ChangeDetectionStrategy,
-} from '@angular/core';
+import { animate, state, style, transition, trigger } from '@angular/animations';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-    trigger,
-    state,
-    style,
-    animate,
-    transition,
-} from '@angular/animations';
 
 @Component({
     selector: 'app-chats-header',

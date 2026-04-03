@@ -1,32 +1,22 @@
-import { Dialog } from "@angular/cdk/dialog";
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormsModule } from "@angular/forms";
-import {
-    ButtonComponent,
-    ConfirmationDialogService,
-    ConfirmationResult,
-    LoadingSpinnerComponent
-} from "@shared/components";
-import { LoadingState } from "../../../../core/enums/loading-state.enum";
-import { ToastService } from "../../../../services/notifications";
-import { GetNgrokConfigResponse } from "@shared/models";
-import { NgrokConfigStorageService } from "@shared/services";
-import { AddNgrokConfigDialogComponent } from "../add-ngrok-config-dialog/add-ngrok-config-dialog.component";
-import { NgrokConfigItemComponent } from "../ngrok-config-item/ngrok-config-item.component";
+import { Dialog } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ReactiveFormsModule } from '@angular/forms';
+import { ButtonComponent, ConfirmationDialogService, ConfirmationResult } from '@shared/components';
+
+import { LoadingState } from '../../../../core/enums/loading-state.enum';
+import { ToastService } from '../../../../services/notifications';
+import { GetNgrokConfigResponse } from '../../models/ngrok-config.model';
+import { NgrokConfigStorageService } from '../../services/ngrok-config/ngrok-config-storage.service';
+import { AddNgrokConfigDialogComponent } from './add-ngrok-config-dialog/add-ngrok-config-dialog.component';
+import { NgrokConfigItemComponent } from './ngrok-config-item/ngrok-config-item.component';
 
 @Component({
-    selector: 'app-ngrok-config-section',
-    templateUrl: './ngrok-config-section.component.html',
-    styleUrls: ['./ngrok-config-section.component.scss'],
-    imports: [
-        FormsModule,
-        ButtonComponent,
-        NgrokConfigItemComponent,
-        NgrokConfigItemComponent,
-        LoadingSpinnerComponent
-    ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'app-ngrok-config-tab',
+    templateUrl: './ngrok-config-tab.component.html',
+    styleUrls: ['./ngrok-config-tab.component.scss'],
+    imports: [ReactiveFormsModule, ButtonComponent, NgrokConfigItemComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppNgrokSectionComponent implements OnInit {
     private ngrokStorageService = inject(NgrokConfigStorageService);
@@ -43,7 +33,6 @@ export class AppNgrokSectionComponent implements OnInit {
         this.getConfigs();
     }
 
-
     refreshData(): void {
         this.status.set(LoadingState.LOADING);
         this.getConfigs();
@@ -52,18 +41,17 @@ export class AppNgrokSectionComponent implements OnInit {
     private getConfigs(): void {
         this.status.set(LoadingState.LOADING);
 
-        this.ngrokStorageService.getConfigs()
+        this.ngrokStorageService
+            .getConfigs()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.status.set(LoadingState.LOADED),
                 error: (err) => {
                     console.error('Failed to load Ngrok configurations:', err);
-                    this.errorMessage.set(
-                        'Failed to load configurations. Please try again.'
-                    );
+                    this.errorMessage.set('Failed to load configurations. Please try again.');
                     this.status.set(LoadingState.ERROR);
                 },
-            })
+            });
     }
 
     onAddConfig(): void {
@@ -74,10 +62,7 @@ export class AppNgrokSectionComponent implements OnInit {
         this.openConfigDialog('update', config);
     }
 
-    private openConfigDialog(
-        action: 'create' | 'update',
-        config?: GetNgrokConfigResponse
-    ): void {
+    private openConfigDialog(action: 'create' | 'update', config?: GetNgrokConfigResponse): void {
         this.dialog.open(AddNgrokConfigDialogComponent, {
             width: '500px',
             disableClose: true,
@@ -86,11 +71,13 @@ export class AppNgrokSectionComponent implements OnInit {
     }
 
     onRemoveConfig(config: GetNgrokConfigResponse): void {
-        this.confirmationDialogService.confirmDelete(config.name)
+        this.confirmationDialogService
+            .confirmDelete(config.name)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((result: ConfirmationResult) => {
                 if (result === true) {
-                    this.ngrokStorageService.deleteConfigById(config.id)
+                    this.ngrokStorageService
+                        .deleteConfigById(config.id)
                         .pipe(takeUntilDestroyed(this.destroyRef))
                         .subscribe({
                             next: () => this.toastService.success('Config deleted'),

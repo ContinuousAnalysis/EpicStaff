@@ -2,30 +2,25 @@ import { Injectable } from '@angular/core';
 import { forkJoin, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { AgentsService } from './staff.service';
-import { ToolConfigService } from '../../tools/services/tool-config.service';
-import {
-    PythonCodeToolService
-} from '../../../user-settings-page/tools/custom-tool-editor/services/pythonCodeToolService.service';
-import {
-    LLMModelsService,
-    LLMConfigService,
-    LLMProvidersService,
-    FullLLMConfig,
-    RealtimeModelsService,
-    FullRealtimeConfig,
-    RealtimeModelConfigsService
-} from '@shared/services';
+import { PythonCodeToolService } from '../../../user-settings-page/tools/custom-tool-editor/services/pythonCodeToolService.service';
 import { ProjectsStorageService } from '../../projects/services/projects-storage.service';
-import { BuiltinToolsService } from '../../tools/services/builtin-tools/builtin-tools.service';
-import { McpToolsService } from '../../tools/services/mcp-tools/mcp-tools.service';
-
-import { GetAgentRequest, PartialUpdateAgentRequest } from '../models/agent.model';
-import { GetToolConfigRequest } from '../../tools/models/tool-config.model';
-import { GetPythonCodeToolRequest } from '../../tools/models/python-code-tool.model';
+import { LLM_Provider } from '../../settings-dialog/models/llm-provider.model';
+import { GetLlmModelRequest } from '../../settings-dialog/models/llms/LLM.model';
+import { RealtimeModel } from '../../settings-dialog/models/realtime-voice/realtime-model.model';
+import { LLM_Providers_Service } from '../../settings-dialog/services/llm-providers.service';
+import { FullLLMConfig } from '../../settings-dialog/services/llms/full-llm-config.service';
+import { LLM_Config_Service } from '../../settings-dialog/services/llms/llm-config.service';
+import { LLM_Models_Service } from '../../settings-dialog/services/llms/llm-models.service';
+import { FullRealtimeConfig } from '../../settings-dialog/services/realtime-llms/full-reamtime-config.service';
+import { RealtimeModelConfigsService } from '../../settings-dialog/services/realtime-llms/real-time-model-config.service';
+import { RealtimeModelsService } from '../../settings-dialog/services/realtime-llms/real-time-models.service';
 import { GetMcpToolRequest } from '../../tools/models/mcp-tool.model';
-import { LLMProvider } from '@shared/models';
-import { Tool } from '../../tools/models/tool.model';
+import { GetPythonCodeToolRequest } from '../../tools/models/python-code-tool.model';
+import { GetToolConfigRequest } from '../../tools/models/tool-config.model';
+import { McpToolsService } from '../../tools/services/mcp-tools/mcp-tools.service';
+import { ToolConfigService } from '../../tools/services/tool-config.service';
+import { GetAgentRequest, PartialUpdateAgentRequest } from '../models/agent.model';
+import { AgentsService } from './staff.service';
 
 export interface MergedConfig {
     id: number;
@@ -106,23 +101,23 @@ export class FullAgentService {
         }).pipe(
             map(
                 ({
-                     agents,
-                     llmConfigs,
-                     toolConfigs,
-                     pythonTools,
-                     mcpTools,
-                     llmModels,
-                     realtimeConfigs,
-                     realtimeModels,
-                     llmProviders,
-                 }) => {
+                    agents,
+                    llmConfigs,
+                    toolConfigs,
+                    pythonTools,
+                    mcpTools,
+                    llmModels,
+                    realtimeConfigs,
+                    realtimeModels,
+                    llmProviders,
+                }) => {
                     // Build lookup tables for models and providers
-                    const modelMap: Record<number, any> = {};
+                    const modelMap: Record<number, GetLlmModelRequest> = {};
                     llmModels.forEach((model) => {
                         modelMap[model.id] = model;
                     });
 
-                    const realtimeModelMap: Record<number, any> = {};
+                    const realtimeModelMap: Record<number, RealtimeModel> = {};
                     realtimeModels.forEach((model) => {
                         realtimeModelMap[model.id] = model;
                     });
@@ -133,16 +128,12 @@ export class FullAgentService {
                     });
 
                     return agents.map((agent) => {
-                        const findEnhancedLlmConfig = (
-                            configId: number | null
-                        ): FullLLMConfig | null => {
+                        const findEnhancedLlmConfig = (configId: number | null): FullLLMConfig | null => {
                             if (configId === null) return null;
                             const config = llmConfigs.find((cfg) => cfg.id === configId);
                             if (config) {
                                 const model = modelMap[config.model] || null;
-                                const provider = model?.llm_provider
-                                    ? providerMap[model.llm_provider]
-                                    : null;
+                                const provider = model?.llm_provider ? providerMap[model.llm_provider] : null;
 
                                 return {
                                     ...config,
@@ -153,16 +144,12 @@ export class FullAgentService {
                             return null;
                         };
 
-                        const findEnhancedRealtimeConfig = (
-                            configId: number | null
-                        ): FullRealtimeConfig | null => {
+                        const findEnhancedRealtimeConfig = (configId: number | null): FullRealtimeConfig | null => {
                             if (configId === null) return null;
                             const config = realtimeConfigs.find((cfg) => cfg.id === configId);
                             if (config) {
                                 const model = realtimeModelMap[config.realtime_model] || null;
-                                const provider = model?.provider
-                                    ? providerMap[model.provider]
-                                    : null;
+                                const provider = model?.provider ? providerMap[model.provider] : null;
 
                                 return {
                                     ...config,
@@ -175,12 +162,8 @@ export class FullAgentService {
 
                         // Use the helper functions, ensuring they don't receive `null`
                         const fullLlmConfig = findEnhancedLlmConfig(agent.llm_config);
-                        const fullFcmLlmConfig = findEnhancedLlmConfig(
-                            agent.fcm_llm_config
-                        );
-                        const fullRealtimeConfig = findEnhancedRealtimeConfig(
-                            agent.realtime_agent?.realtime_config
-                        );
+                        const fullFcmLlmConfig = findEnhancedLlmConfig(agent.fcm_llm_config);
+                        const fullRealtimeConfig = findEnhancedRealtimeConfig(agent.realtime_agent?.realtime_config);
 
                         // Parse tools from the unified tools array
                         const configuredToolIds: number[] = [];
@@ -200,15 +183,9 @@ export class FullAgentService {
                         }
 
                         // Tool configs based on parsed IDs
-                        const fullConfiguredTools = toolConfigs.filter((tool) =>
-                            configuredToolIds.includes(tool.id)
-                        );
-                        const fullPythonTools = pythonTools.filter((pt) =>
-                            pythonToolIds.includes(pt.id)
-                        );
-                        const fullMcpTools = mcpTools.filter((mcp: GetMcpToolRequest) =>
-                            mcpToolIds.includes(mcp.id)
-                        );
+                        const fullConfiguredTools = toolConfigs.filter((tool) => configuredToolIds.includes(tool.id));
+                        const fullPythonTools = pythonTools.filter((pt) => pythonToolIds.includes(pt.id));
+                        const fullMcpTools = mcpTools.filter((mcp: GetMcpToolRequest) => mcpToolIds.includes(mcp.id));
 
                         // Merge all sets of tools
                         const mergedTools = [
@@ -242,8 +219,7 @@ export class FullAgentService {
                                 model_name: fullLlmConfig.modelDetails?.name || 'Unknown Model',
                                 type: 'llm',
                                 provider_id: fullLlmConfig.modelDetails?.llm_provider,
-                                provider_name:
-                                    fullLlmConfig.providerDetails?.name || 'Unknown Provider',
+                                provider_name: fullLlmConfig.providerDetails?.name || 'Unknown Provider',
                             });
                         }
 
@@ -251,13 +227,10 @@ export class FullAgentService {
                             mergedConfigs.push({
                                 id: fullRealtimeConfig.id,
                                 custom_name: fullRealtimeConfig.custom_name,
-                                model_name:
-                                    fullRealtimeConfig.modelDetails?.name || 'Unknown Model',
+                                model_name: fullRealtimeConfig.modelDetails?.name || 'Unknown Model',
                                 type: 'realtime',
                                 provider_id: fullRealtimeConfig.modelDetails?.provider,
-                                provider_name:
-                                    fullRealtimeConfig.providerDetails?.name ||
-                                    'Unknown Provider',
+                                provider_name: fullRealtimeConfig.providerDetails?.name || 'Unknown Provider',
                             });
                         }
 
@@ -298,24 +271,24 @@ export class FullAgentService {
         }).pipe(
             map(
                 ({
-                     project,
-                     agents,
-                     llmConfigs,
-                     toolConfigs,
-                     pythonTools,
-                     mcpTools,
-                     llmModels,
-                     realtimeConfigs,
-                     realtimeModels,
-                     llmProviders,
-                 }) => {
+                    project,
+                    agents,
+                    llmConfigs,
+                    toolConfigs,
+                    pythonTools,
+                    mcpTools,
+                    llmModels,
+                    realtimeConfigs,
+                    realtimeModels,
+                    llmProviders,
+                }) => {
                     // Build lookup tables for models and providers
-                    const modelMap: Record<number, any> = {};
+                    const modelMap: Record<number, GetLlmModelRequest> = {};
                     llmModels.forEach((model) => {
                         modelMap[model.id] = model;
                     });
 
-                    const realtimeModelMap: Record<number, any> = {};
+                    const realtimeModelMap: Record<number, RealtimeModel> = {};
                     realtimeModels.forEach((model) => {
                         realtimeModelMap[model.id] = model;
                     });
@@ -333,16 +306,12 @@ export class FullAgentService {
                     );
 
                     return filteredAgents.map((agent) => {
-                        const findEnhancedLlmConfig = (
-                            configId: number | null
-                        ): FullLLMConfig | null => {
+                        const findEnhancedLlmConfig = (configId: number | null): FullLLMConfig | null => {
                             if (configId === null) return null;
                             const config = llmConfigs.find((cfg) => cfg.id === configId);
                             if (config) {
                                 const model = modelMap[config.model] || null;
-                                const provider = model?.llm_provider
-                                    ? providerMap[model.llm_provider]
-                                    : null;
+                                const provider = model?.llm_provider ? providerMap[model.llm_provider] : null;
 
                                 return {
                                     ...config,
@@ -353,16 +322,12 @@ export class FullAgentService {
                             return null;
                         };
 
-                        const findEnhancedRealtimeConfig = (
-                            configId: number | null
-                        ): FullRealtimeConfig | null => {
+                        const findEnhancedRealtimeConfig = (configId: number | null): FullRealtimeConfig | null => {
                             if (configId === null) return null;
                             const config = realtimeConfigs.find((cfg) => cfg.id === configId);
                             if (config) {
                                 const model = realtimeModelMap[config.realtime_model] || null;
-                                const provider = model?.provider
-                                    ? providerMap[model.provider]
-                                    : null;
+                                const provider = model?.provider ? providerMap[model.provider] : null;
 
                                 return {
                                     ...config,
@@ -375,12 +340,8 @@ export class FullAgentService {
 
                         // Use the helper functions
                         const fullLlmConfig = findEnhancedLlmConfig(agent.llm_config);
-                        const fullFcmLlmConfig = findEnhancedLlmConfig(
-                            agent.fcm_llm_config
-                        );
-                        const fullRealtimeConfig = findEnhancedRealtimeConfig(
-                            agent.realtime_agent?.realtime_config
-                        );
+                        const fullFcmLlmConfig = findEnhancedLlmConfig(agent.fcm_llm_config);
+                        const fullRealtimeConfig = findEnhancedRealtimeConfig(agent.realtime_agent?.realtime_config);
 
                         // Parse tools from the unified tools array
                         const configuredToolIds: number[] = [];
@@ -400,15 +361,9 @@ export class FullAgentService {
                         }
 
                         // Tool configs based on parsed IDs
-                        const fullConfiguredTools = toolConfigs.filter((tool) =>
-                            configuredToolIds.includes(tool.id)
-                        );
-                        const fullPythonTools = pythonTools.filter((pt) =>
-                            pythonToolIds.includes(pt.id)
-                        );
-                        const fullMcpTools = mcpTools.filter((mcp: GetMcpToolRequest) =>
-                            mcpToolIds.includes(mcp.id)
-                        );
+                        const fullConfiguredTools = toolConfigs.filter((tool) => configuredToolIds.includes(tool.id));
+                        const fullPythonTools = pythonTools.filter((pt) => pythonToolIds.includes(pt.id));
+                        const fullMcpTools = mcpTools.filter((mcp: GetMcpToolRequest) => mcpToolIds.includes(mcp.id));
 
                         // Merge all sets of tools
                         const mergedTools = [
@@ -442,8 +397,7 @@ export class FullAgentService {
                                 model_name: fullLlmConfig.modelDetails?.name || 'Unknown Model',
                                 type: 'llm',
                                 provider_id: fullLlmConfig.modelDetails?.llm_provider,
-                                provider_name:
-                                    fullLlmConfig.providerDetails?.name || 'Unknown Provider',
+                                provider_name: fullLlmConfig.providerDetails?.name || 'Unknown Provider',
                             });
                         }
 
@@ -451,13 +405,10 @@ export class FullAgentService {
                             mergedConfigs.push({
                                 id: fullRealtimeConfig.id,
                                 custom_name: fullRealtimeConfig.custom_name,
-                                model_name:
-                                    fullRealtimeConfig.modelDetails?.name || 'Unknown Model',
+                                model_name: fullRealtimeConfig.modelDetails?.name || 'Unknown Model',
                                 type: 'realtime',
                                 provider_id: fullRealtimeConfig.modelDetails?.provider,
-                                provider_name:
-                                    fullRealtimeConfig.providerDetails?.name ||
-                                    'Unknown Provider',
+                                provider_name: fullRealtimeConfig.providerDetails?.name || 'Unknown Provider',
                             });
                         }
 
@@ -496,16 +447,16 @@ export class FullAgentService {
         }).pipe(
             map(
                 ({
-                     agents,
-                     llmConfigs,
-                     toolConfigs,
-                     pythonTools,
-                     mcpTools,
-                     llmModels,
-                     realtimeConfigs,
-                     realtimeModels,
-                     llmProviders,
-                 }) => {
+                    agents,
+                    llmConfigs,
+                    toolConfigs,
+                    pythonTools,
+                    mcpTools,
+                    llmModels,
+                    realtimeConfigs,
+                    realtimeModels,
+                    llmProviders,
+                }) => {
                     // Find the agent with the specified ID
                     const agent = agents.find((agent) => agent.id === agentId);
 
@@ -515,12 +466,12 @@ export class FullAgentService {
                     }
 
                     // Build lookup tables for models and providers
-                    const modelMap: Record<number, any> = {};
+                    const modelMap: Record<number, GetLlmModelRequest> = {};
                     llmModels.forEach((model) => {
                         modelMap[model.id] = model;
                     });
 
-                    const realtimeModelMap: Record<number, any> = {};
+                    const realtimeModelMap: Record<number, RealtimeModel> = {};
                     realtimeModels.forEach((model) => {
                         realtimeModelMap[model.id] = model;
                     });
@@ -530,16 +481,12 @@ export class FullAgentService {
                         providerMap[provider.id] = provider;
                     });
 
-                    const findEnhancedLlmConfig = (
-                        configId: number | null
-                    ): FullLLMConfig | null => {
+                    const findEnhancedLlmConfig = (configId: number | null): FullLLMConfig | null => {
                         if (configId === null) return null;
                         const config = llmConfigs.find((cfg) => cfg.id === configId);
                         if (config) {
                             const model = modelMap[config.model] || null;
-                            const provider = model?.llm_provider
-                                ? providerMap[model.llm_provider]
-                                : null;
+                            const provider = model?.llm_provider ? providerMap[model.llm_provider] : null;
 
                             return {
                                 ...config,
@@ -550,16 +497,12 @@ export class FullAgentService {
                         return null;
                     };
 
-                    const findEnhancedRealtimeConfig = (
-                        configId: number | null
-                    ): FullRealtimeConfig | null => {
+                    const findEnhancedRealtimeConfig = (configId: number | null): FullRealtimeConfig | null => {
                         if (configId === null) return null;
                         const config = realtimeConfigs.find((cfg) => cfg.id === configId);
                         if (config) {
                             const model = realtimeModelMap[config.realtime_model] || null;
-                            const provider = model?.provider
-                                ? providerMap[model.provider]
-                                : null;
+                            const provider = model?.provider ? providerMap[model.provider] : null;
 
                             return {
                                 ...config,
@@ -573,9 +516,7 @@ export class FullAgentService {
                     // Use the helper functions
                     const fullLlmConfig = findEnhancedLlmConfig(agent.llm_config);
                     const fullFcmLlmConfig = findEnhancedLlmConfig(agent.fcm_llm_config);
-                    const fullRealtimeConfig = findEnhancedRealtimeConfig(
-                        agent.realtime_agent?.realtime_config
-                    );
+                    const fullRealtimeConfig = findEnhancedRealtimeConfig(agent.realtime_agent?.realtime_config);
 
                     // Parse tools from the unified tools array
                     const configuredToolIds: number[] = [];
@@ -595,15 +536,9 @@ export class FullAgentService {
                     }
 
                     // Tool configs based on parsed IDs
-                    const fullConfiguredTools = toolConfigs.filter((tool) =>
-                        configuredToolIds.includes(tool.id)
-                    );
-                    const fullPythonTools = pythonTools.filter((pt) =>
-                        pythonToolIds.includes(pt.id)
-                    );
-                    const fullMcpTools = mcpTools.filter((mcp: GetMcpToolRequest) =>
-                        mcpToolIds.includes(mcp.id)
-                    );
+                    const fullConfiguredTools = toolConfigs.filter((tool) => configuredToolIds.includes(tool.id));
+                    const fullPythonTools = pythonTools.filter((pt) => pythonToolIds.includes(pt.id));
+                    const fullMcpTools = mcpTools.filter((mcp: GetMcpToolRequest) => mcpToolIds.includes(mcp.id));
 
                     // Merge all sets of tools
                     const mergedTools = [
@@ -637,8 +572,7 @@ export class FullAgentService {
                             model_name: fullLlmConfig.modelDetails?.name || 'Unknown Model',
                             type: 'llm',
                             provider_id: fullLlmConfig.modelDetails?.llm_provider,
-                            provider_name:
-                                fullLlmConfig.providerDetails?.name || 'Unknown Provider',
+                            provider_name: fullLlmConfig.providerDetails?.name || 'Unknown Provider',
                         });
                     }
 
@@ -646,12 +580,10 @@ export class FullAgentService {
                         mergedConfigs.push({
                             id: fullRealtimeConfig.id,
                             custom_name: fullRealtimeConfig.custom_name,
-                            model_name:
-                                fullRealtimeConfig.modelDetails?.name || 'Unknown Model',
+                            model_name: fullRealtimeConfig.modelDetails?.name || 'Unknown Model',
                             type: 'realtime',
                             provider_id: fullRealtimeConfig.modelDetails?.provider,
-                            provider_name:
-                                fullRealtimeConfig.providerDetails?.name || 'Unknown Provider',
+                            provider_name: fullRealtimeConfig.providerDetails?.name || 'Unknown Provider',
                         });
                     }
 

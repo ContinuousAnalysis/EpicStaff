@@ -1,21 +1,21 @@
+import { OverlayModule } from '@angular/cdk/overlay';
+import { PortalModule } from '@angular/cdk/portal';
 import {
-    Component,
+    AfterViewInit,
     ChangeDetectionStrategy,
+    Component,
     CUSTOM_ELEMENTS_SCHEMA,
     ElementRef,
     ViewChild,
-    AfterViewInit,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { ICONS } from '@shared/constants';
-import { TooltipComponent } from './tooltip/tooltip.component';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { OverlayModule } from '@angular/cdk/overlay';
-import { ConfigureModelsDialogService } from '../../../features/configure-models/services/configure-models-dialog.service';
-import { PortalModule } from '@angular/cdk/portal';
+import { environment } from 'src/environments/environment';
+
 import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
 import { ConfigService } from '../../../services/config/config.service';
-import { environment } from 'src/environments/environment';
+import { ICONS } from '../../../shared/constants/icons.constants';
+import { TooltipComponent } from './tooltip/tooltip.component';
 
 interface NavItem {
     id: string;
@@ -30,13 +30,7 @@ interface NavItem {
 @Component({
     selector: 'app-left-sidebar',
     standalone: true,
-    imports: [
-        TooltipComponent,
-        RouterLinkActive,
-        RouterLink,
-        OverlayModule,
-        PortalModule,
-    ],
+    imports: [TooltipComponent, RouterLinkActive, RouterLink, OverlayModule, PortalModule],
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -95,8 +89,7 @@ export class LeftSidebarComponent implements AfterViewInit {
                 primaryBg: 'var(--color-nodes-background)',
                 primaryBorder: 'var(--accent-color)',
                 primaryText: 'var(--accent-color)',
-                primaryHoverBg:
-                    'color-mix(in srgb, var(--color-nodes-background) 70%, var(--accent-color) 30%)',
+                primaryHoverBg: 'color-mix(in srgb, var(--color-nodes-background) 70%, var(--accent-color) 30%)',
                 ghostBg: 'transparent',
                 ghostText: 'var(--color-text-secondary)',
                 ghostHoverBg: 'var(--color-ghost-btn-hover)',

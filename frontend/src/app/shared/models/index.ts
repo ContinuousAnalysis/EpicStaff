@@ -1,3 +1,4 @@
+export * from './crew_run_message.model';
 export * from './embeddings/embedding.model';
 export * from './embeddings/embedding-config.model';
 export * from './llms/llm.model';

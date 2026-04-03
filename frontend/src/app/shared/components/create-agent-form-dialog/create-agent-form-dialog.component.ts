@@ -1,4 +1,4 @@
-import { Dialog, DialogRef } from '@angular/cdk/dialog';
+import { DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -16,8 +16,6 @@ import {
 import { CollectionsApiService } from '../../../features/knowledge-sources/services/collections-api.service';
 import { CreateAgentRequest, GetAgentRequest, ToolUniqueName } from '../../../features/staff/models/agent.model';
 import { RealtimeAgentService } from '../../../features/staff/services/realtime-agent.service';
-import { AgentsService } from '../../../features/staff/services/staff.service';
-import { ToastService } from '../../../services/notifications/toast.service';
 import { ToolsSelectorComponent } from '../../components/tools-selector/tools-selector.component';
 import { CustomErrorStateMatcher } from '../../error-state-matcher/custom-error-state-matcher';
 import { MATERIAL_FORMS } from '../../material-forms';
@@ -421,11 +419,6 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         const mcpToolIds = formData.mcp_tools || [];
         const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds, mcpToolIds);
 
-        console.log('=== Agent Form Submission ===');
-        console.log('Form data:', formData);
-        console.log('Built tool_ids array:', toolIds);
-        console.log('=== End Agent Form Data ===');
-
         if (this.isEditMode && this.agentToEdit) {
             // Edit mode - update existing agent
             const updateRequest = {
@@ -464,8 +457,6 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     },
                 },
             };
-
-            console.log('Update request:', updateRequest);
 
             this.isSubmitting.set(false);
             this.dialogRef.close({ kind: 'update', payload: updateRequest });
@@ -506,8 +497,6 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     },
                 },
             };
-
-            console.log('Create request:', agentRequest);
 
             this.isSubmitting.set(false);
             this.dialogRef.close({ kind: 'create', payload: agentRequest });

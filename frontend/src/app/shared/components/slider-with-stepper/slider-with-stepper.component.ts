@@ -1,16 +1,6 @@
-import {
-    Component,
-    ChangeDetectionStrategy,
-    input,
-    output,
-    model,
-    signal,
-    computed,
-    forwardRef,
-} from '@angular/core';
-import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { TooltipComponent } from "../tooltip/tooltip.component";
+import { ChangeDetectionStrategy, Component, computed, forwardRef, input, model, output, signal } from '@angular/core';
+import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
     selector: 'app-slider-with-stepper',
@@ -101,4 +91,3 @@ export class SliderWithStepperComponent implements ControlValueAccessor {
         this.isDisabled.set(isDisabled);
     }
 }
-

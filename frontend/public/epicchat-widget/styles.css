@@ -479,7 +479,7 @@ html {
     0px 3px 14px 2px rgba(0, 0, 0, 0.12);
 }
 html {
-  --mat-select-panel-background-color: white;
+  --mat-select-panel-background-color: #27272b;
   --mat-select-enabled-trigger-text-color: rgba(0, 0, 0, 0.87);
   --mat-select-disabled-trigger-text-color: color-mix(in srgb, rgba(0, 0, 0, 0.87) 38%, transparent);
   --mat-select-placeholder-text-color: rgba(0, 0, 0, 0.54);
@@ -2320,28 +2320,28 @@ html {
   font-style: normal;
   font-weight: 300;
   font-display: swap;
-  src: url("./media/open-sans-300.ttf") format("truetype");
+  src: url("./assets/fonts/open-sans/open-sans-300.ttf") format("truetype");
 }
 @font-face {
   font-family: "Open Sans";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("./media/open-sans-400.ttf") format("truetype");
+  src: url("./assets/fonts/open-sans/open-sans-400.ttf") format("truetype");
 }
 @font-face {
   font-family: "Open Sans";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("./media/open-sans-600.ttf") format("truetype");
+  src: url("./assets/fonts/open-sans/open-sans-600.ttf") format("truetype");
 }
 @font-face {
   font-family: "Open Sans";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("./media/open-sans-700.ttf") format("truetype");
+  src: url("./assets/fonts/open-sans/open-sans-700.ttf") format("truetype");
 }
 epic-chat,
 epic-chat * {

@@ -611,6 +611,7 @@ function buildConditionalEdgeConnections(
     nodeByBackendId: Map<number, NodeModel>,
     decisionTableNodes: DecisionTableNodeModel[]
 ): ConnectionModel[] {
+    void decisionTableNodes;
     const connections: ConnectionModel[] = [];
 
     for (let i = 0; i < conditionalEdges.length; i++) {
@@ -708,10 +709,6 @@ function buildDecisionTableConnections(
             continue;
         }
 
-        console.log(
-            `[DT-connections] DT "${backendDt.node_name}" (backendId=${backendDt.id}): default_next_node_id=${backendDt.default_next_node_id}, next_error_node_id=${backendDt.next_error_node_id}, groups=${backendDt.condition_groups?.length ?? 0}`
-        );
-
         for (const group of backendDt.condition_groups) {
             if (group.next_node_id != null) {
                 const targetUuid = backendIdToUuid.get(group.next_node_id);
@@ -719,9 +716,6 @@ function buildDecisionTableConnections(
                     const targetNode = nodeByBackendId.get(group.next_node_id);
                     if (targetNode) {
                         if (targetNode.type === NodeType.EDGE) {
-                            console.log(
-                                `[DT-connections] Group "${group.group_name}" → EDGE node skipped (handled by CE connections)`
-                            );
                         } else {
                             const normalizedGroupName = group.group_name.toLowerCase().replace(/\s+/g, '-');
                             connections.push(
@@ -749,11 +743,7 @@ function buildDecisionTableConnections(
                 if (targetNode) {
                     // Skip EDGE targets — those connections are handled by buildConditionalEdgeConnections
                     if (targetNode.type === NodeType.EDGE) {
-                        console.log(`[DT-connections] Default → EDGE node skipped (handled by CE connections)`);
                     } else {
-                        console.log(
-                            `[DT-connections] Default → ${targetNode.node_name} (type=${targetNode.type}, backendId=${targetNode.backendId})`
-                        );
                         connections.push(
                             makeConnection(
                                 dtNode.id,
@@ -777,7 +767,6 @@ function buildDecisionTableConnections(
                 const targetNode = nodeByBackendId.get(backendDt.next_error_node_id);
                 if (targetNode) {
                     if (targetNode.type === NodeType.EDGE) {
-                        console.log(`[DT-connections] Error → EDGE node skipped (handled by CE connections)`);
                     } else {
                         connections.push(
                             makeConnection(
@@ -797,7 +786,6 @@ function buildDecisionTableConnections(
         }
     }
 
-    console.log(`[DT-connections] Total DT connections built: ${connections.length}`);
     return connections;
 }
 
@@ -920,8 +908,6 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
             nodeByBackendId.set(n.backendId, n);
         }
     }
-    console.log(`[load-graph] backendIdToUuid map: ${backendIdToUuid.size} entries from ${allNodes.length} nodes`);
-
     // ── 4. Post-process: resolve backend ID refs → UUIDs in decision tables
     resolveDecisionTableNodeRefs(decisionTableNodes, graph.decision_table_node_list ?? [], backendIdToUuid);
 
@@ -962,10 +948,6 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     if (badConns.length) {
         console.error('[load-graph] BUG: connections with table-out port still exist!', badConns);
     }
-    console.log(
-        `[load-graph] Built ${allConnections.length} connections: edges=${edgeConnections.length}, CE=${conditionalEdgeConnections.length}, DT=${decisionTableConnections.length}`
-    );
-
     return {
         nodes: allNodes,
         connections: allConnections,

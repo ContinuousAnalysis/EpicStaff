@@ -1,23 +1,29 @@
-import {
-    Component,
-    ChangeDetectionStrategy,
-    Input,
-    Output,
-    EventEmitter,
-    OnInit,
-    OnChanges,
-    SimpleChanges,
-    ChangeDetectorRef,
-    signal,
-} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    EventEmitter,
+    Input,
+    OnChanges,
+    OnInit,
+    Output,
+    signal,
+    SimpleChanges,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { GetProjectRequest } from '../../features/projects/models/project.model';
-import { LLMConfigService, FullLLMConfigService, EmbeddingConfigsService, FullEmbeddingConfigService } from '@shared/services';
-import { GetLlmConfigRequest, GetEmbeddingConfigRequest } from '@shared/models';
-
-import { EmbeddingModelSelectorComponent, LlmModelSelectorComponent, HelpTooltipComponent } from '@shared/components';
+import { GetEmbeddingConfigRequest } from '../../features/settings-dialog/models/embeddings/embedding-config.model';
+import { GetLlmConfigRequest } from '../../features/settings-dialog/models/llms/LLM_config.model';
+import { EmbeddingConfigsService } from '../../features/settings-dialog/services/embeddings/embedding_configs.service';
+import { FullEmbeddingConfigService } from '../../features/settings-dialog/services/embeddings/full-embedding.service';
+import { FullEmbeddingConfig } from '../../features/settings-dialog/services/embeddings/full-embedding.service';
+import { FullLLMConfigService } from '../../features/settings-dialog/services/llms/full-llm-config.service';
+import { FullLLMConfig } from '../../features/settings-dialog/services/llms/full-llm-config.service';
+import { EmbeddingModelSelectorComponent } from '../../shared/components/embedding-model-selector/embedding-model-selector.component';
+import { HelpTooltipComponent } from '../../shared/components/help-tooltip/help-tooltip.component';
+import { LlmModelSelectorComponent } from '../../shared/components/llm-model-selector/llm-model-selector.component';
 
 @Component({
     selector: 'app-settings-section',
@@ -35,9 +41,7 @@ import { EmbeddingModelSelectorComponent, LlmModelSelectorComponent, HelpTooltip
 })
 export class SettingsSectionComponent implements OnInit, OnChanges {
     @Input() public project!: GetProjectRequest;
-    @Output() public settingsChange = new EventEmitter<
-        Partial<GetProjectRequest>
-    >();
+    @Output() public settingsChange = new EventEmitter<Partial<GetProjectRequest>>();
 
     // Project settings as signals
     public memory = signal<boolean>(false);
@@ -64,8 +68,8 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     public embeddingConfigs = signal<GetEmbeddingConfigRequest[]>([]);
 
     // Full config objects for the selectors
-    public fullLLMConfigs = signal<any[]>([]);
-    public fullEmbeddingConfigs = signal<any[]>([]);
+    public fullLLMConfigs = signal<FullLLMConfig[]>([]);
+    public fullEmbeddingConfigs = signal<FullEmbeddingConfig[]>([]);
 
     public isLoading = signal(true);
     public configsLoaded = signal(false);
@@ -79,7 +83,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         private fullLLMConfigService: FullLLMConfigService,
         private fullEmbeddingConfigService: FullEmbeddingConfigService,
         private cdr: ChangeDetectorRef
-    ) { }
+    ) {}
 
     public ngOnInit(): void {
         this.loadConfigurations();
@@ -181,10 +185,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     }
 
     private checkLoadingComplete(): void {
-        if (
-            this.availableLLMs().length > 0 &&
-            this.embeddingConfigs().length > 0
-        ) {
+        if (this.availableLLMs().length > 0 && this.embeddingConfigs().length > 0) {
             this.isLoading.set(false);
             this.configsLoaded.set(true);
             this.initializeHierarchicalSettings();
@@ -206,8 +207,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     }
 
     public toggleProcess(): void {
-        const newValue =
-            this.process() === 'sequential' ? 'hierarchical' : 'sequential';
+        const newValue = this.process() === 'sequential' ? 'hierarchical' : 'sequential';
         this.process.set(newValue);
         this.onSettingChange('process', newValue);
     }
@@ -236,7 +236,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
         this.onSettingChange('embedding_config', this.embedding_config());
     }
 
-    public onSettingChange(setting: string, value: any): void {
+    public onSettingChange(setting: string, value: unknown): void {
         if (!this.project || !this.project.id) return;
 
         const updateData: Partial<GetProjectRequest> = {
@@ -260,9 +260,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
 
     public onTemperatureSliderEnd(): void {
         // Save changes only when slider movement ends
-        const newTemperature = parseFloat(
-            (this.tempCurrentValue / 100).toFixed(1)
-        );
+        const newTemperature = parseFloat((this.tempCurrentValue / 100).toFixed(1));
         this.onSettingChange('default_temperature', newTemperature);
     }
 
@@ -297,7 +295,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     // public searchLimitCurrentValue: number = this.settings().search_limit;
 
     // // Вызывается при движении ползунка
-    // public onThresholdSliderMove(value: any): void {
+    // public onThresholdSliderMove(value: unknown): void {
     //     this.thresholdCurrentValue = value.toString();
     //     const currentSettings = this.settings();
     //     this.settings.set({

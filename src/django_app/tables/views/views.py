@@ -277,17 +277,24 @@ class RunSession(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         files_dict = {}
-        graph_id = serializer.validated_data["graph_id"]
+        graph_id = serializer.validated_data.get("graph_id")
+        graph_uuid = serializer.validated_data.get("graph_uuid")
         username = serializer.validated_data.get("username")
         graph_organization_user = None
         warning_messages = []
 
-        graph = Graph.objects.filter(id=graph_id).first()
+        if graph_id:
+            graph = Graph.objects.filter(id=graph_id).first()
+        else:
+            graph = Graph.objects.filter(uuid=graph_uuid).first()
+
         if not graph:
             return Response(
                 {"message": "Provided graph does not exist"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        graph_id = graph.id
 
         graph_organization = GraphOrganization.objects.filter(
             graph__id=graph_id

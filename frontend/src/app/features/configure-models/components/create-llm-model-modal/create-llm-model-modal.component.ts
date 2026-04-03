@@ -1,16 +1,15 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
-import { TooltipComponent, ValidationErrorsComponent } from "@shared/components";
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
-import { AppIconComponent, CustomInputComponent, ButtonComponent, ToggleSwitchComponent } from '@shared/components';
-import { LLMModel, LLMProvider } from "@shared/models";
-import { ToastService } from '../../../../services/notifications';
-
-import { LlmModelsStorageService } from "../../services/llms/llm-models-storage.service";
-import { getProviderIconPath } from "@shared/utils";
+import { ToastService } from '../../../../../services/notifications/toast.service';
+import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
+import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
+import { ToggleSwitchComponent } from '../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
+import { CustomInputComponent } from '../../../../../shared/components/form-input/form-input.component';
+import { getProviderIconPath } from '../../../utils/get-provider-icon';
 
 export interface CreateLlmModelDialogData {
     provider: LLMProvider;
@@ -114,4 +113,3 @@ export class CreateLlmModelModalComponent {
         return fallback;
     }
 }
-

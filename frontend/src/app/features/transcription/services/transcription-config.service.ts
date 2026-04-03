@@ -1,15 +1,14 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map, switchMap, Observable } from 'rxjs';
+import { map, Observable, switchMap } from 'rxjs';
 
 import { ApiGetRequest } from '../../../core/models/api-request.model';
-
-import { ConfigService } from '../../../services/config';
+import { ConfigService } from '../../../services/config/config.service';
 import {
     CreateTranscriptionConfigRequest,
     EnhancedTranscriptionConfig,
     GetRealtimeTranscriptionModelRequest,
-    GetTranscriptionConfigRequest, UpdateTranscriptionConfigRequest,
+    GetTranscriptionConfigRequest,
 } from '../models/transcription-config.model';
 import { ApiGetResponse, RealtimeTranscriptionModelsService } from './transcription-models.service';
 
@@ -24,9 +23,8 @@ export class TranscriptionConfigsService {
     constructor(
         private http: HttpClient,
         private configService: ConfigService,
-        private realtimeTranscriptionModelsService: RealtimeTranscriptionModelsService,
-    ) {
-    }
+        private realtimeTranscriptionModelsService: RealtimeTranscriptionModelsService
+    ) {}
 
     // Dynamically retrieve the API URL from ConfigService
     private get apiUrl(): string {
@@ -42,33 +40,23 @@ export class TranscriptionConfigsService {
     }
 
     // GET transcription config by ID
-    getTranscriptionConfigById(
-        id: number
-    ): Observable<GetTranscriptionConfigRequest> {
+    getTranscriptionConfigById(id: number): Observable<GetTranscriptionConfigRequest> {
         return this.http.get<GetTranscriptionConfigRequest>(`${this.apiUrl}${id}/`);
     }
-
-    getTranscriptionConfigsByProviderId(
-        providerId: number
-    ): Observable<GetTranscriptionConfigRequest[]> {
+    getTranscriptionConfigsByProviderId(providerId: number): Observable<GetTranscriptionConfigRequest[]> {
         const url = `${this.apiUrl}?limit=1000&model_provider_id=${providerId}`;
         return this.http
             .get<ApiGetRequest<GetTranscriptionConfigRequest>>(url)
             .pipe(map((response) => response.results));
     }
-
     // POST create transcription config
-    createTranscriptionConfig(
-        config: CreateTranscriptionConfigRequest
-    ): Observable<GetTranscriptionConfigRequest> {
+    createTranscriptionConfig(config: CreateTranscriptionConfigRequest): Observable<GetTranscriptionConfigRequest> {
         return this.http.post<GetTranscriptionConfigRequest>(this.apiUrl, config, {
             headers: this.headers,
         });
     }
 
-    updateTranscriptionConfig(
-        config: UpdateTranscriptionConfigRequest
-    ): Observable<GetTranscriptionConfigRequest> {
+    updateTranscriptionConfig(config: UpdateTranscriptionConfigRequest): Observable<GetTranscriptionConfigRequest> {
         return this.http.put<GetTranscriptionConfigRequest>(this.apiUrl, config, {
             headers: this.headers,
         });
@@ -88,21 +76,20 @@ export class TranscriptionConfigsService {
         return this.realtimeTranscriptionModelsService.getAllModels().pipe(
             switchMap((modelsRes: ApiGetResponse<GetRealtimeTranscriptionModelRequest>) => {
                 const models = modelsRes && modelsRes.results ? modelsRes.results : [];
-                return this.http
-                    .get<ApiGetRequest<GetTranscriptionConfigRequest>>(url)
-                    .pipe(
-                        map((response) =>
-                            response.results.map((config) => {
-                                const model = models.find(
-                                    (m: GetRealtimeTranscriptionModelRequest) => m.id === config.realtime_transcription_model
-                                );
-                                return {
-                                    ...config,
-                                    model_name: model ? model.name : 'Unknown model',
-                                } as EnhancedTranscriptionConfig;
-                            })
-                        )
-                    );
+                return this.http.get<ApiGetRequest<GetTranscriptionConfigRequest>>(url).pipe(
+                    map((response) =>
+                        response.results.map((config) => {
+                            const model = models.find(
+                                (m: GetRealtimeTranscriptionModelRequest) =>
+                                    m.id === config.realtime_transcription_model
+                            );
+                            return {
+                                ...config,
+                                model_name: model ? model.name : 'Unknown model',
+                            } as EnhancedTranscriptionConfig;
+                        })
+                    )
+                );
             })
         );
     }

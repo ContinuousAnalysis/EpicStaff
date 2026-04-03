@@ -19,8 +19,7 @@ export interface UpdateTranscriptionConfigRequest {
     realtime_transcription_model?: number;
 }
 
-export interface EnhancedTranscriptionConfig
-    extends GetTranscriptionConfigRequest {
+export interface EnhancedTranscriptionConfig extends GetTranscriptionConfigRequest {
     model_name: string;
 }
 

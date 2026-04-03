@@ -72,7 +72,7 @@
     </div>
 
     <div class="create-model__footer">
-        <app-button type="outline-primary" (click)="onClose()" [disabled]="isSubmitting()">
+        <app-button type="ghost" (click)="onClose()" [disabled]="isSubmitting()">
             Cancel
         </app-button>
         <app-button type="primary" (click)="onSubmit()" [disabled]="form.invalid || isSubmitting()">
@@ -80,4 +80,3 @@
         </app-button>
     </div>
 </div>
-

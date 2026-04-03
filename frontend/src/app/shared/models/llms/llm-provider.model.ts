@@ -5,8 +5,8 @@ export interface LLMProvider {
 }
 
 export enum ModelTypes {
-  EMBEDDING = "embedding",
-  REALTIME = "realtime",
-  LLM = "llm",
-  TRANSCRIPTION = "transcription",
+    EMBEDDING = 'embedding',
+    REALTIME = 'realtime',
+    LLM = 'llm',
+    TRANSCRIPTION = 'transcription',
 }
