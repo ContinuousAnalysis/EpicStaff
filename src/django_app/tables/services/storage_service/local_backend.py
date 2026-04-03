@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 
-from tables.services.storage.base import AbstractStorageBackend
+from tables.services.storage_service.base import AbstractStorageBackend
 
 
 class LocalStorageBackend(AbstractStorageBackend):

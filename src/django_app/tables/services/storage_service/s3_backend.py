@@ -5,7 +5,7 @@ from typing import Iterator
 import boto3
 from botocore.exceptions import ClientError
 
-from tables.services.storage.base import AbstractStorageBackend
+from tables.services.storage_service.base import AbstractStorageBackend
 
 
 class S3StorageBackend(AbstractStorageBackend):

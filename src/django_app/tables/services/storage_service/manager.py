@@ -5,9 +5,9 @@ from typing import Iterator
 
 from rest_framework.exceptions import PermissionDenied
 
-from tables.services.storage.base import AbstractStorageBackend
-from tables.services.storage.decorators import check_permission
-from tables.services.storage.enums import StorageAction
+from tables.services.storage_service.base import AbstractStorageBackend
+from tables.services.storage_service.decorators import check_permission
+from tables.services.storage_service.enums import StorageAction
 
 
 class StorageManager:

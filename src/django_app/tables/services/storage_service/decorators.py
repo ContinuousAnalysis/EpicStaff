@@ -1,6 +1,6 @@
 import functools
 
-from tables.services.storage.enums import StorageAction
+from tables.services.storage_service.enums import StorageAction
 
 
 def check_permission(method):
