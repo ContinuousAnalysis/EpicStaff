@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any
 
 from django.apps import apps
@@ -34,6 +35,16 @@ class GraphBulkSaveService:
     Raises BulkSaveValidationError with a structured error dict if any entity
     fails validation. No DB writes happen in that case.
     """
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def _get_global_node_models() -> tuple[type, ...]:
+        """Return all concrete BaseGlobalNode subclasses. Cached for process lifetime."""
+        return tuple(
+            m
+            for m in apps.get_models()
+            if issubclass(m, BaseGlobalNode) and not m._meta.abstract
+        )
 
     def save(self, graph: Graph, validated_input: dict) -> Graph:
         deleted_data = validated_input.get("deleted", {})
@@ -427,11 +438,7 @@ class GraphBulkSaveService:
         if not node_ids:
             return set()
 
-        node_models = [
-            m
-            for m in apps.get_models()
-            if issubclass(m, BaseGlobalNode) and not m._meta.abstract
-        ]
+        node_models = GraphBulkSaveService._get_global_node_models()
         if not node_models:
             return node_ids
 
