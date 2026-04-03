@@ -2,36 +2,21 @@
     <header class="header">
         <div class="header-left">
             <h3 class="title">Ngrok Configuration Parameters</h3>
-            <p class="subtitle">
-                Configure and manage settings through the Ngrok tunnel.
-            </p>
+            <p class="subtitle">Configure and manage settings through the Ngrok tunnel.</p>
         </div>
 
         <div class="header-right">
-            <app-button
-                type="primary"
-                (click)="onAddConfig()"
-            >
-                + Add Tunnel
-            </app-button>
+            <app-button type="primary" (click)="onAddConfig()"> + Add Tunnel </app-button>
         </div>
     </header>
 
     <div class="config-list">
         @if (status() === 'loading') {
-            <app-loading-spinner
-                message="Loading Ngrok configurations"
-            />
+            <app-loading-spinner message="Loading Ngrok configurations" />
         } @else if (status() === 'error') {
             <div class="loading-state error">
                 <p>{{ errorMessage() }}</p>
-                <app-button
-                    type="secondary"
-                    leftIcon="ui/refresh"
-                    (click)="refreshData()"
-                >
-                    Retry
-                </app-button>
+                <app-button type="secondary" leftIcon="ui/refresh" (click)="refreshData()"> Retry </app-button>
             </div>
         } @else if (ngrokConfigs().length === 0) {
             <div class="loading-state">

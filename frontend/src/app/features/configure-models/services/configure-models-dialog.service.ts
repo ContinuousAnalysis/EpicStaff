@@ -1,8 +1,7 @@
-import { inject, Injectable } from '@angular/core';
 import { Dialog, DialogRef } from '@angular/cdk/dialog';
-import {
-    ConfigureModelsDialogComponent
-} from '../components/configure-models-dialog/configure-models-dialog.component';
+import { inject, Injectable } from '@angular/core';
+
+import { ConfigureModelsDialogComponent } from '../components/configure-models-dialog/configure-models-dialog.component';
 
 @Injectable({
     providedIn: 'root',
@@ -17,5 +16,3 @@ export class ConfigureModelsDialogService {
         });
     }
 }
-
-

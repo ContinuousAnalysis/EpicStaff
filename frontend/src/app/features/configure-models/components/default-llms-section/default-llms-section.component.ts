@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, EMPTY, forkJoin } from 'rxjs';
+
 import { ToastService } from '../../../../services/notifications';
 import { DEFAULT_LLMS_SECTIONS } from '../../constants/default-llms-sections.constant';
 import { DefaultLlmsCard } from '../../interfaces/default-llms-card.interface';
@@ -27,10 +28,7 @@ export class DefaultLlmsSectionComponent implements OnInit {
     public readonly defaultModels = this.defaultModelsStorageService.defaultModels;
 
     ngOnInit(): void {
-        forkJoin([
-            this.llmConfigStorageService.getAllConfigs(),
-            this.defaultModelsStorageService.loadDefaultModels(),
-        ])
+        forkJoin([this.llmConfigStorageService.getAllConfigs(), this.defaultModelsStorageService.loadDefaultModels()])
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe();
     }
@@ -47,7 +45,8 @@ export class DefaultLlmsSectionComponent implements OnInit {
 
         const data: UpdateDefaultModelsRequest = { [field]: event.configId };
 
-        this.defaultModelsStorageService.updateDefaultModels(data)
+        this.defaultModelsStorageService
+            .updateDefaultModels(data)
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 catchError(() => {
@@ -60,7 +59,7 @@ export class DefaultLlmsSectionComponent implements OnInit {
 
     private findCardField(cardId: string): string | null {
         for (const section of this.sections) {
-            const card = section.cards.find(c => c.id === cardId);
+            const card = section.cards.find((c) => c.id === cardId);
             if (card) return card.field;
         }
         return null;

@@ -1,14 +1,18 @@
-import { DIALOG_DATA, DialogRef } from "@angular/cdk/dialog";
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    ButtonComponent, CustomInputComponent, IconButtonComponent, ValidationErrorsComponent
-} from "@shared/components";
-import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
-import { ToastService } from "../../../../services/notifications";
-import { EmbeddingConfigStorageService } from "../../services/llms/embedding-config-storage.service";
-import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selector.component";
+    ButtonComponent,
+    CustomInputComponent,
+    IconButtonComponent,
+    ValidationErrorsComponent,
+} from '@shared/components';
+import { LLMModel, LLMProvider, ModelTypes } from '@shared/models';
+
+import { ToastService } from '../../../../services/notifications';
+import { EmbeddingConfigStorageService } from '../../services/llms/embedding-config-storage.service';
+import { LlmModelSelectorComponent } from '../llm-model-selector/llm-model-selector.component';
 
 @Component({
     selector: 'app-embedding-config-model',
@@ -21,7 +25,7 @@ import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selec
         IconButtonComponent,
         LlmModelSelectorComponent,
         ReactiveFormsModule,
-        ValidationErrorsComponent
+        ValidationErrorsComponent,
     ],
 })
 export class EmbeddingModelConfigDialogComponent {
@@ -37,8 +41,8 @@ export class EmbeddingModelConfigDialogComponent {
     isLoading = signal<boolean>(false);
 
     isEditMode = computed(() => !!this.data?.configId);
-    title = computed(() => this.isEditMode() ? 'Edit Embedding Configuration' : 'Add Embedding Configuration');
-    saveLabel = computed(() => this.isEditMode() ? 'Save Changes' : 'Add Embedding');
+    title = computed(() => (this.isEditMode() ? 'Edit Embedding Configuration' : 'Add Embedding Configuration'));
+    saveLabel = computed(() => (this.isEditMode() ? 'Save Changes' : 'Add Embedding'));
 
     form!: FormGroup;
 
@@ -56,7 +60,8 @@ export class EmbeddingModelConfigDialogComponent {
 
     private loadConfig(configId: number): void {
         this.isLoading.set(true);
-        this.embeddingConfigsService.getConfigById(configId)
+        this.embeddingConfigsService
+            .getConfigById(configId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (config) => {
@@ -70,7 +75,7 @@ export class EmbeddingModelConfigDialogComponent {
             });
     }
 
-    onModelChanged(data: { model: LLMModel, provider: LLMProvider}): void {
+    onModelChanged(data: { model: LLMModel; provider: LLMProvider }): void {
         const nameControl = this.form.get('custom_name');
 
         if (!nameControl) return;
@@ -92,26 +97,20 @@ export class EmbeddingModelConfigDialogComponent {
             ? this.embeddingConfigsService.updateConfig({ id: this.data!.configId!, ...formValue })
             : this.embeddingConfigsService.createConfig(formValue);
 
-        request$
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.isSaving.set(false);
-                    this.toast.success(this.isEditMode()
-                        ? 'Configuration updated successfully.'
-                        : 'Configuration created successfully.'
-                    );
-                    this.dialogRef.close();
-                },
-                error: (err) => {
-                    this.isSaving.set(false);
-                    this.toast.error(this.isEditMode()
-                        ? 'Configuration update failed.'
-                        : 'Configuration creation failed.'
-                    );
-                    console.error(err);
-                },
-            });
+        request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => {
+                this.isSaving.set(false);
+                this.toast.success(
+                    this.isEditMode() ? 'Configuration updated successfully.' : 'Configuration created successfully.'
+                );
+                this.dialogRef.close();
+            },
+            error: (err) => {
+                this.isSaving.set(false);
+                this.toast.error(this.isEditMode() ? 'Configuration update failed.' : 'Configuration creation failed.');
+                console.error(err);
+            },
+        });
     }
 
     protected readonly ModelTypes = ModelTypes;

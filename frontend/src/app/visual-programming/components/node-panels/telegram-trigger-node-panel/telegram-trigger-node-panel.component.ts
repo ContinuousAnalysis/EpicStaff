@@ -21,10 +21,10 @@ import {
     SelectItem,
 } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
+import { NgrokConfigStorageService } from '@shared/services';
 import { startWith } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
-import { NgrokConfigStorageService } from '../../../../features/settings-dialog/services/ngrok-config/ngrok-config-storage.service';
 import {
     DisplayedTelegramField,
     TelegramTriggerNodeField,

@@ -1,11 +1,11 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { CreateLlmModelRequest, LLMModel } from '@shared/models';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { ApiGetRequest } from '../../../../core/models/api-request.model';
-import { ConfigService } from '../../../../services/config/config.service';
-import { CreateLlmModelRequest, LLM_Model } from '../../models/llms/LLM.model';
+import { ApiGetRequest } from '../../../core/models/api-request.model';
+import { ConfigService } from '../../../services/config';
 
 @Injectable({
     providedIn: 'root',
@@ -18,8 +18,7 @@ export class LLMModelsService {
     constructor(
         private http: HttpClient,
         private configService: ConfigService
-    ) {
-    }
+    ) {}
 
     private get apiUrl(): string {
         return this.configService.apiUrl + 'llm-models/';

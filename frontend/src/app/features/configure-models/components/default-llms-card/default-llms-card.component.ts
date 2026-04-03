@@ -1,5 +1,6 @@
-import { Dialog } from "@angular/cdk/dialog";
-import { ComponentType } from "@angular/cdk/portal";
+import { Dialog } from '@angular/cdk/dialog';
+import { ComponentType } from '@angular/cdk/portal';
+import { CommonModule } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -12,29 +13,25 @@ import {
     Signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable } from 'rxjs';
-import { CommonModule } from '@angular/common';
 import { AppIconComponent, SelectComponent, SelectItem } from '@shared/components';
+import { ModelTypes } from '@shared/models';
+import { Observable } from 'rxjs';
+
 import { DefaultLlmsCard } from '../../interfaces/default-llms-card.interface';
-import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
 import { EmbeddingConfigStorageService } from '../../services/llms/embedding-config-storage.service';
+import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
 import { RealtimeConfigStorageService } from '../../services/llms/realtime-config-storage.service';
 import { TranscriptionConfigStorageService } from '../../services/llms/transcription-config-storage.service';
-import { ModelTypes } from '@shared/models';
-import {
-    EmbeddingModelConfigDialogComponent
-} from "../embedding-model-config-dialog/embedding-model-config-dialog.component";
-import { LlmModelConfigDialogComponent } from "../llm-model-config-dialog/llm-model-config-dialog.component";
-import {
-    TranscriptionModelConfigDialogComponent
-} from "../transcription-model-config-dialog/transcription-model-config-dialog.component";
-import { VoiceModelConfigDialogComponent } from "../voice-config-model/voice-model-config-dialog.component";
+import { EmbeddingModelConfigDialogComponent } from '../embedding-model-config-dialog/embedding-model-config-dialog.component';
+import { LlmModelConfigDialogComponent } from '../llm-model-config-dialog/llm-model-config-dialog.component';
+import { TranscriptionModelConfigDialogComponent } from '../transcription-model-config-dialog/transcription-model-config-dialog.component';
+import { VoiceModelConfigDialogComponent } from '../voice-config-model/voice-model-config-dialog.component';
 
 type DialogComponentType =
-    EmbeddingModelConfigDialogComponent |
-    LlmModelConfigDialogComponent |
-    VoiceModelConfigDialogComponent |
-    TranscriptionModelConfigDialogComponent;
+    | EmbeddingModelConfigDialogComponent
+    | LlmModelConfigDialogComponent
+    | VoiceModelConfigDialogComponent
+    | TranscriptionModelConfigDialogComponent;
 
 @Component({
     selector: 'app-default-llms-card',
@@ -57,41 +54,39 @@ export class DefaultLlmsCardComponent implements OnInit {
     public readonly modelSelected = output<{ cardId: string; configId: number | null }>();
 
     private readonly configSignals: Record<ModelTypes, Signal<{ id: number; custom_name: string }[]>> = {
-        [ModelTypes.LLM]:           this.llmConfigStorageService.configs,
-        [ModelTypes.EMBEDDING]:     this.embeddingConfigStorage.configs,
-        [ModelTypes.REALTIME]:      this.realtimeConfigStorage.configs,
+        [ModelTypes.LLM]: this.llmConfigStorageService.configs,
+        [ModelTypes.EMBEDDING]: this.embeddingConfigStorage.configs,
+        [ModelTypes.REALTIME]: this.realtimeConfigStorage.configs,
         [ModelTypes.TRANSCRIPTION]: this.transcriptionConfigStorage.configs,
     };
 
     private readonly configLoaders: Record<ModelTypes, () => Observable<unknown>> = {
-        [ModelTypes.LLM]:           () => this.llmConfigStorageService.getAllConfigs(),
-        [ModelTypes.EMBEDDING]:     () => this.embeddingConfigStorage.getAllConfigs(),
-        [ModelTypes.REALTIME]:      () => this.realtimeConfigStorage.getAllConfigs(),
+        [ModelTypes.LLM]: () => this.llmConfigStorageService.getAllConfigs(),
+        [ModelTypes.EMBEDDING]: () => this.embeddingConfigStorage.getAllConfigs(),
+        [ModelTypes.REALTIME]: () => this.realtimeConfigStorage.getAllConfigs(),
         [ModelTypes.TRANSCRIPTION]: () => this.transcriptionConfigStorage.getAllConfigs(),
     };
 
     private readonly dialogComponents: Record<ModelTypes, ComponentType<DialogComponentType>> = {
-        [ModelTypes.LLM]:           LlmModelConfigDialogComponent,
-        [ModelTypes.EMBEDDING]:     EmbeddingModelConfigDialogComponent,
-        [ModelTypes.REALTIME]:      VoiceModelConfigDialogComponent,
+        [ModelTypes.LLM]: LlmModelConfigDialogComponent,
+        [ModelTypes.EMBEDDING]: EmbeddingModelConfigDialogComponent,
+        [ModelTypes.REALTIME]: VoiceModelConfigDialogComponent,
         [ModelTypes.TRANSCRIPTION]: TranscriptionModelConfigDialogComponent,
     };
 
     public readonly selectItems = computed<SelectItem[]>(() =>
-        this.configSignals[this.card().configType]().map(item => ({
+        this.configSignals[this.card().configType]().map((item) => ({
             value: item.id,
             name: item.custom_name,
         }))
     );
 
     public ngOnInit(): void {
-        this.configLoaders[this.card().configType]()
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe();
+        this.configLoaders[this.card().configType]().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
     }
 
-    public selectConfig(configId: number): void {
-        this.modelSelected.emit({ cardId: this.card().id, configId: configId });
+    public selectConfig(configId: unknown): void {
+        this.modelSelected.emit({ cardId: this.card().id, configId: configId as number });
     }
 
     public onResetConfig(): void {

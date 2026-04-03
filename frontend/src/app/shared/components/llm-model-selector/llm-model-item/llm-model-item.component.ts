@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { FullLLMConfig } from '@shared/services';
+import { getProviderIconPath } from '@shared/utils';
 
-import { FullLLMConfig } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { getProviderIconPath } from '../../../../features/settings-dialog/utils/get-provider-icon';
 import { AppIconComponent } from '../../app-icon/app-icon.component';
 
 @Component({

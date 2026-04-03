@@ -1,5 +1,6 @@
-import { EmbeddingConfig, GetLlmConfigRequest, RealtimeModelConfig } from "@shared/models";
-import { GetTranscriptionConfigRequest } from "../../transcription/models/transcription-config.model";
+import { EmbeddingConfig, GetLlmConfigRequest, RealtimeModelConfig } from '@shared/models';
+
+import { GetTranscriptionConfigRequest } from '../../transcription/models/transcription-config.model';
 
 export interface GetQuickstartResponse {
     supported_providers: string[];

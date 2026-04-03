@@ -1,9 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, forwardRef, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
-
-import { FullLLMConfig } from '../../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { ClickOutsideDirective } from '../../../../../shared/directives/click-outside.directive';
+import { ClickOutsideDirective } from '@shared/directives';
+import { FullLLMConfig } from '@shared/services';
 
 @Component({
     selector: 'app-llm-selector',

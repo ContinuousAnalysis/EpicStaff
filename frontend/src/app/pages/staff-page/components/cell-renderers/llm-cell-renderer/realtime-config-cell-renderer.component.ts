@@ -1,16 +1,16 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { AppIconComponent } from '@shared/components';
+import { getProviderIconPath } from '@shared/utils';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 
-import { getProviderIconPath } from '../../../../../features/settings-dialog/utils/get-provider-icon';
 import { MergedConfig } from '../../../../../features/staff/services/full-agent.service';
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
 
 @Component({
     selector: 'app-config-cell-renderer',
     standalone: true,
-    imports: [CommonModule, AppIconComponent],
+    imports: [CommonModule, AppIconComponent, AppIconComponent],
     template: `
         <div class="configs-cell-wrapper">
             <div *ngIf="!configs || configs.length === 0" class="no-configs">No configurations assigned</div>

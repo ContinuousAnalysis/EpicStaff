@@ -9,6 +9,7 @@ import {
     EnhancedTranscriptionConfig,
     GetRealtimeTranscriptionModelRequest,
     GetTranscriptionConfigRequest,
+    UpdateTranscriptionConfigRequest,
 } from '../models/transcription-config.model';
 import { ApiGetResponse, RealtimeTranscriptionModelsService } from './transcription-models.service';
 

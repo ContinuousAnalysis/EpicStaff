@@ -1,12 +1,13 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { catchError, finalize, Observable, of, tap, throwError } from 'rxjs';
-import { shareReplay } from "rxjs/operators";
+import { shareReplay } from 'rxjs/operators';
+
 import {
     CreateTranscriptionConfigRequest,
     GetTranscriptionConfigRequest,
     UpdateTranscriptionConfigRequest,
-} from "../../../transcription/models/transcription-config.model";
-import { TranscriptionConfigsService } from "../../../transcription/services/transcription-config.service";
+} from '../../../transcription/models/transcription-config.model';
+import { TranscriptionConfigsService } from '../../../transcription/services/transcription-config.service';
 
 @Injectable({
     providedIn: 'root',

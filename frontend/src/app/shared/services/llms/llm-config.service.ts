@@ -1,15 +1,11 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { CreateLLMConfigRequest, GetLlmConfigRequest, UpdateLLMConfigRequest } from '@shared/models';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { ApiGetRequest } from '../../../../core/models/api-request.model';
-import { ConfigService } from '../../../../services/config/config.service';
-import {
-    CreateLLMConfigRequest,
-    GetLlmConfigRequest,
-    UpdateLLMConfigRequest,
-} from '../../models/llms/LLM_config.model';
+import { ApiGetRequest } from '../../../core/models/api-request.model';
+import { ConfigService } from '../../../services/config';
 
 @Injectable({
     providedIn: 'root',

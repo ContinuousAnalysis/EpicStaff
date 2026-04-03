@@ -2,15 +2,20 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+    AppIconComponent,
+    ButtonComponent,
+    CustomInputComponent,
+    ToggleSwitchComponent,
+    TooltipComponent,
+    ValidationErrorsComponent,
+} from '@shared/components';
+import { LLMProvider } from '@shared/models';
+import { EmbeddingModelsService } from '@shared/services';
+import { getProviderIconPath } from '@shared/utils';
 import { finalize } from 'rxjs/operators';
 
-import { ToastService } from '../../../../../services/notifications/toast.service';
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
-import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
-import { ToggleSwitchComponent } from '../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
-import { CustomInputComponent } from '../../../../../shared/components/form-input/form-input.component';
-import { EmbeddingModelsService } from '../../../services/embeddings/embeddings.service';
-import { getProviderIconPath } from '../../../utils/get-provider-icon';
+import { ToastService } from '../../../../services/notifications';
 
 export interface CreateEmbeddingModelDialogData {
     provider: LLMProvider;

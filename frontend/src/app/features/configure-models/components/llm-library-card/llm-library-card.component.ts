@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+
 import { LlmLibraryModel } from '../../interfaces/llm-library-model.interface';
 
 @Component({
@@ -23,4 +24,3 @@ export class LlmLibraryCardComponent {
         this.deleteClick.emit(this.model());
     }
 }
-

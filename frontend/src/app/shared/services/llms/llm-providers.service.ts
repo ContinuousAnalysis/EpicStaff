@@ -1,11 +1,11 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { LLMProvider, ModelTypes } from '@shared/models';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { ApiGetRequest } from '../../../core/models/api-request.model';
 import { ConfigService } from '../../../services/config/config.service';
-import { LLM_Provider, ModelTypes } from '../models/llm-provider.model';
 
 @Injectable({
     providedIn: 'root',
@@ -14,8 +14,7 @@ export class LLMProvidersService {
     constructor(
         private http: HttpClient,
         private configService: ConfigService
-    ) {
-    }
+    ) {}
 
     private get apiUrl(): string {
         return this.configService.apiUrl + 'providers/';

@@ -2,20 +2,25 @@ import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
-import { ButtonComponent, ConfirmationDialogService, ConfirmationResult } from '@shared/components';
+import {
+    ButtonComponent,
+    ConfirmationDialogService,
+    ConfirmationResult,
+    LoadingSpinnerComponent,
+} from '@shared/components';
+import { GetNgrokConfigResponse } from '@shared/models';
+import { NgrokConfigStorageService } from '@shared/services';
 
 import { LoadingState } from '../../../../core/enums/loading-state.enum';
 import { ToastService } from '../../../../services/notifications';
-import { GetNgrokConfigResponse } from '../../models/ngrok-config.model';
-import { NgrokConfigStorageService } from '../../services/ngrok-config/ngrok-config-storage.service';
-import { AddNgrokConfigDialogComponent } from './add-ngrok-config-dialog/add-ngrok-config-dialog.component';
-import { NgrokConfigItemComponent } from './ngrok-config-item/ngrok-config-item.component';
+import { AddNgrokConfigDialogComponent } from '../add-ngrok-config-dialog/add-ngrok-config-dialog.component';
+import { NgrokConfigItemComponent } from '../ngrok-config-item/ngrok-config-item.component';
 
 @Component({
-    selector: 'app-ngrok-config-tab',
-    templateUrl: './ngrok-config-tab.component.html',
-    styleUrls: ['./ngrok-config-tab.component.scss'],
-    imports: [ReactiveFormsModule, ButtonComponent, NgrokConfigItemComponent],
+    selector: 'app-ngrok-config-section',
+    templateUrl: './ngrok-config-section.component.html',
+    styleUrls: ['./ngrok-config-section.component.scss'],
+    imports: [ReactiveFormsModule, ButtonComponent, NgrokConfigItemComponent, LoadingSpinnerComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppNgrokSectionComponent implements OnInit {

@@ -1,11 +1,12 @@
-import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { inject, Injectable } from "@angular/core";
-import { Observable } from "rxjs";
-import { ConfigService } from "../../../services/config";
-import { GetDefaultModelsResponse, UpdateDefaultModelsRequest } from "../models/default-models.model";
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+
+import { ConfigService } from '../../../services/config';
+import { GetDefaultModelsResponse, UpdateDefaultModelsRequest } from '../models/default-models.model';
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class DefaultModelsService {
     private http = inject(HttpClient);

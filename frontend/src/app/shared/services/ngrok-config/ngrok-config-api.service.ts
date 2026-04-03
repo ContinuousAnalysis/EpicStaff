@@ -1,10 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from '@shared/models';
 import { map, Observable } from 'rxjs';
 
-import { ConfigService } from '../../../../services/config';
-import { ApiGetResponse } from '../../../transcription/services/transcription-models.service';
-import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from '../../models/ngrok-config.model';
+import { ApiGetResponse } from '../../../features/transcription/services/transcription-models.service';
+import { ConfigService } from '../../../services/config';
 
 @Injectable({
     providedIn: 'root',

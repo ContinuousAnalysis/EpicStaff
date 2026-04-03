@@ -1,35 +1,45 @@
-import { Dialog } from "@angular/cdk/dialog";
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Dialog } from '@angular/cdk/dialog';
+import { ComponentType } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import {
     ConfirmationDialogData,
     ConfirmationDialogService,
     LoadingSpinnerComponent,
-    SelectComponent, SelectItem
-} from "@shared/components";
-import { ModelTypes } from "@shared/models";
-import { Observable } from 'rxjs';
-import { ToastService } from "../../../../services/notifications";
-import { LlmLibraryModel } from "../../interfaces/llm-library-model.interface";
-import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
-import { DefaultModelsStorageService } from "../../services/default-models-storage.service";
-import { EmbeddingConfigStorageService } from "../../services/llms/embedding-config-storage.service";
-import { LLMLibraryService } from "../../services/llms/llm-library.service";
-import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
-import { RealtimeConfigStorageService } from "../../services/llms/realtime-config-storage.service";
-import { TranscriptionConfigStorageService } from "../../services/llms/transcription-config-storage.service";
-import { LlmLibraryCardComponent } from '../llm-library-card/llm-library-card.component';
+    SelectComponent,
+    SelectItem,
+} from '@shared/components';
 import { AppIconComponent } from '@shared/components';
-import { LlmModelConfigDialogComponent } from "../llm-model-config-dialog/llm-model-config-dialog.component";
-import { EmbeddingModelConfigDialogComponent } from "../embedding-model-config-dialog/embedding-model-config-dialog.component";
-import { VoiceModelConfigDialogComponent } from "../voice-config-model/voice-model-config-dialog.component";
-import { TranscriptionModelConfigDialogComponent } from "../transcription-model-config-dialog/transcription-model-config-dialog.component";
+import { ModelTypes } from '@shared/models';
+import { Observable } from 'rxjs';
+
+import { ToastService } from '../../../../services/notifications';
+import { LlmLibraryModel } from '../../interfaces/llm-library-model.interface';
+import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
+import { DefaultModelsStorageService } from '../../services/default-models-storage.service';
+import { EmbeddingConfigStorageService } from '../../services/llms/embedding-config-storage.service';
+import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
+import { LLMLibraryService } from '../../services/llms/llm-library.service';
+import { RealtimeConfigStorageService } from '../../services/llms/realtime-config-storage.service';
+import { TranscriptionConfigStorageService } from '../../services/llms/transcription-config-storage.service';
+import { EmbeddingModelConfigDialogComponent } from '../embedding-model-config-dialog/embedding-model-config-dialog.component';
+import { LlmLibraryCardComponent } from '../llm-library-card/llm-library-card.component';
+import { LlmModelConfigDialogComponent } from '../llm-model-config-dialog/llm-model-config-dialog.component';
+import { TranscriptionModelConfigDialogComponent } from '../transcription-model-config-dialog/transcription-model-config-dialog.component';
+import { VoiceModelConfigDialogComponent } from '../voice-config-model/voice-model-config-dialog.component';
 
 @Component({
     selector: 'app-llm-library-section',
-    imports: [CommonModule, FormsModule, LlmLibraryCardComponent, AppIconComponent, LoadingSpinnerComponent, SelectComponent],
+    imports: [
+        CommonModule,
+        FormsModule,
+        LlmLibraryCardComponent,
+        AppIconComponent,
+        LoadingSpinnerComponent,
+        SelectComponent,
+    ],
     templateUrl: './llm-library-section.component.html',
     styleUrls: ['./llm-library-section.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,7 +59,7 @@ export class LlmLibrarySectionComponent implements OnInit {
     public providerGroups = this.llmLibraryService.providerGroups;
     public configs = this.llmConfigStorageService.configs;
     public searchQuery = signal('');
-    public selectedCapability = signal<string | null>(null);
+    public selectedCapability = signal<unknown>(null);
     public configsLoaded = signal<boolean>(false);
 
     readonly configTypeSections: { type: ModelTypes; label: string }[] = [
@@ -61,7 +71,7 @@ export class LlmLibrarySectionComponent implements OnInit {
 
     filteredGroups = computed<LlmLibraryProviderGroup[]>(() => {
         const query = this.searchQuery().toLowerCase();
-        const cap = this.selectedCapability();
+        const cap = this.selectedCapability() as string;
 
         return this.providerGroups()
             .map((group) => {
@@ -72,9 +82,7 @@ export class LlmLibrarySectionComponent implements OnInit {
                         model.modelName.toLowerCase().includes(query) ||
                         group.providerName.toLowerCase().includes(query);
 
-                    const matchesCap =
-                        cap === null ||
-                        model.tags.some((t) => t.name.includes(cap));
+                    const matchesCap = cap === null || model.tags.some((t) => t.name.includes(cap));
 
                     return matchesSearch && matchesCap;
                 });
@@ -87,26 +95,23 @@ export class LlmLibrarySectionComponent implements OnInit {
     groupedByType = computed(() => {
         const all = this.filteredGroups();
         return this.configTypeSections
-            .map(section => ({
+            .map((section) => ({
                 ...section,
                 groups: all
-                    .filter(g => g.configType === section.type)
+                    .filter((g) => g.configType === section.type)
                     .sort((a, b) => a.providerName.localeCompare(b.providerName)),
             }))
-            .filter(section => section.groups.length > 0);
+            .filter((section) => section.groups.length > 0);
     });
 
-    public capabilities = computed<SelectItem[]>(() =>
-        [
-            { name: 'All Capabilities', value: null },
-            ...this.configs().flatMap(config =>
-                config.tags.map(tag => ({ name: tag.name, value: tag.name }))
-            )
-        ]
-    );
+    public capabilities = computed<SelectItem[]>(() => [
+        { name: 'All Capabilities', value: null },
+        ...this.configs().flatMap((config) => config.tags.map((tag) => ({ name: tag.name, value: tag.name }))),
+    ]);
 
     ngOnInit() {
-        this.llmLibraryService.loadConfigs()
+        this.llmLibraryService
+            .loadConfigs()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(() => this.configsLoaded.set(true));
     }
@@ -119,11 +124,11 @@ export class LlmLibrarySectionComponent implements OnInit {
         this.dialog.open(LlmModelConfigDialogComponent, {
             height: '90vh',
             width: '600px',
-        })
+        });
     }
 
     public onEdit(model: LlmLibraryModel): void {
-        const dialogComponents: Record<ModelTypes, any> = {
+        const dialogComponents: Record<ModelTypes, ComponentType<unknown>> = {
             [ModelTypes.LLM]: LlmModelConfigDialogComponent,
             [ModelTypes.EMBEDDING]: EmbeddingModelConfigDialogComponent,
             [ModelTypes.REALTIME]: VoiceModelConfigDialogComponent,
@@ -143,7 +148,8 @@ export class LlmLibrarySectionComponent implements OnInit {
             type: 'danger',
         };
 
-        this.confirmationDialogService.confirm(opts)
+        this.confirmationDialogService
+            .confirm(opts)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((result) => {
                 if (result !== true) return;

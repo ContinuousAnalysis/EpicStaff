@@ -1,35 +1,41 @@
+import { CommonModule } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
-    OnInit,
+    computed,
+    DestroyRef,
     inject,
-    signal, computed, DestroyRef, input, WritableSignal
+    input,
+    OnInit,
+    signal,
+    WritableSignal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    ButtonComponent, ConfirmationDialogData, ConfirmationDialogService,
+    ButtonComponent,
+    ConfirmationDialogData,
+    ConfirmationDialogService,
     CustomInputComponent,
     SelectComponent,
-    SelectItem
+    SelectItem,
 } from '@shared/components';
-import { MATERIAL_FORMS } from "@shared/material-forms";
-import { LLMProvider, ModelTypes } from "@shared/models";
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { MATERIAL_FORMS } from '@shared/material-forms';
+import { LLMProvider, ModelTypes } from '@shared/models';
+import { getProviderIconPath } from '@shared/utils';
 import { EMPTY, filter, finalize, forkJoin, of } from 'rxjs';
-import { ToastService } from "../../../../services/notifications";
-import { ConfigureModelsTabId } from "../../enums/configure-models-tab-id.enum";
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
-import { CreateQuickstartRequest } from "../../models/quickstart.model";
-import { DefaultModelsStorageService } from "../../services/default-models-storage.service";
-import { EmbeddingConfigStorageService } from "../../services/llms/embedding-config-storage.service";
-import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
-import { LlmProvidersStorageService } from "../../services/llms/llm-providers-storage.service";
-import { RealtimeConfigStorageService } from "../../services/llms/realtime-config-storage.service";
-import { TranscriptionConfigStorageService } from "../../services/llms/transcription-config-storage.service";
-import { QuickstartService } from "../../services/quickstart.service";
-import { getProviderIconPath } from "@shared/utils";
+import { ToastService } from '../../../../services/notifications';
+import { ConfigureModelsTabId } from '../../enums/configure-models-tab-id.enum';
+import { CreateQuickstartRequest } from '../../models/quickstart.model';
+import { DefaultModelsStorageService } from '../../services/default-models-storage.service';
+import { EmbeddingConfigStorageService } from '../../services/llms/embedding-config-storage.service';
+import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
+import { LlmProvidersStorageService } from '../../services/llms/llm-providers-storage.service';
+import { RealtimeConfigStorageService } from '../../services/llms/realtime-config-storage.service';
+import { TranscriptionConfigStorageService } from '../../services/llms/transcription-config-storage.service';
+import { QuickstartService } from '../../services/quickstart.service';
 
 @Component({
     selector: 'app-quickstart-section',
@@ -39,7 +45,7 @@ import { getProviderIconPath } from "@shared/utils";
         MATERIAL_FORMS,
         CustomInputComponent,
         ButtonComponent,
-        SelectComponent
+        SelectComponent,
     ],
     templateUrl: './quickstart-section.component.html',
     styleUrls: ['./quickstart-section.component.scss'],
@@ -53,7 +59,7 @@ export class QuickstartSectionComponent implements OnInit {
     private readonly embeddingConfigStorageService = inject(EmbeddingConfigStorageService);
     private readonly realtimeConfigStorageService = inject(RealtimeConfigStorageService);
     private readonly transcriptionConfigStorageService = inject(TranscriptionConfigStorageService);
-    private readonly quickstartService =  inject(QuickstartService);
+    private readonly quickstartService = inject(QuickstartService);
     private readonly defaultModelsStorageService = inject(DefaultModelsStorageService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly toast = inject(ToastService);
@@ -98,12 +104,10 @@ export class QuickstartSectionComponent implements OnInit {
 
     public providerItems = computed<SelectItem[]>(() => {
         return this.providers().map((provider) => ({
-            name: provider.name
-                .replace(/[_-]+/g, ' ')
-                .replace(/\b\w/g, (char) => char.toUpperCase()),
+            name: provider.name.replace(/[_-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
             value: provider.name,
-            icon: getProviderIconPath(provider.name)
-        }))
+            icon: getProviderIconPath(provider.name),
+        }));
     });
 
     get activeCard() {
@@ -118,7 +122,7 @@ export class QuickstartSectionComponent implements OnInit {
     private loadData(): void {
         forkJoin({
             providers: this.providersStorageService.getProvidersByType(ModelTypes.LLM),
-            config: this.quickstartService.getQuickstart()
+            config: this.quickstartService.getQuickstart(),
         })
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
@@ -128,12 +132,10 @@ export class QuickstartSectionComponent implements OnInit {
                     }
                 }),
                 map(({ providers, config }) => {
-                    const providersMap = new Map(
-                        providers.map(p => [p.name, p])
-                    );
+                    const providersMap = new Map(providers.map((p) => [p.name, p]));
 
                     return config.supported_providers
-                        .map(name => providersMap.get(name))
+                        .map((name) => providersMap.get(name))
                         .filter((p): p is LLMProvider => !!p);
                 }),
                 tap((filteredProviders) => this.providers.set(filteredProviders)),
@@ -158,36 +160,39 @@ export class QuickstartSectionComponent implements OnInit {
 
         this.isSaving.set(true);
 
-        this.quickstartService.createQuickstart(data).pipe(
-            switchMap(() => {
-                if (this.quickstartStatus() === null) {
-                    return this.quickstartService.applyQuickstart();
-                }
-                this.quickstartStatus.set('updated');
-                this.toast.success('Quickstart updated.');
-                this.onReset();
-                return EMPTY;
-            }),
-            tap(() => {
-                this.onReset();
-                this.quickstartStatus.set('activated');
-                this.toast.success('Quickstart created successfully.');
-            }),
-            catchError((error) => {
-                console.error(error);
-                this.toast.error('Failed to create/apply quickstart.');
-                return EMPTY;
-            }),
-            finalize(() => {
-                this.defaultModelsStorageService.markDefaultModelsOutdated();
-                this.llmConfigStorageService.markConfigsOutdated();
-                this.embeddingConfigStorageService.markConfigsOutdated();
-                this.realtimeConfigStorageService.markConfigsOutdated();
-                this.transcriptionConfigStorageService.markConfigsOutdated();
-                this.isSaving.set(false);
-            }),
-            takeUntilDestroyed(this.destroyRef)
-        ).subscribe();
+        this.quickstartService
+            .createQuickstart(data)
+            .pipe(
+                switchMap(() => {
+                    if (this.quickstartStatus() === null) {
+                        return this.quickstartService.applyQuickstart();
+                    }
+                    this.quickstartStatus.set('updated');
+                    this.toast.success('Quickstart updated.');
+                    this.onReset();
+                    return EMPTY;
+                }),
+                tap(() => {
+                    this.onReset();
+                    this.quickstartStatus.set('activated');
+                    this.toast.success('Quickstart created successfully.');
+                }),
+                catchError((error) => {
+                    console.error(error);
+                    this.toast.error('Failed to create/apply quickstart.');
+                    return EMPTY;
+                }),
+                finalize(() => {
+                    this.defaultModelsStorageService.markDefaultModelsOutdated();
+                    this.llmConfigStorageService.markConfigsOutdated();
+                    this.embeddingConfigStorageService.markConfigsOutdated();
+                    this.realtimeConfigStorageService.markConfigsOutdated();
+                    this.transcriptionConfigStorageService.markConfigsOutdated();
+                    this.isSaving.set(false);
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
     }
 
     public onReset(): void {
@@ -208,17 +213,18 @@ export class QuickstartSectionComponent implements OnInit {
             message: 'This will apply Quickstart as a default model for all default LLMs',
             type: 'info',
         };
-        this.confirmation.confirm(data).pipe(
-            takeUntilDestroyed(this.destroyRef),
-            filter(result => result === true),
-            switchMap(() => this.quickstartService.applyQuickstart()),
-            tap((models) => {
-                this.defaultModelsStorageService.updateModelsInStorage(models);
-                this.quickstartStatus.set('synced');
-                this.toast.success('Models updated successfully.');
-            })
-        ).subscribe();
+        this.confirmation
+            .confirm(data)
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                filter((result) => result === true),
+                switchMap(() => this.quickstartService.applyQuickstart()),
+                tap((models) => {
+                    this.defaultModelsStorageService.updateModelsInStorage(models);
+                    this.quickstartStatus.set('synced');
+                    this.toast.success('Models updated successfully.');
+                })
+            )
+            .subscribe();
     }
 }
-
-

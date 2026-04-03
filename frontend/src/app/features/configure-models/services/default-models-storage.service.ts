@@ -1,7 +1,8 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, of, tap } from 'rxjs';
-import { DefaultModelsService } from './default-models.service';
+
 import { GetDefaultModelsResponse, UpdateDefaultModelsRequest } from '../models/default-models.model';
+import { DefaultModelsService } from './default-models.service';
 
 @Injectable({ providedIn: 'root' })
 export class DefaultModelsStorageService {
@@ -18,15 +19,15 @@ export class DefaultModelsStorageService {
             return of(this.defaultModelsSignal());
         }
 
-        return this.defaultModelsApiService.getDefaultModels().pipe(
-            tap(models => this.updateModelsInStorage(models))
-        );
+        return this.defaultModelsApiService
+            .getDefaultModels()
+            .pipe(tap((models) => this.updateModelsInStorage(models)));
     }
 
     updateDefaultModels(data: UpdateDefaultModelsRequest): Observable<GetDefaultModelsResponse> {
-        return this.defaultModelsApiService.updateDefaultModels(data).pipe(
-            tap(updated => this.updateModelsInStorage(updated))
-        );
+        return this.defaultModelsApiService
+            .updateDefaultModels(data)
+            .pipe(tap((updated) => this.updateModelsInStorage(updated)));
     }
 
     updateModelsInStorage(updated: GetDefaultModelsResponse): void {

@@ -1,14 +1,14 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
-
-import { ConfigService } from '../../../../services/config/config.service';
-import { ApiGetResponse } from '../../../transcription/services/transcription-models.service';
 import {
     CreateRealtimeModelConfigRequest,
     RealtimeModelConfig,
     UpdateRealtimeModelConfigRequest,
-} from '../../models/realtime-voice/realtime-llm-config.model';
+} from '@shared/models';
+import { map, Observable } from 'rxjs';
+
+import { ApiGetResponse } from '../../../features/transcription/services/transcription-models.service';
+import { ConfigService } from '../../../services/config';
 
 @Injectable({
     providedIn: 'root',

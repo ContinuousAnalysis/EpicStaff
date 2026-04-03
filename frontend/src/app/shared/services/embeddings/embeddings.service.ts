@@ -1,11 +1,11 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { CreateEmbeddingModelRequest, EmbeddingModel } from '@shared/models';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { ApiGetRequest } from '../../../../core/models/api-request.model';
-import { ConfigService } from '../../../../services/config/config.service';
-import { CreateEmbeddingModelRequest, EmbeddingModel } from '../../models/embeddings/embedding.model';
+import { ApiGetRequest } from '../../../core/models/api-request.model';
+import { ConfigService } from '../../../services/config';
 
 @Injectable({
     providedIn: 'root',

@@ -9,15 +9,15 @@ import {
     Output,
     SimpleChanges,
 } from '@angular/core';
+import { AppIconComponent } from '@shared/components';
+import { getProviderIconPath } from '@shared/utils';
 
-import { getProviderIconPath } from '../../../../../../features/settings-dialog/utils/get-provider-icon';
 import { MergedConfig } from '../../../../../../features/staff/services/full-agent.service';
-import { AppIconComponent } from '../../../../../../shared/components/app-icon/app-icon.component';
 
 @Component({
     selector: 'app-llm-item',
     standalone: true,
-    imports: [NgClass, NgIf, AppIconComponent],
+    imports: [NgClass, NgIf, AppIconComponent, AppIconComponent],
     template: `
         <div class="llm-item-container">
             <div class="llm-item" [ngClass]="{ 'selected-item': isSelected }" (click)="onSelect()">

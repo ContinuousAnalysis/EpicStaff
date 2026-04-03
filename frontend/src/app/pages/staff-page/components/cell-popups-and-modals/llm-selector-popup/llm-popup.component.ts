@@ -15,17 +15,10 @@ import {
     ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FullLLMConfig, FullLLMConfigService, FullRealtimeConfig, FullRealtimeConfigService } from '@shared/services';
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import {
-    FullLLMConfig,
-    FullLLMConfigService,
-} from '../../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import {
-    FullRealtimeConfig,
-    FullRealtimeConfigService,
-} from '../../../../../features/settings-dialog/services/realtime-llms/full-reamtime-config.service';
 import { MergedConfig } from '../../../../../features/staff/services/full-agent.service';
 import { LlmItemComponent } from './llm-item/llm-item.component';
 

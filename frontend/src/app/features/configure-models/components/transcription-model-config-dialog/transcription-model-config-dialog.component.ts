@@ -1,14 +1,18 @@
-import { DIALOG_DATA, DialogRef } from "@angular/cdk/dialog";
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    ButtonComponent, CustomInputComponent, IconButtonComponent, ValidationErrorsComponent
-} from "@shared/components";
-import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
-import { ToastService } from "../../../../services/notifications";
-import { TranscriptionConfigStorageService } from "../../services/llms/transcription-config-storage.service";
-import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selector.component";
+    ButtonComponent,
+    CustomInputComponent,
+    IconButtonComponent,
+    ValidationErrorsComponent,
+} from '@shared/components';
+import { LLMModel, LLMProvider, ModelTypes } from '@shared/models';
+
+import { ToastService } from '../../../../services/notifications';
+import { TranscriptionConfigStorageService } from '../../services/llms/transcription-config-storage.service';
+import { LlmModelSelectorComponent } from '../llm-model-selector/llm-model-selector.component';
 
 @Component({
     selector: 'app-transcription-config-model',
@@ -21,7 +25,7 @@ import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selec
         IconButtonComponent,
         LlmModelSelectorComponent,
         ReactiveFormsModule,
-        ValidationErrorsComponent
+        ValidationErrorsComponent,
     ],
 })
 export class TranscriptionModelConfigDialogComponent {
@@ -37,8 +41,10 @@ export class TranscriptionModelConfigDialogComponent {
     isLoading = signal<boolean>(false);
 
     isEditMode = computed(() => !!this.data?.configId);
-    title = computed(() => this.isEditMode() ? 'Edit Transcription Configuration' : 'Add Transcription Configuration');
-    saveLabel = computed(() => this.isEditMode() ? 'Save Changes' : 'Add Configuration');
+    title = computed(() =>
+        this.isEditMode() ? 'Edit Transcription Configuration' : 'Add Transcription Configuration'
+    );
+    saveLabel = computed(() => (this.isEditMode() ? 'Save Changes' : 'Add Configuration'));
 
     form!: FormGroup;
 
@@ -56,7 +62,8 @@ export class TranscriptionModelConfigDialogComponent {
 
     private loadConfig(configId: number): void {
         this.isLoading.set(true);
-        this.transcriptionConfigsService.getConfigById(configId)
+        this.transcriptionConfigsService
+            .getConfigById(configId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (config) => {
@@ -70,7 +77,7 @@ export class TranscriptionModelConfigDialogComponent {
             });
     }
 
-    onModelChanged(data: { model: LLMModel, provider: LLMProvider}): void {
+    onModelChanged(data: { model: LLMModel; provider: LLMProvider }): void {
         const nameControl = this.form.get('custom_name');
 
         if (!nameControl) return;
@@ -92,26 +99,20 @@ export class TranscriptionModelConfigDialogComponent {
             ? this.transcriptionConfigsService.updateConfig({ id: this.data!.configId!, ...formValue })
             : this.transcriptionConfigsService.createConfig(formValue);
 
-        request$
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.isSaving.set(false);
-                    this.toast.success(this.isEditMode()
-                        ? 'Configuration updated successfully.'
-                        : 'Configuration created successfully.'
-                    );
-                    this.dialogRef.close();
-                },
-                error: (err) => {
-                    this.isSaving.set(false);
-                    this.toast.error(this.isEditMode()
-                        ? 'Configuration update failed.'
-                        : 'Configuration creation failed.'
-                    );
-                    console.error(err);
-                },
-            });
+        request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => {
+                this.isSaving.set(false);
+                this.toast.success(
+                    this.isEditMode() ? 'Configuration updated successfully.' : 'Configuration created successfully.'
+                );
+                this.dialogRef.close();
+            },
+            error: (err) => {
+                this.isSaving.set(false);
+                this.toast.error(this.isEditMode() ? 'Configuration update failed.' : 'Configuration creation failed.');
+                console.error(err);
+            },
+        });
     }
 
     protected readonly ModelTypes = ModelTypes;

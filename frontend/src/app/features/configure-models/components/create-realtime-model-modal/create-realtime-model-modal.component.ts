@@ -1,16 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { TooltipComponent, ValidationErrorsComponent } from "@shared/components";
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { TooltipComponent, ValidationErrorsComponent } from '@shared/components';
+import { AppIconComponent, ButtonComponent, CustomInputComponent } from '@shared/components';
+import { LLMProvider, RealtimeModel } from '@shared/models';
+import { getProviderIconPath } from '@shared/utils';
 import { finalize } from 'rxjs/operators';
 
-import { AppIconComponent, CustomInputComponent, ButtonComponent } from '@shared/components';
-import { LLMProvider, RealtimeModel } from "@shared/models";
-import { ToastService } from '../../../../services/notifications';
 import { ConfigService } from '../../../../services/config';
-import { getProviderIconPath } from "@shared/utils";
+import { ToastService } from '../../../../services/notifications';
 
 export interface CreateRealtimeModelDialogData {
     provider: LLMProvider;

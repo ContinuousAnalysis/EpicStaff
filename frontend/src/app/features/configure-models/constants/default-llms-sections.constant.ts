@@ -1,4 +1,5 @@
-import { ModelTypes } from "@shared/models";
+import { ModelTypes } from '@shared/models';
+
 import { DefaultLlmsSection } from '../interfaces/default-llms-section.interface';
 
 export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
@@ -30,8 +31,7 @@ export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
                 id: 'voice-llm',
                 field: 'voice_llm_config',
                 title: 'Voice LLM',
-                description:
-                    'Voice LLM enables real-time spoken interaction by generating immediate voice responses.',
+                description: 'Voice LLM enables real-time spoken interaction by generating immediate voice responses.',
                 selectLabel: 'Select LLM from Library',
                 icon: 'llm-agents/voice',
                 configType: ModelTypes.REALTIME,
@@ -137,5 +137,3 @@ export const DEFAULT_LLMS_SECTIONS: DefaultLlmsSection[] = [
     //     ],
     // },
 ];
-
-

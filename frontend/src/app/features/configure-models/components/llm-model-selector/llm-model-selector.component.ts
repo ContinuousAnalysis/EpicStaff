@@ -1,5 +1,7 @@
-import { Dialog } from "@angular/cdk/dialog";
-import { UpperCasePipe } from "@angular/common";
+import { Dialog } from '@angular/cdk/dialog';
+import { Overlay, OverlayModule, OverlayPositionBuilder, OverlayRef } from '@angular/cdk/overlay';
+import { ComponentType, TemplatePortal } from '@angular/cdk/portal';
+import { UpperCasePipe } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -12,22 +14,21 @@ import {
     model,
     output,
     signal,
+    TemplateRef,
     ViewChild,
     ViewContainerRef,
 } from '@angular/core';
-import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { Overlay, OverlayModule, OverlayPositionBuilder, OverlayRef } from '@angular/cdk/overlay';
-import { ComponentType, TemplatePortal } from '@angular/cdk/portal';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AppIconComponent, ButtonComponent, TooltipComponent } from "@shared/components";
-import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
-import { LLMLibraryService, ProviderWithModels } from "../../services/llms/llm-library.service";
-import { getProviderIconPath } from "@shared/utils";
+import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { AppIconComponent, ButtonComponent, TooltipComponent } from '@shared/components';
+import { LLMModel, LLMProvider, ModelTypes } from '@shared/models';
+import { getProviderIconPath } from '@shared/utils';
 
-import { CreateLlmModelModalComponent } from "../create-llm-model-modal/create-llm-model-modal.component";
-import { CreateEmbeddingModelModalComponent } from "../create-embedding-model-modal/create-embedding-model-modal.component";
-import { CreateRealtimeModelModalComponent } from "../create-realtime-model-modal/create-realtime-model-modal.component";
-import { CreateTranscriptionModelModalComponent } from "../create-transcription-model-modal/create-transcription-model-modal.component";
+import { LLMLibraryService, ProviderWithModels } from '../../services/llms/llm-library.service';
+import { CreateEmbeddingModelModalComponent } from '../create-embedding-model-modal/create-embedding-model-modal.component';
+import { CreateLlmModelModalComponent } from '../create-llm-model-modal/create-llm-model-modal.component';
+import { CreateRealtimeModelModalComponent } from '../create-realtime-model-modal/create-realtime-model-modal.component';
+import { CreateTranscriptionModelModalComponent } from '../create-transcription-model-modal/create-transcription-model-modal.component';
 
 const TOP_PROVIDERS = [
     'openai',
@@ -74,7 +75,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
 
     searchQuery = signal('');
     selectedValue = model<number | null>(null);
-    modelChanged = output<{ model: LLMModel, provider: LLMProvider }>();
+    modelChanged = output<{ model: LLMModel; provider: LLMProvider }>();
     configAdded = output<void>();
 
     readonly COLLAPSED_COUNT = 3;
@@ -112,7 +113,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         const id = this.selectedValue();
         if (id === null || id === undefined) return null;
         for (const group of this.sortedProvidersWithModels()) {
-            const model = group.models.find(m => m.id === id);
+            const model = group.models.find((m) => m.id === id);
             if (model) return { model, provider: group.provider };
         }
         return null;
@@ -127,11 +128,9 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         }
 
         return providers
-            .map(p => {
+            .map((p) => {
                 const providerMatches = p.provider.name.toLowerCase().includes(query);
-                const matchingModels = p.visibleModels.filter(m =>
-                    m.name.toLowerCase().includes(query)
-                );
+                const matchingModels = p.visibleModels.filter((m) => m.name.toLowerCase().includes(query));
 
                 if (providerMatches) return p;
 
@@ -145,7 +144,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     });
 
     @ViewChild('triggerBtn') triggerBtn!: ElementRef<HTMLButtonElement>;
-    @ViewChild('dropdownTemplate') dropdownTemplate!: any;
+    @ViewChild('dropdownTemplate') dropdownTemplate!: TemplateRef<unknown>;
 
     private onChange: (value: number | null) => void = () => {};
     private onTouched: () => void = () => {};
@@ -222,7 +221,7 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     }
 
     toggleExpand(providerId: number): void {
-        this.expandedProviders.update(set => {
+        this.expandedProviders.update((set) => {
             const next = new Set(set);
             next.has(providerId) ? next.delete(providerId) : next.add(providerId);
             return next;
@@ -230,9 +229,9 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     }
 
     private readonly createModelModals: Record<ModelTypes, ComponentType<unknown>> = {
-        [ModelTypes.LLM]:           CreateLlmModelModalComponent,
-        [ModelTypes.EMBEDDING]:     CreateEmbeddingModelModalComponent,
-        [ModelTypes.REALTIME]:      CreateRealtimeModelModalComponent,
+        [ModelTypes.LLM]: CreateLlmModelModalComponent,
+        [ModelTypes.EMBEDDING]: CreateEmbeddingModelModalComponent,
+        [ModelTypes.REALTIME]: CreateRealtimeModelModalComponent,
         [ModelTypes.TRANSCRIPTION]: CreateTranscriptionModelModalComponent,
     };
 
@@ -242,13 +241,11 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
             width: '600px',
         });
 
-        dialogRef.closed
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((result) => {
-                if (result) {
-                    this.modelsResource.reload();
-                }
-            });
+        dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+            if (result) {
+                this.modelsResource.reload();
+            }
+        });
     }
 
     writeValue(value: number | null): void {

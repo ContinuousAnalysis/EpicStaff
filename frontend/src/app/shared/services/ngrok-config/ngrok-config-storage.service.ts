@@ -1,8 +1,8 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from '@shared/models';
 import { catchError, Observable, of, throwError } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
-import { CreateNgrokConfigRequest, GetNgrokConfigResponse } from '../../models/ngrok-config.model';
 import { NgrokConfigApiService } from './ngrok-config-api.service';
 
 @Injectable({

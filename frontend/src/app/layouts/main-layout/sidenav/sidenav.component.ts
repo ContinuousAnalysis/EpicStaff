@@ -12,6 +12,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { environment } from 'src/environments/environment';
 
+import { ConfigureModelsDialogService } from '../../../features/configure-models/services/configure-models-dialog.service';
 import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
 import { ConfigService } from '../../../services/config/config.service';
 import { ICONS } from '../../../shared/constants/icons.constants';
@@ -106,7 +107,7 @@ export class LeftSidebarComponent implements AfterViewInit {
         private sanitizer: DomSanitizer,
         public epicChatService: EpicChatService,
         private configService: ConfigService,
-        private configureModelsDialogService: ConfigureModelsDialogService,
+        private configureModelsDialogService: ConfigureModelsDialogService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
         // COMMIT_COMMENTS: Derive apiBaseUrl from browser origin so the EpicChat widget's

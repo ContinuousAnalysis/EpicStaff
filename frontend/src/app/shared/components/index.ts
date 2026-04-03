@@ -12,7 +12,6 @@ export * from './expand-panel/expand-panel.component';
 export * from './expand-panel/expand-panel.component';
 export * from './filters-list/filters-list.component';
 export * from './form-controls';
-export * from './form-field-label/form-field-label.component';
 export * from './form-input/form-input.component';
 export * from './form-select/form-select.component';
 export * from './forms';

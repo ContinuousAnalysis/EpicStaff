@@ -1,17 +1,22 @@
-import { DIALOG_DATA, DialogRef } from "@angular/cdk/dialog";
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
     ButtonComponent,
     CustomInputComponent,
-    IconButtonComponent, InputNumberComponent, JsonEditorFormFieldComponent,
-    KeyValueListComponent, SliderWithStepperComponent, ValidationErrorsComponent
-} from "@shared/components";
-import { LLMModel, LLMProvider, ModelTypes } from "@shared/models";
-import { ToastService } from "../../../../services/notifications";
-import { LlmConfigStorageService } from "../../services/llms/llm-config-storage.service";
-import { LlmModelSelectorComponent } from "../llm-model-selector/llm-model-selector.component";
+    IconButtonComponent,
+    InputNumberComponent,
+    JsonEditorFormFieldComponent,
+    KeyValueListComponent,
+    SliderWithStepperComponent,
+    ValidationErrorsComponent,
+} from '@shared/components';
+import { LLMModel, LLMProvider, ModelTypes } from '@shared/models';
+
+import { ToastService } from '../../../../services/notifications';
+import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
+import { LlmModelSelectorComponent } from '../llm-model-selector/llm-model-selector.component';
 
 interface DialogData {
     configId?: number;
@@ -31,9 +36,9 @@ interface DialogData {
         InputNumberComponent,
         ValidationErrorsComponent,
         LlmModelSelectorComponent,
-        JsonEditorFormFieldComponent
+        JsonEditorFormFieldComponent,
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LlmModelConfigDialogComponent implements OnInit {
     private fb = inject(FormBuilder);
@@ -48,8 +53,8 @@ export class LlmModelConfigDialogComponent implements OnInit {
     isLoading = signal<boolean>(false);
 
     isEditMode = computed(() => !!this.data?.configId);
-    title = computed(() => this.isEditMode() ? 'Edit LLM Configuration' : 'Add LLM Configuration');
-    saveLabel = computed(() => this.isEditMode() ? 'Save Changes' : 'Add LLM');
+    title = computed(() => (this.isEditMode() ? 'Edit LLM Configuration' : 'Add LLM Configuration'));
+    saveLabel = computed(() => (this.isEditMode() ? 'Save Changes' : 'Add LLM'));
 
     form!: FormGroup;
 
@@ -80,7 +85,8 @@ export class LlmModelConfigDialogComponent implements OnInit {
 
     private loadConfig(configId: number): void {
         this.isLoading.set(true);
-        this.configStorageService.getConfigById(configId)
+        this.configStorageService
+            .getConfigById(configId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (config) => {
@@ -97,7 +103,7 @@ export class LlmModelConfigDialogComponent implements OnInit {
             });
     }
 
-    onModelChanged(data: { model: LLMModel, provider: LLMProvider}): void {
+    onModelChanged(data: { model: LLMModel; provider: LLMProvider }): void {
         const nameControl = this.form.get('custom_name');
 
         if (!nameControl) return;
@@ -119,26 +125,20 @@ export class LlmModelConfigDialogComponent implements OnInit {
             ? this.configStorageService.updateConfig({ id: this.data!.configId!, ...formValue })
             : this.configStorageService.createConfig(formValue);
 
-        request$
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.isSaving.set(false);
-                    this.toast.success(this.isEditMode()
-                        ? 'Configuration updated successfully.'
-                        : 'Configuration created successfully.'
-                    );
-                    this.dialogRef.close();
-                },
-                error: (err) => {
-                    this.isSaving.set(false);
-                    this.toast.error(this.isEditMode()
-                        ? 'Configuration update failed.'
-                        : 'Configuration creation failed.'
-                    );
-                    console.error(err);
-                },
-            });
+        request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => {
+                this.isSaving.set(false);
+                this.toast.success(
+                    this.isEditMode() ? 'Configuration updated successfully.' : 'Configuration created successfully.'
+                );
+                this.dialogRef.close();
+            },
+            error: (err) => {
+                this.isSaving.set(false);
+                this.toast.error(this.isEditMode() ? 'Configuration update failed.' : 'Configuration creation failed.');
+                console.error(err);
+            },
+        });
     }
 
     protected readonly ModelTypes = ModelTypes;
