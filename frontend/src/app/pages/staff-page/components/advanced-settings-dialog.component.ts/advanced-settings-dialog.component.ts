@@ -218,7 +218,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         this.selectedLlmId = llmId;
 
         if (llmId === null) {
-            // "Default to LLM" option selected — use null (not undefined) so JSON.stringify preserves it
+            // "Default to LLM" option selected
             this.agentData.fullFcmLlmConfig = null;
         } else {
             // Find the selected LLM config
