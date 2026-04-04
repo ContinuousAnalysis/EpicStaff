@@ -806,7 +806,6 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
 
         data = self.import_export_service.import_entity(
             file_serializer.validated_data["file"],
-            Graph,
             preserve_uuids=file_serializer.validated_data["preserve_uuids"],
         )
         return Response(data, status=status.HTTP_200_OK)
