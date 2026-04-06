@@ -1,5 +1,6 @@
 export * from './app-icon/app-icon.component';
 export * from './app-input-number/input-number.component';
+export * from './app-svg-icon/app-svg-icon.component';
 export * from './app-validation-errors/validation-errors.component';
 export * from './buttons';
 export * from './checkbox/checkbox.component';

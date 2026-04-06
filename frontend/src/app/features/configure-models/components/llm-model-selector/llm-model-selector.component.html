@@ -1,10 +1,5 @@
 @if (label()) {
-    <app-tooltip
-        [required]="required()"
-        [tooltipText]="tooltipText()"
-        [label]="label()"
-        [icon]="icon()"
-    />
+    <app-tooltip [required]="required()" [tooltipText]="tooltipText()" [label]="label()" [icon]="icon()" />
 }
 
 <button
@@ -30,9 +25,11 @@
     <svg
         class="llm-selector__chevron"
         [class.llm-selector__chevron--open]="open()"
-        width="16" height="16" viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
     >
-        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" />
     </svg>
 </button>
 
@@ -56,7 +53,7 @@
                 </div>
             } @else if (filteredProviders().length === 0) {
                 <div class="model-selector__empty">
-                    <app-icon icon="ui/search" size="2rem" />
+                    <app-svg-icon icon="ui/search" size="2rem" />
                     <p class="model-selector__empty-title">Model not found</p>
                     <p class="model-selector__empty-text">Please find a provider to add the LLM</p>
                 </div>
@@ -66,19 +63,12 @@
                         <!-- Provider Header -->
                         <div class="model-selector__provider-header">
                             <div class="model-selector__provider-info">
-                                <app-icon
-                                    [icon]="getProviderIcon(providerData.provider.name)"
-                                    size="1.125rem"
-                                />
+                                <app-icon [icon]="getProviderIcon(providerData.provider.name)" size="1.125rem" />
                                 <span class="model-selector__provider-name">
-                                {{ providerData.provider.name | uppercase }}
-                            </span>
+                                    {{ providerData.provider.name | uppercase }}
+                                </span>
                             </div>
-                            <app-button
-                                type="primary"
-                                mod="small"
-                                (click)="openAllModelsModal(providerData.provider)"
-                            >
+                            <app-button type="primary" mod="small" (click)="openAllModelsModal(providerData.provider)">
                                 + Add model
                             </app-button>
                         </div>
@@ -104,10 +94,26 @@
                                     (click)="toggleExpand(providerData.provider.id); $event.stopPropagation()"
                                 >
                                     @if (expandedProviders().has(providerData.provider.id)) {
-                                        <svg width="12" height="12" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+                                        <svg width="12" height="12" viewBox="0 0 24 24">
+                                            <path
+                                                d="M18 15l-6-6-6 6"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                fill="none"
+                                                stroke-linecap="round"
+                                            />
+                                        </svg>
                                         Show less
                                     } @else {
-                                        <svg width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+                                        <svg width="12" height="12" viewBox="0 0 24 24">
+                                            <path
+                                                d="M6 9l6 6 6-6"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                fill="none"
+                                                stroke-linecap="round"
+                                            />
+                                        </svg>
                                         {{ hiddenCount(providerData) }} more
                                     }
                                 </button>

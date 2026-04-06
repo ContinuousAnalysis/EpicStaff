@@ -4,7 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TooltipComponent, ValidationErrorsComponent } from '@shared/components';
-import { AppIconComponent, ButtonComponent, CustomInputComponent } from '@shared/components';
+import { AppIconComponent, AppSvgIconComponent, ButtonComponent, CustomInputComponent } from '@shared/components';
 import { LLMProvider } from '@shared/models';
 import { getProviderIconPath } from '@shared/utils';
 import { finalize } from 'rxjs/operators';
@@ -28,6 +28,7 @@ export interface CreateTranscriptionModelDialogData {
         ButtonComponent,
         TooltipComponent,
         ValidationErrorsComponent,
+        AppSvgIconComponent,
     ],
     templateUrl: './create-transcription-model-modal.component.html',
     styleUrls: ['./create-transcription-model-modal.component.scss'],

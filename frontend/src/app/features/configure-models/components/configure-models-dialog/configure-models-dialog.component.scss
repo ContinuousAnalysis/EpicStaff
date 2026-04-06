@@ -4,7 +4,6 @@
 }
 
 .configure-models-dialog {
-
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -44,6 +43,7 @@
     }
 
     &__close-btn {
+        cursor: pointer;
         padding: 4px;
         border-radius: 50%;
         border: 1px solid var(--accent-color);
@@ -116,7 +116,4 @@
         overflow: auto;
         padding: 20px 40px;
     }
-
 }
-
-

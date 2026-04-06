@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { AppIconComponent, ButtonComponent, IconButtonComponent } from '@shared/components';
+import { AppSvgIconComponent, ButtonComponent, IconButtonComponent } from '@shared/components';
 import { GetNgrokConfigResponse } from '@shared/models';
 
 @Component({
     selector: 'app-ngrok-config-item',
-    imports: [CommonModule, AppIconComponent, IconButtonComponent, ButtonComponent],
+    imports: [CommonModule, IconButtonComponent, ButtonComponent, AppSvgIconComponent],
     templateUrl: './ngrok-config-item.component.html',
     styleUrls: ['./ngrok-config-item.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

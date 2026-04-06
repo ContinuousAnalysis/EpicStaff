@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
     AppIconComponent,
+    AppSvgIconComponent,
     ButtonComponent,
     CustomInputComponent,
     ToggleSwitchComponent,
@@ -33,6 +34,7 @@ export interface CreateEmbeddingModelDialogData {
         ToggleSwitchComponent,
         TooltipComponent,
         ValidationErrorsComponent,
+        AppSvgIconComponent,
     ],
     templateUrl: './create-embedding-model-modal.component.html',
     styleUrls: ['./create-embedding-model-modal.component.scss'],

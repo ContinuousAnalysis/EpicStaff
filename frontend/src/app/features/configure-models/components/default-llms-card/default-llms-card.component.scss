@@ -38,6 +38,7 @@
     }
 
     &__close-icon {
+        cursor: pointer;
         padding: 4px;
         border-radius: 50%;
         border: 1px solid var(--accent-color);
@@ -78,7 +79,9 @@
         justify-content: center;
         cursor: pointer;
         padding: 0;
-        transition: transform 0.1s ease, background 0.2s ease;
+        transition:
+            transform 0.1s ease,
+            background 0.2s ease;
 
         i {
             font-size: 18px;
@@ -102,5 +105,3 @@
         color: rgba(217, 217, 222, 0.6);
     }
 }
-
-

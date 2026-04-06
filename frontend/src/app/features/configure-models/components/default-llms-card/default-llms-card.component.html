@@ -1,20 +1,12 @@
-<article
-    class="default-llms-card"
-    [class.default-llms-card--active]="selectedConfigId()"
->
+<article class="default-llms-card" [class.default-llms-card--active]="selectedConfigId()">
     <div class="default-llms-card__top">
         <div class="default-llms-card__header">
-            <app-icon
-                [icon]="card().icon"
-                size="2rem"
-                class="default-llms-card__icon"
-            />
+            <app-icon [icon]="card().icon" size="2rem" class="default-llms-card__icon" />
             @if (selectedConfigId()) {
-                <app-icon
+                <app-svg-icon
                     class="default-llms-card__close-icon"
                     size="1.25rem"
                     icon="ui/close"
-                    [isAction]="true"
                     (click)="onResetConfig()"
                 />
             }
@@ -31,12 +23,7 @@
                 (changed)="selectConfig($event)"
             />
         </div>
-        <button
-            class="default-llms-card__add"
-            type="button"
-            aria-label="Add"
-            (click)="onAddModel()"
-        >
+        <button class="default-llms-card__add" type="button" aria-label="Add" (click)="onAddModel()">
             <i class="ti ti-plus" aria-hidden="true"></i>
         </button>
     </div>

@@ -20,7 +20,7 @@ import {
 } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { AppIconComponent, ButtonComponent, TooltipComponent } from '@shared/components';
+import { AppIconComponent, AppSvgIconComponent, ButtonComponent, TooltipComponent } from '@shared/components';
 import { LLMModel, LLMProvider, ModelTypes } from '@shared/models';
 import { getProviderIconPath } from '@shared/utils';
 
@@ -45,7 +45,15 @@ const TOP_PROVIDERS = [
 
 @Component({
     selector: 'app-llm-model-selector',
-    imports: [FormsModule, OverlayModule, AppIconComponent, TooltipComponent, UpperCasePipe, ButtonComponent],
+    imports: [
+        FormsModule,
+        OverlayModule,
+        AppIconComponent,
+        TooltipComponent,
+        UpperCasePipe,
+        ButtonComponent,
+        AppSvgIconComponent,
+    ],
     providers: [
         {
             provide: NG_VALUE_ACCESSOR,

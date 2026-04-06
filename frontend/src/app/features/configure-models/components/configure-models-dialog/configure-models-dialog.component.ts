@@ -1,7 +1,7 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { AppIconComponent } from '@shared/components';
+import { AppSvgIconComponent } from '@shared/components';
 
 import { CONFIGURE_MODELS_TABS } from '../../constants/configure-models-tabs.constant';
 import { ConfigureModelsTabId } from '../../enums/configure-models-tab-id.enum';
@@ -18,9 +18,9 @@ import { VoiceSettingsSectionComponent } from '../voice-settings-section/voice-s
         DefaultLlmsSectionComponent,
         QuickstartSectionComponent,
         LlmLibrarySectionComponent,
-        AppIconComponent,
         AppNgrokSectionComponent,
         VoiceSettingsSectionComponent,
+        AppSvgIconComponent,
     ],
     templateUrl: './configure-models-dialog.component.html',
     styleUrls: ['./configure-models-dialog.component.scss'],

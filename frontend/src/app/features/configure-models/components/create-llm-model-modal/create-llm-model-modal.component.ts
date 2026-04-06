@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
     AppIconComponent,
+    AppSvgIconComponent,
     ButtonComponent,
     CustomInputComponent,
     ToggleSwitchComponent,
@@ -32,6 +33,7 @@ export interface CreateLlmModelDialogData {
         ToggleSwitchComponent,
         TooltipComponent,
         ValidationErrorsComponent,
+        AppSvgIconComponent,
     ],
     templateUrl: './create-llm-model-modal.component.html',
     styleUrls: ['./create-llm-model-modal.component.scss'],
