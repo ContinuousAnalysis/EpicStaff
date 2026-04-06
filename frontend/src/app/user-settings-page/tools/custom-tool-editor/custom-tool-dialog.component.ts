@@ -27,8 +27,10 @@ import {
     ButtonComponent,
     ConfirmationDialogData,
     ConfirmationDialogService,
+    DynamicTableComponent,
     HelpTooltipComponent,
     JsonEditorComponent,
+    TableColumnDef,
 } from '@shared/components';
 
 import {
@@ -59,6 +61,7 @@ interface DialogData {
         ButtonComponent,
         HelpTooltipComponent,
         JsonEditorComponent,
+        DynamicTableComponent,
     ],
     templateUrl: './custom-tool-dialog.component.html',
     styleUrls: ['./custom-tool-dialog.component.scss'],
@@ -71,6 +74,53 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
     toolEditorComponent!: CodeEditorComponent;
     @ViewChild('toolNameInput')
     toolNameInput!: ElementRef<HTMLInputElement>;
+
+    columnDefs: TableColumnDef[] = [
+        {
+            key: 'name',
+            header: 'name',
+            placeholder: 'Enter name',
+            type: 'input',
+        },
+        {
+            key: 'type',
+            header: 'Type',
+            placeholder: 'Enter type',
+            type: 'select',
+            options: [
+                {
+                    label: 'String',
+                    value: 'string',
+                },
+                {
+                    label: 'Integer',
+                    value: 'integer',
+                },
+            ],
+        },
+        {
+            key: 'description',
+            header: 'Description',
+            placeholder: 'Enter description',
+            type: 'input',
+            validators: [Validators.required, Validators.minLength(3)],
+        },
+        {
+            key: 'default_value',
+            header: 'Default Value',
+            placeholder: 'Enter Value',
+            type: 'input',
+        },
+        {
+            key: 'is_required',
+            header: 'Required',
+            type: 'checkbox',
+        },
+    ];
+
+    onRowsChange(value: Record<string, unknown>[]) {
+        console.log(value);
+    }
 
     form!: FormGroup;
     public pythonCode: string =

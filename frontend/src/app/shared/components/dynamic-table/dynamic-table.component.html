@@ -1,0 +1,132 @@
+<div class="dt">
+    <!-- Header -->
+    <div class="dt__header">
+        <div class="dt__header-left">
+            @if (icon()) {
+                <app-svg-icon [icon]="icon()!" size="18px" class="dt__header-icon" />
+            }
+            <span class="dt__header-title">{{ title() }}</span>
+        </div>
+        <app-svg-icon [class.disabled]="!canAddRow()" class="dt__add-btn" size="1rem" icon="plus" (click)="addRow()" />
+    </div>
+
+    <!-- Table wrapper: horizontal scroll -->
+    <div class="dt__table-wrapper" [style.max-height]="maxHeight()">
+        <table class="dt__table">
+            <!-- Column headers -->
+            <thead>
+                <tr cdkDropList cdkDropListOrientation="horizontal" (cdkDropListDropped)="onColumnDrop($event)">
+                    <!-- Drag handle spacer for row drag -->
+                    @if (allowRowDrag()) {
+                        <th class="dt__th dt__th--drag-spacer"></th>
+                    }
+
+                    @for (col of columns(); track trackByColKey($index, col)) {
+                        <th
+                            class="dt__th"
+                            [class.dt__th--draggable]="allowColumnDrag()"
+                            [style.width]="col.width ?? 'auto'"
+                            cdkDrag
+                            [cdkDragDisabled]="!allowColumnDrag()"
+                        >
+                            <div class="dt__th-content">
+                                @if (allowColumnDrag()) {
+                                    <span class="dt__col-drag-handle" cdkDragHandle>
+                                        <i class="ti ti-grip-vertical"></i>
+                                    </span>
+                                }
+                                {{ col.header }}
+                            </div>
+                            <div *cdkDragPlaceholder class="dt__col-drag-placeholder"></div>
+                        </th>
+                    }
+
+                    <!-- Delete spacer -->
+                    <th class="dt__th dt__th--action-spacer"></th>
+                </tr>
+            </thead>
+
+            <!-- Rows -->
+            <tbody cdkDropList (cdkDropListDropped)="onRowDrop($event)" [cdkDropListDisabled]="!allowRowDrag()">
+                @for (row of rows(); track trackByRowId($index, row)) {
+                    <tr class="dt__row" cdkDrag [cdkDragDisabled]="!allowRowDrag()">
+                        <!-- Row drag handle -->
+                        @if (allowRowDrag()) {
+                            <td class="dt__td dt__td--drag">
+                                <span class="dt__row-drag-handle" cdkDragHandle>
+                                    <i class="ti ti-grip-vertical"></i>
+                                </span>
+                            </td>
+                        }
+
+                        @for (col of columns(); track trackByColKey($index, col)) {
+                            <td
+                                class="dt__td"
+                                [class.dt__td--invalid]="isCellInvalid(row._id, col.key)"
+                                [style.width]="col.width ?? 'auto'"
+                            >
+                                @switch (col.type) {
+                                    @case ('input') {
+                                        <input
+                                            class="dt__cell-input"
+                                            type="text"
+                                            [placeholder]="col.placeholder ?? ''"
+                                            [ngModel]="getCellValue(row._id, col.key)"
+                                            (ngModelChange)="onCellChange(row._id, col.key, $event)"
+                                            [class.dt__cell-input--invalid]="isCellInvalid(row._id, col.key)"
+                                        />
+                                    }
+                                    @case ('select') {
+                                        <select
+                                            class="dt__cell-select"
+                                            [ngModel]="getCellValue(row._id, col.key)"
+                                            (ngModelChange)="onCellChange(row._id, col.key, $event)"
+                                            [class.dt__cell-select--invalid]="isCellInvalid(row._id, col.key)"
+                                        >
+                                            @if (col.placeholder) {
+                                                <option value="" disabled>{{ col.placeholder }}</option>
+                                            }
+                                            @for (opt of col.options; track opt.value) {
+                                                <option [ngValue]="opt.value">{{ opt.label }}</option>
+                                            }
+                                        </select>
+                                    }
+                                    @case ('checkbox') {
+                                        <app-checkbox
+                                            class="dt__cell-checkbox"
+                                            [checked]="!!getCellValue(row._id, col.key)"
+                                            (checkedChange)="onCellChange(row._id, col.key, $event)"
+                                        />
+                                    }
+                                }
+                            </td>
+                        }
+
+                        <!-- Delete button -->
+                        <td class="dt__td dt__td--action">
+                            <button
+                                type="button"
+                                class="dt__remove-btn"
+                                (click)="removeRow(row._id)"
+                                title="Remove row"
+                            >
+                                <i class="ti ti-x"></i>
+                            </button>
+                        </td>
+
+                        <!-- CDK drag preview placeholder -->
+                        <div *cdkDragPlaceholder class="dt__row-drag-placeholder"></div>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Validation error bar -->
+    @if (showValidationBar()) {
+        <div class="dt__validation-bar">
+            <span class="dt__validation-msg">{{ validationError() }}</span>
+            <button type="button" class="dt__validation-action" (click)="dismissValidationError()">Input Issues</button>
+        </div>
+    }
+</div>

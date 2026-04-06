@@ -72,24 +72,32 @@
                         </div>
                     </div>
 
+                    <!-- Parameters Section -->
+                    <app-dynamic-table
+                        [title]="'User input'"
+                        [icon]="'user'"
+                        [columnDefs]="columnDefs"
+                        (rowsChange)="onRowsChange($event)"
+                    />
+
                     <!-- Inputs Description Section -->
-                    <div class="form-section inputs-section">
-                        <div class="section-header">
-                            <h3>Inputs Description</h3>
-                            <app-help-tooltip
-                                text="Define the input parameters your tool accepts as JSON. Specify 'properties' for each parameter and 'required' for mandatory fields."
-                            ></app-help-tooltip>
-                        </div>
-                        <div class="json-editor-wrapper">
-                            <app-json-editor
-                                [jsonData]="inputsJsonConfig()"
-                                (jsonChange)="inputsJsonConfig.set($event)"
-                                (validationChange)="onInputsJsonValidChange($event)"
-                                [fullHeight]="false"
-                                [editorHeight]="200"
-                            ></app-json-editor>
-                        </div>
-                    </div>
+                    <!--                    <div class="form-section inputs-section">-->
+                    <!--                        <div class="section-header">-->
+                    <!--                            <h3>Inputs Description</h3>-->
+                    <!--                            <app-help-tooltip-->
+                    <!--                                text="Define the input parameters your tool accepts as JSON. Specify 'properties' for each parameter and 'required' for mandatory fields."-->
+                    <!--                            ></app-help-tooltip>-->
+                    <!--                        </div>-->
+                    <!--                        <div class="json-editor-wrapper">-->
+                    <!--                            <app-json-editor-->
+                    <!--                                [jsonData]="inputsJsonConfig()"-->
+                    <!--                                (jsonChange)="inputsJsonConfig.set($event)"-->
+                    <!--                                (validationChange)="onInputsJsonValidChange($event)"-->
+                    <!--                                [fullHeight]="false"-->
+                    <!--                                [editorHeight]="200"-->
+                    <!--                            ></app-json-editor>-->
+                    <!--                        </div>-->
+                    <!--                    </div>-->
 
                     <!-- Libraries Section -->
                     <div class="form-section">
