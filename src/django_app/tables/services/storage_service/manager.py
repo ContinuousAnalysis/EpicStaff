@@ -118,6 +118,15 @@ class StorageManager:
         )
 
     @check_permission
+    def rename(
+        self, user_name: str, org_id: int, source_path: str, destination_path: str
+    ) -> None:
+        self._backend.rename(
+            self._build_storage_key(org_id, source_path),
+            self._build_storage_key(org_id, destination_path),
+        )
+
+    @check_permission
     def copy(
         self, user_name: str, org_id: int, source_path: str, destination_path: str
     ) -> None:

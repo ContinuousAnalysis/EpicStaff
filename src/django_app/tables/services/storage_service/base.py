@@ -71,6 +71,10 @@ class AbstractStorageBackend(ABC):
         """Move / rename file or folder."""
 
     @abstractmethod
+    def rename(self, source_path: str, destination_path: str) -> None:
+        """Rename/move source to the exact destination path (never into it)."""
+
+    @abstractmethod
     def copy(self, source_path: str, destination_path: str) -> None:
         """Copy file or folder."""
 

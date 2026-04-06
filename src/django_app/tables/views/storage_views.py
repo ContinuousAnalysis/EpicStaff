@@ -152,9 +152,11 @@ class StorageAPIView(ViewSet):
         from_path = serializer.validated_data["from"]
         to_path = serializer.validated_data["to"]
         try:
-            self.manager.move(user_name, org_id, from_path, to_path)
+            self.manager.rename(user_name, org_id, from_path, to_path)
         except FileNotFoundError:
             raise ValidationError({"from": f"Source path does not exist: {from_path}"})
+        except FileExistsError:
+            raise ValidationError({"to": f"Destination already exists: {to_path}"})
         except ValueError as e:
             raise ValidationError({"detail": str(e)})
         return Response({"from": from_path, "to": to_path, "success": True})

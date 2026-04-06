@@ -12,3 +12,4 @@ class StorageAction(str, Enum):
     INFO = "info"
     EXISTS = "exists"
     DOWNLOAD_ZIP = "download_zip"
+    RENAME = "rename"

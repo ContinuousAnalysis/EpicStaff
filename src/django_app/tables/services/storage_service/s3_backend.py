@@ -137,6 +137,53 @@ class S3StorageBackend(AbstractStorageBackend):
         self.copy(source_path, destination_path)
         self.delete(source_path)
 
+    def rename(self, source_path: str, destination_path: str) -> None:
+        full_source = self._full_path(source_path)
+        full_destination = self._full_path(destination_path)
+
+        if full_source.rstrip("/") == full_destination.rstrip("/"):
+            raise ValueError("Source and destination are the same path.")
+
+        # Single file
+        if self.exists(source_path):
+            self.client.copy_object(
+                CopySource={"Bucket": self.bucket_name, "Key": full_source},
+                Bucket=self.bucket_name,
+                Key=full_destination,
+            )
+            self.client.delete_object(Bucket=self.bucket_name, Key=full_source)
+            return
+
+        # Folder: map source_prefix/* -> destination_prefix/* (no extra nesting)
+        source_prefix = full_source if full_source.endswith("/") else full_source + "/"
+        dest_prefix = (
+            full_destination
+            if full_destination.endswith("/")
+            else full_destination + "/"
+        )
+
+        paginator = self.client.get_paginator("list_objects_v2")
+        keys_to_delete = []
+        found = False
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=source_prefix):
+            for obj in page.get("Contents", []):
+                relative = obj["Key"][len(source_prefix) :]
+                dest_key = dest_prefix + relative
+                self.client.copy_object(
+                    CopySource={"Bucket": self.bucket_name, "Key": obj["Key"]},
+                    Bucket=self.bucket_name,
+                    Key=dest_key,
+                )
+                keys_to_delete.append({"Key": obj["Key"]})
+                found = True
+
+        if not found:
+            raise FileNotFoundError(f"Source path does not exist: {source_path}")
+
+        self.client.delete_objects(
+            Bucket=self.bucket_name, Delete={"Objects": keys_to_delete}
+        )
+
     def copy(self, source_path: str, destination_path: str) -> None:
         full_source = self._full_path(source_path)
         full_destination = self._full_path(destination_path)

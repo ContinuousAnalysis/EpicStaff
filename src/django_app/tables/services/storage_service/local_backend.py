@@ -96,6 +96,16 @@ class LocalStorageBackend(AbstractStorageBackend):
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(source), str(destination))
 
+    def rename(self, source_path: str, destination_path: str) -> None:
+        source = self._resolve(source_path)
+        destination = self._resolve(destination_path)
+        if not source.exists():
+            raise FileNotFoundError(f"Source path does not exist: {source_path}")
+        if destination.exists():
+            raise FileExistsError(f"Destination already exists: {destination_path}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(destination))
+
     def copy(self, source_path: str, destination_path: str) -> None:
         source = self._resolve(source_path)
         destination = self._resolve(destination_path)
