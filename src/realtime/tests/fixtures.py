@@ -1,11 +1,10 @@
 from fastapi import WebSocket
 import pytest
-import asyncio
 from unittest.mock import AsyncMock
 from services.tool_manager_service import ToolManagerService
 from services.redis_service import RedisService
 from services.python_code_executor_service import PythonCodeExecutorService
-from models.request_models import RealtimeAgentChatData
+from src.shared.models import RealtimeAgentChatData
 from tool_executors.base_tool_executor import BaseToolExecutor
 from tests.conftest import CONNECTION_KEY
 

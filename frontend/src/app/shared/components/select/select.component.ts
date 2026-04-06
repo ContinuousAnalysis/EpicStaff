@@ -1,17 +1,25 @@
+import { Overlay, OverlayModule, OverlayPositionBuilder, OverlayRef } from '@angular/cdk/overlay';
+import { TemplatePortal } from '@angular/cdk/portal';
+import { NgClass } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
+    DestroyRef,
     ElementRef,
-    ViewContainerRef,
-    ViewChild,
-    signal,
+    inject,
     input,
-    model, output, computed, inject
+    model,
+    output,
+    signal,
+    TemplateRef,
+    ViewChild,
+    ViewContainerRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-import {TemplatePortal} from '@angular/cdk/portal';
-import {NgClass} from "@angular/common";
-import {Overlay, OverlayPositionBuilder, OverlayRef} from "@angular/cdk/overlay";
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 export interface SelectItem {
     name: string;
@@ -22,37 +30,54 @@ export interface SelectItem {
 
 @Component({
     selector: 'app-select',
-    imports: [NgClass],
+    imports: [NgClass, OverlayModule, TooltipComponent],
     templateUrl: './select.component.html',
     styleUrls: ['./select.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    providers: [
+        {
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: SelectComponent,
+            multi: true,
+        },
+    ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SelectComponent {
+export class SelectComponent implements ControlValueAccessor {
+    icon = input<string>('help_outline');
+    label = input<string>('');
+    required = input<boolean>(false);
+    tooltipText = input<string>('');
+    loading = input<boolean>(false);
     mod = input<'default' | 'small'>('default');
     items = input<SelectItem[]>([]);
     placeholder = input<string>('Select option');
     invalid = input<boolean>(false);
+
+    open = signal(false);
+    isDisabled = signal(false);
 
     selectedValue = model<unknown | null>(null);
     selectedItem = computed(() => {
         const value = this.selectedValue();
         if (value === undefined || value === null) return null;
 
-        return this.items().find(i => i.value === value) ?? null;
+        return this.items().find((i) => i.value === value) ?? null;
     });
 
-    changed = output<any>();
+    changed = output<unknown>();
 
-    open = signal(false);
+    private onChange: (value: unknown) => void = () => {};
+    private onTouched: () => void = () => {};
 
     @ViewChild('triggerBtn') triggerBtn!: ElementRef<HTMLButtonElement>;
-    @ViewChild('dropdownTemplate') dropdownTemplate!: any;
+    @ViewChild('dropdownTemplate') dropdownTemplate!: TemplateRef<unknown>;
 
     private overlayRef!: OverlayRef;
 
     private overlay = inject(Overlay);
     private overlayPositionBuilder = inject(OverlayPositionBuilder);
     private vcr = inject(ViewContainerRef);
+    private destroyRef = inject(DestroyRef);
 
     toggle() {
         this.open() ? this.close() : this.openDropdown();
@@ -62,13 +87,15 @@ export class SelectComponent {
         if (!this.overlayRef) {
             const positionStrategy = this.overlayPositionBuilder
                 .flexibleConnectedTo(this.triggerBtn)
-                .withPositions([{
-                    originX: 'start',
-                    originY: 'bottom',
-                    overlayX: 'start',
-                    overlayY: 'top',
-                    offsetY: 4
-                }])
+                .withPositions([
+                    {
+                        originX: 'start',
+                        originY: 'bottom',
+                        overlayX: 'start',
+                        overlayY: 'top',
+                        offsetY: 4,
+                    },
+                ])
                 .withPush(true);
 
             this.overlayRef = this.overlay.create({
@@ -76,10 +103,13 @@ export class SelectComponent {
                 scrollStrategy: this.overlay.scrollStrategies.reposition(),
                 hasBackdrop: true,
                 backdropClass: 'transparent-backdrop',
-                width: this.triggerBtn.nativeElement.offsetWidth
+                width: this.triggerBtn.nativeElement.offsetWidth,
             });
 
-            this.overlayRef.backdropClick().subscribe(() => this.close());
+            this.overlayRef
+                .backdropClick()
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(() => this.close());
         }
 
         const portal = new TemplatePortal(this.dropdownTemplate, this.vcr);
@@ -91,12 +121,33 @@ export class SelectComponent {
         if (this.overlayRef) {
             this.overlayRef.detach();
         }
+        this.onTouched();
         this.open.set(false);
     }
 
     select(item: SelectItem) {
+        if (this.isDisabled()) return;
+        this.onChange(item.value);
+        this.onTouched();
+
         this.selectedValue.set(item.value);
         this.changed.emit(item.value);
         this.close();
+    }
+
+    writeValue(value: unknown): void {
+        this.selectedValue.set(value);
+    }
+
+    registerOnChange(fn: (value: unknown) => void): void {
+        this.onChange = fn;
+    }
+
+    registerOnTouched(fn: () => void): void {
+        this.onTouched = fn;
+    }
+
+    setDisabledState(isDisabled: boolean): void {
+        this.isDisabled.set(isDisabled);
     }
 }

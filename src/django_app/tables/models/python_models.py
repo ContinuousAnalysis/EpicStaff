@@ -1,7 +1,9 @@
 from django.db import models
 
+from tables.models.base_models import ContentHashMixin
 
-class PythonCode(models.Model):
+
+class PythonCode(ContentHashMixin, models.Model):
     code = models.TextField()
     entrypoint = models.TextField(default="main")
     libraries = models.TextField(default="")  # sep: space
@@ -80,6 +82,7 @@ class PythonCodeToolConfig(models.Model):
         return PythonCodeToolConfigField.objects.filter(
             tool=self.tool, name=name
         ).first()
+
     class Meta:
         unique_together = (
             "tool",

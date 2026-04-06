@@ -55,7 +55,7 @@
 .form-fields {
     display: flex;
     flex-direction: column;
-    row-gap: 1.875rem;
+    row-gap: 1rem;
 }
 
 .code-editor-section {
@@ -156,7 +156,7 @@
     }
     &__error-message {
         font-size: 0.75rem;
-        color: #d9d9de60
+        color: #d9d9de60;
     }
 }
 

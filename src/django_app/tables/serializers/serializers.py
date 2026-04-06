@@ -4,18 +4,25 @@ from rest_framework import serializers
 from tables.models.mcp_models import McpTool
 from tables.models.crew_models import ToolConfig
 from tables.models.python_models import PythonCodeTool
-from tables.models.realtime_models import VoiceChoices
 from tables.models.graph_models import GraphFile, Graph
-from tables.models.python_models import PythonCodeTool, PythonCodeToolConfig
+from tables.models.python_models import PythonCodeToolConfig
 
 
 class RunSessionSerializer(serializers.Serializer):
-    graph_id = serializers.IntegerField(required=True)
+    graph_id = serializers.IntegerField(required=False)
+    graph_uuid = serializers.UUIDField(required=False)
     variables = serializers.JSONField(required=False)
     files = serializers.DictField(
         child=serializers.CharField(), required=False, allow_null=True, default=dict
     )
     username = serializers.CharField(required=False)
+
+    def validate(self, attrs):
+        if not attrs.get("graph_id") and not attrs.get("graph_uuid"):
+            raise serializers.ValidationError(
+                "Either 'graph_id' or 'graph_uuid' must be provided."
+            )
+        return attrs
 
 
 class GetUpdatesSerializer(serializers.Serializer):
@@ -40,7 +47,6 @@ class InitRealtimeSerializer(serializers.Serializer):
 
 
 class BaseToolSerializer(serializers.Serializer):
-
     unique_name = serializers.CharField(required=True)  # type + id
     data = serializers.DictField(required=True)
 
@@ -74,7 +80,6 @@ class BaseToolSerializer(serializers.Serializer):
 
 
 class UploadGraphFileSerializer(serializers.Serializer):
-
     files = serializers.DictField(
         child=serializers.FileField(), allow_empty=False, write_only=True
     )
@@ -137,7 +142,6 @@ class UploadGraphFileSerializer(serializers.Serializer):
 
 
 class GraphFileUpdateSerializer(serializers.Serializer):
-
     domain_key = serializers.CharField()
     file = serializers.FileField()
 
@@ -173,8 +177,10 @@ class GraphFileUpdateSerializer(serializers.Serializer):
         instance.save()
         return instance
 
+
 class RegisterTelegramTriggerSerializer(serializers.Serializer):
     telegram_trigger_node_id = serializers.IntegerField(required=True)
+
 
 class ProcessDocumentChunkingSerializer(serializers.Serializer):
     document_id = serializers.IntegerField(required=True)
@@ -189,5 +195,19 @@ class ProcessRagIndexingSerializer(serializers.Serializer):
     Serializer for RAG indexing endpoint
     Business logic is in IndexingService
     """
+
     rag_id = serializers.IntegerField(required=True, min_value=1)
     rag_type = serializers.ChoiceField(required=True, choices=["naive", "graph"])
+
+
+class BulkExportSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+        help_text="List of entity IDs",
+    )
+
+
+class ImportRequestSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    preserve_uuids = serializers.BooleanField(default=False, required=False)

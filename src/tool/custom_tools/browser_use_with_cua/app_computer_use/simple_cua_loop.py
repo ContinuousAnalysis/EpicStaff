@@ -2,6 +2,7 @@ from computers import Computer
 from utils import create_response, check_blocklisted_url
 from computers import computers_config
 
+
 def acknowledge_safety_check_callback(message: str) -> bool:
     response = input(
         f"Safety Check Warning: {message}\nDo you want to acknowledge and proceed? (y/n): "
@@ -52,9 +53,9 @@ def handle_item(item, computer: Computer):
     return []
 
 
-
-
 ComputerClass = computers_config["docker"]
+
+
 def main():
     """Run the CUA (Computer Use Assistant) loop, using Local Playwright."""
     with ComputerClass() as computer:

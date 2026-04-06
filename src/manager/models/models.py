@@ -3,7 +3,6 @@ from enum import Enum
 from pydantic import BaseModel, HttpUrl
 
 
-
 # TODO we use session status in the manager and crew, so we should move it to a shared location
 #  look at SessionCallbackFactory in crew
 class SessionStatus(Enum):
@@ -39,9 +38,7 @@ class LLMConfig(BaseModel):
     timeout: float | int | None = None
     temperature: float | None = None
     top_p: float | None = None
-    n: int | None = None
     stop: str | list[str] | None = None
-    max_completion_tokens: int | None = None
     max_tokens: int | None = None
     presence_penalty: float | None = None
     frequency_penalty: float | None = None

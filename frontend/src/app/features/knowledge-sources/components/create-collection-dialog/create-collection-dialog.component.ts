@@ -1,20 +1,20 @@
-import {ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, signal} from "@angular/core";
-import {ButtonComponent} from "../../../../shared/components/buttons/button/button.component";
-import {DIALOG_DATA, DialogRef} from "@angular/cdk/dialog";
-import {AppIconComponent} from "../../../../shared/components/app-icon/app-icon.component";
-import {CreateCollectionStep} from "../../models/collection.model";
-import {StepUploadFilesComponent} from "./steps/step-upload-files/step-upload-files.component";
-import {StepSelectRagComponent} from "./steps/step-select-rag/step-select-rag.component";
-import {StepperComponent} from "./stepper/stepper.component";
-import {DisplayedListDocument} from "../../models/document.model";
-import {RagConfigurationComponent} from "../rag-configuration/rag-configuration.component";
-import {NaiveRagService} from "../../services/naive-rag.service";
-import {catchError, map, tap} from "rxjs/operators";
-import {Observable, of} from "rxjs";
-import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {RagType} from "../../models/rag.model";
-import {ToastService} from "../../../../services/notifications/toast.service";
-import {CollectionsStorageService} from "../../services/collections-storage.service";
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AppIconComponent, ButtonComponent } from '@shared/components';
+import { Observable, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
+
+import { ToastService } from '../../../../services/notifications';
+import { CreateCollectionStep } from '../../models/collection.model';
+import { DisplayedListDocument } from '../../models/document.model';
+import { RagType } from '../../models/naive-rag.model';
+import { CollectionsStorageService } from '../../services/collections-storage.service';
+import { NaiveRagService } from '../../services/naive-rag.service';
+import { RagConfigurationComponent } from '../rag-configuration/rag-configuration.component';
+import { StepperComponent } from './stepper/stepper.component';
+import { StepSelectRagComponent } from './steps/step-select-rag/step-select-rag.component';
+import { StepUploadFilesComponent } from './steps/step-upload-files/step-upload-files.component';
 
 export interface StepConfig {
     id: CreateCollectionStep;
@@ -37,7 +37,7 @@ export interface StepConfig {
         RagConfigurationComponent,
         AppIconComponent,
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateCollectionDialogComponent {
     collectionId: number = inject(DIALOG_DATA);
@@ -48,12 +48,12 @@ export class CreateCollectionDialogComponent {
     private toastService = inject(ToastService);
 
     collection = computed(() => {
-        return this.collectionsStorageService.fullCollections().find(
-            ({collection_id}) => collection_id === this.collectionId
-        )!;
-    })
+        return this.collectionsStorageService
+            .fullCollections()
+            .find(({ collection_id }) => collection_id === this.collectionId)!;
+    });
 
-    private steps = signal<StepConfig[]>([
+    steps = signal<StepConfig[]>([
         {
             id: CreateCollectionStep.UPLOAD_FILES,
             label: 'Upload files',
@@ -61,7 +61,7 @@ export class CreateCollectionDialogComponent {
             onProceed: () => of(true),
             canProceed: () =>
                 this.selectedDocuments().length > 0 &&
-                this.selectedDocuments().every(d => d.isValidType && d.isValidSize),
+                this.selectedDocuments().every((d) => d.isValidType && d.isValidSize),
         },
         {
             id: CreateCollectionStep.SELECT_RAG,
@@ -73,7 +73,7 @@ export class CreateCollectionDialogComponent {
         {
             id: CreateCollectionStep.CONFIGURE,
             label: 'Configure',
-            proceedLabel: 'Finish',
+            proceedLabel: 'Finish Creation',
             onProceed: () => this.startIndexing(),
             canProceed: () => true,
         },
@@ -81,17 +81,11 @@ export class CreateCollectionDialogComponent {
 
     currentStepIndex = signal(0);
     currentStep = computed(() => this.steps()[this.currentStepIndex()]);
-    stepLabels = computed(() =>
-        this.steps().map(s => s.label)
-    );
+    stepLabels = computed(() => this.steps().map((s) => s.label));
 
-    nextStepDisabled = computed(() =>
-        !this.currentStep().canProceed()
-    );
+    nextStepDisabled = computed(() => !this.currentStep().canProceed());
 
-    nextButtonText = computed(() =>
-        this.currentStep().proceedLabel
-    );
+    nextButtonText = computed(() => this.currentStep().proceedLabel);
 
     selectedRagType = signal<RagType | null>(null);
     selectedEmbedder = signal<number | null>(null);
@@ -99,30 +93,31 @@ export class CreateCollectionDialogComponent {
     naiveRagId = signal<number | null>(null);
 
     prevStep() {
-        this.currentStepIndex.update(i => Math.max(i - 1, 0));
+        this.currentStepIndex.update((i) => Math.max(i - 1, 0));
     }
 
     nextStep() {
         if (!this.currentStep().canProceed()) return;
 
-        this.currentStep().onProceed().pipe(
-            takeUntilDestroyed(this.destroyRef),
-        ).subscribe({
-            next: (v) => {
-                if (!v) return;
+        this.currentStep()
+            .onProceed()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (v) => {
+                    if (!v) return;
 
-                this.currentStepIndex.update(i => {
-                    const lastIndex = this.steps().length - 1;
+                    this.currentStepIndex.update((i) => {
+                        const lastIndex = this.steps().length - 1;
 
-                    if (i >= lastIndex) {
-                        this.onClose();
-                        return i;
-                    }
+                        if (i >= lastIndex) {
+                            this.onClose();
+                            return i;
+                        }
 
-                    return i + 1;
-                });
-            }
-        });
+                        return i + 1;
+                    });
+                },
+            });
     }
 
     createRag(): Observable<boolean> {
@@ -149,17 +144,19 @@ export class CreateCollectionDialogComponent {
 
         if (!ragType || !ragId) return of(false);
 
-        return this.naiveRagService.startIndexing({
-            rag_id: ragId,
-            rag_type: ragType,
-        }).pipe(
-            takeUntilDestroyed(this.destroyRef),
-            map(() => true),
-            catchError(() => {
-                this.toastService.error('RAG indexing failed');
-                return of(false);
+        return this.naiveRagService
+            .startIndexing({
+                rag_id: ragId,
+                rag_type: ragType,
             })
-        )
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                map(() => true),
+                catchError(() => {
+                    this.toastService.error('RAG indexing failed');
+                    return of(false);
+                })
+            );
     }
 
     onClose(): void {

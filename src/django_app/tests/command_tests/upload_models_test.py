@@ -20,7 +20,6 @@ from tables.models import EmbeddingModel
 )
 @pytest.mark.django_db()
 def test_upload_llm_providers(provider_name):
-
     command = upload_models.Command()
     command.handle()
 
@@ -40,7 +39,6 @@ def test_upload_llm_providers(provider_name):
 )
 @pytest.mark.django_db()
 def test_upload_llm_models(llm_model_name, llm_provider_name):
-
     command = upload_models.Command()
     command.handle()
 
@@ -60,7 +58,6 @@ def test_upload_llm_models(llm_model_name, llm_provider_name):
 )
 @pytest.mark.django_db()
 def test_upload_embedding_models(name, embedding_provider_name):
-
     command = upload_models.Command()
     command.handle()
 

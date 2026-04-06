@@ -1,14 +1,11 @@
 import pytest
-from unittest.mock import patch
 from crewai import Agent, Task
 from crewai_tools import tool
 
-from tests.tools_tests.mocks.tools_mocks import mock_file_with_content, mock_empty_file
 from custom_tools import CreateDraftTool
 
 # todo: Ensure that create draft tool works
 class TestCreateDraftTool:
-
     @pytest.mark.skip
     @pytest.mark.vcr(filter_headers=["authorization"], record_mode="once")
     def test_email_draft_tool(self, mocker):
@@ -28,7 +25,10 @@ class TestCreateDraftTool:
             For example, `lorem@ipsum.com|Nice To Meet You|Hey it was great to meet you.`.
             """
 
-            mocked_tool = mocker.patch("custom_tools.create_draft_tool.CreateDraftTool.create_draft", return_value="Draft created")
+            mocked_tool = mocker.patch(
+                "custom_tools.create_draft_tool.CreateDraftTool.create_draft",
+                return_value="Draft created",
+            )
             return CreateDraftTool.create_draft(data)
 
         agent = Agent(
@@ -48,6 +48,9 @@ class TestCreateDraftTool:
             with the title '(title)' and message '(message)'.
             """,
         )
-        
+
         output = agent.execute_task(task)
-        assert output == f"The draft was created successfully for {mocked_email} with the title '{mocked_title}' and message '{mocked_message}'."
+        assert (
+            output
+            == f"The draft was created successfully for {mocked_email} with the title '{mocked_title}' and message '{mocked_message}'."
+        )

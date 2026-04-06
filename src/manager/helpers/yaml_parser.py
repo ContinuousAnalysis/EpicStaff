@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import yaml
 
+
 def load_env_from_yaml_config(yaml_config_path):
     loaded = False
     try:
@@ -14,4 +15,3 @@ def load_env_from_yaml_config(yaml_config_path):
         print(e)
 
     return loaded
-

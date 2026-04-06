@@ -1,7 +1,6 @@
-from threading import Lock
 from collections import OrderedDict
 from typing import Optional
-from models.request_models import RealtimeAgentChatData
+from src.shared.models import RealtimeAgentChatData
 from utils.singleton_meta import SingletonMeta
 
 

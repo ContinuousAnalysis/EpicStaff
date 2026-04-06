@@ -33,7 +33,6 @@ class ToolContainerService:
         network_settings = manager_container.attrs["NetworkSettings"]
         self.network_name = list(network_settings["Networks"].keys())[0]
 
-
     def post_data_with_retry(self, url, json, retries=30, delay=3):
         if json is None:
             json = dict()
@@ -147,6 +146,7 @@ class ToolContainerService:
             environment={"SAVE_FILE_PATH": "/home/user/root/app/savefiles"},
             mounts=[
                 Mount(
+                    # TODO: remove, crew_config is deprecated
                     source="crew_config",
                     target="/home/user/root/app/env_config/",
                 ),

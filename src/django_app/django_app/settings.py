@@ -13,10 +13,17 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 import sys
 from pathlib import Path
+
 from django.core.management.utils import get_random_secret_key
+from dotenv import find_dotenv, load_dotenv
+from loguru import logger
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+if os.getenv("LOAD_DEBUG_ENV", "True").lower() in ("true", "1", "yes", "on"):
+    logger.info("LOAD_DEBUG_ENV=True")
+    load_dotenv(find_dotenv(BASE_DIR.parent / "debug.env"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -25,9 +32,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # SECURITY WARNING: keep the secret key used in production secret!
-
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes", "on")
-
 
 SECRET_KEY = os.getenv("SECRET_KEY") or (
     "321567143216717121" if DEBUG else get_random_secret_key()
@@ -51,7 +56,7 @@ LOGGING = {
     },
     "root": {
         "handlers": ["loguru"],
-        "level": "INFO",
+        "level": "DEBUG",
     },
 }
 
@@ -98,6 +103,7 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = "django_app.urls"
 
@@ -151,7 +157,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 TELEGRAM_TRIGGER_FIELDS_PATH = (
-    BASE_DIR / "tables" / "utils"/ "data" / "telegram_fields.json"
+    BASE_DIR / "tables" / "utils" / "data" / "telegram_fields.json"
 )
 
 # Internationalization
@@ -197,6 +203,10 @@ MEDIA_URL = "/media/"
 
 MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
+REDIS_TUNNEL_CONFIG_CHANNEL = os.getenv(
+    "REDIS_TUNNEL_CONFIG_CHANNEL", "REDIS_TUNNEL_CONFIG_CHANNEL"
+)
+TUNNEL_URLS_HASH_KEY = os.getenv("TUNNEL_URLS_HASH_KEY", "tunnel_urls")
 KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL = os.getenv(
     "KNOWLEDGE_DOCUMENT_CHUNK_CHANNEL", "knowledge:chunk"
 )
@@ -214,5 +224,21 @@ if WEBHOOK_USE_TUNNEL:
     WEBHOOK_TUNNEL = os.getenv("WEBHOOK_TUNNEL", None)
 else:
     WEBHOOK_TUNNEL = None
+
+REQUEST_WEBHOOK_UPDATE_CHANNEL = os.getenv(
+    "REQUEST_WEBHOOK_UPDATE_CHANNEL", "REQUEST_WEBHOOK_UPDATE_CHANNEL"
+)
+SESSION_STATUS_CHANNEL = os.environ.get(
+    "SESSION_STATUS_CHANNEL", "sessions:session_status"
+)
+CODE_RESULT_CHANNEL = os.environ.get("CODE_RESULT_CHANNEL", "code_results")
+GRAPH_MESSAGES_CHANNEL = os.environ.get("GRAPH_MESSAGES_CHANNEL", "graph:messages")
+GRAPH_MESSAGE_UPDATE_CHANNEL = os.environ.get(
+    "GRAPH_MESSAGE_UPDATE_CHANNEL", "graph:message:update"
+)
+WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
+TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
+
+
 WEBHOOK_HOST_NAME = os.getenv("WEBHOOK_HOST_NAME", "localhost")
 WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", 8009))

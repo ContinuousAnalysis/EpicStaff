@@ -1,5 +1,3 @@
-import uuid
-
 from models.ai_models import RealtimeTool
 import websockets
 import json
@@ -231,7 +229,6 @@ class OpenaiRealtimeAgentClient:
         await self.ws.send(json.dumps(event))
 
     async def send_conversation_item_to_server(self, text: str):
-
         event = {
             "type": "conversation.item.create",
             "item": {

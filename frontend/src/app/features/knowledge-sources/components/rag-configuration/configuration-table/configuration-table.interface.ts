@@ -1,5 +1,4 @@
-import {NaiveRagDocumentConfig, UpdateNaiveRagDocumentConfigError} from "../../../models/rag.model";
-
+import { NaiveRagDocumentConfig, UpdateNaiveRagDocumentConfigError } from '../../../models/naive-rag-document.model';
 
 export interface TableDocument extends NaiveRagDocumentConfig {
     checked: boolean;
@@ -13,11 +12,6 @@ export type NormalizedDocumentErrors = {
 export type DocFieldChange = {
     documentId: number;
     documentName: string;
-    field: keyof TableDocument;
-    value: any;
+    field: keyof NaiveRagDocumentConfig;
+    value: string | number | null;
 };
-
-export type SortState = {
-    column: 'chunk_size' | 'chunk_overlap';
-    dir: 'asc' | 'desc';
-} | null;

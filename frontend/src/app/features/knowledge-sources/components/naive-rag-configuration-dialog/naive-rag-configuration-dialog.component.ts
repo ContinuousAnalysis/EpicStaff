@@ -1,29 +1,41 @@
-import {ChangeDetectionStrategy, Component, DestroyRef, inject} from "@angular/core";
-import {CreateCollectionDtoResponse} from "../../models/collection.model";
-import {DIALOG_DATA, DialogRef} from "@angular/cdk/dialog";
-import {AppIconComponent} from "../../../../shared/components/app-icon/app-icon.component";
-import {RagConfigurationComponent} from "../rag-configuration/rag-configuration.component";
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ButtonComponent } from '@shared/components';
+
+import { ToastService } from '../../../../services/notifications';
+import { CreateCollectionDtoResponse } from '../../models/collection.model';
+import { NaiveRagService } from '../../services/naive-rag.service';
+import { RagConfigurationComponent } from '../rag-configuration/rag-configuration.component';
 
 @Component({
     selector: 'app-naive-rag-configuration-dialog',
     templateUrl: './naive-rag-configuration-dialog.component.html',
     styleUrls: ['./naive-rag-configuration-dialog.component.scss'],
-    imports: [
-        AppIconComponent,
-        RagConfigurationComponent
-    ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    imports: [RagConfigurationComponent, ButtonComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NaiveRagConfigurationDialog {
-    data: { collection: CreateCollectionDtoResponse, ragId: number } = inject(DIALOG_DATA);
+    data: { collection: CreateCollectionDtoResponse; ragId: number } = inject(DIALOG_DATA);
     private destroyRef = inject(DestroyRef);
     private dialogRef = inject(DialogRef);
+    private naiveRagService = inject(NaiveRagService);
+    private toast = inject(ToastService);
 
-    onCancel(): void {
+    onClose(): void {
         this.dialogRef.close();
     }
 
-    onSave(): void {
-        this.dialogRef.close(true);
+    runIndexing(): void {
+        this.naiveRagService
+            .startIndexing({
+                rag_id: this.data.ragId,
+                rag_type: 'naive',
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.toast.success('Files re-indexed successfully'),
+                error: () => this.toast.error('Files re-indexing failed'),
+            });
     }
 }

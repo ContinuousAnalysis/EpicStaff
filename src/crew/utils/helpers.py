@@ -5,13 +5,7 @@ from utils.envpy import load_env_from_yaml_config
 
 logger = logging.getLogger(__name__)
 logger.debug(f"Entered {__file__}")
-from rich.markdown import Markdown
-from rich.console import Console
-from rich.table import Table
 import os
-from dotenv import load_dotenv
-
-import numpy as np
 
 
 def signal_handler(sig, frame):

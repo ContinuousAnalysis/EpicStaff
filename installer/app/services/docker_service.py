@@ -1,7 +1,7 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
+from abc import ABC
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 import json
 import platform
 from queue import Empty, Queue
@@ -13,7 +13,7 @@ import docker
 from docker.errors import DockerException
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any, Generator, Literal
+from typing import List, Dict, Generator, Literal
 import os
 import time
 import stat
@@ -342,7 +342,6 @@ class UpdateImagesState(State):
     def _run_script(self, path: str, prefix: str = "") -> Generator[str, None, None]:
         """Runs a script and yields its output in real time"""
         try:
-
             process = subprocess.Popen(
                 path,
                 stdout=subprocess.PIPE,
@@ -502,7 +501,6 @@ class DockerService:
         return self._client
 
     def transition_to(self, state: State):
-
         self._state = state
         self._state.docker_service = self
         try:

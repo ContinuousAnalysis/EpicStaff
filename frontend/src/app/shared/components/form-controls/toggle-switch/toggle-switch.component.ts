@@ -1,56 +1,57 @@
-import {
-  Component,
-  Input,
-  Output,
-  EventEmitter,
-  ChangeDetectionStrategy,
-  forwardRef,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, forwardRef, Input, input, Output } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
+import { TooltipComponent } from '../../tooltip/tooltip.component';
+
 @Component({
-  selector: 'app-toggle-switch',
-  standalone: true,
-  templateUrl: './toggle-switch.component.html',
-  styleUrls: ['./toggle-switch.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => ToggleSwitchComponent),
-      multi: true,
-    },
-  ],
+    selector: 'app-toggle-switch',
+    standalone: true,
+    templateUrl: './toggle-switch.component.html',
+    styleUrls: ['./toggle-switch.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [
+        {
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: forwardRef(() => ToggleSwitchComponent),
+            multi: true,
+        },
+    ],
+    imports: [TooltipComponent],
 })
 export class ToggleSwitchComponent implements ControlValueAccessor {
-  @Input() checked = false;
-  @Output() checkedChange = new EventEmitter<boolean>();
+    icon = input<string>('help_outline');
+    label = input<string>('');
+    required = input<boolean>(false);
+    tooltipText = input<string>('');
 
-  private onChange = (_: any) => {};
-  private onTouched = () => {};
-  private isDisabled = false;
+    @Input() checked = false;
+    @Output() checkedChange = new EventEmitter<boolean>();
 
-  onToggle() {
-    if (this.isDisabled) return;
-    this.checked = !this.checked;
-    this.checkedChange.emit(this.checked);
-    this.onChange(this.checked);
-    this.onTouched();
-  }
+    private onChange: (value: boolean) => void = () => {};
+    private onTouched = () => {};
+    private isDisabled = false;
 
-  writeValue(value: boolean): void {
-    this.checked = value;
-  }
+    onToggle() {
+        if (this.isDisabled) return;
+        this.checked = !this.checked;
+        this.checkedChange.emit(this.checked);
+        this.onChange(this.checked);
+        this.onTouched();
+    }
 
-  registerOnChange(fn: any): void {
-    this.onChange = fn;
-  }
+    writeValue(value: boolean): void {
+        this.checked = value;
+    }
 
-  registerOnTouched(fn: any): void {
-    this.onTouched = fn;
-  }
+    registerOnChange(fn: (value: boolean) => void): void {
+        this.onChange = fn;
+    }
 
-  setDisabledState(isDisabled: boolean): void {
-    this.isDisabled = isDisabled;
-  }
+    registerOnTouched(fn: () => void): void {
+        this.onTouched = fn;
+    }
+
+    setDisabledState(isDisabled: boolean): void {
+        this.isDisabled = isDisabled;
+    }
 }

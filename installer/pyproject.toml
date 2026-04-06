@@ -71,3 +71,7 @@ exclude_lines = [
 [tool.poetry.group.win.dependencies]
 pywin32 = "310"
 pywin32-ctypes = "0.2.3"
+
+[tool.ruff]
+select = ["F","E"]
+ignore = ["E402","E501"]

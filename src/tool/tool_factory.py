@@ -9,6 +9,7 @@ class ToolNotFoundException(Exception):
     def __init__(self, tool_alias: str):
         super().__init__(f"Class with tool alias {tool_alias} is not registered")
 
+
 @dataclass
 class ToolRegistryItem:
     tool_class: Type
@@ -19,7 +20,8 @@ class ToolRegistryItem:
 class DynamicToolFactory(metaclass=SingletonMeta):
     _tool_registry: dict[str, ToolRegistryItem] = {}
 
-    def __init__(self): ...
+    def __init__(self):
+        ...
 
     def register_tool_class(
         self,
@@ -35,7 +37,9 @@ class DynamicToolFactory(metaclass=SingletonMeta):
         if default_kwargs is None:
             default_kwargs = dict()
 
-        self._tool_registry[tool_alias] = ToolRegistryItem(tool_class=tool_class, args=default_args, kwargs=default_kwargs)
+        self._tool_registry[tool_alias] = ToolRegistryItem(
+            tool_class=tool_class, args=default_args, kwargs=default_kwargs
+        )
         logger.info(f"Registered {tool_alias}")
 
     def create(
@@ -68,5 +72,5 @@ class DynamicToolFactory(metaclass=SingletonMeta):
         if tool_alias not in self._tool_registry.keys():
             logger.error(f"{tool_alias} not in {self._tool_registry.keys()}")
             raise ToolNotFoundException(tool_alias=tool_alias)
-        
+
         return self._tool_registry.get(tool_alias).tool_class

@@ -6,10 +6,8 @@ from typing import Any
 from requests import HTTPError, Response
 import requests
 import time
-import dotenv
 import docker
 from loguru import logger
-import re
 from sseclient import SSEClient
 
 from utils.variables import DJANGO_URL, rhost
@@ -110,18 +108,16 @@ def validate_task_and_session(task_name, task_id, agent_id, session_id):
 def wait_for_results_sse(session_id: int):
     if "--debug" not in sys.argv:
         check_containers()
-    
+
     url = f"{DJANGO_URL}/run-session/subscribe/{session_id}/"
     start_time = time.time()
 
     logger.info(f"Subscribing to SSE for session {session_id}...")
 
-
     client = SSEClient(url)
     end_node_result = None
 
     for event in client:
-
         if time.time() - start_time > MAX_WAIT_SSE_SECONDS:
             raise TimeoutError(f"SSE listening timed out after {MAX_WAIT_SSE_SECONDS}s")
 
@@ -137,7 +133,6 @@ def wait_for_results_sse(session_id: int):
             break
 
         logger.debug(f"Received SSE message: {message_data}")
-    
 
     time.sleep(1)
     status = get_session_status(session_id=session_id)
@@ -167,12 +162,10 @@ def wait_for_results_sse(session_id: int):
     return end_node_result
 
 
-
-
 def validate_response(response: Response) -> None:
     try:
         response.raise_for_status()
-    except HTTPError as e:
+    except HTTPError:
         logger.error(response.content)
         raise
 
@@ -226,7 +219,6 @@ def run_session(graph_id: int, variables: dict | None = None) -> int:
 
 
 def create_tool_config(*args, **kwargs) -> int:
-
     tool_config_response = requests.post(
         f"{DJANGO_URL}/tool-configs/", json=kwargs, headers={"Host": rhost}
     )
@@ -252,7 +244,6 @@ def create_crew(*args, **kwargs) -> int:
 
 
 def create_agent(*args, **kwargs) -> int:
-
     agent_response = requests.post(
         f"{DJANGO_URL}/agents/", json=kwargs, headers={"Host": rhost}
     )
@@ -282,8 +273,8 @@ def create_llm_config(llm_id: int) -> int:
                 llm_config = result_dict
             elif result_dict.get("custom_name") == llm_config_data.get("custom_name"):
                 from random import randint
-                llm_config_data["custom_name"] = f"MyLLMConfig_{randint(1, 10000)}"
 
+                llm_config_data["custom_name"] = f"MyLLMConfig_{randint(1, 10000)}"
 
     if llm_config is None:
         llm_config_response = requests.post(
@@ -370,7 +361,7 @@ def create_mcp_tool(
     tool_id = get_mcp_tool_by_name(name=name)
     if tool_id is not None:
         return tool_id
-    
+
     response = requests.post(
         f"{DJANGO_URL}/mcp-tools/", json=tool_data, headers={"Host": rhost}
     )
@@ -378,12 +369,16 @@ def create_mcp_tool(
 
     return response.json()["id"]
 
+
 def get_mcp_tool_by_name(name: str) -> int | None:
-    response = requests.get(f"{DJANGO_URL}/mcp-tools/?name={name}", headers={"Host": rhost})
+    response = requests.get(
+        f"{DJANGO_URL}/mcp-tools/?name={name}", headers={"Host": rhost}
+    )
     results = response.json()["results"]
     if len(results) == 0:
         return None
     return results[0]["id"]
+
 
 def get_python_code_tool_by_name(name: str) -> int | None:
     response = requests.get(
@@ -475,7 +470,6 @@ def create_llm_node(
 
 
 def create_edge(start_key: str, end_key: str, graph: int) -> int:
-
     edge_data = {"start_key": start_key, "end_key": end_key, "graph": graph}
 
     response = requests.post(
@@ -550,16 +544,16 @@ def wait_for_http(url: str, timeout: int = 60):
         time.sleep(2)
     raise TimeoutError(f"Service at {url} not ready after {timeout}s")
 
+
 def create_end_node(graph_id: int):
     output_map = {
         "hash_value": "variables.hash",
         "some_python_node_result": "variables.result",
-        "non_existing_variable": "variables.abracadabra"
-                  }
-    end_node_data = {
-       "graph": graph_id,
-       "output_map": output_map
+        "non_existing_variable": "variables.abracadabra",
     }
-    response = requests.post(f"{DJANGO_URL}/endnodes/", json=end_node_data, headers={"Host": rhost})
+    end_node_data = {"graph": graph_id, "output_map": output_map}
+    response = requests.post(
+        f"{DJANGO_URL}/endnodes/", json=end_node_data, headers={"Host": rhost}
+    )
     validate_response(response)
     return response.json()["id"]

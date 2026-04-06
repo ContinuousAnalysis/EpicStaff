@@ -1,8 +1,4 @@
-from importlib.metadata import version
-from importlib import import_module
 from pathlib import Path
-from json import dumps
-from typing import Any
 
 
 import docker
@@ -18,23 +14,19 @@ class ToolDockerImageBuilder:
     dockerfile = Path("./tool/Dockerfile.tool")
     image_files = Path("./tool")
 
-    default_imports = [
-
-    ]
+    default_imports = []
 
     def __init__(
         self, tool_dict: dict[str, Callable], import_list: list[str] | None = None
     ):
-
         self.tool_dict: dict[str, Callable] = tool_dict
         self.import_list: list[str] = import_list if import_list is not None else list()
         self.__add_default_imports_to_list(import_list=self.import_list)
 
     def build_tool_image(self, image_name: str | None = None) -> Image:
-
-        requirements = " ".join(self.import_list)        
+        requirements = " ".join(self.import_list)
         alias_callable = obj_to_txt(self.tool_dict)
-        
+
         return client.images.build(
             path=str(self.image_files.resolve()),
             tag=image_name,

@@ -1,41 +1,66 @@
-# Use a base image with Python 3.12.10
-FROM python:3.12.10
+# --- Stage 1: Builder ---
+FROM python:3.12.10-slim@sha256:fd95fa221297a88e1cf49c55ec1828edd7c5a428187e67b5d1805692d11588db AS builder
 
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_CACHE_DIR=/tmp/poetry_cache \
+    POETRY_REQUESTS_TIMEOUT=100 \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Set environment variables for Poetry
-ENV POETRY_VERSION=1.8.3 \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1
+WORKDIR /app/src
 
-# Install dependencies for Poetry and Python
-RUN apt-get update && \
-    apt-get install -y curl && \
-    pip install poetry && \
-    apt-get clean
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Add Poetry to the PATH
-ENV PATH="/root/.local/bin:$PATH"
+# Install updated pip, setuptools, wheel and poetry
+RUN pip install --upgrade pip setuptools wheel poetry
 
-# Set the working directory in the Docker image
-WORKDIR /home/user/root/app
-
-# Copy pyproject.toml and poetry.lock first to avoid rebuilding on code changes
-COPY crew/pyproject.toml .
-COPY crew/poetry.lock .
-COPY crew/libraries/ ./libraries
-
+# Enable installing via setuptools for legacy packages
 ENV PEP517_BUILD_BACKEND=setuptools.build_meta
 
-RUN poetry install --no-root --without dotdict,crew -v
-RUN poetry install --no-root --only crew -v
+# Copy only dependency descriptors first (better caching)
+COPY ./crew/pyproject.toml ./crew/poetry.lock ./
+COPY ./crew/libraries ./libraries
 
-COPY ./shared ./../shared
-RUN poetry install --no-root --only dotdict -v
+ENV POETRY_REQUESTS_TIMEOUT=1000
+# Install dependencies inside project .venv
+RUN poetry install --no-ansi --no-root --without dotdict,crew -v
+RUN poetry install --no-ansi --no-root --only crew -v
 
-RUN rm -rf /root/.cache
+# Copy application source
+COPY ./crew /app/src/crew
+COPY ./shared /app/src/shared
 
-#Copying file to workdir
-COPY ./crew .
-CMD ["poetry", "run", "python3", "/home/user/root/app/main.py"]
+WORKDIR /app/src/crew
+ENV VIRTUAL_ENV=/app/src/.venv
+# If dotdict is a poetry group and depends on src/shared presence, install it now from project root
+RUN poetry install --no-ansi --no-root --only dotdict -v
 
+# --- Stage 2: Runtime ---
+FROM python:3.12.10-slim@sha256:fd95fa221297a88e1cf49c55ec1828edd7c5a428187e67b5d1805692d11588db AS runtime
 
+# libpq-dev are required for psycopg2 https://www.psycopg.org/docs/install.html
+RUN apt-get update && apt-get install -y libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip poetry
+
+# Copy built app from builder
+COPY --from=builder /app /app
+
+# Add virtualenv to PATH
+ENV PATH="/app/src/.venv/bin:$PATH" \
+    PYTHONPATH=/app \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    VIRTUAL_ENV=/app/src/.venv
+
+WORKDIR /app/src/crew
+
+# Run entrypoint (code is in /src)
+CMD ["poetry", "run", "python3", "/app/src/crew/main.py"]

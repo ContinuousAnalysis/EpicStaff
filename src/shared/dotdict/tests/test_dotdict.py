@@ -58,7 +58,6 @@ def test_dotdict_model_dump():
     dotdict = DotDict(data)
     dumped = dotdict.model_dump()
     assert dumped == data
-    
 
 
 def test_dotobj_model_dump_tuple():
@@ -68,6 +67,7 @@ def test_dotobj_model_dump_tuple():
 
     expected_data = ["a", {"c": 2, "e": [1, 2, ["3", 4]]}]
     assert dumped == expected_data
+
 
 def test_dotobj_json_dump_tuple():
     data = ("a", {"c": 2, "e": [1, 2, ("3", 4)]})
@@ -85,12 +85,12 @@ def test_dotobj_model_dump_list():
     expected_data = ["a", {"c": 2, "e": [1, 2, ["3", 4]]}]
     assert dumped == expected_data
 
-
     expected_data = [1, 2, "3", test_obj]
     assert len(expected_data) == len(dumped)
     assert isinstance(dumped, list)
     for val in expected_data:
         assert val in dumped
+
 
 def test_dotobj_json_dump_set():
     data = {1, 2, "3"}
@@ -194,7 +194,6 @@ def test_dotlist_setitem_replaces_with_dotobject():
     assert l[0].y == 2
 
 
-
 def test_dotobject_non_iterable_pass_through():
     obj = DotObject(123)
     assert obj == 123
@@ -208,14 +207,10 @@ def test_dotdict_property_expression_reflects_latest_value():
     assert d.sum == 8
 
 
-
 def test_dotdict_json_roundtrip_complex():
     import json
-    data = {
-        "a": {"b": [1, {"c": 2}]},
-        "nums": (1, 2, 3),
-        "set": {4, 5, 6}
-    }
+
+    data = {"a": {"b": [1, {"c": 2}]}, "nums": (1, 2, 3), "set": {4, 5, 6}}
     d = DotObject(data)
     dumped = json.dumps(d)
     loaded = json.loads(dumped)

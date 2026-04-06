@@ -8,11 +8,13 @@ MCP_COMPUTER_URL = os.getenv("MCP_COMPUTER_URL", "http://127.0.0.1:8080/mcp")
 
 cfg = MCPNodeConfig(
     services={
-        "browser_use_with_cua": MCPService(name="browser_use_with_cua", url=MCP_BROWSER_URL),
+        "browser_use_with_cua": MCPService(
+            name="browser_use_with_cua", url=MCP_BROWSER_URL
+        ),
     },
     default_service="browser-use",
     allowed_tools={
-        "browser-use": ["run_browser"], 
+        "browser-use": ["run_browser"],
         "computer-use": ["run_computer"],
     },
     retries=1,

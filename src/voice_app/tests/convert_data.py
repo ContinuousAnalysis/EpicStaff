@@ -11,7 +11,6 @@ buffer_filename_base = [
 
 def convert(buffer_filename_base_list: list[str]):
     for file_name_base in buffer_filename_base_list:
-
         with open(f"{file_name_base}.json", "r") as f:
             data = json.load(f)
 
@@ -20,8 +19,7 @@ def convert(buffer_filename_base_list: list[str]):
         for obj in data:
             audio_bytes += base64.b64decode(obj["audio"])
 
-        
-        # записываем в бинарный файл
+        # write to binary file
         with open(f"{file_name_base}.wav", "wb") as f:
             f.write(audio_bytes)
 
