@@ -45,12 +45,14 @@ class LocalStorageBackend(AbstractStorageBackend):
                 stat.st_mtime, tz=timezone.utc
             ).isoformat()
             if entry.is_dir():
+                is_empty = not any(entry.iterdir())
                 results.append(
                     FileListItem(
                         name=entry.name,
                         type="folder",
                         size=0,
                         modified=modified,
+                        is_empty=is_empty,
                     )
                 )
             else:
@@ -60,6 +62,7 @@ class LocalStorageBackend(AbstractStorageBackend):
                         type="file",
                         size=stat.st_size,
                         modified=modified,
+                        is_empty=False,
                     )
                 )
         return results

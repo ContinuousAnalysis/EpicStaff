@@ -64,12 +64,26 @@ class S3StorageBackend(AbstractStorageBackend):
             for common_prefix in page.get("CommonPrefixes", []):
                 folder_key = common_prefix["Prefix"]
                 folder_name = folder_key.rstrip("/").split("/")[-1]
+                probe = self.client.list_objects_v2(
+                    Bucket=self.bucket_name,
+                    Prefix=folder_key,
+                    Delimiter="/",
+                    MaxKeys=2,
+                )
+                # folder_key itself is the zero-byte marker created by mkdir — exclude it
+                real_files = [
+                    obj for obj in probe.get("Contents", []) if obj["Key"] != folder_key
+                ]
+                is_empty = (
+                    len(real_files) == 0 and len(probe.get("CommonPrefixes", [])) == 0
+                )
                 results.append(
                     FileListItem(
                         name=folder_name,
                         type="folder",
                         size=0,
                         modified=None,
+                        is_empty=is_empty,
                     )
                 )
 
@@ -83,6 +97,7 @@ class S3StorageBackend(AbstractStorageBackend):
                         type="file",
                         size=obj["Size"],
                         modified=obj["LastModified"].isoformat(),
+                        is_empty=False,
                     )
                 )
 

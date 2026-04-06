@@ -117,6 +117,9 @@ class FileItemSerializer(serializers.Serializer):
         required=False,
         help_text="Last modified timestamp",
     )
+    is_empty = serializers.BooleanField(
+        help_text="True if the folder has no children. Always False for files.",
+    )
 
 
 class StorageListResponseSerializer(serializers.Serializer):

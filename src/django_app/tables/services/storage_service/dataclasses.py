@@ -12,6 +12,7 @@ class FileListItem:
     type: Literal["file", "folder"]
     size: int
     modified: str | None
+    is_empty: bool
 
     def to_dict(self) -> dict:
         return asdict(self)
