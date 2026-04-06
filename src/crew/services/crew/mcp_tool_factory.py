@@ -1,6 +1,7 @@
 import asyncio
 from functools import partial
 
+
 from fastmcp import Client
 from mcp.types import Tool as FastMCPTool
 
@@ -74,6 +75,7 @@ class McpTool:
         return tool
 
     async def execute(self, stop_event: StopEvent | None = None, **kwargs):
+        # rewrap the AI request back into wrapper
         if self.wrapper_key:
             kwargs = {self.wrapper_key: kwargs}
 
@@ -119,9 +121,9 @@ class CrewaiMcpToolFactory:
 
         wrapper_key = None
         effective_schema = tool.inputSchema
-        if tool.inputSchema:
+        if effective_schema:
             effective_schema, wrapper_key = _unwrap_single_nested_schema(
-                tool.inputSchema
+                effective_schema
             )
 
         mcp_tool.wrapper_key = wrapper_key
