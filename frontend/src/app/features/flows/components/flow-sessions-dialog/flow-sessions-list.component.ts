@@ -22,6 +22,7 @@ import { FlowSessionsTableComponent } from './flow-sessions-table.component';
 import { PaginationControlsComponent, IconButtonComponent } from '@shared/components';
 import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-filter-dropdown.component';
 import { FlowSessionNodeFilterDropdownComponent } from './flow-session-node-filter-dropdown.component';
+import { NodeGroup } from 'src/app/shared/models/node-group.model';
 
 @Component({
   selector: 'app-flow-sessions-list',
@@ -48,7 +49,9 @@ export class FlowSessionsListComponent implements OnInit {
   public nodeFilter = signal<string | null>(null)
   public totalCount = 0;
   public availableNodes = signal<string[]>([]);
+  public isErrorCauseFilter = signal<boolean>(false);
   private reloadTrigger = signal(0);
+  public availableNodeGroups = signal<NodeGroup[]>([]);
 
   @ViewChild('sessionSearchInput')
   sessionSearchInput!: ElementRef<HTMLInputElement>;
@@ -61,15 +64,15 @@ export class FlowSessionsListComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {
     this.flow = data.flow;
-    console.log('flow in constructor:', JSON.stringify(this.flow));
     this.loadAvailableNodes()
     effect(() => {
       const page = this.currentPage();
       const size = this.pageSize();
       const status = this.statusFilter();
       const nodeName = this.nodeFilter();
+      const isErrorCause = this.isErrorCauseFilter();
       this.reloadTrigger();
-      this.loadSessions(size, (page - 1) * size, status, nodeName);
+      this.loadSessions(size, (page - 1) * size, status, nodeName, isErrorCause);
     });
   }
 
@@ -78,45 +81,47 @@ export class FlowSessionsListComponent implements OnInit {
   }
 
   private loadAvailableNodes(): void {
-    const nodeLists = [
-      this.flow?.crew_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.python_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.llm_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.file_extractor_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.webhook_trigger_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.telegram_trigger_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.end_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.subgraph_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.decision_table_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.audio_transcription_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.code_agent_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-      this.flow?.start_node_list?.map((n: any) => ({ node_name: n.node_name, id: n.id })) ?? [],
-    ];
+  const groups: NodeGroup[] = [
+    { label: 'Crew Node',         icon: 'ti ti-users',              color: '#f0a500', nodes: this.extractNodeNames(this.flow?.crew_node_list) },
+    { label: 'Python Node',       icon: 'ti ti-brand-python',       color: '#ffcf3f', nodes: this.extractNodeNames(this.flow?.python_node_list) },
+    { label: 'LLM Node',          icon: 'ti ti-brain',              color: '#a78bfa', nodes: this.extractNodeNames(this.flow?.llm_node_list) },
+    { label: 'File Extractor',    icon: 'ti ti-file-search',        color: '#38bdf8', nodes: this.extractNodeNames(this.flow?.file_extractor_node_list) },
+    { label: 'Audio to Text',     icon: 'ti ti-microphone',         color: '#f472b6', nodes: this.extractNodeNames(this.flow?.audio_transcription_node_list) },
+    { label: 'Webhook Trigger',   icon: 'ti ti-webhook',            color: '#34d399', nodes: this.extractNodeNames(this.flow?.webhook_trigger_node_list) },
+    { label: 'Telegram Trigger',  icon: 'ti ti-brand-telegram',     color: '#38bdf8', nodes: this.extractNodeNames(this.flow?.telegram_trigger_node_list) },
+    { label: 'Subgraph',          icon: 'ti ti-hierarchy',          color: '#fb923c', nodes: this.extractNodeNames(this.flow?.subgraph_node_list) },
+    { label: 'Decision Table',    icon: 'ti ti-table',              color: '#60a5fa', nodes: this.extractNodeNames(this.flow?.decision_table_node_list) },
+    { label: 'Code Agent',        icon: 'ti ti-robot',              color: '#4ade80', nodes: this.extractNodeNames(this.flow?.code_agent_node_list) },
+    { label: 'Start',             icon: 'ti ti-player-play-filled', color: '#d3d3d3', nodes: this.extractNodeNames(this.flow?.start_node_list) },
+    { label: 'End',               icon: 'ti ti-square-rounded',     color: '#d3d3d3', nodes: this.extractNodeNames(this.flow?.end_node_list) },
+  ].filter(g => g.nodes.length > 0);
 
-    const allNodes = nodeLists.flat()
-    const nodeNames = [
-      ...new Set(
-        allNodes
-        .filter((n: any) => n?.node_name)
-        .map((n: any) => `${n.node_name} #${n.id}`)
-      ),
-    ]
-    .map((name) => name.replace(/^__|__$/g, ''))
+  this.availableNodeGroups.set(groups);
+
+  const allNodes = groups.flatMap(g => g.nodes);
+  this.availableNodes.set(allNodes);
+}
+
+private extractNodeNames(list: any[] | undefined | null): string[] {
+  if (!list?.length) return [];
+  return list
+    .filter(n => n?.node_name)
+    .map(n => `${n.node_name} #${n.id}`)
+    .map(name => name.replace(/^__|__$/g, ''))
     .filter(Boolean)
     .sort();
-    this.availableNodes.set(nodeNames);
-    this.cdr.markForCheck();
-    console.log("availableNodes", this.availableNodes());
-    console.log("flow nodes sample", this.flow?.llm_node_list);
-    console.log("first node keys", this.flow?.llm_node_list?.[0]);
+}
 
+  public onIsErrorCauseChange(): void {
+    this.isErrorCauseFilter.set(!this.isErrorCauseFilter());
+    this.currentPage.set(1);
   }
 
-  private loadSessions(limit: number, offset: number, status: string[], nodeName: string | null = null): void {
+  private loadSessions(limit: number, offset: number, status: string[], nodeName: string | null = null, isErrorCause: boolean = false): void {
     this.isLoaded.set(false);
     if (this.flow && this.flow.id) {
       this.graphSessionService
-        .getSessionsByGraphId(this.flow.id, false, limit, offset, status, nodeName)
+        .getSessionsByGraphId(this.flow.id, false, limit, offset, status, nodeName, isErrorCause)
         .subscribe({
           next: (sessions) => {
             this.sessions.set(sessions.results);

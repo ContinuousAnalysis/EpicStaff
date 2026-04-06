@@ -12,6 +12,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
+import { NodeGroup } from 'src/app/shared/models/node-group.model';
 
 @Component({
   selector: 'app-flow-session-node-filter-dropdown',
@@ -26,8 +27,8 @@ import { ClickOutsideDirective } from '../../../../shared/directives/click-outsi
     >
       <button class="dropdown-toggle" (click)="toggleDropdown($event)">
         <span class="selected-label">
-          <i class="ti ti-diagram"></i>
-          {{ selectedValue ?? 'All Nodes' }}
+          <i class="ti ti-filter"></i>
+          {{ selectedValue ?? 'Filter by Node name' }}
         </span>
         <span class="dropdown-arrow-wrapper">
           <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24">
@@ -73,24 +74,42 @@ import { ClickOutsideDirective } from '../../../../shared/directives/click-outsi
               }
             </li>
 
-            @for (node of filteredNodes; track node) {
-              <li
-                (click)="selectNode(node, $event)"
-                [class.selected]="selectedValue === node"
-              >
-                <i class="ti ti-diagram"></i>
-                <span>{{ node }}</span>
-                @if (selectedValue === node) {
-                  <span class="checkmark">&#10003;</span>
+            @for (group of filteredGroups; track group.label) {
+              @if (group.nodes.length > 0) {
+                <li class="group-header">
+                  <i [class]="group.icon" [style.color]="group.color"></i>
+                  <span>{{ group.label }}</span>
+                </li>
+                @for (node of group.nodes; track node) {
+                  <li
+                    class="group-item"
+                    (click)="selectNode(node, $event)"
+                    [class.selected]="selectedValue === node"
+                  >
+                    <span>{{ node }}</span>
+                    @if (selectedValue === node) {
+                      <span class="checkmark">&#10003;</span>
+                    }
+                  </li>
                 }
-              </li>
-            } @empty {
+              }
+            }
+
+            @if (hasNoResults) {
               <li class="no-results">
                 <i class="ti ti-search-off"></i>
                 No nodes found
               </li>
             }
           </ul>
+
+          @if (selectedValue) {
+            <div class="clear-filter-footer">
+              <button class="clear-filter-btn" (click)="selectNode(null, $event)">
+                Clear Filter
+              </button>
+            </div>
+          }
         </div>
       }
     </div>
@@ -99,46 +118,63 @@ import { ClickOutsideDirective } from '../../../../shared/directives/click-outsi
 })
 
 export class FlowSessionNodeFilterDropdownComponent implements OnChanges {
-    @Input() nodes: string[] = [];
+    @Input() nodeGroups: NodeGroup[] = [];
     @Input() value: string | null = null;
     @Output() valueChange = new EventEmitter<string | null>();
-
-
+    
     public open = false;
     public selectedValue: string | null = null;
     public searchQuery = '';
-
-    public get filteredNodes(): string[] {
-        const search = this.searchQuery.trim().toLowerCase();
-        return search
-            ? this.nodes.filter((n) => n.toLowerCase().includes(search))
-            : [...this.nodes];
-    }
-
+    public filteredGroups: NodeGroup[] = [];
+    
     constructor(private cdr: ChangeDetectorRef) {}
 
     public ngOnChanges(changes: SimpleChanges): void {
         if (changes['value']) {
             this.selectedValue = this.value;
         }
-        if (changes['nodes']) { 
-            this.cdr.markForCheck();
+        if (changes['nodeGroups']) {
+            this.applySearch(this.searchQuery);
         }
+    }
+
+    private applySearch(query: string): void {
+        const search = query.trim().toLowerCase();
+        if (!search) {
+            this.filteredGroups = this.nodeGroups.map(g => ({ ...g }));
+            return;
+        }
+        this.filteredGroups = this.nodeGroups
+        .map(g => ({
+            ...g,
+            nodes: g.nodes.filter(n => n.toLowerCase().includes(search)),
+        }))
+        .filter(g => g.nodes.length > 0);
+    }
+
+    public get hasNoResults(): boolean {
+        return this.filteredGroups.length === 0 || 
+        this.filteredGroups.every(g => g.nodes.length === 0);
     }
 
     
     public onSearchChange(query: string): void {
         this.searchQuery = query;
+        this.applySearch(query);
     }
 
     public clearSearch(event: Event): void {
         event.stopPropagation();
         this.searchQuery = '';
+        this.applySearch('');
     }
 
     public toggleDropdown(event: Event): void {
         event.stopPropagation();
         this.open = !this.open;
+        if (this.open) {
+            this.applySearch(this.searchQuery);
+        }
     }
 
     public closeDropdown(): void {

@@ -120,8 +120,8 @@ export class GraphSessionService {
     limit?: number,
     offset?: number,
     status?: string[],
-    nodeName?: string | null
-  ): Observable<ApiGetRequest<GraphSession>>;
+    nodeName?: string | null,
+    ): Observable<ApiGetRequest<GraphSession>>;
 
   getSessionsByGraphId(
     graphId: number,
@@ -129,7 +129,8 @@ export class GraphSessionService {
     limit?: number,
     offset?: number,
     status?: string[],
-    nodeName?: string | null
+    nodeName?: string | null,
+    isErrorCause?: boolean
   ): Observable<ApiGetRequest<GraphSessionLight>>;
 
   getSessionsByGraphId(
@@ -138,8 +139,9 @@ export class GraphSessionService {
     limit?: number,
     offset?: number,
     status?: string[],
-    nodeName?: string | null
-  ): Observable<ApiGetRequest<GraphSession | GraphSessionLight>> {
+    nodeName?: string | null,
+    isErrorCause?: boolean
+    ): Observable<ApiGetRequest<GraphSession | GraphSessionLight>> {
     let params = new HttpParams().set('graph_id', graphId.toString());
 
     if (detailed !== undefined)
@@ -150,7 +152,8 @@ export class GraphSessionService {
       params = params.set('status', status.join(','));
     if (nodeName)
       params = params.set('node_name', nodeName)
-
+    if (isErrorCause) 
+      params = params.set('is_error_cause', 'true');
     if (detailed === false) {
       return this.http.get<ApiGetRequest<GraphSessionLight>>(this.apiUrl, {
         params,

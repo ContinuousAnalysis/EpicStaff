@@ -31,7 +31,7 @@ interface StatusOption {
       <button class="dropdown-toggle" (click)="toggleDropdown($event)">
         <span class="selected-icons">
           @if (selectedValues().length === 0) {
-          <i [class]="options[0].icon"></i> {{ options[0].label }}
+          <i class="ti ti-filter"></i> Filter by status
           } @else if (selectedValues().length === 1) {
           <i
             [class]="selectedOptions()[0].icon"
