@@ -97,6 +97,7 @@ class PythonNode(BaseNode):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
     stream_config = models.JSONField(default=dict, blank=True)
+    use_storage = models.BooleanField(default=False)
 
     def generate_hash(self):
         """
@@ -203,6 +204,7 @@ class CodeAgentNode(BaseNode):
     max_wait_s = models.IntegerField(default=300)
     stream_config = models.JSONField(default=dict, blank=True)
     output_schema = models.JSONField(default=dict, blank=True)
+    use_storage = models.BooleanField(default=False)
 
 
 class Edge(BaseGraphEntity, models.Model):
