@@ -60,6 +60,7 @@ async def run(code_task_data: CodeTaskData):
         entrypoint=code_task_data.entrypoint,
         func_kwargs=code_task_data.func_kwargs,
         global_kwargs=code_task_data.global_kwargs,
+        use_storage=code_task_data.use_storage,
     )
     await redis_service.async_publish(
         channel=code_result_channel, message=result.model_dump()

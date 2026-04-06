@@ -40,6 +40,7 @@ class RunPythonCodeService(metaclass=SingletonMeta):
                 **global_kwargs,
                 **additional_global_kwargs,
             },
+            use_storage=python_code_data.use_storage,
         )
         callback_receiver = RunPythonCallbackReceiver(execution_id=unique_task_id)
 

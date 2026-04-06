@@ -62,7 +62,11 @@ class CreateVenvHandler(AbstractHandler):
 
         context["libraries"] = set(context["libraries"])
         # Install libraries
-        predefined_libraries = {"/app/src/shared/dotdict"}  # TODO: deal with hard coded path
+        predefined_libraries = {
+            "/app/src/shared/dotdict"
+        }  # TODO: deal with hard coded path
+        if context.get("use_storage"):
+            predefined_libraries.add("/app/src/shared/epicstaff_storage")
         context["libraries"].update(predefined_libraries)
 
         context["libraries"] = sorted(context["libraries"])
@@ -339,6 +343,7 @@ class DynamicVenvExecutorChain:
         entrypoint: str = "main",
         func_kwargs: dict[str, Any] | None = None,
         global_kwargs: dict[str, Any] | None = None,
+        use_storage: bool = False,
     ) -> CodeResultData:
         """Run the complete workflow asynchronously."""
         if func_kwargs is None:
@@ -358,6 +363,7 @@ class DynamicVenvExecutorChain:
             "func_kwargs": func_kwargs,
             "execution_id": execution_id,
             "global_kwargs": global_kwargs,
+            "use_storage": use_storage,
         }
 
         result = await self.chain.handle(context)

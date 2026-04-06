@@ -50,6 +50,7 @@ class PythonCodeData(BaseModel):
     entrypoint: str
     libraries: list[str]
     global_kwargs: dict[str, Any] | None = None
+    use_storage: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -147,5 +148,6 @@ class CodeTaskData(BaseModel):
     entrypoint: str
     func_kwargs: dict | None = None
     global_kwargs: dict[str, Any] | None = None
+    use_storage: bool = False
 
     model_config = ConfigDict(from_attributes=True)

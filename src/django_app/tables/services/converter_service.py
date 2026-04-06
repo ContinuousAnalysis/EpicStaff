@@ -373,7 +373,9 @@ class ConverterService(metaclass=SingletonMeta):
 
         return rt_agent_chat_data
 
-    def convert_python_code_to_pydantic(self, python_code: PythonCode):
+    def convert_python_code_to_pydantic(
+        self, python_code: PythonCode, use_storage: bool = False
+    ):
         libraries = python_code.get_libraries_list()
         venv_name = str(python_code.pk)
         if not libraries:
@@ -384,6 +386,7 @@ class ConverterService(metaclass=SingletonMeta):
             entrypoint=python_code.entrypoint,
             libraries=libraries,
             global_kwargs=python_code.global_kwargs,
+            use_storage=use_storage,
         )
 
     def convert_python_code_tool_to_pydantic(
@@ -520,7 +523,8 @@ class ConverterService(metaclass=SingletonMeta):
         resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
     ) -> PythonNodeData:
         python_code_data = self.convert_python_code_to_pydantic(
-            python_code=python_node.python_code
+            python_code=python_node.python_code,
+            use_storage=python_node.use_storage,
         )
         return PythonNodeData(
             node_name=resolver(python_node.id),
