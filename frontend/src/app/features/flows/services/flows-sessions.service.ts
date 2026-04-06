@@ -1,118 +1,120 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable, Subject } from 'rxjs';
-import { ConfigService } from '../../../services/config/config.service';
+
 import { ApiGetRequest } from '../../../core/models/api-request.model';
 import { WarningMessages } from '../../../pages/running-graph/models/warning-messages.model';
+import { ConfigService } from '../../../services/config/config.service';
 
 export interface GraphSessionGraph {
-  id: number;
-  name: string;
-  metadata: any;
+    id: number;
+    name: string;
+    metadata: Record<string, unknown>;
 }
 
 export enum GraphSessionStatus {
-  RUNNING = 'run',
-  ERROR = 'error',
-  ENDED = 'end',
-  WAITING_FOR_USER = 'wait_for_user',
-  PENDING = 'pending',
-  EXPIRED = 'expired',
-  STOP = 'stop',
+    RUNNING = 'run',
+    ERROR = 'error',
+    ENDED = 'end',
+    WAITING_FOR_USER = 'wait_for_user',
+    PENDING = 'pending',
+    EXPIRED = 'expired',
+    STOP = 'stop',
 }
 
 export interface GraphSession {
-  id: number;
-  graph: GraphSessionGraph;
-  status: GraphSessionStatus;
-  status_data: Record<string, any>;
-  initial_state: Record<string, any>;
-  created_at: string;
-  finished_at: string | null;
+    id: number;
+    graph: GraphSessionGraph;
+    status: GraphSessionStatus;
+    status_data: Record<string, unknown>;
+    initial_state: Record<string, unknown>;
+    created_at: string;
+    finished_at: string | null;
 }
 
 export interface SessionUpdates {
-  status: GraphSessionStatus;
+    status: GraphSessionStatus;
 }
 
 export interface GraphSessionLight {
-  id: number;
-  graph_id: number;
-  status: GraphSessionStatus;
-  status_updated_at: string;
-  created_at: string;
-  finished_at: string | null;
+    id: number;
+    graph_id: number;
+    status: GraphSessionStatus;
+    status_updated_at: string;
+    created_at: string;
+    finished_at: string | null;
 }
 
 export type SessionStatusesCounts = {
-  run: number;
-  wait_for_user: number;
-  error: number;
-  pending: number;
-  stop: number;
+    run: number;
+    wait_for_user: number;
+    error: number;
+    pending: number;
+    stop: number;
 };
 
 export type GraphSessionStatusesCounts = {
-  [graph_id: string]: SessionStatusesCounts;
+    [graph_id: string]: SessionStatusesCounts;
 };
 
 export type SessionStatusesCountsMap = Map<string, SessionStatusesCounts>;
 
 export const defaultSessionStatusesCounts = (): SessionStatusesCounts => ({
-  run: 0,
-  wait_for_user: 0,
-  error: 0,
-  pending: 0,
-  stop: 0,
+    run: 0,
+    wait_for_user: 0,
+    error: 0,
+    pending: 0,
+    stop: 0,
 });
 
 @Injectable({
-  providedIn: 'root',
+    providedIn: 'root',
 })
 export class GraphSessionService {
-  private readonly _sessionsChanged$ = new Subject<void>();
-  public readonly sessionsChanged$ = this._sessionsChanged$.asObservable();
+    private readonly _sessionsChanged$ = new Subject<void>();
+    public readonly sessionsChanged$ = this._sessionsChanged$.asObservable();
 
-  constructor(private http: HttpClient, private configService: ConfigService) {}
+    constructor(
+        private http: HttpClient,
+        private configService: ConfigService
+    ) {}
 
-  private get apiUrl(): string {
-    return this.configService.apiUrl + 'sessions/';
-  }
+    private get apiUrl(): string {
+        return this.configService.apiUrl + 'sessions/';
+    }
 
-  getAllSessions(): Observable<GraphSession[]> {
-    return this.http.get<ApiGetRequest<GraphSession>>(this.apiUrl).pipe(
-      map((response) => {
-        return response.results.sort((a, b) => b.id - a.id);
-      })
-    );
-  }
+    getAllSessions(): Observable<GraphSession[]> {
+        return this.http.get<ApiGetRequest<GraphSession>>(this.apiUrl).pipe(
+            map((response) => {
+                return response.results.sort((a, b) => b.id - a.id);
+            })
+        );
+    }
 
-  getSessionStatuses(graphId?: string): Observable<SessionStatusesCountsMap> {
-    const params = new HttpParams().set('graph_id', graphId!.toString());
-    return this.http
-      .get<GraphSessionStatusesCounts>(this.apiUrl + 'statuses/', { params })
-      .pipe(
-        map((response) => {
-          const outerMap: SessionStatusesCountsMap = new Map();
-          Object.entries(response).forEach(([graphId, statuses]) => {
-            const normalizedStatuses: SessionStatusesCounts = {
-              ...defaultSessionStatusesCounts(),
-              ...statuses,
-            };
-            outerMap.set(graphId, normalizedStatuses);
-          });
-          return outerMap;
-        })
-      );
-  }
+    getSessionStatuses(graphId?: string): Observable<SessionStatusesCountsMap> {
+        const params = new HttpParams().set('graph_id', graphId!.toString());
+        return this.http.get<GraphSessionStatusesCounts>(this.apiUrl + 'statuses/', { params }).pipe(
+            map((response) => {
+                const outerMap: SessionStatusesCountsMap = new Map();
+                Object.entries(response).forEach(([graphId, statuses]) => {
+                    const normalizedStatuses: SessionStatusesCounts = {
+                        ...defaultSessionStatusesCounts(),
+                        ...statuses,
+                    };
+                    outerMap.set(graphId, normalizedStatuses);
+                });
+                return outerMap;
+            })
+        );
+    }
 
-  getSessionById(sessionId: number): Observable<GraphSession> {
-    return this.http.get<GraphSession>(`${this.apiUrl}${sessionId}/`);
-  }
+    getSessionById(sessionId: number): Observable<GraphSession> {
+        return this.http.get<GraphSession>(`${this.apiUrl}${sessionId}/`);
+    }
 
-  getSessionUpdates(sessionId: string): Observable<SessionUpdates> {
-    return this.http.get<SessionUpdates>(`${this.apiUrl}${sessionId}/get-updates/`);
-  }
+    getSessionUpdates(sessionId: string): Observable<SessionUpdates> {
+        return this.http.get<SessionUpdates>(`${this.apiUrl}${sessionId}/get-updates/`);
+    }
 
   getSessionsByGraphId(
     graphId: number,
@@ -165,23 +167,27 @@ export class GraphSessionService {
     }
   }
 
-  deleteSessionById(sessionId: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}${sessionId}/`).pipe(
-      map(() => { this._sessionsChanged$.next(); })
-    );
-  }
+    deleteSessionById(sessionId: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}${sessionId}/`).pipe(
+            map(() => {
+                this._sessionsChanged$.next();
+            })
+        );
+    }
 
-  bulkDeleteSessions(ids: number[]): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}bulk_delete/`, { ids }).pipe(
-      map(() => { this._sessionsChanged$.next(); })
-    );
-  }
+    bulkDeleteSessions(ids: number[]): Observable<void> {
+        return this.http.post<void>(`${this.apiUrl}bulk_delete/`, { ids }).pipe(
+            map(() => {
+                this._sessionsChanged$.next();
+            })
+        );
+    }
 
-  stopSessionById(sessionId: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}${sessionId}/stop/`, {});
-  }
+    stopSessionById(sessionId: number): Observable<void> {
+        return this.http.post<void>(`${this.apiUrl}${sessionId}/stop/`, {});
+    }
 
-  getSessionWarnings(sessionId: string): Observable<WarningMessages> {
-    return this.http.get<WarningMessages>(`${this.apiUrl}${sessionId}/warnings/`);
-  }
+    getSessionWarnings(sessionId: string): Observable<WarningMessages> {
+        return this.http.get<WarningMessages>(`${this.apiUrl}${sessionId}/warnings/`);
+    }
 }
