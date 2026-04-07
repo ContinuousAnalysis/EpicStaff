@@ -9,6 +9,7 @@ from typing import Iterator
 from tables.services.storage_service.base import AbstractStorageBackend
 from tables.services.storage_service.dataclasses import (
     FileInfo,
+    FolderInfo,
     FileListItem,
     UploadResult,
 )
@@ -122,13 +123,27 @@ class LocalStorageBackend(AbstractStorageBackend):
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(source), str(destination))
 
-    def info(self, path: str) -> FileInfo:
-        target = self._resolve(path)
+    def info(self, path: str) -> FileInfo | FolderInfo:
+        clean_path = path.rstrip("/")
+        target = self._resolve(clean_path)
+        name = target.name
+
+        if not target.exists():
+            raise FileNotFoundError(f"File does not exist: {path}")
+
         stat = target.stat()
-        content_type, _ = mimetypes.guess_type(target.name)
         modified = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+
+        if target.is_dir():
+            return FolderInfo(
+                name=name,
+                path=clean_path + "/",
+                modified=modified,
+            )
+
+        content_type, _ = mimetypes.guess_type(target.name)
         return FileInfo(
-            name=target.name,
+            name=name,
             path=path,
             size=stat.st_size,
             content_type=content_type or "application/octet-stream",

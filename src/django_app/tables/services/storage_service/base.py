@@ -5,6 +5,7 @@ from typing import Iterator
 
 from tables.services.storage_service.dataclasses import (
     FileInfo,
+    FolderInfo,
     FileListItem,
     UploadResult,
 )
@@ -79,8 +80,8 @@ class AbstractStorageBackend(ABC):
         """Copy file or folder."""
 
     @abstractmethod
-    def info(self, path: str) -> FileInfo:
-        """Return file metadata."""
+    def info(self, path: str) -> FileInfo | FolderInfo:
+        """Return file or folder metadata."""
 
     @abstractmethod
     def exists(self, path: str) -> bool:

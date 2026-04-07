@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 from tables.services.storage_service.base import AbstractStorageBackend
 from tables.services.storage_service.dataclasses import (
     FileInfo,
+    FolderInfo,
     FileListItem,
     UploadResult,
 )
@@ -249,22 +250,37 @@ class S3StorageBackend(AbstractStorageBackend):
         if not copied:
             raise FileNotFoundError(f"Source path does not exist: {source_path}")
 
-    def info(self, path: str) -> FileInfo:
-        full_path = self._full_path(path)
+    def info(self, path: str) -> FileInfo | FolderInfo:
+        clean_path = path.rstrip("/")
+        full_path = self._full_path(clean_path)
+        name = clean_path.split("/")[-1]
+
+        # Try as file first
         try:
             head = self.client.head_object(Bucket=self.bucket_name, Key=full_path)
+            return FileInfo(
+                name=name,
+                path=clean_path,
+                size=head["ContentLength"],
+                content_type=head.get("ContentType", "application/octet-stream"),
+                modified=head["LastModified"].isoformat(),
+            )
+        except ClientError as error:
+            if error.response["Error"]["Code"] != "404":
+                raise
+
+        # Try as folder marker
+        try:
+            head = self.client.head_object(Bucket=self.bucket_name, Key=full_path + "/")
+            return FolderInfo(
+                name=name,
+                path=clean_path + "/",
+                modified=head["LastModified"].isoformat(),
+            )
         except ClientError as error:
             if error.response["Error"]["Code"] == "404":
                 raise FileNotFoundError(f"File does not exist: {path}")
             raise
-        name = path.rstrip("/").split("/")[-1]
-        return FileInfo(
-            name=name,
-            path=path,
-            size=head["ContentLength"],
-            content_type=head.get("ContentType", "application/octet-stream"),
-            modified=head["LastModified"].isoformat(),
-        )
 
     def exists(self, path: str) -> bool:
         full_path = self._full_path(path)

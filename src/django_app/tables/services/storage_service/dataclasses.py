@@ -33,6 +33,18 @@ class FileInfo:
 
 
 @dataclass(frozen=True, slots=True)
+class FolderInfo:
+    """Metadata returned by info() for folders."""
+
+    name: str
+    path: str
+    modified: str
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
 class UploadResult:
     """Raw result from a backend upload() call."""
 
