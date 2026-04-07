@@ -50,8 +50,27 @@ class FileValidator:
         }
     )
 
+    BLOCKED_ARCHIVE_EXTENSIONS: frozenset[str] = frozenset(
+        {
+            ".rar",
+            ".7z",
+            ".cab",
+            ".iso",
+            ".arj",
+            ".lzh",
+            ".ace",
+            ".arc",
+            ".lz",
+            ".lzma",
+            ".zst",
+        }
+    )
+
     def is_executable_filename(self, filename: str) -> bool:
         return os.path.splitext(filename)[1].lower() in self.BLOCKED_EXTENSIONS
+
+    def is_unsupported_archive(self, filename: str) -> bool:
+        return os.path.splitext(filename)[1].lower() in self.BLOCKED_ARCHIVE_EXTENSIONS
 
     def scan_archive_for_executables(self, file_obj) -> list[str]:
         """
@@ -93,31 +112,38 @@ class FileValidator:
     def validate(self, files: list) -> list:
         """
         Validate a list of uploaded files.  Raises
-        ``serializers.ValidationError`` if any file (or archive entry) has a
-        blocked executable extension.
+        ``serializers.ValidationError`` if any file uses an unsupported
+        archive format or contains blocked executable extensions.
+        ZIP and TAR archives are allowed — they are auto-extracted by the
+        storage layer and never stored as-is.
         """
-        all_problems: dict[str, list[str]] = {}
+        detail_lines: list[str] = []
 
         for f in files:
-            if self.is_executable_filename(f.name):
-                all_problems[f.name] = [f.name]
+            # Block unsupported archive formats first
+            if self.is_unsupported_archive(f.name):
+                ext = os.path.splitext(f.name)[1].lower()
+                detail_lines.append(
+                    f"'{ext}' archives are not supported. Use ZIP or TAR instead."
+                )
                 continue
+
+            # Block executable file extensions
+            if self.is_executable_filename(f.name):
+                detail_lines.append(f"'{f.name}' has a blocked executable extension")
+                continue
+
+            # Scan ZIP/TAR contents for executables
             archive_blocked = self.scan_archive_for_executables(f)
             if archive_blocked:
-                all_problems[f.name] = archive_blocked
+                detail_lines.append(
+                    f"Archive '{f.name}' contains executable files: "
+                    + ", ".join(archive_blocked)
+                )
 
-        if all_problems:
-            detail_lines = []
-            for fname, entries in all_problems.items():
-                if len(entries) == 1 and entries[0] == fname:
-                    detail_lines.append(f"'{fname}' has a blocked executable extension")
-                else:
-                    detail_lines.append(
-                        f"Archive '{fname}' contains executable files: "
-                        + ", ".join(entries)
-                    )
+        if detail_lines:
             raise serializers.ValidationError(
-                "Executable files are not allowed. " + "; ".join(detail_lines)
+                "Upload rejected. " + "; ".join(detail_lines)
             )
 
         return files
