@@ -848,28 +848,8 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
 
 class IdempotentNodeCreateMixin:
     # TODO: change fields from (graph, node_name) to id (all nodes id's are consistent)
-    """
-    COMMIT_COMMENTS: Makes node POST idempotent — if a node with the same
-    (graph, node_name) already exists, update it instead of failing with a
-    unique constraint violation. This prevents orphan accumulation when
-    forkJoin-based saves partially fail and retry.
-    """
-
-    def create(self, request, *args, **kwargs):
-        graph_id = request.data.get("graph")
-        node_name = request.data.get("node_name")
-        if graph_id and node_name:
-            try:
-                existing = self.get_queryset().model.objects.get(
-                    graph_id=graph_id, node_name=node_name
-                )
-                serializer = self.get_serializer(existing, data=request.data)
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except self.get_queryset().model.DoesNotExist:
-                pass
-        return super().create(request, *args, **kwargs)
+    # idempodent mixin required for CodeAgent
+    pass
 
 
 class CrewNodeViewSet(
