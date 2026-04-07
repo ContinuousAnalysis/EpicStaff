@@ -17,7 +17,7 @@ from graphrag.config.enums import (
     InputFileType,
     ChunkStrategyType,
 )
-from models.redis_models import GraphRagBasicSearchParams, GraphRagLocalSearchParams
+from src.shared.models import GraphRagBasicSearchParams, GraphRagLocalSearchParams
 from rag.graph_rag.utils import (
     build_basic_search_prompt,
     build_local_search_prompt,

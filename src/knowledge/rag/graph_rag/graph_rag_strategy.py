@@ -12,7 +12,7 @@ from graphrag.config.models.graph_rag_config import GraphRagConfig
 from rag.base_rag_strategy import BaseRAGStrategy
 from rag.graph_rag.graph_rag_file_manager import GraphRagFileManager
 from rag.graph_rag.graph_rag_config_builder import GraphRagConfigBuilder
-from models.redis_models import (
+from src.shared.models import (
     GraphRagSearchConfig,
     BaseKnowledgeSearchMessageResponse,
     KnowledgeChunkResponse,
