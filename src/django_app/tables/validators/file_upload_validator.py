@@ -6,7 +6,7 @@ import zipfile
 from rest_framework import serializers
 
 
-class FileUploadValidator:
+class FileValidator:
     """
     Validates uploaded files against a blocklist of executable extensions.
     Inspects archive contents (ZIP/TAR) without extracting file data.

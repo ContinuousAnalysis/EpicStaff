@@ -1,6 +1,8 @@
+import os
+
 from rest_framework import serializers
 
-from tables.validators.file_upload_validator import FileUploadValidator
+from tables.validators.file_upload_validator import FileValidator
 
 
 class StoragePathQuerySerializer(serializers.Serializer):
@@ -31,7 +33,7 @@ class StorageUploadSerializer(serializers.Serializer):
     )
 
     def validate_files(self, value):
-        return FileUploadValidator().validate(value)
+        return FileValidator().validate(value)
 
 
 class StorageMkdirSerializer(serializers.Serializer):
@@ -52,6 +54,14 @@ class StorageDownloadZipSerializer(serializers.Serializer):
 class StorageRenameSerializer(serializers.Serializer):
     from_path = serializers.CharField(source="from", help_text="Source path")
     to_path = serializers.CharField(source="to", help_text="Destination path")
+
+    def validate_to_path(self, value: str) -> str:
+        if FileValidator().is_executable_filename(value):
+            ext = os.path.splitext(value)[1].lower()
+            raise serializers.ValidationError(
+                f"Renaming to '{ext}' is not allowed: blocked executable extension."
+            )
+        return value
 
 
 class StorageMoveSerializer(serializers.Serializer):
