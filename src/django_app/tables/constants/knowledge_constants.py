@@ -17,7 +17,7 @@ MAX_CHUNK_SIZE = 8000
 MIN_CHUNK_OVERLAP = 0
 MAX_CHUNK_OVERLAP = 1000
 
-# Chunk preview
+#Chunk preview 
 CHUNKING_TIMEOUT = 50.0
 
 UNIVERSAL_STRATEGIES = {"token", "character"}

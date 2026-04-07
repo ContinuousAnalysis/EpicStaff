@@ -7,6 +7,7 @@ from tables.import_export.constants import MAIN_ENTITY_KEY
 
 
 class ExportService:
+
     def __init__(self, registry: EntityRegistry):
         self.registry = registry
 

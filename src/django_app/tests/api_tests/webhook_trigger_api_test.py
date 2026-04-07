@@ -25,9 +25,7 @@ class TestWebhookTriggerAndNodeAPI:
         assert trigger.path == "myWebhook123"
         assert trigger.ngrok_webhook_config is None
 
-    def test_create_webhook_trigger_node_with_nested_trigger(
-        self, api_client, graph: Graph
-    ):
+    def test_create_webhook_trigger_node_with_nested_trigger(self, api_client, graph: Graph):
         """
         Ensure /api/webhook-trigger-nodes/ accepts nested webhook_trigger payload
         and links node to the corresponding WebhookTrigger.
@@ -59,3 +57,4 @@ class TestWebhookTriggerAndNodeAPI:
         # WebhookTrigger should be created or updated with this path
         trigger = WebhookTrigger.objects.get(path="myWebhookNested")
         assert trigger.ngrok_webhook_config is None
+

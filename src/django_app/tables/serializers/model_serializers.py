@@ -4,7 +4,10 @@ from itertools import chain
 from django.db import transaction
 from loguru import logger
 
-from tables.serializers.base_serializer import BaseGraphEntityMixin
+from tables.serializers.base_serializer import (
+    BaseGraphEntityMixin,
+    ContentHashWritableMixin,
+)
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
 )
@@ -13,7 +16,7 @@ from tables.validators.python_code_tool_config_validator import (
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import WebhookTrigger, NgrokWebhookConfig
-from tables.models.graph_models import NoteNode, WebhookTriggerNode
+from tables.models.graph_models import GraphNote, WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
 from tables.models import (
@@ -61,6 +64,7 @@ from tables.models.crew_models import (
 )
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.graph_models import (
+    CodeAgentNode,
     Condition,
     ConditionGroup,
     DecisionTableNode,
@@ -93,6 +97,7 @@ from tables.models.tag_models import (
     LLMModelTag,
 )
 from tables.models.vector_models import MemoryDatabase
+from tables.models.label_models import Label
 from tables.validators.tool_config_validator import ToolConfigValidator, eval_any
 from tables.models import (
     AgentSessionMessage,
@@ -109,6 +114,7 @@ from tables.constants.variables_constants import (
     DOMAIN_USER_KEY,
     DOMAIN_PERSISTENT_KEY,
 )
+from tables.services.persistent_variables_service import PersistentVariablesService
 from tables.services.rag_assignment_service import (
     RagAssignmentService,
     SearchConfigService,
@@ -312,7 +318,7 @@ class ToolSerializer(serializers.ModelSerializer):
         ]
 
 
-class PythonCodeSerializer(serializers.ModelSerializer):
+class PythonCodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     libraries = serializers.ListField(
         child=serializers.CharField(),
         write_only=False,
@@ -323,6 +329,10 @@ class PythonCodeSerializer(serializers.ModelSerializer):
         model = PythonCode
         fields = "__all__"
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "code": {"allow_blank": True},
+            "entrypoint": {"allow_blank": True},
+        }
 
     def to_representation(self, instance):
         """Convert 'libraries' string to a list of strings for output."""
@@ -1214,7 +1224,7 @@ class PythonCodeResultSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class CrewNodeSerializer(serializers.ModelSerializer):
+class CrewNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     crew = CrewSerializer(read_only=True)
     crew_id = serializers.IntegerField(write_only=True)
 
@@ -1234,7 +1244,7 @@ class CrewNodeSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class PythonNodeSerializer(serializers.ModelSerializer):
+class PythonNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
     class Meta:
@@ -1255,6 +1265,9 @@ class PythonNodeSerializer(serializers.ModelSerializer):
         # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
+            expected_hash = python_code_data.pop("content_hash", None)
+            if expected_hash is not None:
+                python_code._expected_hash = expected_hash
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
@@ -1271,19 +1284,23 @@ class PythonNodeSerializer(serializers.ModelSerializer):
         return self.update(instance, validated_data)
 
 
-class FileExtractorNodeSerializer(serializers.ModelSerializer):
+class FileExtractorNodeSerializer(
+    ContentHashWritableMixin, serializers.ModelSerializer
+):
     class Meta:
         model = FileExtractorNode
         fields = "__all__"
 
 
-class AudioTranscriptionNodeSerializer(serializers.ModelSerializer):
+class AudioTranscriptionNodeSerializer(
+    ContentHashWritableMixin, serializers.ModelSerializer
+):
     class Meta:
         model = AudioTranscriptionNode
         fields = "__all__"
 
 
-class LLMNodeSerializer(serializers.ModelSerializer):
+class LLMNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta:
         model = LLMNode
         fields = "__all__"
@@ -1294,13 +1311,19 @@ class LLMNodeSerializer(serializers.ModelSerializer):
         return data
 
 
-class EdgeSerializer(serializers.ModelSerializer):
+class CodeAgentNodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CodeAgentNode
+        fields = "__all__"
+
+
+class EdgeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
         model = Edge
         fields = "__all__"
 
 
-class SubGraphNodeSerializer(serializers.ModelSerializer):
+class SubGraphNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
         model = SubGraphNode
         fields = "__all__"
@@ -1320,7 +1343,7 @@ class SubGraphNodeSerializer(serializers.ModelSerializer):
         return data
 
 
-class ConditionalEdgeSerializer(serializers.ModelSerializer):
+class ConditionalEdgeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1341,6 +1364,9 @@ class ConditionalEdgeSerializer(serializers.ModelSerializer):
         # Update nested PythonCode instance if provided
         if python_code_data:
             python_code = instance.python_code
+            expected_hash = python_code_data.pop("content_hash", None)
+            if expected_hash is not None:
+                python_code._expected_hash = expected_hash
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
@@ -1357,7 +1383,7 @@ class ConditionalEdgeSerializer(serializers.ModelSerializer):
         return self.update(instance, validated_data)
 
 
-class StartNodeSerializer(serializers.ModelSerializer):
+class StartNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1385,30 +1411,12 @@ class StartNodeSerializer(serializers.ModelSerializer):
             graph=instance.graph
         ).first()
 
-        if not graph_organization:
-            return instance
-
-        if self._should_update_persistent(
-            old_variables,
-            instance.variables,
-            graph_organization.persistent_variables or {},
-            DOMAIN_ORGANIZATION_KEY,
-        ):
-            graph_organization.persistent_variables = self._get_persistent_variables(
-                instance.variables, DOMAIN_ORGANIZATION_KEY
+        if graph_organization:
+            service = PersistentVariablesService()
+            service.sync_graph_organization(
+                graph_organization, old_variables, instance.variables
             )
 
-        if self._should_update_persistent(
-            old_variables,
-            instance.variables,
-            graph_organization.user_variables or {},
-            DOMAIN_USER_KEY,
-        ):
-            graph_organization.user_variables = self._get_persistent_variables(
-                instance.variables, DOMAIN_USER_KEY
-            )
-
-        graph_organization.save()
         return instance
 
     def validate(self, attrs):
@@ -1419,8 +1427,9 @@ class StartNodeSerializer(serializers.ModelSerializer):
         organization_variables = persistent_variables.get(DOMAIN_ORGANIZATION_KEY, [])
         user_variables = persistent_variables.get(DOMAIN_USER_KEY, [])
 
+        service = PersistentVariablesService()
         for path in organization_variables + user_variables:
-            value = self._get_by_path(actual_variables, path)
+            value = service.get_by_path(actual_variables, path)
             if value is None:
                 raise ValidationError(
                     f"Path {path} in {DOMAIN_PERSISTENT_KEY} does not exist in {DOMAIN_VARIABLES_KEY}."
@@ -1428,66 +1437,8 @@ class StartNodeSerializer(serializers.ModelSerializer):
 
         return super().validate(attrs)
 
-    def _should_update_persistent(
-        self, old_vars: dict, new_vars: dict, existing_persistent: dict, object_key: str
-    ) -> bool:
-        """
-        Check if we should update persistent storage:
-        1. If tracked paths changed
-        2. If persistent storage is empty but we have paths to track
-        """
-        old_paths = set(old_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
-        new_paths = set(new_vars.get(DOMAIN_PERSISTENT_KEY, {}).get(object_key, []))
 
-        if old_paths != new_paths:
-            return True
-        if new_paths and not existing_persistent:
-            return True
-
-        return False
-
-    def _get_persistent_variables(self, variables: dict, object_key: str) -> dict:
-        """
-        Extract multiple dot-paths from `variables` and merge them
-        into a single nested dict.
-        """
-        persistent_variables = variables.get(DOMAIN_PERSISTENT_KEY, {}).get(
-            object_key, []
-        )
-        if not persistent_variables:
-            return {}
-
-        result = {}
-        for path in persistent_variables:
-            actual_variables = variables.get(DOMAIN_VARIABLES_KEY)
-            value = self._get_by_path(actual_variables, path)
-            if value is None:
-                continue
-            self._set_by_path(result, path, value)
-
-        return result
-
-    def _get_by_path(self, source: dict, path: str) -> dict | None:
-        """Get value from nested dict by dot-path. Returns None if path not found."""
-        current = source
-        try:
-            for key in path.split("."):
-                current = current[key]
-            return current
-        except (KeyError, TypeError):
-            return None
-
-    def _set_by_path(self, target: dict, path: str, value) -> None:
-        current = target
-        keys = path.split(".")
-
-        for key in keys[:-1]:
-            current = current.setdefault(key, {})
-
-        current[keys[-1]] = value
-
-
-class EndNodeSerializer(serializers.ModelSerializer):
+class EndNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     node_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -1517,6 +1468,7 @@ class SessionSerializer(serializers.ModelSerializer):
             "finished_at",
             "graph",
             "graph_schema",
+            "parent_session",
         ]
 
 
@@ -1530,6 +1482,7 @@ class SessionLightSerializer(serializers.ModelSerializer):
             "status_updated_at",
             "created_at",
             "finished_at",
+            "parent_session",
         )
 
 
@@ -1563,8 +1516,11 @@ class GraphTagSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class GraphLightSerializer(serializers.ModelSerializer):
+class GraphLightBaseSerializer(serializers.ModelSerializer):
     tags = GraphTagSerializer(many=True, read_only=True)
+    label_ids = serializers.PrimaryKeyRelatedField(
+        many=True, read_only=True, source="labels"
+    )
 
     class Meta:
         model = Graph
@@ -1573,7 +1529,22 @@ class GraphLightSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "tags",
+            "epicchat_enabled",
+            "label_ids",
+            "created_at",
+            "updated_at",
         ]
+
+
+class GraphLightSerializer(GraphLightBaseSerializer):
+    subflows = serializers.SerializerMethodField()
+
+    class Meta(GraphLightBaseSerializer.Meta):
+        fields = GraphLightBaseSerializer.Meta.fields + ["subflows"]
+
+    def get_subflows(self, obj):
+        graphs = Graph.objects.get_transitive_subflows(obj.id)
+        return GraphLightBaseSerializer(graphs, many=True).data
 
 
 class RealtimeModelSerializer(serializers.ModelSerializer):
@@ -1612,7 +1583,7 @@ class RealtimeAgentChatSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ConditionSerializer(serializers.ModelSerializer):
+class ConditionSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     condition_group = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -1620,7 +1591,7 @@ class ConditionSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ConditionGroupSerializer(serializers.ModelSerializer):
+class ConditionGroupSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     conditions = ConditionSerializer(many=True, required=False)
     decision_table_node = serializers.PrimaryKeyRelatedField(read_only=True)
 
@@ -1629,7 +1600,9 @@ class ConditionGroupSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class DecisionTableNodeSerializer(serializers.ModelSerializer):
+class DecisionTableNodeSerializer(
+    ContentHashWritableMixin, serializers.ModelSerializer
+):
     condition_groups = ConditionGroupSerializer(many=True, required=False)
 
     class Meta:
@@ -1682,14 +1655,30 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
             "webhook_trigger",
         ] + BaseGraphEntityMixin.Meta.common_fields
 
+    def to_internal_value(self, data):
+        # COMMIT_COMMENTS: Accept webhook_trigger as int FK ID (sent by frontend
+        # after loading from backend) in addition to nested dict — prevents
+        # validation error when the frontend round-trips the serialized data.
+        wt = data.get("webhook_trigger")
+        if isinstance(wt, int):
+            self._webhook_trigger_id = wt
+            data = data.copy()
+            data["webhook_trigger"] = None
+        else:
+            self._webhook_trigger_id = None
+        return super().to_internal_value(data)
+
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
         webhook_trigger_data = validated_data.pop("webhook_trigger", None)
+        wt_id = getattr(self, "_webhook_trigger_id", None)
 
         python_code = PythonCode.objects.create(**python_code_data)
 
         webhook_trigger_instance = None
-        if webhook_trigger_data:
+        if wt_id:
+            webhook_trigger_instance = WebhookTrigger.objects.filter(id=wt_id).first()
+        elif webhook_trigger_data:
             path = webhook_trigger_data.get("path")
             ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
 
@@ -1712,7 +1701,11 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
                 setattr(python_code, attr, value)
             python_code.save()
 
-        if "webhook_trigger" in validated_data:
+        wt_id = getattr(self, "_webhook_trigger_id", None)
+        if wt_id:
+            instance.webhook_trigger = WebhookTrigger.objects.filter(id=wt_id).first()
+            validated_data.pop("webhook_trigger", None)
+        elif "webhook_trigger" in validated_data:
             webhook_trigger_data = validated_data.pop("webhook_trigger")
 
             if webhook_trigger_data:
@@ -1735,9 +1728,9 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
         return instance
 
 
-class NoteNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+class GraphNoteSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
     class Meta(BaseGraphEntityMixin.Meta):
-        model = NoteNode
+        model = GraphNote
         fields = "__all__"
 
 
@@ -1756,16 +1749,21 @@ class GraphSerializer(serializers.ModelSerializer):
     start_node_list = StartNodeSerializer(many=True, read_only=True)
     decision_table_node_list = DecisionTableNodeSerializer(many=True, read_only=True)
     subgraph_node_list = SubGraphNodeSerializer(many=True, read_only=True)
+    code_agent_node_list = CodeAgentNodeSerializer(many=True, read_only=True)
     end_node_list = EndNodeSerializer(many=True, read_only=True, source="end_node")
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
     )
-    note_node_list = NoteNodeSerializer(many=True, read_only=True)
+    label_ids = serializers.PrimaryKeyRelatedField(
+        many=True, source="labels", queryset=Label.objects.all(), required=False
+    )
+    graph_note_list = GraphNoteSerializer(many=True, read_only=True)
 
     class Meta:
         model = Graph
         fields = [
             "id",
+            "uuid",
             "name",
             "metadata",
             "description",
@@ -1779,13 +1777,42 @@ class GraphSerializer(serializers.ModelSerializer):
             "webhook_trigger_node_list",
             "decision_table_node_list",
             "subgraph_node_list",
+            "code_agent_node_list",
             "start_node_list",
             "end_node_list",
             "time_to_live",
             "persistent_variables",
+            "epicchat_enabled",
             "telegram_trigger_node_list",
-            "note_node_list",
+            "label_ids",
+            "graph_note_list",
         ]
+
+    def create(self, validated_data):
+        labels = validated_data.pop("labels", [])
+        instance = super().create(validated_data)
+        instance.labels.set(labels)
+        return instance
+
+    def update(self, instance, validated_data):
+        labels = validated_data.pop("labels", None)
+        instance = super().update(instance, validated_data)
+        if labels is not None:
+            instance.labels.set(labels)
+        return instance
+
+    def create(self, validated_data):
+        labels = validated_data.pop("labels", [])
+        instance = super().create(validated_data)
+        instance.labels.set(labels)
+        return instance
+
+    def update(self, instance, validated_data):
+        labels = validated_data.pop("labels", None)
+        instance = super().update(instance, validated_data)
+        if labels is not None:
+            instance.labels.set(labels)
+        return instance
 
 
 class GraphFileReadSerializer(serializers.ModelSerializer):
@@ -1875,3 +1902,32 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         model = GraphOrganizationUser
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
+
+
+class LabelSerializer(serializers.ModelSerializer):
+    full_path = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Label
+        fields = ["id", "name", "parent", "created_at", "full_path"]
+        read_only_fields = ["id", "created_at", "full_path"]
+        extra_kwargs = {
+            "name": {"validators": []},
+        }
+
+    def validate(self, attrs):
+        name = attrs.get("name")
+        parent = attrs.get("parent")
+
+        if parent is None:
+            if Label.objects.filter(name=name, parent__isnull=True).exists():
+                raise serializers.ValidationError(
+                    {"name": "Top-level label with this name already exists."}
+                )
+        else:
+            if Label.objects.filter(name=name, parent=parent).exists():
+                raise serializers.ValidationError(
+                    {"name": "Label with this name already exists under this parent."}
+                )
+
+        return attrs

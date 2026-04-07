@@ -12,7 +12,10 @@ from django_filters.rest_framework import (
 from rest_framework import filters as drf_filters
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import (
+    PermissionDenied,
+    ValidationError as DRFValidationError,
+)
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
@@ -20,13 +23,17 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from tables.exceptions import (
     AgentSerializerError,
     BuiltInToolModificationError,
+    BulkSaveValidationError,
     TaskSerializerError,
 )
-from tables.filters import EmbeddingModelFilter, LLMModelFilter, ProviderFilter
+from tables.serializers.graph_bulk_save_serializers import GraphBulkSaveInputSerializer
+from tables.services.graph_bulk_save_service import GraphBulkSaveService
+
 from tables.import_export.enums import EntityType
 from tables.models import (
     Agent,
     AudioTranscriptionNode,
+    CodeAgentNode,
     ConditionalEdge,
     Crew,
     CrewNode,
@@ -60,6 +67,34 @@ from tables.models.crew_models import (
     TaskMcpTools,
     TaskPythonCodeToolConfigs,
 )
+from tables.exceptions import (
+    TaskSerializerError,
+    AgentSerializerError,
+)
+from tables.models.llm_models import (
+    RealtimeConfig,
+    RealtimeTranscriptionConfig,
+    RealtimeTranscriptionModel,
+)
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from tables.swagger_schemas.graph_bulk_save_schema import (
+    SAVE_FLOW_SWAGGER as _SAVE_FLOW_SWAGGER,
+)
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.exceptions import PermissionDenied
+from django_filters.rest_framework import (
+    DjangoFilterBackend,
+    FilterSet,
+    CharFilter,
+    NumberFilter,
+)
+from rest_framework import viewsets, mixins, status, filters as drf_filters
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.db import transaction
+from django.db.models import Prefetch
 from tables.models.graph_models import (
     Condition,
     ConditionGroup,
@@ -68,7 +103,7 @@ from tables.models.graph_models import (
     GraphOrganization,
     GraphOrganizationUser,
     LLMNode,
-    NoteNode,
+    GraphNote,
     Organization,
     OrganizationUser,
     TelegramTriggerNode,
@@ -87,25 +122,33 @@ from tables.models.realtime_models import (
     RealtimeAgentChat,
     RealtimeSessionItem,
 )
+from tables.filters import (
+    EmbeddingModelFilter,
+    LabelFilterBackend,
+    LLMModelFilter,
+    ProviderFilter,
+)
+from tables.utils.helpers import natural_sort_key
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
+from tables.models.label_models import Label
 from tables.models.vector_models import MemoryDatabase
 from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
-from tables.serializers.copy_serializers import (
-    AgentCopyDeserializer,
-    AgentCopySerializer,
-    CrewCopyDeserializer,
-    CrewCopySerializer,
-    GraphCopyDeserializer,
-    GraphCopySerializer,
+from tables.services.copy_services import (
+    AgentCopyService,
+    CrewCopyService,
+    GraphCopyService,
+    McpToolCopyService,
+    PythonCodeToolCopyService,
 )
-from tables.serializers.import_serializers import FileImportSerializer
+from tables.views.mixins import CopyActionMixin
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
     AgentTagSerializer,
     AgentWriteSerializer,
     AudioTranscriptionNodeSerializer,
+    CodeAgentNodeSerializer,
     ConditionalEdgeSerializer,
-    NoteNodeSerializer,
+    GraphNoteSerializer,
     ConditionGroupSerializer,
     ConditionSerializer,
     CrewNodeSerializer,
@@ -124,6 +167,7 @@ from tables.serializers.model_serializers import (
     GraphSerializer,
     GraphSessionMessageSerializer,
     GraphTagSerializer,
+    LabelSerializer,
     LLMConfigSerializer,
     LLMModelSerializer,
     LLMNodeSerializer,
@@ -161,6 +205,8 @@ from tables.serializers.serializers import (
     BulkExportSerializer,
     GraphFileUpdateSerializer,
     UploadGraphFileSerializer,
+    BulkExportSerializer,
+    ImportRequestSerializer,
 )
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeFieldSerializer,
@@ -169,11 +215,7 @@ from tables.serializers.telegram_trigger_serializers import (
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
 from tables.services.redis_service import RedisService
-from tables.utils.mixins import DeepCopyMixin
-from tables.exceptions import BuiltInToolModificationError
 from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
-from tables.import_export.enums import EntityType
-from tables.serializers.import_serializers import FileImportSerializer
 from utils.logger import logger
 
 redis_service = RedisService()
@@ -300,7 +342,10 @@ class EmbeddingConfigReadWriteViewSet(ModelViewSet):
     filterset_class = EmbeddingConfigFilter
 
 
-class AgentViewSet(ModelViewSet, DeepCopyMixin):
+class AgentViewSet(CopyActionMixin, ModelViewSet):
+    copy_service_class = AgentCopyService
+    copy_serializer_class = AgentReadSerializer
+
     queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
         Prefetch(
             "python_code_tools",
@@ -336,17 +381,10 @@ class AgentViewSet(ModelViewSet, DeepCopyMixin):
         "allow_code_execution",
     ]
 
-    copy_serializer_class = AgentCopySerializer
-    copy_deserializer_class = AgentCopyDeserializer
-    copy_serializer_response_class = AgentReadSerializer
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.import_export_service = ViewSetImportExportService(
-            entity_type=EntityType.AGENT,
-            export_prefix="agent",
-            filename_attr="role",
-            response_serializer_class=AgentReadSerializer,
+            entity_type=EntityType.AGENT, export_prefix="agent", filename_attr="role"
         )
 
     def get_serializer_class(self):
@@ -417,16 +455,19 @@ class AgentViewSet(ModelViewSet, DeepCopyMixin):
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer = ImportRequestSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
 
         data = self.import_export_service.import_entity(
-            file_serializer.validated_data["file"], Agent
+            file_serializer.validated_data["file"]
         )
         return Response(data, status=status.HTTP_200_OK)
 
 
-class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
+class CrewReadWriteViewSet(CopyActionMixin, ModelViewSet):
+    copy_service_class = CrewCopyService
+    copy_serializer_class = CrewSerializer
+
     queryset = Crew.objects.prefetch_related("task_set", "agents", "tags")
     serializer_class = CrewSerializer
     filter_backends = [DjangoFilterBackend]
@@ -443,17 +484,10 @@ class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
         "planning_llm_config",
     ]
 
-    copy_serializer_class = CrewCopySerializer
-    copy_deserializer_class = CrewCopyDeserializer
-    copy_serializer_response_class = CrewSerializer
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.import_export_service = ViewSetImportExportService(
-            entity_type=EntityType.CREW,
-            export_prefix="crew",
-            filename_attr="name",
-            response_serializer_class=CrewSerializer,
+            entity_type=EntityType.CREW, export_prefix="crew", filename_attr="name"
         )
 
     @action(detail=True, methods=["get"])
@@ -462,11 +496,11 @@ class CrewReadWriteViewSet(ModelViewSet, DeepCopyMixin):
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer = ImportRequestSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
 
         data = self.import_export_service.import_entity(
-            file_serializer.validated_data["file"], Crew
+            file_serializer.validated_data["file"]
         )
         return Response(data, status=status.HTTP_200_OK)
 
@@ -580,7 +614,22 @@ class ToolConfigViewSet(ModelViewSet):
     filterset_fields = ["tool", "name"]
 
 
-class PythonCodeViewSet(viewsets.ModelViewSet):
+class ContentHashPreconditionMixin:
+    """Passes content_hash from request data to the model instance before saving.
+
+    The model's ContentHashMixin.save() validates _expected_hash against the DB,
+    raising 409 Conflict on mismatch. Omitting content_hash skips the check.
+    Scripts can also set instance._expected_hash = hash before calling .save().
+    """
+
+    def perform_update(self, serializer):
+        incoming_hash = self.request.data.get("content_hash")
+        if incoming_hash is not None:
+            serializer.instance._expected_hash = incoming_hash
+        super().perform_update(serializer)
+
+
+class PythonCodeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     """
     A viewset for viewing and editing PythonCode instances.
     """
@@ -589,11 +638,14 @@ class PythonCodeViewSet(viewsets.ModelViewSet):
     serializer_class = PythonCodeSerializer
 
 
-class PythonCodeToolViewSet(viewsets.ModelViewSet):
+class PythonCodeToolViewSet(CopyActionMixin, viewsets.ModelViewSet):
     """
     A viewset for viewing and editing PythonCodeTool instances.
     Prevents modifications or deletions of built-in tools.
     """
+
+    copy_service_class = PythonCodeToolCopyService
+    copy_serializer_class = PythonCodeToolSerializer
 
     queryset = (
         PythonCodeTool.objects.all()
@@ -647,24 +699,21 @@ class PythonCodeResultReadViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["execution_id", "returncode"]
 
 
-class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
-    serializer_class = GraphSerializer
+class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
+    copy_service_class = GraphCopyService
+    copy_serializer_class = GraphLightSerializer
 
-    copy_serializer_class = GraphCopySerializer
-    copy_deserializer_class = GraphCopyDeserializer
-    copy_serializer_response_class = GraphSerializer
+    serializer_class = GraphSerializer
+    filter_backends = [DjangoFilterBackend, LabelFilterBackend]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.import_export_service = ViewSetImportExportService(
-            entity_type=EntityType.GRAPH,
-            export_prefix="graph",
-            filename_attr="name",
-            response_serializer_class=GraphSerializer,
+            entity_type=EntityType.GRAPH, export_prefix="graph", filename_attr="name"
         )
 
     def get_queryset(self):
-        return (
+        qs = (
             Graph.objects.defer("metadata", "tags")
             .prefetch_related(
                 Prefetch(
@@ -698,14 +747,20 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
                 Prefetch("subgraph_node_list", queryset=SubGraphNode.objects.all()),
+                Prefetch(
+                    "code_agent_node_list",
+                    queryset=CodeAgentNode.objects.select_related("llm_config"),
+                ),
                 Prefetch("end_node", queryset=EndNode.objects.all()),
                 Prefetch(
                     "telegram_trigger_node_list",
                     queryset=TelegramTriggerNode.objects.all(),
                 ),
+                Prefetch("graph_note_list", queryset=GraphNote.objects.all()),
             )
             .all()
         )
+        return qs
 
     def perform_create(self, serializer):
         created_graph = serializer.save()
@@ -746,56 +801,123 @@ class GraphViewSet(viewsets.ModelViewSet, DeepCopyMixin):
 
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
-        file_serializer = FileImportSerializer(data=request.data)
+        file_serializer = ImportRequestSerializer(data=request.data)
         file_serializer.is_valid(raise_exception=True)
 
         data = self.import_export_service.import_entity(
-            file_serializer.validated_data["file"], Graph
+            file_serializer.validated_data["file"],
+            Graph,
+            preserve_uuids=file_serializer.validated_data["preserve_uuids"],
         )
         return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="save")
+    @swagger_auto_schema(**_SAVE_FLOW_SWAGGER)
+    def save_flow(self, request, pk=None):
+        input_serializer = GraphBulkSaveInputSerializer(data=request.data)
+        if not input_serializer.is_valid():
+            return Response(
+                {"errors": input_serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        graph = self.get_object()
+        try:
+            GraphBulkSaveService().save(graph, input_serializer.validated_data)
+        except BulkSaveValidationError as exc:
+            return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        refreshed = self.get_queryset().get(pk=pk)
+        return Response(GraphSerializer(refreshed).data, status=status.HTTP_200_OK)
 
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphLightSerializer
-    filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter]
-    # filterset_fields = ['tags']  TODO: Uncomment when tags logic implemented
+    filter_backends = [
+        DjangoFilterBackend,
+        drf_filters.SearchFilter,
+        LabelFilterBackend,
+    ]
+    filterset_fields = ["epicchat_enabled"]
     search_fields = ["name", "description"]
 
     def get_queryset(self):
-        return Graph.objects.prefetch_related("tags")
+        return Graph.objects.only("id", "name", "description").prefetch_related(
+            "tags", "labels"
+        )
 
 
-class CrewNodeViewSet(viewsets.ModelViewSet):
+class IdempotentNodeCreateMixin:
+    # TODO: change fields from (graph, node_name) to id (all nodes id's are consistent)
+    """
+    COMMIT_COMMENTS: Makes node POST idempotent — if a node with the same
+    (graph, node_name) already exists, update it instead of failing with a
+    unique constraint violation. This prevents orphan accumulation when
+    forkJoin-based saves partially fail and retry.
+    """
+
+    def create(self, request, *args, **kwargs):
+        graph_id = request.data.get("graph")
+        node_name = request.data.get("node_name")
+        if graph_id and node_name:
+            try:
+                existing = self.get_queryset().model.objects.get(
+                    graph_id=graph_id, node_name=node_name
+                )
+                serializer = self.get_serializer(existing, data=request.data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except self.get_queryset().model.DoesNotExist:
+                pass
+        return super().create(request, *args, **kwargs)
+
+
+class CrewNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = CrewNode.objects.all()
     serializer_class = CrewNodeSerializer
 
 
-class PythonNodeViewSet(viewsets.ModelViewSet):
+class PythonNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = PythonNode.objects.all()
     serializer_class = PythonNodeSerializer
 
 
-class FileExtractorNodeViewSet(viewsets.ModelViewSet):
+class FileExtractorNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = FileExtractorNode.objects.all()
     serializer_class = FileExtractorNodeSerializer
 
 
-class AudioTranscriptionNodeViewSet(viewsets.ModelViewSet):
+class AudioTranscriptionNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = AudioTranscriptionNode.objects.all()
     serializer_class = AudioTranscriptionNodeSerializer
 
 
-class LLMNodeViewSet(viewsets.ModelViewSet):
+class LLMNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = LLMNode.objects.all()
     serializer_class = LLMNodeSerializer
 
 
-class EdgeViewSet(viewsets.ModelViewSet):
+class CodeAgentNodeViewSet(IdempotentNodeCreateMixin, viewsets.ModelViewSet):
+    queryset = CodeAgentNode.objects.all()
+    serializer_class = CodeAgentNodeSerializer
+
+
+class EdgeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = Edge.objects.all()
     serializer_class = EdgeSerializer
 
 
-class ConditionalEdgeViewSet(viewsets.ModelViewSet):
+class ConditionalEdgeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = ConditionalEdge.objects.all()
     serializer_class = ConditionalEdgeSerializer
 
@@ -928,17 +1050,17 @@ class RealtimeAgentChatViewSet(ReadOnlyModelViewSet):
         )
 
 
-class StartNodeModelViewSet(viewsets.ModelViewSet):
+class StartNodeModelViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = StartNode.objects.all()
     serializer_class = StartNodeSerializer
 
 
-class EndNodeModelViewSet(viewsets.ModelViewSet):
+class EndNodeModelViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = EndNode.objects.all()
     serializer_class = EndNodeSerializer
 
 
-class SubGraphNodeModelViewSet(viewsets.ModelViewSet):
+class SubGraphNodeModelViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):
     queryset = SubGraphNode.objects.all()
     serializer_class = SubGraphNodeSerializer
 
@@ -953,7 +1075,9 @@ class ConditionModelViewSet(viewsets.ModelViewSet):
     serializer_class = ConditionSerializer
 
 
-class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
+class DecisionTableNodeModelViewSet(
+    ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = DecisionTableNode.objects.all()
     serializer_class = DecisionTableNodeSerializer
     filter_backends = [DjangoFilterBackend]
@@ -963,7 +1087,23 @@ class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """
         Create a DecisionTableNode along with nested ConditionGroups and Conditions.
+        If a node with the same (graph, node_name) already exists, update it instead.
         """
+        graph_id = request.data.get("graph")
+        node_name = request.data.get("node_name")
+        if graph_id and node_name:
+            try:
+                existing = DecisionTableNode.objects.get(
+                    graph_id=graph_id, node_name=node_name
+                )
+                node, _ = self._create_or_update_node(
+                    data=request.data, instance=existing
+                )
+                return Response(
+                    self.get_serializer(node).data, status=status.HTTP_200_OK
+                )
+            except DecisionTableNode.DoesNotExist:
+                pass
         node, _ = self._create_or_update_node(data=request.data)
         return Response(self.get_serializer(node).data, status=status.HTTP_201_CREATED)
 
@@ -975,6 +1115,9 @@ class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
         """
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
+        incoming_hash = request.data.get("content_hash")
+        if incoming_hash is not None:
+            instance._expected_hash = incoming_hash
         node, _ = self._create_or_update_node(
             data=request.data, instance=instance, partial=partial
         )
@@ -1020,34 +1163,35 @@ class DecisionTableNodeModelViewSet(viewsets.ModelViewSet):
         Create ConditionGroups and nested Conditions for a DecisionTableNode.
         Uses bulk_create for efficiency.
         """
-        groups_to_create = []
-        conditions_to_create = []
-
-        # Prepare group objects
         for group_data in groups_data:
-            copy_grop_data = group_data.copy()
-            copy_grop_data.pop("conditions")
-            groups_to_create.append(
-                ConditionGroup(decision_table_node=node, **copy_grop_data)
+            copy_group_data = group_data.copy()
+            conditions_data = copy_group_data.pop("conditions", [])
+            copy_group_data.pop("decision_table_node", None)
+            copy_group_data.pop("content_hash", None)
+
+            group = ConditionGroup.objects.create(
+                decision_table_node=node, **copy_group_data
             )
-            # Conditions will be mapped after saving groups
 
-        # Save groups in bulk
-        created_groups = ConditionGroup.objects.bulk_create(groups_to_create)
+            for cond_data in conditions_data:
+                cond_data = {
+                    k: v
+                    for k, v in cond_data.items()
+                    if k not in ("condition_group", "content_hash")
+                }
+                Condition.objects.create(condition_group=group, **cond_data)
 
-        # Map and prepare condition objects
-        for group, group_data in zip(created_groups, groups_data):
-            for cond_data in group_data.get("conditions", []):
-                conditions_to_create.append(
-                    Condition(condition_group=group, **cond_data)
-                )
+            # Re-save group so its hash includes the newly created conditions
+            group.save()
 
-        # Save conditions in bulk
-        if conditions_to_create:
-            Condition.objects.bulk_create(conditions_to_create)
+        # Re-save node so its hash includes the updated group hashes
+        node.save()
 
 
-class McpToolViewSet(viewsets.ModelViewSet):
+class McpToolViewSet(CopyActionMixin, viewsets.ModelViewSet):
+    copy_service_class = McpToolCopyService
+    copy_serializer_class = McpToolSerializer
+
     queryset = McpTool.objects.all()
     serializer_class = McpToolSerializer
     filter_backends = [DjangoFilterBackend]
@@ -1148,11 +1292,24 @@ class GraphOrganizationUserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphOrganizationUserSerializer
 
 
-class WebhookTriggerNodeViewSet(viewsets.ModelViewSet):
+class WebhookTriggerNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
+):
     queryset = WebhookTriggerNode.objects.all()
     serializer_class = WebhookTriggerNodeSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["graph", "node_name", "webhook_trigger__path"]
+
+    def create(self, request, *args, **kwargs):
+        logger.info(f"[WebhookTriggerNode] CREATE payload: {request.data}")
+        try:
+            return super().create(request, *args, **kwargs)
+        except DRFValidationError as e:
+            logger.error(f"[WebhookTriggerNode] validation error: {e.detail}")
+            raise
+        except Exception as e:
+            logger.error(f"[WebhookTriggerNode] unexpected error: {e}")
+            raise
 
 
 class WebhookTriggerViewSet(viewsets.ModelViewSet):
@@ -1161,7 +1318,9 @@ class WebhookTriggerViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
 
 
-class TelegramTriggerNodeViewSet(ModelViewSet):
+class TelegramTriggerNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, ModelViewSet
+):
     queryset = TelegramTriggerNode.objects.prefetch_related("fields")
     serializer_class = TelegramTriggerNodeSerializer
 
@@ -1171,9 +1330,11 @@ class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     serializer_class = TelegramTriggerNodeFieldSerializer
 
 
-class NoteNodeViewSet(ModelViewSet):
-    queryset = NoteNode.objects.all()
-    serializer_class = NoteNodeSerializer
+class GraphNoteViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, ModelViewSet
+):
+    queryset = GraphNote.objects.all()
+    serializer_class = GraphNoteSerializer
 
 
 class NgrokWebhookConfigViewSet(ModelViewSet):
@@ -1193,3 +1354,40 @@ class NgrokWebhookConfigViewSet(ModelViewSet):
         WebhookTriggerService().wait_for_tunnel_url(instance)
         response.data = self.get_serializer(instance).data
         return response
+
+
+class LabelViewSet(viewsets.ModelViewSet):
+    queryset = Label.objects.all()
+    serializer_class = LabelSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["name", "parent"]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        labels = list(queryset)
+
+        # Build paths in memory (one extra lightweight query) to avoid N+1
+        # and to correctly resolve parents that may be filtered out.
+        id_to_row = {
+            row["id"]: row for row in Label.objects.values("id", "parent_id", "name")
+        }
+
+        def full_path_key(label):
+            parts = []
+            current_id = label.id
+            while current_id is not None:
+                row = id_to_row.get(current_id)
+                if row is None:
+                    break
+                parts.append(row["name"])
+                current_id = row["parent_id"]
+            return "/".join(reversed(parts))
+
+        labels.sort(key=lambda label: natural_sort_key(full_path_key(label)))
+
+        page = self.paginate_queryset(labels)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        return Response(self.get_serializer(labels, many=True).data)

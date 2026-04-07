@@ -15,7 +15,9 @@ class EmbeddingModel(models.Model):
     is_visible = models.BooleanField(default=True)
     is_custom = models.BooleanField(default=False)
     tags = models.ManyToManyField(
-        EmbeddingModelTag, blank=True, related_name="embedding_models"
+        EmbeddingModelTag,
+        blank=True,
+        related_name="embedding_models"
     )
 
     class Meta:
@@ -23,6 +25,7 @@ class EmbeddingModel(models.Model):
             "name",
             "embedding_provider",
         )
+
 
 
 class EmbeddingConfig(models.Model):

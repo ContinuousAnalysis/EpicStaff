@@ -329,6 +329,4 @@ class NaiveRagPreviewChunk(Base):
     )
 
     def __str__(self):
-        return (
-            f"NaiveRagPreviewChunk {self.preview_chunk_id} (index: {self.chunk_index})"
-        )
+        return f"NaiveRagPreviewChunk {self.preview_chunk_id} (index: {self.chunk_index})"

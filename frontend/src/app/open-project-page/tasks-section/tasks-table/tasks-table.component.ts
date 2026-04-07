@@ -1,9 +1,13 @@
+import { Dialog, DialogModule } from '@angular/cdk/dialog';
+import { ConnectedPosition, GlobalPositionStrategy, Overlay, OverlayRef } from '@angular/cdk/overlay';
+import { ComponentPortal } from '@angular/cdk/portal';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    ElementRef,
     EventEmitter,
-    Inject,
+    HostListener,
     Input,
     OnChanges,
     Output,
@@ -12,78 +16,43 @@ import {
     SimpleChanges,
     ViewChild,
 } from '@angular/core';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
+import { AgGridModule } from 'ag-grid-angular';
 import {
     CellClickedEvent,
     CellContextMenuEvent,
-    CellEditingStartedEvent,
     CellKeyDownEvent,
-    CellMouseOutEvent,
-    CellMouseOverEvent,
     CellValueChangedEvent,
     ColDef,
     GridApi,
     GridOptions,
-    ICellRendererParams,
+    GridReadyEvent,
     RowDragEndEvent,
+    SuppressKeyboardEventParams,
 } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
-
 import { themeQuartz } from 'ag-grid-community';
 
-import {
-    ConnectedPosition,
-    GlobalPositionStrategy,
-    Overlay,
-    OverlayRef,
-} from '@angular/cdk/overlay';
-import { ComponentPortal } from '@angular/cdk/portal';
-import { DialogModule, Dialog } from '@angular/cdk/dialog';
-import {
-    AdvancedSettingsDialogComponent,
-    AdvancedSettingsData,
-} from '../../../pages/staff-page/components/advanced-settings-dialog.component.ts/advanced-settings-dialog.component';
-import { LLMPopupComponent } from '../../../pages/staff-page/components/cell-popups-and-modals/llm-selector-popup/llm-popup.component';
-import { TagsPopupComponent } from '../../../pages/staff-page/components/cell-popups-and-modals/tags-popup/tags-popup.component';
-import { IndexCellRendererComponent } from '../../../pages/staff-page/components/cell-renderers/index-row-cell-renderer/custom-row-height.component';
+import { GetProjectRequest } from '../../../features/projects/models/project.model';
+import { FullAgent } from '../../../features/staff/services/full-agent.service';
+import { FullTask } from '../../../features/tasks/models/full-task.model';
+import { CreateTaskRequest, TableFullTask, UpdateTaskRequest } from '../../../features/tasks/models/task.model';
+import { TasksService } from '../../../features/tasks/services/tasks.service';
 import { ToolsPopupComponent } from '../../../pages/staff-page/components/cell-popups-and-modals/tools-selector-popup/tools-popup.component';
+import { IndexCellRendererComponent } from '../../../pages/staff-page/components/cell-renderers/index-row-cell-renderer/custom-row-height.component';
 import { AgGridContextMenuComponent } from '../../../pages/staff-page/components/context-menu/ag-grid-context-menu.component';
 import { PreventContextMenuDirective } from '../../../pages/staff-page/components/directives/prevent-context-menu.directive';
-import { DelegationHeaderComponent } from '../../../pages/staff-page/components/header-renderers/delegation-header.component';
-import { MemoryHeaderComponent } from '../../../pages/staff-page/components/header-renderers/memory-header.component';
-import {
-    TableFullAgent,
-    FullAgentService,
-    FullAgent,
-} from '../../../features/staff/services/full-agent.service';
-import { AgentsService } from '../../../features/staff/services/staff.service';
+import { ToastService } from '../../../services/notifications/toast.service';
 import { ClickOutsideDirective } from '../../../shared/directives/click-outside.directive';
-import {
-    CreateAgentRequest,
-    UpdateAgentRequest,
-} from '../../../features/staff/models/agent.model';
-import { FullTask } from '../../../features/tasks/models/full-task.model';
-import {
-    CreateTaskRequest,
-    GetTaskRequest,
-    TableFullTask,
-    UpdateTaskRequest,
-} from '../../../features/tasks/models/task.model';
-import { FullTaskService } from '../../services/full-task.service';
 import { buildToolIdsArray } from '../../../shared/utils/tool-ids-builder.util';
-import { AgentSelectionPopupComponent } from './popups/agent-select-popup/agent-selection-popup.component';
-import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { TasksService } from '../../../features/tasks/services/tasks.service';
+import { FullTaskService } from '../../services/full-task.service';
 import { ProjectStateService } from '../../services/project-state.service';
 import {
     AdvancedTaskSettingsData,
     AdvancedTaskSettingsDialogComponent,
 } from './advanced-task-settings-dialog/advanced-task-settings-dialog.component';
-import { AsyncHeaderComponent } from './header-renderers/async-exec-header/async-header.component';
 import { HumanInputHeaderComponent } from './header-renderers/human-input-header/human-input.component';
 import { KnowledgeQueryHeaderComponent } from './header-renderers/knowledge-query-header/knowledge-query-header.component';
-import { forkJoin, Observable } from 'rxjs';
-import { ToastService } from '../../../services/notifications/toast.service';
+import { AgentSelectionPopupComponent } from './popups/agent-select-popup/agent-selection-popup.component';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -91,7 +60,16 @@ interface CellInfo {
     columnId: string;
     rowIndex: number;
 }
-type PopupEvent = CellClickedEvent<any, any> | CellKeyDownEvent<any, any>;
+type PopupEvent = CellClickedEvent<TableFullTask, unknown> | CellKeyDownEvent<TableFullTask, unknown>;
+type EnterJumpParams = SuppressKeyboardEventParams<TableFullTask, unknown>;
+
+export type TaskPendingKind = 'create' | 'update' | 'delete' | 'reorder';
+
+export interface TaskPendingEvent {
+    rowKey: string;
+    kind: TaskPendingKind;
+    payload: unknown;
+}
 
 @Component({
     selector: 'app-tasks-table',
@@ -102,8 +80,6 @@ type PopupEvent = CellClickedEvent<any, any> | CellKeyDownEvent<any, any>;
         ClickOutsideDirective,
         PreventContextMenuDirective,
         AgGridContextMenuComponent,
-        // Knowledge Query header component (tooltip icon)
-        KnowledgeQueryHeaderComponent,
     ],
     templateUrl: './tasks-table.component.html',
     styleUrls: ['./tasks-table.component.scss'],
@@ -133,6 +109,10 @@ export class TasksTableComponent implements OnChanges {
     }
     @Input() agents: FullAgent[] = [];
     @Input() project!: GetProjectRequest;
+    @Input() isSaving = false;
+
+    @Output() taskPending = new EventEmitter<TaskPendingEvent>();
+    @Output() dirtyChange = new EventEmitter<boolean>();
 
     public rowData: TableFullTask[] = [];
 
@@ -151,7 +131,7 @@ export class TasksTableComponent implements OnChanges {
 
     //overlay
     private popupOverlayRef: OverlayRef | null = null;
-    private currentPopupCell: any = null;
+    private currentPopupCell: CellInfo | null = null;
     private currentCellElement: HTMLElement | null = null;
     private globalClickUnlistener: (() => void) | null = null;
     private globalKeydownUnlistener: (() => void) | null = null;
@@ -160,6 +140,10 @@ export class TasksTableComponent implements OnChanges {
     private isDragOutsideRows = false;
     private draggedTaskData: TableFullTask | null = null;
     private dragMouseUpListener: (() => void) | null = null;
+
+    private baselineTasksById = new Map<number, unknown>();
+    private localPendingKeys = new Set<string>();
+    private localDraftTempKeys = new Set<string>();
 
     constructor(
         private overlay: Overlay,
@@ -170,7 +154,7 @@ export class TasksTableComponent implements OnChanges {
         private tasksService: TasksService,
         private toastService: ToastService,
         private fullTaskService: FullTaskService
-    ) { }
+    ) {}
 
     ngOnInit(): void {
         this.updateRowData();
@@ -186,43 +170,150 @@ export class TasksTableComponent implements OnChanges {
             }
             this.cdr.markForCheck();
         }
+
+        if (changes['agents'] && this.isLoaded) {
+            this.syncAgentsInCurrentRows();
+
+            if (this.gridApi) {
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+            }
+            this.cdr.markForCheck();
+        }
     }
 
     private updateRowData(): void {
-        // Create a map of existing rowData by task ID to preserve mergedTools
-        const existingRowDataMap = new Map<string | number, TableFullTask>();
-        this.rowData.forEach((row) => {
-            if (row.id && !(typeof row.id === 'string' && row.id.startsWith('temp_'))) {
-                const key = typeof row.id === 'string' ? +row.id : row.id;
-                existingRowDataMap.set(key, row);
+        const validAgentIds = new Set((this.agents ?? []).map((a) => Number(a.id)));
+
+        const serverTasksByKey = new Map<string, TableFullTask>();
+
+        for (const t of this.tasks) {
+            const serverAgentId =
+                t.agentData?.id != null
+                    ? Number(t.agentData.id)
+                    : Number((t as TableFullTask & { agent?: unknown }).agent);
+
+            const hasValidServerAgent = Number.isFinite(serverAgentId) && validAgentIds.has(serverAgentId);
+
+            serverTasksByKey.set(String(t.id), {
+                ...t,
+                agentData: hasValidServerAgent ? t.agentData : null,
+                agent: hasValidServerAgent ? serverAgentId : null,
+                mergedTools: (t as TableFullTask & { mergedTools?: unknown }).mergedTools || t.mergedTools || [],
+            } as TableFullTask);
+        }
+
+        const nextRowData: TableFullTask[] = [];
+        const consumedServerKeys = new Set<string>();
+
+        for (const existing of this.rowData) {
+            const key = String(existing?.id ?? '');
+
+            if (key.startsWith('temp_')) {
+                const shouldKeepTemp =
+                    this.localPendingKeys.has(key) ||
+                    this.localDraftTempKeys.has(key) ||
+                    this.requiredErrorsRows.has(key) ||
+                    this.isTempRowTouched(existing);
+
+                if (shouldKeepTemp) {
+                    nextRowData.push(existing);
+                }
+
+                continue;
             }
-        });
 
-        // Merge tasks from state with existing rowData to preserve mergedTools
-        const mergedTasks = this.tasks.map((task) => {
-            const existingRow = existingRowDataMap.get(task.id);
-            // Preserve mergedTools from existing rowData if available, otherwise use task's mergedTools
-            return {
-                ...task,
-                mergedTools: existingRow?.mergedTools || task.mergedTools || [],
-            };
-        });
+            const freshServerRow = serverTasksByKey.get(key);
+            if (!freshServerRow) {
+                continue;
+            }
 
-        this.rowData = [
-            ...mergedTasks,
-            this.createEmptyFullTask(),
-            this.createEmptyFullTask(),
-        ];
+            consumedServerKeys.add(key);
+
+            const serverAgentId =
+                freshServerRow.agentData?.id != null
+                    ? Number(freshServerRow.agentData.id)
+                    : Number((freshServerRow as TableFullTask & { agent?: unknown }).agent);
+
+            const hasValidServerAgent = Number.isFinite(serverAgentId) && validAgentIds.has(serverAgentId);
+
+            nextRowData.push({
+                ...freshServerRow,
+                name: existing.name,
+                instructions: existing.instructions,
+                expected_output: existing.expected_output,
+                knowledge_query: existing.knowledge_query,
+                human_input: existing.human_input,
+                async_execution: existing.async_execution,
+                config: existing.config,
+                output_model: existing.output_model,
+                task_context_list: existing.task_context_list,
+                agentData: hasValidServerAgent ? freshServerRow.agentData : null,
+                agent: hasValidServerAgent ? serverAgentId : null,
+                mergedTools:
+                    existing.mergedTools ||
+                    (freshServerRow as TableFullTask & { mergedTools?: unknown }).mergedTools ||
+                    [],
+                order: existing.order ?? freshServerRow.order,
+            } as TableFullTask);
+        }
+
+        for (const [key, serverRow] of serverTasksByKey.entries()) {
+            if (!consumedServerKeys.has(key)) {
+                nextRowData.push(serverRow);
+            }
+        }
+
+        this.rowData = nextRowData;
+        this.ensureSingleSpareEmptyRow();
+
+        if (this.localPendingKeys.size === 0) {
+            this.baselineTasksById.clear();
+            for (const t of this.tasks) {
+                if (typeof t.id === 'number') {
+                    this.baselineTasksById.set(t.id, this.normalizeTaskForCompare(t));
+                }
+            }
+        }
     }
 
-    onGridReady(event: any): void {
+    private isSpareEmptyTempRow(row: TableFullTask): boolean {
+        const id = String(row?.id ?? '');
+        if (!id.startsWith('temp_')) return false;
+
+        return (
+            !this.isTempRowTouched(row) &&
+            !this.localPendingKeys.has(id) &&
+            !this.localDraftTempKeys.has(id) &&
+            !this.requiredErrorsRows.has(id)
+        );
+    }
+
+    private ensureSingleSpareEmptyRow(): void {
+        const spareIndexes: number[] = [];
+
+        for (let i = 0; i < this.rowData.length; i++) {
+            if (this.isSpareEmptyTempRow(this.rowData[i])) spareIndexes.push(i);
+        }
+
+        if (spareIndexes.length === 0) {
+            this.rowData.push(this.createEmptyFullTask());
+            return;
+        }
+
+        for (let i = spareIndexes.length - 2; i >= 0; i--) {
+            this.rowData.splice(spareIndexes[i], 1);
+        }
+    }
+
+    onGridReady(event: GridReadyEvent): void {
         this.gridApi = event.api;
+        this.gridApi.setGridOption('rowData', [...this.rowData]);
+        this.gridApi.refreshCells({ force: true, columns: ['index'] });
     }
+
     private createEmptyFullTask(): TableFullTask {
         // Create a temporary ID for new tasks
-        const tempId = `temp_${Date.now()}_${Math.random()
-            .toString(36)
-            .substr(2, 9)}`;
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
         return {
             id: tempId, // Use temp ID instead of null
@@ -274,16 +365,18 @@ export class TasksTableComponent implements OnChanges {
         {
             headerName: 'Task Name',
             field: 'name',
+            headerClass: 'required-header',
             cellClass: 'agent-role-cell',
             cellEditor: 'agLargeTextCellEditor',
+            suppressKeyboardEvent: (params) => this.handleEnterJumpWithinTempRow(params),
+            cellEditorPopup: true,
             cellEditorParams: {
                 maxLength: 1000000,
                 cellEditorValidator: (value: string) => {
                     if (!value || value.trim() === '') {
                         return {
                             valid: false,
-                            message:
-                                'Task cannot be empty (cell will not be saved).',
+                            message: 'Task cannot be empty (cell will not be saved).',
                         };
                     }
                     return { valid: true };
@@ -295,6 +388,12 @@ export class TasksTableComponent implements OnChanges {
             },
             cellClassRules: {
                 'cell-warning': (params) => !!params.data.roleWarning,
+                'cell-required-invalid': (params) => {
+                    const id = String(params.data?.id ?? '');
+                    if (!this.isTempRowId(id)) return false;
+                    if (!this.requiredErrorsRows.has(id)) return false;
+                    return this.isRequiredEmpty(params.value);
+                },
             },
             cellStyle: {
                 'white-space': 'normal',
@@ -310,7 +409,10 @@ export class TasksTableComponent implements OnChanges {
         {
             headerName: 'Instructions',
             field: 'instructions',
+            headerClass: 'required-header',
             cellEditor: 'agLargeTextCellEditor',
+            suppressKeyboardEvent: (params) => this.handleEnterJumpWithinTempRow(params),
+            cellEditorPopup: true,
             cellEditorParams: {
                 maxLength: 1000000,
                 cellEditorValidator: (value: string) => {
@@ -329,6 +431,12 @@ export class TasksTableComponent implements OnChanges {
             },
             cellClassRules: {
                 'cell-warning': (params) => !!params.data.goalWarning,
+                'cell-required-invalid': (params) => {
+                    const id = String(params.data?.id ?? '');
+                    if (!this.isTempRowId(id)) return false;
+                    if (!this.requiredErrorsRows.has(id)) return false;
+                    return this.isRequiredEmpty(params.value);
+                },
             },
             cellStyle: {
                 'white-space': 'normal',
@@ -341,8 +449,11 @@ export class TasksTableComponent implements OnChanges {
         },
         {
             headerName: 'Expected Output',
+            headerClass: 'required-header',
             field: 'expected_output',
             cellEditor: 'agLargeTextCellEditor',
+            suppressKeyboardEvent: (params) => this.handleEnterJumpWithinTempRow(params),
+            cellEditorPopup: true,
             cellEditorParams: {
                 maxLength: 1000000,
                 cellEditorValidator: (value: string) => {
@@ -361,6 +472,12 @@ export class TasksTableComponent implements OnChanges {
             },
             cellClassRules: {
                 'cell-warning': (params) => !!params.data.backstoryWarning,
+                'cell-required-invalid': (params) => {
+                    const id = String(params.data?.id ?? '');
+                    if (!this.isTempRowId(id)) return false;
+                    if (!this.requiredErrorsRows.has(id)) return false;
+                    return this.isRequiredEmpty(params.value);
+                },
             },
             cellStyle: {
                 'white-space': 'normal',
@@ -423,15 +540,19 @@ export class TasksTableComponent implements OnChanges {
             flex: 1,
             minWidth: 200,
             maxWidth: 400,
-            cellRenderer: (params: { value: any[] }) => {
-                const tools = params.value || [];
+            cellRenderer: (params: { value: unknown[] }) => {
+                const tools = (params.value || []) as Array<{
+                    configName?: unknown;
+                    toolName?: unknown;
+                    type: string;
+                }>;
 
                 if (!tools || tools.length === 0) {
                     return '<div class="no-tools">No tools assigned</div>';
                 }
 
                 const toolsHtml = tools
-                    .map((tool: { configName: any; toolName: any; type: string }) => {
+                    .map((tool: { configName?: unknown; toolName?: unknown; type: string }) => {
                         // For MCP tools, display the configName (mcp.name) instead of toolName (mcp.tool_name)
                         const displayName = tool.type === 'mcp-tool' ? tool.configName : tool.toolName;
                         return `
@@ -452,7 +573,7 @@ export class TasksTableComponent implements OnChanges {
             editable: false,
             minWidth: 240,
             maxWidth: 260,
-            cellRenderer: (params: any) => {
+            cellRenderer: (params: { data: TableFullTask }) => {
                 const agent = params.data.agentData; // Access the agentData object from the row data
                 if (agent) {
                     return agent.role; // Render the agent's role if available
@@ -466,7 +587,7 @@ export class TasksTableComponent implements OnChanges {
         {
             headerName: '',
             field: 'actions',
-            cellRenderer: (params: ICellRendererParams) => {
+            cellRenderer: () => {
                 return `<i class="ti ti-settings action-icon"></i>`;
             },
             width: 40,
@@ -498,27 +619,26 @@ export class TasksTableComponent implements OnChanges {
                 return params.data.id.toString();
             }
 
-            if (
-                params.data.id &&
-                typeof params.data.id === 'string' &&
-                params.data.id.startsWith('temp_')
-            ) {
+            if (params.data.id && typeof params.data.id === 'string' && params.data.id.startsWith('temp_')) {
                 return params.data.id;
             }
 
-            const tempId = `temp_${Date.now()}_${Math.random()
-                .toString(36)
-                .substr(2, 9)}`;
+            const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             params.data.id = tempId;
             return tempId;
         },
 
-        onCellClicked: (event: CellClickedEvent<any, any>) =>
-            this.onCellClicked(event),
+        onCellClicked: (event: CellClickedEvent<TableFullTask, unknown>) => this.onCellClicked(event),
         onCellKeyDown: (event: CellKeyDownEvent) => this.onCellKeyDown(event),
         onCellValueChanged: (event) => this.onCellValueChanged(event),
+        onCellFocused: (e) => {
+            if (e.rowIndex == null) return;
+            const node = this.gridApi?.getDisplayedRowAtIndex(e.rowIndex);
+            if (!node?.data?.id) return;
+            this.activeRowId = String(node.data.id);
+        },
         onRowDragEnd: (event) => this.onRowDragEnd(event),
-        onRowDragEnter: (event) => {
+        onRowDragEnter: () => {
             // Clear the outside flag when re-entering the row area
             this.isDragOutsideRows = false;
             this.draggedTaskData = null;
@@ -528,7 +648,7 @@ export class TasksTableComponent implements OnChanges {
             // When drag leaves the grid area (e.g., into header), set flag and wait for mouseup
             this.isDragOutsideRows = true;
             this.draggedTaskData = event.node?.data as TableFullTask;
-            
+
             // Add mouseup listener to detect when user releases the mouse outside rows
             this.addDragMouseUpListener();
         },
@@ -539,7 +659,7 @@ export class TasksTableComponent implements OnChanges {
         this.isDragOutsideRows = false;
         this.draggedTaskData = null;
         this.removeDragMouseUpListener();
-        
+
         // Get the moved data
         const movedData = event.node.data as TableFullTask;
 
@@ -564,26 +684,26 @@ export class TasksTableComponent implements OnChanges {
         const finalTargetIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
 
         // Check if we can move the dragged task to the final target index
-        const conflictingDeps = (movedData.task_context_list || []).filter(
-            (depId: any) => {
-                const depIndex = this.rowData.findIndex((row) => {
-                    if (row.id === null || row.id === undefined) return false;
-                    // Convert both to numbers where possible
-                    const rowIdNum = typeof row.id === 'string' ? (row.id.startsWith('temp_') ? NaN : +row.id) : row.id;
-                    return +depId === rowIdNum;
-                });
-                // If dependency not found or dependency would end up below target position -> conflict
-                return depIndex === -1 || depIndex >= finalTargetIndex;
-            }
-        );
+        const conflictingDeps = (movedData.task_context_list || []).filter((depId: unknown) => {
+            const depIdNum = Number(depId);
+            const depIndex = this.rowData.findIndex((row) => {
+                if (row.id === null || row.id === undefined) return false;
+                // Convert both to numbers where possible
+                const rowIdNum = typeof row.id === 'string' ? (row.id.startsWith('temp_') ? NaN : +row.id) : row.id;
+                return depIdNum === rowIdNum;
+            });
+            // If dependency not found or dependency would end up below target position -> conflict
+            return depIndex === -1 || depIndex >= finalTargetIndex;
+        });
 
         if (conflictingDeps.length > 0) {
             // Build a friendly message listing up to 3 conflicting task names/ids
-            const conflictNames = conflictingDeps.map((depId: any) => {
+            const conflictNames = conflictingDeps.map((depId: unknown) => {
+                const depIdNum = Number(depId);
                 const row = this.rowData.find((r) => {
                     if (r.id === null || r.id === undefined) return false;
                     const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
-                    return +depId === rowIdNum;
+                    return depIdNum === rowIdNum;
                 });
                 return row ? `${row.name || 'Without name'} (id:${row.id})` : `id:${depId}`;
             });
@@ -591,9 +711,7 @@ export class TasksTableComponent implements OnChanges {
             const shortList = conflictNames.slice(0, 3).join(', ');
             const more = conflictNames.length > 3 ? `, …и ещё ${conflictNames.length - 3}` : '';
 
-            this.toastService.error(
-                `Context conflict  ${shortList}${more}. First, arrange/edit the dependencies.`
-            );
+            this.toastService.error(`Context conflict  ${shortList}${more}. First, arrange/edit the dependencies.`);
 
             // Revert any visual reorder by re-setting the grid data to our authoritative rowData
             if (this.gridApi) {
@@ -616,17 +734,18 @@ export class TasksTableComponent implements OnChanges {
                 if (!row) continue;
                 const newIndex = i - 1;
                 const deps = row.task_context_list || [];
-                deps.forEach((depId: any) => {
+                deps.forEach((depId: unknown) => {
+                    const depIdNum = Number(depId);
                     const depIndex = this.rowData.findIndex((r) => {
                         if (r.id === null || r.id === undefined) return false;
                         const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
-                        return +depId === rowIdNum;
+                        return depIdNum === rowIdNum;
                     });
                     if (depIndex === -1 || depIndex >= newIndex) {
                         const depRow = this.rowData.find((r) => {
                             if (r.id === null || r.id === undefined) return false;
                             const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
-                            return +depId === rowIdNum;
+                            return depIdNum === rowIdNum;
                         });
                         const depLabel = depRow ? `${depRow.name || 'Without name'} (id:${depRow.id})` : `id:${depId}`;
                         shiftedConflicts.push(`${row.name || 'Without name'} (id:${row.id}) → dependency ${depLabel}`);
@@ -640,17 +759,18 @@ export class TasksTableComponent implements OnChanges {
                 if (!row) continue;
                 const newIndex = i + 1;
                 const deps = row.task_context_list || [];
-                deps.forEach((depId: any) => {
+                deps.forEach((depId: unknown) => {
+                    const depIdNum = Number(depId);
                     const depIndex = this.rowData.findIndex((r) => {
                         if (r.id === null || r.id === undefined) return false;
                         const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
-                        return +depId === rowIdNum;
+                        return depIdNum === rowIdNum;
                     });
                     if (depIndex === -1 || depIndex >= newIndex) {
                         const depRow = this.rowData.find((r) => {
                             if (r.id === null || r.id === undefined) return false;
                             const rowIdNum = typeof r.id === 'string' ? (r.id.startsWith('temp_') ? NaN : +r.id) : r.id;
-                            return +depId === rowIdNum;
+                            return depIdNum === rowIdNum;
                         });
                         const depLabel = depRow ? `${depRow.name || 'Without name'} (id:${depRow.id})` : `id:${depId}`;
                         shiftedConflicts.push(`${row.name || 'Without name'} (id:${row.id}) → dependency ${depLabel}`);
@@ -662,7 +782,9 @@ export class TasksTableComponent implements OnChanges {
         if (shiftedConflicts.length > 0) {
             const shortList = shiftedConflicts.slice(0, 4).join('; ');
             const more = shiftedConflicts.length > 4 ? `; …и ещё ${shiftedConflicts.length - 4}` : '';
-            this.toastService.error(`Cannot move the task: shifting it would break the context for: ${shortList}${more}.`);
+            this.toastService.error(
+                `Cannot move the task: shifting it would break the context for: ${shortList}${more}.`
+            );
             if (this.gridApi) {
                 this.gridApi.setGridOption('rowData', [...this.rowData]);
             }
@@ -703,7 +825,7 @@ export class TasksTableComponent implements OnChanges {
     // Add mouseup listener to detect drop outside rows
     private addDragMouseUpListener(): void {
         if (this.dragMouseUpListener) return; // Already listening
-        
+
         this.dragMouseUpListener = this.renderer.listen('document', 'mouseup', () => {
             if (this.isDragOutsideRows && this.draggedTaskData) {
                 // User released mouse while outside row area - handle as drop to first position
@@ -728,7 +850,7 @@ export class TasksTableComponent implements OnChanges {
     private handleDragToFirstPosition(): void {
         // Show warning that task cannot be dropped outside the table area
         this.toastService.error('Cannot drop task outside the table area. Please drop it on a valid row.');
-        
+
         // Revert the visual state
         if (this.gridApi) {
             this.gridApi.setGridOption('rowData', [...this.rowData]);
@@ -736,84 +858,94 @@ export class TasksTableComponent implements OnChanges {
     }
 
     private parseTaskData(taskData: FullTask) {
-        const agentData = taskData.agentData || null;
-        const agentId = agentData ? agentData.id : null;
-        const crew = this.project ? this.project.id : null;
+        const rawAgentId = taskData.agentData?.id ?? (taskData as TableFullTask & { agent?: unknown }).agent ?? null;
 
-        // Process merged tools similar to agents table
-        const mergedTools = (taskData as any).mergedTools || [];
+        const agentId = rawAgentId == null || String(rawAgentId).trim() === '' ? null : Number(rawAgentId);
+
+        const crew = this.project ? this.project.id : null;
+        const mergedTools =
+            (taskData as TableFullTask & { mergedTools?: Array<{ type?: string; id?: unknown }> }).mergedTools || [];
+
+        const configuredTools = mergedTools
+            .filter((tool: { type?: string; id?: unknown }) => tool.type === 'tool-config')
+            .map((tool: { id?: unknown }) => Number(tool.id))
+            .filter((id): id is number => Number.isFinite(id));
+        const pythonTools = mergedTools
+            .filter((tool: { type?: string; id?: unknown }) => tool.type === 'python-tool')
+            .map((tool: { id?: unknown }) => Number(tool.id))
+            .filter((id): id is number => Number.isFinite(id));
+        const mcpTools = mergedTools
+            .filter((tool: { type?: string; id?: unknown }) => tool.type === 'mcp-tool')
+            .map((tool: { id?: unknown }) => Number(tool.id))
+            .filter((id): id is number => Number.isFinite(id));
 
         const parsed = {
             ...taskData,
-            agent: agentId,
-            crew: crew,
-            configured_tools: mergedTools
-                .filter((tool: any) => tool.type === 'tool-config')
-                .map((tool: any) => tool.id),
-            python_code_tools: mergedTools
-                .filter((tool: any) => tool.type === 'python-tool')
-                .map((tool: any) => tool.id),
-            mcp_tools: mergedTools
-                .filter((tool: any) => tool.type === 'mcp-tool')
-                .map((tool: any) => tool.id),
-            // Explicitly preserve mergedTools for state updates
-            mergedTools: mergedTools,
+            agent: Number.isFinite(agentId) ? agentId : null,
+            crew,
+            configured_tools: configuredTools,
+            python_code_tools: pythonTools,
+            mcp_tools: mcpTools,
+            mergedTools,
         };
 
-        // Delete tools field to ensure it's never included in update requests
-        delete (parsed as any).tools;
-
+        delete (parsed as { tools?: unknown }).tools;
         return parsed;
     }
 
     private onCellValueChanged(event: CellValueChangedEvent): void {
+        if (this.isSameCellValue(event.oldValue, event.newValue)) return;
+
         const colId = event.column.getColId();
         const fieldsToValidate = ['name', 'instructions', 'expected_output'];
 
-        // Check if this is a temporary task
-        const isTempTask =
-            !event.data.id ||
-            (typeof event.data.id === 'string' &&
-                event.data.id.startsWith('temp_'));
+        const isTempTask = !event.data.id || (typeof event.data.id === 'string' && event.data.id.startsWith('temp_'));
 
         if (isTempTask) {
-            // Validate the required fields
-            const isValid = fieldsToValidate.every((field) => {
-                const fieldValue = event.data[field]
-                    ? event.data[field].trim()
-                    : '';
-                event.data[`${field}Warning`] = !fieldValue;
-                return fieldValue !== '';
-            });
+            const rowKey = String(event.data.id);
+            const touched = this.isTempRowTouched(event.data);
+            const valid = this.isTempRowValid(event.data);
 
-            if (!isValid) {
-                console.warn('Warning: One or more required fields are empty.');
+            if (!touched) {
+                this.localDraftTempKeys.delete(rowKey);
+                this.setPending(rowKey, null);
+
+                this.requiredErrorsRows.delete(rowKey);
+                this.gridApi.refreshCells({
+                    rowNodes: [event.node],
+                    columns: [...this.requiredTaskFields],
+                    force: true,
+                });
+                this.cdr.markForCheck();
                 return;
             }
 
-            // Parse the task data
-            const parsedData = this.parseTaskData(event.data);
+            this.localDraftTempKeys.add(rowKey);
+            this.updateRequiredErrorsForTempRow(rowKey, event.data);
 
-            // Build tool_ids array for task creation
+            if (!valid) {
+                this.setPending(rowKey, null);
+                this.cdr.markForCheck();
+                return;
+            }
+
+            this.localDraftTempKeys.delete(rowKey);
+            this.requiredErrorsRows.delete(rowKey);
+
+            const parsedData = this.parseTaskData(event.data);
             const configuredToolIds = parsedData.configured_tools || [];
             const pythonToolIds = parsedData.python_code_tools || [];
             const mcpToolIds = parsedData.mcp_tools || [];
             const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds, mcpToolIds);
 
-            // Create the new task
             const createTaskData: CreateTaskRequest = {
                 ...parsedData,
-                name: parsedData.name,
-                instructions: parsedData.instructions,
-                expected_output: parsedData.expected_output,
                 knowledge_query: parsedData.knowledge_query ?? null,
                 order: parsedData.order ?? null,
                 human_input: parsedData.human_input ?? false,
                 async_execution: parsedData.async_execution ?? false,
                 config: parsedData.config ?? null,
                 output_model: parsedData.output_model ?? null,
-                crew: parsedData.crew,
-                agent: parsedData.agent,
                 task_context_list: parsedData.task_context_list ?? [],
                 configured_tools: configuredToolIds,
                 python_code_tools: pythonToolIds,
@@ -821,122 +953,35 @@ export class TasksTableComponent implements OnChanges {
                 tool_ids: toolIds,
             };
 
-            this.tasksService.createTask(createTaskData).subscribe({
-                next: (newTask: GetTaskRequest) => {
-                    console.log('Task created successfully:', newTask);
-
-                    event.data.id = newTask.id;
-
-                    this.gridApi.refreshCells({
-                        rowNodes: [event.node],
-                        force: true,
-                    });
-
-                    const agentData = this.agents.find(
-                        (agent) => agent.id === newTask.agent
-                    );
-
-                    // Preserve mergedTools from event.data if they exist (from tools popup)
-                    const fullTask: FullTask = {
-                        ...newTask,
-                        agentData: agentData || null,
-                        mergedTools: (event.data as any).mergedTools || [],
-                    };
-
-                    this.projectStateService.addTask(fullTask);
-
-                    const emptyTask = this.createEmptyFullTask();
-
-                    this.rowData.push(emptyTask);
-                    this.gridApi.applyTransaction({ add: [emptyTask] });
-
-                    this.toastService.success('Task added successfully');
-
-                    this.cdr.markForCheck();
-
-                    this.updateTaskOrders();
-                },
-                error: (err) => console.error('Error creating task:', err),
+            this.setPending(rowKey, {
+                rowKey,
+                kind: 'create',
+                payload: createTaskData,
             });
 
+            this.ensureSingleSpareEmptyRow();
+            this.gridApi?.setGridOption('rowData', [...this.rowData]);
+            this.gridApi?.refreshCells({ force: true, columns: ['index'] });
+            this.cdr.markForCheck();
+            this.emitReorderPending();
             return;
         }
 
         let allValid = true;
-        fieldsToValidate.forEach((field) => {
-            const fieldValue = event.data[field]
-                ? event.data[field].trim()
-                : '';
-            event.data[`${field}Warning`] = !fieldValue;
-            if (!fieldValue) {
-                allValid = false;
-            }
-        });
+        for (const field of fieldsToValidate) {
+            const v = event.data[field] ? String(event.data[field]).trim() : '';
+            event.data[`${field}Warning`] = !v;
+            if (!v) allValid = false;
+        }
 
         this.gridApi.refreshCells({
             rowNodes: [event.node],
             columns: [colId],
         });
 
-        if (!allValid) {
-            console.warn('Warning: One or more required fields are empty.');
-            return;
-        }
-
-        const parsedUpdateData = this.parseTaskData(event.data);
-
-        // Build tool_ids array for task update
-        const updateConfiguredToolIds = parsedUpdateData.configured_tools || [];
-        const updatePythonToolIds = parsedUpdateData.python_code_tools || [];
-        const updateMcpToolIds = parsedUpdateData.mcp_tools || [];
-        const updateToolIds = buildToolIdsArray(
-            updateConfiguredToolIds,
-            updatePythonToolIds,
-            updateMcpToolIds
-        );
-
-        if (typeof parsedUpdateData.id === 'string') {
-            parsedUpdateData.id = +parsedUpdateData.id;
-        }
-
-        // Create update request with all tool arrays, explicitly excluding tools field
-        const updateTaskRequest: UpdateTaskRequest = {
-            ...parsedUpdateData,
-            knowledge_query: parsedUpdateData.knowledge_query ?? null,
-            configured_tools: updateConfiguredToolIds,
-            python_code_tools: updatePythonToolIds,
-            mcp_tools: updateMcpToolIds,
-            tool_ids: updateToolIds,
-        };
-
-        this.tasksService.updateTask(updateTaskRequest).subscribe({
-            next: (updatedResponse) => {
-                console.log('Task updated successfully:', updatedResponse);
-                this.toastService.success('Task updated successfully');
-                
-                // Preserve mergedTools from the original task in state or from event.data
-                // First try to get it from the current tasks array (from state service)
-                const originalTask = this.tasks.find(
-                    (t) => t.id === parsedUpdateData.id
-                );
-                const preservedMergedTools = 
-                    originalTask?.mergedTools || 
-                    (event.data as any).mergedTools || 
-                    [];
-                
-                const taskForState: FullTask = {
-                    ...parsedUpdateData,
-                    mergedTools: preservedMergedTools,
-                };
-                this.projectStateService.updateTask(taskForState);
-            },
-            error: (error) => {
-                console.error('Error updating task:', error);
-            },
-            complete: () => {
-                console.log('Task update process completed.');
-            },
-        });
+        if (!allValid) return;
+        this.upsertPendingForExistingTask(event.data as TableFullTask);
+        this.cdr.markForCheck();
     }
 
     ngOnDestroy(): void {
@@ -949,8 +994,7 @@ export class TasksTableComponent implements OnChanges {
         const normalTasks: TableFullTask[] = this.rowData.filter((task) => {
             // Check if the ID is a number or a string that can be parsed as a number
             const hasNormalId =
-                typeof task.id === 'number' ||
-                (typeof task.id === 'string' && !task.id.startsWith('temp'));
+                typeof task.id === 'number' || (typeof task.id === 'string' && !task.id.startsWith('temp'));
 
             // Remove tasks with null order
             if (task.order === null) {
@@ -959,52 +1003,64 @@ export class TasksTableComponent implements OnChanges {
 
             // Remove tasks with order greater than or equal to current task's order
             // Only keep tasks with order < taskData.order (strictly less than)
-            const hasValidOrder =
-                taskData.order !== null && task.order < taskData.order;
+            const hasValidOrder = taskData.order !== null && task.order < taskData.order;
 
             return hasNormalId && hasValidOrder;
         });
 
-        console.log('Filtered tasks (normal IDs & valid order):', normalTasks);
+        const positionStrategy = new GlobalPositionStrategy().top('45px').centerHorizontally();
 
-        const positionStrategy = new GlobalPositionStrategy()
-            .top('45px')
-            .centerHorizontally();
+        const dialogRef = this.dialog.open(AdvancedTaskSettingsDialogComponent, {
+            data: {
+                config: taskData.config,
+                output_model: taskData.output_model,
+                task_context_list: taskData.task_context_list,
+                taskName: taskData.name,
+                taskId: taskData.id,
+                availableTasks: normalTasks, // Pass filtered tasks to dialog
+            },
+            disableClose: true,
+            width: '100%', // Set minimum width
+            maxWidth: '650px', // Allow it to be responsive but not too wide
+            height: 'fit-content', // Set height to 90% of viewport height
+            maxHeight: '90vh', // Ensure maximum height
+            positionStrategy,
+        });
 
-        const dialogRef = this.dialog.open(
-            AdvancedTaskSettingsDialogComponent,
-            {
-                data: {
-                    config: taskData.config,
-                    output_model: taskData.output_model,
-                    task_context_list: taskData.task_context_list,
-                    taskName: taskData.name,
-                    taskId: taskData.id,
-                    availableTasks: normalTasks, // Pass filtered tasks to dialog
+        dialogRef.closed.subscribe((updatedData) => {
+            const data = updatedData as AdvancedTaskSettingsData | undefined;
+            if (!data) return;
+
+            const beforeOutput = taskData.output_model ?? null;
+            const beforeCtx = Array.isArray(taskData.task_context_list) ? taskData.task_context_list : [];
+
+            const afterOutput = data.output_model ?? null;
+            const afterCtx = Array.isArray(data.task_context_list) ? data.task_context_list : [];
+
+            const norm = (arr: unknown[]) =>
+                arr
+                    .map((x) => (typeof x === 'string' ? Number(x) : x))
+                    .filter((x) => Number.isFinite(x))
+                    .map((x) => Number(x))
+                    .sort((a, b) => a - b);
+
+            const sameOutput = JSON.stringify(beforeOutput) === JSON.stringify(afterOutput);
+            const sameCtx = JSON.stringify(norm(beforeCtx)) === JSON.stringify(norm(afterCtx));
+
+            if (sameOutput && sameCtx) return;
+
+            this.updateTaskDataInRow(
+                {
+                    output_model: afterOutput,
+                    task_context_list: afterCtx,
                 },
-                width: '100%', // Set minimum width
-                maxWidth: '650px', // Allow it to be responsive but not too wide
-                height: 'fit-content', // Set height to 90% of viewport height
-                maxHeight: '90vh', // Ensure maximum height
-                positionStrategy,
-            }
-        );
-
-        dialogRef.closed.subscribe((updatedData: unknown) => {
-            const data: AdvancedTaskSettingsData | undefined = updatedData as
-                | AdvancedTaskSettingsData
-                | undefined;
-            if (data) {
-                this.updateTaskDataInRow(data, taskData);
-            }
+                taskData
+            );
         });
     }
 
-    updateTaskDataInRow(
-        updatedData: Partial<TableFullTask>,
-        taskData: TableFullTask
-    ): void {
-        const index = this.rowData.findIndex((task) => task === taskData);
+    updateTaskDataInRow(updatedData: Partial<TableFullTask>, taskData: TableFullTask): void {
+        const index = this.rowData.findIndex((task) => task.id === taskData.id);
         if (index === -1) {
             console.error('Task not found in rowData for update:', taskData);
             return;
@@ -1015,6 +1071,15 @@ export class TasksTableComponent implements OnChanges {
             ...this.rowData[index],
             ...updatedData,
         };
+
+        const isAgentCleared =
+            ('agent' in updatedData && updatedData.agent == null) ||
+            ('agentData' in updatedData && updatedData.agentData == null);
+
+        if (isAgentCleared) {
+            updatedTask.agent = null;
+            updatedTask.agentData = null;
+        }
 
         // Update our local row data
         this.rowData[index] = updatedTask;
@@ -1027,30 +1092,69 @@ export class TasksTableComponent implements OnChanges {
 
         // Check if this is a temporary task
         const isTempTask =
-            !updatedTask.id ||
-            (typeof updatedTask.id === 'string' &&
-                updatedTask.id.startsWith('temp_'));
+            !updatedTask.id || (typeof updatedTask.id === 'string' && updatedTask.id.startsWith('temp_'));
 
         if (isTempTask) {
-            console.warn(
-                'Task has a temporary ID, not updating backend:',
-                updatedTask
-            );
+            const rowKey = String(updatedTask.id);
+            const touched = this.isTempRowTouched(updatedTask);
+            const valid = this.isTempRowValid(updatedTask);
+
+            if (!touched) {
+                this.localDraftTempKeys.delete(rowKey);
+                this.requiredErrorsRows.delete(rowKey);
+                this.setPending(rowKey, null);
+                this.gridApi.refreshCells({
+                    rowNodes: [this.gridApi.getRowNode(rowKey)!].filter(Boolean),
+                    force: true,
+                });
+                return;
+            }
+
+            this.localDraftTempKeys.add(rowKey);
+            this.updateRequiredErrorsForTempRow(rowKey, updatedTask);
+
+            if (!valid) {
+                this.setPending(rowKey, null);
+                return;
+            }
+
+            this.localDraftTempKeys.delete(rowKey);
+            this.requiredErrorsRows.delete(rowKey);
+
+            const parsedTaskData = this.parseTaskData(updatedTask as FullTask);
+            const cfg = parsedTaskData.configured_tools || [];
+            const py = parsedTaskData.python_code_tools || [];
+            const mcp = parsedTaskData.mcp_tools || [];
+            const tool_ids = buildToolIdsArray(cfg, py, mcp);
+
+            this.setPending(rowKey, {
+                rowKey,
+                kind: 'create',
+                payload: {
+                    ...parsedTaskData,
+                    knowledge_query: updatedTask.knowledge_query ?? null,
+                    configured_tools: cfg,
+                    python_code_tools: py,
+                    mcp_tools: mcp,
+                    tool_ids,
+                },
+            });
+
+            this.ensureSingleSpareEmptyRow();
+            this.gridApi?.setGridOption('rowData', [...this.rowData]);
+            this.gridApi?.refreshCells({ force: true, columns: ['index'] });
+
             return;
         }
 
         // Parse the task data to extract tools
-        const parsedTaskData = this.parseTaskData(updatedTask as any);
+        const parsedTaskData = this.parseTaskData(updatedTask as FullTask);
 
         // Build tool_ids array for settings update
         const settingsConfiguredToolIds = parsedTaskData.configured_tools || [];
         const settingsPythonToolIds = parsedTaskData.python_code_tools || [];
         const settingsMcpToolIds = parsedTaskData.mcp_tools || [];
-        const settingsToolIds = buildToolIdsArray(
-            settingsConfiguredToolIds,
-            settingsPythonToolIds,
-            settingsMcpToolIds
-        );
+        const settingsToolIds = buildToolIdsArray(settingsConfiguredToolIds, settingsPythonToolIds, settingsMcpToolIds);
 
         // Prepare the payload for the backend update request (excluding tools field)
         const updateTaskData: UpdateTaskRequest = {
@@ -1060,13 +1164,12 @@ export class TasksTableComponent implements OnChanges {
             instructions: updatedTask.instructions,
             expected_output: updatedTask.expected_output,
             knowledge_query: updatedTask.knowledge_query ?? null,
-            order: updatedTask.order,
             human_input: updatedTask.human_input,
             async_execution: updatedTask.async_execution,
             config: updatedTask.config,
             output_model: updatedTask.output_model,
             crew: updatedTask.crew,
-            agent: updatedTask.agent,
+            agent: parsedTaskData.agent,
             task_context_list: updatedTask.task_context_list,
             configured_tools: settingsConfiguredToolIds,
             python_code_tools: settingsPythonToolIds,
@@ -1074,61 +1177,30 @@ export class TasksTableComponent implements OnChanges {
             tool_ids: settingsToolIds,
         };
 
-        this.tasksService.updateTask(updateTaskData).subscribe({
-            next: (updatedResponse) => {
-                console.log('Task updated successfully:', updatedResponse);
-
-             
-                const originalTask = this.tasks.find(
-                    (t) => t.id === +updatedTask.id
-                );
-                const preservedMergedTools = 
-                    originalTask?.mergedTools || 
-                    (updatedTask as any).mergedTools || 
-                    [];
-
-               
-                const taskForState: FullTask = {
-                    ...updatedTask,
-                    id: +updatedTask.id,
-                    mergedTools: preservedMergedTools,
-                };
-
-             
-                this.projectStateService.updateTask(taskForState);
-
-                this.toastService.success('Task updated successfully');
-            },
-            error: (error) => {
-                console.error('Error updating task:', error);
-                this.toastService.error('Failed to update task');
-            },
-            complete: () => {
-                console.log('Task update process completed.');
-            },
+        this.setPending(String(updatedTask.id), {
+            rowKey: String(updatedTask.id),
+            kind: 'update',
+            payload: updateTaskData,
         });
+
+        return;
     }
     public handleCopy(): void {
         if (!this.selectedRowData) return;
         // Deep clone the selected row (to avoid mutating references)
         this.copiedRowData = JSON.parse(JSON.stringify(this.selectedRowData));
-        console.log('Copied row:', this.copiedRowData);
         this.closeContextMenu();
     }
     public handlePasteBelow(): void {
         if (!this.selectedRowData || !this.copiedRowData) return;
-        const index = this.rowData.findIndex(
-            (row: TableFullTask) => row === this.selectedRowData
-        );
+        const index = this.rowData.findIndex((row: TableFullTask) => row === this.selectedRowData);
         if (index === -1) return;
         this.pasteNewTaskAt(index + 1);
     }
 
     public handlePasteAbove(): void {
         if (!this.selectedRowData || !this.copiedRowData) return;
-        const index = this.rowData.findIndex(
-            (row) => row === this.selectedRowData
-        );
+        const index = this.rowData.findIndex((row) => row === this.selectedRowData);
         if (index === -1) return;
         this.pasteNewTaskAt(index);
     }
@@ -1139,14 +1211,11 @@ export class TasksTableComponent implements OnChanges {
         // Check if row has a temp ID or null ID: handle locally
         const isTempRow =
             !this.selectedRowData.id ||
-            (typeof this.selectedRowData.id === 'string' &&
-                this.selectedRowData.id.startsWith('temp_'));
+            (typeof this.selectedRowData.id === 'string' && this.selectedRowData.id.startsWith('temp_'));
 
         if (isTempRow) {
             // For temporary rows, remove directly without backend call
-            const localIndex = this.rowData.findIndex(
-                (row) => row === this.selectedRowData
-            );
+            const localIndex = this.rowData.findIndex((row) => row === this.selectedRowData);
 
             if (localIndex !== -1) {
                 // Remove from local array
@@ -1161,12 +1230,18 @@ export class TasksTableComponent implements OnChanges {
                     columns: ['index'],
                 });
 
-                console.log('Deleted temporary row:', this.selectedRowData);
                 this.cdr.markForCheck();
             } else {
                 console.warn('Row not found for local deletion.');
             }
 
+            const tempRowKey = String(this.selectedRowData.id);
+            this.localDraftTempKeys.delete(tempRowKey);
+            this.requiredErrorsRows.delete(tempRowKey);
+            this.setPending(tempRowKey, null);
+            this.ensureSingleSpareEmptyRow();
+            this.reindexAndSyncPendingOrders();
+            this.maybeClearReorderPending();
             this.closeContextMenu();
             return;
         }
@@ -1182,70 +1257,34 @@ export class TasksTableComponent implements OnChanges {
         }
 
         // Remove optimistically from local array
-        let removedRow = this.rowData.splice(index, 1)[0];
-
-        // Refresh the grid with the updated data
-        this.gridApi.setGridOption('rowData', [...this.rowData]);
-
-        // Refresh index column
-        this.gridApi.refreshCells({
-            force: true,
-            columns: ['index'],
-        });
+        this.rowData.splice(index, 1);
+        this.reindexAndSyncPendingOrders();
 
         this.cdr.markForCheck();
 
         // Convert ID to number if it's a string
-        const idToDelete =
-            typeof rowToDelete.id === 'string'
-                ? +rowToDelete.id
-                : rowToDelete.id;
+        const idToDelete = typeof rowToDelete.id === 'string' ? +rowToDelete.id : rowToDelete.id;
 
-        this.tasksService.deleteTask(idToDelete).subscribe({
-            next: () => {
-                // Convert ID to number for project state service
-                const idForState =
-                    typeof rowToDelete.id === 'string'
-                        ? +rowToDelete.id
-                        : rowToDelete.id;
-                this.projectStateService.deleteTask(idForState);
-
-                this.updateTaskOrders();
-                this.toastService.success('Task deleted successfully');
-            },
-            error: (error) => {
-                console.error('Error deleting task:', error);
-
-                // Revert the deletion if the API call fails
-                if (removedRow && index !== -1) {
-                    this.rowData.splice(index, 0, removedRow);
-
-                    // Refresh the grid with the restored data
-                    this.gridApi.setGridOption('rowData', [...this.rowData]);
-
-                    // Refresh index column after restoring
-                    this.gridApi.refreshCells({
-                        force: true,
-                        columns: ['index'],
-                    });
-
-                    this.cdr.markForCheck();
-                    this.toastService.error('Failed to delete task');
-                }
-            },
-            complete: () => {
-                this.closeContextMenu();
-            },
+        this.setPending(String(idToDelete), {
+            rowKey: String(idToDelete),
+            kind: 'delete',
+            payload: { id: idToDelete },
         });
+
+        this.projectStateService.deleteTask(idToDelete);
+
+        this.emitReorderPending();
+        this.closeContextMenu();
+        return;
     }
+
     public closeContextMenu(): void {
         this.contextMenuVisible.set(false);
     }
+
     private pasteNewTaskAt(insertIndex: number): void {
         // Create a temporary ID for the new task
-        const tempId = `temp_${Date.now()}_${Math.random()
-            .toString(36)
-            .substr(2, 9)}`;
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
         const newTaskData: FullTask = {
             ...JSON.parse(JSON.stringify(this.copiedRowData)),
@@ -1271,11 +1310,7 @@ export class TasksTableComponent implements OnChanges {
         const pasteConfiguredToolIds = parsedTaskData.configured_tools || [];
         const pastePythonToolIds = parsedTaskData.python_code_tools || [];
         const pasteMcpToolIds = parsedTaskData.mcp_tools || [];
-        const pasteToolIds = buildToolIdsArray(
-            pasteConfiguredToolIds,
-            pastePythonToolIds,
-            pasteMcpToolIds
-        );
+        const pasteToolIds = buildToolIdsArray(pasteConfiguredToolIds, pastePythonToolIds, pasteMcpToolIds);
 
         const createTaskData: CreateTaskRequest = {
             ...parsedTaskData,
@@ -1297,61 +1332,27 @@ export class TasksTableComponent implements OnChanges {
             tool_ids: pasteToolIds,
         };
 
-        this.tasksService.createTask(createTaskData).subscribe({
-            next: (newTask: GetTaskRequest) => {
-                console.log('Task created successfully:', newTask);
-
-                // Update the ID in our task data
-                newTaskData.id = newTask.id;
-
-                // Update the grid without re-rendering entirely
-                this.gridApi.applyTransaction({ update: [newTaskData] });
-
-                // Map agent data from the agents array based on agent id
-                const agentData = this.agents.find(
-                    (agent) => agent.id === newTask.agent
-                );
-
-                // Create a FullTask by merging GetTaskRequest and agent data
-                // Preserve mergedTools from newTaskData (which was copied from the original)
-                const fullTask: FullTask = {
-                    ...newTask,
-                    agentData: agentData || null,
-                    mergedTools: (newTaskData as any).mergedTools || [],
-                };
-
-                this.projectStateService.addTask(fullTask);
-                this.toastService.success('Task created successfully');
-                this.updateTaskOrders();
-            },
-            error: (err) => {
-                console.error('Error creating task:', err);
-
-                // Remove the row if there was an error
-                this.gridApi.applyTransaction({ remove: [newTaskData] });
-                this.toastService.error('Failed to create task');
-            },
-            complete: () => {
-                console.log('Task creation completed');
-            },
+        this.setPending(String(newTaskData.id), {
+            rowKey: String(newTaskData.id),
+            kind: 'create',
+            payload: createTaskData,
         });
-
+        this.gridApi.applyTransaction({ update: [newTaskData] });
+        this.reindexAndSyncPendingOrders();
         this.closeContextMenu();
+        return;
     }
+
     public handleAddEmptyTaskAbove(): void {
         if (!this.selectedRowData) return;
-        const index = this.rowData.findIndex(
-            (row) => row === this.selectedRowData
-        );
+        const index = this.rowData.findIndex((row) => row === this.selectedRowData);
         if (index === -1) return;
         this.insertEmptyTaskAt(index);
     }
 
     public handleAddEmptyTaskBelow(): void {
         if (!this.selectedRowData) return;
-        const index = this.rowData.findIndex(
-            (row) => row === this.selectedRowData
-        );
+        const index = this.rowData.findIndex((row) => row === this.selectedRowData);
         if (index === -1) return;
         this.insertEmptyTaskAt(index + 1);
     }
@@ -1369,16 +1370,7 @@ export class TasksTableComponent implements OnChanges {
             addIndex: insertIndex,
         });
 
-        // Update the order for all tasks
-        this.rowData.forEach((row, i) => {
-            row.order = i;
-        });
-
-        // Refresh order cells
-        this.gridApi.refreshCells({
-            force: true,
-            columns: ['order'],
-        });
+        this.reindexAndSyncPendingOrders();
 
         // Mark for change detection
         this.cdr.markForCheck();
@@ -1387,99 +1379,13 @@ export class TasksTableComponent implements OnChanges {
     }
 
     updateTaskOrders(): void {
-        // Build the ordered list of tasks based on the grid's displayed order so
-        // PATCH requests match what the user sees in the UI.
-        let displayedRows: TableFullTask[] = [];
-        if (this.gridApi) {
-            const count = this.gridApi.getDisplayedRowCount();
-            for (let i = 0; i < count; i++) {
-                const node = this.gridApi.getDisplayedRowAtIndex(i);
-                if (node && node.data) {
-                    displayedRows.push(node.data as TableFullTask);
-                }
-            }
-        } else {
-            // Fallback to local rowData
-            displayedRows = [...this.rowData];
-        }
-
-        // Filter displayed rows to only real tasks (exclude null and temp IDs)
-        const tasksWithIds = displayedRows.filter((task: TableFullTask) => {
-            if (task.id === null || task.id === undefined) return false;
-            if (typeof task.id === 'string' && task.id.startsWith('temp_')) return false;
-            return true;
-        });
-
-        // Create an array of update requests with new order values (1-based)
-        const updateRequests: Observable<GetTaskRequest>[] = tasksWithIds.map((task, index) => {
-            console.log('updating task order', task);
-            const taskId = typeof task.id === 'string' ? +task.id : task.id;
-            return this.tasksService.patchTaskOrder(taskId, index + 1);
-        });
-
-        // Execute all update requests in parallel using forkJoin
-        if (updateRequests.length > 0) {
-            forkJoin(updateRequests).subscribe({
-                next: (results) => {
-                    console.log(
-                        'All task orders updated successfully:',
-                        results
-                    );
-
-                    // Update local state to reflect the new orders
-                    results.forEach((updatedTask) => {
-                        const index = this.rowData.findIndex((row) => {
-                            // Handle case where row.id might be a string
-                            if (typeof row.id === 'string') {
-                                return +row.id === updatedTask.id;
-                            }
-                            return row.id === updatedTask.id;
-                        });
-
-                        if (index !== -1) {
-                            this.rowData[index].order = updatedTask.order;
-                        }
-                    });
-
-                    // Refresh order cells to reflect updates
-                    this.gridApi.refreshCells({
-                        force: true,
-                        columns: ['order'],
-                    });
-
-                    // Notify the state service with proper FullTask objects
-                    results.forEach((updatedTask) => {
-                        // Find the corresponding row to get the agentData and mergedTools
-                        const rowWithAgentData = this.rowData.find((row) => {
-                            if (typeof row.id === 'string') {
-                                return +row.id === updatedTask.id;
-                            }
-                            return row.id === updatedTask.id;
-                        });
-
-                        if (rowWithAgentData) {
-                            // Create a FullTask object preserving agentData and mergedTools from our original row
-                            const fullTask: FullTask = {
-                                ...updatedTask,
-                                agentData: rowWithAgentData.agentData,
-                                mergedTools: (rowWithAgentData as any).mergedTools || [],
-                            };
-                            this.projectStateService.updateTask(fullTask);
-                        }
-                    });
-
-                    this.cdr.markForCheck();
-                },
-                error: (error) => {
-                    console.error('Error updating task orders:', error);
-                    this.toastService.error('Failed to update task orders');
-                },
-            });
-        }
+        this.reindexAndSyncPendingOrders();
     }
-    private onCellClicked(event: CellClickedEvent<any, any>): void {
-        if (event.colDef.field === 'actions') {
-            const taskData: TableFullTask = event.data;
+
+    private onCellClicked(event: CellClickedEvent<TableFullTask, unknown>): void {
+        if (event.column.getColId() === 'actions') {
+            const taskData = event.data;
+            if (!taskData) return;
             this.closePopup();
             this.openSettingsDialog(taskData);
             return;
@@ -1511,15 +1417,15 @@ export class TasksTableComponent implements OnChanges {
         }
     }
 
-    private onCellKeyDown(event: CellKeyDownEvent<any, any>): void {
+    private onCellKeyDown(event: CellKeyDownEvent<TableFullTask, unknown>): void {
         const keyboardEvent = event.event as KeyboardEvent;
 
         if (keyboardEvent?.key === 'Enter') {
             const { rowIndex, column } = event;
             const columnId = column.getColId();
-            if (event.colDef.field === 'actions') {
+            if (event.column.getColId() === 'actions') {
                 const taskData = event.data;
-                console.log(event.data);
+                if (!taskData) return;
                 this.closePopup();
 
                 this.openSettingsDialog(taskData);
@@ -1553,9 +1459,7 @@ export class TasksTableComponent implements OnChanges {
         this.currentPopupCell = cell;
 
         // Get the container cell element.
-        let target = (event.event!.target as HTMLElement).closest(
-            '.ag-cell'
-        ) as HTMLElement;
+        let target = (event.event!.target as HTMLElement).closest('.ag-cell') as HTMLElement;
         if (!target) {
             target = event.event!.target as HTMLElement;
         }
@@ -1689,103 +1593,63 @@ export class TasksTableComponent implements OnChanges {
                 }
             }
             // Subscribe to the agentSelected event from the popup
-            popupRef.instance.agentSelected.subscribe(
-                (selectedAgent: FullAgent) => {
-                    console.log('Selected agent:', selectedAgent);
+            popupRef.instance.agentSelected.subscribe((selectedAgent: FullAgent | null) => {
+                if (!this.currentPopupCell) return;
+                const rowIndex = this.currentPopupCell.rowIndex;
+                const rowNode = this.gridApi.getDisplayedRowAtIndex(rowIndex);
+                if (!rowNode) return;
+                const taskData = rowNode.data as TableFullTask;
 
-                    if (this.currentPopupCell) {
-                        const rowIndex = this.currentPopupCell.rowIndex;
-                        const rowNode =
-                            this.gridApi.getDisplayedRowAtIndex(rowIndex);
-                        if (rowNode) {
-                            // Update the agentData cell value with the selected agent
-                            rowNode.setDataValue('agentData', selectedAgent); // Set the selected agent in the cell
-                        }
-                    }
-                    // Close the popup after selecting an agent
-                    this.closePopup();
+                if (selectedAgent === null) {
+                    this.updateTaskDataInRow(
+                        {
+                            agent: null,
+                            agentData: null,
+                        },
+                        taskData
+                    );
+                } else {
+                    this.updateTaskDataInRow(
+                        {
+                            agent: selectedAgent.id,
+                            agentData: selectedAgent,
+                        },
+                        taskData
+                    );
                 }
-            );
+                this.closePopup();
+            });
         }
 
         if (cell.columnId === 'mergedTools') {
             const portal = new ComponentPortal(ToolsPopupComponent);
             const popupRef = this.popupOverlayRef.attach(portal);
+            const rowNode = event.node;
             popupRef.instance.mergedTools = event.data?.mergedTools || [];
 
-            popupRef.instance.mergedToolsUpdated.subscribe(
-                (
-                    updatedMergedTools: {
-                        id: number;
-                        configName: string;
-                        toolName: string;
-                        type: string;
-                    }[]
-                ) => {
-                    if (this.currentPopupCell) {
-                        const rowIndex = this.currentPopupCell.rowIndex;
-                        const rowNode =
-                            this.gridApi.getDisplayedRowAtIndex(rowIndex);
-                        if (rowNode) {
-                            const taskData = rowNode.data as TableFullTask;
-                            // Update the grid row data
-                            rowNode.setDataValue(
-                                'mergedTools',
-                                updatedMergedTools
-                            );
-                            
-                            // Also update the rowData array to keep it in sync
-                            const rowDataIndex = this.rowData.findIndex(
-                                (row) => row === taskData
-                            );
-                            if (rowDataIndex !== -1) {
-                                this.rowData[rowDataIndex] = {
-                                    ...this.rowData[rowDataIndex],
-                                    mergedTools: updatedMergedTools,
-                                };
-                            }
-                            
-                            // Update the state service if this is a real task (not temp)
-                            if (taskData.id && !(typeof taskData.id === 'string' && taskData.id.startsWith('temp_'))) {
-                                const taskId = typeof taskData.id === 'string' ? +taskData.id : taskData.id;
-                                const originalTask = this.tasks.find((t) => t.id === taskId);
-                                if (originalTask) {
-                                    const updatedTask: FullTask = {
-                                        ...originalTask,
-                                        mergedTools: updatedMergedTools,
-                                    };
-                                    this.projectStateService.updateTask(updatedTask);
-                                }
-                            }
-                        }
-                    }
-                    this.closePopup();
-                }
-            );
+            popupRef.instance.mergedToolsUpdated.subscribe((updatedMergedTools) => {
+                const mergedToolsClone = (updatedMergedTools ?? []).map((t) => ({ ...t }));
+                const taskData = rowNode.data as TableFullTask;
+                this.updateTaskDataInRow({ mergedTools: mergedToolsClone }, taskData);
+                this.closePopup();
+            });
 
-            // Handle cancel event
             popupRef.instance.cancel.subscribe(() => {
                 this.closePopup();
             });
         }
 
         // Use Renderer2 to attach a global click listener.
-        this.globalClickUnlistener = this.renderer.listen(
-            'document',
-            'click',
-            (evt: MouseEvent) => this.onDocumentClick(evt)
+        this.globalClickUnlistener = this.renderer.listen('document', 'click', (evt: MouseEvent) =>
+            this.onDocumentClick(evt)
         );
 
         // Attach a global keydown listener to close the popup on Escape key.
-        this.globalKeydownUnlistener = this.renderer.listen(
-            'document',
-            'keydown',
-            (evt: KeyboardEvent) => {
-                if (evt.key === 'Escape') {
-                    this.closePopup();
-                }
+        this.globalKeydownUnlistener = this.renderer.listen('document', 'keydown', (evt: KeyboardEvent) => {
+            if (evt.key === 'Escape') {
+                this.closePopup();
             }
-        );
+        });
     }
 
     private onDocumentClick(event: MouseEvent): void {
@@ -1835,8 +1699,6 @@ export class TasksTableComponent implements OnChanges {
 
         // Get the available space at the bottom of the screen
         const spaceBelow = window.innerHeight - mouseEvent.clientY;
-        const spaceAbove = mouseEvent.clientY;
-
         const menuHeight = 265; // Height of the context menu, you can adjust this based on the actual height
 
         // If there's not enough space below, position it above
@@ -1865,4 +1727,527 @@ export class TasksTableComponent implements OnChanges {
     //     return allDependenciesAbove;
     // }
 
+    private hasLocalDirty = false;
+    private markDirty(): void {
+        if (this.hasLocalDirty) return;
+        this.hasLocalDirty = true;
+        this.dirtyChange.emit(true);
+    }
+
+    private emitReorderPending(): void {
+        const displayedRows: TableFullTask[] = [];
+
+        if (this.gridApi) {
+            const count = this.gridApi.getDisplayedRowCount();
+            for (let i = 0; i < count; i++) {
+                const node = this.gridApi.getDisplayedRowAtIndex(i);
+                if (node?.data) displayedRows.push(node.data as TableFullTask);
+            }
+        } else {
+            displayedRows.push(...this.rowData);
+        }
+
+        const reorderPayload = displayedRows
+            .filter((t) => t?.id)
+            .filter((t) => !(typeof t.id === 'string' && t.id.startsWith('temp_')))
+            .map((t, idx) => ({
+                id: typeof t.id === 'string' ? Number(t.id) : t.id,
+                order: idx,
+            }));
+
+        this.setPending('__ALL__', {
+            rowKey: '__ALL__',
+            kind: 'reorder',
+            payload: reorderPayload,
+        });
+    }
+
+    private isSameCellValue(a: unknown, b: unknown): boolean {
+        return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    }
+
+    private setPending(rowKey: string, ev: TaskPendingEvent | null): void {
+        if (!ev) {
+            this.localPendingKeys.delete(rowKey);
+            this.taskPending.emit({ rowKey, kind: 'update', payload: null });
+        } else {
+            this.localPendingKeys.add(rowKey);
+            this.taskPending.emit(ev);
+        }
+
+        const isDirty = this.localPendingKeys.size > 0 || this.localDraftTempKeys.size > 0;
+
+        this.hasLocalDirty = isDirty;
+        this.dirtyChange.emit(isDirty);
+    }
+
+    private normalizeIdList(ids: unknown): number[] {
+        const arr = Array.isArray(ids) ? ids : [];
+
+        const nums = arr.map((x) => Number(x)).filter((x): x is number => Number.isFinite(x));
+
+        return Array.from(new Set(nums)).sort((a, b) => a - b);
+    }
+
+    private normalizeTaskForCompare(task: FullTask): unknown {
+        const parsed = this.parseTaskData(task);
+
+        return {
+            id: parsed.id != null ? Number(parsed.id) : null,
+            name: String(parsed.name ?? '').trim(),
+            instructions: String(parsed.instructions ?? '').trim(),
+            expected_output: String(parsed.expected_output ?? '').trim(),
+            knowledge_query: parsed.knowledge_query ?? null,
+            order: parsed.order ?? null,
+            human_input: !!parsed.human_input,
+            async_execution: !!parsed.async_execution,
+            config: parsed.config ?? null,
+            output_model: parsed.output_model ?? null,
+            crew: parsed.crew ?? null,
+            agent: parsed.agent ?? null,
+            task_context_list: this.normalizeIdList(parsed.task_context_list),
+            configured_tools: this.normalizeIdList(parsed.configured_tools),
+            python_code_tools: this.normalizeIdList(parsed.python_code_tools),
+            mcp_tools: this.normalizeIdList(parsed.mcp_tools),
+        };
+    }
+
+    private jsonEqual(a: unknown, b: unknown): boolean {
+        return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    private upsertPendingForExistingTask(taskData: TableFullTask): void {
+        const isTemp = !taskData.id || (typeof taskData.id === 'string' && taskData.id.startsWith('temp_'));
+
+        if (isTemp) return;
+
+        const parsedUpdateData = this.parseTaskData(taskData as FullTask);
+        const configured = parsedUpdateData.configured_tools || [];
+        const python = parsedUpdateData.python_code_tools || [];
+        const mcp = parsedUpdateData.mcp_tools || [];
+        const toolIds = buildToolIdsArray(configured, python, mcp);
+
+        const idNum = Number(parsedUpdateData.id);
+        if (!Number.isFinite(idNum)) return;
+
+        const parsedWithoutOrder = { ...parsedUpdateData };
+        delete (parsedWithoutOrder as Record<string, unknown>)['order'];
+
+        const updateTaskRequest: UpdateTaskRequest = {
+            ...parsedWithoutOrder,
+            id: idNum,
+            knowledge_query: parsedUpdateData.knowledge_query ?? null,
+            configured_tools: configured,
+            python_code_tools: python,
+            mcp_tools: mcp,
+            tool_ids: toolIds,
+        };
+
+        const baseline = this.baselineTasksById.get(idNum);
+        const currentNorm = this.normalizeTaskForCompare(taskData as FullTask);
+
+        if (baseline && this.jsonEqual(currentNorm, baseline)) {
+            this.setPending(String(idNum), null);
+            return;
+        }
+
+        this.setPending(String(idNum), {
+            rowKey: String(idNum),
+            kind: 'update',
+            payload: updateTaskRequest,
+        });
+    }
+
+    public requiredErrorsRows = new Set<string>();
+    private activeRowId: string | null = null;
+
+    private readonly requiredTaskFields = ['name', 'instructions', 'expected_output'] as const;
+
+    private isTempRowId(id: unknown): boolean {
+        return typeof id === 'string' && id.startsWith('temp_');
+    }
+
+    private isRequiredEmpty(v: unknown): boolean {
+        return v == null || String(v).trim() === '';
+    }
+
+    private isTempRowTouched(task: TableFullTask): boolean {
+        if (!task) return false;
+        const cur = this.normalizeTempTaskForTouch(task);
+        const base = this.normalizeTempTaskForTouch(this.createEmptyTempTouchBaseline());
+        return JSON.stringify(cur) !== JSON.stringify(base);
+    }
+
+    private normalizeTempTaskForTouch(task: unknown): unknown {
+        const t = structuredClone((task ?? {}) as Partial<TableFullTask>);
+        const text = (v: unknown) => (v == null ? '' : String(v)).trim();
+        const nullableText = (v: unknown) => {
+            const s = text(v);
+            return s === '' ? null : s;
+        };
+
+        const agentId = t.agentData?.id ?? null;
+
+        const toolsKey: string[] = Array.isArray(t.mergedTools)
+            ? t.mergedTools
+                  .map((x: { type?: unknown; id?: unknown }) => `${x?.type ?? ''}:${x?.id ?? ''}`)
+                  .filter((s: string) => s !== ':')
+                  .sort()
+            : [];
+
+        const ctxKey: string[] = Array.isArray(t.task_context_list)
+            ? t.task_context_list
+                  .map((x: unknown) =>
+                      typeof x === 'object' && x !== null ? String((x as { id?: unknown }).id ?? '') : String(x ?? '')
+                  )
+                  .filter((s: string) => s !== '')
+                  .sort()
+            : [];
+
+        return {
+            name: text(t.name),
+            instructions: text(t.instructions),
+            expected_output: text(t.expected_output),
+            knowledge_query: nullableText(t.knowledge_query),
+            human_input: Boolean(t.human_input),
+            async_execution: Boolean(t.async_execution),
+            output_model: t.output_model ?? null,
+            config: t.config ?? null,
+            agentId,
+            toolsKey,
+            ctxKey,
+        };
+    }
+
+    private createEmptyTempTouchBaseline(): Partial<TableFullTask> {
+        return {
+            name: '',
+            instructions: '',
+            expected_output: '',
+            knowledge_query: null,
+            human_input: false,
+            async_execution: false,
+            output_model: null,
+            config: null,
+            agentData: null,
+            mergedTools: [],
+            task_context_list: [],
+        };
+    }
+
+    private isTempRowValid(data: unknown): boolean {
+        const row = (data ?? {}) as Partial<TableFullTask>;
+        return this.requiredTaskFields.every((f) => !this.isRequiredEmpty(row[f]));
+    }
+
+    private updateRequiredErrorsForTempRow(rowId: string, data: unknown): void {
+        const row = data as TableFullTask;
+        const shouldShow = this.isTempRowTouched(row) && !this.isTempRowValid(row);
+
+        if (shouldShow) this.requiredErrorsRows.add(rowId);
+        else this.requiredErrorsRows.delete(rowId);
+
+        const node = this.gridApi?.getRowNode(rowId);
+        if (node) {
+            this.gridApi.refreshCells({
+                rowNodes: [node],
+                columns: [...this.requiredTaskFields],
+                force: true,
+            });
+        }
+    }
+
+    private handleEnterJumpWithinTempRow(params: EnterJumpParams): boolean {
+        const e = params.event as KeyboardEvent | undefined;
+        if (!e) return false;
+        if (e.key !== 'Enter') return false;
+        if (e.shiftKey) return false;
+
+        const data = params.node?.data;
+        const rowId = String(data?.id ?? '');
+        if (!this.isTempRowId(rowId)) return false;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.type === 'keyup') return true;
+        const colId = params.column?.getColId?.() ?? params.colDef?.field;
+        const order = ['name', 'instructions', 'expected_output', 'knowledge_query'];
+        const idx = order.indexOf(colId);
+
+        this.gridApi.stopEditing();
+        if (idx === -1) return true;
+        const nextCol = order[idx + 1];
+
+        setTimeout(() => {
+            if (!nextCol) {
+                this.updateRequiredErrorsForTempRow(rowId, data);
+                return;
+            }
+            const rowIndex = params.node?.rowIndex;
+            if (rowIndex == null) return;
+            this.gridApi.startEditingCell({ rowIndex, colKey: nextCol });
+        }, 0);
+
+        return true;
+    }
+
+    @ViewChild('agGridWrap', { static: true }) agGridWrap!: ElementRef<HTMLElement>;
+
+    @HostListener('document:mousedown', ['$event'])
+    onDocumentMouseDown(ev: MouseEvent): void {
+        if (!this.activeRowId) return;
+        const wrap = this.agGridWrap?.nativeElement;
+        if (!wrap) return;
+
+        const target = ev.target as Node | null;
+        if (!target || !wrap.contains(target)) {
+            const node = this.gridApi?.getRowNode(this.activeRowId);
+            if (node?.data) this.updateRequiredErrorsForTempRow(this.activeRowId, node.data);
+            return;
+        }
+
+        const rowEl = (target as HTMLElement).closest('.ag-row');
+        const clickedId = rowEl?.getAttribute('row-id') ?? null;
+
+        if (clickedId && clickedId !== this.activeRowId) {
+            const node = this.gridApi?.getRowNode(this.activeRowId);
+            if (node?.data) this.updateRequiredErrorsForTempRow(this.activeRowId, node.data);
+        }
+    }
+
+    public validateBeforeSave(): boolean {
+        let ok = true;
+
+        for (const row of this.rowData) {
+            const id = String(row?.id ?? '');
+            if (!this.isTempRowId(id)) continue;
+
+            if (this.isTempRowTouched(row) && !this.isTempRowValid(row)) {
+                this.requiredErrorsRows.add(id);
+                ok = false;
+                const node = this.gridApi?.getRowNode(id);
+                if (node) {
+                    this.gridApi.refreshCells({ rowNodes: [node], columns: [...this.requiredTaskFields], force: true });
+                }
+            }
+        }
+        return ok;
+    }
+
+    public clearLocalDirtyAfterSave(): void {
+        this.localPendingKeys.clear();
+        this.localDraftTempKeys.clear();
+        this.requiredErrorsRows.clear();
+        this.hasLocalDirty = false;
+        this.dirtyChange.emit(false);
+        this.gridApi?.refreshCells({ force: true });
+        this.cdr.markForCheck();
+    }
+
+    public hasLocalDrafts(): boolean {
+        return this.localDraftTempKeys.size > 0;
+    }
+
+    public applyCreatedTask(tempRowKey: string, created: { id: number } & Partial<TableFullTask>): void {
+        const idx = this.rowData.findIndex((t) => String(t.id) === tempRowKey);
+        if (idx === -1) return;
+        const oldRow = this.rowData[idx];
+
+        const newRow: TableFullTask = {
+            ...oldRow,
+            ...created,
+            id: Number(created.id),
+        };
+
+        this.rowData.splice(idx, 1, newRow);
+        this.gridApi?.applyTransaction({
+            remove: [oldRow],
+            add: [newRow],
+            addIndex: idx,
+        });
+
+        this.localDraftTempKeys?.delete(tempRowKey);
+        this.requiredErrorsRows?.delete(tempRowKey);
+        this.localPendingKeys?.delete(tempRowKey);
+
+        this.baselineTasksById?.set(Number(created.id), this.normalizeTaskForCompare(newRow as FullTask));
+
+        this.projectStateService.addTask(newRow as FullTask);
+        this.reindexAndSyncPendingOrders();
+        this.cdr.markForCheck();
+    }
+
+    public applyUpdatedTask(rowKey: string, updated: Partial<TableFullTask>): void {
+        const idx = this.rowData.findIndex((t) => String(t.id) === rowKey);
+        if (idx === -1) return;
+        const oldRow = this.rowData[idx];
+
+        const newRow: TableFullTask = { ...oldRow, ...updated };
+        this.rowData.splice(idx, 1, newRow);
+        this.gridApi?.applyTransaction({ update: [newRow] });
+
+        this.baselineTasksById?.set(Number(newRow.id), this.normalizeTaskForCompare(newRow as FullTask));
+        this.cdr.markForCheck();
+    }
+
+    public getCurrentReorderPayload(): Array<{ id: number; order: number }> {
+        const displayedRows: TableFullTask[] = [];
+
+        if (this.gridApi) {
+            const count = this.gridApi.getDisplayedRowCount();
+            for (let i = 0; i < count; i++) {
+                const node = this.gridApi.getDisplayedRowAtIndex(i);
+                if (node?.data) {
+                    displayedRows.push(node.data as TableFullTask);
+                }
+            }
+        } else {
+            displayedRows.push(...this.rowData);
+        }
+
+        return displayedRows
+            .filter((t) => t?.id != null)
+            .filter((t) => !(typeof t.id === 'string' && t.id.startsWith('temp_')))
+            .map((t, idx) => ({
+                id: typeof t.id === 'string' ? Number(t.id) : t.id,
+                order: idx,
+            }))
+            .filter((x) => Number.isFinite(x.id));
+    }
+
+    private maybeClearReorderPending(): void {
+        const displayedRows: TableFullTask[] = [];
+
+        if (this.gridApi) {
+            const count = this.gridApi.getDisplayedRowCount();
+            for (let i = 0; i < count; i++) {
+                const node = this.gridApi.getDisplayedRowAtIndex(i);
+                if (node?.data) displayedRows.push(node.data as TableFullTask);
+            }
+        } else {
+            displayedRows.push(...this.rowData);
+        }
+
+        const displayedPayload = displayedRows
+            .filter((t) => t?.id != null)
+            .filter((t) => !(typeof t.id === 'string' && t.id.startsWith('temp_')))
+            .map((t, idx) => ({
+                id: typeof t.id === 'string' ? Number(t.id) : t.id,
+                order: idx,
+            }))
+            .filter((x) => Number.isFinite(x.id));
+
+        const baselinePayload = this.tasks
+            .filter((t) => typeof t.id === 'number' && t.order != null)
+            .sort((a, b) => (a.order ?? 999999) - (b.order ?? 999999))
+            .map((t, idx) => ({ id: t.id, order: idx }));
+
+        const same = JSON.stringify(displayedPayload) === JSON.stringify(baselinePayload);
+        if (same) this.setPending('__ALL__', null);
+    }
+
+    private syncAgentsInCurrentRows(): void {
+        const validAgentIds = new Set((this.agents ?? []).map((a) => Number(a.id)));
+
+        let changed = false;
+
+        this.rowData = this.rowData.map((row) => {
+            const rowAgentId =
+                row.agentData?.id != null ? Number(row.agentData.id) : row.agent != null ? Number(row.agent) : null;
+
+            const hasAgent = rowAgentId != null && Number.isFinite(rowAgentId);
+
+            const isValidAgent = hasAgent && validAgentIds.has(rowAgentId!);
+
+            if (!hasAgent || isValidAgent) {
+                return row;
+            }
+
+            changed = true;
+
+            const updatedRow: TableFullTask = {
+                ...row,
+                agentData: null,
+                agent: null,
+            };
+
+            const isTemp = typeof updatedRow.id === 'string' && updatedRow.id.startsWith('temp_');
+
+            if (!isTemp) {
+                this.upsertPendingForExistingTask(updatedRow);
+            }
+
+            return updatedRow;
+        });
+
+        if (!changed) return;
+    }
+
+    private reindexAndSyncPendingOrders(): void {
+        const displayedRows: TableFullTask[] = [];
+
+        if (this.gridApi) {
+            const count = this.gridApi.getDisplayedRowCount();
+            for (let i = 0; i < count; i++) {
+                const node = this.gridApi.getDisplayedRowAtIndex(i);
+                if (node?.data) {
+                    node.data.order = i;
+                    displayedRows.push(node.data as TableFullTask);
+                }
+            }
+        } else {
+            this.rowData.forEach((row, i) => {
+                row.order = i;
+                displayedRows.push(row);
+            });
+        }
+
+        this.rowData = [...displayedRows];
+
+        for (const row of this.rowData) {
+            const rowKey = String(row.id ?? '');
+            if (!rowKey.startsWith('temp_')) continue;
+            if (!this.isTempRowTouched(row)) continue;
+            if (!this.isTempRowValid(row)) continue;
+            const parsedData = this.parseTaskData(row as FullTask);
+            const configuredToolIds = parsedData.configured_tools || [];
+            const pythonToolIds = parsedData.python_code_tools || [];
+            const mcpToolIds = parsedData.mcp_tools || [];
+            const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds, mcpToolIds);
+
+            const createTaskData: CreateTaskRequest = {
+                ...parsedData,
+                knowledge_query: parsedData.knowledge_query ?? null,
+                order: row.order ?? null,
+                human_input: parsedData.human_input ?? false,
+                async_execution: parsedData.async_execution ?? false,
+                config: parsedData.config ?? null,
+                output_model: parsedData.output_model ?? null,
+                task_context_list: parsedData.task_context_list ?? [],
+                configured_tools: configuredToolIds,
+                python_code_tools: pythonToolIds,
+                mcp_tools: mcpToolIds,
+                tool_ids: toolIds,
+            };
+
+            this.setPending(rowKey, {
+                rowKey,
+                kind: 'create',
+                payload: createTaskData,
+            });
+        }
+
+        this.gridApi?.setGridOption('rowData', [...this.rowData]);
+        this.gridApi?.refreshCells({
+            force: true,
+            columns: ['index', 'order'],
+        });
+
+        this.emitReorderPending();
+    }
+
+    public getCurrentRows(): TableFullTask[] {
+        return [...this.rowData];
+    }
 }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, forwardRef, Input, Output } from '@angular/core';
+import { Component, forwardRef, Input } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -33,31 +33,19 @@ import { MatTooltipModule } from '@angular/material/tooltip';
                     ></i>
                 </ng-container>
             </div>
-            <div class="input-wrapper">
-                <input
-                    [type]="effectiveType"
-                    [id]="id"
-                    [name]="name"
-                    [placeholder]="placeholder"
-                    [(ngModel)]="value"
-                    (blur)="onTouched()"
-                    class="text-input"
-                    [class.has-toggle]="type === 'password'"
-                    [class.error]="errorMessage"
-                    [disabled]="disabled"
-                    [autofocus]="autofocus"
-                    [style.--active-color]="activeColor"
-                />
-                <button
-                    *ngIf="type === 'password'"
-                    type="button"
-                    class="toggle-visibility"
-                    (click)="togglePasswordVisibility()"
-                    tabindex="-1"
-                >
-                    <i [class]="'ti ' + (passwordVisible ? 'ti-eye' : 'ti-eye-off')"></i>
-                </button>
-            </div>
+            <input
+                [type]="type"
+                [id]="id"
+                [name]="name"
+                [placeholder]="placeholder"
+                [(ngModel)]="value"
+                (blur)="onTouched()"
+                class="text-input"
+                [class.error]="errorMessage"
+                [disabled]="disabled"
+                [autofocus]="autofocus"
+                [style.--active-color]="activeColor"
+            />
             <div class="error-message" *ngIf="errorMessage">
                 {{ errorMessage }}
             </div>
@@ -108,12 +96,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
                     }
                 }
 
-                .input-wrapper {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                }
-
                 .text-input {
                     width: 100%;
                     padding: 8px 12px;
@@ -128,10 +110,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
                         color: var(--color-input-text-placeholder);
                     }
 
-                    &.has-toggle {
-                        padding-right: 36px;
-                    }
-
                     &:focus {
                         outline: none;
                         border-color: var(--active-color, #685fff);
@@ -139,27 +117,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
                     &.error {
                         border-color: #ef4444;
-                    }
-                }
-
-                .toggle-visibility {
-                    position: absolute;
-                    right: 13px;
-                    background: none;
-                    border: none;
-                    padding: 0;
-                    cursor: pointer;
-                    color: rgba(255, 255, 255, 0.5);
-                    display: flex;
-                    align-items: center;
-                    transition: color 0.2s ease;
-
-                    &:hover {
-                        color: rgba(255, 255, 255, 0.9);
-                    }
-
-                    i {
-                        font-size: 16px;
                     }
                 }
 
@@ -202,15 +159,11 @@ export class CustomInputComponent implements ControlValueAccessor {
     @Input() activeColor: string = '#685fff';
     @Input() errorMessage: string = '';
 
-    passwordVisible: boolean = false;
-
     private _value: string = '';
     private _disabled: boolean = false;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onChange: any = () => {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onTouched: any = () => {};
+    onChange: (value: string) => void = () => {};
+    onTouched: () => void = () => {};
 
     get value(): string {
         return this._value;
@@ -230,27 +183,19 @@ export class CustomInputComponent implements ControlValueAccessor {
         this._disabled = val;
     }
 
-    get effectiveType(): string {
-        return this.type === 'password' && this.passwordVisible ? 'text' : this.type;
-    }
-
     get isClassIcon(): boolean {
         return !!this.icon && this.icon.trim().includes(' ');
-    }
-
-    togglePasswordVisibility(): void {
-        this.passwordVisible = !this.passwordVisible;
     }
 
     writeValue(value: string): void {
         this._value = value || '';
     }
 
-    registerOnChange(fn: unknown): void {
+    registerOnChange(fn: (value: string) => void): void {
         this.onChange = fn;
     }
 
-    registerOnTouched(fn: unknown): void {
+    registerOnTouched(fn: () => void): void {
         this.onTouched = fn;
     }
 

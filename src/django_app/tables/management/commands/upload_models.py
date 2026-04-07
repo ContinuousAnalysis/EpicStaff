@@ -66,6 +66,7 @@ PROVIDER_MODELS_DIR = BASE_DIR / "provider_models"
 
 
 def upload_tags():
+
     llm_tag_names = PREDEFINED_TAGS["llm_model"]
 
     for tag in llm_tag_names:
