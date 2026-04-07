@@ -37,7 +37,9 @@
 
         <div *ngIf="serverError()" class="server-error">{{ serverError() }}</div>
 
-        <app-button class="btn" [disabled]="!termsControl.value" (click)="onSubmit()"> Create account </app-button>
+        <app-button class="btn" [disabled]="form.invalid || !termsControl.value" (click)="onSubmit()">
+            Create account
+        </app-button>
     </div>
 
     <p class="prompt">Already have an account? <span (click)="navToLogin()">Log in</span></p>

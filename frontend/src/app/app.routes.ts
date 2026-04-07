@@ -1,18 +1,21 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './core/guards/auth.guard';
+import { guestGuard } from './core/guards/guest.guard';
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 
 export const routes: Routes = [
-    //todo add lazy loading
     {
         path: 'login',
-        component: LoginPageComponent,
+        loadComponent: () =>
+            import('./features/auth/components/login-page/login-page.component').then((m) => m.LoginPageComponent),
         canActivate: [guestGuard],
     },
     {
         path: 'sign-up',
-        component: SignUpPageComponent,
+        loadComponent: () =>
+            import('./features/auth/components/sign-up-page/sign-up-page.component').then((m) => m.SignUpPageComponent),
         canActivate: [guestGuard],
     },
     {

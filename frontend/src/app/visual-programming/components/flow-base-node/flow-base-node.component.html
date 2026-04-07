@@ -81,25 +81,6 @@
                 Missing flow
             </div>
         </div>
-        <div
-            class="go-to-flow"
-            *ngIf="node.type === NodeType.SUBGRAPH && !isBlockedSubgraph && getSelectedFlowUrl()"
-            (mousedown)="$event.stopPropagation()"
-            (click)="$event.stopPropagation()"
-        >
-            <app-go-to-button
-                variant="icon"
-                [href]="getSelectedFlowUrl()!"
-                target="_blank"
-            ></app-go-to-button>
-        </div>
-        <div
-            class="blocked-badge"
-            *ngIf="isBlockedSubgraph"
-            title="Referenced subgraph was deleted"
-        >
-            Missing flow
-        </div>
     </div>
 </ng-template>
 @switch (node.type) {

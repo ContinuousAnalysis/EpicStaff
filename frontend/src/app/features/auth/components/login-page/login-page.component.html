@@ -31,7 +31,7 @@
 
         <div *ngIf="serverError()" class="server-error">{{ serverError() }}</div>
 
-        <app-button class="btn" (click)="onSubmit()" [disabled]="loading"> Login </app-button>
+        <app-button class="btn" (click)="onSubmit()" [disabled]="loading || form.invalid"> Login </app-button>
     </div>
 
     <p class="prompt">Don’t have an account yet? <span (click)="navToSignUp()">Sign Up</span></p>

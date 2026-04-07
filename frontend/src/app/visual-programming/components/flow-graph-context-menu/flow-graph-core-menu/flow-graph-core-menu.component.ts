@@ -212,7 +212,7 @@ export class FlowGraphCoreMenuComponent {
             data = null; // audio to text data is unknown as specified
         } else if (type === NodeType.WEBHOOK_TRIGGER) {
             data = {
-                webhook_trigger: null,
+                webhook_trigger: 0,
                 python_code: {
                     name: 'Webhook trigger Node',
                     libraries: [],
@@ -222,7 +222,6 @@ export class FlowGraphCoreMenuComponent {
             };
         } else if (type === NodeType.TELEGRAM_TRIGGER) {
             data = {
-                webhook_trigger: null,
                 telegram_bot_api_key: '',
                 fields: [],
             };
