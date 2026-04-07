@@ -3,6 +3,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
@@ -62,24 +64,53 @@ export class FilesListPageComponent {
 
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
             if (!result) return;
-            this.storageApiService.mkdir(result.folderName).subscribe({
-                next: () => {
-                    this.toastService.success(`Folder "${result.folderName}" created`);
-                    this.storageApiService.triggerRefresh();
-                    result.files.forEach((file) => {
-                        this.storageApiService.upload(result.folderName, file).subscribe({
-                            next: () => {
-                                this.toastService.success(`"${file.name}" uploaded`);
-                                this.storageApiService.triggerRefresh();
-                            },
-                            error: () => this.toastService.error(`Failed to upload "${file.name}"`),
-                        });
-                    });
-                },
-                error: () => {
-                    this.toastService.error('Failed to create folder');
-                },
-            });
+            const targetFolder = result.folderName.trim();
+            if (!targetFolder) return;
+
+            this.storageApiService
+                .list('')
+                .pipe(
+                    takeUntilDestroyed(this.destroyRef),
+                    switchMap((items) => {
+                        const normalizedTarget = targetFolder.toLowerCase();
+                        const exists = (items ?? []).some(
+                            (item) => item.type === 'folder' && item.name?.trim().toLowerCase() === normalizedTarget
+                        );
+                        if (exists) {
+                            this.toastService.info(`Folder "${targetFolder}" already exists`);
+                            if (!result.files.length) {
+                                return of(null);
+                            }
+                            return this.storageApiService
+                                .uploadMany(targetFolder, result.files)
+                                .pipe(takeUntilDestroyed(this.destroyRef));
+                        }
+
+                        return this.storageApiService.mkdir(targetFolder).pipe(
+                            takeUntilDestroyed(this.destroyRef),
+                            switchMap(() => {
+                                this.toastService.success(`Folder "${targetFolder}" created`);
+                                if (!result.files.length) {
+                                    return of(null);
+                                }
+                                return this.storageApiService
+                                    .uploadMany(targetFolder, result.files)
+                                    .pipe(takeUntilDestroyed(this.destroyRef));
+                            })
+                        );
+                    })
+                )
+                .subscribe({
+                    next: () => {
+                        if (result.files.length) {
+                            this.toastService.success(`${result.files.length} file(s) uploaded`);
+                        }
+                        this.storageApiService.triggerRefresh();
+                    },
+                    error: () => {
+                        this.toastService.error('Failed to create folder');
+                    },
+                });
         });
     }
 }

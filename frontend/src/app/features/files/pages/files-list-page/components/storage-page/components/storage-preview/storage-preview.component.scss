@@ -30,6 +30,13 @@
         flex-shrink: 0;
     }
 
+    &__header-left {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        min-width: 0;
+    }
+
     &__breadcrumbs {
         display: flex;
         align-items: center;
@@ -51,7 +58,6 @@
 
         &:last-child {
             color: var(--color-text-primary);
-            font-weight: 500;
         }
     }
 
@@ -85,22 +91,106 @@
         }
     }
 
+    &__add-to-flow {
+        width: 112px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        padding: 0 0.6rem;
+        border: 1px solid #685fff;
+        border-radius: 4px;
+        background: transparent;
+        color: #685fff;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+
+        &:hover {
+            background: transparent;
+            color: #685fff;
+        }
+    }
+
+    &__toggle-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        background: transparent;
+        border: 1px solid var(--color-text-secondary);
+        border-radius: 4px;
+        cursor: pointer;
+        color: var(--color-text-secondary);
+        flex-shrink: 0;
+
+        ::ng-deep app-icon svg path {
+            stroke: var(--color-text-secondary);
+            transition: stroke 0.15s ease;
+        }
+
+        &--active {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            background: rgba(88, 86, 214, 0.08);
+
+            ::ng-deep app-icon svg path {
+                stroke: var(--accent-color);
+            }
+        }
+
+        &:hover:not(&--active) {
+            border-color: var(--color-text-primary);
+            color: var(--color-text-primary);
+        }
+    }
+
     &__badge {
         position: absolute;
-        top: 4.5rem;
-        right: 1.25rem;
+        top: 0;
+        right: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
         padding: 0.2rem 0.5rem;
         font-size: 0.7rem;
-        color: var(--color-text-secondary);
-        background-color: var(--color-ghost-btn-hover);
+        color: #d9d9de;
+        background: #d9d9de14;
         border-radius: 0.25rem;
+        z-index: 1;
+    }
+
+    &__badge-type {
+        color: #d9d9de;
+    }
+
+    &__badge-suffix {
+        color: #d9d9de;
+        opacity: 0.6;
     }
 
     &__body {
         flex: 1;
-        overflow: auto;
-        padding: 1.25rem;
+        overflow: hidden;
         position: relative;
+    }
+
+    &__scroll {
+        height: 100%;
+        overflow: auto;
+        padding: 28px 24px 24px;
+    }
+
+    &__empty-state {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+        height: 100%;
     }
 
     &__loading {

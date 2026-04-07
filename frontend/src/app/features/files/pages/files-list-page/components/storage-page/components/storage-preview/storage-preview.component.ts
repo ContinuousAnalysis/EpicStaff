@@ -3,9 +3,11 @@ import {
     ChangeDetectionStrategy,
     Component,
     DestroyRef,
+    EventEmitter,
     inject,
     Input,
     OnChanges,
+    Output,
     signal,
     SimpleChanges,
 } from '@angular/core';
@@ -16,6 +18,7 @@ import { AppIconComponent } from '../../../../../../../../shared/components/app-
 import { ButtonComponent } from '../../../../../../../../shared/components/buttons/button/button.component';
 import { StorageItem } from '../../../../../../models/storage.models';
 import { StorageApiService } from '../../../../../../services/storage-api.service';
+import { getFileExtension } from '../../../../../../utils/storage-file.utils';
 
 type PreviewType = 'text' | 'json' | 'pdf' | 'image' | 'unsupported';
 
@@ -28,6 +31,8 @@ type PreviewType = 'text' | 'json' | 'pdf' | 'image' | 'unsupported';
 })
 export class StoragePreviewComponent implements OnChanges {
     @Input() item: StorageItem | null = null;
+    @Input() showSidebar = true;
+    @Output() toggleSidebar = new EventEmitter<void>();
 
     private destroyRef = inject(DestroyRef);
     private storageApiService = inject(StorageApiService);
@@ -54,20 +59,21 @@ export class StoragePreviewComponent implements OnChanges {
         return this.item.path.split('/').filter(Boolean);
     }
 
+    get hasFileSelected(): boolean {
+        return !!this.item && this.item.type === 'file';
+    }
+
     get fileExtension(): string {
         if (!this.item) return '';
-        const parts = this.item.name.split('.');
-        return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+        return getFileExtension(this.item.name);
     }
 
     get previewBadge(): string | null {
         switch (this.previewType()) {
             case 'text':
-                return 'TXT only view';
+                return 'TXT';
             case 'json':
                 return 'JSON';
-            case 'pdf':
-                return 'PDF';
             default:
                 return null;
         }
@@ -87,7 +93,8 @@ export class StoragePreviewComponent implements OnChanges {
         this.imageUrl.set(null);
         this.previewError.set(null);
 
-        if (!this.item || this.item.type === 'folder') {
+        const currentItem = this.item;
+        if (!currentItem || currentItem.type === 'folder') {
             this.previewType.set('unsupported');
             return;
         }
@@ -100,7 +107,7 @@ export class StoragePreviewComponent implements OnChanges {
 
         this.isLoadingPreview.set(true);
         this.storageApiService
-            .downloadBlob(this.item.path)
+            .downloadBlob(currentItem.path)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (blob) => this.handleBlob(blob, type),

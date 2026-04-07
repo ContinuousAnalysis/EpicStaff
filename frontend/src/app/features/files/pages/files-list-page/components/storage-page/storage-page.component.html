@@ -9,6 +9,7 @@
                 <app-storage-tree
                     [items]="treeData()"
                     (fileSelected)="onFileSelect($event)"
+                    (folderSelected)="onFolderSelect($event)"
                     (folderToggled)="onFolderToggle($event)"
                     (contextAction)="onContextAction($event)"
                     (closeSidebar)="toggleSidebar()"
@@ -16,17 +17,11 @@
                 />
             </div>
             <div class="storage-page__content">
-                <div class="storage-page__breadcrumb-bar">
-                    <button
-                        class="storage-page__toggle-btn"
-                        [class.storage-page__toggle-btn--active]="showSidebar()"
-                        (click)="toggleSidebar()"
-                        title="Toggle Folder Branches"
-                    >
-                        <app-icon icon="ui/expand-sidebar" size="0.85rem"></app-icon>
-                    </button>
-                </div>
-                <app-storage-preview [item]="selectedFile()" />
+                <app-storage-preview
+                    [item]="selectedFile()"
+                    [showSidebar]="showSidebar()"
+                    (toggleSidebar)="toggleSidebar()"
+                />
             </div>
         }
     </div>

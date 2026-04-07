@@ -5,10 +5,9 @@ import { map } from 'rxjs/operators';
 
 import { ConfigService } from '../../../services/config/config.service';
 import {
-    StorageArchiveResponse,
     StorageItem,
     StorageItemInfo,
-    StorageSessionOutput,
+    StorageSessionOutputItem,
     StorageUploadResponse,
 } from '../models/storage.models';
 
@@ -56,19 +55,15 @@ export class StorageApiService {
     }
 
     upload(path: string, file: File): Observable<StorageUploadResponse> {
+        return this.uploadMany(path, [file]);
+    }
+
+    uploadMany(path: string, files: File[]): Observable<StorageUploadResponse> {
         const formData = new FormData();
-        formData.append('file', file);
+        files.forEach((file) => formData.append('files', file));
         formData.append('path', path);
 
         return this.http.post<StorageUploadResponse>(`${this.apiUrl}upload/`, formData);
-    }
-
-    uploadArchive(path: string, file: File): Observable<StorageArchiveResponse> {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('path', path);
-
-        return this.http.post<StorageArchiveResponse>(`${this.apiUrl}upload-archive/`, formData);
     }
 
     downloadZip(paths: string[]): Observable<Blob> {
@@ -87,20 +82,20 @@ export class StorageApiService {
 
     delete(path: string): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}delete/`, {
-            body: { path },
+            params: { path },
         });
     }
 
     rename(from: string, to: string): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}rename/`, { from, to });
+        return this.http.post<void>(`${this.apiUrl}rename/`, { from_path: from, to_path: to });
     }
 
     move(from: string, to: string): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}move/`, { from, to });
+        return this.http.post<void>(`${this.apiUrl}move/`, { from_path: from, to_path: to });
     }
 
     copy(from: string, to: string): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}copy/`, { from, to });
+        return this.http.post<void>(`${this.apiUrl}copy/`, { from_path: from, to_path: to });
     }
 
     addToFlow(path: string, flowId: number, variableName: string): Observable<void> {
@@ -111,9 +106,11 @@ export class StorageApiService {
         });
     }
 
-    getSessionOutputs(sessionId: string): Observable<StorageSessionOutput[]> {
-        return this.http.get<StorageSessionOutput[]>(`${this.apiUrl}session-outputs/`, {
-            params: { session_id: sessionId },
-        });
+    getSessionOutputs(sessionId: string): Observable<StorageSessionOutputItem[]> {
+        return this.http
+            .get<{ items: StorageSessionOutputItem[] }>(`${this.apiUrl}session-outputs/`, {
+                params: { session_id: sessionId },
+            })
+            .pipe(map((res) => res.items ?? []));
     }
 }
