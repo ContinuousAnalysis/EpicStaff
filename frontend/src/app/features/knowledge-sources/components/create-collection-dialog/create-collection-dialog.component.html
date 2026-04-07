@@ -3,7 +3,7 @@
         <span class="dialog__header-title"> Create New Collection </span>
 
         <div class="dialog__stepper">
-            <app-stepper [steps]="stepLabels()" [currentStep]="currentStepIndex()"/>
+            <app-stepper [steps]="stepLabels()" [currentStep]="currentStepIndex()" />
         </div>
 
         <div class="dialog__actions">
@@ -23,8 +23,7 @@
             >
                 {{ nextText() }}
             </app-button>
-            <!--            todo use app-svg-->
-            <app-icon [icon]="'ui/close'" class="dialog__actions--close" [size]="'1.5rem'" (click)="onClose()" />
+            <app-svg-icon [icon]="'close'" class="dialog__actions--close" [size]="'1.5rem'" (click)="onClose()" />
         </div>
     </div>
 
@@ -47,7 +46,8 @@
         @case (CreateCollectionStep.CONFIGURE) {
             <div class="dialog__content">
                 @if (configurationComponent()) {
-                    <ng-container *ngComponentOutlet="configurationComponent(); inputs: configurationInputs()"
+                    <ng-container
+                        *ngComponentOutlet="configurationComponent(); inputs: configurationInputs()"
                     ></ng-container>
                 }
             </div>

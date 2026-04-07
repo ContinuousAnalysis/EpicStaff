@@ -1,33 +1,25 @@
-import { Dialog } from "@angular/cdk/dialog";
-import { ComponentType } from "@angular/cdk/overlay";
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, input } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { AppIconComponent } from "@shared/components";
-import { throwError } from "rxjs";
-import { catchError, switchMap } from "rxjs/operators";
+import { Dialog } from '@angular/cdk/dialog';
+import { ComponentType } from '@angular/cdk/overlay';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { throwError } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 
-import { ToastService } from "../../../../../../../services/notifications";
-import {
-    CreateCollectionDialogComponent
-} from "../../../../../components/create-collection-dialog/create-collection-dialog.component";
-import {
-    GraphRagConfigurationDialog
-} from "../../../../../components/rag-configuration-dialog/graph-rag-configuration-dialog/graph-rag-configuration-dialog.component";
-import {
-    NaiveRagConfigurationDialog
-} from "../../../../../components/rag-configuration-dialog/naive-rag-configuration-dialog/naive-rag-configuration-dialog.component";
-import {
-    RagConfigurationDialogComponent
-} from "../../../../../components/rag-configuration-dialog/rag-configuration-dialog.component";
-import { RagType } from "../../../../../models/base-rag.model";
-import { CreateCollectionDtoResponse } from "../../../../../models/collection.model";
-import { CollectionsStorageService } from "../../../../../services/collections-storage.service";
+import { ToastService } from '../../../../../../../services/notifications';
+import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { CreateCollectionDialogComponent } from '../../../../../components/create-collection-dialog/create-collection-dialog.component';
+import { GraphRagConfigurationDialog } from '../../../../../components/rag-configuration-dialog/graph-rag-configuration-dialog/graph-rag-configuration-dialog.component';
+import { NaiveRagConfigurationDialog } from '../../../../../components/rag-configuration-dialog/naive-rag-configuration-dialog/naive-rag-configuration-dialog.component';
+import { RagConfigurationDialogComponent } from '../../../../../components/rag-configuration-dialog/rag-configuration-dialog.component';
+import { RagType } from '../../../../../models/base-rag.model';
+import { CreateCollectionDtoResponse } from '../../../../../models/collection.model';
+import { CollectionsStorageService } from '../../../../../services/collections-storage.service';
 
 @Component({
     selector: 'app-collection-details-rags',
     templateUrl: 'collection-rags.component.html',
     styleUrls: ['./collection-rags.component.scss'],
-    imports: [AppIconComponent],
+    imports: [AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CollectionRagsComponent {
@@ -40,7 +32,7 @@ export class CollectionRagsComponent {
 
     onConfigureNaiveRag(type: RagType): void {
         const ragConfigurations = this.collection().rag_configurations;
-        const ragConfig = ragConfigurations.find(i => i.rag_type === type);
+        const ragConfig = ragConfigurations.find((i) => i.rag_type === type);
 
         if (!ragConfigurations.length || !ragConfig) {
             this.openCollectionModal(type);
@@ -88,13 +80,9 @@ export class CollectionRagsComponent {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
             data: { ragId },
-            disableClose: true
+            disableClose: true,
         });
 
-        dialog.closed
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-            )
-            .subscribe()
+        dialog.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
     }
 }

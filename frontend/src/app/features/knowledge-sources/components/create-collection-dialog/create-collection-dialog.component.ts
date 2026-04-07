@@ -1,22 +1,23 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { NgComponentOutlet } from "@angular/common";
+import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AppIconComponent, ButtonComponent } from '@shared/components';
+import { ButtonComponent } from '@shared/components';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { ToastService } from '../../../../services/notifications';
-import { RagType } from "../../models/base-rag.model";
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { RagType } from '../../models/base-rag.model';
 import { CreateCollectionStep } from '../../models/collection.model';
 import { DisplayedListDocument } from '../../models/document.model';
-import { RagConfiguration } from "../../models/rag-configuration";
+import { RagConfiguration } from '../../models/rag-configuration';
 import { CollectionsStorageService } from '../../services/collections-storage.service';
-import { StepperComponent } from "./components/stepper/stepper.component";
-import { StepSelectRagComponent } from "./components/steps/step-select-rag/step-select-rag.component";
-import { StepUploadFilesComponent } from "./components/steps/step-upload-files/step-upload-files.component";
-import { RagCreationStrategy } from "./factory/interfaces/rag-creation-strategy.interface";
-import { RagStrategyFactory } from "./factory/rag-creation.factory";
+import { StepperComponent } from './components/stepper/stepper.component';
+import { StepSelectRagComponent } from './components/steps/step-select-rag/step-select-rag.component';
+import { StepUploadFilesComponent } from './components/steps/step-upload-files/step-upload-files.component';
+import { RagCreationStrategy } from './factory/interfaces/rag-creation-strategy.interface';
+import { RagStrategyFactory } from './factory/rag-creation.factory';
 
 export interface StepConfig {
     id: CreateCollectionStep;
@@ -36,12 +37,12 @@ export interface StepConfig {
         StepUploadFilesComponent,
         StepSelectRagComponent,
         NgComponentOutlet,
-        AppIconComponent
+        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateCollectionDialogComponent {
-    data: { collection_id: number, forceType: RagType | undefined } = inject(DIALOG_DATA);
+    data: { collection_id: number; forceType: RagType | undefined } = inject(DIALOG_DATA);
 
     private destroyRef = inject(DestroyRef);
     private dialogRef = inject(DialogRef);
@@ -57,10 +58,8 @@ export class CreateCollectionDialogComponent {
 
     private strategy = signal<RagCreationStrategy | null>(null);
 
-    collection = computed(() =>
-        this.collectionsStorageService
-            .fullCollections()
-            .find(c => c.collection_id === this.data.collection_id)!
+    collection = computed(
+        () => this.collectionsStorageService.fullCollections().find((c) => c.collection_id === this.data.collection_id)!
     );
 
     canProceedSelectRag = computed(() => {
@@ -93,23 +92,17 @@ export class CreateCollectionDialogComponent {
             proceedLabel: 'Finish Creation',
             onProceed: () => this.handleFinish(),
             canProceed: () => true,
-        }
+        },
     ]);
 
     currentStep = computed(() => this.steps()[this.currentStepIndex()]);
     nextDisabled = computed(() => !this.currentStep().canProceed());
     nextText = computed(() => this.currentStep().proceedLabel);
-    stepLabels = computed(() =>
-        this.steps().map(s => s.label)
-    );
+    stepLabels = computed(() => this.steps().map((s) => s.label));
 
-    configurationComponent = computed(() =>
-        this.strategy()?.getConfigurationComponent() ?? null
-    );
+    configurationComponent = computed(() => this.strategy()?.getConfigurationComponent() ?? null);
 
-    configurationInputs = computed(() =>
-        this.strategy()?.getConfigurationInputs()
-    );
+    configurationInputs = computed(() => this.strategy()?.getConfigurationInputs());
 
     @ViewChild(NgComponentOutlet, { static: false })
     private strategyComponent!: NgComponentOutlet;
@@ -121,14 +114,15 @@ export class CreateCollectionDialogComponent {
     nextStep() {
         if (!this.currentStep().canProceed()) return;
 
-        this.currentStep().onProceed()
+        this.currentStep()
+            .onProceed()
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(success => {
+            .subscribe((success) => {
                 if (!success) return;
 
                 const last = this.steps().length - 1;
 
-                this.currentStepIndex.update(i => {
+                this.currentStepIndex.update((i) => {
                     if (i >= last) {
                         this.onClose();
                         return i;
@@ -147,11 +141,7 @@ export class CreateCollectionDialogComponent {
         const strategy = this.factory.create(type);
         this.strategy.set(strategy);
 
-        return strategy.create(
-            collectionId,
-            embedderId,
-            this.selectedLLM() ?? undefined
-        ).pipe(
+        return strategy.create(collectionId, embedderId, this.selectedLLM() ?? undefined).pipe(
             catchError(() => {
                 this.toastService.error('Failed to create RAG');
                 return of(false);

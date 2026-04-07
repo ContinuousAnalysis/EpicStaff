@@ -6,20 +6,22 @@ import {
     ElementRef,
     inject,
     model,
-    output, ViewChild
-} from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+    output,
+    ViewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-    AppIconComponent,
+    AppSvgIconComponent,
     ButtonComponent,
     DragDropAreaComponent,
     ListActionsComponent,
-    ListComponent, ListRowComponent
-} from "@shared/components";
+    ListComponent,
+    ListRowComponent,
+} from '@shared/components';
 
-import { FileSizePipe } from "../../../../../../../../shared/pipes/file-size.pipe";
-import { DisplayedListDocument } from "../../../../../../models/document.model";
-import { DocumentsStorageService } from "../../../../../../services/documents-storage.service";
+import { FileSizePipe } from '../../../../../../../../shared/pipes/file-size.pipe';
+import { DisplayedListDocument } from '../../../../../../models/document.model';
+import { DocumentsStorageService } from '../../../../../../services/documents-storage.service';
 
 @Component({
     selector: 'app-files-list',
@@ -28,12 +30,12 @@ import { DocumentsStorageService } from "../../../../../../services/documents-st
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         ButtonComponent,
-        AppIconComponent,
         FileSizePipe,
         DragDropAreaComponent,
         ListActionsComponent,
         ListComponent,
         ListRowComponent,
+        AppSvgIconComponent,
     ],
 })
 export class FilesListComponent {

@@ -100,7 +100,7 @@
                         <!-- filename -->
                         <div class="table__col table__col-file" (click)="selectedRagDocId.set(d.naive_rag_document_id)">
                             <span>{{ i + 1 }}</span>
-                            <app-icon class="table__file-icon" icon="ui/document" size="0.75rem" />
+                            <app-svg-icon class="table__file-icon" icon="document" size="0.75rem" />
                             <span class="table__file-name">
                                 {{ parseFullFileName(d.file_name).name }}
                             </span>

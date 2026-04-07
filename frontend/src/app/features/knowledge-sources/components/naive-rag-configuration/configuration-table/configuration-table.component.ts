@@ -11,7 +11,7 @@ import {
     signal,
 } from '@angular/core';
 import {
-    AppIconComponent,
+    AppSvgIconComponent,
     ButtonComponent,
     CheckboxComponent,
     InputNumberComponent,
@@ -31,12 +31,12 @@ import { DocFieldChange, TableDocument } from './configuration-table.interface';
     styleUrls: ['./configuration-table.component.scss'],
     imports: [
         SelectComponent,
-        AppIconComponent,
         ButtonComponent,
         InputNumberComponent,
         CheckboxComponent,
         MultiSelectComponent,
         KeyValuePipe,
+        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
