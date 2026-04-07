@@ -81,16 +81,18 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                             </td>
                             <td>
                                 <div class="actions-container">
-                                    <button class="view-btn" (click)="viewSession.emit(session.id)">View</button>
-                                    <button
+                                    <button class="view-btn" (click)="viewSession.emit(session.id)">Preview</button>
+                                    <img src="assets/icons/ui/session-arrow.svg" alt="arrow-icon" class="arrow-icon" />
+
+                                    <img
+                                        src="assets/icons/ui/stop-session.svg"
+                                        alt="arrow-icon"
                                         *ngIf="canStop(session.status)"
-                                        class="stop-btn"
                                         (click)="stopSession.emit(session.id)"
                                         title="Stop session"
                                         style="margin-left: 8px;"
-                                    >
-                                        Stop
-                                    </button>
+                                        class="arrow-icon"
+                                    />
                                 </div>
                             </td>
                             <td>
