@@ -14,7 +14,7 @@ from src.crew.constants.constants import (
     GRAPH_RAG_SEARCH_TIMEOUT,
     DEFAULT_RAG_SEARCH_TIMEOUT,
 )
-from src.crew.models.request_models import (
+from src.shared.models import (
     RagSearchConfig,
     NaiveRagSearchConfig,
     GraphRagSearchConfig,

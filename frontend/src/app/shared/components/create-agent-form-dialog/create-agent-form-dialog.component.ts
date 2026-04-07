@@ -21,8 +21,8 @@ import { MATERIAL_FORMS } from '../../material-forms';
 import { RealtimeAgentService, AgentsService } from '@services';
 import { ToastService } from '../../../services/notifications';
 import {
-    FullLLMConfigService,
     FullLLMConfig,
+    FullLLMConfigService,
 } from '../../../features/settings-dialog/services/llms/full-llm-config.service';
 import {
     GetAgentRequest,
@@ -45,16 +45,22 @@ import {
     TextareaComponent
 } from "@shared/components";
 
+export type AgentDialogResult =
+    | { kind: 'create'; payload: CreateAgentRequest }
+    | { kind: 'update'; payload: GetAgentRequest };
+
 @Component({
     selector: 'app-create-agent-form',
     templateUrl: './create-agent-form-dialog.component.html',
     styleUrls: ['./create-agent-form-dialog.component.scss'],
-    standalone: true,
     imports: [
         CommonModule,
         FormsModule,
         ReactiveFormsModule,
         ...MATERIAL_FORMS,
+        ToolsSelectorComponent,
+        AppIconComponent,
+        AppSvgIconComponent,
         ValidationErrorsComponent,
         CustomInputComponent,
         TextareaComponent,
@@ -82,7 +88,7 @@ export class CreateAgentFormComponent implements OnInit {
     private toastService = inject(ToastService);
     private fullLLMConfigService = inject(FullLLMConfigService);
     private collectionsService = inject(CollectionsApiService);
-    public dialogRef = inject(DialogRef<GetAgentRequest | undefined>);
+    public dialogRef = inject(DialogRef<AgentDialogResult | undefined>);
 
     public isSubmitting = signal(false);
     public activeTab = signal<TabId>(TabId.GENERAL);
@@ -111,9 +117,7 @@ export class CreateAgentFormComponent implements OnInit {
 
     constructor() {
         // Check edit mode
-        const data = this.dialogRef.config?.data as
-            | { agent: GetAgentRequest; isEditMode: boolean }
-            | undefined;
+        const data = this.dialogRef.config?.data as { agent: GetAgentRequest; isEditMode: boolean } | undefined;
         if (data?.isEditMode && data?.agent) {
             this.isEditMode = true;
             this.agentToEdit = data.agent;
@@ -282,7 +286,8 @@ export class CreateAgentFormComponent implements OnInit {
                     },
                     complete: () => this.isSubmitting.set(false),
                 });
-
+            // todo
+            this.dialogRef.close({ kind: 'update', payload: updateRequest });
         } else {
             this.agentService
                 .createAgent(basePayload)
@@ -300,6 +305,8 @@ export class CreateAgentFormComponent implements OnInit {
                     },
                     complete: () => this.isSubmitting.set(false),
                 });
+            // todo
+            this.dialogRef.close({ kind: 'create', payload: agentRequest });
         }
     }
 

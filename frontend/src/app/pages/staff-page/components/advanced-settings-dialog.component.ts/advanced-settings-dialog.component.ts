@@ -2,36 +2,35 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
-    Component,
+    Component, DestroyRef,
     Inject,
-    OnInit,
-    signal, inject, DestroyRef,
+    inject,
+    OnInit, signal
 } from '@angular/core';
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import {
-    FormsModule,
-    ReactiveFormsModule,
-    Validators, FormGroup, FormBuilder,
-} from '@angular/forms';
-import { AgentRag, AgentSearchConfigs } from "@shared/models";
-
-import { forkJoin, of } from 'rxjs';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
     AdvancedTabComponent,
     ExecutionTabComponent,
     GeneralTabComponent,
-    IconButtonComponent, RagTabComponent,
-    TabButtonComponent, Tab, TabId
-} from '@shared/components';
+    RagTabComponent,
+    Tab, TabButtonComponent
+} from "@shared/components";
+import { forkJoin, of } from 'rxjs';
+
+import {
+    GetCollectionRagsResponse,
+    GetCollectionRequest
+} from '../../../../features/knowledge-sources/models/collection.model';
+import { CollectionsApiService } from '../../../../features/knowledge-sources/services/collections-api.service';
 import {
     FullLLMConfig,
     FullLLMConfigService,
 } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { CollectionsApiService } from "../../../../features/knowledge-sources/services/collections-api.service";
-import {
-    GetCollectionRagsResponse,
-    GetCollectionRequest
-} from "../../../../features/knowledge-sources/models/collection.model";
+import { AgentRag } from "../../../../features/staff/models/agent.model";
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
+import { AgentSearchConfigs } from "../../../../shared/models";
 
 export interface AdvancedSettingsData {
     id: number;
@@ -55,19 +54,14 @@ export interface AdvancedSettingsData {
     imports: [
         FormsModule,
         ReactiveFormsModule,
+        AppSvgIconComponent,
         IconButtonComponent,
         AdvancedTabComponent,
         ExecutionTabComponent,
         RagTabComponent,
         GeneralTabComponent,
         TabButtonComponent,
-        GeneralTabComponent,
-        RagTabComponent,
-        ExecutionTabComponent,
-        AdvancedTabComponent,
-
     ],
-    standalone: true,
     templateUrl: './advanced-settings-dialog.component.html',
     styleUrls: ['./advanced-settings-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,8 +100,7 @@ export class AdvancedSettingsDialogComponent implements OnInit {
         const collectionId = this.data.knowledge_collection;
         forkJoin({
             llmConfigs: this.fullLLMConfigService.getFullLLMConfigs(),
-            knowledgeSources:
-                this.collectionsService.getCollections(),
+            knowledgeSources: this.collectionsService.getCollections(),
             rags: collectionId ? this.collectionsService.getRagsByCollectionId(collectionId) : of([]),
         })
             .pipe(takeUntilDestroyed(this.destroyRef))

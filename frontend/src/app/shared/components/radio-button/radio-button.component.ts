@@ -1,8 +1,15 @@
-import { ChangeDetectionStrategy, Component, forwardRef, input, model, output } from "@angular/core";
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
-import { SelectItem } from "../select/select.component";
-import { TooltipComponent } from "../tooltip/tooltip.component";
+import { NgClass } from '@angular/common';
+import { ChangeDetectionStrategy, Component, forwardRef, input, model, output } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
+import { TooltipComponent } from '../tooltip/tooltip.component';
+
+export interface SegmentedOption<T = unknown> {
+    label: string;
+    value: T;
+}
+
+//todo check usages of radio btn in graph rag
 @Component({
     selector: 'app-radio-button',
     templateUrl: './radio-button.component.html',
@@ -14,32 +21,30 @@ import { TooltipComponent } from "../tooltip/tooltip.component";
             multi: true,
         },
     ],
-    imports: [
-        TooltipComponent
-    ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    imports: [NgClass, TooltipComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RadioButtonComponent implements ControlValueAccessor {
+export class RadioButtonComponent<T> implements ControlValueAccessor {
     icon = input<string>('help_outline');
     label = input<string>('');
     required = input<boolean>(false);
     tooltipText = input<string>('');
 
     mod = input<'default' | 'small'>('default');
-    options = input.required<SelectItem[]>();
+    options = input.required<SegmentedOption<T>[]>();
     disabled = input(false);
 
-    value = model<unknown | null>(null);
-    valueChange = output<unknown>();
+    value = model<T | null>(null);
+    valueChange = output<T>();
 
-    private onChange: (value: unknown) => void = () => {};
+    private onChange: (value: T) => void = () => {};
     private onTouched: () => void = () => {};
 
-    writeValue(value: unknown | null): void {
+    writeValue(value: T | null): void {
         this.value.set(value);
     }
 
-    registerOnChange(fn: (value: unknown) => void): void {
+    registerOnChange(fn: (value: T) => void): void {
         this.onChange = fn;
     }
 
@@ -47,9 +52,11 @@ export class RadioButtonComponent implements ControlValueAccessor {
         this.onTouched = fn;
     }
 
-    setDisabledState(isDisabled: boolean): void {}
+    setDisabledState(isDisabled: boolean): void {
+        void isDisabled;
+    }
 
-    select(option: SelectItem) {
+    select(option: SegmentedOption<T>) {
         if (this.disabled()) return;
 
         this.value.set(option.value);

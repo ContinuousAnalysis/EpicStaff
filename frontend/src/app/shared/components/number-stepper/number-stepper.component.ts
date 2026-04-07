@@ -1,15 +1,7 @@
-import {
-    Component,
-    ChangeDetectionStrategy,
-    input,
-    output,
-    model,
-    signal,
-    computed,
-    forwardRef,
-} from '@angular/core';
-import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, forwardRef, input, model, output, signal } from '@angular/core';
+import { ControlValueAccessor, FormControl, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+
 import { FormFieldLabelComponent } from '../form-field-label/form-field-label.component';
 
 export type StepperSize = 'sm' | 'md' | 'lg';
@@ -122,8 +114,19 @@ export class NumberStepperComponent implements ControlValueAccessor {
     });
 
     onKeyDown(event: KeyboardEvent) {
-        const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'Home', 'End',
-                             'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+        const allowedKeys = [
+            'Backspace',
+            'Delete',
+            'Tab',
+            'Escape',
+            'Enter',
+            'Home',
+            'End',
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+        ];
 
         if (allowedKeys.includes(event.key)) {
             return;
@@ -161,7 +164,7 @@ export class NumberStepperComponent implements ControlValueAccessor {
     }
 
     onStepDown() {
-        const current = this.value() ?? (this.min() ?? 0);
+        const current = this.value() ?? this.min() ?? 0;
         const minVal = this.min();
         let newValue = current - this.step();
         if (minVal !== null && newValue < minVal) {
@@ -171,7 +174,7 @@ export class NumberStepperComponent implements ControlValueAccessor {
     }
 
     onStepUp() {
-        const current = this.value() ?? (this.min() ?? 0);
+        const current = this.value() ?? this.min() ?? 0;
         const maxVal = this.max();
         let newValue = current + this.step();
         if (maxVal !== null && newValue > maxVal) {
@@ -202,4 +205,3 @@ export class NumberStepperComponent implements ControlValueAccessor {
         this.isDisabled.set(isDisabled);
     }
 }
-

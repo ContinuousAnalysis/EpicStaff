@@ -1,20 +1,25 @@
+import { Overlay, OverlayModule, OverlayPositionBuilder, OverlayRef } from '@angular/cdk/overlay';
+import { TemplatePortal } from '@angular/cdk/portal';
+import { NgClass } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
+    DestroyRef,
     ElementRef,
-    ViewContainerRef,
-    ViewChild,
-    signal,
+    inject,
     input,
-    model, output, computed, inject
+    model,
+    output,
+    signal,
+    TemplateRef,
+    ViewChild,
+    ViewContainerRef,
 } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { isEqual } from 'lodash';
 
-import { TemplatePortal } from '@angular/cdk/portal';
-import { NgClass } from "@angular/common";
-import { Overlay, OverlayPositionBuilder, OverlayRef, OverlayModule } from "@angular/cdk/overlay";
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
-import { TooltipComponent } from "../tooltip/tooltip.component";
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 export interface SelectItem<T = unknown> {
     name: string;
@@ -25,23 +30,24 @@ export interface SelectItem<T = unknown> {
 
 @Component({
     selector: 'app-select',
-    imports: [NgClass, TooltipComponent, OverlayModule],
+    imports: [NgClass, OverlayModule, TooltipComponent],
     templateUrl: './select.component.html',
     styleUrls: ['./select.component.scss'],
     providers: [
         {
             provide: NG_VALUE_ACCESSOR,
             useExisting: SelectComponent,
-            multi: true
-        }
+            multi: true,
+        },
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SelectComponent implements ControlValueAccessor {
     icon = input<string>('help_outline');
     label = input<string>('');
     required = input<boolean>(false);
     tooltipText = input<string>('');
+    loading = input<boolean>(false);
     mod = input<'default' | 'small'>('default');
     items = input<SelectItem[]>([]);
     placeholder = input<string>('Select option');
@@ -53,24 +59,25 @@ export class SelectComponent implements ControlValueAccessor {
     selectedValue = model<unknown | null>(null);
     selectedItem = computed(() => {
         const value = this.selectedValue();
-        if (value == null) return null;
+        if (value === undefined || value === null) return null;
 
         return this.items().find(i => isEqual(i.value, value)) ?? null;
     });
 
-    changed = output<any>();
+    changed = output<unknown>();
 
     private onChange: (value: unknown) => void = () => {};
     private onTouched: () => void = () => {};
 
     @ViewChild('triggerBtn') triggerBtn!: ElementRef<HTMLButtonElement>;
-    @ViewChild('dropdownTemplate') dropdownTemplate!: any;
+    @ViewChild('dropdownTemplate') dropdownTemplate!: TemplateRef<unknown>;
 
     private overlayRef!: OverlayRef;
 
     private overlay = inject(Overlay);
     private overlayPositionBuilder = inject(OverlayPositionBuilder);
     private vcr = inject(ViewContainerRef);
+    private destroyRef = inject(DestroyRef);
 
     toggle() {
         this.open() ? this.close() : this.openDropdown();
@@ -80,13 +87,15 @@ export class SelectComponent implements ControlValueAccessor {
         if (!this.overlayRef) {
             const positionStrategy = this.overlayPositionBuilder
                 .flexibleConnectedTo(this.triggerBtn)
-                .withPositions([{
-                    originX: 'start',
-                    originY: 'bottom',
-                    overlayX: 'start',
-                    overlayY: 'top',
-                    offsetY: 4
-                }])
+                .withPositions([
+                    {
+                        originX: 'start',
+                        originY: 'bottom',
+                        overlayX: 'start',
+                        overlayY: 'top',
+                        offsetY: 4,
+                    },
+                ])
                 .withPush(true);
 
             this.overlayRef = this.overlay.create({
@@ -94,10 +103,13 @@ export class SelectComponent implements ControlValueAccessor {
                 scrollStrategy: this.overlay.scrollStrategies.reposition(),
                 hasBackdrop: true,
                 backdropClass: 'transparent-backdrop',
-                width: this.triggerBtn.nativeElement.offsetWidth
+                width: this.triggerBtn.nativeElement.offsetWidth,
             });
 
-            this.overlayRef.backdropClick().subscribe(() => this.close());
+            this.overlayRef
+                .backdropClick()
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(() => this.close());
         }
 
         const portal = new TemplatePortal(this.dropdownTemplate, this.vcr);

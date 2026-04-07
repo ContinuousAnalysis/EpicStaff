@@ -1,11 +1,5 @@
-import {
-    Component,
-    Input,
-    Output,
-    EventEmitter,
-    ChangeDetectionStrategy,
-} from '@angular/core';
 import { NgClass } from '@angular/common';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
     selector: 'app-tab-button',
@@ -13,9 +7,7 @@ import { NgClass } from '@angular/common';
     templateUrl: './tab-button.component.html',
     styleUrls: ['./tab-button.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
-        NgClass
-    ],
+    imports: [NgClass],
 })
 export class TabButtonComponent {
     @Input() mod: 'sm' | 'md' = 'md';

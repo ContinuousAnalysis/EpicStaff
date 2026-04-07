@@ -5,24 +5,25 @@ import {
     forwardRef,
     input,
     model,
-} from "@angular/core";
-import {
-    AppIconComponent,
-    CustomInputComponent,
-    TooltipComponent,
-    ValidationErrorsComponent
-} from "@shared/components";
+} from '@angular/core';
 import {
     ControlValueAccessor,
     FormControl,
     NG_VALUE_ACCESSOR,
     ReactiveFormsModule, Validators
 } from "@angular/forms";
+import {
+    AppIconComponent,
+    CustomInputComponent,
+    TooltipComponent,
+    ValidationErrorsComponent
+} from "@shared/components";
 
 @Component({
     selector: 'app-chips-input',
     templateUrl: './chips-input.component.html',
     styleUrls: ['./chips-input.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         TooltipComponent,
         CustomInputComponent,
@@ -37,7 +38,6 @@ import {
             multi: true,
         },
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChipsInputComponent implements ControlValueAccessor {
     icon = input<string>('help_outline');

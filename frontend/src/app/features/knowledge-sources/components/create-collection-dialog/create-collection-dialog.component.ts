@@ -1,21 +1,22 @@
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { NgComponentOutlet } from "@angular/common";
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal, ViewChild } from "@angular/core";
-import { ButtonComponent, AppIconComponent } from "@shared/components";
-import { DIALOG_DATA, DialogRef } from "@angular/cdk/dialog";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AppIconComponent, ButtonComponent } from '@shared/components';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
+import { ToastService } from '../../../../services/notifications';
 import { RagType } from "../../models/base-rag.model";
-import { CreateCollectionStep } from "../../models/collection.model";
+import { CreateCollectionStep } from '../../models/collection.model';
+import { DisplayedListDocument } from '../../models/document.model';
 import { RagConfiguration } from "../../models/rag-configuration";
+import { CollectionsStorageService } from '../../services/collections-storage.service';
+import { StepperComponent } from "./components/stepper/stepper.component";
 import { StepSelectRagComponent } from "./components/steps/step-select-rag/step-select-rag.component";
 import { StepUploadFilesComponent } from "./components/steps/step-upload-files/step-upload-files.component";
 import { RagCreationStrategy } from "./factory/interfaces/rag-creation-strategy.interface";
 import { RagStrategyFactory } from "./factory/rag-creation.factory";
-import { StepperComponent } from "./components/stepper/stepper.component";
-import { DisplayedListDocument } from "../../models/document.model";
-import { catchError } from "rxjs/operators";
-import { Observable, of } from "rxjs";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { ToastService } from "../../../../services/notifications";
-import { CollectionsStorageService } from "../../services/collections-storage.service";
 
 export interface StepConfig {
     id: CreateCollectionStep;
@@ -37,7 +38,7 @@ export interface StepConfig {
         NgComponentOutlet,
         AppIconComponent
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateCollectionDialogComponent {
     data: { collection_id: number, forceType: RagType | undefined } = inject(DIALOG_DATA);
@@ -77,7 +78,7 @@ export class CreateCollectionDialogComponent {
             onProceed: () => of(true),
             canProceed: () =>
                 this.selectedDocuments().length > 0 &&
-                this.selectedDocuments().every(d => d.isValidType && d.isValidSize),
+                this.selectedDocuments().every((d) => d.isValidType && d.isValidSize),
         },
         {
             id: CreateCollectionStep.SELECT_RAG,
@@ -114,7 +115,7 @@ export class CreateCollectionDialogComponent {
     private strategyComponent!: NgComponentOutlet;
 
     prevStep() {
-        this.currentStepIndex.update(i => Math.max(i - 1, 0));
+        this.currentStepIndex.update((i) => Math.max(i - 1, 0));
     }
 
     nextStep() {
@@ -165,7 +166,6 @@ export class CreateCollectionDialogComponent {
         const componentInstance: RagConfiguration = this.strategyComponent['_componentRef'].instance;
         const componentData = componentInstance.getConfigurationData();
 
-        console.log(componentData);
         if (!componentData) {
             return of(false);
         }

@@ -1,15 +1,10 @@
 <div class="create-agent">
     <div class="create-agent__header">
         <h2 class="create-agent__title">
-            {{ isEditMode ? "Edit Agent" : "Create New Agent" }}
+            {{ isEditMode ? 'Edit Agent' : 'Create New Agent' }}
         </h2>
-        <button
-            mat-icon-button
-            class="create-agent__close-button"
-            (click)="onCancelForm()"
-            [disabled]="isSubmitting()"
-        >
-            <mat-icon>close</mat-icon>
+        <button mat-icon-button class="create-agent__close-button" (click)="onCancelForm()" [disabled]="isSubmitting()">
+            <app-svg-icon icon="close" size="24px" />
         </button>
     </div>
 
@@ -124,7 +119,7 @@
             @if (isSubmitting()) {
                 <mat-spinner diameter="16"></mat-spinner>
             } @else {
-                {{ isEditMode ? "Update Agent" : "Create Agent" }}
+                {{ isEditMode ? 'Update Agent' : 'Create Agent' }}
             }
         </app-button>
     </div>

@@ -1,15 +1,13 @@
-import { ChangeDetectionStrategy, Component, signal, output } from "@angular/core";
+import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
 import { AppIconComponent } from "@shared/components";
 
 @Component({
     selector: 'app-file-uploader',
-    templateUrl: "./file-uploader.component.html",
-    styleUrls: ["./file-uploader.component.scss"],
-    imports: [
-        AppIconComponent
-    ],
+    templateUrl: './file-uploader.component.html',
+    styleUrls: ['./file-uploader.component.scss'],
+    imports: [AppIconComponent],
 
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileUploaderComponent {
     isDragging = signal<boolean>(false);
@@ -30,12 +28,7 @@ export class FileUploaderComponent {
         const rect = target.getBoundingClientRect();
         const { clientX, clientY } = event;
 
-        if (
-            clientX <= rect.left ||
-            clientX >= rect.right ||
-            clientY <= rect.top ||
-            clientY >= rect.bottom
-        ) {
+        if (clientX <= rect.left || clientX >= rect.right || clientY <= rect.top || clientY >= rect.bottom) {
             this.isDragging.set(false);
         }
     }

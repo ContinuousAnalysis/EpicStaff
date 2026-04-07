@@ -1,7 +1,15 @@
+import { Dialog } from "@angular/cdk/dialog";
 import { ComponentType } from "@angular/cdk/overlay";
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, input } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { AppIconComponent } from "@shared/components";
-import { Dialog } from "@angular/cdk/dialog";
+import { throwError } from "rxjs";
+import { catchError, switchMap } from "rxjs/operators";
+
+import { ToastService } from "../../../../../../../services/notifications";
+import {
+    CreateCollectionDialogComponent
+} from "../../../../../components/create-collection-dialog/create-collection-dialog.component";
 import {
     GraphRagConfigurationDialog
 } from "../../../../../components/rag-configuration-dialog/graph-rag-configuration-dialog/graph-rag-configuration-dialog.component";
@@ -13,23 +21,14 @@ import {
 } from "../../../../../components/rag-configuration-dialog/rag-configuration-dialog.component";
 import { RagType } from "../../../../../models/base-rag.model";
 import { CreateCollectionDtoResponse } from "../../../../../models/collection.model";
-import {
-    CreateCollectionDialogComponent
-} from "../../../../../components/create-collection-dialog/create-collection-dialog.component";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CollectionsStorageService } from "../../../../../services/collections-storage.service";
-import { catchError, switchMap } from "rxjs/operators";
-import { ToastService } from "../../../../../../../services/notifications";
-import { throwError } from "rxjs";
 
 @Component({
     selector: 'app-collection-details-rags',
     templateUrl: 'collection-rags.component.html',
     styleUrls: ['./collection-rags.component.scss'],
-    imports: [
-        AppIconComponent
-    ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    imports: [AppIconComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CollectionRagsComponent {
     private dialog = inject(Dialog);
@@ -64,18 +63,18 @@ export class CollectionRagsComponent {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
             data: { collection_id: this.collection().collection_id, forceType },
-            disableClose: true
+            disableClose: true,
         });
 
         dialog.closed
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 switchMap(() => {
-                    return this.collectionsStorageService.getFullCollection(this.collection().collection_id, true)
+                    return this.collectionsStorageService.getFullCollection(this.collection().collection_id, true);
                 }),
                 catchError((error) => {
-                    this.toastService.error('Failed to get collection data')
-                    return throwError(() => error)
+                    this.toastService.error('Failed to get collection data');
+                    return throwError(() => error);
                 })
             )
             .subscribe();

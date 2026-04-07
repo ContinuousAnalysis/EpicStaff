@@ -1,5 +1,5 @@
 <!-- agents-section.component.html -->
-<div class="agents-section" clickOutside (clickOutside)="onOutsideClick()">
+<div class="agents-section" appClickOutside (appClickOutside)="onOutsideClick()">
     <!-- Grid controls - search and size switcher -->
     <div class="grid-container">
         <!-- Loading Animation -->
@@ -15,7 +15,6 @@
             [size]="currentGridSize"
             [cardState]="cardState"
             (removeAgent)="onRemoveStaffAgent($event)"
-            (editAgent)="onEditAgent($event)"
         >
         </app-staff-agent-card>
     </div>
@@ -23,5 +22,6 @@
     <app-grid-controls
         #gridControls
         (currentSizeChange)="onGridSizeChanged($event)"
-        ></app-grid-controls>
+        (staffAgentAdded)="onAddStaffAgent($event)"
+    ></app-grid-controls>
 </div>

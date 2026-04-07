@@ -1,25 +1,25 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, model, OnInit, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { EmbeddingConfigsService, LLM_Config_Service } from "@services";
 import { SelectComponent, SelectItem } from "@shared/components";
 import { MATERIAL_FORMS } from "@shared/material-forms";
-import { EmbeddingConfig } from "@shared/models";
 import { map } from "rxjs/operators";
+
 import { ToastService } from "../../../../../../../services/notifications";
+import { EmbeddingConfig } from "../../../../../../settings-dialog/models/embeddings/embedding-config.model";
+import {
+    EmbeddingConfigsService
+} from "../../../../../../settings-dialog/services/embeddings/embedding_configs.service";
+import { LLM_Config_Service } from "../../../../../../settings-dialog/services/llms/llm-config.service";
 import { RAG_TYPES } from "../../../../../constants/constants";
 import { Rag, RagType } from "../../../../../models/base-rag.model";
 import { RagTypeComponent } from "./rag-type/rag-type.component";
 
 @Component({
-    selector: "app-step-select-rag",
-    templateUrl: "./step-select-rag.component.html",
-    styleUrls: ["./step-select-rag.component.scss"],
-    imports: [
-        RagTypeComponent,
-        SelectComponent,
-        MATERIAL_FORMS
-    ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'app-step-select-rag',
+    templateUrl: './step-select-rag.component.html',
+    styleUrls: ['./step-select-rag.component.scss'],
+    imports: [RagTypeComponent, SelectComponent, MATERIAL_FORMS],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StepSelectRagComponent implements OnInit {
     forceType = input<RagType>();
@@ -31,7 +31,7 @@ export class StepSelectRagComponent implements OnInit {
     selectedEmbedder = model<number | null>(null);
     selectedLLM = model<number | null>(null);
 
-    private destroyRef = inject(DestroyRef)
+    private destroyRef = inject(DestroyRef);
     private embeddingConfigService = inject(EmbeddingConfigsService);
     private toastService = inject(ToastService);
     private llmConfigService = inject(LLM_Config_Service);
@@ -55,7 +55,7 @@ export class StepSelectRagComponent implements OnInit {
                     return configs.map((embedConfig: EmbeddingConfig) => ({
                         name: embedConfig.custom_name,
                         value: embedConfig.id,
-                    }))
+                    }));
                 })
             )
             .subscribe({

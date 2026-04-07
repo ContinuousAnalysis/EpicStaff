@@ -71,6 +71,14 @@ class InvalidTaskOrderError(CustomAPIExeption):
     default_code = "invalid_context_task_order"
 
 
+class ContentHashConflictError(CustomAPIExeption):
+    status_code = 409
+    default_detail = (
+        "Node has been modified by another user. Please refresh and try again."
+    )
+    default_code = "content_hash_conflict"
+
+
 class SubGraphValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = (
@@ -321,3 +329,9 @@ class UnknownRagTypeException(RagException):
     def __init__(self, rag_type):
         self.rag_type = rag_type
         super().__init__(f"Unknown RAG type: '{rag_type}'")
+
+
+class BulkSaveValidationError(CustomAPIExeption):
+    def __init__(self, errors: dict):
+        self.errors = errors
+        super().__init__(str(errors))

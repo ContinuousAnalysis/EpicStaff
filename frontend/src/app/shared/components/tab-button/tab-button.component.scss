@@ -6,9 +6,15 @@
     padding: 1rem 1.5rem 0.7rem 1.5rem;
     cursor: pointer;
     border-bottom: 2px solid transparent;
-    transition: color 0.2s, border-bottom 0.2s;
+    transition:
+        color 0.2s,
+        border-bottom 0.2s;
     text-decoration: none;
     display: inline-block;
+    align-items: center;
+    min-width: 0;
+    flex: 0 1 auto;
+    max-width: 100%;
     outline: none;
 
     &.sm {
@@ -32,4 +38,12 @@
         opacity: 0.6;
         border-bottom: 2px solid transparent;
     }
+}
+
+.tab-btn__label {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }

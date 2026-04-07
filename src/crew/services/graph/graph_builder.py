@@ -14,6 +14,7 @@ from src.crew.services.graph.nodes import (
     EndNode,
 )
 
+from src.crew.services.graph.nodes.code_agent_node import CodeAgentNode
 from src.crew.services.graph.nodes.llm_node import LLMNode
 from src.crew.services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
 from src.crew.services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
@@ -24,7 +25,7 @@ from src.crew.services.graph.subgraphs.decision_table_node import (
 from src.crew.services.graph.subgraphs.subgraph_node import SubGraphNode
 from src.crew.services.crew.crew_parser_service import CrewParserService
 from src.crew.services.redis_service import RedisService
-from src.crew.models.request_models import (
+from src.shared.models import (
     DecisionTableNodeData,
     PythonCodeData,
     SessionData,
@@ -245,6 +246,7 @@ class SessionGraphBuilder:
                 output_variable_path=crew_node_data.output_variable_path,
                 knowledge_search_service=self.knowledge_search_service,
                 stop_event=self.stop_event,
+                stream_config=crew_node_data.stream_config,
             )
             self.add_node(crew_node)
 
@@ -257,6 +259,7 @@ class SessionGraphBuilder:
                 input_map=python_node_data.input_map,
                 output_variable_path=python_node_data.output_variable_path,
                 stop_event=self.stop_event,
+                stream_config=python_node_data.stream_config,
             )
             self.add_node(python_node)
 
@@ -292,6 +295,32 @@ class SessionGraphBuilder:
                 stop_event=self.stop_event,
             )
             self.add_node(llm_node)
+
+        for ca_data in schema.code_agent_node_list:
+            code_agent_node = CodeAgentNode(
+                session_id=self.session_id,
+                graph_id=schema.graph_id,
+                node_name=ca_data.node_name,
+                stop_event=self.stop_event,
+                input_map=ca_data.input_map,
+                output_variable_path=ca_data.output_variable_path,
+                python_code_executor_service=self.python_code_executor_service,
+                llm_config_id=ca_data.llm_config_id,
+                agent_mode=ca_data.agent_mode,
+                code_session_id=ca_data.session_id,
+                system_prompt=ca_data.system_prompt,
+                stream_handler_code=ca_data.stream_handler_code,
+                libraries=ca_data.libraries,
+                polling_interval_ms=ca_data.polling_interval_ms,
+                silence_indicator_s=ca_data.silence_indicator_s,
+                indicator_repeat_s=ca_data.indicator_repeat_s,
+                chunk_timeout_s=ca_data.chunk_timeout_s,
+                inactivity_timeout_s=ca_data.inactivity_timeout_s,
+                max_wait_s=ca_data.max_wait_s,
+                stream_config=ca_data.stream_config,
+                output_schema=ca_data.output_schema,
+            )
+            self.add_node(code_agent_node)
 
         for edge in schema.edge_list:
             self.add_edge(edge.start_key, edge.end_key)
@@ -338,10 +367,9 @@ class SessionGraphBuilder:
 
         if schema.entrypoint is not None:
             self.set_entrypoint(schema.entrypoint)
-        # name always __end_node__
-        # TODO: remove validation here and in request model
         if schema.end_node is not None:
             end_node = EndNode(
+                node_name=schema.end_node.node_name,
                 session_graph_builder_instance=self,
                 session_id=self.session_id,
                 output_map=schema.end_node.output_map,
