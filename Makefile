@@ -13,7 +13,7 @@ endif
 .PHONY: help \
         backup apply-backup stash-tags apply-tags switch \
         dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
-        prod start-prod prod-down prod-logs \
+        prod-setup prod-init prod prod-build prod-up start-prod prod-down prod-logs \
         clean docker-generate-certs
 
 # --- Help ---
@@ -102,18 +102,39 @@ rebuild-dev:
 # PRODUCTION Environment
 # ==========================================
 
-prod: start-prod
+prod-setup:
+	@echo "--- Setting up production environment ---"
+	@python3 make_scripts/setup_prod.py
 
-start-prod:
+prod-init:
+	@echo "--- Creating external volumes and networks ---"
+	@docker volume create sandbox_venvs      || true
+	@docker volume create sandbox_executions || true
+	@docker volume create crew_pgdata        || true
+	@docker volume create media_data         || true
+	@docker network create mcp-network       || true
+	@echo "--- Done ---"
+
+PROD_ENV_ARG = $(shell test -f prod/prod.env && echo "--env-file ../prod/prod.env")
+
+prod: prod-build prod-up
+
+prod-build: prod-init
+	@echo "--- Building production images ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) build
+
+prod-up: prod-init
 	@echo "--- Starting production services ---"
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env up --build -d
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) up -d
+
+start-prod: prod
 
 prod-down:
 	@echo "--- Stopping production services ---"
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env down
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) down
 
 prod-logs:
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env logs -f
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) logs -f
 
 # ==========================================
 # UTILITIES
