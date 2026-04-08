@@ -13,7 +13,12 @@
     </button>
 
     @if (isOpen()) {
-        <div class="color-options-panel" [class.open-upward]="openUpward()" (click)="$event.stopPropagation()">
+        <div
+            class="color-options-panel"
+            [class.open-upward]="openUpward()"
+            [ngStyle]="panelStyle()"
+            (click)="$event.stopPropagation()"
+        >
             @for (option of colorOptions; track option.id) {
                 <button
                     type="button"

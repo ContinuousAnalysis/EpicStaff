@@ -28,6 +28,7 @@ export class LabelColorPickerComponent implements OnChanges {
 
     readonly isOpen = signal<boolean>(false);
     readonly openUpward = signal<boolean>(false);
+    readonly panelStyle = signal<Record<string, string>>({});
     readonly colorOptions = LABEL_COLOR_OPTIONS;
     currentOption: LabelColorOption = getLabelColorOption(LabelColor.Default);
 
@@ -50,7 +51,22 @@ export class LabelColorPickerComponent implements OnChanges {
             if (trigger) {
                 const rect = trigger.getBoundingClientRect();
                 const spaceBelow = window.innerHeight - rect.bottom;
-                this.openUpward.set(spaceBelow < 220); // panel is ~210px tall (6 options)
+                const openUpward = spaceBelow < 220; // panel is ~210px tall (6 options)
+                this.openUpward.set(openUpward);
+                const left = rect.left + rect.width / 2;
+                if (openUpward) {
+                    this.panelStyle.set({
+                        top: 'auto',
+                        bottom: window.innerHeight - rect.top + 4 + 'px',
+                        left: left + 'px',
+                    });
+                } else {
+                    this.panelStyle.set({
+                        top: rect.bottom + 4 + 'px',
+                        bottom: 'auto',
+                        left: left + 'px',
+                    });
+                }
             }
         }
         this.isOpen.update((v) => !v);
