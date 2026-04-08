@@ -20,13 +20,13 @@ import { FullEmbeddingConfig } from '@shared/services';
 import { getProviderIconPath } from '@shared/utils';
 
 import { DropdownManagerService } from '../../services/dropdown-manager.service';
-import { AppIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { EmbeddingModelItemComponent } from './embedding-model-item/embedding-model-item.component';
 
 @Component({
     selector: 'app-embedding-model-selector',
     standalone: true,
-    imports: [CommonModule, FormsModule, AppIconComponent, EmbeddingModelItemComponent],
+    imports: [CommonModule, FormsModule, AppSvgIconComponent, EmbeddingModelItemComponent],
     providers: [
         {
             provide: NG_VALUE_ACCESSOR,
@@ -38,13 +38,13 @@ import { EmbeddingModelItemComponent } from './embedding-model-item/embedding-mo
         <div class="embedding-selector-container">
             <div class="selected-model" [class.placeholder]="!selectedConfig" (click)="toggleDropdown($event)">
                 <div *ngIf="selectedConfig; else placeholderTemplate" class="model-info">
-                    <app-icon
+                    <app-svg-icon
                         [icon]="getProviderIcon(selectedConfig)"
                         size="20px"
                         [ariaLabel]="selectedConfig.providerDetails?.name || ''"
                         class="provider-icon"
                     >
-                    </app-icon>
+                    </app-svg-icon>
                     <div class="model-text">
                         <span class="model-name">{{ selectedConfig.modelDetails?.name || 'Unknown Model' }}</span>
                         <span *ngIf="selectedConfig.custom_name" class="custom-name">

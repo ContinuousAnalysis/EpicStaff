@@ -63,18 +63,18 @@ export class LlmModelConfigDialogComponent implements OnInit {
             custom_name: ['', [Validators.required]],
             api_key: [''],
             model: [null, [Validators.required]],
-            temperature: [0.7, [Validators.min(0), Validators.max(1)]],
+            temperature: [0.5, [Validators.min(0), Validators.max(1)]],
             top_p: [1, [Validators.min(0.1)]],
-            stop: [{}],
+            stop: [null],
             max_tokens: [4096, [Validators.min(500), Validators.max(2147483647)]],
-            presence_penalty: [null],
-            frequency_penalty: [null],
-            logit_bias: ['{}'],
+            presence_penalty: [0],
+            frequency_penalty: [0],
+            logit_bias: [null],
             response_format: [null],
             seed: [null, [Validators.min(-2147483648), Validators.max(2147483647)]],
             headers: [{}],
             extra_headers: [{}],
-            timeout: [30, [Validators.min(1), Validators.max(600)]],
+            timeout: [120, [Validators.min(1), Validators.max(600)]],
             is_visible: [true],
         });
 
@@ -90,10 +90,7 @@ export class LlmModelConfigDialogComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (config) => {
-                    this.form.patchValue({
-                        ...config,
-                        logit_bias: JSON.stringify(config.logit_bias ?? {}),
-                    });
+                    this.form.patchValue(config);
                     this.isLoading.set(false);
                 },
                 error: () => {

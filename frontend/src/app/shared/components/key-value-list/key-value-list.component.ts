@@ -1,13 +1,8 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    forwardRef,
-    input,
-    signal,
-} from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
-import { TooltipComponent } from '../tooltip/tooltip.component';
+import { ChangeDetectionStrategy, Component, forwardRef, input, signal } from '@angular/core';
+import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+
 import { JsonEditorComponent } from '../json-editor/json-editor.component';
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 interface KeyValueItem {
     name: string;
@@ -43,7 +38,7 @@ export class KeyValueListComponent implements ControlValueAccessor {
     isDisabled = signal<boolean>(false);
     jsonText = signal<string>('{}');
 
-    editorOptions: any = {
+    editorOptions: Record<string, unknown> = {
         theme: 'vs-dark',
         language: 'json',
         automaticLayout: true,
@@ -73,11 +68,9 @@ export class KeyValueListComponent implements ControlValueAccessor {
         const idx = this.editingIndex();
 
         if (idx !== null) {
-            this.items.update(items =>
-                items.map((item, i) => (i === idx ? { name, value } : item))
-            );
+            this.items.update((items) => items.map((item, i) => (i === idx ? { name, value } : item)));
         } else {
-            this.items.update(items => [...items, { name, value }]);
+            this.items.update((items) => [...items, { name, value }]);
         }
 
         this.draftName.set('');
@@ -104,7 +97,7 @@ export class KeyValueListComponent implements ControlValueAccessor {
         if (this.editingIndex() === index) {
             this.cancelEdit();
         }
-        this.items.update(items => items.filter((_, i) => i !== index));
+        this.items.update((items) => items.filter((_, i) => i !== index));
         this.syncJson();
         this.emit();
     }
@@ -124,12 +117,12 @@ export class KeyValueListComponent implements ControlValueAccessor {
         try {
             const parsed = JSON.parse(json || '{}');
             if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-                const items: KeyValueItem[] = Object.entries(
-                    parsed as Record<string, unknown>
-                ).map(([name, value]) => ({
-                    name,
-                    value: typeof value === 'string' ? value : String(value ?? ''),
-                }));
+                const items: KeyValueItem[] = Object.entries(parsed as Record<string, unknown>).map(
+                    ([name, value]) => ({
+                        name,
+                        value: typeof value === 'string' ? value : String(value ?? ''),
+                    })
+                );
                 this.isUpdatingFromJson = true;
                 this.items.set(items);
                 this.cancelEdit();
@@ -141,12 +134,12 @@ export class KeyValueListComponent implements ControlValueAccessor {
 
     private syncJson(): void {
         if (this.isUpdatingFromJson) return;
-        const obj = Object.fromEntries(this.items().map(i => [i.name, i.value]));
+        const obj = Object.fromEntries(this.items().map((i) => [i.name, i.value]));
         this.jsonText.set(JSON.stringify(obj, null, 2));
     }
 
     private emit(): void {
-        const record = Object.fromEntries(this.items().map(i => [i.name, i.value]));
+        const record = Object.fromEntries(this.items().map((i) => [i.name, i.value]));
         this.onChange(record);
         this.onTouched();
     }

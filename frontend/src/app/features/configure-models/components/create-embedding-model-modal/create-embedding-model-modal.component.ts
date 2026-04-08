@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    AppIconComponent,
     AppSvgIconComponent,
     ButtonComponent,
     CustomInputComponent,
@@ -28,13 +27,12 @@ export interface CreateEmbeddingModelDialogData {
     imports: [
         CommonModule,
         ReactiveFormsModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         CustomInputComponent,
         ButtonComponent,
         ToggleSwitchComponent,
         TooltipComponent,
         ValidationErrorsComponent,
-        AppSvgIconComponent,
     ],
     templateUrl: './create-embedding-model-modal.component.html',
     styleUrls: ['./create-embedding-model-modal.component.scss'],

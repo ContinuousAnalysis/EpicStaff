@@ -19,13 +19,13 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
 import { DropdownManagerService, FullLLMConfig } from '@shared/services';
 import { getProviderIconPath } from '@shared/utils';
 
-import { AppIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component';
 
 @Component({
     selector: 'app-llm-model-selector',
     standalone: true,
-    imports: [CommonModule, FormsModule, AppIconComponent, LlmModelItemComponent],
+    imports: [CommonModule, FormsModule, AppSvgIconComponent, LlmModelItemComponent],
     providers: [
         {
             provide: NG_VALUE_ACCESSOR,
@@ -37,13 +37,13 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
         <div class="llm-selector-container">
             <div class="selected-model" [class.placeholder]="!selectedConfig" (click)="toggleDropdown($event)">
                 <div *ngIf="selectedConfig; else placeholderTemplate" class="model-info">
-                    <app-icon
+                    <app-svg-icon
                         [icon]="getProviderIcon(selectedConfig)"
                         size="20px"
                         [ariaLabel]="selectedConfig.providerDetails?.name || ''"
                         class="provider-icon"
                     >
-                    </app-icon>
+                    </app-svg-icon>
                     <div class="model-text">
                         <span class="model-name">{{ selectedConfig.modelDetails?.name || 'Unknown Model' }}</span>
                         <span *ngIf="selectedConfig.custom_name" class="custom-name">

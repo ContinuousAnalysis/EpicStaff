@@ -13,7 +13,7 @@ import {
     Signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AppIconComponent, AppSvgIconComponent, SelectComponent, SelectItem } from '@shared/components';
+import { AppSvgIconComponent, SelectComponent, SelectItem } from '@shared/components';
 import { ModelTypes } from '@shared/models';
 import { Observable } from 'rxjs';
 
@@ -35,7 +35,7 @@ type DialogComponentType =
 
 @Component({
     selector: 'app-default-llms-card',
-    imports: [CommonModule, AppIconComponent, SelectComponent, AppSvgIconComponent],
+    imports: [CommonModule, AppSvgIconComponent, SelectComponent],
     templateUrl: './default-llms-card.component.html',
     styleUrls: ['./default-llms-card.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

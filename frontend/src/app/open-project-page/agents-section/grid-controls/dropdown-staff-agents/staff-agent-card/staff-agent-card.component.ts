@@ -12,7 +12,7 @@ import {
     Output,
     SimpleChanges,
 } from '@angular/core';
-import { AppIconComponent } from '@shared/components';
+import { AppIconComponent, AppSvgIconComponent } from '@shared/components';
 import { getProviderIconPath } from '@shared/utils';
 
 import { FullAgent } from '../../../../../features/staff/services/full-agent.service';
@@ -28,7 +28,7 @@ interface SectionStates {
 @Component({
     selector: 'app-staff-agent-card',
     standalone: true,
-    imports: [CommonModule, AppIconComponent],
+    imports: [CommonModule, AppIconComponent, AppSvgIconComponent],
     templateUrl: './staff-agent-card.component.html',
     styleUrls: ['./staff-agent-card.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

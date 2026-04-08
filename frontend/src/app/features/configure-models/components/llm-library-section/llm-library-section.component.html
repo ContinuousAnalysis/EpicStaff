@@ -28,11 +28,7 @@
                     />
                 </div>
 
-                <button
-                    type="button"
-                    class="llm-library__add-btn"
-                    (click)="onAddModel()"
-                >
+                <button type="button" class="llm-library__add-btn" (click)="onAddModel()">
                     <i class="ti ti-plus" aria-hidden="true"></i>
                     Add Configuration
                 </button>
@@ -46,11 +42,11 @@
                 @for (group of section.groups; track group.id) {
                     <div class="llm-library__provider-group">
                         <div class="llm-library__provider-header">
-                            <app-icon
+                            <app-svg-icon
                                 [icon]="group.providerIconPath"
-                                [size]="'22px'"
+                                size="22px"
                                 [ariaLabel]="group.providerName"
-                            ></app-icon>
+                            />
                             <span class="llm-library__provider-name">{{ group.providerName }}</span>
                         </div>
 
@@ -68,9 +64,6 @@
             </div>
         }
     } @else {
-        <app-loading-spinner
-            message="Loading Configurations data"
-        />
+        <app-loading-spinner message="Loading Configurations data" />
     }
 </section>
-

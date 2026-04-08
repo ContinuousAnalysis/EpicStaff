@@ -3,8 +3,13 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AppSvgIconComponent, TooltipComponent, ValidationErrorsComponent } from '@shared/components';
-import { AppIconComponent, ButtonComponent, CustomInputComponent } from '@shared/components';
+import {
+    AppSvgIconComponent,
+    ButtonComponent,
+    CustomInputComponent,
+    TooltipComponent,
+    ValidationErrorsComponent,
+} from '@shared/components';
 import { LLMProvider, RealtimeModel } from '@shared/models';
 import { getProviderIconPath } from '@shared/utils';
 import { finalize } from 'rxjs/operators';
@@ -22,12 +27,11 @@ export interface CreateRealtimeModelDialogData {
     imports: [
         CommonModule,
         ReactiveFormsModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         CustomInputComponent,
         ButtonComponent,
         TooltipComponent,
         ValidationErrorsComponent,
-        AppSvgIconComponent,
     ],
     templateUrl: './create-realtime-model-modal.component.html',
     styleUrls: ['./create-realtime-model-modal.component.scss'],

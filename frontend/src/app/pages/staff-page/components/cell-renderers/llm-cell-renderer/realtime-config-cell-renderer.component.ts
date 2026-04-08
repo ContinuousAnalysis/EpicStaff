@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { AppIconComponent } from '@shared/components';
+import { AppSvgIconComponent } from '@shared/components';
 import { getProviderIconPath } from '@shared/utils';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
@@ -10,18 +10,18 @@ import { MergedConfig } from '../../../../../features/staff/services/full-agent.
 @Component({
     selector: 'app-config-cell-renderer',
     standalone: true,
-    imports: [CommonModule, AppIconComponent, AppIconComponent],
+    imports: [CommonModule, AppSvgIconComponent],
     template: `
         <div class="configs-cell-wrapper">
             <div *ngIf="!configs || configs.length === 0" class="no-configs">No configurations assigned</div>
 
             <div *ngFor="let config of configs" class="config-item" [ngClass]="config.type">
-                <app-icon
+                <app-svg-icon
                     [icon]="getProviderIcon(config)"
                     size="20px"
                     [ariaLabel]="config.provider_name || ''"
                     class="provider-icon"
-                ></app-icon>
+                ></app-svg-icon>
 
                 <div class="item-content">
                     <div class="item-text">

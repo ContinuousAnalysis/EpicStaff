@@ -156,11 +156,11 @@
                 <div class="details-subsection">
                     <h5 class="subsection-title">MODEL</h5>
                     <div *ngIf="agent.fullLlmConfig; else noModel" class="model-info-container">
-                        <app-icon
+                        <app-svg-icon
                             [icon]="getProviderIcon(agent.fullLlmConfig.providerDetails?.name)"
                             [size]="'1.7rem'"
                             class="provider-icon"
-                        ></app-icon>
+                        ></app-svg-icon>
                         <div class="model-info">
                             <p class="model-name">
                                 {{ agent.fullLlmConfig.modelDetails?.name }}

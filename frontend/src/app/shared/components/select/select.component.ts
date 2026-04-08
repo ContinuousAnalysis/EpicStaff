@@ -19,7 +19,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-import { AppIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { TooltipComponent } from '../tooltip/tooltip.component';
 
 export interface SelectItem {
@@ -32,7 +32,7 @@ export interface SelectItem {
 
 @Component({
     selector: 'app-select',
-    imports: [NgClass, OverlayModule, TooltipComponent, AppIconComponent],
+    imports: [NgClass, OverlayModule, TooltipComponent, AppSvgIconComponent],
     templateUrl: './select.component.html',
     styleUrls: ['./select.component.scss'],
     providers: [

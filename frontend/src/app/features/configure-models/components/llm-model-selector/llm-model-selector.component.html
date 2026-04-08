@@ -13,7 +13,7 @@
     (click)="toggle()"
 >
     @if (selectedModelInfo(); as info) {
-        <app-icon [icon]="getProviderIcon(info.provider.name)" size="18px" />
+        <app-svg-icon [icon]="getProviderIcon(info.provider.name)" size="18px" />
         <span class="llm-selector__trigger-label">
             <span class="llm-selector__trigger-provider">{{ info.provider.name }}:</span>
             <span class="llm-selector__trigger-model">{{ info.model.name }}</span>
@@ -63,7 +63,7 @@
                         <!-- Provider Header -->
                         <div class="model-selector__provider-header">
                             <div class="model-selector__provider-info">
-                                <app-icon [icon]="getProviderIcon(providerData.provider.name)" size="1.125rem" />
+                                <app-svg-icon [icon]="getProviderIcon(providerData.provider.name)" size="1.125rem" />
                                 <span class="model-selector__provider-name">
                                     {{ providerData.provider.name | uppercase }}
                                 </span>

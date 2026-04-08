@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
-import { FullLLMConfig, FullLLMConfigService } from "@shared/services";
-import { getProviderIconPath } from "@shared/utils";
+import { FullLLMConfig, FullLLMConfigService } from '@shared/services';
+import { getProviderIconPath } from '@shared/utils';
 import { of, Subscription, switchMap, takeUntil } from 'rxjs';
 import { Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -20,7 +20,6 @@ import { ToolsSelectorComponent } from '../../components/tools-selector/tools-se
 import { CustomErrorStateMatcher } from '../../error-state-matcher/custom-error-state-matcher';
 import { MATERIAL_FORMS } from '../../material-forms';
 import { buildToolIdsArray } from '../../utils/tool-ids-builder.util';
-import { AppIconComponent } from '../app-icon/app-icon.component';
 import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { ValidationErrorsComponent } from '../app-validation-errors/validation-errors.component';
 
@@ -62,7 +61,6 @@ export type AgentDialogResult =
         ReactiveFormsModule,
         ...MATERIAL_FORMS,
         ToolsSelectorComponent,
-        AppIconComponent,
         AppSvgIconComponent,
         ValidationErrorsComponent,
     ],

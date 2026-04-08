@@ -1,12 +1,14 @@
+import { ChangeDetectionStrategy, Component, forwardRef, input, signal } from '@angular/core';
 import {
-    ChangeDetectionStrategy,
-    Component,
-    forwardRef,
-    input,
-    signal,
-} from '@angular/core';
-import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator } from '@angular/forms';
-import { TooltipComponent } from "../tooltip/tooltip.component";
+    AbstractControl,
+    ControlValueAccessor,
+    NG_VALIDATORS,
+    NG_VALUE_ACCESSOR,
+    ValidationErrors,
+    Validator,
+} from '@angular/forms';
+
+import { TooltipComponent } from '../tooltip/tooltip.component';
 import { JsonEditorComponent } from './json-editor.component';
 
 @Component({
@@ -46,7 +48,7 @@ export class JsonEditorFormFieldComponent implements ControlValueAccessor, Valid
     isDisabled = signal<boolean>(false);
     isValid = signal<boolean>(true);
 
-    editorOptions: any = {
+    editorOptions: Record<string, unknown> = {
         theme: 'vs-dark',
         language: 'json',
         automaticLayout: true,
@@ -81,6 +83,7 @@ export class JsonEditorFormFieldComponent implements ControlValueAccessor, Valid
     }
 
     validate(_: AbstractControl): ValidationErrors | null {
+        void _;
         return this.isValid() ? null : { invalidJson: true };
     }
 
@@ -88,8 +91,14 @@ export class JsonEditorFormFieldComponent implements ControlValueAccessor, Valid
         this.onValidatorChange = fn;
     }
 
-    writeValue(value: string | null): void {
-        this.jsonValue.set(value ?? '{}');
+    writeValue(value: unknown): void {
+        if (value == null) {
+            this.jsonValue.set('{}');
+        } else if (typeof value === 'string') {
+            this.jsonValue.set(value);
+        } else {
+            this.jsonValue.set(JSON.stringify(value, null, 2));
+        }
     }
 
     registerOnChange(fn: (value: string) => void): void {
