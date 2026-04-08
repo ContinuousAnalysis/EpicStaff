@@ -9,6 +9,11 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
 import { DragDropAreaComponent } from '../../../../../../shared/components/drag-drop-area/drag-drop-area.component';
 import { SpinnerComponent } from '../../../../../../shared/components/spinner/spinner.component';
 import {
+    AddToFlowDialogComponent,
+    AddToFlowDialogData,
+    AddToFlowDialogResult,
+} from '../../../../components/add-to-flow-dialog/add-to-flow-dialog.component';
+import {
     CopyToDialogComponent,
     CopyToDialogData,
     CopyToDialogResult,
@@ -174,6 +179,9 @@ export class StoragePageComponent {
             case 'view-details':
                 this.handleViewDetails(event.item);
                 break;
+            case 'add-to-flow':
+                this.handleAddToFlow(event.item);
+                break;
         }
     }
 
@@ -224,6 +232,24 @@ export class StoragePageComponent {
                 },
                 error: () => this.toastService.error('Failed to upload files'),
             });
+    }
+
+    private handleAddToFlow(item: StorageItem): void {
+        const dialogRef = this.dialog.open<AddToFlowDialogResult, AddToFlowDialogData>(AddToFlowDialogComponent, {
+            data: { item },
+        });
+        dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+            if (!result) return;
+            const requests = result.flowIds.map((flowId) =>
+                this.storageApiService.addToFlow(item.path, flowId, item.name)
+            );
+            forkJoin(requests)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: () => this.toastService.success(`"${item.name}" added to ${result.flowIds.length} flow(s)`),
+                    error: () => this.toastService.error(`Failed to add "${item.name}" to flow`),
+                });
+        });
     }
 
     private handleCopy(item: StorageItem): void {
