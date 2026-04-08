@@ -356,10 +356,6 @@
     &:hover ::ng-deep .label-icon svg path {
         fill: var(--label-color, var(--color-ks-text));
     }
-
-    &.active ::ng-deep .label-icon svg path {
-        fill: var(--accent-color);
-    }
 }
 
 .unlabeled-item {

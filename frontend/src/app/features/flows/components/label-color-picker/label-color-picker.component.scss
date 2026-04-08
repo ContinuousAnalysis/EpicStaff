@@ -58,6 +58,11 @@
         0px 2px 3px rgba(0, 0, 0, 0.3);
 }
 
+.color-options-panel.open-upward {
+    top: auto;
+    bottom: calc(100% + 4px);
+}
+
 .color-option-btn {
     display: flex;
     align-items: center;

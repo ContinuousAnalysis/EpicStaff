@@ -27,6 +27,7 @@ export class LabelColorPickerComponent implements OnChanges {
     private readonly elementRef = inject(ElementRef);
 
     readonly isOpen = signal<boolean>(false);
+    readonly openUpward = signal<boolean>(false);
     readonly colorOptions = LABEL_COLOR_OPTIONS;
     currentOption: LabelColorOption = getLabelColorOption(LabelColor.Default);
 
@@ -43,6 +44,15 @@ export class LabelColorPickerComponent implements OnChanges {
 
     toggle(event: MouseEvent): void {
         event.stopPropagation();
+        const willOpen = !this.isOpen();
+        if (willOpen) {
+            const trigger = this.elementRef.nativeElement.querySelector('.color-trigger-btn') as HTMLElement;
+            if (trigger) {
+                const rect = trigger.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                this.openUpward.set(spaceBelow < 220); // panel is ~210px tall (6 options)
+            }
+        }
         this.isOpen.update((v) => !v);
     }
 

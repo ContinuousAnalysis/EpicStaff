@@ -112,9 +112,11 @@ export class FlowsLabelSidebarComponent implements OnInit {
     }
 
     startAddRootLabel(): void {
+        this.cancelRename();
         this.addingRootLabel.set(true);
         this.addingChildOf.set(null);
         this.newLabelNameValue.set('');
+        this.newLabelError.set('');
     }
 
     cancelAddLabel(): void {
@@ -126,9 +128,11 @@ export class FlowsLabelSidebarComponent implements OnInit {
     }
 
     startAddChildLabel(parentId: number): void {
+        this.cancelRename();
         this.addingChildOf.set(parentId);
         this.addingRootLabel.set(false);
         this.newLabelNameValue.set('');
+        this.newLabelError.set('');
         this.expandedNodes.update((s) => new Set([...s, parentId]));
         this.scrollChildAddRowIntoView();
     }
@@ -158,8 +162,10 @@ export class FlowsLabelSidebarComponent implements OnInit {
     }
 
     startRename(label: LabelDto): void {
+        this.cancelAddLabel();
         this.editingLabelId.set(label.id);
         this.editingLabelNameValue.set(label.name);
+        this.renameLabelError.set('');
         this.scrollRenameRowIntoView();
         this.editingLabelColor.set(label.metadata?.color ?? LabelColor.Default);
     }
