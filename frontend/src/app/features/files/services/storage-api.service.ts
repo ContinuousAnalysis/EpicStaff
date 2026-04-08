@@ -1,14 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 
 import { ConfigService } from '../../../services/config/config.service';
 import {
-    StorageArchiveResponse,
     StorageItem,
     StorageItemInfo,
-    StorageSessionOutput,
+    StorageSessionOutputItem,
     StorageUploadResponse,
 } from '../models/storage.models';
 
@@ -37,6 +36,41 @@ export class StorageApiService {
             .pipe(map((res) => res.items ?? []));
     }
 
+    ensureFolderAndUpload(
+        targetFolder: string,
+        files: File[]
+    ): Observable<{ alreadyExists: boolean; created: boolean; uploadedCount: number }> {
+        const normalizedTarget = this.normalizePath(targetFolder);
+        const { parentPath, folderName } = this.splitParentAndName(normalizedTarget);
+
+        return this.list(parentPath).pipe(
+            switchMap((items) => {
+                const exists = (items ?? []).some(
+                    (item) => item.type === 'folder' && item.name?.trim().toLowerCase() === folderName.toLowerCase()
+                );
+                if (exists) {
+                    if (!files.length) {
+                        return of({ alreadyExists: true, created: false, uploadedCount: 0 });
+                    }
+                    return this.uploadMany(normalizedTarget, files).pipe(
+                        map(() => ({ alreadyExists: true, created: false, uploadedCount: files.length }))
+                    );
+                }
+
+                return this.mkdir(normalizedTarget).pipe(
+                    switchMap(() => {
+                        if (!files.length) {
+                            return of({ alreadyExists: false, created: true, uploadedCount: 0 });
+                        }
+                        return this.uploadMany(normalizedTarget, files).pipe(
+                            map(() => ({ alreadyExists: false, created: true, uploadedCount: files.length }))
+                        );
+                    })
+                );
+            })
+        );
+    }
+
     info(path: string): Observable<StorageItemInfo> {
         return this.http.get<StorageItemInfo>(`${this.apiUrl}info/`, {
             params: { path },
@@ -56,19 +90,15 @@ export class StorageApiService {
     }
 
     upload(path: string, file: File): Observable<StorageUploadResponse> {
+        return this.uploadMany(path, [file]);
+    }
+
+    uploadMany(path: string, files: File[]): Observable<StorageUploadResponse> {
         const formData = new FormData();
-        formData.append('file', file);
+        files.forEach((file) => formData.append('files', file));
         formData.append('path', path);
 
         return this.http.post<StorageUploadResponse>(`${this.apiUrl}upload/`, formData);
-    }
-
-    uploadArchive(path: string, file: File): Observable<StorageArchiveResponse> {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('path', path);
-
-        return this.http.post<StorageArchiveResponse>(`${this.apiUrl}upload-archive/`, formData);
     }
 
     downloadZip(paths: string[]): Observable<Blob> {
@@ -87,20 +117,20 @@ export class StorageApiService {
 
     delete(path: string): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}delete/`, {
-            body: { path },
+            params: { path },
         });
     }
 
     rename(from: string, to: string): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}rename/`, { from, to });
+        return this.http.post<void>(`${this.apiUrl}rename/`, { from_path: from, to_path: to });
     }
 
     move(from: string, to: string): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}move/`, { from, to });
+        return this.http.post<void>(`${this.apiUrl}move/`, { from_path: from, to_path: to });
     }
 
     copy(from: string, to: string): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}copy/`, { from, to });
+        return this.http.post<void>(`${this.apiUrl}copy/`, { from_path: from, to_path: to });
     }
 
     addToFlow(path: string, flowId: number, variableName: string): Observable<void> {
@@ -111,9 +141,31 @@ export class StorageApiService {
         });
     }
 
-    getSessionOutputs(sessionId: string): Observable<StorageSessionOutput[]> {
-        return this.http.get<StorageSessionOutput[]>(`${this.apiUrl}session-outputs/`, {
-            params: { session_id: sessionId },
-        });
+    getSessionOutputs(sessionId: string): Observable<StorageSessionOutputItem[]> {
+        return this.http
+            .get<{ items: StorageSessionOutputItem[] }>(`${this.apiUrl}session-outputs/`, {
+                params: { session_id: sessionId },
+            })
+            .pipe(map((res) => res.items ?? []));
+    }
+
+    private normalizePath(path: string): string {
+        return path
+            .trim()
+            .replace(/\\/g, '/')
+            .replace(/\/{2,}/g, '/')
+            .replace(/^\/+|\/+$/g, '');
+    }
+
+    private splitParentAndName(path: string): { parentPath: string; folderName: string } {
+        const slashIndex = path.lastIndexOf('/');
+        if (slashIndex === -1) {
+            return { parentPath: '', folderName: path };
+        }
+
+        return {
+            parentPath: path.slice(0, slashIndex),
+            folderName: path.slice(slashIndex + 1),
+        };
     }
 }

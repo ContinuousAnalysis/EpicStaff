@@ -6,70 +6,116 @@
 } @else {
     <div class="storage-preview">
         <div class="storage-preview__header">
-            <div class="storage-preview__breadcrumbs">
-                <app-icon icon="ui/folder" size="1rem" class="storage-preview__breadcrumb-icon"></app-icon>
-                @for (crumb of breadcrumbs; track crumb; let last = $last) {
-                    <span class="storage-preview__breadcrumb">{{ crumb }}</span>
-                    @if (!last) {
-                        <span class="storage-preview__breadcrumb-sep">/</span>
-                    }
-                }
-            </div>
-            <div class="storage-preview__header-actions">
-                <app-button type="primary" [leftIcon]="'ui/plus'" (click)="onDownload()"> Add to flow </app-button>
-                <button class="storage-preview__kebab" aria-label="More actions">
-                    <app-icon icon="ui/dots-vertical" size="1rem"></app-icon>
+            <div class="storage-preview__header-left">
+                <button
+                    class="storage-preview__toggle-btn"
+                    [class.storage-preview__toggle-btn--active]="showSidebar"
+                    (click)="toggleSidebar.emit()"
+                    title="Toggle Folder Branches"
+                >
+                    <app-icon icon="ui/expand-sidebar" size="0.85rem"></app-icon>
                 </button>
+                <div class="storage-preview__breadcrumbs">
+                    @for (crumb of breadcrumbs; track crumb; let last = $last) {
+                        <span class="storage-preview__breadcrumb">{{ crumb }}</span>
+                        @if (!last) {
+                            <span class="storage-preview__breadcrumb-sep">/</span>
+                        }
+                    }
+                </div>
             </div>
+            <app-button
+                class="storage-preview__add-to-flow"
+                type="outline-primary"
+                mod="small"
+                [leftIcon]="'ui/add-to-flow'"
+                iconSize="12px"
+                ariaLabel="Add to flow"
+                (click)="onDownload()"
+            >
+                Add to flow
+            </app-button>
+            <button class="storage-preview__kebab" aria-label="More actions" (click)="onKebabClick($event)">
+                <app-icon icon="ui/dots-vertical" size="1rem"></app-icon>
+            </button>
         </div>
 
-        @if (previewBadge) {
-            <div class="storage-preview__badge">
-                {{ previewBadge }}
+        @if (kebabMenuOpen()) {
+            <div class="storage-preview__overlay" (click)="closeKebabMenu()"></div>
+            <div
+                class="storage-preview__context-menu"
+                [style.right.px]="kebabMenuPosition().right"
+                [style.top.px]="kebabMenuPosition().top"
+            >
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('download')">
+                    Download
+                </button>
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('copy')">
+                    Copy to...
+                </button>
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('rename')">Rename</button>
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('view-details')">
+                    View details
+                </button>
+                <div class="storage-preview__context-menu-divider"></div>
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('delete')">Delete</button>
             </div>
         }
 
         <div class="storage-preview__body">
-            @if (isLoadingPreview()) {
-                <div class="storage-preview__loading">Loading preview...</div>
-            } @else if (previewError()) {
-                <div class="storage-preview__error">
-                    <app-icon icon="ui/alert-triangle" size="1.5rem"></app-icon>
-                    <p>{{ previewError() }}</p>
-                    <app-button type="ghost" (click)="onDownload()">Download file</app-button>
+            @if (previewBadge && previewType() !== 'pdf') {
+                <div class="storage-preview__badge">
+                    <span class="storage-preview__badge-type">{{ previewBadge }}</span>
+                    <span class="storage-preview__badge-suffix">only view</span>
                 </div>
-            } @else {
-                @switch (previewType()) {
-                    @case ('text') {
-                        <pre class="storage-preview__text">{{ textContent() }}</pre>
-                    }
-                    @case ('json') {
-                        <pre class="storage-preview__json">{{ jsonContent() | json }}</pre>
-                    }
-                    @case ('pdf') {
-                        @if (pdfUrl()) {
-                            <iframe class="storage-preview__pdf" [src]="pdfUrl()" title="PDF preview"></iframe>
+            }
+            <div class="storage-preview__scroll">
+                @if (!hasFileSelected) {
+                    <div class="storage-preview__empty-state">
+                        <app-icon icon="ui/file" size="3rem" class="storage-preview__empty-icon"></app-icon>
+                        <p class="storage-preview__empty-text">Select a file to preview</p>
+                    </div>
+                } @else if (isLoadingPreview()) {
+                    <div class="storage-preview__loading">Loading preview...</div>
+                } @else if (previewError()) {
+                    <div class="storage-preview__error">
+                        <app-icon icon="ui/alert-triangle" size="1.5rem"></app-icon>
+                        <p>{{ previewError() }}</p>
+                        <app-button type="ghost" (click)="onDownload()">Download file</app-button>
+                    </div>
+                } @else {
+                    @switch (previewType()) {
+                        @case ('text') {
+                            <pre class="storage-preview__text">{{ textContent() }}</pre>
                         }
-                    }
-                    @case ('image') {
-                        @if (imageUrl()) {
-                            <img class="storage-preview__image" [src]="imageUrl()" [alt]="item.name" />
+                        @case ('json') {
+                            <pre class="storage-preview__json">{{ jsonContent() | json }}</pre>
                         }
-                    }
-                    @case ('unsupported') {
-                        <div class="storage-preview__unsupported">
-                            <app-icon icon="ui/file" size="3rem"></app-icon>
-                            <p class="storage-preview__unsupported-name">{{ item.name }}</p>
-                            @if (item.size) {
-                                <p class="storage-preview__unsupported-size">{{ item.size | number }} bytes</p>
+                        @case ('pdf') {
+                            @if (pdfUrl()) {
+                                <iframe class="storage-preview__pdf" [src]="pdfUrl()" title="PDF preview"></iframe>
                             }
-                            <app-button type="ghost" [leftIcon]="'ui/download'" (click)="onDownload()">
-                                Download
-                            </app-button>
-                        </div>
+                        }
+                        @case ('image') {
+                            @if (imageUrl()) {
+                                <img class="storage-preview__image" [src]="imageUrl()" [alt]="item.name" />
+                            }
+                        }
+                        @case ('unsupported') {
+                            <div class="storage-preview__unsupported">
+                                <app-icon icon="ui/file" size="3rem"></app-icon>
+                                <p class="storage-preview__unsupported-name">{{ item.name }}</p>
+                                @if (item.size) {
+                                    <p class="storage-preview__unsupported-size">{{ item.size | number }} bytes</p>
+                                }
+                                <app-button type="ghost" [leftIcon]="'ui/download'" (click)="onDownload()">
+                                    Download
+                                </app-button>
+                            </div>
+                        }
                     }
                 }
-            }
+            </div>
         </div>
     </div>
 }

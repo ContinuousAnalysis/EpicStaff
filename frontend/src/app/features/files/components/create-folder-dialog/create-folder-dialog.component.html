@@ -50,7 +50,13 @@
                 <span class="create-folder-dialog__drop-or">or</span>
                 <label class="create-folder-dialog__browse-btn">
                     Browse files
-                    <input type="file" multiple hidden (change)="onFileInputChange($event)" />
+                    <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.csv,.docx,.txt,.json,.html,.zip,.tar,.gz,.bz2,.xz"
+                        hidden
+                        (change)="onFileInputChange($event)"
+                    />
                 </label>
             </div>
         </div>

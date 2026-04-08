@@ -1,0 +1,33 @@
+<div class="storage-details-dialog">
+    <div class="storage-details-dialog__header">
+        <h2 class="storage-details-dialog__title">Details</h2>
+        <button class="storage-details-dialog__close" type="button" (click)="close()">Close</button>
+    </div>
+
+    <div class="storage-details-dialog__content">
+        <div class="storage-details-dialog__row">
+            <span class="storage-details-dialog__label">Name</span>
+            <span class="storage-details-dialog__value">{{ data.name }}</span>
+        </div>
+        <div class="storage-details-dialog__row" *ngIf="data.type">
+            <span class="storage-details-dialog__label">Type</span>
+            <span class="storage-details-dialog__value">{{ data.type }}</span>
+        </div>
+        <div class="storage-details-dialog__row" *ngIf="data.size !== undefined">
+            <span class="storage-details-dialog__label">Size</span>
+            <span class="storage-details-dialog__value">{{ data.size | number }} bytes</span>
+        </div>
+        <div class="storage-details-dialog__row">
+            <span class="storage-details-dialog__label">Added</span>
+            <span class="storage-details-dialog__value">{{ addedAt }}</span>
+        </div>
+        <div class="storage-details-dialog__row">
+            <span class="storage-details-dialog__label">Path</span>
+            <span class="storage-details-dialog__value">{{ data.path }}</span>
+        </div>
+        <div class="storage-details-dialog__row">
+            <span class="storage-details-dialog__label">Where used</span>
+            <span class="storage-details-dialog__value">{{ whereUsed }}</span>
+        </div>
+    </div>
+</div>

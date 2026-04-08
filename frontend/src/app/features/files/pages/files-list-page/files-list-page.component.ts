@@ -62,24 +62,28 @@ export class FilesListPageComponent {
 
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
             if (!result) return;
-            this.storageApiService.mkdir(result.folderName).subscribe({
-                next: () => {
-                    this.toastService.success(`Folder "${result.folderName}" created`);
-                    this.storageApiService.triggerRefresh();
-                    result.files.forEach((file) => {
-                        this.storageApiService.upload(result.folderName, file).subscribe({
-                            next: () => {
-                                this.toastService.success(`"${file.name}" uploaded`);
-                                this.storageApiService.triggerRefresh();
-                            },
-                            error: () => this.toastService.error(`Failed to upload "${file.name}"`),
-                        });
-                    });
-                },
-                error: () => {
-                    this.toastService.error('Failed to create folder');
-                },
-            });
+            const targetFolder = result.folderName.trim();
+            if (!targetFolder) return;
+
+            this.storageApiService
+                .ensureFolderAndUpload(targetFolder, result.files)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (flow) => {
+                        if (flow.alreadyExists) {
+                            this.toastService.info(`Folder "${targetFolder}" already exists`);
+                        } else if (flow.created) {
+                            this.toastService.success(`Folder "${targetFolder}" created`);
+                        }
+                        if (flow.uploadedCount > 0) {
+                            this.toastService.success(`${flow.uploadedCount} file(s) uploaded`);
+                        }
+                        this.storageApiService.triggerRefresh();
+                    },
+                    error: () => {
+                        this.toastService.error('Failed to create folder');
+                    },
+                });
         });
     }
 }

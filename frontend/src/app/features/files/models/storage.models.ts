@@ -2,6 +2,7 @@ export interface StorageItem {
     name: string;
     path: string;
     type: 'file' | 'folder';
+    is_empty?: boolean;
     size?: number;
     modified?: string;
     children?: StorageItem[];
@@ -14,17 +15,34 @@ export interface StorageItemInfo extends StorageItem {
     etag?: string;
 }
 
-export interface StorageUploadResponse {
+export interface StorageFileUploadResult {
+    type: 'file';
     path: string;
     size: number;
 }
 
-export interface StorageArchiveResponse {
+export interface StorageArchiveUploadResult {
+    type: 'archive';
     extracted: string[];
 }
 
-export interface StorageSessionOutput {
-    path: string;
-    size: number;
-    created: string;
+export type StorageUploadResult = StorageFileUploadResult | StorageArchiveUploadResult;
+
+export interface StorageUploadResponse {
+    uploaded: StorageUploadResult[];
+}
+
+export interface StorageSessionOutputItem {
+    name: string;
+    type: 'file' | 'folder';
+    size?: number;
+    modified?: string;
+}
+
+export type StorageAction = 'read' | 'write' | 'read_write';
+
+export interface ProjectStorageConfig {
+    enabled: boolean;
+    action: StorageAction;
+    files: string[];
 }

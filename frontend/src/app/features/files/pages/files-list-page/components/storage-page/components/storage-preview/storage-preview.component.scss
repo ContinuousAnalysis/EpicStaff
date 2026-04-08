@@ -24,18 +24,29 @@
     &__header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-start;
+        gap: 0.5rem;
         padding: 0.75rem 1.25rem;
         border-bottom: 1px solid var(--color-divider-subtle);
         flex-shrink: 0;
     }
 
-    &__breadcrumbs {
+    &__header-left {
         display: flex;
         align-items: center;
-        gap: 0.25rem;
+        gap: 0.625rem;
+        flex: 1 1 auto;
         min-width: 0;
         overflow: hidden;
+    }
+
+    &__breadcrumbs {
+        display: block;
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     &__breadcrumb-icon {
@@ -51,7 +62,6 @@
 
         &:last-child {
             color: var(--color-text-primary);
-            font-weight: 500;
         }
     }
 
@@ -59,13 +69,7 @@
         font-size: 0.85rem;
         color: var(--color-text-secondary);
         opacity: 0.5;
-    }
-
-    &__header-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        flex-shrink: 0;
+        padding: 0 0.15rem;
     }
 
     &__kebab {
@@ -73,34 +77,168 @@
         align-items: center;
         justify-content: center;
         padding: 0.375rem;
+        flex: 0 0 auto;
         background: transparent;
         border: none;
         cursor: pointer;
-        color: var(--color-text-secondary);
+        color: var(--color-ks-button-activated);
         border-radius: 0.25rem;
 
         &:hover {
-            color: var(--color-text-primary);
             background-color: var(--color-ghost-btn-hover);
+        }
+    }
+
+    &__overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+    }
+
+    &__context-menu {
+        position: fixed;
+        z-index: 1001;
+        width: 170px;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        background-color: #212325;
+        border: 1px solid #2b2d30;
+        border-radius: 8px;
+        box-shadow:
+            0 2px 3px rgba(0, 0, 0, 0.3),
+            0 6px 10px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+    }
+
+    &__context-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        height: 28px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 16px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: #d9d9de;
+        font-weight: 400;
+        font-size: 10px;
+        line-height: 1;
+        text-align: left;
+
+        &:hover {
+            background-color: var(--color-ghost-btn-hover);
+        }
+    }
+
+    &__context-menu-divider {
+        height: 1px;
+        margin: 0.25rem 0;
+        background-color: var(--color-divider-subtle);
+    }
+
+    &__add-to-flow {
+        width: auto;
+        max-width: 112px;
+        min-width: 28px;
+        flex: 0 1000 112px;
+        margin-left: auto;
+
+        &:has(.btn--only-icon) {
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        ::ng-deep .btn.btn--icon-left-small {
+            padding-left: 1.9rem;
+        }
+
+        ::ng-deep .btn .btn-content {
+            font-size: 0.85rem;
+            line-height: 1;
+        }
+    }
+
+    &__toggle-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        background: transparent;
+        border: 1px solid var(--color-text-secondary);
+        border-radius: 4px;
+        cursor: pointer;
+        color: var(--color-text-secondary);
+        flex-shrink: 0;
+
+        ::ng-deep app-icon svg path {
+            stroke: var(--color-text-secondary);
+            transition: stroke 0.15s ease;
+        }
+
+        &--active {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            background: rgba(88, 86, 214, 0.08);
+
+            ::ng-deep app-icon svg path {
+                stroke: var(--accent-color);
+            }
+        }
+
+        &:hover:not(&--active) {
+            border-color: var(--color-text-primary);
+            color: var(--color-text-primary);
         }
     }
 
     &__badge {
         position: absolute;
-        top: 4.5rem;
-        right: 1.25rem;
+        top: 0;
+        right: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
         padding: 0.2rem 0.5rem;
         font-size: 0.7rem;
-        color: var(--color-text-secondary);
-        background-color: var(--color-ghost-btn-hover);
+        color: #d9d9de;
+        background: #d9d9de14;
         border-radius: 0.25rem;
+        z-index: 1;
+    }
+
+    &__badge-type {
+        color: #d9d9de;
+    }
+
+    &__badge-suffix {
+        color: #d9d9de;
+        opacity: 0.6;
     }
 
     &__body {
         flex: 1;
-        overflow: auto;
-        padding: 1.25rem;
+        overflow: hidden;
         position: relative;
+    }
+
+    &__scroll {
+        height: 100%;
+        overflow: auto;
+        padding: 28px 24px 24px;
+    }
+
+    &__empty-state {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+        height: 100%;
     }
 
     &__loading {

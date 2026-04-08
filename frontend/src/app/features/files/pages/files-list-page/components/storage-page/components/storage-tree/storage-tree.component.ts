@@ -1,14 +1,13 @@
-import { OverlayModule } from '@angular/cdk/overlay';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, output, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 
 import { AppIconComponent } from '../../../../../../../../shared/components/app-icon/app-icon.component';
 import { StorageItem } from '../../../../../../models/storage.models';
+import { getFileExtension } from '../../../../../../utils/storage-file.utils';
 
 @Component({
     selector: 'app-storage-tree',
-    imports: [NgTemplateOutlet, FormsModule, AppIconComponent, OverlayModule],
+    imports: [NgTemplateOutlet, AppIconComponent],
     templateUrl: './storage-tree.component.html',
     styleUrls: ['./storage-tree.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,19 +15,25 @@ import { StorageItem } from '../../../../../../models/storage.models';
 export class StorageTreeComponent {
     @Input() items: StorageItem[] = [];
     @Output() fileSelected = new EventEmitter<StorageItem>();
+    @Output() folderSelected = new EventEmitter<StorageItem>();
     @Output() folderToggled = new EventEmitter<StorageItem>();
     @Output() contextAction = new EventEmitter<{
         action: string;
         item: StorageItem;
+        selectedItems?: StorageItem[];
         renameFromPath?: string;
     }>();
     closeSidebar = output<void>();
     openCreateFolder = output<string>();
+    selectionChange = output<StorageItem[]>();
 
     selectedItem = signal<StorageItem | null>(null);
+    selectedPaths = signal<Set<string>>(new Set<string>());
     hoveredItem = signal<StorageItem | null>(null);
     renamingItem = signal<StorageItem | null>(null);
+    renamingFromPath = '';
     renameValue = '';
+    private selectionAnchorPath: string | null = null;
 
     contextMenuOpen = signal<boolean>(false);
     contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -41,19 +46,35 @@ export class StorageTreeComponent {
         return Array.isArray(nodes) ? nodes : [];
     }
 
-    onItemClick(item: StorageItem): void {
-        if (item.type === 'folder') {
-            item.isExpanded = !item.isExpanded;
-            this.folderToggled.emit(item);
-        } else {
-            this.selectedItem.set(item);
-            this.fileSelected.emit(item);
+    onItemClick(event: MouseEvent, item: StorageItem): void {
+        this.updateSelection(event, item);
+        this.selectedItem.set(item);
+        const hasModifier = event.ctrlKey || event.metaKey || event.shiftKey;
+        if (hasModifier) {
+            return;
         }
+        if (item.type === 'file') {
+            this.fileSelected.emit(item);
+        } else {
+            this.folderSelected.emit(item);
+        }
+    }
+
+    onFolderChevronClick(event: MouseEvent, item: StorageItem): void {
+        event.preventDefault();
+        event.stopPropagation();
+        item.isExpanded = !item.isExpanded;
+        this.folderToggled.emit(item);
     }
 
     onContextMenu(event: MouseEvent, item: StorageItem): void {
         event.preventDefault();
         event.stopPropagation();
+        if (!this.isItemSelected(item)) {
+            this.setSelectedPaths(new Set([item.path]));
+            this.selectedItem.set(item);
+            this.selectionAnchorPath = item.path;
+        }
         this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
         this.contextMenuItem.set(item);
         this.contextMenuOpen.set(true);
@@ -61,6 +82,9 @@ export class StorageTreeComponent {
 
     onKebabClick(event: MouseEvent, item: StorageItem): void {
         event.stopPropagation();
+        this.setSelectedPaths(new Set([item.path]));
+        this.selectedItem.set(item);
+        this.selectionAnchorPath = item.path;
         this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
         this.contextMenuItem.set(item);
         this.contextMenuOpen.set(true);
@@ -76,31 +100,33 @@ export class StorageTreeComponent {
         if (!item) return;
 
         if (action === 'rename') {
-            this.renamingItem.set(item);
+            this.renamingFromPath = item.path || item.name;
             this.renameValue = item.name;
+            this.renamingItem.set(item);
         } else {
             this.contextAction.emit({ action, item });
         }
         this.closeContextMenu();
     }
 
-    onRenameConfirm(item: StorageItem): void {
-        try {
-            const newName = this.renameValue.trim();
-            const currentName = item.name ?? '';
-            if (newName && newName !== currentName) {
-                const currentPath = item.path ?? '';
-                const slashIndex = currentPath.lastIndexOf('/');
-                const parentPath = slashIndex >= 0 ? currentPath.substring(0, slashIndex) : '';
-                const newPath = parentPath ? `${parentPath}/${newName}` : newName;
-                this.contextAction.emit({
-                    action: 'rename',
-                    item: { ...item, name: newName, path: newPath },
-                    renameFromPath: currentPath,
-                });
-            }
-        } finally {
-            this.renamingItem.set(null);
+    onRenameConfirm(): void {
+        const item = this.renamingItem();
+        if (!item) {
+            return;
+        }
+        this.renamingItem.set(null);
+
+        const newName = this.renameValue.trim();
+        const currentPath = this.renamingFromPath;
+        if (newName && newName !== item.name) {
+            const slashIndex = currentPath.lastIndexOf('/');
+            const parentPath = slashIndex >= 0 ? currentPath.substring(0, slashIndex) : '';
+            const newPath = parentPath ? `${parentPath}/${newName}` : newName;
+            this.contextAction.emit({
+                action: 'rename',
+                item: { ...item, name: newName, path: newPath },
+                renameFromPath: currentPath,
+            });
         }
     }
 
@@ -110,27 +136,40 @@ export class StorageTreeComponent {
         this.renamingItem.set(null);
     }
 
-    onRenameEnter(event: Event, item: StorageItem): void {
+    onRenameEnter(event: Event): void {
         event.preventDefault();
         event.stopPropagation();
-        this.onRenameConfirm(item);
-    }
-
-    getFileExtension(name: string): string {
-        const parts = name.split('.');
-        return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+        this.onRenameConfirm();
     }
 
     getFileIcon(item: StorageItem): string {
         if (item.type === 'folder') {
-            return 'ui/folder';
+            return item.is_empty ? 'ui/folder-storage-empty' : 'ui/folder-storage';
         }
+        const ext = getFileExtension(item.name);
+        if (ext === 'txt') return 'ui/file-txt';
+        if (ext === 'pdf') return 'ui/file-pdf';
+        if (ext === 'docx') return 'ui/file-docx';
+        if (ext === 'json') return 'ui/file-json';
+        if (ext === 'html') return 'ui/file-html';
         return 'ui/file';
+    }
+
+    isItemSelected(item: StorageItem): boolean {
+        return this.selectedPaths().has(item.path);
     }
 
     onAddFolderClick(): void {
         const selected = this.selectedItem();
-        const currentFolder = selected?.type === 'folder' && selected.path ? selected.path : '';
+        let currentFolder = '';
+        if (selected?.path) {
+            if (selected.type === 'folder') {
+                currentFolder = selected.path;
+            } else {
+                const slashIndex = selected.path.lastIndexOf('/');
+                currentFolder = slashIndex >= 0 ? selected.path.substring(0, slashIndex) : '';
+            }
+        }
         this.openCreateFolder.emit(currentFolder);
     }
 
@@ -152,14 +191,69 @@ export class StorageTreeComponent {
 
     onMoreMenuAction(action: string): void {
         this.closeMoreMenu();
-        if (action === 'create-folder') {
-            this.openCreateFolder.emit('');
-        } else {
-            this.contextAction.emit({ action, item: { name: '', path: '', type: 'folder' } });
+        const selectedSet = this.selectedPaths();
+        const selectedItems = this.collectVisibleNodes(this.items).filter((node) => selectedSet.has(node.path));
+        if ((action === 'download-selected' || action === 'delete-selected') && selectedItems.length === 0) {
+            return;
         }
+        this.contextAction.emit({
+            action,
+            item: selectedItems[0] ?? this.selectedItem() ?? { name: '', path: '', type: 'folder' },
+            selectedItems,
+        });
     }
 
     trackByPath(_index: number, item: StorageItem): string {
         return item.path;
+    }
+
+    private updateSelection(event: MouseEvent, item: StorageItem): void {
+        const path = item.path;
+        const isCtrlOrMeta = event.ctrlKey || event.metaKey;
+        const isShift = event.shiftKey;
+        const currentSelection = new Set(this.selectedPaths());
+
+        if (isShift && this.selectionAnchorPath) {
+            const visibleNodes = this.collectVisibleNodes(this.items);
+            const startIndex = visibleNodes.findIndex((n) => n.path === this.selectionAnchorPath);
+            const endIndex = visibleNodes.findIndex((n) => n.path === path);
+            if (startIndex !== -1 && endIndex !== -1) {
+                const [from, to] = startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+                const ranged = visibleNodes.slice(from, to + 1);
+                this.setSelectedPaths(new Set(ranged.map((n) => n.path)));
+                return;
+            }
+        }
+
+        if (isCtrlOrMeta) {
+            if (currentSelection.has(path)) {
+                currentSelection.delete(path);
+            } else {
+                currentSelection.add(path);
+            }
+            this.setSelectedPaths(currentSelection);
+            this.selectionAnchorPath = path;
+            return;
+        }
+
+        this.setSelectedPaths(new Set([path]));
+        this.selectionAnchorPath = path;
+    }
+
+    private setSelectedPaths(paths: Set<string>): void {
+        this.selectedPaths.set(paths);
+        const visible = this.collectVisibleNodes(this.items);
+        this.selectionChange.emit(visible.filter((n) => paths.has(n.path)));
+    }
+
+    private collectVisibleNodes(nodes: StorageItem[]): StorageItem[] {
+        const flat: StorageItem[] = [];
+        for (const node of nodes) {
+            flat.push(node);
+            if (node.type === 'folder' && node.isExpanded && node.children?.length) {
+                flat.push(...this.collectVisibleNodes(node.children));
+            }
+        }
+        return flat;
     }
 }
