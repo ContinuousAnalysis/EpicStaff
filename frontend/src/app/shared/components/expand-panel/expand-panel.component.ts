@@ -1,7 +1,8 @@
 import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { expandCollapseAnimation } from '@shared/animations';
-import { TooltipComponent } from '@shared/components';
+
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 @Component({
     selector: 'app-expand-panel',

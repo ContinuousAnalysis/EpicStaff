@@ -59,7 +59,7 @@ import { IconButtonComponent } from '../buttons/icon-button/icon-button.componen
                         <span>Select Tools</span>
                     </div>
                     <app-icon-button
-                        icon="ui/x"
+                        icon="x"
                         ariaLabel="Close dialog"
                         size="1.5rem"
                         (onClick)="closeToolsDialog()"

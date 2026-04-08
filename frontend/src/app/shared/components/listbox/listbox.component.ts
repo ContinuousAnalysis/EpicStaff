@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, forwardRef, input, model } from '@angular/core';
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
-import { AppIconComponent, CustomInputComponent, TooltipComponent } from '@shared/components';
+
+import { AppIconComponent } from '../app-icon/app-icon.component';
+import { CustomInputComponent } from '../form-input/form-input.component';
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 @Component({
     selector: 'app-listbox',

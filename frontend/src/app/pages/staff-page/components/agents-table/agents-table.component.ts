@@ -13,7 +13,8 @@ import {
     Output,
     Renderer2,
     signal,
-    SimpleChanges, ViewChild,
+    SimpleChanges,
+    ViewChild,
 } from '@angular/core';
 import { AgGridModule } from 'ag-grid-angular';
 import {
@@ -636,7 +637,7 @@ export class AgentsTableComponent {
         const parsed = {
             ...agentData,
             llm_config: llmConfigId,
-            fcm_llm_config: agentData.fullFcmLlmConfig?.id ?? llmConfigId,
+            fcm_llm_config: agentData.fcm_llm_config ?? agentData.fullFcmLlmConfig?.id ?? llmConfigId,
             realtime_agent: realtime_agent, // Use the properly structured realtime_agent object
             configured_tools: mergedTools
                 .filter((tool: { id: number; type: string }) => tool.type === 'tool-config')
@@ -1942,12 +1943,11 @@ export class AgentsTableComponent {
 
     private normalizeAdvancedSettings(input: TableFullAgent): Record<string, unknown> {
         const rawInput = input as TableFullAgent & Record<string, unknown>;
-        const sl = input?.search_configs?.naive?.search_limit;
-        const st = input?.search_configs?.naive?.similarity_threshold;
         return {
-            fcm_llm_config_id: input?.fullFcmLlmConfig?.id ?? null,
+            fcm_llm_config_id: input?.fcm_llm_config ?? input?.fullFcmLlmConfig?.id ?? null,
             knowledge_collection: input?.knowledge_collection ?? rawInput['selected_knowledge_source'] ?? null,
             rag_id: input?.rag?.rag_id ?? rawInput['rag_id'] ?? null,
+            rag_type: input?.rag?.rag_type ?? null,
             max_iter: input?.max_iter ?? 20,
             max_rpm: input?.max_rpm ?? 10,
             max_execution_time: input?.max_execution_time ?? 60,
@@ -1957,8 +1957,7 @@ export class AgentsTableComponent {
             cache: !!input?.cache,
             respect_context_window: !!input?.respect_context_window,
 
-            search_limit: sl == null ? null : Number(sl),
-            similarity_threshold: st == null ? null : Number(st),
+            search_configs: JSON.stringify(input?.search_configs ?? null),
         };
     }
 

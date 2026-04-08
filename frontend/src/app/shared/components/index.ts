@@ -7,8 +7,6 @@ export * from './checkbox/checkbox.component';
 export * from './chips-input/chips-input.component';
 export * from './chips-select/chips-select.component';
 export * from './cofirm-dialog';
-export * from './create-agent-form-dialog/create-agent-form-dialog.component';
-export * from './create-agent-form-dialog/tabs';
 export * from './drag-drop-area/drag-drop-area.component';
 export * from './dual-slider/dual-slider.component';
 export * from './embedding-model-selector';

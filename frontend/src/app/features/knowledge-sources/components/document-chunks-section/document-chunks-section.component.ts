@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { AppIconComponent, AppSvgIconComponent, ButtonComponent, SpinnerComponent } from '@shared/components';
+import { AppSvgIconComponent, ButtonComponent, SpinnerComponent } from '@shared/components';
 import { EMPTY } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -12,14 +12,7 @@ import { ChunkPreviewComponent } from './chunk-preview/chunk-preview.component';
     templateUrl: './document-chunks-section.component.html',
     styleUrls: ['./document-chunks-section.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
-        AppIconComponent,
-        ButtonComponent,
-        ChunkPreviewComponent,
-        SpinnerComponent,
-        NgTemplateOutlet,
-        AppSvgIconComponent,
-    ],
+    imports: [ButtonComponent, ChunkPreviewComponent, SpinnerComponent, NgTemplateOutlet, AppSvgIconComponent],
 })
 export class DocumentChunksSectionComponent {
     private chunksStorageService = inject(NaiveRagDocumentsStorageService);

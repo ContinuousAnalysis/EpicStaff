@@ -1,7 +1,7 @@
-import { SelectItem } from "@shared/components";
+import { SelectItem } from '@shared/components';
 
-import { RagName, RagTypeLevel } from "../enums/rag";
-import { Rag } from "../models/base-rag.model";
+import { RagName, RagTypeLevel } from '../enums/rag';
+import { Rag } from '../models/base-rag.model';
 
 export const FILE_TYPES = ['pdf', 'csv', 'md', 'docx', 'txt', 'json', 'html'];
 
@@ -20,16 +20,17 @@ export const RAG_TYPES: Rag[] = [
         description:
             "The document is broken down into chunks, indexed, and the most relevant content for the user's query is searched for.",
         tip: 'Recommended for small collections. Minimal settings.',
-        icon: 'ui/mouse',
+        icon: 'mouse',
         level: RagTypeLevel.BASIC,
         stars: 1,
     },
     {
         name: RagName.GRAPH_RAG,
         value: 'graph',
-        description: 'A graph of entities and their relationships is created, which allows for a better understanding of the context and connections.',
+        description:
+            'A graph of entities and their relationships is created, which allows for a better understanding of the context and connections.',
         tip: 'For more complex queries and a broader context.',
-        icon: 'ui/web',
+        icon: 'web',
         level: RagTypeLevel.ADVANCED,
         stars: 2,
     },
@@ -39,7 +40,7 @@ export const RAG_TYPES: Rag[] = [
         description:
             'Combines multiple data sources with different search strategies. Allows you to configure different approaches for different types of documents.',
         tip: 'Recommended for multi-source projects.',
-        icon: 'ui/tab-group',
+        icon: 'tab-group',
         level: RagTypeLevel.EXPERT,
         stars: 3,
         disabled: true,

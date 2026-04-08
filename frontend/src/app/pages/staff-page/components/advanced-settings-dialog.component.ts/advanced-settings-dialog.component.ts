@@ -2,35 +2,37 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
-    Component, DestroyRef,
+    Component,
+    DestroyRef,
     Inject,
     inject,
-    OnInit, signal
+    OnInit,
+    signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import {
-    AdvancedTabComponent,
-    ExecutionTabComponent,
-    GeneralTabComponent,
-    RagTabComponent,
-    Tab, TabButtonComponent
-} from "@shared/components";
+import { IconButtonComponent, TabButtonComponent } from '@shared/components';
 import { forkJoin, of } from 'rxjs';
 
 import {
     GetCollectionRagsResponse,
-    GetCollectionRequest
+    GetCollectionRequest,
 } from '../../../../features/knowledge-sources/models/collection.model';
 import { CollectionsApiService } from '../../../../features/knowledge-sources/services/collections-api.service';
 import {
     FullLLMConfig,
     FullLLMConfigService,
 } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { AgentRag } from "../../../../features/staff/models/agent.model";
-import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
-import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
-import { AgentSearchConfigs } from "../../../../shared/models";
+import { AgentRag } from '../../../../features/staff/models/agent.model';
+import {
+    AdvancedTabComponent,
+    ExecutionTabComponent,
+    GeneralTabComponent,
+    RagTabComponent,
+    Tab,
+    TabId,
+} from '../../../../shared/components/create-agent-form-dialog/tabs';
+import { AgentSearchConfigs } from '../../../../shared/models';
 
 export interface AdvancedSettingsData {
     id: number;
@@ -42,7 +44,7 @@ export interface AdvancedSettingsData {
     default_temperature: number | null;
     knowledge_collection?: number | null;
     fcm_llm_config: number | null;
-    rag: AgentRag | null
+    rag: AgentRag | null;
     search_configs: AgentSearchConfigs;
     memory: boolean;
     cache: boolean;
@@ -54,7 +56,6 @@ export interface AdvancedSettingsData {
     imports: [
         FormsModule,
         ReactiveFormsModule,
-        AppSvgIconComponent,
         IconButtonComponent,
         AdvancedTabComponent,
         ExecutionTabComponent,
@@ -118,9 +119,10 @@ export class AdvancedSettingsDialogComponent implements OnInit {
                 },
             });
 
-        this.form.get('knowledge_collection')?.valueChanges
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(id => this.onKnowledgeSourceChange(id));
+        this.form
+            .get('knowledge_collection')
+            ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((id) => this.onKnowledgeSourceChange(id));
     }
 
     private initForm(): void {
@@ -135,10 +137,12 @@ export class AdvancedSettingsDialogComponent implements OnInit {
             respect_context_window: [data.respect_context_window ?? false],
             fcm_llm_config: [data.fcm_llm_config || null],
             knowledge_collection: [data.knowledge_collection || null],
-            rag: [{
-                rag_id: data.rag?.rag_id || null,
-                rag_type: data.rag?.rag_type || null,
-            }],
+            rag: [
+                {
+                    rag_id: data.rag?.rag_id || null,
+                    rag_type: data.rag?.rag_type || null,
+                },
+            ],
             search_configs: [data.search_configs || null, [Validators.required]],
         });
     }
@@ -153,9 +157,10 @@ export class AdvancedSettingsDialogComponent implements OnInit {
     }
 
     private getRagsByCollectionId(id: number): void {
-        this.collectionsService.getRagsByCollectionId(id)
+        this.collectionsService
+            .getRagsByCollectionId(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(rags => this.agentRags = rags);
+            .subscribe((rags) => (this.agentRags = rags));
     }
 
     // In save method
@@ -166,9 +171,7 @@ export class AdvancedSettingsDialogComponent implements OnInit {
         const result = {
             ...rest,
             rag,
-            search_configs: rag?.rag_type
-                ? { ...this.data.search_configs, [rag.rag_type]: search_configs }
-                : null,
+            search_configs: rag?.rag_type ? { ...this.data.search_configs, [rag.rag_type]: search_configs } : null,
         };
 
         // Update agentData with current form control values

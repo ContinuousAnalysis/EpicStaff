@@ -12,16 +12,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
-import {
-    AdvancedTabComponent,
-    ButtonComponent,
-    CustomInputComponent,
-    ExecutionTabComponent,
-    GeneralTabComponent,
-    RagTabComponent,
-    TabButtonComponent,
-    TextareaComponent,
-} from '@shared/components';
+import { ButtonComponent, CustomInputComponent, TabButtonComponent, TextareaComponent } from '@shared/components';
 import { buildToolIdsArray } from '@shared/utils';
 
 import {
@@ -39,6 +30,7 @@ import { CustomErrorStateMatcher } from '../../error-state-matcher';
 import { MATERIAL_FORMS } from '../../material-forms';
 import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { ValidationErrorsComponent } from '../app-validation-errors/validation-errors.component';
+import { AdvancedTabComponent, ExecutionTabComponent, GeneralTabComponent, RagTabComponent } from './tabs';
 import { Tab, TabId } from './tabs';
 
 export type AgentDialogResult =
@@ -261,49 +253,8 @@ export class CreateAgentFormComponent implements OnInit {
                 ...this.agentToEdit,
                 ...basePayload,
             };
-
-            // this.agentService
-            //     .updateAgent({
-            //         ...this.agentToEdit,
-            //         ...basePayload,
-            //     })
-            //     .pipe(takeUntilDestroyed(this.destroyRef))
-            //     .subscribe({
-            //         next: (updatedAgent) => {
-            //             const completeAgent: GetAgentRequest = {
-            //                 ...this.agentToEdit!,
-            //                 ...updatedAgent,
-            //                 tools: this.agentToEdit!.tools,
-            //             };
-            //
-            //             this.dialogRef.close(completeAgent);
-            //         },
-            //         error: (error) => {
-            //             console.error('Error updating agent:', error);
-            //             this.toastService.error('Failed to update agent');
-            //         },
-            //         complete: () => this.isSubmitting.set(false),
-            //     });
-            // todo
             this.dialogRef.close({ kind: 'update', payload: updateRequest });
         } else {
-            // this.agentService
-            //     .createAgent(basePayload)
-            //     .pipe(takeUntilDestroyed(this.destroyRef))
-            //     .subscribe({
-            //         next: (createdAgent: GetAgentRequest) => {
-            //             this.toastService.success(
-            //                 `Agent ${createdAgent.role} created`
-            //             );
-            //             this.dialogRef.close(createdAgent);
-            //         },
-            //         error: (error) => {
-            //             console.error('Error creating agent:', error);
-            //             this.toastService.error('Failed to create agent');
-            //         },
-            //         complete: () => this.isSubmitting.set(false),
-            //     });
-            // todo
             this.dialogRef.close({ kind: 'create', payload: basePayload });
         }
     }

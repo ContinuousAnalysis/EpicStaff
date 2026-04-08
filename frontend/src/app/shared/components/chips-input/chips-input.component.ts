@@ -1,36 +1,17 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    effect,
-    forwardRef,
-    input,
-    model,
-} from '@angular/core';
-import {
-    ControlValueAccessor,
-    FormControl,
-    NG_VALUE_ACCESSOR,
-    ReactiveFormsModule, Validators
-} from "@angular/forms";
-import {
-    AppIconComponent,
-    CustomInputComponent,
-    TooltipComponent,
-    ValidationErrorsComponent
-} from "@shared/components";
+import { ChangeDetectionStrategy, Component, effect, forwardRef, input, model } from '@angular/core';
+import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule, Validators } from '@angular/forms';
+
+import { AppIconComponent } from '../app-icon/app-icon.component';
+import { ValidationErrorsComponent } from '../app-validation-errors/validation-errors.component';
+import { CustomInputComponent } from '../form-input/form-input.component';
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 @Component({
     selector: 'app-chips-input',
     templateUrl: './chips-input.component.html',
     styleUrls: ['./chips-input.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
-        TooltipComponent,
-        CustomInputComponent,
-        AppIconComponent,
-        ReactiveFormsModule,
-        ValidationErrorsComponent
-    ],
+    imports: [TooltipComponent, CustomInputComponent, AppIconComponent, ReactiveFormsModule, ValidationErrorsComponent],
     providers: [
         {
             provide: NG_VALUE_ACCESSOR,
@@ -48,10 +29,8 @@ export class ChipsInputComponent implements ControlValueAccessor {
     minItemLength = input<number | null>(null);
     maxItemLength = input<number | null>(null);
 
-    private onChange: (value: string[]) => void = () => {
-    };
-    private onTouched: () => void = () => {
-    };
+    private onChange: (value: string[]) => void = () => {};
+    private onTouched: () => void = () => {};
     private isDisabled = false;
 
     value = model<string[]>([]);

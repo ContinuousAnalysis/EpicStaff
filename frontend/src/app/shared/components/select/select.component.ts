@@ -16,6 +16,7 @@ import {
     ViewChild,
     ViewContainerRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { isEqual } from 'lodash';
 
@@ -61,7 +62,7 @@ export class SelectComponent implements ControlValueAccessor {
         const value = this.selectedValue();
         if (value === undefined || value === null) return null;
 
-        return this.items().find(i => isEqual(i.value, value)) ?? null;
+        return this.items().find((i) => isEqual(i.value, value)) ?? null;
     });
 
     changed = output<unknown>();

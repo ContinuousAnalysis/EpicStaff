@@ -46,7 +46,7 @@ export interface Tab {
                     <app-icon icon="ui/settings-filled" size="20"></app-icon>
                     <h2>Settings</h2>
                 </div>
-                <app-icon-button icon="ui/x" ariaLabel="Close settings" (click)="close()"></app-icon-button>
+                <app-icon-button icon="x" ariaLabel="Close settings" (click)="close()"></app-icon-button>
             </header>
 
             <div class="dialog-content">

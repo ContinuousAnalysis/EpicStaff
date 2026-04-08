@@ -322,8 +322,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         event.stopPropagation();
 
         if (sectionId === 'agents') {
-            console.log('Add agent clicked');
-
             const dialogRef = this.dialog.open<{ kind: 'create' | 'update'; payload: CreateAgentRequest }>(
                 CreateAgentFormComponent,
                 {
@@ -352,7 +350,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
                 )
                 .subscribe();
         } else if (sectionId === 'tasks') {
-            console.log('Add task clicked');
         }
     }
 
