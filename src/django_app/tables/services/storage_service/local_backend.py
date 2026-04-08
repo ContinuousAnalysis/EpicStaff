@@ -103,12 +103,9 @@ class LocalStorageBackend(AbstractStorageBackend):
         destination = self._resolve(destination_path)
         if not source.exists():
             raise FileNotFoundError(f"Source path does not exist: {source_path}")
-        # If destination is an existing directory, move source into it
-        if destination.is_dir():
-            shutil.move(str(source), str(destination / source.name))
-        else:
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(source), str(destination))
+        # Destination is always the target directory — place source inside it
+        destination.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(destination / source.name))
 
     def rename(self, source_path: str, destination_path: str) -> None:
         source = self._resolve(source_path)
@@ -125,13 +122,17 @@ class LocalStorageBackend(AbstractStorageBackend):
         destination = self._resolve(destination_path)
         if not source.exists():
             raise FileNotFoundError(f"Source path does not exist: {source_path}")
+        # Destination is always the target directory — place source inside it
+        target = destination / source.name
+        if target.exists():
+            raise FileExistsError(
+                f"Destination already exists: {destination_path}/{source.name}"
+            )
+        destination.mkdir(parents=True, exist_ok=True)
         if source.is_dir():
-            # Copy source folder into destination: /dest/source_name/...
-            target = destination / source.name if destination.is_dir() else destination
             shutil.copytree(str(source), str(target))
         else:
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(str(source), str(destination))
+            shutil.copy2(str(source), str(target))
 
     def info(self, path: str) -> FileInfo | FolderInfo:
         clean_path = path.rstrip("/")

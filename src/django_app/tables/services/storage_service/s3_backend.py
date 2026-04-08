@@ -217,8 +217,11 @@ class S3StorageBackend(AbstractStorageBackend):
         full_source = self._full_path(source_path)
         full_destination = self._full_path(destination_path)
 
-        # Single file: destination must differ from source
-        if full_source.rstrip("/") == full_destination.rstrip("/"):
+        # Destination is the target directory — source name is auto-appended,
+        # so "same path" means copying into the parent the source already lives in.
+        source_name = full_source.rstrip("/").split("/")[-1]
+        resolved_destination = full_destination.rstrip("/") + "/" + source_name
+        if resolved_destination.rstrip("/") == full_source.rstrip("/"):
             raise ValueError(
                 "Source and destination are the same path — cannot copy to itself."
             )
@@ -227,6 +230,9 @@ class S3StorageBackend(AbstractStorageBackend):
 
         # Check if source is a single object
         if self.exists(source_path):
+            # Destination is always the target directory — append source filename
+            source_name = full_source.rstrip("/").split("/")[-1]
+            full_destination = full_destination.rstrip("/") + "/" + source_name
             self.client.copy_object(
                 CopySource=copy_source,
                 Bucket=self.bucket_name,
